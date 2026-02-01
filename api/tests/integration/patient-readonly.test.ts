@@ -29,6 +29,12 @@ vi.mock("../../src/services/medicationService", () => ({
   updateMedication: vi.fn(async () => ({ id: "med-1" }))
 }));
 
+vi.mock("../../src/auth/patientSessionVerifier", () => ({
+  patientSessionVerifier: {
+    verify: vi.fn(async () => ({ patientId: "patient-1" }))
+  }
+}));
+
 describe("patient read-only integration", () => {
   it("returns schedule for patient token", async () => {
     const request = new Request(

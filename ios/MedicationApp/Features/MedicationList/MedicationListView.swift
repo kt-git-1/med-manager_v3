@@ -70,7 +70,7 @@ final class MedicationListViewModel: ObservableObject {
         case .caregiver:
             return sessionStore.caregiverToken
         case .patient:
-            return sessionStore.patientToken
+            return nil
         case .none:
             return nil
         }

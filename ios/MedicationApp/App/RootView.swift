@@ -9,7 +9,11 @@ struct RootView: View {
             case .none:
                 ModeSelectView()
             case .some(.caregiver):
-                CaregiverLoginView()
+                if sessionStore.caregiverToken == nil {
+                    CaregiverAuthChoiceView()
+                } else {
+                    CaregiverHomeView()
+                }
             case .some(.patient):
                 if sessionStore.patientToken == nil {
                     LinkCodeEntryView()

@@ -1,0 +1,4 @@
+export const LINKING_CODE_LENGTH = 6;
+export const LINKING_CODE_TTL_MINUTES = 15;
+export const LINKING_CODE_MAX_ATTEMPTS = 5;
+export const LINKING_CODE_LOCKOUT_MINUTES = 5;

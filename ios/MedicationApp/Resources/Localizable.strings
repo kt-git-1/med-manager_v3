@@ -2,8 +2,10 @@
 "common.loading" = "読み込み中...";
 "common.error.generic" = "取得に失敗しました";
 "common.error.login" = "ログインに失敗しました";
+"common.error.signup" = "サインアップに失敗しました";
 "common.error.linking" = "連携に失敗しました";
 "common.save" = "保存";
+"common.cancel" = "キャンセル";
 
 /* Mode select */
 "mode.select.title" = "モードを選択";
@@ -17,11 +19,24 @@
 "caregiver.login.button" = "ログイン";
 "caregiver.login.button.loading" = "ログイン中...";
 
+/* Caregiver auth choice */
+"caregiver.auth.title" = "家族アカウント";
+"caregiver.auth.login" = "ログイン";
+"caregiver.auth.signup" = "サインアップ";
+
+/* Caregiver signup */
+"caregiver.signup.title" = "家族サインアップ";
+"caregiver.signup.email" = "Email";
+"caregiver.signup.password" = "Password";
+"caregiver.signup.button" = "サインアップ";
+"caregiver.signup.button.loading" = "登録中...";
+
 /* Link code */
 "link.code.title" = "連携コード";
 "link.code.placeholder" = "コードを入力";
 "link.code.button" = "送信";
 "link.code.button.loading" = "送信中...";
+"link.code.error.invalid" = "6桁の数字コードを入力してください";
 
 /* Medication list */
 "medication.list.empty.title" = "薬がありません";
@@ -47,3 +62,31 @@
 
 /* Patient view */
 "patient.readonly.title" = "薬一覧";
+"patient.readonly.today.title" = "今日";
+"patient.readonly.today.tab" = "今日";
+"patient.readonly.history.tab" = "履歴";
+"patient.readonly.history.title" = "履歴";
+"patient.readonly.history.message" = "準備中です";
+
+/* Caregiver tabs */
+"caregiver.tabs.medications" = "薬";
+"caregiver.tabs.patients" = "連携・患者";
+"caregiver.medications.placeholder.title" = "患者を選択してください";
+"caregiver.medications.placeholder.message" = "患者一覧から対象を選んでください";
+
+/* Patient management */
+"caregiver.patients.title" = "患者管理";
+"caregiver.patients.add" = "追加";
+"caregiver.patients.empty.title" = "患者がいません";
+"caregiver.patients.empty.message" = "右上の追加から作成できます";
+"caregiver.patients.issueCode" = "コード発行";
+"caregiver.patients.revoke" = "解除";
+"caregiver.patients.create.title" = "患者作成";
+"caregiver.patients.create.section" = "表示名";
+"caregiver.patients.create.name" = "表示名";
+"caregiver.patients.create.validation" = "表示名は必須です";
+"caregiver.patients.code.title" = "連携コード";
+"caregiver.patients.code.expires" = "有効期限: %@";
+"caregiver.patients.revoke.confirm.title" = "リンク解除";
+"caregiver.patients.revoke.confirm.message" = "この患者のリンクを解除します。既存セッションは失効します。";
+"caregiver.patients.revoke.confirm.action" = "解除する";

@@ -48,6 +48,9 @@ export async function requirePatient(authHeader?: string) {
   if (!token) {
     throw new AuthError("Unauthorized", 401);
   }
+  if (isCaregiverToken(token)) {
+    throw new AuthError("Forbidden", 403);
+  }
   try {
     const session = await patientSessionVerifier.verify(token);
     return { role: "patient" as const, patientId: session.patientId };
