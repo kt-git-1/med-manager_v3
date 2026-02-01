@@ -41,7 +41,7 @@ export async function GET(request: Request) {
       resolvedPatientId = session.patientId;
     } else if (isCaregiver) {
       const session = await requireCaregiver(authHeader);
-      assertCaregiverPatientScope(session.caregiverUserId, resolvedPatientId);
+      await assertCaregiverPatientScope(session.caregiverUserId, resolvedPatientId);
     } else {
       const session = await requirePatient(authHeader);
       assertPatientScope(resolvedPatientId, session.patientId);
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
         headers: { "content-type": "application/json" }
       });
     }
-    assertCaregiverPatientScope(session.caregiverUserId, input.patientId);
+    await assertCaregiverPatientScope(session.caregiverUserId, input.patientId);
     const created = await createMedication(input);
     return new Response(JSON.stringify({ data: created }), {
       status: 201,

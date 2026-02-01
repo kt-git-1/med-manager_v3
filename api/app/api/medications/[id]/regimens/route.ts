@@ -36,7 +36,7 @@ export async function POST(
         headers: { "content-type": "application/json" }
       });
     }
-    assertCaregiverPatientScope(session.caregiverUserId, medication.patientId);
+    await assertCaregiverPatientScope(session.caregiverUserId, medication.patientId);
     const body = await request.json();
     const startDate = parseDate(body.startDate);
     if (!startDate) {

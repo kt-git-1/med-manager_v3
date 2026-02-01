@@ -35,7 +35,7 @@ export async function PATCH(
         headers: { "content-type": "application/json" }
       });
     }
-    assertCaregiverPatientScope(session.caregiverUserId, existing.patientId);
+    await assertCaregiverPatientScope(session.caregiverUserId, existing.patientId);
     const body = await request.json();
     const merged = {
       medicationId: existing.medicationId,

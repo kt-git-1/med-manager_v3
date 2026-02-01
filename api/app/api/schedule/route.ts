@@ -38,7 +38,7 @@ export async function GET(request: Request) {
 
     if (patientIdParam) {
       const session = await requireCaregiver(authHeader);
-      assertCaregiverPatientScope(session.caregiverUserId, patientIdParam);
+      await assertCaregiverPatientScope(session.caregiverUserId, patientIdParam);
       patientId = patientIdParam;
     } else {
       const session = await requirePatient(authHeader);

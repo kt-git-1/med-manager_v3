@@ -1,5 +1,6 @@
 import { patientSessionVerifier } from "../auth/patientSessionVerifier";
 import { verifySupabaseJwt } from "../auth/supabaseJwt";
+import { getActiveLinkForCaregiverPatient } from "../repositories/caregiverPatientLinkRepo";
 
 export type AuthRole = "caregiver" | "patient";
 
@@ -66,9 +67,12 @@ export function assertPatientScope(requestedPatientId: string, sessionPatientId:
   }
 }
 
-export function assertCaregiverPatientScope(caregiverUserId: string, requestedPatientId: string) {
-  // TODO: replace with caregiver->patient mapping check.
-  if (caregiverUserId !== requestedPatientId) {
+export async function assertCaregiverPatientScope(
+  caregiverUserId: string,
+  requestedPatientId: string
+) {
+  const link = await getActiveLinkForCaregiverPatient(caregiverUserId, requestedPatientId);
+  if (!link) {
     throw new AuthError("Not found", 404);
   }
 }

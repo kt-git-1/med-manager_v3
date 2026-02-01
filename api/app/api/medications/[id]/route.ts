@@ -39,7 +39,7 @@ export async function GET(
     const isCaregiver = isCaregiverToken(token);
     if (isCaregiver) {
       const session = await requireCaregiver(authHeader);
-      assertCaregiverPatientScope(session.caregiverUserId, medication.patientId);
+      await assertCaregiverPatientScope(session.caregiverUserId, medication.patientId);
     } else {
       const session = await requirePatient(authHeader);
       assertPatientScope(medication.patientId, session.patientId);
@@ -85,7 +85,7 @@ export async function PATCH(
         headers: { "content-type": "application/json" }
       });
     }
-    assertCaregiverPatientScope(session.caregiverUserId, existing.patientId);
+    await assertCaregiverPatientScope(session.caregiverUserId, existing.patientId);
     const updated = await updateMedication(id, input);
     return new Response(JSON.stringify({ data: updated }), {
       headers: { "content-type": "application/json" }
@@ -115,7 +115,7 @@ export async function DELETE(
         headers: { "content-type": "application/json" }
       });
     }
-    assertCaregiverPatientScope(session.caregiverUserId, existing.patientId);
+    await assertCaregiverPatientScope(session.caregiverUserId, existing.patientId);
     await archiveMedication(id);
     return new Response(null, { status: 204 });
   } catch (error) {
