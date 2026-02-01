@@ -5,6 +5,7 @@ import {
   listMedicationRecords,
   updateMedicationRecord
 } from "../repositories/medicationRepo";
+import type { Medication } from "@prisma/client";
 
 export type MedicationCreateInput = {
   patientId: string;
@@ -28,11 +29,11 @@ export async function createMedication(input: MedicationCreateInput) {
   return createMedicationRecord(input);
 }
 
-export async function listMedications(patientId: string) {
+export async function listMedications(patientId: string): Promise<Medication[]> {
   return listMedicationRecords(patientId);
 }
 
-export async function getMedication(id: string) {
+export async function getMedication(id: string): Promise<Medication | null> {
   return getMedicationRecord(id);
 }
 

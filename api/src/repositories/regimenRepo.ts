@@ -1,11 +1,19 @@
 import { prisma } from "./prisma";
+import type { DayOfWeek } from "@prisma/client";
 import type { RegimenCreateInput, RegimenUpdateInput } from "../services/regimenService";
+
+function toPrismaDays(days: string[] | undefined): DayOfWeek[] | undefined {
+  if (!days) {
+    return undefined;
+  }
+  return days as DayOfWeek[];
+}
 
 export async function createRegimenRecord(input: RegimenCreateInput) {
   return prisma.regimen.create({
     data: {
       ...input,
-      daysOfWeek: input.daysOfWeek ?? []
+      daysOfWeek: toPrismaDays(input.daysOfWeek) ?? []
     }
   });
 }
@@ -15,7 +23,7 @@ export async function updateRegimenRecord(id: string, input: RegimenUpdateInput)
     where: { id },
     data: {
       ...input,
-      daysOfWeek: input.daysOfWeek
+      daysOfWeek: toPrismaDays(input.daysOfWeek)
     }
   });
 }

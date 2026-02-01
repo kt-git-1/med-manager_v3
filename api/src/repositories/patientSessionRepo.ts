@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import type { Prisma } from "@prisma/client";
 
 export type PatientSessionRecord = {
   id: string;
@@ -21,13 +22,13 @@ export async function findActivePatientSessionByTokenHash(
   });
 }
 
-export async function createPatientSessionRecord(input: {
+export function createPatientSessionRecord(input: {
   patientId: string;
   tokenHash: string;
   issuedAt: Date;
   lastRotatedAt?: Date | null;
   expiresAt?: Date | null;
-}): Promise<PatientSessionRecord> {
+}): Prisma.PrismaPromise<PatientSessionRecord> {
   return prisma.patientSession.create({
     data: {
       patientId: input.patientId,
@@ -39,14 +40,20 @@ export async function createPatientSessionRecord(input: {
   });
 }
 
-export async function revokePatientSessionByTokenHash(tokenHash: string, revokedAt: Date) {
+export function revokePatientSessionByTokenHash(
+  tokenHash: string,
+  revokedAt: Date
+): Prisma.PrismaPromise<Prisma.BatchPayload> {
   return prisma.patientSession.updateMany({
     where: { tokenHash },
     data: { revokedAt }
   });
 }
 
-export async function revokePatientSessionsByPatientId(patientId: string, revokedAt: Date) {
+export function revokePatientSessionsByPatientId(
+  patientId: string,
+  revokedAt: Date
+): Prisma.PrismaPromise<Prisma.BatchPayload> {
   return prisma.patientSession.updateMany({
     where: { patientId, revokedAt: null },
     data: { revokedAt }

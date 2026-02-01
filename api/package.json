@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint .",
     "format": "prettier --check .",
@@ -19,6 +19,7 @@
   "devDependencies": {
     "@playwright/test": "^1.58.1",
     "@types/node": "^25.1.0",
+    "@types/pg": "^8.16.0",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
     "eslint": "^9.39.2",
