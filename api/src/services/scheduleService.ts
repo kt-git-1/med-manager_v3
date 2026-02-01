@@ -49,13 +49,6 @@ const weekdayMap: Record<string, string> = {
   Sat: "SAT"
 };
 
-function resolveTimeZone(value: string | null | undefined) {
-  if (typeof value === "string" && value.trim().length > 0) {
-    return value;
-  }
-  return "UTC";
-}
-
 function getZonedParts(date: Date, timeZone: string) {
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone,
@@ -177,7 +170,10 @@ export function generateSchedule({
       continue;
     }
 
-    const tz = resolveTimeZone(regimen.timezone);
+    const tz = regimen.timezone;
+    if (!tz || tz.trim().length === 0) {
+      throw new Error("Missing timezone");
+    }
     const normalizedFrom = truncateToMinutes(from, tz);
     const normalizedTo = truncateToMinutes(to, tz);
     const regimenStart = startOfLocalDay(regimen.startDate, tz);
