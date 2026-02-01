@@ -49,6 +49,13 @@ const weekdayMap: Record<string, string> = {
   Sat: "SAT"
 };
 
+function resolveTimeZone(value: string | null | undefined) {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value;
+  }
+  return "UTC";
+}
+
 function getZonedParts(date: Date, timeZone: string) {
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone,
@@ -77,47 +84,47 @@ function getZonedParts(date: Date, timeZone: string) {
   };
 }
 
-function getTimeZoneOffset(date: Date, timeZone: string) {
-  const parts = getZonedParts(date, timeZone);
+function getTimeZoneOffset(date: Date, tz: string) {
+  const parts = getZonedParts(date, tz);
   const asUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
   return asUtc - date.getTime();
 }
 
 function makeUtcFromZonedParts(
   parts: { year: number; month: number; day: number; hour: number; minute: number },
-  timeZone: string
+  tz: string
 ) {
   const assumedUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, 0, 0);
-  const offset = getTimeZoneOffset(new Date(assumedUtc), timeZone);
+  const offset = getTimeZoneOffset(new Date(assumedUtc), tz);
   return new Date(assumedUtc - offset);
 }
 
-function truncateToMinutes(date: Date, timeZone: string) {
-  const parts = getZonedParts(date, timeZone);
+function truncateToMinutes(date: Date, tz: string) {
+  const parts = getZonedParts(date, tz);
   return makeUtcFromZonedParts(
     { year: parts.year, month: parts.month, day: parts.day, hour: parts.hour, minute: parts.minute },
-    timeZone
+    tz
   );
 }
 
-function startOfLocalDay(date: Date, timeZone: string) {
-  const parts = getZonedParts(date, timeZone);
+function startOfLocalDay(date: Date, tz: string) {
+  const parts = getZonedParts(date, tz);
   return makeUtcFromZonedParts(
     { year: parts.year, month: parts.month, day: parts.day, hour: 0, minute: 0 },
-    timeZone
+    tz
   );
 }
 
-function nextLocalDay(date: Date, timeZone: string) {
-  const parts = getZonedParts(date, timeZone);
+function nextLocalDay(date: Date, tz: string) {
+  const parts = getZonedParts(date, tz);
   return makeUtcFromZonedParts(
     { year: parts.year, month: parts.month, day: parts.day + 1, hour: 0, minute: 0 },
-    timeZone
+    tz
   );
 }
 
-function getWeekday(date: Date, timeZone: string) {
-  const label = new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short" }).format(date);
+function getWeekday(date: Date, tz: string) {
+  const label = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" }).format(date);
   return weekdayMap[label];
 }
 
@@ -170,11 +177,11 @@ export function generateSchedule({
       continue;
     }
 
-    const timeZone = regimen.timezone;
-    const normalizedFrom = truncateToMinutes(from, timeZone);
-    const normalizedTo = truncateToMinutes(to, timeZone);
-    const regimenStart = startOfLocalDay(regimen.startDate, timeZone);
-    const regimenEnd = regimen.endDate ? startOfLocalDay(regimen.endDate, timeZone) : null;
+    const tz = resolveTimeZone(regimen.timezone);
+    const normalizedFrom = truncateToMinutes(from, tz);
+    const normalizedTo = truncateToMinutes(to, tz);
+    const regimenStart = startOfLocalDay(regimen.startDate, tz);
+    const regimenEnd = regimen.endDate ? startOfLocalDay(regimen.endDate, tz) : null;
     const window = intersectWindow(normalizedFrom, normalizedTo, regimenStart, regimenEnd);
     if (!window) {
       continue;
@@ -182,15 +189,15 @@ export function generateSchedule({
 
     const daysOfWeek = regimen.daysOfWeek ?? [];
     const times = [...regimen.times].sort();
-    let cursor = startOfLocalDay(window.start, timeZone);
+    let cursor = startOfLocalDay(window.start, tz);
 
     while (cursor < window.end) {
-      const weekday = getWeekday(cursor, timeZone);
+      const weekday = getWeekday(cursor, tz);
       const matchesDay = daysOfWeek.length === 0 || daysOfWeek.includes(weekday);
       if (matchesDay) {
         for (const time of times) {
           const { hour, minute } = parseTime(time);
-          const cursorParts = getZonedParts(cursor, timeZone);
+          const cursorParts = getZonedParts(cursor, tz);
           const scheduledAtDate = makeUtcFromZonedParts(
             {
               year: cursorParts.year,
@@ -199,7 +206,7 @@ export function generateSchedule({
               hour,
               minute
             },
-            timeZone
+            tz
           );
           if (scheduledAtDate >= window.start && scheduledAtDate < window.end) {
             doses.push({
@@ -211,7 +218,7 @@ export function generateSchedule({
           }
         }
       }
-      cursor = nextLocalDay(cursor, timeZone);
+      cursor = nextLocalDay(cursor, tz);
     }
   }
 
