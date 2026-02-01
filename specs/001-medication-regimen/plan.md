@@ -16,7 +16,7 @@ This plan follows `specs/000-domain-policy/spec.md`.
 **Language/Version**: TypeScript (Node.js 20+), Swift 5.9+  
 **Primary Dependencies**: Next.js Route Handlers, Supabase Auth, Prisma ORM 7.3, SwiftUI  
 **Storage**: Supabase Postgres (PostgreSQL)  
-**Testing**: Vitest or Jest for API unit/contract tests, Playwright API tests (optional), XCTest for iOS, XCUITest smoke  
+**Testing**: Vitest or Jest for API unit/contract/integration tests, XCTest for iOS, XCUITest smoke  
 **Target Platform**: Vercel (serverless) + iOS 17+  
 **Project Type**: Mobile + API  
 **Performance Goals**: Schedule generation p95 < 2s for 7-day range  
@@ -73,7 +73,7 @@ ios/
 └── MedicationApp/
     ├── App/
     ├── Features/
-    │   ├── ModeSwitch/
+    │   ├── ModeSelect/
     │   ├── MedicationList/
     │   ├── MedicationForm/
     │   └── PatientReadOnly/
@@ -88,7 +88,7 @@ by migrating shared UI and introducing a mode switch at the top-level scene.
 ## 1) アーキテクチャ & モジュール境界
 
 - iOS (SwiftUI)
-  - `ModeSwitch`: family/patient mode toggle backed by stored session type.
+  - `ModeSelect`: 起動直後に「患者/家族」を選択し、それぞれ連携コード入力/ログインへ遷移。
   - `SessionStore`: family session (Supabase JWT) and patient session (patientSessionToken).
   - 画面構成: 薬一覧、薬追加/編集（家族のみ）、患者モード閲覧（読取専用）。
 - API (Next.js Route Handlers)
@@ -206,6 +206,11 @@ generate(patientId, from, to):
   - 薬一覧（次回予定表示）
   - 薬追加/編集（家族のみ）
   - 患者モード閲覧（read-only）
+
+- 起動画面フロー（固定）
+  - Root → モード選択（患者 / 家族）
+  - 患者：連携コード入力 → patientSessionToken（暫定スタブ）保存 → 閲覧画面
+  - 家族：ログイン（email/password）→ JWT保存 → 家族画面
 - モード切替
   - `SessionStore` が family/patient を保持し、Rootで画面切替。
   - patientSessionToken は Keychain に保存（暫定でも差し替え可能に）。
@@ -226,6 +231,8 @@ generate(patientId, from, to):
 
 ## 7) マイルストーン / 作業分解（PR単位）
 
+- (0) テストランナー + テストDB戦略（contract/integrationが回る基盤）
+  - Done when: `npm test` が空テストで通り、テストDBの起動/マイグレーション/クリーンアップが自動化されている
 - (a) Prisma schema + migration + index（v7.3セットアップ含む）
   - Done when: `prisma.config.ts` が生成済み、schema/migration が通る
 - (b) API（Medication/Regimen）

@@ -13,6 +13,11 @@
 4. Run API
    - `npm run dev`
 
+## patientSessionToken (001 stub)
+
+- 001では `patientSessionToken` 検証はスタブです。
+- 置換時は `api/src/auth/patientSessionVerifier.ts` を本実装に差し替えます。
+
 ## iOS (SwiftUI)
 
 1. Open `ios/MedicationApp` in Xcode
