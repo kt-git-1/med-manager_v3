@@ -6,7 +6,9 @@
    - `npm install` (from `api/`)
 2. Configure env
    - Create `api/.env` with `DATABASE_URL` (Supabase pooled connection string)
-   - Configure Supabase Auth keys for JWT verification (`SUPABASE_JWT_SECRET`)
+   - Supabase Auth JWT verification:
+     - HS256: `SUPABASE_JWT_SECRET`
+     - ES256 (ECC P-256): set `SUPABASE_URL` (for JWKS fetch) or `SUPABASE_JWT_PUBLIC_KEY`
 3. Prisma v7.3
    - Ensure `api/prisma.config.ts` is present (v7.3 style)
    - Run `npx prisma migrate dev --name family_linking` (from `api/`)

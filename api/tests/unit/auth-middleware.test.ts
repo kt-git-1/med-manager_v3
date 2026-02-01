@@ -22,7 +22,7 @@ describe("auth middleware", () => {
   });
 
   it("accepts valid caregiver token", async () => {
-    mockedJwt.mockReturnValueOnce({ caregiverUserId: "caregiver-1" });
+    mockedJwt.mockResolvedValueOnce({ caregiverUserId: "caregiver-1" });
     await expect(requireCaregiver("Bearer caregiver-valid")).resolves.toEqual({
       role: "caregiver",
       caregiverUserId: "caregiver-1"
