@@ -35,8 +35,9 @@ export async function requireCaregiver(authHeader?: string) {
   if (!token.startsWith("caregiver-")) {
     throw new AuthError("Unauthorized", 401);
   }
+  const rawToken = token.slice("caregiver-".length);
   try {
-    const session = verifySupabaseJwt(token);
+    const session = verifySupabaseJwt(rawToken);
     return { role: "caregiver" as const, caregiverUserId: session.caregiverUserId };
   } catch {
     throw new AuthError("Unauthorized", 401);

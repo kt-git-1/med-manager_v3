@@ -1,6 +1,6 @@
 {
-  "status": "passed",
-  "failedTests": [],
-  "command": "npm test",
-  "ranAt": "2026-02-01T07:22:36.000Z"
+  "status": "failed",
+  "failedTests": [
+    "c41b9612e23edb4a505e-cdda77f43e4904e4acb1"
+  ]
 }

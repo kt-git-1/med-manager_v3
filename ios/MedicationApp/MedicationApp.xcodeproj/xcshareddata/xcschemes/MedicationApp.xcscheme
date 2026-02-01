@@ -81,6 +81,11 @@
             value = "sb_publishable_nVf6RMV1tUkg8ew7BJLVnw_YDnUMRra"
             isEnabled = "YES">
          </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "API_BASE_URL"
+            value = "https://med-manager-v3.vercel.app/"
+            isEnabled = "YES">
+         </EnvironmentVariable>
       </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
