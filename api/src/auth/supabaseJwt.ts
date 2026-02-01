@@ -114,12 +114,12 @@ async function resolveEs256Key(header: JwtHeader) {
     return createPublicKey(publicKey);
   }
   if (!header.kid) {
-    throw new Error("Missing key id");
+    return null;
   }
   const jwks = await fetchJwks();
   const jwk = jwks.get(header.kid);
   if (!jwk) {
-    throw new Error("Unknown key id");
+    return null;
   }
   return createPublicKey({ key: jwk as JsonWebKey, format: "jwk" });
 }
@@ -140,11 +140,30 @@ export async function verifySupabaseJwt(token: string): Promise<CaregiverSession
     }
     verifyHmacSignature(token, secret);
   } else if (header.alg === "ES256") {
-    const key = await resolveEs256Key(header);
     const signature = rawSignatureToDer(base64UrlDecode(parts[2]));
-    const verified = verify("sha256", Buffer.from(`${parts[0]}.${parts[1]}`), key, signature);
-    if (!verified) {
-      throw new Error("Invalid token signature");
+    const data = Buffer.from(`${parts[0]}.${parts[1]}`);
+    const directKey = await resolveEs256Key(header);
+    if (directKey) {
+      const verified = verify("sha256", data, directKey, signature);
+      if (!verified) {
+        throw new Error("Invalid token signature");
+      }
+    } else {
+      const jwks = await fetchJwks();
+      if (jwks.size === 0) {
+        throw new Error("Missing JWKS keys");
+      }
+      let verified = false;
+      for (const jwk of jwks.values()) {
+        const key = createPublicKey({ key: jwk as JsonWebKey, format: "jwk" });
+        if (verify("sha256", data, key, signature)) {
+          verified = true;
+          break;
+        }
+      }
+      if (!verified) {
+        throw new Error("Invalid token signature");
+      }
     }
   } else {
     throw new Error("Unsupported token algorithm");
