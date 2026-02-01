@@ -6,13 +6,19 @@ struct LinkCodeEntryView: View {
     @State private var errorMessage: String?
     @State private var isLoading = false
 
-    private let linkingService = LinkingService()
+    private let linkingService: LinkingService
+
+    init(sessionStore: SessionStore? = nil) {
+        let store = sessionStore ?? SessionStore()
+        self.linkingService = LinkingService(sessionStore: store)
+    }
 
     var body: some View {
         VStack(spacing: 12) {
             Text(NSLocalizedString("link.code.title", comment: "Link code title"))
                 .font(.title2)
             TextField(NSLocalizedString("link.code.placeholder", comment: "Link code placeholder"), text: $code)
+                .keyboardType(.numberPad)
                 .accessibilityLabel("連携コード")
             if let errorMessage {
                 ErrorStateView(message: errorMessage)
@@ -38,8 +44,13 @@ struct LinkCodeEntryView: View {
         do {
             let token = try await linkingService.link(code: code)
             sessionStore.savePatientToken(token)
+            code = ""
         } catch {
-            errorMessage = NSLocalizedString("common.error.linking", comment: "Linking failed")
+            if case APIError.validation = error {
+                errorMessage = NSLocalizedString("link.code.error.invalid", comment: "Invalid code")
+            } else {
+                errorMessage = NSLocalizedString("common.error.linking", comment: "Linking failed")
+            }
         }
     }
 }

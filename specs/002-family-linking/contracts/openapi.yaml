@@ -1,0 +1,136 @@
+openapi: 3.0.3
+info:
+  title: Family Linking API (002)
+  version: 0.1.0
+servers:
+  - url: /api
+paths:
+  /patients:
+    get:
+      summary: List patients for caregiver
+      responses:
+        "200":
+          description: Patient list
+    post:
+      summary: Create patient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePatientRequest"
+      responses:
+        "201":
+          description: Created
+        "422":
+          description: Validation error
+  /patients/{patientId}/linking-codes:
+    post:
+      summary: Issue linking code for patient
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Linking code issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LinkingCodeResponse"
+        "404":
+          description: Not found (concealed)
+        "409":
+          description: Conflict
+  /patients/{patientId}/revoke:
+    post:
+      summary: Revoke link and invalidate sessions
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Revoked
+        "404":
+          description: Not found (concealed)
+  /patient/link:
+    post:
+      summary: Exchange linking code for patient session token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LinkCodeExchangeRequest"
+      responses:
+        "200":
+          description: Patient session token issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatientSessionResponse"
+        "404":
+          description: Invalid or expired code (concealed)
+        "422":
+          description: Validation error
+        "429":
+          description: Locked out
+  /patient/session/refresh:
+    post:
+      summary: Refresh patient session token
+      responses:
+        "200":
+          description: Patient session token rotated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatientSessionResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+components:
+  schemas:
+    Patient:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+    CreatePatientRequest:
+      type: object
+      required:
+        - displayName
+      properties:
+        displayName:
+          type: string
+    LinkingCodeResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+    LinkCodeExchangeRequest:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+    PatientSessionResponse:
+      type: object
+      properties:
+        patientSessionToken:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true

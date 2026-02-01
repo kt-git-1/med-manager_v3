@@ -38,11 +38,21 @@ export async function POST(
     }
     assertCaregiverPatientScope(session.caregiverUserId, medication.patientId);
     const body = await request.json();
+    const startDate = parseDate(body.startDate);
+    if (!startDate) {
+      return new Response(
+        JSON.stringify({ error: "validation", messages: ["startDate is required"] }),
+        {
+          status: 422,
+          headers: { "content-type": "application/json" }
+        }
+      );
+    }
     const input = {
       medicationId: id,
       patientId: medication.patientId,
       timezone: body.timezone,
-      startDate: parseDate(body.startDate),
+      startDate,
       endDate: parseDate(body.endDate),
       times: body.times,
       daysOfWeek: body.daysOfWeek

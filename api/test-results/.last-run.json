@@ -1,4 +1,6 @@
 {
   "status": "passed",
-  "failedTests": []
+  "failedTests": [],
+  "command": "npm test",
+  "ranAt": "2026-02-01T07:22:36.000Z"
 }

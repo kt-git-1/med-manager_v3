@@ -7,6 +7,7 @@ declare global {
   var pgPool: Pool | undefined;
 }
 
+// Singleton clients to keep serverless connections under control.
 const pool =
   global.pgPool ??
   new Pool({

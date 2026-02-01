@@ -12,6 +12,12 @@ vi.mock("../../src/services/scheduleService", () => ({
   generateScheduleForPatient: vi.fn(async () => [])
 }));
 
+vi.mock("../../src/auth/patientSessionVerifier", () => ({
+  patientSessionVerifier: {
+    verify: vi.fn(async () => ({ patientId: "patient-1" }))
+  }
+}));
+
 describe("patient read-only contract", () => {
   it("allows patient to read medications list", async () => {
     const request = new Request("http://localhost/api/medications?patientId=patient-1", {

@@ -19,6 +19,12 @@ vi.mock("../../src/services/scheduleService", () => ({
   ]
 }));
 
+vi.mock("../../src/auth/patientSessionVerifier", () => ({
+  patientSessionVerifier: {
+    verify: vi.fn(async () => ({ patientId: "patient-1" }))
+  }
+}));
+
 describe("schedule range integration", () => {
   it("returns 401 when authorization is missing", async () => {
     const request = new Request("http://localhost/api/schedule?from=2026-02-01&to=2026-02-02");

@@ -17,6 +17,11 @@ enum DayOfWeek {
   SUN
 }
 
+enum LinkStatus {
+  ACTIVE
+  REVOKED
+}
+
 model Medication {
   id                  String   @id @default(uuid())
   patientId           String
@@ -58,4 +63,73 @@ model Regimen {
 
   @@index([patientId, medicationId, enabled])
   @@index([patientId, startDate, endDate])
+}
+
+model Patient {
+  id          String   @id @default(uuid())
+  caregiverId String
+  displayName String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  links        CaregiverPatientLink[]
+  linkingCodes LinkingCode[]
+  linkingAttempts LinkingAttempt[]
+  sessions     PatientSession[]
+}
+
+model CaregiverPatientLink {
+  id          String     @id @default(uuid())
+  caregiverId String
+  patientId   String     @unique
+  status      LinkStatus @default(ACTIVE)
+  revokedAt   DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([caregiverId])
+}
+
+model LinkingCode {
+  id        String   @id @default(uuid())
+  patientId String
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  issuedBy  String
+  createdAt DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([codeHash])
+  @@index([patientId, expiresAt])
+}
+
+model PatientSession {
+  id            String   @id @default(uuid())
+  patientId     String
+  tokenHash     String   @unique
+  issuedAt      DateTime @default(now())
+  expiresAt     DateTime?
+  lastRotatedAt DateTime?
+  revokedAt     DateTime?
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([patientId])
+  @@index([revokedAt])
+}
+
+model LinkingAttempt {
+  id           String   @id @default(uuid())
+  patientId    String   @unique
+  attemptCount Int      @default(0)
+  lockedUntil  DateTime?
+  updatedAt    DateTime @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([lockedUntil])
 }
