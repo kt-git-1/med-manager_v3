@@ -33,7 +33,7 @@ final class MedicationListViewModel: ObservableObject {
 
     convenience init() {
         let sessionStore = SessionStore()
-        let baseURL = URL(string: ProcessInfo.processInfo.environment["API_BASE_URL"] ?? "http://localhost:3000")!
+        let baseURL = SessionStore.resolveBaseURL()
         self.init(apiClient: APIClient(baseURL: baseURL, sessionStore: sessionStore), sessionStore: sessionStore)
     }
 
@@ -82,7 +82,7 @@ struct MedicationListView: View {
 
     init(sessionStore: SessionStore? = nil) {
         let store = sessionStore ?? SessionStore()
-        let baseURL = URL(string: ProcessInfo.processInfo.environment["API_BASE_URL"] ?? "http://localhost:3000")!
+        let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
             wrappedValue: MedicationListViewModel(
                 apiClient: APIClient(baseURL: baseURL, sessionStore: store),

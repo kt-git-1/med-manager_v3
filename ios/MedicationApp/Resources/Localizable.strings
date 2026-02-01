@@ -37,6 +37,7 @@
 "link.code.button" = "送信";
 "link.code.button.loading" = "送信中...";
 "link.code.error.invalid" = "6桁の数字コードを入力してください";
+"link.code.error.not_found" = "コードが見つからないか期限切れです";
 
 /* Medication list */
 "medication.list.empty.title" = "薬がありません";

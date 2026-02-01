@@ -16,7 +16,20 @@ final class SessionStore: ObservableObject {
     private var isRefreshingPatientToken = false
 
     init() {
-        self.baseURL = URL(string: ProcessInfo.processInfo.environment["API_BASE_URL"] ?? "http://localhost:3000")!
+        self.baseURL = SessionStore.resolveBaseURL()
+    }
+
+    static func resolveBaseURL() -> URL {
+        let envValue = ProcessInfo.processInfo.environment["API_BASE_URL"]
+        if let envValue, let url = URL(string: envValue) {
+            return url
+        }
+        let infoValue = Bundle.main.infoDictionary?["API_BASE_URL"] as? String
+        if let infoValue, let url = URL(string: infoValue) {
+            return url
+        }
+        print("SessionStore: API_BASE_URL missing or invalid, defaulting to http://localhost:3000")
+        return URL(string: "http://localhost:3000")!
     }
 
     func setMode(_ mode: AppMode) {
@@ -24,7 +37,11 @@ final class SessionStore: ObservableObject {
     }
 
     func saveCaregiverToken(_ token: String) {
-        caregiverToken = token
+        if token.starts(with: "caregiver-") {
+            caregiverToken = token
+        } else {
+            caregiverToken = "caregiver-\(token)"
+        }
     }
 
     func savePatientToken(_ token: String) {

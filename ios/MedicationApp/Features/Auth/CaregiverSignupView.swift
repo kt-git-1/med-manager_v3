@@ -42,9 +42,17 @@ struct CaregiverSignupView: View {
         defer { isLoading = false }
         do {
             let token = try await authService.signup(email: email, password: password)
-            sessionStore.saveCaregiverToken(token)
+            if token.isEmpty {
+                errorMessage = "Check your email to confirm your account."
+            } else {
+                sessionStore.saveCaregiverToken(token)
+            }
         } catch {
-            errorMessage = NSLocalizedString("common.error.signup", comment: "Signup failed")
+            if let apiError = error as? LocalizedError, let message = apiError.errorDescription {
+                errorMessage = message
+            } else {
+                errorMessage = NSLocalizedString("common.error.signup", comment: "Signup failed")
+            }
         }
     }
 }

@@ -46,11 +46,28 @@ struct LinkCodeEntryView: View {
             sessionStore.savePatientToken(token)
             code = ""
         } catch {
-            if case APIError.validation = error {
-                errorMessage = NSLocalizedString("link.code.error.invalid", comment: "Invalid code")
+            print("LinkCodeEntryView: link failed \(error)")
+            if let apiError = error as? APIError {
+                switch apiError {
+                case .validation:
+                    errorMessage = NSLocalizedString("link.code.error.invalid", comment: "Invalid code")
+                case .notFound:
+                    errorMessage = NSLocalizedString("link.code.error.not_found", comment: "Code not found")
+                case .network(let message):
+                    errorMessage = message
+                default:
+                    if let message = apiError.errorDescription {
+                        errorMessage = message
+                    } else {
+                        errorMessage = "Linking failed: \(apiError)"
+                    }
+                }
+            } else if let message = (error as? LocalizedError)?.errorDescription {
+                errorMessage = message
             } else {
-                errorMessage = NSLocalizedString("common.error.linking", comment: "Linking failed")
+                errorMessage = "Linking failed: \(error)"
             }
         }
     }
+
 }

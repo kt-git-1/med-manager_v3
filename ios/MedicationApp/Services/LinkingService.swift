@@ -5,7 +5,7 @@ final class LinkingService {
 
     init(sessionStore: SessionStore? = nil) {
         let store = sessionStore ?? SessionStore()
-        let baseURL = URL(string: ProcessInfo.processInfo.environment["API_BASE_URL"] ?? "http://localhost:3000")!
+        let baseURL = SessionStore.resolveBaseURL()
         self.apiClient = APIClient(baseURL: baseURL, sessionStore: store)
     }
 

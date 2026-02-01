@@ -44,7 +44,11 @@ struct CaregiverLoginView: View {
             let token = try await authService.login(email: email, password: password)
             sessionStore.saveCaregiverToken(token)
         } catch {
-            errorMessage = NSLocalizedString("common.error.login", comment: "Login failed")
+            if let apiError = error as? LocalizedError, let message = apiError.errorDescription {
+                errorMessage = message
+            } else {
+                errorMessage = NSLocalizedString("common.error.login", comment: "Login failed")
+            }
         }
     }
 }

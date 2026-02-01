@@ -99,6 +99,7 @@ final class APIClient {
 
     func exchangeLinkCode(code: String) async throws -> String {
         let url = baseURL.appendingPathComponent("api/patient/link")
+        print("APIClient: exchangeLinkCode url=\(url.absoluteString)")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -107,8 +108,12 @@ final class APIClient {
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
         let decoder = JSONDecoder()
-        let result = try decoder.decode(PatientSessionResponseDTO.self, from: data)
-        return result.data.patientSessionToken
+        do {
+            let result = try decoder.decode(PatientSessionResponseDTO.self, from: data)
+            return result.data.patientSessionToken
+        } catch {
+            throw APIError.network("Invalid server response")
+        }
     }
 
     func refreshPatientSessionToken() async throws -> String {
@@ -140,6 +145,7 @@ final class APIClient {
         guard let httpResponse = response as? HTTPURLResponse else {
             return
         }
+        let message = parseErrorMessage(from: data)
         switch httpResponse.statusCode {
         case 200...299:
             return
@@ -154,10 +160,27 @@ final class APIClient {
         case 409:
             throw APIError.conflict
         case 422:
-            let message = String(data: data, encoding: .utf8) ?? "validation error"
-            throw APIError.validation(message)
+            throw APIError.validation(message ?? "validation error")
         default:
-            throw APIError.unknown
+            throw APIError.network(message ?? "Request failed")
         }
+    }
+
+    private func parseErrorMessage(from data: Data) -> String? {
+        struct ErrorPayload: Decodable {
+            let error: String?
+            let message: String?
+            let messages: [String]?
+        }
+        if let payload = try? JSONDecoder().decode(ErrorPayload.self, from: data) {
+            if let messages = payload.messages, !messages.isEmpty {
+                return messages.joined(separator: "\n")
+            }
+            return payload.message ?? payload.error
+        }
+        if let text = String(data: data, encoding: .utf8), !text.isEmpty {
+            return text
+        }
+        return nil
     }
 }

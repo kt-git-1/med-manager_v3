@@ -18,5 +18,11 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>SUPABASE_URL</key>
+	<string>https://kairaeahklftpjfcaddh.supabase.co</string>
+	<key>SUPABASE_ANON_KEY</key>
+	<string>sb_publishable_nVf6RMV1tUkg8ew7BJLVnw_YDnUMRra</string>
+	<key>API_BASE_URL</key>
+	<string>https://med-manager-v3.vercel.app/</string>
 </dict>
 </plist>
