@@ -4,6 +4,8 @@ export type HttpError = {
   message: string;
 };
 
+import { log } from "../logging/logger";
+
 export function toHttpError(error: unknown): HttpError {
   if (error instanceof Error && "statusCode" in error) {
     const statusCode = (error as Error & { statusCode: number }).statusCode;
@@ -41,6 +43,16 @@ function mapStatusCode(status: number): string {
 
 export function errorResponse(error: unknown) {
   const httpError = toHttpError(error);
+  if (httpError.status >= 500) {
+    if (error instanceof Error) {
+      log(
+        "error",
+        `Unhandled error: ${error.message}${error.stack ? `\n${error.stack}` : ""}`
+      );
+    } else {
+      log("error", `Unhandled error: ${JSON.stringify(error)}`);
+    }
+  }
   return new Response(JSON.stringify({ error: httpError.code, message: httpError.message }), {
     status: httpError.status,
     headers: { "content-type": "application/json" }
