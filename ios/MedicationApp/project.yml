@@ -1,0 +1,37 @@
+name: MedicationApp
+options:
+  bundleIdPrefix: com.example
+settings:
+  base:
+    SWIFT_VERSION: 5.9
+    IPHONEOS_DEPLOYMENT_TARGET: 17.0
+targets:
+  MedicationApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+      - path: Features
+      - path: Shared
+      - path: Networking
+      - path: Services
+    resources: []
+    info:
+      path: App/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.medicationapp
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 0.1.0
+    scheme:
+      testTargets:
+        - MedicationAppTests
+  MedicationAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+    info:
+      path: Tests/Info.plist
+    dependencies:
+      - target: MedicationApp

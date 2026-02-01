@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DayOfWeek {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
+model Medication {
+  id                  String   @id @default(uuid())
+  patientId           String
+  name                String
+  dosageText          String
+  doseCountPerIntake  Int
+  dosageStrengthValue Float
+  dosageStrengthUnit  String
+  notes               String?
+  startDate           DateTime @db.Date
+  endDate             DateTime? @db.Date
+  inventoryCount      Int?
+  inventoryUnit       String?
+  isActive            Boolean  @default(true)
+  isArchived          Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  regimens Regimen[]
+
+  @@index([patientId, isActive])
+  @@index([patientId, startDate, endDate])
+}
+
+model Regimen {
+  id           String      @id @default(uuid())
+  patientId    String
+  medicationId String
+  timezone     String
+  startDate    DateTime @db.Date
+  endDate      DateTime? @db.Date
+  times        String[]
+  daysOfWeek   DayOfWeek[]
+  enabled      Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  medication Medication @relation(fields: [medicationId], references: [id])
+
+  @@index([patientId, medicationId, enabled])
+  @@index([patientId, startDate, endDate])
+}

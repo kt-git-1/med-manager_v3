@@ -1,6 +1,13 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
+/api/node_modules
+/api/dist
+/api/.next
+/ios/MedicationApp/TestResults
+/ios/MedicationApp/TestResults.xcresult
+/ios/MedicationApp/Pods
+/ios/MedicationApp/DerivedData
 /node_modules
 /.pnp
 .pnp.js
@@ -27,6 +34,9 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.*
+.env.example
+.env.test.example
 
 # vercel
 .vercel
@@ -34,3 +44,25 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# editor
+.idea/
+.vscode/
+
+# logs
+*.log
+
+# swift / xcode
+.build/
+DerivedData/
+*.swiftpm/
+Packages/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+*.xcuserdata/

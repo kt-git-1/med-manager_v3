@@ -1,0 +1,106 @@
+openapi: 3.0.3
+info:
+  title: Medication Regimen API (001)
+  version: 0.1.0
+servers:
+  - url: /api
+paths:
+  /medications:
+    get:
+      summary: List medications for patient
+      responses:
+        "200":
+          description: Medication list
+    post:
+      summary: Create medication
+      responses:
+        "201":
+          description: Created
+  /medications/{medicationId}:
+    get:
+      summary: Get medication detail
+      parameters:
+        - name: medicationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Medication detail
+    patch:
+      summary: Update medication
+      parameters:
+        - name: medicationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated
+        "409":
+          description: Conflict
+    delete:
+      summary: Archive medication
+      parameters:
+        - name: medicationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Archived
+  /regimens:
+    post:
+      summary: Create regimen
+      responses:
+        "201":
+          description: Created
+  /regimens/{regimenId}:
+    patch:
+      summary: Update regimen
+      parameters:
+        - name: regimenId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated
+        "409":
+          description: Conflict
+  /regimens/{regimenId}/stop:
+    post:
+      summary: Stop regimen
+      parameters:
+        - name: regimenId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Stopped
+  /schedule:
+    get:
+      summary: Generate scheduled doses by range
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Scheduled doses
+components: {}
