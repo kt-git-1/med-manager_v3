@@ -62,16 +62,21 @@ function debugLog(message: string) {
   log("warn", message);
 }
 
-function getJwksUrl() {
+function getJwksUrls() {
   const explicit = process.env.SUPABASE_JWT_JWKS_URL;
   if (explicit) {
-    return explicit;
+    return [explicit];
   }
   const supabaseUrl = process.env.SUPABASE_URL;
   if (!supabaseUrl) {
     throw new Error("Missing SUPABASE_URL");
   }
-  return `${supabaseUrl.replace(/\/$/, "")}/auth/v1/keys`;
+  const base = supabaseUrl.replace(/\/$/, "");
+  return [
+    `${base}/auth/v1/keys`,
+    `${base}/auth/v1/.well-known/jwks.json`,
+    `${base}/.well-known/jwks.json`
+  ];
 }
 
 async function fetchJwks(): Promise<Map<string, JwkKey>> {
@@ -79,21 +84,30 @@ async function fetchJwks(): Promise<Map<string, JwkKey>> {
     return cachedJwks.keys;
   }
   const anonKey = process.env.SUPABASE_ANON_KEY;
-  const url = getJwksUrl();
-  debugLog(`supabase jwks fetch: url=${url} anonKey=${anonKey ? "set" : "missing"}`);
-  const response = await fetch(url, {
-    headers: anonKey
-      ? {
-          apikey: anonKey,
-          authorization: `Bearer ${anonKey}`
-        }
-      : undefined
-  });
-  if (!response.ok) {
-    debugLog(`supabase jwks fetch failed: status=${response.status}`);
-    throw new Error(`Failed to fetch JWKS: ${response.status}`);
+  const urls = getJwksUrls();
+  let lastStatus: number | undefined;
+  let data: { keys?: JwkKey[] } | null = null;
+  for (const url of urls) {
+    debugLog(`supabase jwks fetch: url=${url} anonKey=${anonKey ? "set" : "missing"}`);
+    const response = await fetch(url, {
+      headers: anonKey
+        ? {
+            apikey: anonKey,
+            authorization: `Bearer ${anonKey}`
+          }
+        : undefined
+    });
+    if (!response.ok) {
+      lastStatus = response.status;
+      debugLog(`supabase jwks fetch failed: status=${response.status}`);
+      continue;
+    }
+    data = (await response.json()) as { keys?: JwkKey[] };
+    break;
   }
-  const data = (await response.json()) as { keys?: JwkKey[] };
+  if (!data) {
+    throw new Error(`Failed to fetch JWKS: ${lastStatus ?? "unknown"}`);
+  }
   const keys = new Map<string, JwkKey>();
   for (const key of data.keys ?? []) {
     if (key.kid) {
