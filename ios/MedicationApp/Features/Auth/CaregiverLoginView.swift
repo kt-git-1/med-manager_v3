@@ -11,22 +11,29 @@ struct CaregiverLoginView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            Text("家族ログイン")
+            Text(NSLocalizedString("caregiver.login.title", comment: "Caregiver login title"))
                 .font(.title2)
-            TextField("Email", text: $email)
+            TextField(NSLocalizedString("caregiver.login.email", comment: "Email label"), text: $email)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.emailAddress)
-            SecureField("Password", text: $password)
+                .accessibilityLabel("メールアドレス")
+            SecureField(NSLocalizedString("caregiver.login.password", comment: "Password label"), text: $password)
+                .accessibilityLabel("パスワード")
             if let errorMessage {
-                Text(errorMessage)
-                    .foregroundColor(.red)
+                ErrorStateView(message: errorMessage)
             }
-            Button(isLoading ? "ログイン中..." : "ログイン") {
+            Button(
+                isLoading
+                    ? NSLocalizedString("caregiver.login.button.loading", comment: "Logging in")
+                    : NSLocalizedString("caregiver.login.button", comment: "Login button")
+            ) {
                 Task { await login() }
             }
             .disabled(isLoading)
+            .accessibilityLabel("ログイン")
         }
         .padding()
+        .accessibilityIdentifier("CaregiverLoginView")
     }
 
     @MainActor
@@ -37,7 +44,7 @@ struct CaregiverLoginView: View {
             let token = try await authService.login(email: email, password: password)
             sessionStore.saveCaregiverToken(token)
         } catch {
-            errorMessage = "ログインに失敗しました"
+            errorMessage = NSLocalizedString("common.error.login", comment: "Login failed")
         }
     }
 }

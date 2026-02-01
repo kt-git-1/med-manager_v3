@@ -7,6 +7,8 @@ import {
 import { generateScheduleForPatient } from "../../../src/services/scheduleService";
 import { buildScheduleResponse } from "../../../src/services/scheduleResponse";
 
+export const runtime = "nodejs";
+
 function parseDate(value: string | null) {
   if (!value) {
     return null;

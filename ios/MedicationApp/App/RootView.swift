@@ -11,7 +11,11 @@ struct RootView: View {
             case .some(.caregiver):
                 CaregiverLoginView()
             case .some(.patient):
-                LinkCodeEntryView()
+                if sessionStore.patientToken == nil {
+                    LinkCodeEntryView()
+                } else {
+                    PatientReadOnlyView()
+                }
             }
         }
     }

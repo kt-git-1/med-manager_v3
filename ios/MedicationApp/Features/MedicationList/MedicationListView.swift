@@ -46,7 +46,7 @@ final class MedicationListViewModel: ObservableObject {
             do {
                 guard let patientId = currentPatientId() else {
                     items = []
-                    errorMessage = "患者IDが未設定です"
+                    errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
                     return
                 }
                 let medications = try await apiClient.fetchMedications(patientId: patientId)
@@ -60,7 +60,7 @@ final class MedicationListViewModel: ObservableObject {
                 }
             } catch {
                 items = []
-                errorMessage = "取得に失敗しました"
+                errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
             }
         }
     }
@@ -78,27 +78,43 @@ final class MedicationListViewModel: ObservableObject {
 }
 
 struct MedicationListView: View {
-    @StateObject private var viewModel = MedicationListViewModel()
+    @StateObject private var viewModel: MedicationListViewModel
+
+    init(sessionStore: SessionStore? = nil) {
+        let store = sessionStore ?? SessionStore()
+        let baseURL = URL(string: ProcessInfo.processInfo.environment["API_BASE_URL"] ?? "http://localhost:3000")!
+        _viewModel = StateObject(
+            wrappedValue: MedicationListViewModel(
+                apiClient: APIClient(baseURL: baseURL, sessionStore: store),
+                sessionStore: store
+            )
+        )
+    }
 
     var body: some View {
         Group {
             if viewModel.isLoading {
-                ProgressView()
+                LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
             } else if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
-                    .foregroundColor(.red)
+                ErrorStateView(message: errorMessage)
             } else if viewModel.items.isEmpty {
-                Text("薬がありません")
+                EmptyStateView(
+                    title: NSLocalizedString("medication.list.empty.title", comment: "Empty list title"),
+                    message: NSLocalizedString("medication.list.empty.message", comment: "Empty list message")
+                )
             } else {
                 List(viewModel.items) { item in
                     VStack(alignment: .leading, spacing: 4) {
                         Text(item.name)
                             .font(.headline)
-                        Text("開始日: \(item.startDateText)")
+                            .accessibilityLabel("薬名 \(item.name)")
+                        Text("\(NSLocalizedString("medication.list.startDate", comment: "Start date")): \(item.startDateText)")
                             .font(.subheadline)
+                            .accessibilityLabel("開始日 \(item.startDateText)")
                         if let next = item.nextScheduledText {
-                            Text("次回予定: \(next)")
+                            Text("\(NSLocalizedString("medication.list.nextDose", comment: "Next dose")): \(next)")
                                 .font(.subheadline)
+                                .accessibilityLabel("次回予定 \(next)")
                         }
                     }
                 }

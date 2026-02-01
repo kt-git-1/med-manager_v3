@@ -10,11 +10,15 @@
 		07A122CD68554DEF139F0929 /* MedicationFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0822331373D994BC40BCB45F /* MedicationFormView.swift */; };
 		08F2E2D7265212F0DAEC48C8 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B421542D92993BB7B79D9D3 /* APIError.swift */; };
 		0E7183A7256CA67A2F98F040 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D944249F964B12755FD2DF /* APIClient.swift */; };
+		1C2D3E4F5A6B7C8D9E0F1A2B /* MedicationDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B3C4D5E6F708192A3B4C5D6 /* MedicationDTO.swift */; };
 		291B6376A250F33FB5566E26 /* EmptyDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = F416FC7961AEE499FB0C7826 /* EmptyDTO.swift */; };
+		2D3E4F5A6B7C8D9E0F1A2B3C /* StateViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C4D5E6F708192A3B4C5D6E7 /* StateViews.swift */; };
+		4E5F60718293A4B5C6D7E8F9 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5F708192A3B4C5D6E7F8091A /* Localizable.strings */; };
 		403B60DF0710DEE297E332E7 /* MedicationListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB55437B073B6E2D5D88F3AE /* MedicationListViewModelTests.swift */; };
 		48CB1ABF9F105E0E095F3EA4 /* MedicationFormViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F793F0C9A8BBA67CA9C46326 /* MedicationFormViewModelTests.swift */; };
 		5DFE8FD36CAEB373DF8D79D7 /* MedicationFormValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1936DBB41CFB0907EE79DBF6 /* MedicationFormValidationTests.swift */; };
 		60E08AF3CCF0AE7F4FB97E8B /* LinkingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F3B3EC234D1D71D44BC2C6E /* LinkingService.swift */; };
+		7A8B9C0D1E2F3A4B5C6D7E8F /* PatientReadOnlyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7E6D5C4B3A2F1E0D9C8B7A /* PatientReadOnlyView.swift */; };
 		86383151B8A2885DF215EF2F /* LinkCodeEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF25E0AC2E6F7B74E5AE6DD9 /* LinkCodeEntryView.swift */; };
 		9AC12771713EEFB88AB180B2 /* MedicationApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6422C8656A2A888B307E5A94 /* MedicationApp.swift */; };
 		9CD32F9777E00CA402463257 /* MedicationFormViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 816F71313F426FE0A622F4B3 /* MedicationFormViewModel.swift */; };
@@ -45,12 +49,16 @@
 		1936DBB41CFB0907EE79DBF6 /* MedicationFormValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationFormValidationTests.swift; sourceTree = "<group>"; };
 		1B421542D92993BB7B79D9D3 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
 		2F3B3EC234D1D71D44BC2C6E /* LinkingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkingService.swift; sourceTree = "<group>"; };
+		2B3C4D5E6F708192A3B4C5D6 /* MedicationDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationDTO.swift; sourceTree = "<group>"; };
+		3C4D5E6F708192A3B4C5D6E7 /* StateViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateViews.swift; sourceTree = "<group>"; };
+		5F708192A3B4C5D6E7F8091A /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
 		30F0665AE9C17BFB7BD43D41 /* MedicationApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MedicationApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		48D944249F964B12755FD2DF /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		55D848B099AC94BF91C18A12 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		5EFC3080A97C8534B55D4B19 /* CaregiverLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverLoginView.swift; sourceTree = "<group>"; };
 		6422C8656A2A888B307E5A94 /* MedicationApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationApp.swift; sourceTree = "<group>"; };
 		816F71313F426FE0A622F4B3 /* MedicationFormViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationFormViewModel.swift; sourceTree = "<group>"; };
+		8F7E6D5C4B3A2F1E0D9C8B7A /* PatientReadOnlyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientReadOnlyView.swift; sourceTree = "<group>"; };
 		B24EE1B2BF4DDDB26FB959AD /* MedicationAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MedicationAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B787856EA1456F50596935F0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		EB55437B073B6E2D5D88F3AE /* MedicationListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationListViewModelTests.swift; sourceTree = "<group>"; };
@@ -84,6 +92,7 @@
 			isa = PBXGroup;
 			children = (
 				F416FC7961AEE499FB0C7826 /* EmptyDTO.swift */,
+				2B3C4D5E6F708192A3B4C5D6 /* MedicationDTO.swift */,
 			);
 			path = DTOs;
 			sourceTree = "<group>";
@@ -103,10 +112,19 @@
 				E401E5B4AF7BC11FDD5F32B6 /* Features */,
 				F50EAA427463168A9B653C17 /* Networking */,
 				CFC6F2D9CD18F578EFD8E001 /* Services */,
+				6A7B8C9D0E1F2A3B4C5D6E7F /* Resources */,
 				F4EAFFFD8DD887721209EAAC /* Shared */,
 				E3BBD46D74E5948FF9B26BF2 /* Tests */,
 				B341C91B15A13777AFA409E8 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		6A7B8C9D0E1F2A3B4C5D6E7F /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				5F708192A3B4C5D6E7F8091A /* Localizable.strings */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		7C632D3DABFEBEC21887EB91 /* ModeSelect */ = {
@@ -115,6 +133,14 @@
 				0ED0295C35ADCA8CCEB59000 /* ModeSelectView.swift */,
 			);
 			path = ModeSelect;
+			sourceTree = "<group>";
+		};
+		8B7C6D5E4F3A2B1C0D9E8F7A /* PatientReadOnly */ = {
+			isa = PBXGroup;
+			children = (
+				8F7E6D5C4B3A2F1E0D9C8B7A /* PatientReadOnlyView.swift */,
+			);
+			path = PatientReadOnly;
 			sourceTree = "<group>";
 		};
 		B341C91B15A13777AFA409E8 /* Products */ = {
@@ -170,6 +196,7 @@
 				27B28F49BE53014BA49C37BC /* MedicationForm */,
 				C242C151CD5306FE53BA9275 /* MedicationList */,
 				7C632D3DABFEBEC21887EB91 /* ModeSelect */,
+				8B7C6D5E4F3A2B1C0D9E8F7A /* PatientReadOnly */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -178,8 +205,17 @@
 			isa = PBXGroup;
 			children = (
 				55D848B099AC94BF91C18A12 /* SessionStore.swift */,
+				4D5E6F708192A3B4C5D6E7F8 /* Views */,
 			);
 			path = Shared;
+			sourceTree = "<group>";
+		};
+		4D5E6F708192A3B4C5D6E7F8 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				3C4D5E6F708192A3B4C5D6E7 /* StateViews.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 		F50EAA427463168A9B653C17 /* Networking */ = {
@@ -200,6 +236,7 @@
 			buildConfigurationList = 23769F69F26A8559D65055DA /* Build configuration list for PBXNativeTarget "MedicationApp" */;
 			buildPhases = (
 				1DF30347F72939D9215DC176 /* Sources */,
+				7F8E9D0C1B2A3D4E5F607182 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -269,6 +306,7 @@
 				CC241D83091F75F9817D86C1 /* AuthService.swift in Sources */,
 				9E32A2665B38F39DF6691477 /* CaregiverLoginView.swift in Sources */,
 				291B6376A250F33FB5566E26 /* EmptyDTO.swift in Sources */,
+				1C2D3E4F5A6B7C8D9E0F1A2B /* MedicationDTO.swift in Sources */,
 				86383151B8A2885DF215EF2F /* LinkCodeEntryView.swift in Sources */,
 				60E08AF3CCF0AE7F4FB97E8B /* LinkingService.swift in Sources */,
 				9AC12771713EEFB88AB180B2 /* MedicationApp.swift in Sources */,
@@ -276,8 +314,18 @@
 				9CD32F9777E00CA402463257 /* MedicationFormViewModel.swift in Sources */,
 				D427E43F32FD2C23CA3BB00A /* MedicationListView.swift in Sources */,
 				E865934EDE6E1079E23D6398 /* ModeSelectView.swift in Sources */,
+				7A8B9C0D1E2F3A4B5C6D7E8F /* PatientReadOnlyView.swift in Sources */,
 				C531B4EE2AF37C0A10FE41B1 /* RootView.swift in Sources */,
 				C6F26CAD5BC8841754DDEDEE /* SessionStore.swift in Sources */,
+				2D3E4F5A6B7C8D9E0F1A2B3C /* StateViews.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7F8E9D0C1B2A3D4E5F607182 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4E5F60718293A4B5C6D7E8F9 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

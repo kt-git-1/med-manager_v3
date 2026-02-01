@@ -10,19 +10,25 @@ struct LinkCodeEntryView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            Text("連携コード")
+            Text(NSLocalizedString("link.code.title", comment: "Link code title"))
                 .font(.title2)
-            TextField("コードを入力", text: $code)
+            TextField(NSLocalizedString("link.code.placeholder", comment: "Link code placeholder"), text: $code)
+                .accessibilityLabel("連携コード")
             if let errorMessage {
-                Text(errorMessage)
-                    .foregroundColor(.red)
+                ErrorStateView(message: errorMessage)
             }
-            Button(isLoading ? "送信中..." : "送信") {
+            Button(
+                isLoading
+                    ? NSLocalizedString("link.code.button.loading", comment: "Sending link code")
+                    : NSLocalizedString("link.code.button", comment: "Send link code")
+            ) {
                 Task { await link() }
             }
             .disabled(isLoading)
+            .accessibilityLabel("連携コード送信")
         }
         .padding()
+        .accessibilityIdentifier("LinkCodeEntryView")
     }
 
     @MainActor
@@ -33,7 +39,7 @@ struct LinkCodeEntryView: View {
             let token = try await linkingService.link(code: code)
             sessionStore.savePatientToken(token)
         } catch {
-            errorMessage = "連携に失敗しました"
+            errorMessage = NSLocalizedString("common.error.linking", comment: "Linking failed")
         }
     }
 }

@@ -1,7 +1,15 @@
 import { errorResponse } from "../../../../src/middleware/error";
-import { assertCaregiverPatientScope, requireCaregiver } from "../../../../src/middleware/auth";
+import {
+  assertCaregiverPatientScope,
+  AuthError,
+  getBearerToken,
+  isCaregiverToken,
+  requireCaregiver
+} from "../../../../src/middleware/auth";
 import { validateRegimen } from "../../../../src/validators/regimen";
 import { getRegimen, updateRegimen } from "../../../../src/services/regimenService";
+
+export const runtime = "nodejs";
 
 function parseDate(value: string | undefined) {
   return value ? new Date(value) : undefined;
@@ -9,11 +17,18 @@ function parseDate(value: string | undefined) {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireCaregiver(request.headers.get("authorization") ?? undefined);
-    const existing = await getRegimen(params.id);
+    const { id } = await params;
+    const authHeader = request.headers.get("authorization") ?? undefined;
+    const token = getBearerToken(authHeader);
+    const isCaregiver = isCaregiverToken(token);
+    if (!isCaregiver) {
+      throw new AuthError("Forbidden", 403);
+    }
+    const session = await requireCaregiver(authHeader);
+    const existing = await getRegimen(id);
     if (!existing) {
       return new Response(JSON.stringify({ error: "not_found" }), {
         status: 404,
@@ -38,7 +53,7 @@ export async function PATCH(
         headers: { "content-type": "application/json" }
       });
     }
-    const updated = await updateRegimen(params.id, {
+    const updated = await updateRegimen(id, {
       timezone: body.timezone,
       startDate: parseDate(body.startDate),
       endDate: parseDate(body.endDate),

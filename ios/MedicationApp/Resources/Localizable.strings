@@ -1,0 +1,49 @@
+/* Common */
+"common.loading" = "読み込み中...";
+"common.error.generic" = "取得に失敗しました";
+"common.error.login" = "ログインに失敗しました";
+"common.error.linking" = "連携に失敗しました";
+"common.save" = "保存";
+
+/* Mode select */
+"mode.select.title" = "モードを選択";
+"mode.select.caregiver" = "家族モード";
+"mode.select.patient" = "患者モード";
+
+/* Caregiver login */
+"caregiver.login.title" = "家族ログイン";
+"caregiver.login.email" = "Email";
+"caregiver.login.password" = "Password";
+"caregiver.login.button" = "ログイン";
+"caregiver.login.button.loading" = "ログイン中...";
+
+/* Link code */
+"link.code.title" = "連携コード";
+"link.code.placeholder" = "コードを入力";
+"link.code.button" = "送信";
+"link.code.button.loading" = "送信中...";
+
+/* Medication list */
+"medication.list.empty.title" = "薬がありません";
+"medication.list.empty.message" = "右上の追加から登録できます";
+"medication.list.startDate" = "開始日";
+"medication.list.nextDose" = "次回予定";
+
+/* Medication form */
+"medication.form.section.basic" = "基本情報";
+"medication.form.section.period" = "期間";
+"medication.form.section.inventory" = "在庫";
+"medication.form.section.notes" = "メモ";
+"medication.form.name" = "薬名";
+"medication.form.dosage.value" = "用量 (数値)";
+"medication.form.dosage.unit" = "用量単位";
+"medication.form.dose.count" = "服用数/回";
+"medication.form.startDate" = "開始日";
+"medication.form.endDate" = "終了日";
+"medication.form.inventory.count" = "在庫数";
+"medication.form.inventory.unit" = "在庫単位";
+"medication.form.notes" = "メモ";
+"medication.form.patient.readonly" = "患者モードでは編集できません";
+
+/* Patient view */
+"patient.readonly.title" = "薬一覧";

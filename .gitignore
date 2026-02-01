@@ -2,6 +2,8 @@
 
 # dependencies
 /api/node_modules
+/api/dist
+/api/.next
 /ios/MedicationApp/TestResults
 /ios/MedicationApp/TestResults.xcresult
 /ios/MedicationApp/Pods

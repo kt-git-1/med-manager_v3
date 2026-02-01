@@ -1,8 +1,18 @@
 import { errorResponse } from "../../../src/middleware/error";
-import { assertCaregiverPatientScope, requireCaregiver } from "../../../src/middleware/auth";
+import {
+  assertCaregiverPatientScope,
+  assertPatientScope,
+  AuthError,
+  getBearerToken,
+  isCaregiverToken,
+  requireCaregiver,
+  requirePatient
+} from "../../../src/middleware/auth";
 import { validateMedication } from "../../../src/validators/medication";
 import { createMedication, listMedications } from "../../../src/services/medicationService";
 import { generateScheduleForPatient } from "../../../src/services/scheduleService";
+
+export const runtime = "nodejs";
 
 function parseDate(value: string | undefined) {
   return value ? new Date(value) : undefined;
@@ -10,21 +20,38 @@ function parseDate(value: string | undefined) {
 
 export async function GET(request: Request) {
   try {
-    const session = await requireCaregiver(request.headers.get("authorization") ?? undefined);
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get("patientId");
-    if (!patientId) {
-      return new Response(JSON.stringify({ error: "validation", message: "patientId required" }), {
-        status: 422,
-        headers: { "content-type": "application/json" }
-      });
+    const authHeader = request.headers.get("authorization") ?? undefined;
+    const token = getBearerToken(authHeader);
+    const isCaregiver = isCaregiverToken(token);
+    let resolvedPatientId = patientId;
+
+    if (!resolvedPatientId) {
+      if (isCaregiver) {
+        return new Response(
+          JSON.stringify({ error: "validation", message: "patientId required" }),
+          {
+            status: 422,
+            headers: { "content-type": "application/json" }
+          }
+        );
+      }
+      const session = await requirePatient(authHeader);
+      resolvedPatientId = session.patientId;
+    } else if (isCaregiver) {
+      const session = await requireCaregiver(authHeader);
+      assertCaregiverPatientScope(session.caregiverUserId, resolvedPatientId);
+    } else {
+      const session = await requirePatient(authHeader);
+      assertPatientScope(resolvedPatientId, session.patientId);
     }
-    assertCaregiverPatientScope(session.caregiverUserId, patientId);
-    const medications = await listMedications(patientId);
+
+    const medications = await listMedications(resolvedPatientId);
     const rangeStart = new Date();
     const rangeEnd = new Date(rangeStart.getTime() + 7 * 24 * 60 * 60 * 1000);
     const doses = await generateScheduleForPatient({
-      patientId,
+      patientId: resolvedPatientId,
       from: rangeStart,
       to: rangeEnd
     });
@@ -48,7 +75,13 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const session = await requireCaregiver(request.headers.get("authorization") ?? undefined);
+    const authHeader = request.headers.get("authorization") ?? undefined;
+    const token = getBearerToken(authHeader);
+    const isCaregiver = isCaregiverToken(token);
+    if (!isCaregiver) {
+      throw new AuthError("Forbidden", 403);
+    }
+    const session = await requireCaregiver(authHeader);
     const body = await request.json();
     const input = {
       ...body,

@@ -1,8 +1,16 @@
 import { errorResponse } from "../../../../../src/middleware/error";
-import { assertCaregiverPatientScope, requireCaregiver } from "../../../../../src/middleware/auth";
+import {
+  assertCaregiverPatientScope,
+  AuthError,
+  getBearerToken,
+  isCaregiverToken,
+  requireCaregiver
+} from "../../../../../src/middleware/auth";
 import { validateRegimen } from "../../../../../src/validators/regimen";
 import { createRegimen } from "../../../../../src/services/regimenService";
 import { getMedication } from "../../../../../src/services/medicationService";
+
+export const runtime = "nodejs";
 
 function parseDate(value: string | undefined) {
   return value ? new Date(value) : undefined;
@@ -10,11 +18,18 @@ function parseDate(value: string | undefined) {
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireCaregiver(request.headers.get("authorization") ?? undefined);
-    const medication = await getMedication(params.id);
+    const { id } = await params;
+    const authHeader = request.headers.get("authorization") ?? undefined;
+    const token = getBearerToken(authHeader);
+    const isCaregiver = isCaregiverToken(token);
+    if (!isCaregiver) {
+      throw new AuthError("Forbidden", 403);
+    }
+    const session = await requireCaregiver(authHeader);
+    const medication = await getMedication(id);
     if (!medication) {
       return new Response(JSON.stringify({ error: "not_found" }), {
         status: 404,
@@ -24,7 +39,7 @@ export async function POST(
     assertCaregiverPatientScope(session.caregiverUserId, medication.patientId);
     const body = await request.json();
     const input = {
-      medicationId: params.id,
+      medicationId: id,
       patientId: medication.patientId,
       timezone: body.timezone,
       startDate: parseDate(body.startDate),

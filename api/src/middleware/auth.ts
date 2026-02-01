@@ -23,13 +23,24 @@ export function getBearerToken(authHeader?: string): string | null {
   return token;
 }
 
+export function isCaregiverToken(token: string | null): boolean {
+  return !!token && token.startsWith("caregiver-") && token !== "caregiver-placeholder";
+}
+
 export async function requireCaregiver(authHeader?: string) {
   const token = getBearerToken(authHeader);
   if (!token) {
     throw new AuthError("Unauthorized", 401);
   }
-  const session = verifySupabaseJwt(token);
-  return { role: "caregiver" as const, caregiverUserId: session.caregiverUserId };
+  if (!token.startsWith("caregiver-")) {
+    throw new AuthError("Unauthorized", 401);
+  }
+  try {
+    const session = verifySupabaseJwt(token);
+    return { role: "caregiver" as const, caregiverUserId: session.caregiverUserId };
+  } catch {
+    throw new AuthError("Unauthorized", 401);
+  }
 }
 
 export async function requirePatient(authHeader?: string) {
@@ -37,8 +48,12 @@ export async function requirePatient(authHeader?: string) {
   if (!token) {
     throw new AuthError("Unauthorized", 401);
   }
-  const session = await patientSessionVerifier.verify(token);
-  return { role: "patient" as const, patientId: session.patientId };
+  try {
+    const session = await patientSessionVerifier.verify(token);
+    return { role: "patient" as const, patientId: session.patientId };
+  } catch {
+    throw new AuthError("Unauthorized", 401);
+  }
 }
 
 export function assertPatientScope(requestedPatientId: string, sessionPatientId: string) {

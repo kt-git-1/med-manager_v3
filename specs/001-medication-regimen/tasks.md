@@ -134,14 +134,14 @@ description: "Task list template for feature implementation"
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T039 [P] [US3] Contract tests for patient read-only — Why: 403/404/200方針; Files: `api/tests/contract/patient-readonly.contract.test.ts`; Done when: read可/更新不可; Tests: `cd api && npm test`
-- [ ] T040 [P] [US3] Integration tests for patient access — Why: patientSessionTokenスタブ検証; Files: `api/tests/integration/patient-readonly.test.ts`; Done when: read-only動作; Tests: `cd api && npm test`
+- [x] T039 [P] [US3] Contract tests for patient read-only — Why: 403/404/200方針; Files: `api/tests/contract/patient-readonly.contract.test.ts`; Done when: read可/更新不可; Tests: `cd api && npm test`
+- [x] T040 [P] [US3] Integration tests for patient access — Why: patientSessionTokenスタブ検証; Files: `api/tests/integration/patient-readonly.test.ts`; Done when: read-only動作; Tests: `cd api && npm test`
 
 ### Implementation for User Story 3
 
-- [ ] T041 [US3] Patient auth flow with stub verifier — Why: 001の暫定運用; Files: `api/src/auth/patientSessionVerifier.ts`, `api/src/middleware/auth.ts`; Done when: read-only enforcement（更新は403、他患者は404）; Tests: `api/tests/integration/patient-readonly.test.ts`
-- [ ] T042 [US3] iOS patient read-only views — Why: 患者閲覧UX; Files: `ios/MedicationApp/Features/PatientReadOnly/PatientReadOnlyView.swift`; Done when: 編集UI非表示; Tests: `ios/MedicationApp/Tests/PatientReadOnlyViewTests.swift`
-- [ ] T043 [US3] iOS mode gating — Why: 患者は編集不可; Files: `ios/MedicationApp/Features/MedicationForm/MedicationFormView.swift`, `ios/MedicationApp/Shared/SessionStore.swift`; Done when: patientで編集不可（UI/操作/ナビ）; Tests: `ios/MedicationApp/Tests/ModeGatingTests.swift`
+- [x] T041 [US3] Patient auth flow with stub verifier — Why: 001の暫定運用; Files: `api/src/auth/patientSessionVerifier.ts`, `api/src/middleware/auth.ts`; Done when: read-only enforcement（更新は403、他患者は404）; Tests: `api/tests/integration/patient-readonly.test.ts`
+- [x] T042 [US3] iOS patient read-only views — Why: 患者閲覧UX; Files: `ios/MedicationApp/Features/PatientReadOnly/PatientReadOnlyView.swift`; Done when: 編集UI非表示; Tests: `ios/MedicationApp/Tests/PatientReadOnlyViewTests.swift`
+- [x] T043 [US3] iOS mode gating — Why: 患者は編集不可; Files: `ios/MedicationApp/Features/MedicationForm/MedicationFormView.swift`, `ios/MedicationApp/Shared/SessionStore.swift`; Done when: patientで編集不可（UI/操作/ナビ）; Tests: `ios/MedicationApp/Tests/ModeGatingTests.swift`
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -151,13 +151,15 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T044 [P] Add Independent Test E2E checklist — Why: 受け入れ確認; Files: `specs/001-medication-regimen/checklists/e2e.md`; Done when: 4シナリオが記載; Tests: N/A
-- [ ] T045 [P] Accessibility + loading/empty/error states — Why: UX要件; Files: `ios/MedicationApp/Features/*`, `ios/MedicationApp/Shared/Views/StateViews.swift`; Done when: a11y対応; Tests: XCUITest smoke
-- [ ] T046 [P] API error matrix docs — Why: 401/403/404/409/422を明文化; Files: `specs/001-medication-regimen/README.md`; Done when: エラー方針記載; Tests: N/A
-- [ ] T047 [P] Schedule boundary regression tests — Why: timezoneバグ防止; Files: `api/tests/unit/schedule-generator.test.ts`; Done when: DST/日付跨ぎ追加（該当する場合）; Tests: `cd api && npm test`
-- [ ] T048 [P] Schedule performance smoke check — Why: p95目標の観測; Files: `api/tests/integration/schedule-perf.test.ts`; Done when: 7日範囲の計測が記録; Tests: `cd api && npm test`
-- [ ] T049 [P] Domain-policy linkage check — Why: 仕様依存の明確化; Files: `specs/001-medication-regimen/README.md`; Done when: `specs/000-domain-policy/spec.md` 参照が明確; Tests: N/A
-- [ ] T050 Run quickstart validation — Why: 実行手順の整合; Files: `specs/001-medication-regimen/quickstart.md`; Done when: ローカル手順が通る; Tests: `npm test`, Xcode tests
+- [x] T044 [P] Add Independent Test E2E checklist — Why: 受け入れ確認; Files: `specs/001-medication-regimen/checklists/e2e.md`; Done when: 4シナリオが記載; Tests: N/A
+- [x] T045 [P] Accessibility + loading/empty/error states — Why: UX要件; Files: `ios/MedicationApp/Features/*`, `ios/MedicationApp/Shared/Views/StateViews.swift`; Done when: a11y対応; Tests: `ios/MedicationApp/UITests/MedicationAppUITests.swift`（smoke）
+- [x] T046 [P] API error matrix docs — Why: 401/403/404/409/422を明文化; Files: `specs/001-medication-regimen/README.md`; Done when: エラー方針記載; Tests: N/A
+- [x] T047 [P] Schedule boundary regression tests — Why: timezoneバグ防止; Files: `api/tests/unit/schedule-generator.test.ts`; Done when: DST/日付跨ぎ追加（該当する場合）; Tests: `cd api && npm test`
+- [x] T048 [P] Schedule performance smoke check — Why: p95目標の観測; Files: `api/tests/integration/schedule-perf.test.ts`; Done when: 7日範囲の計測が記録; Tests: `cd api && npm test`
+- [x] T049 [P] Domain-policy linkage check — Why: 仕様依存の明確化; Files: `specs/001-medication-regimen/README.md`; Done when: `specs/000-domain-policy/spec.md` 参照が明確; Tests: N/A
+- [x] T050 Run quickstart validation — Why: 実行手順の整合; Files: `specs/001-medication-regimen/quickstart.md`; Done when: ローカル手順が通る; Tests: `npm test`, Xcode tests
+- [x] T051 [P] Add ADR for schedule generation + auth stub — Why: 設計判断の記録; Files: `specs/001-medication-regimen/adr/001-schedule-auth.md`; Done when: Decision/Alternatives/Impactが記載; Tests: N/A
+- [x] T052 [P] Prepare i18n-ready strings — Why: i18n準備; Files: `ios/MedicationApp/Resources/Localizable.strings`; Done when: 主要UI文字列を`NSLocalizedString`へ置換; Tests: N/A
 
 ---
 

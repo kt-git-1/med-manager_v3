@@ -1,5 +1,13 @@
 import { errorResponse } from "../../../../src/middleware/error";
-import { assertCaregiverPatientScope, requireCaregiver } from "../../../../src/middleware/auth";
+import {
+  assertCaregiverPatientScope,
+  assertPatientScope,
+  AuthError,
+  getBearerToken,
+  isCaregiverToken,
+  requireCaregiver,
+  requirePatient
+} from "../../../../src/middleware/auth";
 import { validateMedication } from "../../../../src/validators/medication";
 import {
   archiveMedication,
@@ -7,24 +15,35 @@ import {
   updateMedication
 } from "../../../../src/services/medicationService";
 
+export const runtime = "nodejs";
+
 function parseDate(value: string | undefined) {
   return value ? new Date(value) : undefined;
 }
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireCaregiver(request.headers.get("authorization") ?? undefined);
-    const medication = await getMedication(params.id);
+    const { id } = await params;
+    const medication = await getMedication(id);
     if (!medication) {
       return new Response(JSON.stringify({ error: "not_found" }), {
         status: 404,
         headers: { "content-type": "application/json" }
       });
     }
-    assertCaregiverPatientScope(session.caregiverUserId, medication.patientId);
+    const authHeader = request.headers.get("authorization") ?? undefined;
+    const token = getBearerToken(authHeader);
+    const isCaregiver = isCaregiverToken(token);
+    if (isCaregiver) {
+      const session = await requireCaregiver(authHeader);
+      assertCaregiverPatientScope(session.caregiverUserId, medication.patientId);
+    } else {
+      const session = await requirePatient(authHeader);
+      assertPatientScope(medication.patientId, session.patientId);
+    }
     return new Response(JSON.stringify({ data: medication }), {
       headers: { "content-type": "application/json" }
     });
@@ -35,10 +54,17 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireCaregiver(request.headers.get("authorization") ?? undefined);
+    const { id } = await params;
+    const authHeader = request.headers.get("authorization") ?? undefined;
+    const token = getBearerToken(authHeader);
+    const isCaregiver = isCaregiverToken(token);
+    if (!isCaregiver) {
+      throw new AuthError("Forbidden", 403);
+    }
+    const session = await requireCaregiver(authHeader);
     const body = await request.json();
     const input = {
       ...body,
@@ -52,7 +78,7 @@ export async function PATCH(
         headers: { "content-type": "application/json" }
       });
     }
-    const existing = await getMedication(params.id);
+    const existing = await getMedication(id);
     if (!existing) {
       return new Response(JSON.stringify({ error: "not_found" }), {
         status: 404,
@@ -60,7 +86,7 @@ export async function PATCH(
       });
     }
     assertCaregiverPatientScope(session.caregiverUserId, existing.patientId);
-    const updated = await updateMedication(params.id, input);
+    const updated = await updateMedication(id, input);
     return new Response(JSON.stringify({ data: updated }), {
       headers: { "content-type": "application/json" }
     });
@@ -71,11 +97,18 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireCaregiver(request.headers.get("authorization") ?? undefined);
-    const existing = await getMedication(params.id);
+    const { id } = await params;
+    const authHeader = request.headers.get("authorization") ?? undefined;
+    const token = getBearerToken(authHeader);
+    const isCaregiver = isCaregiverToken(token);
+    if (!isCaregiver) {
+      throw new AuthError("Forbidden", 403);
+    }
+    const session = await requireCaregiver(authHeader);
+    const existing = await getMedication(id);
     if (!existing) {
       return new Response(JSON.stringify({ error: "not_found" }), {
         status: 404,
@@ -83,7 +116,7 @@ export async function DELETE(
       });
     }
     assertCaregiverPatientScope(session.caregiverUserId, existing.patientId);
-    await archiveMedication(params.id);
+    await archiveMedication(id);
     return new Response(null, { status: 204 });
   } catch (error) {
     return errorResponse(error);

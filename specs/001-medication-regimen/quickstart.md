@@ -28,3 +28,8 @@
 
 - API: `npm test`
 - iOS: `Cmd+U` for unit/UI tests
+
+## Validation
+
+- API: `npm test`
+- iOS: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`

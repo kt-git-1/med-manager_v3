@@ -5,12 +5,12 @@ struct ModeSelectView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("モードを選択")
+            Text(NSLocalizedString("mode.select.title", comment: "Mode selection title"))
                 .font(.title2)
-            Button("家族モード") {
+            Button(NSLocalizedString("mode.select.caregiver", comment: "Caregiver mode")) {
                 sessionStore.setMode(.caregiver)
             }
-            Button("患者モード") {
+            Button(NSLocalizedString("mode.select.patient", comment: "Patient mode")) {
                 sessionStore.setMode(.patient)
             }
         }

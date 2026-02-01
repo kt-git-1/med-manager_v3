@@ -1,53 +1,71 @@
 import SwiftUI
 
 struct MedicationFormView: View {
+    @EnvironmentObject private var sessionStore: SessionStore
     @StateObject private var viewModel = MedicationFormViewModel()
 
     var body: some View {
         Form {
-            Section("基本情報") {
-                TextField("薬名", text: $viewModel.name)
-                TextField("用量 (数値)", text: $viewModel.dosageStrengthValue)
+            Section(NSLocalizedString("medication.form.section.basic", comment: "Basic info")) {
+                TextField(NSLocalizedString("medication.form.name", comment: "Medication name"), text: $viewModel.name)
+                    .accessibilityLabel("薬名")
+                TextField(NSLocalizedString("medication.form.dosage.value", comment: "Dosage value"), text: $viewModel.dosageStrengthValue)
                     .keyboardType(.decimalPad)
-                TextField("用量単位", text: $viewModel.dosageStrengthUnit)
-                TextField("服用数/回", text: $viewModel.doseCountPerIntake)
+                    .accessibilityLabel("用量数値")
+                TextField(NSLocalizedString("medication.form.dosage.unit", comment: "Dosage unit"), text: $viewModel.dosageStrengthUnit)
+                    .accessibilityLabel("用量単位")
+                TextField(NSLocalizedString("medication.form.dose.count", comment: "Dose count"), text: $viewModel.doseCountPerIntake)
                     .keyboardType(.numberPad)
+                    .accessibilityLabel("服用数")
             }
 
-            Section("期間") {
-                DatePicker("開始日", selection: $viewModel.startDate, displayedComponents: .date)
+            Section(NSLocalizedString("medication.form.section.period", comment: "Period")) {
+                DatePicker(NSLocalizedString("medication.form.startDate", comment: "Start date"), selection: $viewModel.startDate, displayedComponents: .date)
+                    .accessibilityLabel("開始日")
                 DatePicker(
-                    "終了日",
+                    NSLocalizedString("medication.form.endDate", comment: "End date"),
                     selection: Binding(
                         get: { viewModel.endDate ?? viewModel.startDate },
                         set: { viewModel.endDate = $0 }
                     ),
                     displayedComponents: .date
                 )
+                .accessibilityLabel("終了日")
             }
 
-            Section("在庫") {
-                TextField("在庫数", text: $viewModel.inventoryCount)
+            Section(NSLocalizedString("medication.form.section.inventory", comment: "Inventory")) {
+                TextField(NSLocalizedString("medication.form.inventory.count", comment: "Inventory count"), text: $viewModel.inventoryCount)
                     .keyboardType(.numberPad)
-                TextField("在庫単位", text: $viewModel.inventoryUnit)
+                    .accessibilityLabel("在庫数")
+                TextField(NSLocalizedString("medication.form.inventory.unit", comment: "Inventory unit"), text: $viewModel.inventoryUnit)
+                    .accessibilityLabel("在庫単位")
             }
 
-            Section("メモ") {
-                TextField("メモ", text: $viewModel.notes)
+            Section(NSLocalizedString("medication.form.section.notes", comment: "Notes")) {
+                TextField(NSLocalizedString("medication.form.notes", comment: "Notes"), text: $viewModel.notes)
+                    .accessibilityLabel("メモ")
             }
 
             if let errorMessage = viewModel.errorMessage {
                 Section {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
+                    ErrorStateView(message: errorMessage)
                 }
             }
 
-            Button(viewModel.isSubmitting ? "保存中..." : "保存") {
-                Task { _ = await viewModel.submit() }
+            if sessionStore.mode == .patient {
+                Section {
+                    Text(NSLocalizedString("medication.form.patient.readonly", comment: "Read-only message"))
+                        .foregroundColor(.secondary)
+                }
+            } else {
+                Button(viewModel.isSubmitting ? "保存中..." : "保存") {
+                    Task { _ = await viewModel.submit() }
+                }
+                .disabled(viewModel.isSubmitting)
+                .accessibilityLabel(NSLocalizedString("common.save", comment: "Save"))
             }
-            .disabled(viewModel.isSubmitting)
         }
+        .disabled(sessionStore.mode == .patient)
         .accessibilityIdentifier("MedicationFormView")
     }
 }
