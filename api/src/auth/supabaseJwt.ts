@@ -69,9 +69,17 @@ async function fetchJwks(): Promise<Map<string, JwkKey>> {
   if (cachedJwks && Date.now() - cachedJwks.fetchedAt < JWKS_CACHE_TTL_MS) {
     return cachedJwks.keys;
   }
-  const response = await fetch(getJwksUrl());
+  const anonKey = process.env.SUPABASE_ANON_KEY;
+  const response = await fetch(getJwksUrl(), {
+    headers: anonKey
+      ? {
+          apikey: anonKey,
+          authorization: `Bearer ${anonKey}`
+        }
+      : undefined
+  });
   if (!response.ok) {
-    throw new Error("Failed to fetch JWKS");
+    throw new Error(`Failed to fetch JWKS: ${response.status}`);
   }
   const data = (await response.json()) as { keys?: JwkKey[] };
   const keys = new Map<string, JwkKey>();
