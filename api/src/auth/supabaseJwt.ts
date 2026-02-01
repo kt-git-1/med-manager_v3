@@ -1,4 +1,5 @@
 import { createHmac, createPublicKey, timingSafeEqual, verify } from "crypto";
+import { log } from "../logging/logger";
 
 export type CaregiverSession = {
   caregiverUserId: string;
@@ -52,6 +53,14 @@ type JwkKey = {
 
 let cachedJwks: { fetchedAt: number; keys: Map<string, JwkKey> } | null = null;
 const JWKS_CACHE_TTL_MS = 5 * 60 * 1000;
+const JWT_DEBUG = process.env.SUPABASE_JWT_DEBUG === "true";
+
+function debugLog(message: string) {
+  if (!JWT_DEBUG) {
+    return;
+  }
+  log("warn", message);
+}
 
 function getJwksUrl() {
   const explicit = process.env.SUPABASE_JWT_JWKS_URL;
@@ -70,7 +79,9 @@ async function fetchJwks(): Promise<Map<string, JwkKey>> {
     return cachedJwks.keys;
   }
   const anonKey = process.env.SUPABASE_ANON_KEY;
-  const response = await fetch(getJwksUrl(), {
+  const url = getJwksUrl();
+  debugLog(`supabase jwks fetch: url=${url} anonKey=${anonKey ? "set" : "missing"}`);
+  const response = await fetch(url, {
     headers: anonKey
       ? {
           apikey: anonKey,
@@ -79,6 +90,7 @@ async function fetchJwks(): Promise<Map<string, JwkKey>> {
       : undefined
   });
   if (!response.ok) {
+    debugLog(`supabase jwks fetch failed: status=${response.status}`);
     throw new Error(`Failed to fetch JWKS: ${response.status}`);
   }
   const data = (await response.json()) as { keys?: JwkKey[] };
@@ -141,40 +153,50 @@ export async function verifySupabaseJwt(token: string): Promise<CaregiverSession
     throw new Error("Invalid token format");
   }
   const header = parseJson<JwtHeader>(parts[0]);
-  if (header.alg === "HS256") {
-    const secret = process.env.SUPABASE_JWT_SECRET;
-    if (!secret) {
-      throw new Error("Missing SUPABASE_JWT_SECRET");
-    }
-    verifyHmacSignature(token, secret);
-  } else if (header.alg === "ES256") {
-    const signature = rawSignatureToDer(base64UrlDecode(parts[2]));
-    const data = Buffer.from(`${parts[0]}.${parts[1]}`);
-    const directKey = await resolveEs256Key(header);
-    if (directKey) {
-      const verified = verify("sha256", data, directKey, signature);
-      if (!verified) {
-        throw new Error("Invalid token signature");
+  try {
+    if (header.alg === "HS256") {
+      const secret = process.env.SUPABASE_JWT_SECRET;
+      if (!secret) {
+        throw new Error("Missing SUPABASE_JWT_SECRET");
       }
-    } else {
-      const jwks = await fetchJwks();
-      if (jwks.size === 0) {
-        throw new Error("Missing JWKS keys");
-      }
-      let verified = false;
-      for (const jwk of jwks.values()) {
-        const key = createPublicKey({ key: jwk as JsonWebKey, format: "jwk" });
-        if (verify("sha256", data, key, signature)) {
-          verified = true;
-          break;
+      verifyHmacSignature(token, secret);
+    } else if (header.alg === "ES256") {
+      const signature = rawSignatureToDer(base64UrlDecode(parts[2]));
+      const data = Buffer.from(`${parts[0]}.${parts[1]}`);
+      const directKey = await resolveEs256Key(header);
+      if (directKey) {
+        const verified = verify("sha256", data, directKey, signature);
+        if (!verified) {
+          throw new Error("Invalid token signature");
+        }
+      } else {
+        const jwks = await fetchJwks();
+        if (jwks.size === 0) {
+          throw new Error("Missing JWKS keys");
+        }
+        let verified = false;
+        for (const jwk of jwks.values()) {
+          const key = createPublicKey({ key: jwk as JsonWebKey, format: "jwk" });
+          if (verify("sha256", data, key, signature)) {
+            verified = true;
+            break;
+          }
+        }
+        if (!verified) {
+          throw new Error("Invalid token signature");
         }
       }
-      if (!verified) {
-        throw new Error("Invalid token signature");
-      }
+    } else {
+      throw new Error("Unsupported token algorithm");
     }
-  } else {
-    throw new Error("Unsupported token algorithm");
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "unknown";
+    debugLog(
+      `supabase jwt verify failed: alg=${header.alg ?? "missing"} kid=${
+        header.kid ?? "missing"
+      } reason=${reason}`
+    );
+    throw error;
   }
   const payload = parseJson<JwtPayload>(parts[1]);
   if (typeof payload.exp === "number") {
