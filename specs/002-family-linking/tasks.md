@@ -160,3 +160,40 @@
 ### Incremental Delivery
 
 US1 → US2 → US3 → iOS flows → Polish
+
+---
+
+## Phase 9: Integration (001 × 002) - 家族モードの患者選択と薬登録導線の統合 🎯 MVP
+
+**Goal**: 家族モードで「対象患者」を選択し、その患者に対して薬/スケジュール（001）を登録・編集できる導線を完成させる。  
+**Key idea**: `currentPatientId`（選択中患者）を単一の真実として保持し、薬タブの操作対象を必ず `currentPatientId` に束縛する。  
+**Policy**: caregiver の薬CRUDは `patientId` 必須（未指定は 422）。
+
+### Independent Test (E2E)
+- 家族ログイン → 患者作成 → 患者を選択 → 薬追加/編集 → 薬一覧に反映（対象患者が一致）  
+- 患者未選択時は薬タブが「患者選択」へ誘導する  
+- 選択中患者を解除（revoke）すると currentPatient がクリアされ導線がリセットされる
+
+### iOS Integration Tasks
+
+- [x] T042 [P] Add `currentPatientId` + persistence to `SessionStore` (Why: single source of truth for caregiver target patient | Files: `ios/MedicationApp/Shared/SessionStore.swift` (+ UserDefaults), `ios/MedicationApp/Services/*` if needed | Done: currentPatient set/clear/restore works; cleared on logout and revoke; patient mode unaffected | Tests: unit tests for persistence + basic UI smoke)
+- [x] T043 [P] Wire patient selection in caregiver patient list and show selected state (Why: make selection explicit and reversible | Files: `ios/MedicationApp/Features/PatientManagement/PatientManagementView.swift`, related ViewModels | Done: tapping a patient sets `currentPatientId`; selected row is visibly highlighted; last selection is restored on next launch | Tests: UI smoke / ViewModel unit)
+- [x] T044 [P] Add caregiver Medication tab guard + empty states for no patient selected / no patients / no meds (Why: prevent ambiguity and dead-ends | Files: `ios/MedicationApp/Features/Medication/*`, `ios/MedicationApp/App/RootView.swift` (tab switch helper) | Done:
+  - 0 patients → prompt to create patient (navigate to 連携/患者タブ)
+  - no selection → prompt to select patient (navigate to 連携/患者タブ)
+  - selection + 0 meds → prompt to add med
+  | Tests: UI smoke)
+- [x] T045 [P] Display current patient header + switch affordance in Medication tab (Why: reduce user confusion when multiple patients exist | Files: `ios/MedicationApp/Features/Medication/MedicationListView.swift` (or equivalent) | Done: shows “対象患者: {displayName}” and a “切替” action that opens patient tab or a chooser | Tests: UI smoke)
+- [x] T046 [P] Ensure Medication create/edit requests always include `currentPatientId` (Why: bind CRUD to chosen patient | Files: `ios/MedicationApp/Networking/APIClient.swift`, medication DTOs/ViewModels | Done: list/create/update/delete all require currentPatient; if missing, UI blocks and no request is sent | Tests: APIClient request-building unit tests)
+- [x] T047 [P] Handle revoke impact on selection (Why: avoid stale selection) | Files: `ios/MedicationApp/Features/PatientManagement/PatientRevokeView.swift`, `ios/MedicationApp/Shared/SessionStore.swift` | Done: if revoked patient == currentPatient, clear selection and redirect medication tab to selection prompt | Tests: UI smoke
+
+### API Integration Tasks
+
+- [x] T048 [P] Enforce caregiver medication endpoints require `patientId` (Why: remove ambiguity in multi-patient caregiver UX | Files: medication endpoints in `api/app/api/*` and validators (001) | Done: create/list/update for caregiver require `patientId` and return 422 when missing; non-owned patientId is 404 conceal | Tests: contract + integration)
+- [x] T049 [P] Add integration test: caregiver creates two patients, adds meds to each, list scoped by patientId (Why: prove scoping works end-to-end | Files: `api/tests/integration/caregiver-medication-scope.test.ts` (new) | Done: med A not returned when querying patient B; 422 on missing patientId | Tests: `npm test -- api/tests/integration/caregiver-medication-scope.test.ts`)
+- [x] T050 [P] Add integration test: revoke clears access but does not delete data; re-link same family can continue (Why: validate “解除はアクセス遮断のみ” contract | Files: `api/tests/integration/revoke-access-only.test.ts` (new) | Done: revoke makes patient tokens invalid; caregiver can still see patient and meds; new patient session after re-link can read existing meds | Tests: `npm test -- api/tests/integration/revoke-access-only.test.ts`)
+
+### Cross-Cutting / Documentation
+
+- [x] T051 [P] Update E2E checklists for unified caregiver flow (Why: prevent regression where UI is disconnected | Files: `specs/001-medication-regimen/checklists/e2e.md`, `specs/002-family-linking/checklists/e2e.md` | Done: unified scenario added (login→patient create→select→med CRUD) | Tests: N/A)
+- [x] T052 Run full test suite and record results (Why: confirm no regressions across 001/002) | Files: `api/test-results/.last-run.json` (optional) | Done: all tests passing | Tests: `npm test` + iOS `xcodebuild ... test`

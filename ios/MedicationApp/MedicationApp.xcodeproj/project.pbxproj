@@ -31,6 +31,8 @@
 		A1B2C3D4E5F6A7B8C9D0E1FD /* PatientRevokeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1FC /* PatientRevokeView.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1FF /* CaregiverHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1FE /* CaregiverHomeView.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E201 /* PatientDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E200 /* PatientDTO.swift */; };
+		A2B3C4D5E6F708192A3B4C5D /* SessionStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B3C4D5E6F708192A3B4C5C /* SessionStoreTests.swift */; };
+		A3B4C5D6E7F8091A2B3C4D5E /* PatientManagementViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3B4C5D6E7F8091A2B3C4D5D /* PatientManagementViewModelTests.swift */; };
 		C531B4EE2AF37C0A10FE41B1 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C5E58283CB0DE531C70CF9B /* RootView.swift */; };
 		C6F26CAD5BC8841754DDEDEE /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55D848B099AC94BF91C18A12 /* SessionStore.swift */; };
 		CC241D83091F75F9817D86C1 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10B347F8F660C4110482F537 /* AuthService.swift */; };
@@ -75,6 +77,8 @@
 		A1B2C3D4E5F6A7B8C9D0E1FC /* PatientRevokeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientRevokeView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6A7B8C9D0E1FE /* CaregiverHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverHomeView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6A7B8C9D0E200 /* PatientDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientDTO.swift; sourceTree = "<group>"; };
+		A2B3C4D5E6F708192A3B4C5C /* SessionStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStoreTests.swift; sourceTree = "<group>"; };
+		A3B4C5D6E7F8091A2B3C4D5D /* PatientManagementViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientManagementViewModelTests.swift; sourceTree = "<group>"; };
 		B24EE1B2BF4DDDB26FB959AD /* MedicationAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MedicationAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B787856EA1456F50596935F0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		EB55437B073B6E2D5D88F3AE /* MedicationListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationListViewModelTests.swift; sourceTree = "<group>"; };
@@ -223,6 +227,8 @@
 				1936DBB41CFB0907EE79DBF6 /* MedicationFormValidationTests.swift */,
 				F793F0C9A8BBA67CA9C46326 /* MedicationFormViewModelTests.swift */,
 				EB55437B073B6E2D5D88F3AE /* MedicationListViewModelTests.swift */,
+				A2B3C4D5E6F708192A3B4C5C /* SessionStoreTests.swift */,
+				A3B4C5D6E7F8091A2B3C4D5D /* PatientManagementViewModelTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -378,6 +384,8 @@
 				5DFE8FD36CAEB373DF8D79D7 /* MedicationFormValidationTests.swift in Sources */,
 				48CB1ABF9F105E0E095F3EA4 /* MedicationFormViewModelTests.swift in Sources */,
 				403B60DF0710DEE297E332E7 /* MedicationListViewModelTests.swift in Sources */,
+				A2B3C4D5E6F708192A3B4C5D /* SessionStoreTests.swift in Sources */,
+				A3B4C5D6E7F8091A2B3C4D5E /* PatientManagementViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -456,13 +464,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QSZR732YXD;
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.medicationapp;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.example.medicationapp-v3";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -573,13 +582,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QSZR732YXD;
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.medicationapp;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.example.medicationapp-v3";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

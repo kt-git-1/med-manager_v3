@@ -88,6 +88,12 @@ export async function POST(request: Request) {
       startDate: parseDate(body.startDate),
       endDate: parseDate(body.endDate)
     };
+    if (!input.patientId) {
+      return new Response(JSON.stringify({ error: "validation", message: "patientId required" }), {
+        status: 422,
+        headers: { "content-type": "application/json" }
+      });
+    }
     const errors = validateMedication(input);
     if (errors.length) {
       return new Response(JSON.stringify({ error: "validation", messages: errors }), {

@@ -9,14 +9,24 @@ final class SessionStore: ObservableObject {
     @Published var mode: AppMode?
     @Published var caregiverToken: String?
     @Published var patientToken: String?
+    @Published var currentPatientId: String? {
+        didSet {
+            persistCurrentPatientId()
+        }
+    }
+    @Published var shouldRedirectCaregiverToMedicationTab = false
 
     private let baseURL: URL
+    private let userDefaults: UserDefaults
     private lazy var apiClient = APIClient(baseURL: baseURL, sessionStore: self)
     private var patientRefreshTask: Task<Void, Never>?
     private var isRefreshingPatientToken = false
+    private static let currentPatientIdStorageKey = "currentPatientId"
 
-    init() {
+    init(userDefaults: UserDefaults = .standard) {
+        self.userDefaults = userDefaults
         self.baseURL = SessionStore.resolveBaseURL()
+        self.currentPatientId = userDefaults.string(forKey: SessionStore.currentPatientIdStorageKey)
     }
 
     static func resolveBaseURL() -> URL {
@@ -51,6 +61,7 @@ final class SessionStore: ObservableObject {
 
     func clearCaregiverToken() {
         caregiverToken = nil
+        clearCurrentPatientId()
     }
 
     func clearPatientToken() {
@@ -97,6 +108,33 @@ final class SessionStore: ObservableObject {
             } else if case APIError.forbidden = error {
                 clearPatientToken()
             }
+        }
+    }
+
+    func setCurrentPatientId(_ patientId: String?) {
+        currentPatientId = patientId
+    }
+
+    func clearCurrentPatientId() {
+        currentPatientId = nil
+    }
+
+    func clearCurrentPatientIfMatches(_ patientId: String) {
+        guard currentPatientId == patientId else { return }
+        currentPatientId = nil
+    }
+
+    func handlePatientRevoked(_ patientId: String) {
+        guard currentPatientId == patientId else { return }
+        currentPatientId = nil
+        shouldRedirectCaregiverToMedicationTab = true
+    }
+
+    private func persistCurrentPatientId() {
+        if let currentPatientId {
+            userDefaults.set(currentPatientId, forKey: SessionStore.currentPatientIdStorageKey)
+        } else {
+            userDefaults.removeObject(forKey: SessionStore.currentPatientIdStorageKey)
         }
     }
 }

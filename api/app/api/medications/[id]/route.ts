@@ -64,6 +64,14 @@ export async function PATCH(
     if (!isCaregiver) {
       throw new AuthError("Forbidden", 403);
     }
+    const { searchParams } = new URL(request.url);
+    const patientId = searchParams.get("patientId");
+    if (!patientId) {
+      return new Response(JSON.stringify({ error: "validation", message: "patientId required" }), {
+        status: 422,
+        headers: { "content-type": "application/json" }
+      });
+    }
     const session = await requireCaregiver(authHeader);
     const body = await request.json();
     const input = {
@@ -85,7 +93,13 @@ export async function PATCH(
         headers: { "content-type": "application/json" }
       });
     }
-    await assertCaregiverPatientScope(session.caregiverUserId, existing.patientId);
+    await assertCaregiverPatientScope(session.caregiverUserId, patientId);
+    if (existing.patientId !== patientId) {
+      return new Response(JSON.stringify({ error: "not_found" }), {
+        status: 404,
+        headers: { "content-type": "application/json" }
+      });
+    }
     const updated = await updateMedication(id, input);
     return new Response(JSON.stringify({ data: updated }), {
       headers: { "content-type": "application/json" }
@@ -107,6 +121,14 @@ export async function DELETE(
     if (!isCaregiver) {
       throw new AuthError("Forbidden", 403);
     }
+    const { searchParams } = new URL(request.url);
+    const patientId = searchParams.get("patientId");
+    if (!patientId) {
+      return new Response(JSON.stringify({ error: "validation", message: "patientId required" }), {
+        status: 422,
+        headers: { "content-type": "application/json" }
+      });
+    }
     const session = await requireCaregiver(authHeader);
     const existing = await getMedication(id);
     if (!existing) {
@@ -115,7 +137,13 @@ export async function DELETE(
         headers: { "content-type": "application/json" }
       });
     }
-    await assertCaregiverPatientScope(session.caregiverUserId, existing.patientId);
+    await assertCaregiverPatientScope(session.caregiverUserId, patientId);
+    if (existing.patientId !== patientId) {
+      return new Response(JSON.stringify({ error: "not_found" }), {
+        status: 404,
+        headers: { "content-type": "application/json" }
+      });
+    }
     await archiveMedication(id);
     return new Response(null, { status: 204 });
   } catch (error) {

@@ -8,14 +8,39 @@ final class PatientManagementViewModel: ObservableObject {
     @Published var issuedCode: LinkingCodeDTO?
 
     private let apiClient: APIClient
+    private let sessionStore: SessionStore
 
-    init(apiClient: APIClient) {
+    init(apiClient: APIClient, sessionStore: SessionStore) {
         self.apiClient = apiClient
+        self.sessionStore = sessionStore
     }
 
     convenience init(sessionStore: SessionStore) {
         let baseURL = SessionStore.resolveBaseURL()
-        self.init(apiClient: APIClient(baseURL: baseURL, sessionStore: sessionStore))
+        self.init(
+            apiClient: APIClient(baseURL: baseURL, sessionStore: sessionStore),
+            sessionStore: sessionStore
+        )
+    }
+
+    var selectedPatientId: String? {
+        sessionStore.currentPatientId
+    }
+
+    func toggleSelection(patientId: String) {
+        if sessionStore.currentPatientId == patientId {
+            sessionStore.clearCurrentPatientId()
+        } else {
+            sessionStore.setCurrentPatientId(patientId)
+        }
+    }
+
+    func setSelectedPatientId(_ patientId: String?) {
+        if let patientId, !patientId.isEmpty {
+            sessionStore.setCurrentPatientId(patientId)
+        } else {
+            sessionStore.clearCurrentPatientId()
+        }
     }
 
     func load() {
@@ -85,22 +110,75 @@ struct PatientManagementView: View {
                         message: NSLocalizedString("caregiver.patients.empty.message", comment: "Empty patients message")
                     )
                 } else {
-                    List(viewModel.patients) { patient in
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(patient.displayName)
-                                .font(.headline)
-                            HStack {
-                                Button(NSLocalizedString("caregiver.patients.issueCode", comment: "Issue code")) {
-                                    Task { await viewModel.issueLinkingCode(patientId: patient.id) }
+                    let selectedPatient = viewModel.patients.first { $0.id == viewModel.selectedPatientId }
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(NSLocalizedString("caregiver.patients.select.label", comment: "Select label"))
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                Picker(
+                                    NSLocalizedString("caregiver.patients.select.label", comment: "Select label"),
+                                    selection: Binding(
+                                        get: { viewModel.selectedPatientId ?? "" },
+                                        set: { newValue in
+                                            viewModel.setSelectedPatientId(newValue.isEmpty ? nil : newValue)
+                                        }
+                                    )
+                                ) {
+                                    Text(NSLocalizedString("caregiver.patients.select.placeholder", comment: "Select placeholder"))
+                                        .tag("")
+                                    ForEach(viewModel.patients) { patient in
+                                        Text(patient.displayName).tag(patient.id)
+                                    }
                                 }
-                                .buttonStyle(.bordered)
-                                Button(NSLocalizedString("caregiver.patients.revoke", comment: "Revoke")) {
-                                    revokeTarget = patient
+                                .pickerStyle(.menu)
+                                Text(NSLocalizedString("caregiver.patients.select.help", comment: "Select help text"))
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                            }
+
+                            if let selectedPatient {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack {
+                                        Text(selectedPatient.displayName)
+                                            .font(.headline)
+                                        Spacer()
+                                        Text(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))
+                                            .font(.subheadline.weight(.semibold))
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 6)
+                                            .background(Color.accentColor.opacity(0.2))
+                                            .foregroundColor(.accentColor)
+                                            .clipShape(Capsule())
+                                    }
+                                    HStack {
+                                        Button(NSLocalizedString("caregiver.patients.issueCode", comment: "Issue code")) {
+                                            Task { await viewModel.issueLinkingCode(patientId: selectedPatient.id) }
+                                        }
+                                        .buttonStyle(.bordered)
+                                        Button(NSLocalizedString("caregiver.patients.revoke", comment: "Revoke")) {
+                                            revokeTarget = selectedPatient
+                                        }
+                                        .buttonStyle(.bordered)
+                                        .tint(.red)
+                                    }
                                 }
-                                .buttonStyle(.bordered)
-                                .tint(.red)
+                                .padding(12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.accentColor.opacity(0.12))
+                                )
+                                .accessibilityLabel("\(selectedPatient.displayName) \(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))")
+                            } else {
+                                EmptyStateView(
+                                    title: NSLocalizedString("caregiver.patients.select.empty.title", comment: "No selection title"),
+                                    message: NSLocalizedString("caregiver.patients.select.empty.message", comment: "No selection message")
+                                )
                             }
                         }
+                        .padding(.horizontal)
+                        .padding(.vertical, 12)
                     }
                 }
             }

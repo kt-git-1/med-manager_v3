@@ -3,6 +3,7 @@
 ## Scenarios
 
 - [x] 家族がログイン→患者作成（displayName必須）→患者一覧に表示
+- [x] 家族が患者を選択→薬追加/編集→薬一覧が対象患者で更新される
 - [x] 家族がコード発行→患者が入力→token取得→001の閲覧API成功
 - [x] refreshが成功し旧tokenが無効（回転）
 - [x] 家族が解除→既存tokenで閲覧APIもrefreshも失敗
