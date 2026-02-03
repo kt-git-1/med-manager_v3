@@ -1,6 +1,7 @@
 import XCTest
 @testable import MedicationApp
 
+@MainActor
 final class MedicationFormViewModelTests: XCTestCase {
     func testMedicationListRequestRequiresPatientIdForCaregiver() {
         let userDefaults = UserDefaults(suiteName: "MedicationFormViewModelTests")!

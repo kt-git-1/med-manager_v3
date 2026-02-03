@@ -39,6 +39,12 @@ export type ScheduleDose = {
   medicationSnapshot: MedicationSnapshot;
 };
 
+export type DoseStatus = "pending" | "taken" | "missed";
+
+export type ScheduleDoseWithStatus = ScheduleDose & {
+  effectiveStatus: DoseStatus;
+};
+
 const weekdayMap: Record<string, string> = {
   Sun: "SUN",
   Mon: "MON",
@@ -238,4 +244,67 @@ export async function generateScheduleForPatient({
     prisma.regimen.findMany({ where: { patientId } })
   ]);
   return generateSchedule({ medications, regimens, from, to });
+}
+
+function doseKey(input: { patientId: string; medicationId: string; scheduledAt: string }) {
+  return `${input.patientId}:${input.medicationId}:${input.scheduledAt}`;
+}
+
+function deriveDoseStatus({
+  scheduledAt,
+  hasTaken,
+  now
+}: {
+  scheduledAt: string;
+  hasTaken: boolean;
+  now: Date;
+}): DoseStatus {
+  if (hasTaken) {
+    return "taken";
+  }
+  const scheduledTime = new Date(scheduledAt).getTime();
+  const missedAfter = scheduledTime + 60 * 60 * 1000;
+  return now.getTime() > missedAfter ? "missed" : "pending";
+}
+
+export function applyDoseStatuses(
+  doses: ScheduleDose[],
+  doseRecords: { patientId: string; medicationId: string; scheduledAt: Date }[],
+  now: Date = new Date()
+): ScheduleDoseWithStatus[] {
+  const takenKeys = new Set(
+    doseRecords.map((record) =>
+      doseKey({
+        patientId: record.patientId,
+        medicationId: record.medicationId,
+        scheduledAt: record.scheduledAt.toISOString()
+      })
+    )
+  );
+  return doses.map((dose) => {
+    const hasTaken = takenKeys.has(doseKey(dose));
+    return {
+      ...dose,
+      effectiveStatus: deriveDoseStatus({ scheduledAt: dose.scheduledAt, hasTaken, now })
+    };
+  });
+}
+
+export async function generateScheduleForPatientWithStatus({
+  patientId,
+  from,
+  to,
+  now = new Date()
+}: {
+  patientId: string;
+  from: Date;
+  to: Date;
+  now?: Date;
+}) {
+  const { listDoseRecordsByPatientRange } = await import("../repositories/doseRecordRepo");
+  const [doses, records] = await Promise.all([
+    generateScheduleForPatient({ patientId, from, to }),
+    listDoseRecordsByPatientRange({ patientId, from, to })
+  ]);
+  return applyDoseStatuses(doses, records, now);
 }

@@ -1,5 +1,6 @@
 /* Common */
 "common.loading" = "読み込み中...";
+"common.updating" = "更新中...";
 "common.error.generic" = "取得に失敗しました";
 "common.error.login" = "ログインに失敗しました";
 "common.error.signup" = "サインアップに失敗しました";
@@ -82,6 +83,17 @@
 "patient.readonly.history.tab" = "履歴";
 "patient.readonly.history.title" = "履歴";
 "patient.readonly.history.message" = "準備中です";
+"patient.today.empty.title" = "予定がありません";
+"patient.today.empty.message" = "今日の服用予定はありません";
+"patient.today.taken.button" = "飲んだ";
+"patient.today.confirm.title" = "飲みましたか？";
+"patient.today.confirm.message" = "%@（%@）\n患者モードでは取り消しできません";
+"patient.today.confirm.action" = "記録する";
+"patient.today.status.pending" = "未記録";
+"patient.today.status.taken" = "記録済み";
+"patient.today.status.missed" = "飲み忘れ";
+"patient.today.alreadyRecorded" = "すでに記録済みです";
+"patient.today.recorded" = "記録しました";
 
 /* Caregiver tabs */
 "caregiver.tabs.medications" = "薬";

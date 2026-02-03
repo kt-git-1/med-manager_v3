@@ -1,6 +1,7 @@
 import XCTest
 @testable import MedicationApp
 
+@MainActor
 final class MedicationFormValidationTests: XCTestCase {
     func testValidateRequiresScheduleTimes() {
         let viewModel = MedicationFormViewModel()

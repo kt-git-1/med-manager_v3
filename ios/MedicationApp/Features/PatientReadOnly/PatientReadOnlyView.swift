@@ -9,7 +9,7 @@ struct PatientReadOnlyView: View {
             switch selectedTab {
             case .today:
                 NavigationStack {
-                    MedicationListView(sessionStore: sessionStore)
+                    PatientTodayView(sessionStore: sessionStore)
                         .navigationTitle(NSLocalizedString("patient.readonly.today.title", comment: "Today title"))
                         .navigationBarTitleDisplayMode(.inline)
                 }
