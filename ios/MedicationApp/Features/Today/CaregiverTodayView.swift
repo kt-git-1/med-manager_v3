@@ -1,16 +1,17 @@
 import SwiftUI
 
-struct PatientTodayView: View {
+struct CaregiverTodayView: View {
     private let sessionStore: SessionStore
-    @StateObject private var viewModel: PatientTodayViewModel
-    @State private var showingConfirm = false
+    private let onOpenPatients: () -> Void
+    @StateObject private var viewModel: CaregiverTodayViewModel
 
-    init(sessionStore: SessionStore? = nil) {
+    init(sessionStore: SessionStore? = nil, onOpenPatients: @escaping () -> Void = {}) {
         let store = sessionStore ?? SessionStore()
         self.sessionStore = store
+        self.onOpenPatients = onOpenPatients
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
-            wrappedValue: PatientTodayViewModel(apiClient: APIClient(baseURL: baseURL, sessionStore: store))
+            wrappedValue: CaregiverTodayViewModel(apiClient: APIClient(baseURL: baseURL, sessionStore: store))
         )
     }
 
@@ -43,56 +44,66 @@ struct PatientTodayView: View {
             }
         }
         .onAppear {
-            viewModel.handleAppear()
-        }
-        .onDisappear {
-            viewModel.handleDisappear()
-        }
-        .alert(
-            NSLocalizedString("patient.today.confirm.title", comment: "Confirm title"),
-            isPresented: $showingConfirm,
-            presenting: viewModel.confirmDose
-        ) { _ in
-            Button(NSLocalizedString("patient.today.confirm.action", comment: "Confirm action")) {
-                viewModel.recordConfirmedDose()
+            if sessionStore.currentPatientId != nil {
+                viewModel.load(showLoading: true)
             }
-            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
-        } message: { dose in
-            Text(confirmMessage(for: dose))
         }
-        .onChange(of: viewModel.confirmDose) { _, newValue in
-            showingConfirm = newValue != nil
+        .onChange(of: sessionStore.currentPatientId) { _, newValue in
+            if newValue != nil {
+                viewModel.load(showLoading: true)
+            } else {
+                viewModel.reset()
+            }
         }
-        .sensoryFeedback(.success, trigger: viewModel.toastMessage)
-        .accessibilityIdentifier("PatientTodayView")
+        .accessibilityIdentifier("CaregiverTodayView")
         .environmentObject(sessionStore)
     }
 
     private var content: some View {
         Group {
-            if viewModel.isLoading {
+            if sessionStore.currentPatientId == nil {
+                VStack(spacing: 12) {
+                    EmptyStateView(
+                        title: NSLocalizedString("caregiver.medications.noSelection.title", comment: "No selection title"),
+                        message: NSLocalizedString("caregiver.medications.noSelection.message", comment: "No selection message")
+                    )
+                    Button(NSLocalizedString("caregiver.medications.noSelection.action", comment: "Go to patients action")) {
+                        onOpenPatients()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .font(.headline)
+                }
+                .padding(24)
+                .frame(maxWidth: .infinity)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                .padding(.horizontal, 24)
+            } else if viewModel.isLoading {
                 LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
             } else if let errorMessage = viewModel.errorMessage {
                 ErrorStateView(message: errorMessage)
             } else if viewModel.items.isEmpty {
                 EmptyStateView(
-                    title: NSLocalizedString("patient.today.empty.title", comment: "Empty title"),
-                    message: NSLocalizedString("patient.today.empty.message", comment: "Empty message")
+                    title: NSLocalizedString("caregiver.today.empty.title", comment: "Empty title"),
+                    message: NSLocalizedString("caregiver.today.empty.message", comment: "Empty message")
                 )
             } else {
                 List {
                     if !plannedItems.isEmpty {
                         Section {
                             ForEach(plannedItems) { dose in
-                                PatientTodayRow(
+                                CaregiverTodayRow(
                                     dose: dose,
                                     timeText: viewModel.timeText(for: dose.scheduledAt),
-                                    onRecord: { viewModel.confirmRecord(for: dose) }
+                                    actionTitle: NSLocalizedString("caregiver.today.record.button", comment: "Record"),
+                                    recordedByText: nil,
+                                    isDestructive: false,
+                                    onAction: { viewModel.recordDose(dose) }
                                 )
                                 .listRowSeparator(.hidden)
                             }
                         } header: {
-                            Text(NSLocalizedString("patient.today.section.planned", comment: "Today planned"))
+                            Text(NSLocalizedString("caregiver.today.section.planned", comment: "Today planned"))
                                 .font(.headline)
                                 .foregroundStyle(.primary)
                                 .textCase(nil)
@@ -102,15 +113,18 @@ struct PatientTodayView: View {
                     if !takenItems.isEmpty {
                         Section {
                             ForEach(takenItems) { dose in
-                                PatientTodayRow(
+                                CaregiverTodayRow(
                                     dose: dose,
                                     timeText: viewModel.timeText(for: dose.scheduledAt),
-                                    onRecord: { viewModel.confirmRecord(for: dose) }
+                                    actionTitle: NSLocalizedString("caregiver.today.delete.button", comment: "Delete"),
+                                    recordedByText: recordedByText(for: dose),
+                                    isDestructive: true,
+                                    onAction: { viewModel.deleteDose(dose) }
                                 )
                                 .listRowSeparator(.hidden)
                             }
                         } header: {
-                            Text(NSLocalizedString("patient.today.section.taken", comment: "Taken"))
+                            Text(NSLocalizedString("caregiver.today.section.taken", comment: "Taken"))
                                 .font(.headline)
                                 .foregroundStyle(.primary)
                                 .textCase(nil)
@@ -140,20 +154,30 @@ struct PatientTodayView: View {
         viewModel.items.filter { $0.effectiveStatus == .taken }
     }
 
-    private func confirmMessage(for dose: ScheduleDoseDTO) -> String {
-        let timeText = viewModel.timeText(for: dose.scheduledAt)
-        return String(
-            format: NSLocalizedString("patient.today.confirm.message", comment: "Confirm message"),
-            dose.medicationSnapshot.name,
-            timeText
-        )
+    private func recordedByText(for dose: ScheduleDoseDTO) -> String? {
+        guard dose.effectiveStatus == .taken, let recordedByType = dose.recordedByType else {
+            return nil
+        }
+        let nameKey: String
+        switch recordedByType {
+        case .patient:
+            nameKey = "caregiver.today.recordedBy.patient"
+        case .caregiver:
+            nameKey = "caregiver.today.recordedBy.caregiver"
+        }
+        let name = NSLocalizedString(nameKey, comment: "Recorded by actor")
+        let format = NSLocalizedString("caregiver.today.recordedBy", comment: "Recorded by label")
+        return String(format: format, name)
     }
 }
 
-private struct PatientTodayRow: View {
+private struct CaregiverTodayRow: View {
     let dose: ScheduleDoseDTO
     let timeText: String
-    let onRecord: () -> Void
+    let actionTitle: String
+    let recordedByText: String?
+    let isDestructive: Bool
+    let onAction: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -161,13 +185,16 @@ private struct PatientTodayRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(timeText)
                         .font(.headline)
-                        .foregroundStyle(isMissed ? Color.red : Color.primary)
                     Text(dose.medicationSnapshot.name)
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(isMissed ? Color.red : Color.primary)
                     Text(dose.medicationSnapshot.dosageText)
                         .font(.body)
                         .foregroundColor(.secondary)
+                    if let recordedByText {
+                        Text(recordedByText)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 Spacer()
                 if let statusText = statusText(for: dose.effectiveStatus) {
@@ -176,42 +203,27 @@ private struct PatientTodayRow: View {
                         .padding(.vertical, 4)
                         .padding(.horizontal, 8)
                         .background(statusBackground(for: dose.effectiveStatus))
-                        .foregroundStyle(statusForeground(for: dose.effectiveStatus))
                         .clipShape(Capsule())
                 }
             }
 
-            if shouldShowRecordButton(for: dose.effectiveStatus) {
-                Button(action: onRecord) {
-                    Text(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
-                        .font(.title3.weight(.bold))
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .accessibilityLabel(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
-            }
+            actionButton
         }
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(backgroundColor(for: dose.effectiveStatus))
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(isMissed ? Color.red.opacity(0.35) : Color.clear, lineWidth: 1)
-        )
         .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilitySummary)
     }
 
-    private var isMissed: Bool {
-        dose.effectiveStatus == .missed
-    }
-
     private var accessibilitySummary: String {
         var parts = [timeText, dose.medicationSnapshot.name, dose.medicationSnapshot.dosageText]
+        if let recordedByText {
+            parts.append(recordedByText)
+        }
         if let statusText = statusText(for: dose.effectiveStatus) {
             parts.append(statusText)
         }
@@ -231,12 +243,28 @@ private struct PatientTodayRow: View {
         }
     }
 
-    private func statusForeground(for status: DoseStatusDTO?) -> Color {
-        switch status {
-        case .missed:
-            return Color.red
-        case .taken, .pending, .none:
-            return Color.primary
+    @ViewBuilder
+    private var actionButton: some View {
+        if isDestructive {
+            Button(action: onAction) {
+                Text(actionTitle)
+                    .font(.title3.weight(.bold))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .tint(.red)
+            .accessibilityLabel(actionTitle)
+        } else {
+            Button(action: onAction) {
+                Text(actionTitle)
+                    .font(.title3.weight(.bold))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .tint(.accentColor)
+            .accessibilityLabel(actionTitle)
         }
     }
 
@@ -262,18 +290,5 @@ private struct PatientTodayRow: View {
         case .pending, .none:
             return Color(.systemBackground)
         }
-    }
-
-    private func shouldShowRecordButton(for status: DoseStatusDTO?) -> Bool {
-        switch status {
-        case .pending, .none:
-            return Date() >= recordAvailableFrom
-        case .taken, .missed:
-            return false
-        }
-    }
-
-    private var recordAvailableFrom: Date {
-        dose.scheduledAt.addingTimeInterval(-30 * 60)
     }
 }

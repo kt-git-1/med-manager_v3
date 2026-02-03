@@ -3,8 +3,8 @@ options:
   bundleIdPrefix: com.example
 settings:
   base:
-    SWIFT_VERSION: 5.9
-    IPHONEOS_DEPLOYMENT_TARGET: 17.0
+    SWIFT_VERSION: 6.2
+    IPHONEOS_DEPLOYMENT_TARGET: 26.0
 targets:
   MedicationApp:
     type: application

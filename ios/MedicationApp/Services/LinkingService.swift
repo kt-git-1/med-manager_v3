@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class LinkingService {
     private let apiClient: APIClient
 

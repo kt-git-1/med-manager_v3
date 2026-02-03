@@ -12,11 +12,11 @@ struct FullScreenContainer<Content: View>: View {
         GeometryReader { proxy in
             ZStack {
                 Color(.systemGroupedBackground)
+                    .ignoresSafeArea()
                 content
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
             .position(x: proxy.size.width / 2, y: proxy.size.height / 2)
-            .ignoresSafeArea()
         }
         .onAppear {
             let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }

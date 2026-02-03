@@ -1,6 +1,6 @@
 import Foundation
 
-final class AuthService {
+final class AuthService: Sendable {
     private let supabaseURL: URL
     private let supabaseAnonKey: String
 

@@ -80,19 +80,19 @@ description: "Task list for dose recording implementation"
 
 ### Tests for User Story 2
 
-- [ ] T023 [P] [US2] Contract tests for caregiver endpoints in `api/tests/contract/dose-recording-caregiver.contract.test.ts`
-- [ ] T024 [P] [US2] Integration test for caregiver create/delete in `api/tests/integration/dose-recording-caregiver.test.ts`
-- [ ] T025 [P] [US2] Integration test for concealment on non-owned patient in `api/tests/integration/caregiver-concealment.test.ts`
-- [ ] T026 [P] [US2] iOS UI smoke for caregiver record/delete flow in `ios/MedicationApp/Tests/TodayCaregiverFlowTests.swift`
+- [x] T023 [P] [US2] Contract tests for caregiver endpoints in `api/tests/contract/dose-recording-caregiver.contract.test.ts`
+- [x] T024 [P] [US2] Integration test for caregiver create/delete in `api/tests/integration/dose-recording-caregiver.test.ts`
+- [x] T025 [P] [US2] Integration test for concealment on non-owned patient in `api/tests/integration/caregiver-concealment.test.ts`
+- [x] T026 [P] [US2] iOS UI smoke for caregiver record/delete flow in `ios/MedicationApp/Tests/TodayCaregiverFlowTests.swift`
 
 ### Implementation for User Story 2
 
-- [ ] T027 [US2] Add caregiver today endpoint in `api/app/api/patients/[patientId]/today/route.ts`
-- [ ] T028 [US2] Add caregiver dose record create/delete endpoints in `api/app/api/patients/[patientId]/dose-records/route.ts`
-- [ ] T029 [US2] Enforce caregiver ownership concealment in `api/src/services/doseRecordService.ts`
-- [ ] T030 [US2] Add caregiver Today view model in `ios/MedicationApp/Features/Today/CaregiverTodayViewModel.swift`
-- [ ] T031 [US2] Add caregiver Today UI with record/delete actions in `ios/MedicationApp/Features/Today/CaregiverTodayView.swift`
-- [ ] T032 [US2] Add API client methods for caregiver today/create/delete in `ios/MedicationApp/Networking/APIClient.swift`
+- [x] T027 [US2] Add caregiver today endpoint in `api/app/api/patients/[patientId]/today/route.ts`
+- [x] T028 [US2] Add caregiver dose record create/delete endpoints in `api/app/api/patients/[patientId]/dose-records/route.ts`
+- [x] T029 [US2] Enforce caregiver ownership concealment in `api/src/services/doseRecordService.ts`
+- [x] T030 [US2] Add caregiver Today view model in `ios/MedicationApp/Features/Today/CaregiverTodayViewModel.swift`
+- [x] T031 [US2] Add caregiver Today UI with record/delete actions in `ios/MedicationApp/Features/Today/CaregiverTodayView.swift`
+- [x] T032 [US2] Add API client methods for caregiver today/create/delete in `ios/MedicationApp/Networking/APIClient.swift`
 
 **Checkpoint**: User Story 2 works end-to-end for caregiver flow
 
@@ -106,18 +106,18 @@ description: "Task list for dose recording implementation"
 
 ### Tests for User Story 3
 
-- [ ] T033 [P] [US3] Integration test for missed status derivation in `api/tests/integration/dose-missed-status.test.ts`
-- [ ] T034 [P] [US3] iOS test for reminder scheduling in `ios/MedicationApp/Tests/ReminderSchedulingTests.swift`
-- [ ] T035 [P] [US3] Integration test for no persisted missed/pending records in `api/tests/integration/dose-recording-persistence.test.ts`
-- [ ] T036 [P] [US3] iOS test for max 2 reminders per dose in `ios/MedicationApp/Tests/ReminderSchedulingTests.swift`
+- [x] T033 [P] [US3] Integration test for missed status derivation in `api/tests/integration/dose-missed-status.test.ts`
+- [x] T034 [P] [US3] iOS test for reminder scheduling in `ios/MedicationApp/Tests/ReminderSchedulingTests.swift`
+- [x] T035 [P] [US3] Integration test for no persisted missed/pending records in `api/tests/integration/dose-recording-persistence.test.ts`
+- [x] T036 [P] [US3] iOS test for max 2 reminders per dose in `ios/MedicationApp/Tests/ReminderSchedulingTests.swift`
 
 ### Implementation for User Story 3
 
-- [ ] T037 [US3] Add missed emphasis styling in `ios/MedicationApp/Features/Today/PatientTodayView.swift`
-- [ ] T038 [US3] Add local notification scheduler in `ios/MedicationApp/Services/ReminderService.swift`
-- [ ] T039 [US3] Trigger reminder scheduling on refresh/foreground in `ios/MedicationApp/Features/Today/PatientTodayViewModel.swift`
-- [ ] T040 [US3] Add auto-refresh hooks on appear/foreground in `ios/MedicationApp/Features/Today/PatientTodayViewModel.swift`
-- [ ] T041 [US3] Add localized strings for reminders/confirm copy in `ios/MedicationApp/Resources/Localizable.strings`
+- [x] T037 [US3] Add missed emphasis styling in `ios/MedicationApp/Features/Today/PatientTodayView.swift`
+- [x] T038 [US3] Add local notification scheduler in `ios/MedicationApp/Services/ReminderService.swift`
+- [x] T039 [US3] Trigger reminder scheduling on refresh/foreground in `ios/MedicationApp/Features/Today/PatientTodayViewModel.swift`
+- [x] T040 [US3] Add auto-refresh hooks on appear/foreground in `ios/MedicationApp/Features/Today/PatientTodayViewModel.swift`
+- [x] T041 [US3] Add localized strings for reminders/confirm copy in `ios/MedicationApp/Resources/Localizable.strings`
 
 **Checkpoint**: User Story 3 behavior complete and independently testable
 
@@ -127,12 +127,12 @@ description: "Task list for dose recording implementation"
 
 **Purpose**: Documentation, validation, and cross-story hardening
 
-- [ ] T042 [P] Update API error mapping docs in `api/src/middleware/error.ts` if needed for new errors
-- [ ] T043 [P] Add logging for dose record operations in `api/src/logging/logger.ts`
-- [ ] T044 [P] Run basic accessibility verification for Today UI (Dynamic Type + VoiceOver labels) in `ios/MedicationApp/Features/Today/`
-- [ ] T045 [P] Add Today refresh performance validation note (<5s) in `specs/003-dose-recording/quickstart.md`
-- [ ] T046 [P] Update quickstart validation steps in `specs/003-dose-recording/quickstart.md`
-- [ ] T047 Run full API test suite from `api/` and iOS tests from `ios/MedicationApp`
+- [x] T042 [P] Update API error mapping docs in `api/src/middleware/error.ts` if needed for new errors
+- [x] T043 [P] Add logging for dose record operations in `api/src/logging/logger.ts`
+- [x] T044 [P] Run basic accessibility verification for Today UI (Dynamic Type + VoiceOver labels) in `ios/MedicationApp/Features/Today/`
+- [x] T045 [P] Add Today refresh performance validation note (<5s) in `specs/003-dose-recording/quickstart.md`
+- [x] T046 [P] Update quickstart validation steps in `specs/003-dose-recording/quickstart.md`
+- [x] T047 Run full API test suite from `api/` and iOS tests from `ios/MedicationApp`
 
 ---
 

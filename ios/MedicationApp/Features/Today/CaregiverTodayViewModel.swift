@@ -1,25 +1,20 @@
 import Foundation
 import SwiftUI
-import UIKit
 
 @MainActor
-final class PatientTodayViewModel: ObservableObject {
+final class CaregiverTodayViewModel: ObservableObject {
     @Published var items: [ScheduleDoseDTO] = []
     @Published var isLoading = false
     @Published var isUpdating = false
     @Published var errorMessage: String?
     @Published var toastMessage: String?
-    @Published var confirmDose: ScheduleDoseDTO?
 
     private let apiClient: APIClient
-    private let reminderService: ReminderService
     private let dateFormatter: DateFormatter
     private let timeFormatter: DateFormatter
-    private var foregroundTask: Task<Void, Never>?
 
-    init(apiClient: APIClient, reminderService: ReminderService = ReminderService()) {
+    init(apiClient: APIClient) {
         self.apiClient = apiClient
-        self.reminderService = reminderService
         self.dateFormatter = DateFormatter()
         self.dateFormatter.locale = Locale(identifier: "ja_JP")
         self.dateFormatter.dateStyle = .medium
@@ -30,35 +25,20 @@ final class PatientTodayViewModel: ObservableObject {
         self.timeFormatter.timeStyle = .short
     }
 
-    deinit {
-        foregroundTask?.cancel()
-    }
-
-    func handleAppear() {
-        startForegroundRefresh()
-        load(showLoading: true)
-    }
-
-    func handleDisappear() {
-        foregroundTask?.cancel()
-        foregroundTask = nil
-    }
-
     func load(showLoading: Bool) {
         guard !isLoading else { return }
         isLoading = showLoading
         isUpdating = true
         errorMessage = nil
-        Task { @MainActor in
+        Task {
             defer {
                 isLoading = false
                 isUpdating = false
             }
             do {
-                let doses = try await apiClient.fetchPatientToday()
+                let doses = try await apiClient.fetchCaregiverToday()
                 let todayOnly = doses.filter { Calendar.current.isDateInToday($0.scheduledAt) }
                 items = todayOnly.sorted(by: sortDose)
-                await reminderService.scheduleReminders(for: todayOnly)
             } catch {
                 items = []
                 errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
@@ -66,28 +46,45 @@ final class PatientTodayViewModel: ObservableObject {
         }
     }
 
-    func confirmRecord(for dose: ScheduleDoseDTO) {
-        if dose.effectiveStatus == .taken {
-            showToast(NSLocalizedString("patient.today.alreadyRecorded", comment: "Already recorded"))
-            return
-        }
-        confirmDose = dose
+    func reset() {
+        items = []
+        isLoading = false
+        isUpdating = false
+        errorMessage = nil
+        toastMessage = nil
     }
 
-    func recordConfirmedDose() {
-        guard let dose = confirmDose else { return }
-        confirmDose = nil
+    func recordDose(_ dose: ScheduleDoseDTO) {
+        guard dose.effectiveStatus != .taken else { return }
         isUpdating = true
-        Task { @MainActor in
+        Task {
             defer { isUpdating = false }
             do {
-                _ = try await apiClient.createPatientDoseRecord(
+                _ = try await apiClient.createCaregiverDoseRecord(
                     input: DoseRecordCreateRequestDTO(
                         medicationId: dose.medicationId,
                         scheduledAt: dose.scheduledAt
                     )
                 )
-                showToast(NSLocalizedString("patient.today.recorded", comment: "Recorded"))
+                showToast(NSLocalizedString("caregiver.today.recorded", comment: "Recorded"))
+                load(showLoading: false)
+            } catch {
+                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+            }
+        }
+    }
+
+    func deleteDose(_ dose: ScheduleDoseDTO) {
+        guard dose.effectiveStatus == .taken else { return }
+        isUpdating = true
+        Task {
+            defer { isUpdating = false }
+            do {
+                try await apiClient.deleteCaregiverDoseRecord(
+                    medicationId: dose.medicationId,
+                    scheduledAt: dose.scheduledAt
+                )
+                showToast(NSLocalizedString("caregiver.today.deleted", comment: "Deleted"))
                 load(showLoading: false)
             } catch {
                 showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
@@ -134,19 +131,6 @@ final class PatientTodayViewModel: ObservableObject {
             return 1
         case .pending, .none:
             return 0
-        }
-    }
-
-    private func startForegroundRefresh() {
-        guard foregroundTask == nil else { return }
-        foregroundTask = Task { [weak self] in
-            for await _ in NotificationCenter.default.notifications(
-                named: UIApplication.willEnterForegroundNotification
-            ) {
-                await MainActor.run {
-                    self?.load(showLoading: false)
-                }
-            }
         }
     }
 }

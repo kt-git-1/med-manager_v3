@@ -8,6 +8,8 @@
 "common.save" = "保存";
 "common.cancel" = "キャンセル";
 "common.select" = "選択";
+"common.ok" = "OK";
+"common.logout" = "ログアウト";
 
 /* Mode select */
 "mode.select.title" = "モードを選択";
@@ -46,6 +48,7 @@
 "medication.list.empty.message" = "右上の追加から登録できます";
 "medication.list.empty.action" = "薬を追加する";
 "medication.list.add" = "追加";
+"medication.list.section.title" = "薬一覧";
 "medication.list.startDate" = "開始日";
 "medication.list.nextDose" = "次回予定";
 "medication.toast.created" = "薬を追加しました";
@@ -83,6 +86,8 @@
 "patient.readonly.history.tab" = "履歴";
 "patient.readonly.history.title" = "履歴";
 "patient.readonly.history.message" = "準備中です";
+"patient.readonly.settings.tab" = "設定";
+"patient.readonly.settings.title" = "設定";
 "patient.today.empty.title" = "予定がありません";
 "patient.today.empty.message" = "今日の服用予定はありません";
 "patient.today.taken.button" = "飲んだ";
@@ -94,8 +99,13 @@
 "patient.today.status.missed" = "飲み忘れ";
 "patient.today.alreadyRecorded" = "すでに記録済みです";
 "patient.today.recorded" = "記録しました";
+"patient.today.section.planned" = "今日の服用予定";
+"patient.today.section.taken" = "服用済み";
+"patient.today.reminder.title" = "服用リマインダー";
+"patient.today.reminder.body" = "%@を飲む時間です（%@）";
 
 /* Caregiver tabs */
+"caregiver.tabs.today" = "今日";
 "caregiver.tabs.medications" = "薬";
 "caregiver.tabs.patients" = "連携・患者";
 "caregiver.medications.placeholder.title" = "患者を選択してください";
@@ -107,7 +117,21 @@
 "caregiver.medications.noSelection.message" = "連携・患者タブから対象を選んでください";
 "caregiver.medications.noSelection.action" = "患者一覧を開く";
 "caregiver.medications.currentPatient" = "対象患者: %@";
+"caregiver.medications.currentPatient.inline" = "対象患者：%@";
 "caregiver.medications.switch" = "切替";
+
+/* Caregiver today */
+"caregiver.today.empty.title" = "予定がありません";
+"caregiver.today.empty.message" = "今日の服用予定はありません";
+"caregiver.today.record.button" = "代理で記録する";
+"caregiver.today.delete.button" = "取り消す";
+"caregiver.today.recorded" = "記録しました";
+"caregiver.today.deleted" = "記録を取り消しました";
+"caregiver.today.section.planned" = "今日の服用予定";
+"caregiver.today.section.taken" = "服用済み";
+"caregiver.today.recordedBy" = "記録: %@";
+"caregiver.today.recordedBy.patient" = "本人";
+"caregiver.today.recordedBy.caregiver" = "家族";
 
 /* Patient management */
 "caregiver.patients.title" = "患者管理";
@@ -130,6 +154,9 @@
 "caregiver.patients.create.validation" = "表示名は必須です";
 "caregiver.patients.code.title" = "連携コード";
 "caregiver.patients.code.expires" = "有効期限: %@";
+"caregiver.patients.code.copy" = "コピー";
+"caregiver.patients.code.share" = "共有";
+"caregiver.patients.code.copied" = "連携コードをコピーしました";
 "caregiver.patients.revoke.confirm.title" = "リンク解除";
 "caregiver.patients.revoke.confirm.message" = "この患者のリンクを解除します。既存セッションは失効します。";
 "caregiver.patients.revoke.confirm.action" = "解除する";

@@ -34,3 +34,6 @@
 
 - API: `npm test`
 - iOS: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`
+- Manual: Patient Today "Taken" flow updates after refresh
+- Manual: Caregiver Today record/delete works for selected patient
+- Performance: Today refresh completes within 5 seconds

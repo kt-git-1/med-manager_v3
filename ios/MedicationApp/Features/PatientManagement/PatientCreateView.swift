@@ -20,6 +20,8 @@ struct PatientCreateView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Color(.systemGroupedBackground))
             .navigationTitle(NSLocalizedString("caregiver.patients.create.title", comment: "Create title"))
             .toolbar {
                 Button(NSLocalizedString("common.save", comment: "Save")) {

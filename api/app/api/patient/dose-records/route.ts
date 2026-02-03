@@ -1,4 +1,5 @@
 import { errorResponse } from "../../../../src/middleware/error";
+import { logDoseRecordOperation } from "../../../../src/logging/logger";
 import { requirePatient } from "../../../../src/middleware/auth";
 import { validateDoseRecordCreate } from "../../../../src/validators/doseRecord";
 import { createDoseRecordIdempotent } from "../../../../src/services/doseRecordService";
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
       recordedByType: "PATIENT",
       recordedById: null
     });
+    logDoseRecordOperation("create", "patient");
     return new Response(
       JSON.stringify({
         data: {

@@ -1,6 +1,7 @@
 import SwiftUI
 
 enum CaregiverTab: Hashable {
+    case today
     case medications
     case patients
 }
@@ -8,10 +9,20 @@ enum CaregiverTab: Hashable {
 struct CaregiverHomeView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @State private var selectedTab: CaregiverTab = .medications
+    @State private var currentPatientName: String?
 
     var body: some View {
         ZStack {
             switch selectedTab {
+            case .today:
+                NavigationStack {
+                    CaregiverTodayView(
+                        sessionStore: sessionStore,
+                        onOpenPatients: { selectedTab = .patients }
+                    )
+                    .navigationTitle(NSLocalizedString("caregiver.tabs.today", comment: "Today tab"))
+                    .navigationBarTitleDisplayMode(.large)
+                }
             case .medications:
                 CaregiverMedicationView(
                     sessionStore: sessionStore,
@@ -22,12 +33,65 @@ struct CaregiverHomeView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            CaregiverBottomTabBar(selectedTab: $selectedTab)
+            VStack(spacing: 8) {
+                if let patientName = currentPatientName {
+                    HStack {
+                        Text(
+                            String(
+                                format: NSLocalizedString(
+                                    "caregiver.medications.currentPatient.inline",
+                                    comment: "Current patient inline label"
+                                ),
+                                patientName
+                            )
+                        )
+                        .font(.caption)
+                        .foregroundColor(.accentColor)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.accentColor.opacity(0.12), in: Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.accentColor, lineWidth: 1)
+                        )
+                        Spacer()
+                    }
+                }
+                CaregiverBottomTabBar(selectedTab: $selectedTab)
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 6)
+        }
+        .onAppear {
+            loadCurrentPatientName()
+        }
+        .onChange(of: sessionStore.currentPatientId) { _, _ in
+            loadCurrentPatientName()
+        }
+        .onChange(of: sessionStore.mode) { _, _ in
+            loadCurrentPatientName()
         }
         .onChange(of: sessionStore.shouldRedirectCaregiverToMedicationTab) { _, shouldRedirect in
             guard shouldRedirect else { return }
             selectedTab = .medications
             sessionStore.shouldRedirectCaregiverToMedicationTab = false
+        }
+    }
+
+    private func loadCurrentPatientName() {
+        guard sessionStore.mode == .caregiver,
+              let patientId = sessionStore.currentPatientId else {
+            currentPatientName = nil
+            return
+        }
+        Task { @MainActor in
+            do {
+                let apiClient = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: sessionStore)
+                let patients = try await apiClient.listPatients()
+                currentPatientName = patients.first { $0.id == patientId }?.displayName
+            } catch {
+                currentPatientName = nil
+            }
         }
     }
 }
@@ -37,6 +101,13 @@ private struct CaregiverBottomTabBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            tabButton(
+                title: NSLocalizedString("caregiver.tabs.today", comment: "Today tab"),
+                systemImage: "calendar",
+                isSelected: selectedTab == .today
+            ) {
+                selectedTab = .today
+            }
             tabButton(
                 title: NSLocalizedString("caregiver.tabs.medications", comment: "Medications tab"),
                 systemImage: "pills",
@@ -54,10 +125,12 @@ private struct CaregiverBottomTabBar: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
-        .background(Color(.systemBackground))
-        .clipShape(Capsule())
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(
+            Capsule()
+                .strokeBorder(Color(.separator).opacity(0.4))
+        )
         .shadow(color: Color.black.opacity(0.12), radius: 18, y: 10)
-        .padding(.bottom, 6)
     }
 
     private func tabButton(
@@ -149,10 +222,7 @@ struct CaregiverMedicationView: View {
                     }
                     .padding(24)
                     .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(Color(.systemBackground))
-                    )
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                     .padding(.horizontal, 24)
                 } else if sessionStore.currentPatientId == nil {
@@ -169,17 +239,12 @@ struct CaregiverMedicationView: View {
                     }
                     .padding(24)
                     .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(Color(.systemBackground))
-                    )
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                     .padding(.horizontal, 24)
                 } else {
-                    let selectedPatient = viewModel.patients.first { $0.id == sessionStore.currentPatientId }
                     MedicationListView(
                         sessionStore: sessionStore,
-                        selectedPatientName: selectedPatient?.displayName,
                         onOpenPatients: onOpenPatients
                     )
                     .frame(maxHeight: .infinity, alignment: .top)

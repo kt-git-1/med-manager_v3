@@ -87,7 +87,6 @@ final class MedicationListViewModel: ObservableObject {
 
 struct MedicationListView: View {
     private let sessionStore: SessionStore
-    private let selectedPatientName: String?
     private let onOpenPatients: (() -> Void)?
     @StateObject private var viewModel: MedicationListViewModel
     @State private var showingCreate = false
@@ -96,12 +95,10 @@ struct MedicationListView: View {
 
     init(
         sessionStore: SessionStore? = nil,
-        selectedPatientName: String? = nil,
         onOpenPatients: (() -> Void)? = nil
     ) {
         let store = sessionStore ?? SessionStore()
         self.sessionStore = store
-        self.selectedPatientName = selectedPatientName
         self.onOpenPatients = onOpenPatients
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
@@ -145,88 +142,63 @@ struct MedicationListView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                 List {
-                    if let selectedPatientName {
-                        HStack(spacing: 12) {
-                            Text(String(format: NSLocalizedString("caregiver.medications.currentPatient", comment: "Current patient label"), selectedPatientName))
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            if let onOpenPatients {
-                                Button(NSLocalizedString("caregiver.medications.switch", comment: "Switch patient")) {
-                                    onOpenPatients()
-                                }
-                                .buttonStyle(.bordered)
-                            }
-                        }
-                        .padding(16)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color(.systemBackground))
-                        )
-                        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
-                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                        .listRowSeparator(.hidden)
-                        Divider()
-                            .listRowInsets(EdgeInsets(top: 4, leading: 24, bottom: 4, trailing: 24))
-                            .listRowSeparator(.hidden)
-                    }
-
-                    Text("薬一覧")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                        .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 4, trailing: 16))
-                        .listRowSeparator(.hidden)
-
-                    ForEach(viewModel.items) { item in
-                        let rowContent = HStack(alignment: .top, spacing: 12) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(item.name)
-                                    .font(.title3.weight(.semibold))
-                                    .accessibilityLabel("薬名 \(item.name)")
-                                Text("\(NSLocalizedString("medication.list.startDate", comment: "Start date")): \(item.startDateText)")
-                                    .font(.body)
-                                    .accessibilityLabel("開始日 \(item.startDateText)")
-                                if let next = item.nextScheduledText {
-                                    Text("\(NSLocalizedString("medication.list.nextDose", comment: "Next dose")): \(next)")
+                    Section {
+                        ForEach(viewModel.items) { item in
+                            let rowContent = HStack(alignment: .top, spacing: 12) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(item.name)
+                                        .font(.title3.weight(.semibold))
+                                        .accessibilityLabel("薬名 \(item.name)")
+                                    Text("\(NSLocalizedString("medication.list.startDate", comment: "Start date")): \(item.startDateText)")
                                         .font(.body)
-                                        .accessibilityLabel("次回予定 \(next)")
+                                        .accessibilityLabel("開始日 \(item.startDateText)")
+                                    if let next = item.nextScheduledText {
+                                        Text("\(NSLocalizedString("medication.list.nextDose", comment: "Next dose")): \(next)")
+                                            .font(.body)
+                                            .accessibilityLabel("次回予定 \(next)")
+                                    }
+                                }
+                                Spacer()
+                                if sessionStore.mode == .caregiver {
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(.secondary)
+                                        .padding(.top, 2)
                                 }
                             }
-                            Spacer()
                             if sessionStore.mode == .caregiver {
-                                Image(systemName: "chevron.right")
-                                    .foregroundColor(.secondary)
-                                    .padding(.top, 2)
-                            }
-                        }
-                        if sessionStore.mode == .caregiver {
-                            Button(action: { selectedMedication = item.medication }) {
+                                Button(action: { selectedMedication = item.medication }) {
+                                    rowContent
+                                        .padding(16)
+                                        .frame(maxWidth: .infinity)
+                                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                                }
+                                .buttonStyle(.plain)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                .listRowSeparator(.hidden)
+                            } else {
                                 rowContent
                                     .padding(16)
                                     .frame(maxWidth: .infinity)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .fill(Color(.systemBackground))
-                                    )
+                                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                                     .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                    .listRowSeparator(.hidden)
                             }
-                            .buttonStyle(.plain)
-                        } else {
-                            rowContent
-                                .padding(16)
-                                .frame(maxWidth: .infinity)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color(.systemBackground))
-                                )
-                                .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                         }
+                    } header: {
+                        Text(NSLocalizedString("medication.list.section.title", comment: "Medication list section"))
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                            .textCase(nil)
                     }
+                    .listRowSeparator(.hidden)
                 }
-                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                .listRowSeparator(.hidden)
                 .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .background(Color.white)
+                .safeAreaPadding(.top)
+                .safeAreaPadding(.bottom, 120)
                 }
             }
             if let toastMessage {
@@ -270,6 +242,7 @@ struct MedicationListView: View {
                 viewModel.load()
             }
         }
+        .sensoryFeedback(.success, trigger: toastMessage)
         .accessibilityIdentifier("MedicationListView")
     }
 
@@ -277,9 +250,12 @@ struct MedicationListView: View {
         withAnimation {
             toastMessage = message
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            withAnimation {
-                toastMessage = nil
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            await MainActor.run {
+                withAnimation {
+                    toastMessage = nil
+                }
             }
         }
     }

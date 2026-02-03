@@ -17,6 +17,8 @@
 		C9D8E7F6A5B4C3D2E1F00918 /* TodayPatientFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A40516273849A5B6C7 /* TodayPatientFlowTests.swift */; };
 		D0A1B2C3D4E5F60718293A4B /* DoseRecordDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F405162738495A6B7C /* DoseRecordDTO.swift */; };
 		E1F2A3B4C5D6E7F8091A2B3C /* PatientTodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A6978877665544 /* PatientTodayView.swift */; };
+		E7F8A9B0C1D2E3F405162738 /* CaregiverTodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E8F9A0B1C2D3E4F5061728 /* CaregiverTodayView.swift */; };
+		F8A9B0C1D2E3F40516273849 /* CaregiverTodayViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6D7E8F9A0B1C2D3E4F50617 /* CaregiverTodayViewModel.swift */; };
 		F0F1F2F3F4F5F6F7F8F9FAFB /* FullScreenContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F1F2F3F4F5F6F7F8F9FAFC /* FullScreenContainer.swift */; };
 		403B60DF0710DEE297E332E7 /* MedicationListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB55437B073B6E2D5D88F3AE /* MedicationListViewModelTests.swift */; };
 		48CB1ABF9F105E0E095F3EA4 /* MedicationFormViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F793F0C9A8BBA67CA9C46326 /* MedicationFormViewModelTests.swift */; };
@@ -29,6 +31,7 @@
 		9AC12771713EEFB88AB180B2 /* MedicationApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6422C8656A2A888B307E5A94 /* MedicationApp.swift */; };
 		9CD32F9777E00CA402463257 /* MedicationFormViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 816F71313F426FE0A622F4B3 /* MedicationFormViewModel.swift */; };
 		9E32A2665B38F39DF6691477 /* CaregiverLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EFC3080A97C8534B55D4B19 /* CaregiverLoginView.swift */; };
+		B4C5D6E7F8091A2B3C4D5E6F /* ReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D5E6F708192A3B4C5D6E7F /* ReminderService.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F3 /* CaregiverAuthChoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* CaregiverAuthChoiceView.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F5 /* CaregiverSignupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F4 /* CaregiverSignupView.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F7 /* PatientManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F6 /* PatientManagementView.swift */; };
@@ -71,6 +74,8 @@
 		3C4D5E6F708192A3B4C5D6E7 /* StateViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateViews.swift; sourceTree = "<group>"; };
 		F0F1F2F3F4F5F6F7F8F9FAFC /* FullScreenContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullScreenContainer.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5061728394A5B6C /* PatientTodayViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientTodayViewModel.swift; sourceTree = "<group>"; };
+		C6D7E8F9A0B1C2D3E4F50617 /* CaregiverTodayViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverTodayViewModel.swift; sourceTree = "<group>"; };
+		D7E8F9A0B1C2D3E4F5061728 /* CaregiverTodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverTodayView.swift; sourceTree = "<group>"; };
 		48D944249F964B12755FD2DF /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		55D848B099AC94BF91C18A12 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		5EFC3080A97C8534B55D4B19 /* CaregiverLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverLoginView.swift; sourceTree = "<group>"; };
@@ -90,6 +95,7 @@
 		A3B4C5D6E7F8091A2B3C4D5D /* PatientManagementViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientManagementViewModelTests.swift; sourceTree = "<group>"; };
 		B24EE1B2BF4DDDB26FB959AD /* MedicationAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MedicationAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B787856EA1456F50596935F0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		C4D5E6F708192A3B4C5D6E7F /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
 		C1D2E3F405162738495A6B7C /* DoseRecordDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoseRecordDTO.swift; sourceTree = "<group>"; };
 		D1E2F3A40516273849A5B6C7 /* TodayPatientFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayPatientFlowTests.swift; sourceTree = "<group>"; };
 		EB55437B073B6E2D5D88F3AE /* MedicationListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationListViewModelTests.swift; sourceTree = "<group>"; };
@@ -190,6 +196,8 @@
 		E2F3A4B5C6D7E8F9012A3B4C /* Today */ = {
 			isa = PBXGroup;
 			children = (
+				D7E8F9A0B1C2D3E4F5061728 /* CaregiverTodayView.swift */,
+				C6D7E8F9A0B1C2D3E4F50617 /* CaregiverTodayViewModel.swift */,
 				F1E2D3C4B5A6978877665544 /* PatientTodayView.swift */,
 				B1C2D3E4F5061728394A5B6C /* PatientTodayViewModel.swift */,
 			);
@@ -230,6 +238,7 @@
 			children = (
 				10B347F8F660C4110482F537 /* AuthService.swift */,
 				2F3B3EC234D1D71D44BC2C6E /* LinkingService.swift */,
+				C4D5E6F708192A3B4C5D6E7F /* ReminderService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -398,8 +407,11 @@
 				A1B2C3D4E5F6A7B8C9D0E1F9 /* PatientCreateView.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1FB /* PatientLinkCodeView.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1FD /* PatientRevokeView.swift in Sources */,
+				E7F8A9B0C1D2E3F405162738 /* CaregiverTodayView.swift in Sources */,
+				F8A9B0C1D2E3F40516273849 /* CaregiverTodayViewModel.swift in Sources */,
 				E1F2A3B4C5D6E7F8091A2B3C /* PatientTodayView.swift in Sources */,
 				A9B8C7D6E5F4031223344556 /* PatientTodayViewModel.swift in Sources */,
+				B4C5D6E7F8091A2B3C4D5E6F /* ReminderService.swift in Sources */,
 				7A8B9C0D1E2F3A4B5C6D7E8F /* PatientReadOnlyView.swift in Sources */,
 				C531B4EE2AF37C0A10FE41B1 /* RootView.swift in Sources */,
 				C6F26CAD5BC8841754DDEDEE /* SessionStore.swift in Sources */,
@@ -478,7 +490,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -486,7 +498,7 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				SWIFT_VERSION = 5.9;
+				SWIFT_VERSION = 6.2;
 			};
 			name = Release;
 		};
@@ -561,7 +573,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -570,7 +582,7 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.9;
+				SWIFT_VERSION = 6.2;
 			};
 			name = Debug;
 		};

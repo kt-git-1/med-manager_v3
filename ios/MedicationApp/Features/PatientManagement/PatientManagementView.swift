@@ -111,10 +111,7 @@ struct PatientManagementView: View {
                     )
                     .padding(24)
                     .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(Color(.systemBackground))
-                    )
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                     .padding(.horizontal, 24)
                 } else {
@@ -147,10 +144,7 @@ struct PatientManagementView: View {
                             }
                             .padding(16)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(Color(.systemBackground))
-                            )
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                             .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
 
                             if let selectedPatient {
@@ -182,10 +176,7 @@ struct PatientManagementView: View {
                                     }
                                 }
                                 .padding(16)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .fill(Color(.systemBackground))
-                                )
+                                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                                 .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                                 .accessibilityLabel("\(selectedPatient.displayName) \(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))")
                             } else {
@@ -195,10 +186,7 @@ struct PatientManagementView: View {
                                 )
                                 .padding(16)
                                 .frame(maxWidth: .infinity)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .fill(Color(.systemBackground))
-                                )
+                                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                                 .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                             }
                         }
@@ -209,8 +197,13 @@ struct PatientManagementView: View {
             }
             .navigationTitle(NSLocalizedString("caregiver.patients.title", comment: "Patients title"))
             .toolbar {
-                Button(NSLocalizedString("caregiver.patients.add", comment: "Add patient")) {
-                    showingCreate = true
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button(NSLocalizedString("caregiver.patients.add", comment: "Add patient")) {
+                        showingCreate = true
+                    }
+                    Button(NSLocalizedString("common.logout", comment: "Logout")) {
+                        sessionStore.clearCaregiverToken()
+                    }
                 }
             }
             .sheet(isPresented: $showingCreate) {

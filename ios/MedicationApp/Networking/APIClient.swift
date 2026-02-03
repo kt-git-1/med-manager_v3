@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class APIClient {
     private let baseURL: URL
     private let sessionStore: SessionStore
@@ -203,6 +204,70 @@ final class APIClient {
         return try decoder.decode(DoseRecordResponseDTO.self, from: data).data
     }
 
+    func fetchCaregiverToday(patientId: String? = nil) async throws -> [ScheduleDoseDTO] {
+        let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
+        let url = baseURL.appendingPathComponent("api/patients/\(resolvedPatientId)/today")
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(ScheduleResponseDTO.self, from: data).data
+    }
+
+    func createCaregiverDoseRecord(
+        patientId: String? = nil,
+        input: DoseRecordCreateRequestDTO
+    ) async throws -> DoseRecordDTO {
+        let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
+        let url = baseURL.appendingPathComponent("api/patients/\(resolvedPatientId)/dose-records")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        request.httpBody = try encoder.encode(input)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(DoseRecordResponseDTO.self, from: data).data
+    }
+
+    func deleteCaregiverDoseRecord(
+        patientId: String? = nil,
+        medicationId: String,
+        scheduledAt: Date
+    ) async throws {
+        let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
+        var components = URLComponents(
+            url: baseURL.appendingPathComponent("api/patients/\(resolvedPatientId)/dose-records"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "medicationId", value: medicationId),
+            URLQueryItem(name: "scheduledAt", value: iso8601String(from: scheduledAt))
+        ]
+        guard let url = components?.url else {
+            throw APIError.unknown
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+    }
+
+    @MainActor
     private func tokenForCurrentMode() -> String? {
         switch sessionStore.mode {
         case .caregiver:
@@ -214,6 +279,7 @@ final class APIClient {
         }
     }
 
+    @MainActor
     private func mapErrorIfNeeded(response: URLResponse, data: Data) throws {
         guard let httpResponse = response as? HTTPURLResponse else {
             return
@@ -257,6 +323,7 @@ final class APIClient {
         return nil
     }
 
+    @MainActor
     func makeMedicationListRequest(patientId: String?) throws -> URLRequest {
         let resolvedPatientId = try resolvedMedicationPatientId(requestedPatientId: patientId)
         let url = try makeMedicationURL(path: "api/medications", patientId: resolvedPatientId)
@@ -268,6 +335,7 @@ final class APIClient {
         return request
     }
 
+    @MainActor
     func makeMedicationCreateRequest(input: MedicationCreateRequestDTO) throws -> URLRequest {
         let resolvedInput = try resolvedMedicationCreateInput(input)
         let url = baseURL.appendingPathComponent("api/medications")
@@ -281,6 +349,7 @@ final class APIClient {
         return request
     }
 
+    @MainActor
     func makeMedicationUpdateRequest(
         id: String,
         patientId: String,
@@ -298,6 +367,7 @@ final class APIClient {
         return request
     }
 
+    @MainActor
     func makeMedicationDeleteRequest(id: String, patientId: String) throws -> URLRequest {
         let resolvedPatientId = try resolvedMedicationPatientId(requestedPatientId: patientId)
         let url = try makeMedicationURL(path: "api/medications/\(id)", patientId: resolvedPatientId)
@@ -309,6 +379,7 @@ final class APIClient {
         return request
     }
 
+    @MainActor
     func makeRegimenListRequest(medicationId: String) throws -> URLRequest {
         let url = baseURL.appendingPathComponent("api/medications/\(medicationId)/regimens")
         var request = URLRequest(url: url)
@@ -319,6 +390,7 @@ final class APIClient {
         return request
     }
 
+    @MainActor
     func makeRegimenCreateRequest(
         medicationId: String,
         input: RegimenCreateRequestDTO
@@ -334,6 +406,7 @@ final class APIClient {
         return request
     }
 
+    @MainActor
     func makeRegimenUpdateRequest(
         id: String,
         input: RegimenUpdateRequestDTO
@@ -349,6 +422,7 @@ final class APIClient {
         return request
     }
 
+    @MainActor
     private func resolvedMedicationPatientId(requestedPatientId: String?) throws -> String? {
         if sessionStore.mode == .caregiver {
             guard let patientId = sessionStore.currentPatientId, !patientId.isEmpty else {
@@ -359,6 +433,7 @@ final class APIClient {
         return requestedPatientId
     }
 
+    @MainActor
     private func resolvedMedicationCreateInput(
         _ input: MedicationCreateRequestDTO
     ) throws -> MedicationCreateRequestDTO {
@@ -384,6 +459,25 @@ final class APIClient {
             throw APIError.validation("patientId required")
         }
         return input
+    }
+
+    @MainActor
+    private func resolvedCaregiverPatientId(requestedPatientId: String?) throws -> String {
+        if let requestedPatientId, !requestedPatientId.isEmpty {
+            return requestedPatientId
+        }
+        guard sessionStore.mode == .caregiver,
+              let patientId = sessionStore.currentPatientId,
+              !patientId.isEmpty else {
+            throw APIError.validation("patientId required")
+        }
+        return patientId
+    }
+
+    private func iso8601String(from date: Date) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.string(from: date)
     }
 
     private func makeMedicationURL(path: String, patientId: String?) throws -> URL {

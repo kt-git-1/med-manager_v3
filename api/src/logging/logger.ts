@@ -1,4 +1,6 @@
 type LogLevel = "info" | "warn" | "error";
+type DoseRecordAction = "create" | "delete";
+type DoseRecordActor = "patient" | "caregiver";
 
 function redact(input: string) {
   return input
@@ -11,4 +13,8 @@ function redact(input: string) {
 export function log(level: LogLevel, message: string) {
   const sanitized = redact(message);
   console[level](sanitized);
+}
+
+export function logDoseRecordOperation(action: DoseRecordAction, actor: DoseRecordActor) {
+  log("info", `dose_record.${action}.${actor}.success`);
 }

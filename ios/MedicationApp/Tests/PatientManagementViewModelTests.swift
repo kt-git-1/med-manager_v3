@@ -1,6 +1,7 @@
 import XCTest
 @testable import MedicationApp
 
+@MainActor
 final class PatientManagementViewModelTests: XCTestCase {
     private let suiteName = "PatientManagementViewModelTests"
     private var userDefaults: UserDefaults!
