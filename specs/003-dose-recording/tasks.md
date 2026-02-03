@@ -106,18 +106,18 @@ description: "Task list for dose recording implementation"
 
 ### Tests for User Story 3
 
-- [ ] T033 [P] [US3] Integration test for missed status derivation in `api/tests/integration/dose-missed-status.test.ts`
-- [ ] T034 [P] [US3] iOS test for reminder scheduling in `ios/MedicationApp/Tests/ReminderSchedulingTests.swift`
-- [ ] T035 [P] [US3] Integration test for no persisted missed/pending records in `api/tests/integration/dose-recording-persistence.test.ts`
-- [ ] T036 [P] [US3] iOS test for max 2 reminders per dose in `ios/MedicationApp/Tests/ReminderSchedulingTests.swift`
+- [x] T033 [P] [US3] Integration test for missed status derivation in `api/tests/integration/dose-missed-status.test.ts`
+- [x] T034 [P] [US3] iOS test for reminder scheduling in `ios/MedicationApp/Tests/ReminderSchedulingTests.swift`
+- [x] T035 [P] [US3] Integration test for no persisted missed/pending records in `api/tests/integration/dose-recording-persistence.test.ts`
+- [x] T036 [P] [US3] iOS test for max 2 reminders per dose in `ios/MedicationApp/Tests/ReminderSchedulingTests.swift`
 
 ### Implementation for User Story 3
 
-- [ ] T037 [US3] Add missed emphasis styling in `ios/MedicationApp/Features/Today/PatientTodayView.swift`
-- [ ] T038 [US3] Add local notification scheduler in `ios/MedicationApp/Services/ReminderService.swift`
-- [ ] T039 [US3] Trigger reminder scheduling on refresh/foreground in `ios/MedicationApp/Features/Today/PatientTodayViewModel.swift`
-- [ ] T040 [US3] Add auto-refresh hooks on appear/foreground in `ios/MedicationApp/Features/Today/PatientTodayViewModel.swift`
-- [ ] T041 [US3] Add localized strings for reminders/confirm copy in `ios/MedicationApp/Resources/Localizable.strings`
+- [x] T037 [US3] Add missed emphasis styling in `ios/MedicationApp/Features/Today/PatientTodayView.swift`
+- [x] T038 [US3] Add local notification scheduler in `ios/MedicationApp/Services/ReminderService.swift`
+- [x] T039 [US3] Trigger reminder scheduling on refresh/foreground in `ios/MedicationApp/Features/Today/PatientTodayViewModel.swift`
+- [x] T040 [US3] Add auto-refresh hooks on appear/foreground in `ios/MedicationApp/Features/Today/PatientTodayViewModel.swift`
+- [x] T041 [US3] Add localized strings for reminders/confirm copy in `ios/MedicationApp/Resources/Localizable.strings`
 
 **Checkpoint**: User Story 3 behavior complete and independently testable
 

@@ -17,7 +17,7 @@ struct PatientReadOnlyView: View {
                 }
             }
             .navigationTitle(navigationTitle)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(navigationTitleDisplayMode)
         }
         .safeAreaInset(edge: .bottom) {
             PatientBottomTabBar(selectedTab: $selectedTab)
@@ -33,6 +33,15 @@ struct PatientReadOnlyView: View {
             return NSLocalizedString("patient.readonly.history.title", comment: "History title")
         case .settings:
             return NSLocalizedString("patient.readonly.settings.title", comment: "Settings title")
+        }
+    }
+
+    private var navigationTitleDisplayMode: NavigationBarItem.TitleDisplayMode {
+        switch selectedTab {
+        case .today:
+            return .large
+        case .history, .settings:
+            return .inline
         }
     }
 }

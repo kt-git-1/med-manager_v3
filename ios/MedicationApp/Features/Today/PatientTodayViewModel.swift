@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import UIKit
 
 @MainActor
 final class PatientTodayViewModel: ObservableObject {
@@ -11,11 +12,14 @@ final class PatientTodayViewModel: ObservableObject {
     @Published var confirmDose: ScheduleDoseDTO?
 
     private let apiClient: APIClient
+    private let reminderService: ReminderService
     private let dateFormatter: DateFormatter
     private let timeFormatter: DateFormatter
+    private var foregroundTask: Task<Void, Never>?
 
-    init(apiClient: APIClient) {
+    init(apiClient: APIClient, reminderService: ReminderService = ReminderService()) {
         self.apiClient = apiClient
+        self.reminderService = reminderService
         self.dateFormatter = DateFormatter()
         self.dateFormatter.locale = Locale(identifier: "ja_JP")
         self.dateFormatter.dateStyle = .medium
@@ -26,12 +30,26 @@ final class PatientTodayViewModel: ObservableObject {
         self.timeFormatter.timeStyle = .short
     }
 
+    deinit {
+        foregroundTask?.cancel()
+    }
+
+    func handleAppear() {
+        startForegroundRefresh()
+        load(showLoading: true)
+    }
+
+    func handleDisappear() {
+        foregroundTask?.cancel()
+        foregroundTask = nil
+    }
+
     func load(showLoading: Bool) {
         guard !isLoading else { return }
         isLoading = showLoading
         isUpdating = true
         errorMessage = nil
-        Task {
+        Task { @MainActor in
             defer {
                 isLoading = false
                 isUpdating = false
@@ -40,6 +58,7 @@ final class PatientTodayViewModel: ObservableObject {
                 let doses = try await apiClient.fetchPatientToday()
                 let todayOnly = doses.filter { Calendar.current.isDateInToday($0.scheduledAt) }
                 items = todayOnly.sorted(by: sortDose)
+                await reminderService.scheduleReminders(for: todayOnly)
             } catch {
                 items = []
                 errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
@@ -59,7 +78,7 @@ final class PatientTodayViewModel: ObservableObject {
         guard let dose = confirmDose else { return }
         confirmDose = nil
         isUpdating = true
-        Task {
+        Task { @MainActor in
             defer { isUpdating = false }
             do {
                 _ = try await apiClient.createPatientDoseRecord(
@@ -115,6 +134,19 @@ final class PatientTodayViewModel: ObservableObject {
             return 1
         case .pending, .none:
             return 0
+        }
+    }
+
+    private func startForegroundRefresh() {
+        guard foregroundTask == nil else { return }
+        foregroundTask = Task { [weak self] in
+            for await _ in NotificationCenter.default.notifications(
+                named: UIApplication.willEnterForegroundNotification
+            ) {
+                await MainActor.run {
+                    self?.load(showLoading: false)
+                }
+            }
         }
     }
 }

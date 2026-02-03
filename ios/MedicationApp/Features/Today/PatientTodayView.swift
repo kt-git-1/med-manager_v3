@@ -43,7 +43,10 @@ struct PatientTodayView: View {
             }
         }
         .onAppear {
-            viewModel.load(showLoading: true)
+            viewModel.handleAppear()
+        }
+        .onDisappear {
+            viewModel.handleDisappear()
         }
         .alert(
             NSLocalizedString("patient.today.confirm.title", comment: "Confirm title"),
@@ -158,8 +161,10 @@ private struct PatientTodayRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(timeText)
                         .font(.headline)
+                        .foregroundStyle(isMissed ? Color.red : Color.primary)
                     Text(dose.medicationSnapshot.name)
                         .font(.title3.weight(.semibold))
+                        .foregroundStyle(isMissed ? Color.red : Color.primary)
                     Text(dose.medicationSnapshot.dosageText)
                         .font(.body)
                         .foregroundColor(.secondary)
@@ -171,6 +176,7 @@ private struct PatientTodayRow: View {
                         .padding(.vertical, 4)
                         .padding(.horizontal, 8)
                         .background(statusBackground(for: dose.effectiveStatus))
+                        .foregroundStyle(statusForeground(for: dose.effectiveStatus))
                         .clipShape(Capsule())
                 }
             }
@@ -191,7 +197,15 @@ private struct PatientTodayRow: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(backgroundColor(for: dose.effectiveStatus))
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(isMissed ? Color.red.opacity(0.35) : Color.clear, lineWidth: 1)
+        )
         .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
+    }
+
+    private var isMissed: Bool {
+        dose.effectiveStatus == .missed
     }
 
     private func statusText(for status: DoseStatusDTO?) -> String? {
@@ -204,6 +218,15 @@ private struct PatientTodayRow: View {
             return NSLocalizedString("patient.today.status.missed", comment: "Missed")
         case .none:
             return nil
+        }
+    }
+
+    private func statusForeground(for status: DoseStatusDTO?) -> Color {
+        switch status {
+        case .missed:
+            return Color.red
+        case .taken, .pending, .none:
+            return Color.primary
         }
     }
 
@@ -234,9 +257,13 @@ private struct PatientTodayRow: View {
     private func shouldShowRecordButton(for status: DoseStatusDTO?) -> Bool {
         switch status {
         case .pending, .none:
-            return true
+            return Date() >= recordAvailableFrom
         case .taken, .missed:
             return false
         }
+    }
+
+    private var recordAvailableFrom: Date {
+        dose.scheduledAt.addingTimeInterval(-30 * 60)
     }
 }
