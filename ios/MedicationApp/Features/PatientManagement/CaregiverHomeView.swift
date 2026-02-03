@@ -15,10 +15,14 @@ struct CaregiverHomeView: View {
         ZStack {
             switch selectedTab {
             case .today:
-                CaregiverTodayView(
-                    sessionStore: sessionStore,
-                    onOpenPatients: { selectedTab = .patients }
-                )
+                NavigationStack {
+                    CaregiverTodayView(
+                        sessionStore: sessionStore,
+                        onOpenPatients: { selectedTab = .patients }
+                    )
+                    .navigationTitle(NSLocalizedString("caregiver.tabs.today", comment: "Today tab"))
+                    .navigationBarTitleDisplayMode(.large)
+                }
             case .medications:
                 CaregiverMedicationView(
                     sessionStore: sessionStore,

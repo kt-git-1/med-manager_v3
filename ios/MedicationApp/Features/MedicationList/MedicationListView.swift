@@ -186,6 +186,11 @@ struct MedicationListView: View {
                                     .listRowSeparator(.hidden)
                             }
                         }
+                    } header: {
+                        Text(NSLocalizedString("medication.list.section.title", comment: "Medication list section"))
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                            .textCase(nil)
                     }
                     .listRowSeparator(.hidden)
                 }
