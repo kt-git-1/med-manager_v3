@@ -75,26 +75,40 @@ final class APIClient {
         try mapErrorIfNeeded(response: response, data: data)
         let decoder = JSONDecoder()
         _ = try decoder.decode(RevokeResponseDTO.self, from: data)
+        sessionStore.handlePatientRevoked(patientId)
     }
 
     func fetchMedications(patientId: String?) async throws -> [MedicationDTO] {
-        var components = URLComponents(url: baseURL.appendingPathComponent("api/medications"), resolvingAgainstBaseURL: false)
-        if let patientId {
-            components?.queryItems = [URLQueryItem(name: "patientId", value: patientId)]
-        }
-        guard let url = components?.url else {
-            throw APIError.unknown
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        if let token = tokenForCurrentMode() {
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
+        let request = try makeMedicationListRequest(patientId: patientId)
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(MedicationListResponseDTO.self, from: data).data
+    }
+
+    func createMedication(_ input: MedicationCreateRequestDTO) async throws -> MedicationDTO {
+        let request = try makeMedicationCreateRequest(input: input)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(MedicationResponseDTO.self, from: data).data
+    }
+
+    func updateMedication(id: String, patientId: String, input: MedicationUpdateRequestDTO) async throws -> MedicationDTO {
+        let request = try makeMedicationUpdateRequest(id: id, patientId: patientId, input: input)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(MedicationResponseDTO.self, from: data).data
+    }
+
+    func deleteMedication(id: String, patientId: String) async throws {
+        let request = try makeMedicationDeleteRequest(id: id, patientId: patientId)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
     }
 
     func exchangeLinkCode(code: String) async throws -> String {
@@ -182,5 +196,111 @@ final class APIClient {
             return text
         }
         return nil
+    }
+
+    func makeMedicationListRequest(patientId: String?) throws -> URLRequest {
+        let resolvedPatientId = try resolvedMedicationPatientId(requestedPatientId: patientId)
+        let url = try makeMedicationURL(path: "api/medications", patientId: resolvedPatientId)
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        return request
+    }
+
+    func makeMedicationCreateRequest(input: MedicationCreateRequestDTO) throws -> URLRequest {
+        let resolvedInput = try resolvedMedicationCreateInput(input)
+        let url = baseURL.appendingPathComponent("api/medications")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        request.httpBody = try medicationEncoder().encode(resolvedInput)
+        return request
+    }
+
+    func makeMedicationUpdateRequest(
+        id: String,
+        patientId: String,
+        input: MedicationUpdateRequestDTO
+    ) throws -> URLRequest {
+        let resolvedPatientId = try resolvedMedicationPatientId(requestedPatientId: patientId)
+        let url = try makeMedicationURL(path: "api/medications/\(id)", patientId: resolvedPatientId)
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        request.httpBody = try medicationEncoder().encode(input)
+        return request
+    }
+
+    func makeMedicationDeleteRequest(id: String, patientId: String) throws -> URLRequest {
+        let resolvedPatientId = try resolvedMedicationPatientId(requestedPatientId: patientId)
+        let url = try makeMedicationURL(path: "api/medications/\(id)", patientId: resolvedPatientId)
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        return request
+    }
+
+    private func resolvedMedicationPatientId(requestedPatientId: String?) throws -> String? {
+        if sessionStore.mode == .caregiver {
+            guard let patientId = sessionStore.currentPatientId, !patientId.isEmpty else {
+                throw APIError.validation("patientId required")
+            }
+            return patientId
+        }
+        return requestedPatientId
+    }
+
+    private func resolvedMedicationCreateInput(
+        _ input: MedicationCreateRequestDTO
+    ) throws -> MedicationCreateRequestDTO {
+        if sessionStore.mode == .caregiver {
+            guard let patientId = sessionStore.currentPatientId, !patientId.isEmpty else {
+                throw APIError.validation("patientId required")
+            }
+            return MedicationCreateRequestDTO(
+                patientId: patientId,
+                name: input.name,
+                dosageText: input.dosageText,
+                doseCountPerIntake: input.doseCountPerIntake,
+                dosageStrengthValue: input.dosageStrengthValue,
+                dosageStrengthUnit: input.dosageStrengthUnit,
+                notes: input.notes,
+                startDate: input.startDate,
+                endDate: input.endDate,
+                inventoryCount: input.inventoryCount,
+                inventoryUnit: input.inventoryUnit
+            )
+        }
+        if input.patientId.isEmpty {
+            throw APIError.validation("patientId required")
+        }
+        return input
+    }
+
+    private func makeMedicationURL(path: String, patientId: String?) throws -> URL {
+        var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)
+        if let patientId, !patientId.isEmpty {
+            components?.queryItems = [URLQueryItem(name: "patientId", value: patientId)]
+        }
+        guard let url = components?.url else {
+            throw APIError.unknown
+        }
+        return url
+    }
+
+    private func medicationEncoder() -> JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        return encoder
     }
 }

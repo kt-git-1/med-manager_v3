@@ -6,6 +6,7 @@
 "common.error.linking" = "連携に失敗しました";
 "common.save" = "保存";
 "common.cancel" = "キャンセル";
+"common.select" = "選択";
 
 /* Mode select */
 "mode.select.title" = "モードを選択";
@@ -42,8 +43,12 @@
 /* Medication list */
 "medication.list.empty.title" = "薬がありません";
 "medication.list.empty.message" = "右上の追加から登録できます";
+"medication.list.empty.action" = "薬を追加する";
+"medication.list.add" = "追加";
 "medication.list.startDate" = "開始日";
 "medication.list.nextDose" = "次回予定";
+"medication.toast.created" = "薬を追加しました";
+"medication.toast.updated" = "薬を編集しました";
 
 /* Medication form */
 "medication.form.section.basic" = "基本情報";
@@ -56,10 +61,12 @@
 "medication.form.dose.count" = "服用数/回";
 "medication.form.startDate" = "開始日";
 "medication.form.endDate" = "終了日";
+"medication.form.endDate.enabled" = "終了日を設定";
 "medication.form.inventory.count" = "在庫数";
 "medication.form.inventory.unit" = "在庫単位";
 "medication.form.notes" = "メモ";
 "medication.form.patient.readonly" = "患者モードでは編集できません";
+"medication.form.patient.required" = "対象患者を選択してください";
 
 /* Patient view */
 "patient.readonly.title" = "薬一覧";
@@ -74,6 +81,14 @@
 "caregiver.tabs.patients" = "連携・患者";
 "caregiver.medications.placeholder.title" = "患者を選択してください";
 "caregiver.medications.placeholder.message" = "患者一覧から対象を選んでください";
+"caregiver.medications.noPatients.title" = "患者がいません";
+"caregiver.medications.noPatients.message" = "先に患者を作成してください";
+"caregiver.medications.noPatients.action" = "患者を追加する";
+"caregiver.medications.noSelection.title" = "患者を選択してください";
+"caregiver.medications.noSelection.message" = "連携・患者タブから対象を選んでください";
+"caregiver.medications.noSelection.action" = "患者一覧を開く";
+"caregiver.medications.currentPatient" = "対象患者: %@";
+"caregiver.medications.switch" = "切替";
 
 /* Patient management */
 "caregiver.patients.title" = "患者管理";
@@ -82,6 +97,14 @@
 "caregiver.patients.empty.message" = "右上の追加から作成できます";
 "caregiver.patients.issueCode" = "コード発行";
 "caregiver.patients.revoke" = "解除";
+"caregiver.patients.select.label" = "対象患者";
+"caregiver.patients.select.placeholder" = "未選択";
+"caregiver.patients.select.help" = "プルダウンから対象患者を選んでください";
+"caregiver.patients.select.caption" = "タップして対象患者を設定";
+"caregiver.patients.select.action" = "選択";
+"caregiver.patients.select.selected" = "選択中";
+"caregiver.patients.select.empty.title" = "患者が未選択です";
+"caregiver.patients.select.empty.message" = "上のプルダウンから患者を選んでください";
 "caregiver.patients.create.title" = "患者作成";
 "caregiver.patients.create.section" = "表示名";
 "caregiver.patients.create.name" = "表示名";

@@ -2,7 +2,6 @@ import { createHash, randomInt } from "crypto";
 import { AuthError } from "../middleware/auth";
 import { prisma } from "../repositories/prisma";
 import { listPatientRecordsByCaregiver, getPatientRecordForCaregiver } from "../repositories/patientRepo";
-import { getActiveLinkForCaregiverPatient } from "../repositories/caregiverPatientLinkRepo";
 import { createLinkingCodeRecord, invalidateActiveLinkingCodes } from "../repositories/linkingCodeRepo";
 import {
   LINKING_CODE_LENGTH,
@@ -68,9 +67,17 @@ export async function issueLinkingCodeForPatient(
   if (!patient) {
     throw new AuthError("Not found", 404);
   }
-  const link = await getActiveLinkForCaregiverPatient(caregiverUserId, patientId);
+  const link = await prisma.caregiverPatientLink.findFirst({
+    where: { caregiverId: caregiverUserId, patientId }
+  });
   if (!link) {
     throw new AuthError("Not found", 404);
+  }
+  if (link.status !== "ACTIVE" || link.revokedAt) {
+    await prisma.caregiverPatientLink.update({
+      where: { id: link.id },
+      data: { status: "ACTIVE", revokedAt: null }
+    });
   }
   const code = generateLinkingCode();
   const codeHash = hashLinkingCode(code);

@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>API_BASE_URL</key>
+	<string>https://med-manager-v3.vercel.app/</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleExecutable</key>
@@ -18,11 +20,11 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-	<key>SUPABASE_URL</key>
-	<string>https://kairaeahklftpjfcaddh.supabase.co</string>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
 	<key>SUPABASE_ANON_KEY</key>
 	<string>sb_publishable_nVf6RMV1tUkg8ew7BJLVnw_YDnUMRra</string>
-	<key>API_BASE_URL</key>
-	<string>https://med-manager-v3.vercel.app/</string>
+	<key>SUPABASE_URL</key>
+	<string>https://kairaeahklftpjfcaddh.supabase.co</string>
 </dict>
 </plist>

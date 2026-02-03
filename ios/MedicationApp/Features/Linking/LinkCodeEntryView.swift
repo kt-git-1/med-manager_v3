@@ -14,26 +14,41 @@ struct LinkCodeEntryView: View {
     }
 
     var body: some View {
-        VStack(spacing: 12) {
-            Text(NSLocalizedString("link.code.title", comment: "Link code title"))
-                .font(.title2)
-            TextField(NSLocalizedString("link.code.placeholder", comment: "Link code placeholder"), text: $code)
-                .keyboardType(.numberPad)
-                .accessibilityLabel("連携コード")
-            if let errorMessage {
-                ErrorStateView(message: errorMessage)
+        VStack {
+            Spacer(minLength: 0)
+            VStack(spacing: 16) {
+                Text(NSLocalizedString("link.code.title", comment: "Link code title"))
+                    .font(.title2.weight(.semibold))
+                TextField(NSLocalizedString("link.code.placeholder", comment: "Link code placeholder"), text: $code)
+                    .keyboardType(.numberPad)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.body)
+                    .accessibilityLabel("連携コード")
+                if let errorMessage {
+                    ErrorStateView(message: errorMessage)
+                }
+                Button(
+                    isLoading
+                        ? NSLocalizedString("link.code.button.loading", comment: "Sending link code")
+                        : NSLocalizedString("link.code.button", comment: "Send link code")
+                ) {
+                    Task { await link() }
+                }
+                .buttonStyle(.borderedProminent)
+                .font(.headline)
+                .disabled(isLoading)
+                .accessibilityLabel("連携コード送信")
             }
-            Button(
-                isLoading
-                    ? NSLocalizedString("link.code.button.loading", comment: "Sending link code")
-                    : NSLocalizedString("link.code.button", comment: "Send link code")
-            ) {
-                Task { await link() }
-            }
-            .disabled(isLoading)
-            .accessibilityLabel("連携コード送信")
+            .padding(24)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color(.systemBackground))
+            )
+            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .padding(.horizontal, 24)
+            Spacer(minLength: 0)
         }
-        .padding()
         .accessibilityIdentifier("LinkCodeEntryView")
     }
 

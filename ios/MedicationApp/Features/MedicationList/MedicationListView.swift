@@ -1,10 +1,12 @@
 import SwiftUI
 
 struct MedicationListItem: Identifiable {
-    let id: String
+    let medication: MedicationDTO
     let name: String
     let startDateText: String
     let nextScheduledText: String?
+
+    var id: String { medication.id }
 }
 
 @MainActor
@@ -44,15 +46,21 @@ final class MedicationListViewModel: ObservableObject {
         Task {
             defer { isLoading = false }
             do {
-                guard let patientId = currentPatientId() else {
-                    items = []
-                    errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
-                    return
+                let patientId: String?
+                if sessionStore.mode == .caregiver {
+                    guard let selectedPatientId = currentPatientId() else {
+                        items = []
+                        errorMessage = nil
+                        return
+                    }
+                    patientId = selectedPatientId
+                } else {
+                    patientId = nil
                 }
                 let medications = try await apiClient.fetchMedications(patientId: patientId)
                 items = medications.map { medication in
                     MedicationListItem(
-                        id: medication.id,
+                        medication: medication,
                         name: medication.name,
                         startDateText: dateFormatter.string(from: medication.startDate),
                         nextScheduledText: medication.nextScheduledAt.map { dateTimeFormatter.string(from: $0) }
@@ -68,7 +76,7 @@ final class MedicationListViewModel: ObservableObject {
     private func currentPatientId() -> String? {
         switch sessionStore.mode {
         case .caregiver:
-            return sessionStore.caregiverToken
+            return sessionStore.currentPatientId
         case .patient:
             return nil
         case .none:
@@ -78,10 +86,23 @@ final class MedicationListViewModel: ObservableObject {
 }
 
 struct MedicationListView: View {
+    private let sessionStore: SessionStore
+    private let selectedPatientName: String?
+    private let onOpenPatients: (() -> Void)?
     @StateObject private var viewModel: MedicationListViewModel
+    @State private var showingCreate = false
+    @State private var selectedMedication: MedicationDTO?
+    @State private var toastMessage: String?
 
-    init(sessionStore: SessionStore? = nil) {
+    init(
+        sessionStore: SessionStore? = nil,
+        selectedPatientName: String? = nil,
+        onOpenPatients: (() -> Void)? = nil
+    ) {
         let store = sessionStore ?? SessionStore()
+        self.sessionStore = store
+        self.selectedPatientName = selectedPatientName
+        self.onOpenPatients = onOpenPatients
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
             wrappedValue: MedicationListViewModel(
@@ -92,37 +113,174 @@ struct MedicationListView: View {
     }
 
     var body: some View {
-        Group {
-            if viewModel.isLoading {
-                LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
-            } else if let errorMessage = viewModel.errorMessage {
-                ErrorStateView(message: errorMessage)
-            } else if viewModel.items.isEmpty {
-                EmptyStateView(
-                    title: NSLocalizedString("medication.list.empty.title", comment: "Empty list title"),
-                    message: NSLocalizedString("medication.list.empty.message", comment: "Empty list message")
-                )
-            } else {
-                List(viewModel.items) { item in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(item.name)
-                            .font(.headline)
-                            .accessibilityLabel("薬名 \(item.name)")
-                        Text("\(NSLocalizedString("medication.list.startDate", comment: "Start date")): \(item.startDateText)")
-                            .font(.subheadline)
-                            .accessibilityLabel("開始日 \(item.startDateText)")
-                        if let next = item.nextScheduledText {
-                            Text("\(NSLocalizedString("medication.list.nextDose", comment: "Next dose")): \(next)")
-                                .font(.subheadline)
-                                .accessibilityLabel("次回予定 \(next)")
+        ZStack(alignment: .top) {
+            Group {
+                if viewModel.isLoading {
+                    LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+                } else if let errorMessage = viewModel.errorMessage {
+                    ErrorStateView(message: errorMessage)
+                } else if viewModel.items.isEmpty {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 0)
+                            .fill(Color(.secondarySystemBackground))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        VStack {
+                            Spacer(minLength: 0)
+                            VStack(spacing: 12) {
+                                EmptyStateView(
+                                    title: NSLocalizedString("medication.list.empty.title", comment: "Empty list title"),
+                                    message: NSLocalizedString("medication.list.empty.message", comment: "Empty list message")
+                                )
+                                if sessionStore.mode == .caregiver {
+                                    Button(NSLocalizedString("medication.list.empty.action", comment: "Add medication action")) {
+                                        showingCreate = true
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                }
+                            }
+                            .padding(.horizontal, 24)
+                            Spacer(minLength: 0)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                List {
+                    if let selectedPatientName {
+                        HStack(spacing: 12) {
+                            Text(String(format: NSLocalizedString("caregiver.medications.currentPatient", comment: "Current patient label"), selectedPatientName))
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            if let onOpenPatients {
+                                Button(NSLocalizedString("caregiver.medications.switch", comment: "Switch patient")) {
+                                    onOpenPatients()
+                                }
+                                .buttonStyle(.bordered)
+                            }
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(.systemBackground))
+                        )
+                        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        Divider()
+                            .listRowInsets(EdgeInsets(top: 4, leading: 24, bottom: 4, trailing: 24))
+                            .listRowSeparator(.hidden)
+                    }
+
+                    Text("薬一覧")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 4, trailing: 16))
+                        .listRowSeparator(.hidden)
+
+                    ForEach(viewModel.items) { item in
+                        let rowContent = HStack(alignment: .top, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(item.name)
+                                    .font(.title3.weight(.semibold))
+                                    .accessibilityLabel("薬名 \(item.name)")
+                                Text("\(NSLocalizedString("medication.list.startDate", comment: "Start date")): \(item.startDateText)")
+                                    .font(.body)
+                                    .accessibilityLabel("開始日 \(item.startDateText)")
+                                if let next = item.nextScheduledText {
+                                    Text("\(NSLocalizedString("medication.list.nextDose", comment: "Next dose")): \(next)")
+                                        .font(.body)
+                                        .accessibilityLabel("次回予定 \(next)")
+                                }
+                            }
+                            Spacer()
+                            if sessionStore.mode == .caregiver {
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.secondary)
+                                    .padding(.top, 2)
+                            }
+                        }
+                        if sessionStore.mode == .caregiver {
+                            Button(action: { selectedMedication = item.medication }) {
+                                rowContent
+                                    .padding(16)
+                                    .frame(maxWidth: .infinity)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(Color(.systemBackground))
+                                    )
+                                    .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            rowContent
+                                .padding(16)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color(.systemBackground))
+                                )
+                                .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                         }
                     }
                 }
+                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                .listRowSeparator(.hidden)
+                .listStyle(.plain)
+                }
+            }
+            if let toastMessage {
+                Text(toastMessage)
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .shadow(radius: 4)
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .accessibilityLabel(toastMessage)
             }
         }
         .onAppear {
             viewModel.load()
         }
+        .toolbar {
+            if sessionStore.mode == .caregiver {
+                Button(NSLocalizedString("medication.list.add", comment: "Add medication")) {
+                    showingCreate = true
+                }
+            }
+        }
+        .sheet(isPresented: $showingCreate) {
+            MedicationFormView(sessionStore: sessionStore, onSuccess: showToast)
+                .environmentObject(sessionStore)
+        }
+        .sheet(item: $selectedMedication) { medication in
+            MedicationFormView(sessionStore: sessionStore, medication: medication, onSuccess: showToast)
+                .environmentObject(sessionStore)
+        }
+        .onChange(of: showingCreate) { _, isPresented in
+            if !isPresented {
+                viewModel.load()
+            }
+        }
+        .onChange(of: selectedMedication?.id) { _, medicationId in
+            if medicationId == nil {
+                viewModel.load()
+            }
+        }
         .accessibilityIdentifier("MedicationListView")
+    }
+
+    private func showToast(_ message: String) {
+        withAnimation {
+            toastMessage = message
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            withAnimation {
+                toastMessage = nil
+            }
+        }
     }
 }
