@@ -1,13 +1,15 @@
 import { errorResponse } from "../../../../../src/middleware/error";
 import {
   assertCaregiverPatientScope,
+  assertPatientScope,
   AuthError,
   getBearerToken,
   isCaregiverToken,
-  requireCaregiver
+  requireCaregiver,
+  requirePatient
 } from "../../../../../src/middleware/auth";
 import { validateRegimen } from "../../../../../src/validators/regimen";
-import { createRegimen } from "../../../../../src/services/regimenService";
+import { createRegimen, listRegimensForMedication } from "../../../../../src/services/regimenService";
 import { getMedication } from "../../../../../src/services/medicationService";
 
 export const runtime = "nodejs";
@@ -67,6 +69,38 @@ export async function POST(
     const created = await createRegimen(input);
     return new Response(JSON.stringify({ data: created }), {
       status: 201,
+      headers: { "content-type": "application/json" }
+    });
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const authHeader = request.headers.get("authorization") ?? undefined;
+    const token = getBearerToken(authHeader);
+    const isCaregiver = isCaregiverToken(token);
+    const medication = await getMedication(id);
+    if (!medication) {
+      return new Response(JSON.stringify({ error: "not_found" }), {
+        status: 404,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    if (isCaregiver) {
+      const session = await requireCaregiver(authHeader);
+      await assertCaregiverPatientScope(session.caregiverUserId, medication.patientId);
+    } else {
+      const session = await requirePatient(authHeader);
+      assertPatientScope(medication.patientId, session.patientId);
+    }
+    const regimens = await listRegimensForMedication(id);
+    return new Response(JSON.stringify({ data: regimens }), {
       headers: { "content-type": "application/json" }
     });
   } catch (error) {

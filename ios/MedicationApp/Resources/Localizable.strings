@@ -53,6 +53,7 @@
 /* Medication form */
 "medication.form.section.basic" = "基本情報";
 "medication.form.section.period" = "期間";
+"medication.form.section.schedule" = "スケジュール";
 "medication.form.section.inventory" = "在庫";
 "medication.form.section.notes" = "メモ";
 "medication.form.name" = "薬名";
@@ -62,6 +63,12 @@
 "medication.form.startDate" = "開始日";
 "medication.form.endDate" = "終了日";
 "medication.form.endDate.enabled" = "終了日を設定";
+"medication.form.schedule.frequency" = "頻度";
+"medication.form.schedule.daily" = "毎日";
+"medication.form.schedule.weekly" = "曜日指定";
+"medication.form.schedule.weekdays" = "曜日";
+"medication.form.schedule.times" = "時刻";
+"medication.form.schedule.unset" = "スケジュール未設定";
 "medication.form.inventory.count" = "在庫数";
 "medication.form.inventory.unit" = "在庫単位";
 "medication.form.notes" = "メモ";

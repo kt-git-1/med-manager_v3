@@ -24,6 +24,13 @@
 2. Configure endpoints (API base URL)
 3. Run on simulator/device
 
+### Schedule input constraints (MVP)
+
+- Frequency: `毎日` or `曜日指定`
+- Weekdays: required when `曜日指定`
+- Times: select from 朝/昼/夜/眠前, at least one, max 4
+- If a medication has no schedule, show "スケジュール未設定" and prompt edit
+
 ## Tests
 
 - API: `npm test`

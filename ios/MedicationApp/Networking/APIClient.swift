@@ -111,6 +111,33 @@ final class APIClient {
         try mapErrorIfNeeded(response: response, data: data)
     }
 
+    func fetchRegimens(medicationId: String) async throws -> [RegimenDTO] {
+        let request = try makeRegimenListRequest(medicationId: medicationId)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(RegimenListResponseDTO.self, from: data).data
+    }
+
+    func createRegimen(medicationId: String, input: RegimenCreateRequestDTO) async throws -> RegimenDTO {
+        let request = try makeRegimenCreateRequest(medicationId: medicationId, input: input)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(RegimenResponseDTO.self, from: data).data
+    }
+
+    func updateRegimen(id: String, input: RegimenUpdateRequestDTO) async throws -> RegimenDTO {
+        let request = try makeRegimenUpdateRequest(id: id, input: input)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(RegimenResponseDTO.self, from: data).data
+    }
+
     func exchangeLinkCode(code: String) async throws -> String {
         let url = baseURL.appendingPathComponent("api/patient/link")
         print("APIClient: exchangeLinkCode url=\(url.absoluteString)")
@@ -250,6 +277,46 @@ final class APIClient {
         return request
     }
 
+    func makeRegimenListRequest(medicationId: String) throws -> URLRequest {
+        let url = baseURL.appendingPathComponent("api/medications/\(medicationId)/regimens")
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        return request
+    }
+
+    func makeRegimenCreateRequest(
+        medicationId: String,
+        input: RegimenCreateRequestDTO
+    ) throws -> URLRequest {
+        let url = baseURL.appendingPathComponent("api/medications/\(medicationId)/regimens")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        request.httpBody = try regimenEncoder().encode(input)
+        return request
+    }
+
+    func makeRegimenUpdateRequest(
+        id: String,
+        input: RegimenUpdateRequestDTO
+    ) throws -> URLRequest {
+        let url = baseURL.appendingPathComponent("api/regimens/\(id)")
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        request.httpBody = try regimenEncoder().encode(input)
+        return request
+    }
+
     private func resolvedMedicationPatientId(requestedPatientId: String?) throws -> String? {
         if sessionStore.mode == .caregiver {
             guard let patientId = sessionStore.currentPatientId, !patientId.isEmpty else {
@@ -299,6 +366,12 @@ final class APIClient {
     }
 
     private func medicationEncoder() -> JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        return encoder
+    }
+
+    private func regimenEncoder() -> JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         return encoder

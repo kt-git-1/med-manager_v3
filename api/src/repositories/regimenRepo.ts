@@ -28,6 +28,13 @@ export async function updateRegimenRecord(id: string, input: RegimenUpdateInput)
   });
 }
 
+export async function listRegimensByMedicationId(medicationId: string) {
+  return prisma.regimen.findMany({
+    where: { medicationId },
+    orderBy: { createdAt: "desc" }
+  });
+}
+
 export async function stopRegimenRecord(id: string) {
   return prisma.regimen.update({
     where: { id },
