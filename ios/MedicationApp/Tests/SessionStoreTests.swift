@@ -1,6 +1,7 @@
 import XCTest
 @testable import MedicationApp
 
+@MainActor
 final class SessionStoreTests: XCTestCase {
     private let suiteName = "SessionStoreTests"
     private var userDefaults: UserDefaults!

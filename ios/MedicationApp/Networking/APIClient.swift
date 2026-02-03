@@ -204,6 +204,69 @@ final class APIClient {
         return try decoder.decode(DoseRecordResponseDTO.self, from: data).data
     }
 
+    func fetchCaregiverToday(patientId: String? = nil) async throws -> [ScheduleDoseDTO] {
+        let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
+        let url = baseURL.appendingPathComponent("api/patients/\(resolvedPatientId)/today")
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(ScheduleResponseDTO.self, from: data).data
+    }
+
+    func createCaregiverDoseRecord(
+        patientId: String? = nil,
+        input: DoseRecordCreateRequestDTO
+    ) async throws -> DoseRecordDTO {
+        let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
+        let url = baseURL.appendingPathComponent("api/patients/\(resolvedPatientId)/dose-records")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        request.httpBody = try encoder.encode(input)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(DoseRecordResponseDTO.self, from: data).data
+    }
+
+    func deleteCaregiverDoseRecord(
+        patientId: String? = nil,
+        medicationId: String,
+        scheduledAt: Date
+    ) async throws {
+        let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
+        var components = URLComponents(
+            url: baseURL.appendingPathComponent("api/patients/\(resolvedPatientId)/dose-records"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "medicationId", value: medicationId),
+            URLQueryItem(name: "scheduledAt", value: iso8601String(from: scheduledAt))
+        ]
+        guard let url = components?.url else {
+            throw APIError.unknown
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+    }
+
     @MainActor
     private func tokenForCurrentMode() -> String? {
         switch sessionStore.mode {
@@ -396,6 +459,25 @@ final class APIClient {
             throw APIError.validation("patientId required")
         }
         return input
+    }
+
+    @MainActor
+    private func resolvedCaregiverPatientId(requestedPatientId: String?) throws -> String {
+        if let requestedPatientId, !requestedPatientId.isEmpty {
+            return requestedPatientId
+        }
+        guard sessionStore.mode == .caregiver,
+              let patientId = sessionStore.currentPatientId,
+              !patientId.isEmpty else {
+            throw APIError.validation("patientId required")
+        }
+        return patientId
+    }
+
+    private func iso8601String(from date: Date) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.string(from: date)
     }
 
     private func makeMedicationURL(path: String, patientId: String?) throws -> URL {

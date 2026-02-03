@@ -102,6 +102,7 @@
 "patient.today.section.taken" = "服用済み";
 
 /* Caregiver tabs */
+"caregiver.tabs.today" = "今日";
 "caregiver.tabs.medications" = "薬";
 "caregiver.tabs.patients" = "連携・患者";
 "caregiver.medications.placeholder.title" = "患者を選択してください";
@@ -114,6 +115,16 @@
 "caregiver.medications.noSelection.action" = "患者一覧を開く";
 "caregiver.medications.currentPatient" = "対象患者: %@";
 "caregiver.medications.switch" = "切替";
+
+/* Caregiver today */
+"caregiver.today.empty.title" = "予定がありません";
+"caregiver.today.empty.message" = "今日の服用予定はありません";
+"caregiver.today.record.button" = "記録する";
+"caregiver.today.delete.button" = "取り消す";
+"caregiver.today.recorded" = "記録しました";
+"caregiver.today.deleted" = "記録を取り消しました";
+"caregiver.today.section.planned" = "今日の服用予定";
+"caregiver.today.section.taken" = "服用済み";
 
 /* Patient management */
 "caregiver.patients.title" = "患者管理";

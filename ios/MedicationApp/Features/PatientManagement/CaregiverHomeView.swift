@@ -1,6 +1,7 @@
 import SwiftUI
 
 enum CaregiverTab: Hashable {
+    case today
     case medications
     case patients
 }
@@ -12,6 +13,11 @@ struct CaregiverHomeView: View {
     var body: some View {
         ZStack {
             switch selectedTab {
+            case .today:
+                CaregiverTodayView(
+                    sessionStore: sessionStore,
+                    onOpenPatients: { selectedTab = .patients }
+                )
             case .medications:
                 CaregiverMedicationView(
                     sessionStore: sessionStore,
@@ -37,6 +43,13 @@ private struct CaregiverBottomTabBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            tabButton(
+                title: NSLocalizedString("caregiver.tabs.today", comment: "Today tab"),
+                systemImage: "calendar",
+                isSelected: selectedTab == .today
+            ) {
+                selectedTab = .today
+            }
             tabButton(
                 title: NSLocalizedString("caregiver.tabs.medications", comment: "Medications tab"),
                 systemImage: "pills",
