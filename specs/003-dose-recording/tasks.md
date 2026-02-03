@@ -52,21 +52,21 @@ description: "Task list for dose recording implementation"
 
 ### Tests for User Story 1
 
-- [ ] T011 [P] [US1] Contract tests for patient endpoints in `api/tests/contract/dose-recording-patient.contract.test.ts`
-- [ ] T012 [P] [US1] Integration test for idempotent create in `api/tests/integration/dose-recording-patient.test.ts`
-- [ ] T013 [P] [US1] Integration test for patient revoke access in `api/tests/integration/patient-session-revoke.test.ts`
-- [ ] T014 [P] [US1] iOS UI smoke for patient Today flow in `ios/MedicationApp/Tests/TodayPatientFlowTests.swift`
+- [x] T011 [P] [US1] Contract tests for patient endpoints in `api/tests/contract/dose-recording-patient.contract.test.ts`
+- [x] T012 [P] [US1] Integration test for idempotent create in `api/tests/integration/dose-recording-patient.test.ts`
+- [x] T013 [P] [US1] Integration test for patient revoke access in `api/tests/integration/patient-session-revoke.test.ts`
+- [x] T014 [P] [US1] iOS UI smoke for patient Today flow in `ios/MedicationApp/Tests/TodayPatientFlowTests.swift`
 
 ### Implementation for User Story 1
 
-- [ ] T015 [US1] Add patient today endpoint in `api/app/api/patient/today/route.ts`
-- [ ] T016 [US1] Add patient dose record create endpoint in `api/app/api/patient/dose-records/route.ts`
-- [ ] T017 [US1] Wire patient auth verification in `api/src/middleware/auth.ts` for patient routes
-- [ ] T018 [US1] Add patient Today view model in `ios/MedicationApp/Features/Today/PatientTodayViewModel.swift`
-- [ ] T019 [US1] Add patient Today UI with large “Taken” button in `ios/MedicationApp/Features/Today/PatientTodayView.swift`
-- [ ] T020 [US1] Add confirm dialog and “already recorded” feedback in `ios/MedicationApp/Features/Today/PatientTodayView.swift`
-- [ ] T021 [US1] Add full-screen updating overlay using shared container in `ios/MedicationApp/Shared/Views/FullScreenContainer.swift`
-- [ ] T022 [US1] Add API client methods for patient today + create in `ios/MedicationApp/Networking/APIClient.swift`
+- [x] T015 [US1] Add patient today endpoint in `api/app/api/patient/today/route.ts`
+- [x] T016 [US1] Add patient dose record create endpoint in `api/app/api/patient/dose-records/route.ts`
+- [x] T017 [US1] Wire patient auth verification in `api/src/middleware/auth.ts` for patient routes
+- [x] T018 [US1] Add patient Today view model in `ios/MedicationApp/Features/Today/PatientTodayViewModel.swift`
+- [x] T019 [US1] Add patient Today UI with large “Taken” button in `ios/MedicationApp/Features/Today/PatientTodayView.swift`
+- [x] T020 [US1] Add confirm dialog and “already recorded” feedback in `ios/MedicationApp/Features/Today/PatientTodayView.swift`
+- [x] T021 [US1] Add full-screen updating overlay using shared container in `ios/MedicationApp/Shared/Views/FullScreenContainer.swift`
+- [x] T022 [US1] Add API client methods for patient today + create in `ios/MedicationApp/Networking/APIClient.swift`
 
 **Checkpoint**: User Story 1 works end-to-end for patient flow
 

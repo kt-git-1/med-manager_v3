@@ -11,7 +11,7 @@ enum RecordedByTypeDTO: String, Decodable {
     case caregiver
 }
 
-struct MedicationSnapshotDTO: Decodable {
+struct MedicationSnapshotDTO: Decodable, Equatable {
     let name: String
     let dosageText: String
     let doseCountPerIntake: Int
@@ -19,7 +19,7 @@ struct MedicationSnapshotDTO: Decodable {
     let dosageStrengthUnit: String
 }
 
-struct ScheduleDoseDTO: Decodable, Identifiable {
+struct ScheduleDoseDTO: Decodable, Identifiable, Equatable {
     let key: String
     let patientId: String
     let medicationId: String

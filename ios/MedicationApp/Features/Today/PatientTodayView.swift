@@ -1,0 +1,186 @@
+import SwiftUI
+
+struct PatientTodayView: View {
+    private let sessionStore: SessionStore
+    @StateObject private var viewModel: PatientTodayViewModel
+    @State private var showingConfirm = false
+
+    init(sessionStore: SessionStore? = nil) {
+        let store = sessionStore ?? SessionStore()
+        self.sessionStore = store
+        let baseURL = SessionStore.resolveBaseURL()
+        _viewModel = StateObject(
+            wrappedValue: PatientTodayViewModel(apiClient: APIClient(baseURL: baseURL, sessionStore: store))
+        )
+    }
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            FullScreenContainer {
+                content
+            }
+
+            if let toastMessage = viewModel.toastMessage {
+                Text(toastMessage)
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .shadow(radius: 4)
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .accessibilityLabel(toastMessage)
+            }
+
+            if viewModel.isUpdating {
+                Color.black.opacity(0.2)
+                    .ignoresSafeArea()
+                LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemBackground))
+                    )
+                    .shadow(radius: 6)
+            }
+        }
+        .onAppear {
+            viewModel.load(showLoading: true)
+        }
+        .alert(
+            NSLocalizedString("patient.today.confirm.title", comment: "Confirm title"),
+            isPresented: $showingConfirm,
+            presenting: viewModel.confirmDose
+        ) { _ in
+            Button(NSLocalizedString("patient.today.confirm.action", comment: "Confirm action")) {
+                viewModel.recordConfirmedDose()
+            }
+            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
+        } message: { dose in
+            Text(confirmMessage(for: dose))
+        }
+        .onChange(of: viewModel.confirmDose) { _, newValue in
+            showingConfirm = newValue != nil
+        }
+        .accessibilityIdentifier("PatientTodayView")
+        .environmentObject(sessionStore)
+    }
+
+    private var content: some View {
+        Group {
+            if viewModel.isLoading {
+                LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+            } else if let errorMessage = viewModel.errorMessage {
+                ErrorStateView(message: errorMessage)
+            } else if viewModel.items.isEmpty {
+                EmptyStateView(
+                    title: NSLocalizedString("patient.today.empty.title", comment: "Empty title"),
+                    message: NSLocalizedString("patient.today.empty.message", comment: "Empty message")
+                )
+            } else {
+                List(viewModel.items) { dose in
+                    PatientTodayRow(
+                        dose: dose,
+                        timeText: viewModel.timeText(for: dose.scheduledAt),
+                        onRecord: { viewModel.confirmRecord(for: dose) }
+                    )
+                    .listRowSeparator(.hidden)
+                }
+                .listStyle(.plain)
+            }
+        }
+    }
+
+    private func confirmMessage(for dose: ScheduleDoseDTO) -> String {
+        let timeText = viewModel.timeText(for: dose.scheduledAt)
+        return String(
+            format: NSLocalizedString("patient.today.confirm.message", comment: "Confirm message"),
+            dose.medicationSnapshot.name,
+            timeText
+        )
+    }
+}
+
+private struct PatientTodayRow: View {
+    let dose: ScheduleDoseDTO
+    let timeText: String
+    let onRecord: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(timeText)
+                        .font(.headline)
+                    Text(dose.medicationSnapshot.name)
+                        .font(.title3.weight(.semibold))
+                    Text(dose.medicationSnapshot.dosageText)
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                if let statusText = statusText(for: dose.effectiveStatus) {
+                    Text(statusText)
+                        .font(.caption.weight(.semibold))
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 8)
+                        .background(statusBackground(for: dose.effectiveStatus))
+                        .clipShape(Capsule())
+                }
+            }
+
+            Button(action: onRecord) {
+                Text(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
+                    .font(.title3.weight(.bold))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .accessibilityLabel(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(backgroundColor(for: dose.effectiveStatus))
+        )
+        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
+    }
+
+    private func statusText(for status: DoseStatusDTO?) -> String? {
+        switch status {
+        case .pending:
+            return NSLocalizedString("patient.today.status.pending", comment: "Pending")
+        case .taken:
+            return NSLocalizedString("patient.today.status.taken", comment: "Taken")
+        case .missed:
+            return NSLocalizedString("patient.today.status.missed", comment: "Missed")
+        case .none:
+            return nil
+        }
+    }
+
+    private func statusBackground(for status: DoseStatusDTO?) -> Color {
+        switch status {
+        case .missed:
+            return Color.red.opacity(0.15)
+        case .taken:
+            return Color.green.opacity(0.12)
+        case .pending:
+            return Color(.secondarySystemBackground)
+        case .none:
+            return Color(.secondarySystemBackground)
+        }
+    }
+
+    private func backgroundColor(for status: DoseStatusDTO?) -> Color {
+        switch status {
+        case .missed:
+            return Color.red.opacity(0.08)
+        case .taken:
+            return Color.green.opacity(0.06)
+        case .pending, .none:
+            return Color(.systemBackground)
+        }
+    }
+}

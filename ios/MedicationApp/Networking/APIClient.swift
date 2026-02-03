@@ -171,6 +171,38 @@ final class APIClient {
         return result.data.patientSessionToken
     }
 
+    func fetchPatientToday() async throws -> [ScheduleDoseDTO] {
+        let url = baseURL.appendingPathComponent("api/patient/today")
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(ScheduleResponseDTO.self, from: data).data
+    }
+
+    func createPatientDoseRecord(input: DoseRecordCreateRequestDTO) async throws -> DoseRecordDTO {
+        let url = baseURL.appendingPathComponent("api/patient/dose-records")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        request.httpBody = try encoder.encode(input)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(DoseRecordResponseDTO.self, from: data).data
+    }
+
     private func tokenForCurrentMode() -> String? {
         switch sessionStore.mode {
         case .caregiver:
