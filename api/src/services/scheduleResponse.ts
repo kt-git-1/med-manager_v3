@@ -3,6 +3,7 @@ export type ScheduleResponseDose = {
   patientId: string;
   medicationId: string;
   scheduledAt: string;
+  effectiveStatus?: "pending" | "taken" | "missed";
   medicationSnapshot: {
     name: string;
     dosageText: string;

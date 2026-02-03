@@ -1,0 +1,168 @@
+openapi: 3.0.3
+info:
+  title: Dose Recording API (003)
+  version: 0.1.0
+servers:
+  - url: /api
+paths:
+  /patient/today:
+    get:
+      summary: Get today's scheduled doses for patient
+      responses:
+        "200":
+          description: Today's schedule with effective status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TodayScheduleResponse"
+        "401":
+          description: Unauthorized
+  /patient/dose-records:
+    post:
+      summary: Record a scheduled dose as taken (patient)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DoseRecordCreateRequest"
+      responses:
+        "200":
+          description: Taken record created or already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoseRecordResponse"
+        "401":
+          description: Unauthorized
+        "422":
+          description: Validation error
+  /patients/{patientId}/today:
+    get:
+      summary: Get today's scheduled doses for patient (caregiver)
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Today's schedule with effective status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TodayScheduleResponse"
+        "404":
+          description: Not found (concealed)
+  /patients/{patientId}/dose-records:
+    post:
+      summary: Record a scheduled dose as taken (caregiver)
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DoseRecordCreateRequest"
+      responses:
+        "200":
+          description: Taken record created or already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoseRecordResponse"
+        "404":
+          description: Not found (concealed)
+        "422":
+          description: Validation error
+    delete:
+      summary: Delete a taken record (caregiver)
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: medicationId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: scheduledAt
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found (concealed)
+components:
+  schemas:
+    DoseStatus:
+      type: string
+      enum:
+        - pending
+        - taken
+        - missed
+    ScheduledDose:
+      type: object
+      properties:
+        medicationId:
+          type: string
+        scheduledAt:
+          type: string
+          format: date-time
+        effectiveStatus:
+          $ref: "#/components/schemas/DoseStatus"
+        medicationName:
+          type: string
+        dosageText:
+          type: string
+        doseCountPerIntake:
+          type: integer
+    TodayScheduleResponse:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        doses:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScheduledDose"
+    DoseRecordCreateRequest:
+      type: object
+      required:
+        - medicationId
+        - scheduledAt
+      properties:
+        medicationId:
+          type: string
+        scheduledAt:
+          type: string
+          format: date-time
+    DoseRecordResponse:
+      type: object
+      properties:
+        medicationId:
+          type: string
+        scheduledAt:
+          type: string
+          format: date-time
+        takenAt:
+          type: string
+          format: date-time
+        recordedByType:
+          type: string
+          enum:
+            - patient
+            - caregiver

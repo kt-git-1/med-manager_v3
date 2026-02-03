@@ -22,6 +22,11 @@ enum LinkStatus {
   REVOKED
 }
 
+enum RecordedByType {
+  PATIENT
+  CAREGIVER
+}
+
 model Medication {
   id                  String   @id @default(uuid())
   patientId           String
@@ -40,7 +45,8 @@ model Medication {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  regimens Regimen[]
+  regimens    Regimen[]
+  doseRecords DoseRecord[]
 
   @@index([patientId, isActive])
   @@index([patientId, startDate, endDate])
@@ -72,10 +78,11 @@ model Patient {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  links        CaregiverPatientLink[]
-  linkingCodes LinkingCode[]
+  links           CaregiverPatientLink[]
+  linkingCodes    LinkingCode[]
   linkingAttempts LinkingAttempt[]
-  sessions     PatientSession[]
+  sessions        PatientSession[]
+  doseRecords     DoseRecord[]
 }
 
 model CaregiverPatientLink {
@@ -120,6 +127,24 @@ model PatientSession {
 
   @@index([patientId])
   @@index([revokedAt])
+}
+
+model DoseRecord {
+  id             String         @id @default(uuid())
+  patientId      String
+  medicationId   String
+  scheduledAt    DateTime
+  takenAt        DateTime       @default(now())
+  recordedByType RecordedByType
+  recordedById   String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  patient    Patient    @relation(fields: [patientId], references: [id])
+  medication Medication @relation(fields: [medicationId], references: [id])
+
+  @@unique([patientId, medicationId, scheduledAt])
+  @@index([patientId, scheduledAt])
 }
 
 model LinkingAttempt {
