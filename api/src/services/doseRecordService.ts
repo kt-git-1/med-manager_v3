@@ -7,7 +7,6 @@ import {
   type DoseRecordKey
 } from "../repositories/doseRecordRepo";
 import { assertCaregiverPatientScope } from "../middleware/auth";
-import { assertCaregiverPatientScope } from "../middleware/auth";
 
 export type DoseRecordCreateInput = DoseRecordKey & {
   recordedByType: RecordedByType;
@@ -66,34 +65,4 @@ export async function listDoseRecordsForPatientRange(input: {
   to: Date;
 }): Promise<DoseRecord[]> {
   return listDoseRecordsByPatientRange(input);
-}
-
-export async function createCaregiverDoseRecord(input: {
-  caregiverUserId: string;
-  patientId: string;
-  medicationId: string;
-  scheduledAt: Date;
-}): Promise<DoseRecord> {
-  await assertCaregiverPatientScope(input.caregiverUserId, input.patientId);
-  return createDoseRecordIdempotent({
-    patientId: input.patientId,
-    medicationId: input.medicationId,
-    scheduledAt: input.scheduledAt,
-    recordedByType: "CAREGIVER",
-    recordedById: input.caregiverUserId
-  });
-}
-
-export async function deleteCaregiverDoseRecord(input: {
-  caregiverUserId: string;
-  patientId: string;
-  medicationId: string;
-  scheduledAt: Date;
-}): Promise<DoseRecord | null> {
-  await assertCaregiverPatientScope(input.caregiverUserId, input.patientId);
-  return deleteDoseRecord({
-    patientId: input.patientId,
-    medicationId: input.medicationId,
-    scheduledAt: input.scheduledAt
-  });
 }
