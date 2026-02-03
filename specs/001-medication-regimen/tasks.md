@@ -180,14 +180,14 @@ description: "Task list template for feature implementation"
 
 ### Tasks
 
-- [ ] T053 [US1] Add schedule section UI to MedicationFormView (Why: 曜日/時間入力を可能にする; Files: `ios/MedicationApp/Features/MedicationForm/MedicationFormView.swift`; Done when: 毎日/曜日指定切替、曜日トグル、時刻スロット：朝/昼/夜/眠前（ラベル＋固定時刻表示、複数選択）が表示/操作できる; Tests: UI smoke or ViewModel test)
-- [ ] T054 [US1] Extend MedicationFormViewModel with schedule fields + validation (Why: 保存前に不正入力を防ぐ; Files: `ios/MedicationApp/Features/MedicationForm/MedicationFormViewModel.swift`; Done when: 上記バリデーションを満たさないと保存不可＆エラー表示; Tests: `ios/MedicationApp/Tests/MedicationFormValidationTests.swift` にケース追加)
-- [ ] T055 [US1] Wire schedule payload to API (create/update) (Why: 入力したスケジュールを永続化; Files: `ios/MedicationApp/Networking/APIClient.swift`, DTOs, MedicationFormViewModel; Done when: 保存時にスケジュールがAPIへ送られ、再取得で同じ内容が返る; Tests: `ios/MedicationApp/Tests/APIClientTests.swift`（リクエスト構築）)
-- [ ] T056 [US1] Prefill schedule when editing existing medication (Why: 編集UX; Files: MedicationFormViewModel + 取得処理; Done when: 編集時に曜日/時刻がフォームに復元される。未設定なら「未設定」状態で編集を促す; Tests: ViewModel unit tests)
-- [ ] T057 [US1] Add unit tests for schedule serialization + edge cases (Why: 将来の不具合防止; Files: `ios/MedicationApp/Tests/MedicationFormViewModelTests.swift` など; Done when: 重複時刻/0件/曜日0件/最大回数/編集復元 のテストが追加; Tests: `xcodebuild test`)
-- [ ] T058 [US1] Add integration test: schedule generator reflects weekday/time from regimen (Why: UI→API→生成が繋がることを保証; Files: `api/tests/integration/*` or `api/tests/unit/schedule-generator.test.ts`; Done when: 曜日指定＋複数時刻で生成結果が一致; Tests: `cd api && npm test`)
-- [ ] T059 [US1] Update E2E checklist for caregiver schedule entry (Why: 手動受け入れ; Files: `specs/001-medication-regimen/checklists/e2e.md`; Done when: 「患者選択→薬追加→曜日/時間入力→今日/予定に反映」シナリオが追記; Tests: N/A)
-- [ ] T060 [P] Update quickstart/docs to mention schedule UI constraints (Why: 仕様共有; Files: `specs/001-medication-regimen/quickstart.md` or README; Done when: 最大回数/バリデーション/未設定時挙動が明記; Tests: N/A)
+- [x] T053 [US1] Add schedule section UI to MedicationFormView (Why: 曜日/時間入力を可能にする; Files: `ios/MedicationApp/Features/MedicationForm/MedicationFormView.swift`; Done when: 毎日/曜日指定切替、曜日トグル、時刻スロット：朝/昼/夜/眠前（ラベル＋固定時刻表示、複数選択）が表示/操作できる; Tests: UI smoke or ViewModel test)
+- [x] T054 [US1] Extend MedicationFormViewModel with schedule fields + validation (Why: 保存前に不正入力を防ぐ; Files: `ios/MedicationApp/Features/MedicationForm/MedicationFormViewModel.swift`; Done when: 上記バリデーションを満たさないと保存不可＆エラー表示; Tests: `ios/MedicationApp/Tests/MedicationFormValidationTests.swift` にケース追加)
+- [x] T055 [US1] Wire schedule payload to API (create/update) (Why: 入力したスケジュールを永続化; Files: `ios/MedicationApp/Networking/APIClient.swift`, DTOs, MedicationFormViewModel; Done when: 保存時にスケジュールがAPIへ送られ、再取得で同じ内容が返る; Tests: `ios/MedicationApp/Tests/APIClientTests.swift`（リクエスト構築）)
+- [x] T056 [US1] Prefill schedule when editing existing medication (Why: 編集UX; Files: MedicationFormViewModel + 取得処理; Done when: 編集時に曜日/時刻がフォームに復元される。未設定なら「未設定」状態で編集を促す; Tests: ViewModel unit tests)
+- [x] T057 [US1] Add unit tests for schedule serialization + edge cases (Why: 将来の不具合防止; Files: `ios/MedicationApp/Tests/MedicationFormViewModelTests.swift` など; Done when: 重複時刻/0件/曜日0件/最大回数/編集復元 のテストが追加; Tests: `xcodebuild test`)
+- [x] T058 [US1] Add integration test: schedule generator reflects weekday/time from regimen (Why: UI→API→生成が繋がることを保証; Files: `api/tests/integration/*` or `api/tests/unit/schedule-generator.test.ts`; Done when: 曜日指定＋複数時刻で生成結果が一致; Tests: `cd api && npm test`)
+- [x] T059 [US1] Update E2E checklist for caregiver schedule entry (Why: 手動受け入れ; Files: `specs/001-medication-regimen/checklists/e2e.md`; Done when: 「患者選択→薬追加→曜日/時間入力→今日/予定に反映」シナリオが追記; Tests: N/A)
+- [x] T060 [P] Update quickstart/docs to mention schedule UI constraints (Why: 仕様共有; Files: `specs/001-medication-regimen/quickstart.md` or README; Done when: 最大回数/バリデーション/未設定時挙動が明記; Tests: N/A)
 
 ---
 

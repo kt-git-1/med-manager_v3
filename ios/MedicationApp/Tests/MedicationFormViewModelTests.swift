@@ -94,4 +94,37 @@ final class MedicationFormViewModelTests: XCTestCase {
             .queryItems
         XCTAssertEqual(deleteItems?.first(where: { $0.name == "patientId" })?.value, "patient-2")
     }
+
+    func testScheduleSerializationOrdersTimesAndDays() {
+        let viewModel = MedicationFormViewModel()
+        viewModel.name = "Test"
+        viewModel.selectedTimeSlots = [.bedtime, .morning, .evening]
+        viewModel.selectedDays = [.fri, .mon, .wed]
+        viewModel.scheduleFrequency = .weekly
+
+        XCTAssertEqual(viewModel.scheduleTimes(), ["08:00", "18:00", "21:00"])
+        XCTAssertEqual(viewModel.scheduleDays(), ["MON", "WED", "FRI"])
+    }
+
+    func testApplyRegimenPrefillsSchedule() {
+        let viewModel = MedicationFormViewModel()
+        let regimen = RegimenDTO(
+            id: "reg-1",
+            patientId: "patient-1",
+            medicationId: "med-1",
+            timezone: "UTC",
+            startDate: Date(timeIntervalSince1970: 0),
+            endDate: nil,
+            times: ["12:00", "18:00"],
+            daysOfWeek: [],
+            enabled: true
+        )
+
+        viewModel.applyRegimen(regimen)
+
+        XCTAssertEqual(viewModel.scheduleFrequency, .daily)
+        XCTAssertTrue(viewModel.selectedTimeSlots.contains(.noon))
+        XCTAssertTrue(viewModel.selectedTimeSlots.contains(.evening))
+        XCTAssertTrue(viewModel.selectedDays.isEmpty)
+    }
 }

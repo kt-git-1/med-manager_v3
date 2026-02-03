@@ -73,6 +73,78 @@ struct MedicationFormView: View {
                 }
             }
 
+            Section(NSLocalizedString("medication.form.section.schedule", comment: "Schedule")) {
+                Picker(
+                    NSLocalizedString("medication.form.schedule.frequency", comment: "Schedule frequency"),
+                    selection: $viewModel.scheduleFrequency
+                ) {
+                    Text(NSLocalizedString("medication.form.schedule.daily", comment: "Daily")).tag(ScheduleFrequency.daily)
+                    Text(NSLocalizedString("medication.form.schedule.weekly", comment: "Weekly")).tag(ScheduleFrequency.weekly)
+                }
+                .pickerStyle(.segmented)
+
+                if viewModel.scheduleFrequency == .weekly {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(NSLocalizedString("medication.form.schedule.weekdays", comment: "Weekdays"))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        HStack(spacing: 8) {
+                            ForEach(ScheduleDay.allCases) { day in
+                                Button {
+                                    if viewModel.selectedDays.contains(day) {
+                                        viewModel.selectedDays.remove(day)
+                                    } else {
+                                        viewModel.selectedDays.insert(day)
+                                    }
+                                } label: {
+                                    Text(day.shortLabel)
+                                        .font(.body.weight(.semibold))
+                                        .frame(width: 32, height: 32)
+                                        .background(
+                                            Circle()
+                                                .fill(viewModel.selectedDays.contains(day) ? Color.accentColor : Color(.secondarySystemBackground))
+                                        )
+                                        .foregroundColor(viewModel.selectedDays.contains(day) ? .white : .primary)
+                                }
+                                .accessibilityLabel("曜日 \(day.shortLabel)")
+                            }
+                        }
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(NSLocalizedString("medication.form.schedule.times", comment: "Times"))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    ForEach(ScheduleTimeSlot.allCases) { slot in
+                        Button {
+                            if viewModel.selectedTimeSlots.contains(slot) {
+                                viewModel.selectedTimeSlots.remove(slot)
+                            } else {
+                                viewModel.selectedTimeSlots.insert(slot)
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: viewModel.selectedTimeSlots.contains(slot) ? "checkmark.circle.fill" : "circle")
+                                    .foregroundColor(viewModel.selectedTimeSlots.contains(slot) ? .accentColor : .secondary)
+                                Text("\(slot.label) (\(slot.timeValue))")
+                                Spacer()
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(slot.label) \(slot.timeValue)")
+                    }
+                }
+
+                if viewModel.scheduleIsLoading {
+                    ProgressView()
+                } else if viewModel.scheduleNotSet && viewModel.isEditing {
+                    Text(NSLocalizedString("medication.form.schedule.unset", comment: "Schedule not set"))
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+            }
+
             Section(NSLocalizedString("medication.form.section.inventory", comment: "Inventory")) {
                 Stepper(
                     value: intBinding(for: $viewModel.inventoryCount),
@@ -142,12 +214,20 @@ struct MedicationFormView: View {
         .accessibilityIdentifier("MedicationFormView")
         .onAppear {
             hasEndDate = viewModel.endDate != nil
+            Task {
+                await viewModel.loadExistingScheduleIfNeeded()
+            }
         }
         .onChange(of: hasEndDate) { _, enabled in
             if !enabled {
                 viewModel.endDate = nil
             } else if viewModel.endDate == nil {
                 viewModel.endDate = viewModel.startDate
+            }
+        }
+        .onChange(of: viewModel.scheduleFrequency) { _, frequency in
+            if frequency == .daily {
+                viewModel.selectedDays = []
             }
         }
     }

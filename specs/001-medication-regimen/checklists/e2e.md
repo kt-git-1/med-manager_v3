@@ -5,5 +5,6 @@
 - [x] Caregiver logs in, creates a medication + regimen, and sees it in the list
 - [x] Caregiver creates a patient, selects it, and CRUDs meds scoped to that patient
 - [x] Caregiver stops a regimen or archives a medication, and it no longer appears in schedules
+- [ ] Caregiver selects patient, adds medication with weekday/time schedule, and sees today/schedule reflect it
 - [x] Patient links with a code, can view medication list and schedule, and cannot edit
 - [x] Schedule range returns only matching days/times and next dose appears on list

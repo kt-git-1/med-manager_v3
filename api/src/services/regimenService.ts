@@ -1,6 +1,7 @@
 import {
   createRegimenRecord,
   getRegimenRecord,
+  listRegimensByMedicationId,
   stopRegimenRecord,
   updateRegimenRecord
 } from "../repositories/regimenRepo";
@@ -33,4 +34,8 @@ export async function stopRegimen(id: string) {
 
 export async function getRegimen(id: string) {
   return getRegimenRecord(id);
+}
+
+export async function listRegimensForMedication(medicationId: string) {
+  return listRegimensByMedicationId(medicationId);
 }

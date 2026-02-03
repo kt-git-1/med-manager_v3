@@ -134,4 +134,30 @@ describe("schedule generator", () => {
 
     expect(doses.map((dose) => dose.scheduledAt)).toEqual(["2026-02-01T15:00:00.000Z"]);
   });
+
+  it("generates multiple times for specified weekdays", () => {
+    const from = new Date("2026-02-02T00:00:00Z");
+    const to = new Date("2026-02-09T00:00:00Z");
+
+    const doses = generateSchedule({
+      medications: [baseMedication],
+      regimens: [
+        {
+          ...baseRegimen,
+          timezone: "UTC",
+          daysOfWeek: ["MON", "FRI"],
+          times: ["08:00", "18:30"]
+        }
+      ],
+      from,
+      to
+    });
+
+    expect(doses.map((dose) => dose.scheduledAt)).toEqual([
+      "2026-02-02T08:00:00.000Z",
+      "2026-02-02T18:30:00.000Z",
+      "2026-02-06T08:00:00.000Z",
+      "2026-02-06T18:30:00.000Z"
+    ]);
+  });
 });
