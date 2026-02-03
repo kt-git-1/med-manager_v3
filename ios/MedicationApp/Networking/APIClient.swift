@@ -186,6 +186,33 @@ final class APIClient {
         return try decoder.decode(ScheduleResponseDTO.self, from: data).data
     }
 
+    func fetchPatientHistoryMonth(year: Int, month: Int) async throws -> HistoryMonthResponseDTO {
+        let request = try makeHistoryRequest(
+            path: "api/patient/history/month",
+            queryItems: [
+                URLQueryItem(name: "year", value: String(year)),
+                URLQueryItem(name: "month", value: String(month))
+            ]
+        )
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(HistoryMonthResponseDTO.self, from: data)
+    }
+
+    func fetchPatientHistoryDay(date: String) async throws -> HistoryDayResponseDTO {
+        let request = try makeHistoryRequest(
+            path: "api/patient/history/day",
+            queryItems: [URLQueryItem(name: "date", value: date)]
+        )
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(HistoryDayResponseDTO.self, from: data)
+    }
+
     func createPatientDoseRecord(input: DoseRecordCreateRequestDTO) async throws -> DoseRecordDTO {
         let url = baseURL.appendingPathComponent("api/patient/dose-records")
         var request = URLRequest(url: url)
@@ -217,6 +244,35 @@ final class APIClient {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(ScheduleResponseDTO.self, from: data).data
+    }
+
+    func fetchCaregiverHistoryMonth(patientId: String? = nil, year: Int, month: Int) async throws -> HistoryMonthResponseDTO {
+        let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
+        let request = try makeHistoryRequest(
+            path: "api/patients/\(resolvedPatientId)/history/month",
+            queryItems: [
+                URLQueryItem(name: "year", value: String(year)),
+                URLQueryItem(name: "month", value: String(month))
+            ]
+        )
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(HistoryMonthResponseDTO.self, from: data)
+    }
+
+    func fetchCaregiverHistoryDay(patientId: String? = nil, date: String) async throws -> HistoryDayResponseDTO {
+        let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
+        let request = try makeHistoryRequest(
+            path: "api/patients/\(resolvedPatientId)/history/day",
+            queryItems: [URLQueryItem(name: "date", value: date)]
+        )
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(HistoryDayResponseDTO.self, from: data)
     }
 
     func createCaregiverDoseRecord(
@@ -478,6 +534,20 @@ final class APIClient {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter.string(from: date)
+    }
+
+    private func makeHistoryRequest(path: String, queryItems: [URLQueryItem]) throws -> URLRequest {
+        var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)
+        components?.queryItems = queryItems
+        guard let url = components?.url else {
+            throw APIError.unknown
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        return request
     }
 
     private func makeMedicationURL(path: String, patientId: String?) throws -> URL {

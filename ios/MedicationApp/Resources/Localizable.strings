@@ -88,6 +88,17 @@
 "patient.readonly.history.message" = "準備中です";
 "patient.readonly.settings.tab" = "設定";
 "patient.readonly.settings.title" = "設定";
+"history.month.previous" = "前の月";
+"history.month.next" = "次の月";
+"history.legend.taken" = "記録済み";
+"history.legend.missed" = "飲み忘れ";
+"history.legend.pending" = "未記録";
+"history.day.title" = "日別詳細";
+"history.day.empty.title" = "予定がありません";
+"history.day.empty.message" = "この日の服用予定はありません";
+"history.status.pending" = "未記録";
+"history.status.taken" = "記録済み";
+"history.status.missed" = "飲み忘れ";
 "patient.today.empty.title" = "予定がありません";
 "patient.today.empty.message" = "今日の服用予定はありません";
 "patient.today.taken.button" = "飲んだ";
