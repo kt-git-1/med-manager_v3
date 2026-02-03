@@ -71,15 +71,15 @@
 
 ### Tests for User Story 2
 
-- [ ] T020 [P] [US2] Contract test caregiver history + concealment in `api/tests/contract/history-caregiver.contract.test.ts` (Why: 401/404 behavior; AC: non-owned patient 404; Test: `npm test`)
+- [x] T020 [P] [US2] Contract test caregiver history + concealment in `api/tests/contract/history-caregiver.contract.test.ts` (Why: 401/404 behavior; AC: non-owned patient 404; Test: `npm test`)
 
 ### Implementation for User Story 2 (API → iOS)
 
-- [ ] T021 [US2] Implement caregiver month endpoint in `api/app/api/patients/[patientId]/history/month/route.ts` (Why: caregiver month summaries; AC: 404 concealment; Test: `npm test`)
-- [ ] T022 [US2] Implement caregiver day endpoint in `api/app/api/patients/[patientId]/history/day/route.ts` (Why: caregiver day detail; AC: 404 concealment; Test: `npm test`)
-- [ ] T023 [US2] Add caregiver History tab + order (薬→履歴→連携/患者) in `ios/MedicationApp/Features/PatientManagement/CaregiverHomeView.swift` (Why: UX tab order; AC: tab order matches spec; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T024 [US2] Add caregiver empty state + CTA in `ios/MedicationApp/Features/History/CaregiverHistoryView.swift` (Why: no patient selected flow; AC: shows 「患者を選択してください」 and CTA; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T025 [US2] Add caregiver history strings in `ios/MedicationApp/Resources/Localizable.strings` (Why: i18n-ready copy; AC: caregiver labels localized; Test: N/A)
+- [x] T021 [US2] Implement caregiver month endpoint in `api/app/api/patients/[patientId]/history/month/route.ts` (Why: caregiver month summaries; AC: 404 concealment; Test: `npm test`)
+- [x] T022 [US2] Implement caregiver day endpoint in `api/app/api/patients/[patientId]/history/day/route.ts` (Why: caregiver day detail; AC: 404 concealment; Test: `npm test`)
+- [x] T023 [US2] Add caregiver History tab + order (薬→履歴→連携/患者) in `ios/MedicationApp/Features/PatientManagement/CaregiverHomeView.swift` (Why: UX tab order; AC: tab order matches spec; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T024 [US2] Add caregiver empty state + CTA in `ios/MedicationApp/Features/History/CaregiverHistoryView.swift` (Why: no patient selected flow; AC: shows 「患者を選択してください」 and CTA; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T025 [US2] Add caregiver history strings in `ios/MedicationApp/Resources/Localizable.strings` (Why: i18n-ready copy; AC: caregiver labels localized; Test: N/A)
 
 **Checkpoint**: User Story 2 works independently with caregiver auth
 

@@ -1,8 +1,8 @@
 import SwiftUI
 
 enum CaregiverTab: Hashable {
-    case today
     case medications
+    case history
     case patients
 }
 
@@ -14,20 +14,20 @@ struct CaregiverHomeView: View {
     var body: some View {
         ZStack {
             switch selectedTab {
-            case .today:
-                NavigationStack {
-                    CaregiverTodayView(
-                        sessionStore: sessionStore,
-                        onOpenPatients: { selectedTab = .patients }
-                    )
-                    .navigationTitle(NSLocalizedString("caregiver.tabs.today", comment: "Today tab"))
-                    .navigationBarTitleDisplayMode(.large)
-                }
             case .medications:
                 CaregiverMedicationView(
                     sessionStore: sessionStore,
                     onOpenPatients: { selectedTab = .patients }
                 )
+            case .history:
+                NavigationStack {
+                    CaregiverHistoryView(
+                        sessionStore: sessionStore,
+                        onOpenPatients: { selectedTab = .patients }
+                    )
+                    .navigationTitle(NSLocalizedString("caregiver.tabs.history", comment: "History tab"))
+                    .navigationBarTitleDisplayMode(.inline)
+                }
             case .patients:
                 PatientManagementView(sessionStore: sessionStore)
             }
@@ -102,18 +102,18 @@ private struct CaregiverBottomTabBar: View {
     var body: some View {
         HStack(spacing: 12) {
             tabButton(
-                title: NSLocalizedString("caregiver.tabs.today", comment: "Today tab"),
-                systemImage: "calendar",
-                isSelected: selectedTab == .today
-            ) {
-                selectedTab = .today
-            }
-            tabButton(
                 title: NSLocalizedString("caregiver.tabs.medications", comment: "Medications tab"),
                 systemImage: "pills",
                 isSelected: selectedTab == .medications
             ) {
                 selectedTab = .medications
+            }
+            tabButton(
+                title: NSLocalizedString("caregiver.tabs.history", comment: "History tab"),
+                systemImage: "clock",
+                isSelected: selectedTab == .history
+            ) {
+                selectedTab = .history
             }
             tabButton(
                 title: NSLocalizedString("caregiver.tabs.patients", comment: "Patients tab"),

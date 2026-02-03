@@ -116,9 +116,12 @@
 "patient.today.reminder.body" = "%@を飲む時間です（%@）";
 
 /* Caregiver tabs */
-"caregiver.tabs.today" = "今日";
 "caregiver.tabs.medications" = "薬";
+"caregiver.tabs.history" = "履歴";
 "caregiver.tabs.patients" = "連携・患者";
+"caregiver.history.empty.title" = "患者を選択してください";
+"caregiver.history.empty.message" = "連携・患者タブから対象を選んでください";
+"caregiver.history.empty.action" = "連携・患者を開く";
 "caregiver.medications.placeholder.title" = "患者を選択してください";
 "caregiver.medications.placeholder.message" = "患者一覧から対象を選んでください";
 "caregiver.medications.noPatients.title" = "患者がいません";
