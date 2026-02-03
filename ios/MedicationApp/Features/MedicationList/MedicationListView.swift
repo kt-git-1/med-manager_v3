@@ -186,6 +186,7 @@ struct MedicationListView: View {
                                     .listRowSeparator(.hidden)
                             }
                         }
+                    }
                     .listRowSeparator(.hidden)
                 }
                 .listStyle(.plain)
