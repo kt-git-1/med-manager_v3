@@ -202,10 +202,20 @@ private struct PatientTodayRow: View {
                 .stroke(isMissed ? Color.red.opacity(0.35) : Color.clear, lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilitySummary)
     }
 
     private var isMissed: Bool {
         dose.effectiveStatus == .missed
+    }
+
+    private var accessibilitySummary: String {
+        var parts = [timeText, dose.medicationSnapshot.name, dose.medicationSnapshot.dosageText]
+        if let statusText = statusText(for: dose.effectiveStatus) {
+            parts.append(statusText)
+        }
+        return parts.joined(separator: ", ")
     }
 
     private func statusText(for status: DoseStatusDTO?) -> String? {

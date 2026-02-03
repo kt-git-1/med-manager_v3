@@ -215,6 +215,19 @@ private struct CaregiverTodayRow: View {
                 .fill(backgroundColor(for: dose.effectiveStatus))
         )
         .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilitySummary)
+    }
+
+    private var accessibilitySummary: String {
+        var parts = [timeText, dose.medicationSnapshot.name, dose.medicationSnapshot.dosageText]
+        if let recordedByText {
+            parts.append(recordedByText)
+        }
+        if let statusText = statusText(for: dose.effectiveStatus) {
+            parts.append(statusText)
+        }
+        return parts.joined(separator: ", ")
     }
 
     private func statusText(for status: DoseStatusDTO?) -> String? {

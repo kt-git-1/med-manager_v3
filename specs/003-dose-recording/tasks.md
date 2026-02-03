@@ -127,12 +127,12 @@ description: "Task list for dose recording implementation"
 
 **Purpose**: Documentation, validation, and cross-story hardening
 
-- [ ] T042 [P] Update API error mapping docs in `api/src/middleware/error.ts` if needed for new errors
-- [ ] T043 [P] Add logging for dose record operations in `api/src/logging/logger.ts`
-- [ ] T044 [P] Run basic accessibility verification for Today UI (Dynamic Type + VoiceOver labels) in `ios/MedicationApp/Features/Today/`
-- [ ] T045 [P] Add Today refresh performance validation note (<5s) in `specs/003-dose-recording/quickstart.md`
-- [ ] T046 [P] Update quickstart validation steps in `specs/003-dose-recording/quickstart.md`
-- [ ] T047 Run full API test suite from `api/` and iOS tests from `ios/MedicationApp`
+- [x] T042 [P] Update API error mapping docs in `api/src/middleware/error.ts` if needed for new errors
+- [x] T043 [P] Add logging for dose record operations in `api/src/logging/logger.ts`
+- [x] T044 [P] Run basic accessibility verification for Today UI (Dynamic Type + VoiceOver labels) in `ios/MedicationApp/Features/Today/`
+- [x] T045 [P] Add Today refresh performance validation note (<5s) in `specs/003-dose-recording/quickstart.md`
+- [x] T046 [P] Update quickstart validation steps in `specs/003-dose-recording/quickstart.md`
+- [x] T047 Run full API test suite from `api/` and iOS tests from `ios/MedicationApp`
 
 ---
 

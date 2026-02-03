@@ -1,4 +1,5 @@
 import { errorResponse } from "../../../../../src/middleware/error";
+import { logDoseRecordOperation } from "../../../../../src/logging/logger";
 import {
   AuthError,
   getBearerToken,
@@ -46,6 +47,7 @@ export async function POST(
       medicationId: body.medicationId,
       scheduledAt: scheduledAt!
     });
+    logDoseRecordOperation("create", "caregiver");
     return new Response(
       JSON.stringify({
         data: {
@@ -96,6 +98,7 @@ export async function DELETE(
       medicationId: medicationId!,
       scheduledAt: parsedScheduledAt!
     });
+    logDoseRecordOperation("delete", "caregiver");
     return new Response(null, { status: 204 });
   } catch (error) {
     return errorResponse(error);

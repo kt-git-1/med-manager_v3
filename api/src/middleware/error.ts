@@ -23,6 +23,7 @@ export function toHttpError(error: unknown): HttpError {
 }
 
 function mapStatusCode(status: number): string {
+  // API error codes used by clients (includes concealment 404 and validation 422).
   switch (status) {
     case 401:
       return "unauthorized";
