@@ -16,9 +16,9 @@ struct PatientTodayView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            FullScreenContainer {
-                content
-            }
+            Color.white
+                .ignoresSafeArea()
+            content
 
             if let toastMessage = viewModel.toastMessage {
                 Text(toastMessage)
@@ -38,10 +38,7 @@ struct PatientTodayView: View {
                     .ignoresSafeArea()
                 LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
                     .padding(16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.systemBackground))
-                    )
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .shadow(radius: 6)
             }
         }
@@ -63,6 +60,7 @@ struct PatientTodayView: View {
         .onChange(of: viewModel.confirmDose) { _, newValue in
             showingConfirm = newValue != nil
         }
+        .sensoryFeedback(.success, trigger: viewModel.toastMessage)
         .accessibilityIdentifier("PatientTodayView")
         .environmentObject(sessionStore)
     }
@@ -79,17 +77,64 @@ struct PatientTodayView: View {
                     message: NSLocalizedString("patient.today.empty.message", comment: "Empty message")
                 )
             } else {
-                List(viewModel.items) { dose in
-                    PatientTodayRow(
-                        dose: dose,
-                        timeText: viewModel.timeText(for: dose.scheduledAt),
-                        onRecord: { viewModel.confirmRecord(for: dose) }
-                    )
-                    .listRowSeparator(.hidden)
+                List {
+                    if !plannedItems.isEmpty {
+                        Section {
+                            ForEach(plannedItems) { dose in
+                                PatientTodayRow(
+                                    dose: dose,
+                                    timeText: viewModel.timeText(for: dose.scheduledAt),
+                                    onRecord: { viewModel.confirmRecord(for: dose) }
+                                )
+                                .listRowSeparator(.hidden)
+                            }
+                        } header: {
+                            Text(NSLocalizedString("patient.today.section.planned", comment: "Today planned"))
+                                .font(.headline)
+                                .foregroundStyle(.primary)
+                                .textCase(nil)
+                        }
+                    }
+
+                    if !takenItems.isEmpty {
+                        Section {
+                            ForEach(takenItems) { dose in
+                                PatientTodayRow(
+                                    dose: dose,
+                                    timeText: viewModel.timeText(for: dose.scheduledAt),
+                                    onRecord: { viewModel.confirmRecord(for: dose) }
+                                )
+                                .listRowSeparator(.hidden)
+                            }
+                        } header: {
+                            Text(NSLocalizedString("patient.today.section.taken", comment: "Taken"))
+                                .font(.headline)
+                                .foregroundStyle(.primary)
+                                .textCase(nil)
+                        }
+                    }
                 }
                 .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .background(Color.white)
             }
         }
+        .safeAreaPadding(.top)
+    }
+
+    private var plannedItems: [ScheduleDoseDTO] {
+        viewModel.items.filter { dose in
+            switch dose.effectiveStatus {
+            case .taken:
+                return false
+            case .pending, .missed, .none:
+                return true
+            }
+        }
+    }
+
+    private var takenItems: [ScheduleDoseDTO] {
+        viewModel.items.filter { $0.effectiveStatus == .taken }
     }
 
     private func confirmMessage(for dose: ScheduleDoseDTO) -> String {
@@ -130,14 +175,16 @@ private struct PatientTodayRow: View {
                 }
             }
 
-            Button(action: onRecord) {
-                Text(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
-                    .font(.title3.weight(.bold))
-                    .frame(maxWidth: .infinity)
+            if shouldShowRecordButton(for: dose.effectiveStatus) {
+                Button(action: onRecord) {
+                    Text(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
+                        .font(.title3.weight(.bold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .accessibilityLabel(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .accessibilityLabel(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
         }
         .padding(16)
         .background(
@@ -181,6 +228,15 @@ private struct PatientTodayRow: View {
             return Color.green.opacity(0.06)
         case .pending, .none:
             return Color(.systemBackground)
+        }
+    }
+
+    private func shouldShowRecordButton(for status: DoseStatusDTO?) -> Bool {
+        switch status {
+        case .pending, .none:
+            return true
+        case .taken, .missed:
+            return false
         }
     }
 }

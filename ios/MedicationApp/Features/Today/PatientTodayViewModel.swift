@@ -38,7 +38,8 @@ final class PatientTodayViewModel: ObservableObject {
             }
             do {
                 let doses = try await apiClient.fetchPatientToday()
-                items = doses.sorted { $0.scheduledAt < $1.scheduledAt }
+                let todayOnly = doses.filter { Calendar.current.isDateInToday($0.scheduledAt) }
+                items = todayOnly.sorted(by: sortDose)
             } catch {
                 items = []
                 errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
@@ -87,10 +88,33 @@ final class PatientTodayViewModel: ObservableObject {
         withAnimation {
             toastMessage = message
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            withAnimation {
-                self.toastMessage = nil
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            await MainActor.run {
+                withAnimation {
+                    self?.toastMessage = nil
+                }
             }
+        }
+    }
+
+    private func sortDose(_ lhs: ScheduleDoseDTO, _ rhs: ScheduleDoseDTO) -> Bool {
+        let leftRank = statusRank(lhs.effectiveStatus)
+        let rightRank = statusRank(rhs.effectiveStatus)
+        if leftRank != rightRank {
+            return leftRank < rightRank
+        }
+        return lhs.scheduledAt < rhs.scheduledAt
+    }
+
+    private func statusRank(_ status: DoseStatusDTO?) -> Int {
+        switch status {
+        case .taken:
+            return 2
+        case .missed:
+            return 1
+        case .pending, .none:
+            return 0
         }
     }
 }

@@ -32,5 +32,8 @@ struct ModeSelectView: View {
             .padding(.horizontal, 24)
             Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemGroupedBackground))
+        .ignoresSafeArea(edges: .bottom)
     }
 }

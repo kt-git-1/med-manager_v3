@@ -54,8 +54,11 @@ private struct CaregiverBottomTabBar: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
-        .background(Color(.systemBackground))
-        .clipShape(Capsule())
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(
+            Capsule()
+                .strokeBorder(Color(.separator).opacity(0.4))
+        )
         .shadow(color: Color.black.opacity(0.12), radius: 18, y: 10)
         .padding(.bottom, 6)
     }
@@ -149,10 +152,7 @@ struct CaregiverMedicationView: View {
                     }
                     .padding(24)
                     .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(Color(.systemBackground))
-                    )
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                     .padding(.horizontal, 24)
                 } else if sessionStore.currentPatientId == nil {
@@ -169,10 +169,7 @@ struct CaregiverMedicationView: View {
                     }
                     .padding(24)
                     .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(Color(.systemBackground))
-                    )
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                     .padding(.horizontal, 24)
                 } else {

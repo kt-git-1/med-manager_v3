@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class APIClient {
     private let baseURL: URL
     private let sessionStore: SessionStore
@@ -203,6 +204,7 @@ final class APIClient {
         return try decoder.decode(DoseRecordResponseDTO.self, from: data).data
     }
 
+    @MainActor
     private func tokenForCurrentMode() -> String? {
         switch sessionStore.mode {
         case .caregiver:
@@ -214,6 +216,7 @@ final class APIClient {
         }
     }
 
+    @MainActor
     private func mapErrorIfNeeded(response: URLResponse, data: Data) throws {
         guard let httpResponse = response as? HTTPURLResponse else {
             return
@@ -257,6 +260,7 @@ final class APIClient {
         return nil
     }
 
+    @MainActor
     func makeMedicationListRequest(patientId: String?) throws -> URLRequest {
         let resolvedPatientId = try resolvedMedicationPatientId(requestedPatientId: patientId)
         let url = try makeMedicationURL(path: "api/medications", patientId: resolvedPatientId)
@@ -268,6 +272,7 @@ final class APIClient {
         return request
     }
 
+    @MainActor
     func makeMedicationCreateRequest(input: MedicationCreateRequestDTO) throws -> URLRequest {
         let resolvedInput = try resolvedMedicationCreateInput(input)
         let url = baseURL.appendingPathComponent("api/medications")
@@ -281,6 +286,7 @@ final class APIClient {
         return request
     }
 
+    @MainActor
     func makeMedicationUpdateRequest(
         id: String,
         patientId: String,
@@ -298,6 +304,7 @@ final class APIClient {
         return request
     }
 
+    @MainActor
     func makeMedicationDeleteRequest(id: String, patientId: String) throws -> URLRequest {
         let resolvedPatientId = try resolvedMedicationPatientId(requestedPatientId: patientId)
         let url = try makeMedicationURL(path: "api/medications/\(id)", patientId: resolvedPatientId)
@@ -309,6 +316,7 @@ final class APIClient {
         return request
     }
 
+    @MainActor
     func makeRegimenListRequest(medicationId: String) throws -> URLRequest {
         let url = baseURL.appendingPathComponent("api/medications/\(medicationId)/regimens")
         var request = URLRequest(url: url)
@@ -319,6 +327,7 @@ final class APIClient {
         return request
     }
 
+    @MainActor
     func makeRegimenCreateRequest(
         medicationId: String,
         input: RegimenCreateRequestDTO
@@ -334,6 +343,7 @@ final class APIClient {
         return request
     }
 
+    @MainActor
     func makeRegimenUpdateRequest(
         id: String,
         input: RegimenUpdateRequestDTO
@@ -349,6 +359,7 @@ final class APIClient {
         return request
     }
 
+    @MainActor
     private func resolvedMedicationPatientId(requestedPatientId: String?) throws -> String? {
         if sessionStore.mode == .caregiver {
             guard let patientId = sessionStore.currentPatientId, !patientId.isEmpty else {
@@ -359,6 +370,7 @@ final class APIClient {
         return requestedPatientId
     }
 
+    @MainActor
     private func resolvedMedicationCreateInput(
         _ input: MedicationCreateRequestDTO
     ) throws -> MedicationCreateRequestDTO {

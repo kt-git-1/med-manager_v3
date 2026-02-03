@@ -234,6 +234,8 @@ struct MedicationFormView: View {
                 .accessibilityLabel(NSLocalizedString("common.save", comment: "Save"))
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(Color(.systemGroupedBackground))
         .disabled(sessionStore.mode == .patient)
         .accessibilityIdentifier("MedicationFormView")
         .safeAreaInset(edge: .bottom) {

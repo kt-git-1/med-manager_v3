@@ -160,10 +160,7 @@ struct MedicationListView: View {
                         }
                         .padding(16)
                         .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color(.systemBackground))
-                        )
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                         .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                         .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                         .listRowSeparator(.hidden)
@@ -205,10 +202,7 @@ struct MedicationListView: View {
                                 rowContent
                                     .padding(16)
                                     .frame(maxWidth: .infinity)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .fill(Color(.systemBackground))
-                                    )
+                                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                                     .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                             }
                             .buttonStyle(.plain)
@@ -216,10 +210,7 @@ struct MedicationListView: View {
                             rowContent
                                 .padding(16)
                                 .frame(maxWidth: .infinity)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color(.systemBackground))
-                                )
+                                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                                 .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                         }
                     }
@@ -227,6 +218,8 @@ struct MedicationListView: View {
                 .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                 .listRowSeparator(.hidden)
                 .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .background(Color(.systemGroupedBackground))
                 }
             }
             if let toastMessage {
@@ -270,6 +263,7 @@ struct MedicationListView: View {
                 viewModel.load()
             }
         }
+        .sensoryFeedback(.success, trigger: toastMessage)
         .accessibilityIdentifier("MedicationListView")
     }
 
@@ -277,9 +271,12 @@ struct MedicationListView: View {
         withAnimation {
             toastMessage = message
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            withAnimation {
-                toastMessage = nil
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            await MainActor.run {
+                withAnimation {
+                    toastMessage = nil
+                }
             }
         }
     }

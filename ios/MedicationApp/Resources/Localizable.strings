@@ -8,6 +8,8 @@
 "common.save" = "保存";
 "common.cancel" = "キャンセル";
 "common.select" = "選択";
+"common.ok" = "OK";
+"common.logout" = "ログアウト";
 
 /* Mode select */
 "mode.select.title" = "モードを選択";
@@ -83,6 +85,8 @@
 "patient.readonly.history.tab" = "履歴";
 "patient.readonly.history.title" = "履歴";
 "patient.readonly.history.message" = "準備中です";
+"patient.readonly.settings.tab" = "設定";
+"patient.readonly.settings.title" = "設定";
 "patient.today.empty.title" = "予定がありません";
 "patient.today.empty.message" = "今日の服用予定はありません";
 "patient.today.taken.button" = "飲んだ";
@@ -94,6 +98,8 @@
 "patient.today.status.missed" = "飲み忘れ";
 "patient.today.alreadyRecorded" = "すでに記録済みです";
 "patient.today.recorded" = "記録しました";
+"patient.today.section.planned" = "今日の服用予定";
+"patient.today.section.taken" = "服用済み";
 
 /* Caregiver tabs */
 "caregiver.tabs.medications" = "薬";
@@ -130,6 +136,9 @@
 "caregiver.patients.create.validation" = "表示名は必須です";
 "caregiver.patients.code.title" = "連携コード";
 "caregiver.patients.code.expires" = "有効期限: %@";
+"caregiver.patients.code.copy" = "コピー";
+"caregiver.patients.code.share" = "共有";
+"caregiver.patients.code.copied" = "連携コードをコピーしました";
 "caregiver.patients.revoke.confirm.title" = "リンク解除";
 "caregiver.patients.revoke.confirm.message" = "この患者のリンクを解除します。既存セッションは失効します。";
 "caregiver.patients.revoke.confirm.action" = "解除する";

@@ -5,6 +5,7 @@ enum AppMode: String {
     case patient
 }
 
+@MainActor
 final class SessionStore: ObservableObject {
     @Published var mode: AppMode?
     @Published var caregiverToken: String?
@@ -22,11 +23,29 @@ final class SessionStore: ObservableObject {
     private var patientRefreshTask: Task<Void, Never>?
     private var isRefreshingPatientToken = false
     private static let currentPatientIdStorageKey = "currentPatientId"
+    private static let caregiverTokenStorageKey = "caregiverToken"
+    private static let patientTokenStorageKey = "patientToken"
+    private static let lastModeStorageKey = "lastAppMode"
 
     init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
         self.baseURL = SessionStore.resolveBaseURL()
         self.currentPatientId = userDefaults.string(forKey: SessionStore.currentPatientIdStorageKey)
+        self.caregiverToken = userDefaults.string(forKey: SessionStore.caregiverTokenStorageKey)
+        self.patientToken = userDefaults.string(forKey: SessionStore.patientTokenStorageKey)
+
+        if let rawMode = userDefaults.string(forKey: SessionStore.lastModeStorageKey),
+           let storedMode = AppMode(rawValue: rawMode) {
+            self.mode = storedMode
+        } else if caregiverToken != nil {
+            self.mode = .caregiver
+        } else if patientToken != nil {
+            self.mode = .patient
+        }
+
+        if patientToken != nil {
+            startPatientTokenRefreshLoop()
+        }
     }
 
     static func resolveBaseURL() -> URL {
@@ -44,6 +63,7 @@ final class SessionStore: ObservableObject {
 
     func setMode(_ mode: AppMode) {
         self.mode = mode
+        userDefaults.set(mode.rawValue, forKey: SessionStore.lastModeStorageKey)
     }
 
     func saveCaregiverToken(_ token: String) {
@@ -52,20 +72,32 @@ final class SessionStore: ObservableObject {
         } else {
             caregiverToken = "caregiver-\(token)"
         }
+        userDefaults.set(caregiverToken, forKey: SessionStore.caregiverTokenStorageKey)
     }
 
     func savePatientToken(_ token: String) {
         patientToken = token
+        userDefaults.set(token, forKey: SessionStore.patientTokenStorageKey)
         startPatientTokenRefreshLoop()
     }
 
     func clearCaregiverToken() {
         caregiverToken = nil
+        userDefaults.removeObject(forKey: SessionStore.caregiverTokenStorageKey)
+        if mode == .caregiver {
+            mode = nil
+            userDefaults.removeObject(forKey: SessionStore.lastModeStorageKey)
+        }
         clearCurrentPatientId()
     }
 
     func clearPatientToken() {
         patientToken = nil
+        userDefaults.removeObject(forKey: SessionStore.patientTokenStorageKey)
+        if mode == .patient {
+            mode = nil
+            userDefaults.removeObject(forKey: SessionStore.lastModeStorageKey)
+        }
         patientRefreshTask?.cancel()
         patientRefreshTask = nil
         isRefreshingPatientToken = false
@@ -84,16 +116,15 @@ final class SessionStore: ObservableObject {
 
     private func startPatientTokenRefreshLoop() {
         patientRefreshTask?.cancel()
-        patientRefreshTask = Task { [weak self] in
+        patientRefreshTask = Task { @MainActor [weak self] in
             guard let self else { return }
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 10 * 60 * 1_000_000_000)
+                try? await Task.sleep(for: .seconds(600))
                 await refreshPatientTokenIfNeeded()
             }
         }
     }
 
-    @MainActor
     private func refreshPatientTokenIfNeeded() async {
         guard patientToken != nil else { return }
         guard !isRefreshingPatientToken else { return }

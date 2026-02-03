@@ -4,12 +4,9 @@ struct LoadingStateView: View {
     let message: String
 
     var body: some View {
-        VStack(spacing: 8) {
-            ProgressView()
-            Text(message)
-                .font(.body)
-                .foregroundColor(.secondary)
-        }
+        ProgressView(message)
+            .font(.body)
+            .foregroundColor(.secondary)
         .accessibilityLabel(message)
     }
 }
@@ -19,12 +16,12 @@ struct EmptyStateView: View {
     let message: String
 
     var body: some View {
-        VStack(spacing: 8) {
+        ContentUnavailableView {
             Text(title)
                 .font(.title3.weight(.semibold))
+        } description: {
             Text(message)
                 .font(.body)
-                .foregroundColor(.secondary)
         }
         .multilineTextAlignment(.center)
         .padding(.horizontal, 24)
@@ -36,7 +33,7 @@ struct ErrorStateView: View {
     let message: String
 
     var body: some View {
-        Text(message)
+        Label(message, systemImage: "exclamationmark.triangle.fill")
             .font(.subheadline)
             .foregroundColor(.red)
             .accessibilityLabel(message)
