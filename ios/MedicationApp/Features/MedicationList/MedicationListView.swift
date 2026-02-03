@@ -120,24 +120,35 @@ struct MedicationListView: View {
                 } else if let errorMessage = viewModel.errorMessage {
                     ErrorStateView(message: errorMessage)
                 } else if viewModel.items.isEmpty {
-                    VStack(spacing: 12) {
-                        EmptyStateView(
-                            title: NSLocalizedString("medication.list.empty.title", comment: "Empty list title"),
-                            message: NSLocalizedString("medication.list.empty.message", comment: "Empty list message")
-                        )
-                        if sessionStore.mode == .caregiver {
-                            Button(NSLocalizedString("medication.list.empty.action", comment: "Add medication action")) {
-                                showingCreate = true
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 0)
+                            .fill(Color(.secondarySystemBackground))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        VStack {
+                            Spacer(minLength: 0)
+                            VStack(spacing: 12) {
+                                EmptyStateView(
+                                    title: NSLocalizedString("medication.list.empty.title", comment: "Empty list title"),
+                                    message: NSLocalizedString("medication.list.empty.message", comment: "Empty list message")
+                                )
+                                if sessionStore.mode == .caregiver {
+                                    Button(NSLocalizedString("medication.list.empty.action", comment: "Add medication action")) {
+                                        showingCreate = true
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                }
                             }
-                            .buttonStyle(.borderedProminent)
+                            .padding(.horizontal, 24)
+                            Spacer(minLength: 0)
                         }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                 List {
                     if let selectedPatientName {
                         HStack(spacing: 12) {
                             Text(String(format: NSLocalizedString("caregiver.medications.currentPatient", comment: "Current patient label"), selectedPatientName))
-                                .font(.subheadline)
+                                .font(.headline)
                                 .foregroundColor(.secondary)
                             Spacer()
                             if let onOpenPatients {
@@ -147,21 +158,38 @@ struct MedicationListView: View {
                                 .buttonStyle(.bordered)
                             }
                         }
-                        .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
+                        .padding(16)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(.systemBackground))
+                        )
+                        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        Divider()
+                            .listRowInsets(EdgeInsets(top: 4, leading: 24, bottom: 4, trailing: 24))
+                            .listRowSeparator(.hidden)
                     }
+
+                    Text("薬一覧")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 4, trailing: 16))
+                        .listRowSeparator(.hidden)
 
                     ForEach(viewModel.items) { item in
                         let rowContent = HStack(alignment: .top, spacing: 12) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(item.name)
-                                    .font(.headline)
+                                    .font(.title3.weight(.semibold))
                                     .accessibilityLabel("薬名 \(item.name)")
                                 Text("\(NSLocalizedString("medication.list.startDate", comment: "Start date")): \(item.startDateText)")
-                                    .font(.subheadline)
+                                    .font(.body)
                                     .accessibilityLabel("開始日 \(item.startDateText)")
                                 if let next = item.nextScheduledText {
                                     Text("\(NSLocalizedString("medication.list.nextDose", comment: "Next dose")): \(next)")
-                                        .font(.subheadline)
+                                        .font(.body)
                                         .accessibilityLabel("次回予定 \(next)")
                                 }
                             }
@@ -175,14 +203,29 @@ struct MedicationListView: View {
                         if sessionStore.mode == .caregiver {
                             Button(action: { selectedMedication = item.medication }) {
                                 rowContent
+                                    .padding(16)
+                                    .frame(maxWidth: .infinity)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(Color(.systemBackground))
+                                    )
+                                    .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                             }
                             .buttonStyle(.plain)
                         } else {
                             rowContent
+                                .padding(16)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color(.systemBackground))
+                                )
+                                .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                         }
                     }
                 }
-                .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
+                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                .listRowSeparator(.hidden)
                 .listStyle(.plain)
                 }
             }

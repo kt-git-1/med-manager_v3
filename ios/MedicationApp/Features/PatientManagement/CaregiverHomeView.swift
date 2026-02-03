@@ -10,32 +10,78 @@ struct CaregiverHomeView: View {
     @State private var selectedTab: CaregiverTab = .medications
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            CaregiverMedicationView(
-                sessionStore: sessionStore,
-                onOpenPatients: { selectedTab = .patients }
-            )
-                .tabItem {
-                    Label(
-                        NSLocalizedString("caregiver.tabs.medications", comment: "Medications tab"),
-                        systemImage: "pills"
-                    )
-                }
-                .tag(CaregiverTab.medications)
-            PatientManagementView(sessionStore: sessionStore)
-                .tabItem {
-                    Label(
-                        NSLocalizedString("caregiver.tabs.patients", comment: "Patients tab"),
-                        systemImage: "person.2"
-                    )
-                }
-                .tag(CaregiverTab.patients)
+        ZStack {
+            switch selectedTab {
+            case .medications:
+                CaregiverMedicationView(
+                    sessionStore: sessionStore,
+                    onOpenPatients: { selectedTab = .patients }
+                )
+            case .patients:
+                PatientManagementView(sessionStore: sessionStore)
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            CaregiverBottomTabBar(selectedTab: $selectedTab)
         }
         .onChange(of: sessionStore.shouldRedirectCaregiverToMedicationTab) { _, shouldRedirect in
             guard shouldRedirect else { return }
             selectedTab = .medications
             sessionStore.shouldRedirectCaregiverToMedicationTab = false
         }
+    }
+}
+
+private struct CaregiverBottomTabBar: View {
+    @Binding var selectedTab: CaregiverTab
+
+    var body: some View {
+        HStack(spacing: 12) {
+            tabButton(
+                title: NSLocalizedString("caregiver.tabs.medications", comment: "Medications tab"),
+                systemImage: "pills",
+                isSelected: selectedTab == .medications
+            ) {
+                selectedTab = .medications
+            }
+            tabButton(
+                title: NSLocalizedString("caregiver.tabs.patients", comment: "Patients tab"),
+                systemImage: "person.2",
+                isSelected: selectedTab == .patients
+            ) {
+                selectedTab = .patients
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
+        .background(Color(.systemBackground))
+        .clipShape(Capsule())
+        .shadow(color: Color.black.opacity(0.12), radius: 18, y: 10)
+        .padding(.bottom, 6)
+    }
+
+    private func tabButton(
+        title: String,
+        systemImage: String,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 18, weight: .semibold))
+                Text(title)
+                    .font(.headline)
+            }
+            .foregroundColor(isSelected ? .accentColor : .secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(
+                Capsule()
+                    .fill(isSelected ? Color(.secondarySystemBackground) : Color.clear)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -99,7 +145,16 @@ struct CaregiverMedicationView: View {
                             onOpenPatients()
                         }
                         .buttonStyle(.borderedProminent)
+                        .font(.headline)
                     }
+                    .padding(24)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(Color(.systemBackground))
+                    )
+                    .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                    .padding(.horizontal, 24)
                 } else if sessionStore.currentPatientId == nil {
                     VStack(spacing: 12) {
                         EmptyStateView(
@@ -110,7 +165,16 @@ struct CaregiverMedicationView: View {
                             onOpenPatients()
                         }
                         .buttonStyle(.borderedProminent)
+                        .font(.headline)
                     }
+                    .padding(24)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(Color(.systemBackground))
+                    )
+                    .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                    .padding(.horizontal, 24)
                 } else {
                     let selectedPatient = viewModel.patients.first { $0.id == sessionStore.currentPatientId }
                     MedicationListView(

@@ -10,29 +10,48 @@ struct CaregiverLoginView: View {
     private let authService = AuthService()
 
     var body: some View {
-        VStack(spacing: 12) {
-            Text(NSLocalizedString("caregiver.login.title", comment: "Caregiver login title"))
-                .font(.title2)
-            TextField(NSLocalizedString("caregiver.login.email", comment: "Email label"), text: $email)
-                .textInputAutocapitalization(.never)
-                .keyboardType(.emailAddress)
-                .accessibilityLabel("メールアドレス")
-            SecureField(NSLocalizedString("caregiver.login.password", comment: "Password label"), text: $password)
-                .accessibilityLabel("パスワード")
-            if let errorMessage {
-                ErrorStateView(message: errorMessage)
+        VStack {
+            Spacer(minLength: 0)
+            VStack(spacing: 16) {
+                Text(NSLocalizedString("caregiver.login.title", comment: "Caregiver login title"))
+                    .font(.title2.weight(.semibold))
+                VStack(spacing: 12) {
+                    TextField(NSLocalizedString("caregiver.login.email", comment: "Email label"), text: $email)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.emailAddress)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.body)
+                        .accessibilityLabel("メールアドレス")
+                    SecureField(NSLocalizedString("caregiver.login.password", comment: "Password label"), text: $password)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.body)
+                        .accessibilityLabel("パスワード")
+                }
+                if let errorMessage {
+                    ErrorStateView(message: errorMessage)
+                }
+                Button(
+                    isLoading
+                        ? NSLocalizedString("caregiver.login.button.loading", comment: "Logging in")
+                        : NSLocalizedString("caregiver.login.button", comment: "Login button")
+                ) {
+                    Task { await login() }
+                }
+                .buttonStyle(.borderedProminent)
+                .font(.headline)
+                .disabled(isLoading)
+                .accessibilityLabel("ログイン")
             }
-            Button(
-                isLoading
-                    ? NSLocalizedString("caregiver.login.button.loading", comment: "Logging in")
-                    : NSLocalizedString("caregiver.login.button", comment: "Login button")
-            ) {
-                Task { await login() }
-            }
-            .disabled(isLoading)
-            .accessibilityLabel("ログイン")
+            .padding(24)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color(.systemBackground))
+            )
+            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .padding(.horizontal, 24)
+            Spacer(minLength: 0)
         }
-        .padding()
         .accessibilityIdentifier("CaregiverLoginView")
     }
 

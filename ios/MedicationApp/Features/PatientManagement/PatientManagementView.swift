@@ -109,13 +109,21 @@ struct PatientManagementView: View {
                         title: NSLocalizedString("caregiver.patients.empty.title", comment: "Empty patients title"),
                         message: NSLocalizedString("caregiver.patients.empty.message", comment: "Empty patients message")
                     )
+                    .padding(24)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(Color(.systemBackground))
+                    )
+                    .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                    .padding(.horizontal, 24)
                 } else {
                     let selectedPatient = viewModel.patients.first { $0.id == viewModel.selectedPatientId }
                     ScrollView {
                         VStack(alignment: .leading, spacing: 16) {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(NSLocalizedString("caregiver.patients.select.label", comment: "Select label"))
-                                    .font(.subheadline)
+                                    .font(.headline)
                                     .foregroundColor(.secondary)
                                 Picker(
                                     NSLocalizedString("caregiver.patients.select.label", comment: "Select label"),
@@ -134,15 +142,22 @@ struct PatientManagementView: View {
                                 }
                                 .pickerStyle(.menu)
                                 Text(NSLocalizedString("caregiver.patients.select.help", comment: "Select help text"))
-                                    .font(.footnote)
+                                    .font(.body)
                                     .foregroundColor(.secondary)
                             }
+                            .padding(16)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(Color(.systemBackground))
+                            )
+                            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
 
                             if let selectedPatient {
                                 VStack(alignment: .leading, spacing: 12) {
                                     HStack {
                                         Text(selectedPatient.displayName)
-                                            .font(.headline)
+                                            .font(.title3.weight(.semibold))
                                         Spacer()
                                         Text(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))
                                             .font(.subheadline.weight(.semibold))
@@ -157,28 +172,38 @@ struct PatientManagementView: View {
                                             Task { await viewModel.issueLinkingCode(patientId: selectedPatient.id) }
                                         }
                                         .buttonStyle(.bordered)
+                                        .font(.headline)
                                         Button(NSLocalizedString("caregiver.patients.revoke", comment: "Revoke")) {
                                             revokeTarget = selectedPatient
                                         }
                                         .buttonStyle(.bordered)
+                                        .font(.headline)
                                         .tint(.red)
                                     }
                                 }
-                                .padding(12)
+                                .padding(16)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.accentColor.opacity(0.12))
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(Color(.systemBackground))
                                 )
+                                .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                                 .accessibilityLabel("\(selectedPatient.displayName) \(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))")
                             } else {
                                 EmptyStateView(
                                     title: NSLocalizedString("caregiver.patients.select.empty.title", comment: "No selection title"),
                                     message: NSLocalizedString("caregiver.patients.select.empty.message", comment: "No selection message")
                                 )
+                                .padding(16)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(Color(.systemBackground))
+                                )
+                                .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                             }
                         }
-                        .padding(.horizontal)
-                        .padding(.vertical, 12)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 16)
                     }
                 }
             }

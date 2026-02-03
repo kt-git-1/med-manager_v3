@@ -131,6 +131,10 @@ struct MedicationFormView: View {
                     }
                 }
                 .disabled(viewModel.isSubmitting || isCaregiverMissingPatient)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .listRowBackground(Color(.secondarySystemBackground))
                 .accessibilityLabel(NSLocalizedString("common.save", comment: "Save"))
             }
         }
