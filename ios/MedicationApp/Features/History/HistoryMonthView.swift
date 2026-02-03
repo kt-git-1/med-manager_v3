@@ -43,21 +43,25 @@ struct HistoryMonthView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
-            header
+        ScrollView {
+            LazyVStack(spacing: 16) {
+                header
 
-            if viewModel.isLoading && viewModel.month == nil {
-                LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
-            } else if let errorMessage = viewModel.errorMessage {
-                ErrorStateView(message: errorMessage)
-            } else {
-                calendarGrid
-                legend
-                HistoryDayDetailView(viewModel: viewModel, selectedDate: selectedDate)
+                if viewModel.isLoading && viewModel.month == nil {
+                    LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+                } else if let errorMessage = viewModel.errorMessage {
+                    ErrorStateView(message: errorMessage)
+                } else {
+                    calendarGrid
+                    legend
+                    HistoryDayDetailView(viewModel: viewModel, selectedDate: selectedDate)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 24)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
         .onAppear {
             loadMonth()
         }
@@ -223,11 +227,7 @@ struct HistoryMonthView: View {
 
     private var summariesByDate: [String: HistorySlotSummaryDTO] {
         guard let month = viewModel.month else { return [:] }
-        return Dictionary(
-            uniqueKeysWithValues: month.days.map {
-                (HistoryMonthView.dateKeyFormatter.string(from: $0.date), $0.slotSummary)
-            }
-        )
+        return Dictionary(uniqueKeysWithValues: month.days.map { ($0.date, $0.slotSummary) })
     }
 
     private var currentMonthStart: Date {

@@ -21,7 +21,7 @@ enum HistorySlotSummaryStatusDTO: String, Decodable, Equatable {
 }
 
 struct HistoryDaySummaryDTO: Decodable, Equatable {
-    let date: Date
+    let date: String
     let slotSummary: HistorySlotSummaryDTO
 }
 
@@ -36,6 +36,24 @@ struct HistoryMonthResponseDTO: Decodable, Equatable {
     let year: Int
     let month: Int
     let days: [HistoryDaySummaryDTO]
+
+    enum CodingKeys: String, CodingKey {
+        case year
+        case month
+        case days
+        case monthSummary
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        year = try container.decode(Int.self, forKey: .year)
+        month = try container.decode(Int.self, forKey: .month)
+        if let days = try container.decodeIfPresent([HistoryDaySummaryDTO].self, forKey: .days) {
+            self.days = days
+        } else {
+            self.days = try container.decode([HistoryDaySummaryDTO].self, forKey: .monthSummary)
+        }
+    }
 }
 
 struct HistoryDayItemDTO: Decodable, Equatable {
@@ -49,6 +67,22 @@ struct HistoryDayItemDTO: Decodable, Equatable {
 }
 
 struct HistoryDayResponseDTO: Decodable, Equatable {
-    let date: Date
+    let date: String
     let doses: [HistoryDayItemDTO]
+
+    enum CodingKeys: String, CodingKey {
+        case date
+        case doses
+        case dayDetails
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        date = try container.decode(String.self, forKey: .date)
+        if let doses = try container.decodeIfPresent([HistoryDayItemDTO].self, forKey: .doses) {
+            self.doses = doses
+        } else {
+            self.doses = try container.decode([HistoryDayItemDTO].self, forKey: .dayDetails)
+        }
+    }
 }
