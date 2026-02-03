@@ -4,6 +4,7 @@ export type ScheduleResponseDose = {
   medicationId: string;
   scheduledAt: string;
   effectiveStatus?: "pending" | "taken" | "missed";
+  recordedByType?: "patient" | "caregiver";
   medicationSnapshot: {
     name: string;
     dosageText: string;

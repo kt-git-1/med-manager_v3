@@ -48,6 +48,7 @@
 "medication.list.empty.message" = "右上の追加から登録できます";
 "medication.list.empty.action" = "薬を追加する";
 "medication.list.add" = "追加";
+"medication.list.section.title" = "薬一覧";
 "medication.list.startDate" = "開始日";
 "medication.list.nextDose" = "次回予定";
 "medication.toast.created" = "薬を追加しました";
@@ -119,12 +120,15 @@
 /* Caregiver today */
 "caregiver.today.empty.title" = "予定がありません";
 "caregiver.today.empty.message" = "今日の服用予定はありません";
-"caregiver.today.record.button" = "記録する";
+"caregiver.today.record.button" = "代理で記録する";
 "caregiver.today.delete.button" = "取り消す";
 "caregiver.today.recorded" = "記録しました";
 "caregiver.today.deleted" = "記録を取り消しました";
 "caregiver.today.section.planned" = "今日の服用予定";
 "caregiver.today.section.taken" = "服用済み";
+"caregiver.today.recordedBy" = "記録: %@";
+"caregiver.today.recordedBy.patient" = "本人";
+"caregiver.today.recordedBy.caregiver" = "家族";
 
 /* Patient management */
 "caregiver.patients.title" = "患者管理";

@@ -25,6 +25,7 @@ struct ScheduleDoseDTO: Decodable, Identifiable, Equatable {
     let medicationId: String
     let scheduledAt: Date
     let effectiveStatus: DoseStatusDTO?
+    let recordedByType: RecordedByTypeDTO?
     let medicationSnapshot: MedicationSnapshotDTO
 
     var id: String { key }

@@ -96,6 +96,7 @@ struct CaregiverTodayView: View {
                                     dose: dose,
                                     timeText: viewModel.timeText(for: dose.scheduledAt),
                                     actionTitle: NSLocalizedString("caregiver.today.record.button", comment: "Record"),
+                                    recordedByText: nil,
                                     isDestructive: false,
                                     onAction: { viewModel.recordDose(dose) }
                                 )
@@ -116,6 +117,7 @@ struct CaregiverTodayView: View {
                                     dose: dose,
                                     timeText: viewModel.timeText(for: dose.scheduledAt),
                                     actionTitle: NSLocalizedString("caregiver.today.delete.button", comment: "Delete"),
+                                    recordedByText: recordedByText(for: dose),
                                     isDestructive: true,
                                     onAction: { viewModel.deleteDose(dose) }
                                 )
@@ -151,12 +153,29 @@ struct CaregiverTodayView: View {
     private var takenItems: [ScheduleDoseDTO] {
         viewModel.items.filter { $0.effectiveStatus == .taken }
     }
+
+    private func recordedByText(for dose: ScheduleDoseDTO) -> String? {
+        guard dose.effectiveStatus == .taken, let recordedByType = dose.recordedByType else {
+            return nil
+        }
+        let nameKey: String
+        switch recordedByType {
+        case .patient:
+            nameKey = "caregiver.today.recordedBy.patient"
+        case .caregiver:
+            nameKey = "caregiver.today.recordedBy.caregiver"
+        }
+        let name = NSLocalizedString(nameKey, comment: "Recorded by actor")
+        let format = NSLocalizedString("caregiver.today.recordedBy", comment: "Recorded by label")
+        return String(format: format, name)
+    }
 }
 
 private struct CaregiverTodayRow: View {
     let dose: ScheduleDoseDTO
     let timeText: String
     let actionTitle: String
+    let recordedByText: String?
     let isDestructive: Bool
     let onAction: () -> Void
 
@@ -171,6 +190,11 @@ private struct CaregiverTodayRow: View {
                     Text(dose.medicationSnapshot.dosageText)
                         .font(.body)
                         .foregroundColor(.secondary)
+                    if let recordedByText {
+                        Text(recordedByText)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 Spacer()
                 if let statusText = statusText(for: dose.effectiveStatus) {

@@ -43,6 +43,7 @@ export type DoseStatus = "pending" | "taken" | "missed";
 
 export type ScheduleDoseWithStatus = ScheduleDose & {
   effectiveStatus: DoseStatus;
+  recordedByType?: "patient" | "caregiver";
 };
 
 const weekdayMap: Record<string, string> = {
@@ -269,23 +270,26 @@ function deriveDoseStatus({
 
 export function applyDoseStatuses(
   doses: ScheduleDose[],
-  doseRecords: { patientId: string; medicationId: string; scheduledAt: Date }[],
+  doseRecords: { patientId: string; medicationId: string; scheduledAt: Date; recordedByType: string }[],
   now: Date = new Date()
 ): ScheduleDoseWithStatus[] {
-  const takenKeys = new Set(
-    doseRecords.map((record) =>
+  const recordedByMap = new Map(
+    doseRecords.map((record) => [
       doseKey({
         patientId: record.patientId,
         medicationId: record.medicationId,
         scheduledAt: record.scheduledAt.toISOString()
-      })
-    )
+      }),
+      record.recordedByType.toLowerCase()
+    ])
   );
   return doses.map((dose) => {
-    const hasTaken = takenKeys.has(doseKey(dose));
+    const key = doseKey(dose);
+    const hasTaken = recordedByMap.has(key);
     return {
       ...dose,
-      effectiveStatus: deriveDoseStatus({ scheduledAt: dose.scheduledAt, hasTaken, now })
+      effectiveStatus: deriveDoseStatus({ scheduledAt: dose.scheduledAt, hasTaken, now }),
+      recordedByType: hasTaken ? (recordedByMap.get(key) as "patient" | "caregiver") : undefined
     };
   });
 }
