@@ -88,6 +88,7 @@ final class MedicationListViewModel: ObservableObject {
 struct MedicationListView: View {
     private let sessionStore: SessionStore
     private let onOpenPatients: (() -> Void)?
+    private let headerView: AnyView?
     @StateObject private var viewModel: MedicationListViewModel
     @State private var showingCreate = false
     @State private var selectedMedication: MedicationDTO?
@@ -95,11 +96,13 @@ struct MedicationListView: View {
 
     init(
         sessionStore: SessionStore? = nil,
-        onOpenPatients: (() -> Void)? = nil
+        onOpenPatients: (() -> Void)? = nil,
+        headerView: AnyView? = nil
     ) {
         let store = sessionStore ?? SessionStore()
         self.sessionStore = store
         self.onOpenPatients = onOpenPatients
+        self.headerView = headerView
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
             wrappedValue: MedicationListViewModel(
@@ -110,38 +113,43 @@ struct MedicationListView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            Group {
-                if viewModel.isLoading {
-                    LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
-                } else if let errorMessage = viewModel.errorMessage {
-                    ErrorStateView(message: errorMessage)
-                } else if viewModel.items.isEmpty {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 0)
-                            .fill(Color(.secondarySystemBackground))
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        VStack {
-                            Spacer(minLength: 0)
-                            VStack(spacing: 12) {
-                                EmptyStateView(
-                                    title: NSLocalizedString("medication.list.empty.title", comment: "Empty list title"),
-                                    message: NSLocalizedString("medication.list.empty.message", comment: "Empty list message")
-                                )
-                                if sessionStore.mode == .caregiver {
-                                    Button(NSLocalizedString("medication.list.empty.action", comment: "Add medication action")) {
-                                        showingCreate = true
-                                    }
-                                    .buttonStyle(.borderedProminent)
+        Group {
+            if viewModel.isLoading {
+                LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+            } else if let errorMessage = viewModel.errorMessage {
+                ErrorStateView(message: errorMessage)
+            } else if viewModel.items.isEmpty {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 0)
+                        .fill(Color(.secondarySystemBackground))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    VStack {
+                        Spacer(minLength: 0)
+                        VStack(spacing: 12) {
+                            EmptyStateView(
+                                title: NSLocalizedString("medication.list.empty.title", comment: "Empty list title"),
+                                message: NSLocalizedString("medication.list.empty.message", comment: "Empty list message")
+                            )
+                            if sessionStore.mode == .caregiver {
+                                Button(NSLocalizedString("medication.list.empty.action", comment: "Add medication action")) {
+                                    showingCreate = true
                                 }
+                                .buttonStyle(.borderedProminent)
                             }
-                            .padding(.horizontal, 24)
-                            Spacer(minLength: 0)
                         }
+                        .padding(.horizontal, 24)
+                        Spacer(minLength: 0)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                List {
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                let baseList = List {
+                    if let headerView {
+                        headerView
+                            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    }
                     Section {
                         ForEach(viewModel.items) { item in
                             let rowContent = HStack(alignment: .top, spacing: 12) {
@@ -197,21 +205,23 @@ struct MedicationListView: View {
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
                 .background(Color.white)
-                .safeAreaPadding(.top)
                 .safeAreaPadding(.bottom, 120)
-                }
-            }
-            if let toastMessage {
-                Text(toastMessage)
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .shadow(radius: 4)
-                    .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .accessibilityLabel(toastMessage)
+                let listWithInsets = headerView == nil ? AnyView(baseList.safeAreaPadding(.top)) : AnyView(baseList)
+                listWithInsets
+                    .overlay(alignment: .top) {
+                        if let toastMessage {
+                            Text(toastMessage)
+                                .font(.subheadline.weight(.semibold))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(.ultraThinMaterial)
+                                .clipShape(Capsule())
+                                .shadow(radius: 4)
+                                .padding(.top, 8)
+                                .transition(.move(edge: .top).combined(with: .opacity))
+                                .accessibilityLabel(toastMessage)
+                        }
+                    }
             }
         }
         .onAppear {

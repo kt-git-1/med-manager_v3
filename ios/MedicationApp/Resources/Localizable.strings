@@ -116,12 +116,14 @@
 "patient.today.reminder.body" = "%@を飲む時間です（%@）";
 
 /* Caregiver tabs */
-"caregiver.tabs.medications" = "薬";
+"caregiver.tabs.medications" = "薬/予定";
 "caregiver.tabs.history" = "履歴";
-"caregiver.tabs.patients" = "連携・患者";
+"caregiver.tabs.patients" = "連携/患者";
 "caregiver.history.empty.title" = "患者を選択してください";
 "caregiver.history.empty.message" = "連携・患者タブから対象を選んでください";
 "caregiver.history.empty.action" = "連携・患者を開く";
+"caregiver.medications.segment.medications" = "薬一覧";
+"caregiver.medications.segment.today" = "今日の予定";
 "caregiver.medications.placeholder.title" = "患者を選択してください";
 "caregiver.medications.placeholder.message" = "患者一覧から対象を選んでください";
 "caregiver.medications.noPatients.title" = "患者がいません";
@@ -148,7 +150,7 @@
 "caregiver.today.recordedBy.caregiver" = "家族";
 
 /* Patient management */
-"caregiver.patients.title" = "患者管理";
+"caregiver.patients.title" = "連携/患者";
 "caregiver.patients.add" = "追加";
 "caregiver.patients.empty.title" = "患者がいません";
 "caregiver.patients.empty.message" = "右上の追加から作成できます";

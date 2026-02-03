@@ -3,12 +3,18 @@ import SwiftUI
 struct CaregiverTodayView: View {
     private let sessionStore: SessionStore
     private let onOpenPatients: () -> Void
+    private let headerView: AnyView?
     @StateObject private var viewModel: CaregiverTodayViewModel
 
-    init(sessionStore: SessionStore? = nil, onOpenPatients: @escaping () -> Void = {}) {
+    init(
+        sessionStore: SessionStore? = nil,
+        onOpenPatients: @escaping () -> Void = {},
+        headerView: AnyView? = nil
+    ) {
         let store = sessionStore ?? SessionStore()
         self.sessionStore = store
         self.onOpenPatients = onOpenPatients
+        self.headerView = headerView
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
             wrappedValue: CaregiverTodayViewModel(apiClient: APIClient(baseURL: baseURL, sessionStore: store))
@@ -16,34 +22,36 @@ struct CaregiverTodayView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            Color.white
-                .ignoresSafeArea()
-            content
-
-            if let toastMessage = viewModel.toastMessage {
-                Text(toastMessage)
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .shadow(radius: 4)
-                    .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .accessibilityLabel(toastMessage)
+        content
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(Color.white)
+            .overlay(alignment: .top) {
+                if let toastMessage = viewModel.toastMessage {
+                    Text(toastMessage)
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Capsule())
+                        .shadow(radius: 4)
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .accessibilityLabel(toastMessage)
+                }
             }
-
-            if viewModel.isUpdating {
-                Color.black.opacity(0.2)
-                    .ignoresSafeArea()
-                LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                    .padding(16)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(radius: 6)
+            .overlay {
+                if viewModel.isUpdating {
+                    ZStack {
+                        Color.black.opacity(0.2)
+                            .ignoresSafeArea()
+                        LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
+                            .padding(16)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .shadow(radius: 6)
+                    }
+                }
             }
-        }
-        .onAppear {
+            .onAppear {
             if sessionStore.currentPatientId != nil {
                 viewModel.load(showLoading: true)
             }
@@ -55,8 +63,8 @@ struct CaregiverTodayView: View {
                 viewModel.reset()
             }
         }
-        .accessibilityIdentifier("CaregiverTodayView")
-        .environmentObject(sessionStore)
+            .accessibilityIdentifier("CaregiverTodayView")
+            .environmentObject(sessionStore)
     }
 
     private var content: some View {
@@ -88,7 +96,13 @@ struct CaregiverTodayView: View {
                     message: NSLocalizedString("caregiver.today.empty.message", comment: "Empty message")
                 )
             } else {
-                List {
+                let baseList = List {
+                    if let headerView {
+                        headerView
+                            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    }
                     if !plannedItems.isEmpty {
                         Section {
                             ForEach(plannedItems) { dose in
@@ -134,9 +148,10 @@ struct CaregiverTodayView: View {
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
                 .background(Color.white)
+                let listWithInsets = headerView == nil ? AnyView(baseList.safeAreaPadding(.top)) : AnyView(baseList)
+                listWithInsets
             }
         }
-        .safeAreaPadding(.top)
     }
 
     private var plannedItems: [ScheduleDoseDTO] {

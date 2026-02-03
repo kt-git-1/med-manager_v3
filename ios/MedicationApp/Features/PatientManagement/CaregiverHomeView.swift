@@ -189,6 +189,7 @@ struct CaregiverMedicationView: View {
     private let sessionStore: SessionStore
     private let onOpenPatients: () -> Void
     @StateObject private var viewModel: CaregiverMedicationViewModel
+    @State private var selectedSection: MedicationScheduleSection = .medications
 
     init(sessionStore: SessionStore, onOpenPatients: @escaping () -> Void) {
         self.sessionStore = sessionStore
@@ -243,11 +244,20 @@ struct CaregiverMedicationView: View {
                     .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                     .padding(.horizontal, 24)
                 } else {
-                    MedicationListView(
-                        sessionStore: sessionStore,
-                        onOpenPatients: onOpenPatients
-                    )
-                    .frame(maxHeight: .infinity, alignment: .top)
+                    switch selectedSection {
+                    case .medications:
+                        MedicationListView(
+                            sessionStore: sessionStore,
+                            onOpenPatients: onOpenPatients,
+                            headerView: AnyView(headerView)
+                        )
+                    case .today:
+                        CaregiverTodayView(
+                            sessionStore: sessionStore,
+                            onOpenPatients: onOpenPatients,
+                            headerView: AnyView(headerView)
+                        )
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -259,4 +269,22 @@ struct CaregiverMedicationView: View {
         }
         .accessibilityIdentifier("CaregiverMedicationView")
     }
+
+    private var headerView: some View {
+        Picker("", selection: $selectedSection) {
+            Text(NSLocalizedString("caregiver.medications.segment.medications", comment: "Medications list segment"))
+                .tag(MedicationScheduleSection.medications)
+            Text(NSLocalizedString("caregiver.medications.segment.today", comment: "Today schedule segment"))
+                .tag(MedicationScheduleSection.today)
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal, 16)
+        .padding(.top, 4)
+        .padding(.bottom, 4)
+    }
+}
+
+private enum MedicationScheduleSection: Hashable {
+    case medications
+    case today
 }
