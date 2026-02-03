@@ -87,7 +87,6 @@ final class MedicationListViewModel: ObservableObject {
 
 struct MedicationListView: View {
     private let sessionStore: SessionStore
-    private let selectedPatientName: String?
     private let onOpenPatients: (() -> Void)?
     @StateObject private var viewModel: MedicationListViewModel
     @State private var showingCreate = false
@@ -96,12 +95,10 @@ struct MedicationListView: View {
 
     init(
         sessionStore: SessionStore? = nil,
-        selectedPatientName: String? = nil,
         onOpenPatients: (() -> Void)? = nil
     ) {
         let store = sessionStore ?? SessionStore()
         self.sessionStore = store
-        self.selectedPatientName = selectedPatientName
         self.onOpenPatients = onOpenPatients
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
@@ -145,30 +142,6 @@ struct MedicationListView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                 List {
-                    if let selectedPatientName {
-                        HStack(spacing: 12) {
-                            Text(String(format: NSLocalizedString("caregiver.medications.currentPatient", comment: "Current patient label"), selectedPatientName))
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            if let onOpenPatients {
-                                Button(NSLocalizedString("caregiver.medications.switch", comment: "Switch patient")) {
-                                    onOpenPatients()
-                                }
-                                .buttonStyle(.bordered)
-                            }
-                        }
-                        .padding(16)
-                        .frame(maxWidth: .infinity)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
-                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                        .listRowSeparator(.hidden)
-                        Divider()
-                            .listRowInsets(EdgeInsets(top: 4, leading: 24, bottom: 4, trailing: 24))
-                            .listRowSeparator(.hidden)
-                    }
-
                     Section {
                         ForEach(viewModel.items) { item in
                             let rowContent = HStack(alignment: .top, spacing: 12) {
@@ -213,19 +186,13 @@ struct MedicationListView: View {
                                     .listRowSeparator(.hidden)
                             }
                         }
-                    } header: {
-                        Text(NSLocalizedString("medication.list.section.title", comment: "Medication list section"))
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                            .textCase(nil)
-                    }
                     .listRowSeparator(.hidden)
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
                 .background(Color.white)
                 .safeAreaPadding(.top)
-                .safeAreaPadding(.bottom, 72)
+                .safeAreaPadding(.bottom, 120)
                 }
             }
             if let toastMessage {

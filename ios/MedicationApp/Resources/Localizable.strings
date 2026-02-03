@@ -115,6 +115,7 @@
 "caregiver.medications.noSelection.message" = "連携・患者タブから対象を選んでください";
 "caregiver.medications.noSelection.action" = "患者一覧を開く";
 "caregiver.medications.currentPatient" = "対象患者: %@";
+"caregiver.medications.currentPatient.inline" = "対象患者：%@";
 "caregiver.medications.switch" = "切替";
 
 /* Caregiver today */

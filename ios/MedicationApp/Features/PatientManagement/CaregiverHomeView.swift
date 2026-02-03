@@ -9,6 +9,7 @@ enum CaregiverTab: Hashable {
 struct CaregiverHomeView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @State private var selectedTab: CaregiverTab = .medications
+    @State private var currentPatientName: String?
 
     var body: some View {
         ZStack {
@@ -28,12 +29,65 @@ struct CaregiverHomeView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            CaregiverBottomTabBar(selectedTab: $selectedTab)
+            VStack(spacing: 8) {
+                if let patientName = currentPatientName {
+                    HStack {
+                        Text(
+                            String(
+                                format: NSLocalizedString(
+                                    "caregiver.medications.currentPatient.inline",
+                                    comment: "Current patient inline label"
+                                ),
+                                patientName
+                            )
+                        )
+                        .font(.caption)
+                        .foregroundColor(.accentColor)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.accentColor.opacity(0.12), in: Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.accentColor, lineWidth: 1)
+                        )
+                        Spacer()
+                    }
+                }
+                CaregiverBottomTabBar(selectedTab: $selectedTab)
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 6)
+        }
+        .onAppear {
+            loadCurrentPatientName()
+        }
+        .onChange(of: sessionStore.currentPatientId) { _, _ in
+            loadCurrentPatientName()
+        }
+        .onChange(of: sessionStore.mode) { _, _ in
+            loadCurrentPatientName()
         }
         .onChange(of: sessionStore.shouldRedirectCaregiverToMedicationTab) { _, shouldRedirect in
             guard shouldRedirect else { return }
             selectedTab = .medications
             sessionStore.shouldRedirectCaregiverToMedicationTab = false
+        }
+    }
+
+    private func loadCurrentPatientName() {
+        guard sessionStore.mode == .caregiver,
+              let patientId = sessionStore.currentPatientId else {
+            currentPatientName = nil
+            return
+        }
+        Task { @MainActor in
+            do {
+                let apiClient = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: sessionStore)
+                let patients = try await apiClient.listPatients()
+                currentPatientName = patients.first { $0.id == patientId }?.displayName
+            } catch {
+                currentPatientName = nil
+            }
         }
     }
 }
@@ -73,7 +127,6 @@ private struct CaregiverBottomTabBar: View {
                 .strokeBorder(Color(.separator).opacity(0.4))
         )
         .shadow(color: Color.black.opacity(0.12), radius: 18, y: 10)
-        .padding(.bottom, 6)
     }
 
     private func tabButton(
@@ -186,10 +239,8 @@ struct CaregiverMedicationView: View {
                     .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
                     .padding(.horizontal, 24)
                 } else {
-                    let selectedPatient = viewModel.patients.first { $0.id == sessionStore.currentPatientId }
                     MedicationListView(
                         sessionStore: sessionStore,
-                        selectedPatientName: selectedPatient?.displayName,
                         onOpenPatients: onOpenPatients
                     )
                     .frame(maxHeight: .infinity, alignment: .top)
