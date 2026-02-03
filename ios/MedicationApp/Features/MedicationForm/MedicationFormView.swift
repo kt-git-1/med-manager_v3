@@ -28,6 +28,11 @@ struct MedicationFormView: View {
 
     var body: some View {
         let isCaregiverMissingPatient = sessionStore.mode == .caregiver && sessionStore.currentPatientId == nil
+        let weekdayColumns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 7)
+        let timeColumns = [
+            GridItem(.flexible(), spacing: 12),
+            GridItem(.flexible(), spacing: 12)
+        ]
         Form {
             Section(NSLocalizedString("medication.form.section.basic", comment: "Basic info")) {
                 TextField(NSLocalizedString("medication.form.name", comment: "Medication name"), text: $viewModel.name)
@@ -88,10 +93,11 @@ struct MedicationFormView: View {
                         Text(NSLocalizedString("medication.form.schedule.weekdays", comment: "Weekdays"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                        HStack(spacing: 8) {
+                        LazyVGrid(columns: weekdayColumns, spacing: 8) {
                             ForEach(ScheduleDay.allCases) { day in
+                                let isSelected = viewModel.selectedDays.contains(day)
                                 Button {
-                                    if viewModel.selectedDays.contains(day) {
+                                    if isSelected {
                                         viewModel.selectedDays.remove(day)
                                     } else {
                                         viewModel.selectedDays.insert(day)
@@ -99,14 +105,16 @@ struct MedicationFormView: View {
                                 } label: {
                                     Text(day.shortLabel)
                                         .font(.body.weight(.semibold))
-                                        .frame(width: 32, height: 32)
+                                        .frame(maxWidth: .infinity, minHeight: 36)
                                         .background(
-                                            Circle()
-                                                .fill(viewModel.selectedDays.contains(day) ? Color.accentColor : Color(.secondarySystemBackground))
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(isSelected ? Color.accentColor : Color(.secondarySystemBackground))
                                         )
-                                        .foregroundColor(viewModel.selectedDays.contains(day) ? .white : .primary)
+                                        .foregroundColor(isSelected ? .white : .primary)
                                 }
+                                .buttonStyle(.plain)
                                 .accessibilityLabel("曜日 \(day.shortLabel)")
+                                .accessibilityValue(isSelected ? "選択中" : "未選択")
                             }
                         }
                     }
@@ -116,23 +124,39 @@ struct MedicationFormView: View {
                     Text(NSLocalizedString("medication.form.schedule.times", comment: "Times"))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    ForEach(ScheduleTimeSlot.allCases) { slot in
-                        Button {
-                            if viewModel.selectedTimeSlots.contains(slot) {
-                                viewModel.selectedTimeSlots.remove(slot)
-                            } else {
-                                viewModel.selectedTimeSlots.insert(slot)
+                    LazyVGrid(columns: timeColumns, spacing: 12) {
+                        ForEach(ScheduleTimeSlot.allCases) { slot in
+                            let isSelected = viewModel.selectedTimeSlots.contains(slot)
+                            Button {
+                                if isSelected {
+                                    viewModel.selectedTimeSlots.remove(slot)
+                                } else {
+                                    viewModel.selectedTimeSlots.insert(slot)
+                                }
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                                        .foregroundColor(isSelected ? .accentColor : .secondary)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(slot.label)
+                                            .font(.body.weight(.semibold))
+                                        Text(slot.timeValue)
+                                            .font(.footnote)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    Spacer()
+                                }
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                                .padding(.horizontal, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(.secondarySystemBackground))
+                                )
                             }
-                        } label: {
-                            HStack {
-                                Image(systemName: viewModel.selectedTimeSlots.contains(slot) ? "checkmark.circle.fill" : "circle")
-                                    .foregroundColor(viewModel.selectedTimeSlots.contains(slot) ? .accentColor : .secondary)
-                                Text("\(slot.label) (\(slot.timeValue))")
-                                Spacer()
-                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("\(slot.label) \(slot.timeValue)")
+                            .accessibilityValue(isSelected ? "選択中" : "未選択")
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("\(slot.label) \(slot.timeValue)")
                     }
                 }
 
@@ -212,6 +236,9 @@ struct MedicationFormView: View {
         }
         .disabled(sessionStore.mode == .patient)
         .accessibilityIdentifier("MedicationFormView")
+        .safeAreaInset(edge: .bottom) {
+            Color.clear.frame(height: 24)
+        }
         .onAppear {
             hasEndDate = viewModel.endDate != nil
             Task {
