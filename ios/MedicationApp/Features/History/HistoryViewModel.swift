@@ -4,11 +4,15 @@ import Foundation
 final class HistoryViewModel: ObservableObject {
     @Published var month: HistoryMonthResponseDTO?
     @Published var day: HistoryDayResponseDTO?
-    @Published var isLoading = false
-    @Published var errorMessage: String?
+    @Published var isLoadingMonth = false
+    @Published var isLoadingDay = false
+    @Published var isUpdating = false
+    @Published var monthErrorMessage: String?
+    @Published var dayErrorMessage: String?
 
     private let apiClient: APIClient
     private let sessionStore: SessionStore
+    private var activeRequests = 0
 
     init(apiClient: APIClient, sessionStore: SessionStore) {
         self.apiClient = apiClient
@@ -16,11 +20,15 @@ final class HistoryViewModel: ObservableObject {
     }
 
     func loadMonth(year: Int, month: Int) {
-        guard !isLoading else { return }
-        isLoading = true
-        errorMessage = nil
+        guard !isLoadingMonth else { return }
+        monthErrorMessage = nil
+        startRequest()
+        isLoadingMonth = true
         Task {
-            defer { isLoading = false }
+            defer {
+                endRequest()
+                isLoadingMonth = false
+            }
             do {
                 switch sessionStore.mode {
                 case .patient:
@@ -31,17 +39,24 @@ final class HistoryViewModel: ObservableObject {
                     self.month = nil
                 }
             } catch {
-                self.errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
+                self.monthErrorMessage = NSLocalizedString(
+                    "history.error.retry",
+                    comment: "History load failed with retry"
+                )
             }
         }
     }
 
     func loadDay(date: String) {
-        guard !isLoading else { return }
-        isLoading = true
-        errorMessage = nil
+        guard !isLoadingDay else { return }
+        dayErrorMessage = nil
+        startRequest()
+        isLoadingDay = true
         Task {
-            defer { isLoading = false }
+            defer {
+                endRequest()
+                isLoadingDay = false
+            }
             do {
                 switch sessionStore.mode {
                 case .patient:
@@ -52,8 +67,21 @@ final class HistoryViewModel: ObservableObject {
                     self.day = nil
                 }
             } catch {
-                self.errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
+                self.dayErrorMessage = NSLocalizedString(
+                    "history.error.retry",
+                    comment: "History load failed with retry"
+                )
             }
         }
+    }
+
+    private func startRequest() {
+        activeRequests += 1
+        isUpdating = activeRequests > 0
+    }
+
+    private func endRequest() {
+        activeRequests = max(0, activeRequests - 1)
+        isUpdating = activeRequests > 0
     }
 }

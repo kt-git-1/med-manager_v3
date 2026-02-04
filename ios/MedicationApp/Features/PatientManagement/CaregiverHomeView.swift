@@ -228,21 +228,30 @@ struct CaregiverMedicationView: View {
                     .padding(.horizontal, 24)
                 } else if sessionStore.currentPatientId == nil {
                     VStack(spacing: 12) {
-                        EmptyStateView(
-                            title: NSLocalizedString("caregiver.medications.noSelection.title", comment: "No selection title"),
-                            message: NSLocalizedString("caregiver.medications.noSelection.message", comment: "No selection message")
-                        )
-                        Button(NSLocalizedString("caregiver.medications.noSelection.action", comment: "Go to patients action")) {
-                            onOpenPatients()
+                        Spacer(minLength: 0)
+                        VStack(spacing: 12) {
+                            Text(NSLocalizedString("caregiver.medications.noSelection.title", comment: "No selection title"))
+                                .font(.title3.weight(.semibold))
+                                .multilineTextAlignment(.center)
+                            Text(NSLocalizedString("caregiver.medications.noSelection.message", comment: "No selection message"))
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                            Button(NSLocalizedString("caregiver.medications.noSelection.action", comment: "Go to patients action")) {
+                                onOpenPatients()
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .font(.headline)
+                            .padding(.top, 4)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .font(.headline)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 16)
+                        .frame(maxWidth: .infinity)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                        .padding(.horizontal, 24)
+                        Spacer(minLength: 0)
                     }
-                    .padding(24)
-                    .frame(maxWidth: .infinity)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
-                    .padding(.horizontal, 24)
                 } else {
                     switch selectedSection {
                     case .medications:

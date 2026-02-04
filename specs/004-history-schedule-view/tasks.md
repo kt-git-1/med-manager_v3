@@ -93,13 +93,13 @@
 
 ### Tests for User Story 3
 
-- [ ] T026 [P] [US3] iOS UI smoke tests for overlay + retry in `ios/MedicationApp/Tests/HistoryOverlayTests.swift` (Why: blocking UX enforcement; AC: overlay blocks scroll/tap; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T026 [P] [US3] iOS UI smoke tests for overlay + retry in `ios/MedicationApp/Tests/HistoryOverlayTests.swift` (Why: blocking UX enforcement; AC: overlay blocks scroll/tap; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
 
 ### Implementation for User Story 3
 
-- [ ] T027 [US3] Implement full-screen overlay state in `ios/MedicationApp/Features/History/HistoryViewModel.swift` and `ios/MedicationApp/Shared/Views/FullScreenContainer.swift` (Why: block interactions; AC: overlay on all fetches; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T028 [US3] Add error + retry UX wiring in `ios/MedicationApp/Features/History/HistoryMonthView.swift` and `ios/MedicationApp/Features/History/HistoryDayDetailView.swift` (Why: recovery flow; AC: error text + retry uses overlay; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T029 [US3] Add accessibility labels for dots, legend, and empty state in `ios/MedicationApp/Features/History/HistoryMonthView.swift`, `ios/MedicationApp/Features/History/HistoryDayDetailView.swift`, `ios/MedicationApp/Features/History/CaregiverHistoryView.swift` (Why: VoiceOver clarity; AC: labels describe slot/status; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T027 [US3] Implement full-screen overlay state in `ios/MedicationApp/Features/History/HistoryViewModel.swift` and `ios/MedicationApp/Shared/Views/FullScreenContainer.swift` (Why: block interactions; AC: overlay on all fetches; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T028 [US3] Add error + retry UX wiring in `ios/MedicationApp/Features/History/HistoryMonthView.swift` and `ios/MedicationApp/Features/History/HistoryDayDetailView.swift` (Why: recovery flow; AC: error text + retry uses overlay; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T029 [US3] Add accessibility labels for dots, legend, and empty state in `ios/MedicationApp/Features/History/HistoryMonthView.swift`, `ios/MedicationApp/Features/History/HistoryDayDetailView.swift`, `ios/MedicationApp/Features/History/CaregiverHistoryView.swift` (Why: VoiceOver clarity; AC: labels describe slot/status; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
 
 **Checkpoint**: User Story 3 independently meets overlay and retry requirements
 
@@ -109,10 +109,10 @@
 
 **Purpose**: Documentation and final verification
 
-- [ ] T030 [P] Verify no manual refresh control in History UI (`ios/MedicationApp/Features/History/*`) (Why: auto-sync only; AC: no refresh button or pull-to-refresh; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T031 [P] Record history load timing check (Why: NFR-001) in `specs/004-history-schedule-view/quickstart.md` (AC: note manual perf check <= 3s; Test: N/A)
-- [ ] T032 [P] Update user-facing release notes/help copy in `specs/README.md` (or existing user docs) (Why: NFR-004; AC: History tab + status legend described; Test: N/A)
-- [ ] T033 [P] Refresh docs and contracts if needed in `specs/004-history-schedule-view/quickstart.md` and `specs/004-history-schedule-view/contracts/openapi.yaml` (Why: keep docs accurate; AC: docs match implementation; Test: N/A)
+- [x] T030 [P] Verify no manual refresh control in History UI (`ios/MedicationApp/Features/History/*`) (Why: auto-sync only; AC: no refresh button or pull-to-refresh; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T031 [P] Record history load timing check (Why: NFR-001) in `specs/004-history-schedule-view/quickstart.md` (AC: note manual perf check <= 3s; Test: N/A)
+- [x] T032 [P] Update user-facing release notes/help copy in `specs/README.md` (or existing user docs) (Why: NFR-004; AC: History tab + status legend described; Test: N/A)
+- [x] T033 [P] Refresh docs and contracts if needed in `specs/004-history-schedule-view/quickstart.md` and `specs/004-history-schedule-view/contracts/openapi.yaml` (Why: keep docs accurate; AC: docs match implementation; Test: N/A)
 
 ---
 

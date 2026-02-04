@@ -31,15 +31,23 @@ struct HistoryDayDetailView: View {
             Text(dayTitle)
                 .font(.headline)
 
-            if viewModel.isLoading && viewModel.day == nil {
+            if viewModel.isLoadingDay && viewModel.day == nil {
                 LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
-            } else if let errorMessage = viewModel.errorMessage {
-                ErrorStateView(message: errorMessage)
+            } else if let errorMessage = viewModel.dayErrorMessage {
+                VStack(spacing: 12) {
+                    ErrorStateView(message: errorMessage)
+                    Button(NSLocalizedString("common.retry", comment: "Retry")) {
+                        retryLoad()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("HistoryDayRetryButton")
+                }
             } else if sortedDoses.isEmpty {
                 EmptyStateView(
                     title: NSLocalizedString("history.day.empty.title", comment: "History day empty title"),
                     message: NSLocalizedString("history.day.empty.message", comment: "History day empty message")
                 )
+                .accessibilityIdentifier("HistoryDayEmptyState")
             } else {
                 VStack(spacing: 12) {
                     ForEach(Array(sortedDoses.enumerated()), id: \.offset) { _, dose in
@@ -86,6 +94,19 @@ struct HistoryDayDetailView: View {
         case .bedtime:
             return 3
         }
+    }
+
+    private func retryLoad() {
+        guard let selectedDate else { return }
+        viewModel.loadDay(date: HistoryDayDetailView.dateKey(for: selectedDate))
+    }
+
+    private static func dateKey(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = HistoryDayDetailView.calendar
+        formatter.timeZone = HistoryDayDetailView.historyTimeZone
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
     }
 }
 

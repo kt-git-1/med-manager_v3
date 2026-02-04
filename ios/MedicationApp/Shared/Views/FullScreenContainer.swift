@@ -3,9 +3,11 @@ import UIKit
 
 struct FullScreenContainer<Content: View>: View {
     private let content: Content
+    private let overlay: AnyView?
 
-    init(@ViewBuilder content: () -> Content) {
+    init(@ViewBuilder content: () -> Content, overlay: AnyView? = nil) {
         self.content = content()
+        self.overlay = overlay
     }
 
     var body: some View {
@@ -14,6 +16,10 @@ struct FullScreenContainer<Content: View>: View {
                 Color(.systemGroupedBackground)
                     .ignoresSafeArea()
                 content
+                if let overlay {
+                    overlay
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
             .position(x: proxy.size.width / 2, y: proxy.size.height / 2)

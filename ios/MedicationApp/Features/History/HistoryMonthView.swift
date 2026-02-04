@@ -43,25 +43,30 @@ struct HistoryMonthView: View {
     }
 
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 16) {
-                header
+        FullScreenContainer(
+            content: {
+                ScrollView {
+                LazyVStack(spacing: 16) {
+                    header
 
-                if viewModel.isLoading && viewModel.month == nil {
-                    LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
-                } else if let errorMessage = viewModel.errorMessage {
-                    ErrorStateView(message: errorMessage)
-                } else {
-                    calendarGrid
-                    legend
-                    HistoryDayDetailView(viewModel: viewModel, selectedDate: selectedDate)
+                    if viewModel.isLoadingMonth && viewModel.month == nil {
+                        LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+                    } else if let errorMessage = viewModel.monthErrorMessage {
+                        errorSection(message: errorMessage, retry: loadMonth)
+                    } else {
+                        calendarGrid
+                        legend
+                        HistoryDayDetailView(viewModel: viewModel, selectedDate: selectedDate)
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 24)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 24)
-        }
+            },
+            overlay: viewModel.isUpdating ? AnyView(updatingOverlay) : nil
+        )
         .onAppear {
             loadMonth()
         }
@@ -145,10 +150,10 @@ struct HistoryMonthView: View {
                     .foregroundStyle(isSelected ? Color.white : Color.primary)
                     .frame(maxWidth: .infinity)
                 HStack(spacing: 4) {
-                    slotDot(summary?.morning ?? .none)
-                    slotDot(summary?.noon ?? .none)
-                    slotDot(summary?.evening ?? .none)
-                    slotDot(summary?.bedtime ?? .none)
+                    slotDot(summary?.morning ?? .none, slotKey: "morning")
+                    slotDot(summary?.noon ?? .none, slotKey: "noon")
+                    slotDot(summary?.evening ?? .none, slotKey: "evening")
+                    slotDot(summary?.bedtime ?? .none, slotKey: "bedtime")
                 }
             }
             .padding(.vertical, 6)
@@ -162,11 +167,13 @@ struct HistoryMonthView: View {
     }
 
     @ViewBuilder
-    private func slotDot(_ status: HistorySlotSummaryStatusDTO) -> some View {
+    private func slotDot(_ status: HistorySlotSummaryStatusDTO, slotKey: String) -> some View {
         if status != .none {
             Circle()
                 .fill(statusColor(status))
                 .frame(width: 6, height: 6)
+                .accessibilityLabel("\(slotLabel(for: slotKey)) \(statusLabel(for: status))")
+                .accessibilityIdentifier("HistorySlotDot-\(slotKey)")
         }
     }
 
@@ -192,6 +199,7 @@ struct HistoryMonthView: View {
         .font(.caption)
         .foregroundStyle(.secondary)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityIdentifier("HistoryLegend")
     }
 
     private func legendItem(color: Color, title: String) -> some View {
@@ -201,6 +209,7 @@ struct HistoryMonthView: View {
                 .frame(width: 8, height: 8)
             Text(title)
         }
+        .accessibilityLabel(title)
     }
 
     private var weekdaySymbols: [String] {
@@ -287,5 +296,61 @@ struct HistoryMonthView: View {
     private static func startOfMonth(for date: Date) -> Date {
         let components = calendar.dateComponents([.year, .month], from: date)
         return calendar.date(from: components) ?? date
+    }
+
+    private var updatingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.2)
+                .ignoresSafeArea()
+            VStack {
+                Spacer()
+                LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
+                    .padding(16)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .shadow(radius: 6)
+                Spacer()
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .accessibilityIdentifier("HistoryUpdatingOverlay")
+    }
+
+    private func errorSection(message: String, retry: @escaping () -> Void) -> some View {
+        VStack(spacing: 12) {
+            ErrorStateView(message: message)
+            Button(NSLocalizedString("common.retry", comment: "Retry")) {
+                retry()
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier("HistoryRetryButton")
+        }
+    }
+
+    private func slotLabel(for key: String) -> String {
+        switch key {
+        case "morning":
+            return NSLocalizedString("history.slot.morning", comment: "Morning slot")
+        case "noon":
+            return NSLocalizedString("history.slot.noon", comment: "Noon slot")
+        case "evening":
+            return NSLocalizedString("history.slot.evening", comment: "Evening slot")
+        case "bedtime":
+            return NSLocalizedString("history.slot.bedtime", comment: "Bedtime slot")
+        default:
+            return key
+        }
+    }
+
+    private func statusLabel(for status: HistorySlotSummaryStatusDTO) -> String {
+        switch status {
+        case .taken:
+            return NSLocalizedString("history.status.taken", comment: "Taken")
+        case .missed:
+            return NSLocalizedString("history.status.missed", comment: "Missed")
+        case .pending:
+            return NSLocalizedString("history.status.pending", comment: "Pending")
+        case .none:
+            return ""
+        }
     }
 }

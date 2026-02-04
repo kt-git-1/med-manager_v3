@@ -15,6 +15,13 @@
 4. Run API
    - `npm run dev` (from `api/`)
 
+## History Endpoints
+
+- `GET /api/patient/history/month?year=YYYY&month=M`
+- `GET /api/patient/history/day?date=YYYY-MM-DD`
+- `GET /api/patients/{patientId}/history/month?year=YYYY&month=M`
+- `GET /api/patients/{patientId}/history/day?date=YYYY-MM-DD`
+
 ## iOS (SwiftUI)
 
 1. Open `ios/MedicationApp` in Xcode
@@ -32,6 +39,7 @@
 
 - API: `npm test`
 - iOS: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`
+- Manual: History month load completes within 3s for most runs (NFR-001)
 - Manual: History month loads and dots render
 - Manual: Day tap loads details with correct ordering
 - Manual: Overlay blocks input during fetch and retry works
