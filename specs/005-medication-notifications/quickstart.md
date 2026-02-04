@@ -1,0 +1,35 @@
+# Quickstart: Medication Notifications
+
+## Scope
+
+- Patient local reminders for pending slots (7-day rolling window)
+- Settings toggles (master, per-slot, re-reminder)
+- Notification tap routing to Today + highlight
+- Caregiver in-app banner via realtime dose events
+
+## Key Endpoints Used
+
+- `GET /api/patient/history/month` (slot summary source)
+- `GET /api/patient/history/day` (refresh today after TAKEN)
+- `POST /api/patient/dose-records` (emits dose record event on TAKEN)
+
+## Local Development
+
+### API
+
+```bash
+cd api
+npm test
+```
+
+### iOS
+
+```bash
+xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test
+```
+
+## Notes
+
+- Scheduling refreshes must show the full-screen "更新中" overlay while foregrounded.
+- Notification permission denied → Settings shows guidance and disables toggles.
+- Caregiver banners appear only when withinTime is true and app is foregrounded.

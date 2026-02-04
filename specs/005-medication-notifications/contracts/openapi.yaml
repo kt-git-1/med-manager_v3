@@ -1,0 +1,56 @@
+openapi: 3.0.3
+info:
+  title: Medication Notifications API (005)
+  version: 0.1.0
+  description: |
+    No new HTTP endpoints are introduced in this feature. This contract documents
+    the existing endpoints used to build the reminder plan and record TAKEN events.
+servers:
+  - url: /api
+paths:
+  /patient/history/month:
+    get:
+      summary: Get month slot summary (patient)
+      responses:
+        "200":
+          description: Month slot summary
+        "401":
+          description: Unauthorized
+  /patient/history/day:
+    get:
+      summary: Get day schedule (patient)
+      responses:
+        "200":
+          description: Day schedule with effective status
+        "401":
+          description: Unauthorized
+  /patient/dose-records:
+    post:
+      summary: Record a scheduled dose as taken (patient)
+      responses:
+        "200":
+          description: Taken record created or already exists
+        "401":
+          description: Unauthorized
+        "422":
+          description: Validation error
+components:
+  schemas:
+    DoseRecordEvent:
+      type: object
+      description: Realtime payload emitted on TAKEN record
+      properties:
+        id:
+          type: string
+        patientId:
+          type: string
+        displayName:
+          type: string
+        scheduledAt:
+          type: string
+          format: date-time
+        takenAt:
+          type: string
+          format: date-time
+        withinTime:
+          type: boolean
