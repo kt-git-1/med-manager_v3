@@ -1,28 +1,33 @@
-# Quickstart: Dose Recording (003)
+# Quickstart: History Schedule View (004)
 
 ## API (Next.js + Prisma)
 
 1. Install dependencies
    - `npm install` (from `api/`)
 2. Configure env
-   - Create `api/.env` with `DATABASE_URL` (Supabase pooled connection string)
+   - Create `api/.env` with `DATABASE_URL`
    - Supabase Auth JWT verification:
      - HS256: `SUPABASE_JWT_SECRET`
      - ES256 (ECC P-256): set `SUPABASE_URL` (for JWKS fetch) or `SUPABASE_JWT_PUBLIC_KEY`
 3. Prisma
    - Ensure `api/prisma.config.ts` is present (v7.3 style)
-   - Run `npx prisma migrate dev --name dose_recording` (from `api/`)
+   - Run `npx prisma migrate dev --name history_schedule_view` (from `api/`)
 4. Run API
    - `npm run dev` (from `api/`)
+
+## History Endpoints
+
+- `GET /api/patient/history/month?year=YYYY&month=M`
+- `GET /api/patient/history/day?date=YYYY-MM-DD`
+- `GET /api/patients/{patientId}/history/month?year=YYYY&month=M`
+- `GET /api/patients/{patientId}/history/day?date=YYYY-MM-DD`
 
 ## iOS (SwiftUI)
 
 1. Open `ios/MedicationApp` in Xcode
 2. Configure endpoints (API base URL) and Supabase Auth keys
    - `API_BASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` in scheme environment variables
-3. Enable notifications
-   - Grant notification permission for reminders in the simulator/device
-4. Run on simulator/device
+3. Run on simulator/device
 
 ## Tests
 
@@ -34,6 +39,7 @@
 
 - API: `npm test`
 - iOS: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`
-- Manual: Patient Today "Taken" flow updates after refresh
-- Manual: Caregiver Today record/delete works for selected patient
-- Performance: Today refresh completes within 5 seconds
+- Manual: History month load completes within 3s for most runs (NFR-001)
+- Manual: History month loads and dots render
+- Manual: Day tap loads details with correct ordering
+- Manual: Overlay blocks input during fetch and retry works

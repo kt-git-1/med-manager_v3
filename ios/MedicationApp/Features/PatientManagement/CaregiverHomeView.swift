@@ -1,8 +1,8 @@
 import SwiftUI
 
 enum CaregiverTab: Hashable {
-    case today
     case medications
+    case history
     case patients
 }
 
@@ -14,20 +14,20 @@ struct CaregiverHomeView: View {
     var body: some View {
         ZStack {
             switch selectedTab {
-            case .today:
-                NavigationStack {
-                    CaregiverTodayView(
-                        sessionStore: sessionStore,
-                        onOpenPatients: { selectedTab = .patients }
-                    )
-                    .navigationTitle(NSLocalizedString("caregiver.tabs.today", comment: "Today tab"))
-                    .navigationBarTitleDisplayMode(.large)
-                }
             case .medications:
                 CaregiverMedicationView(
                     sessionStore: sessionStore,
                     onOpenPatients: { selectedTab = .patients }
                 )
+            case .history:
+                NavigationStack {
+                    CaregiverHistoryView(
+                        sessionStore: sessionStore,
+                        onOpenPatients: { selectedTab = .patients }
+                    )
+                    .navigationTitle(NSLocalizedString("caregiver.tabs.history", comment: "History tab"))
+                    .navigationBarTitleDisplayMode(.inline)
+                }
             case .patients:
                 PatientManagementView(sessionStore: sessionStore)
             }
@@ -102,18 +102,18 @@ private struct CaregiverBottomTabBar: View {
     var body: some View {
         HStack(spacing: 12) {
             tabButton(
-                title: NSLocalizedString("caregiver.tabs.today", comment: "Today tab"),
-                systemImage: "calendar",
-                isSelected: selectedTab == .today
-            ) {
-                selectedTab = .today
-            }
-            tabButton(
                 title: NSLocalizedString("caregiver.tabs.medications", comment: "Medications tab"),
                 systemImage: "pills",
                 isSelected: selectedTab == .medications
             ) {
                 selectedTab = .medications
+            }
+            tabButton(
+                title: NSLocalizedString("caregiver.tabs.history", comment: "History tab"),
+                systemImage: "clock",
+                isSelected: selectedTab == .history
+            ) {
+                selectedTab = .history
             }
             tabButton(
                 title: NSLocalizedString("caregiver.tabs.patients", comment: "Patients tab"),
@@ -189,6 +189,7 @@ struct CaregiverMedicationView: View {
     private let sessionStore: SessionStore
     private let onOpenPatients: () -> Void
     @StateObject private var viewModel: CaregiverMedicationViewModel
+    @State private var selectedSection: MedicationScheduleSection = .medications
 
     init(sessionStore: SessionStore, onOpenPatients: @escaping () -> Void) {
         self.sessionStore = sessionStore
@@ -227,27 +228,45 @@ struct CaregiverMedicationView: View {
                     .padding(.horizontal, 24)
                 } else if sessionStore.currentPatientId == nil {
                     VStack(spacing: 12) {
-                        EmptyStateView(
-                            title: NSLocalizedString("caregiver.medications.noSelection.title", comment: "No selection title"),
-                            message: NSLocalizedString("caregiver.medications.noSelection.message", comment: "No selection message")
-                        )
-                        Button(NSLocalizedString("caregiver.medications.noSelection.action", comment: "Go to patients action")) {
-                            onOpenPatients()
+                        Spacer(minLength: 0)
+                        VStack(spacing: 12) {
+                            Text(NSLocalizedString("caregiver.medications.noSelection.title", comment: "No selection title"))
+                                .font(.title3.weight(.semibold))
+                                .multilineTextAlignment(.center)
+                            Text(NSLocalizedString("caregiver.medications.noSelection.message", comment: "No selection message"))
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                            Button(NSLocalizedString("caregiver.medications.noSelection.action", comment: "Go to patients action")) {
+                                onOpenPatients()
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .font(.headline)
+                            .padding(.top, 4)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .font(.headline)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 16)
+                        .frame(maxWidth: .infinity)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                        .padding(.horizontal, 24)
+                        Spacer(minLength: 0)
                     }
-                    .padding(24)
-                    .frame(maxWidth: .infinity)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
-                    .padding(.horizontal, 24)
                 } else {
-                    MedicationListView(
-                        sessionStore: sessionStore,
-                        onOpenPatients: onOpenPatients
-                    )
-                    .frame(maxHeight: .infinity, alignment: .top)
+                    switch selectedSection {
+                    case .medications:
+                        MedicationListView(
+                            sessionStore: sessionStore,
+                            onOpenPatients: onOpenPatients,
+                            headerView: AnyView(headerView)
+                        )
+                    case .today:
+                        CaregiverTodayView(
+                            sessionStore: sessionStore,
+                            onOpenPatients: onOpenPatients,
+                            headerView: AnyView(headerView)
+                        )
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -259,4 +278,22 @@ struct CaregiverMedicationView: View {
         }
         .accessibilityIdentifier("CaregiverMedicationView")
     }
+
+    private var headerView: some View {
+        Picker("", selection: $selectedSection) {
+            Text(NSLocalizedString("caregiver.medications.segment.medications", comment: "Medications list segment"))
+                .tag(MedicationScheduleSection.medications)
+            Text(NSLocalizedString("caregiver.medications.segment.today", comment: "Today schedule segment"))
+                .tag(MedicationScheduleSection.today)
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal, 16)
+        .padding(.top, 4)
+        .padding(.bottom, 4)
+    }
+}
+
+private enum MedicationScheduleSection: Hashable {
+    case medications
+    case today
 }

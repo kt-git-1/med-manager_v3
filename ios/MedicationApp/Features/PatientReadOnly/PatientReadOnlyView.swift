@@ -11,7 +11,7 @@ struct PatientReadOnlyView: View {
                 case .today:
                     PatientTodayView(sessionStore: sessionStore)
                 case .history:
-                    PatientHistoryPlaceholderView()
+                    HistoryMonthView(sessionStore: sessionStore)
                 case .settings:
                     PatientSettingsView(onLogout: { sessionStore.clearPatientToken() })
                 }

@@ -1,0 +1,191 @@
+openapi: 3.0.3
+info:
+  title: History Schedule View API (004)
+  version: 0.1.0
+servers:
+  - url: /api
+paths:
+  /patient/history/month:
+    get:
+      summary: Get history month summary for patient
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+      responses:
+        "200":
+          description: History month summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryMonthResponse"
+        "401":
+          description: Unauthorized
+  /patient/history/day:
+    get:
+      summary: Get history day detail for patient
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: History day detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryDayResponse"
+        "401":
+          description: Unauthorized
+  /patients/{patientId}/history/month:
+    get:
+      summary: Get history month summary for caregiver
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+      responses:
+        "200":
+          description: History month summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryMonthResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found (concealed)
+  /patients/{patientId}/history/day:
+    get:
+      summary: Get history day detail for caregiver
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: History day detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryDayResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found (concealed)
+components:
+  schemas:
+    DoseStatus:
+      type: string
+      enum:
+        - pending
+        - taken
+        - missed
+    Slot:
+      type: string
+      enum:
+        - morning
+        - noon
+        - evening
+        - bedtime
+    SlotSummaryStatus:
+      type: string
+      enum:
+        - pending
+        - taken
+        - missed
+        - none
+    HistoryDaySummary:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        slotSummary:
+          type: object
+          properties:
+            morning:
+              $ref: "#/components/schemas/SlotSummaryStatus"
+            noon:
+              $ref: "#/components/schemas/SlotSummaryStatus"
+            evening:
+              $ref: "#/components/schemas/SlotSummaryStatus"
+            bedtime:
+              $ref: "#/components/schemas/SlotSummaryStatus"
+    HistoryMonthResponse:
+      type: object
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryDaySummary"
+    HistoryDayItem:
+      type: object
+      properties:
+        medicationId:
+          type: string
+        medicationName:
+          type: string
+        dosageText:
+          type: string
+        doseCountPerIntake:
+          type: integer
+        scheduledAt:
+          type: string
+          format: date-time
+        slot:
+          $ref: "#/components/schemas/Slot"
+        effectiveStatus:
+          $ref: "#/components/schemas/DoseStatus"
+    HistoryDayResponse:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        doses:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryDayItem"

@@ -312,3 +312,49 @@ export async function generateScheduleForPatientWithStatus({
   ]);
   return applyDoseStatuses(doses, records, now);
 }
+
+export function getLocalDateKey(date: Date, tz: string) {
+  const parts = getZonedParts(date, tz);
+  return `${String(parts.year).padStart(4, "0")}-${String(parts.month).padStart(2, "0")}-${String(
+    parts.day
+  ).padStart(2, "0")}`;
+}
+
+export function getMonthRange(year: number, month: number, tz: string) {
+  const from = makeUtcFromZonedParts({ year, month, day: 1, hour: 0, minute: 0 }, tz);
+  const nextMonth = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
+  const to = makeUtcFromZonedParts(
+    { year: nextMonth.year, month: nextMonth.month, day: 1, hour: 0, minute: 0 },
+    tz
+  );
+  return { from, to };
+}
+
+export function getDayRange(date: Date, tz: string) {
+  const from = startOfLocalDay(date, tz);
+  const to = nextLocalDay(from, tz);
+  return { from, to };
+}
+
+export function normalizeRangeToTimeZone(from: Date, to: Date, tz: string) {
+  return {
+    from: truncateToMinutes(from, tz),
+    to: truncateToMinutes(to, tz)
+  };
+}
+
+export async function getScheduleWithStatus(
+  patientId: string,
+  from: Date,
+  to: Date,
+  tz: string,
+  now: Date = new Date()
+) {
+  const normalized = normalizeRangeToTimeZone(from, to, tz);
+  return generateScheduleForPatientWithStatus({
+    patientId,
+    from: normalized.from,
+    to: normalized.to,
+    now
+  });
+}

@@ -34,12 +34,19 @@ struct PatientTodayView: View {
             }
 
             if viewModel.isUpdating {
-                Color.black.opacity(0.2)
-                    .ignoresSafeArea()
-                LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                    .padding(16)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(radius: 6)
+                ZStack {
+                    Color.black.opacity(0.2)
+                        .ignoresSafeArea()
+                    VStack {
+                        Spacer()
+                        LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
+                            .padding(16)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .shadow(radius: 6)
+                        Spacer()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
         }
         .onAppear {

@@ -88,6 +88,7 @@ final class MedicationListViewModel: ObservableObject {
 struct MedicationListView: View {
     private let sessionStore: SessionStore
     private let onOpenPatients: (() -> Void)?
+    private let headerView: AnyView?
     @StateObject private var viewModel: MedicationListViewModel
     @State private var showingCreate = false
     @State private var selectedMedication: MedicationDTO?
@@ -95,11 +96,13 @@ struct MedicationListView: View {
 
     init(
         sessionStore: SessionStore? = nil,
-        onOpenPatients: (() -> Void)? = nil
+        onOpenPatients: (() -> Void)? = nil,
+        headerView: AnyView? = nil
     ) {
         let store = sessionStore ?? SessionStore()
         self.sessionStore = store
         self.onOpenPatients = onOpenPatients
+        self.headerView = headerView
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
             wrappedValue: MedicationListViewModel(
@@ -110,10 +113,11 @@ struct MedicationListView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .top) {
+        ZStack {
             Group {
                 if viewModel.isLoading {
-                    LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+                    Color.white
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let errorMessage = viewModel.errorMessage {
                     ErrorStateView(message: errorMessage)
                 } else if viewModel.items.isEmpty {
@@ -141,77 +145,102 @@ struct MedicationListView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                List {
-                    Section {
-                        ForEach(viewModel.items) { item in
-                            let rowContent = HStack(alignment: .top, spacing: 12) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(item.name)
-                                        .font(.title3.weight(.semibold))
-                                        .accessibilityLabel("薬名 \(item.name)")
-                                    Text("\(NSLocalizedString("medication.list.startDate", comment: "Start date")): \(item.startDateText)")
-                                        .font(.body)
-                                        .accessibilityLabel("開始日 \(item.startDateText)")
-                                    if let next = item.nextScheduledText {
-                                        Text("\(NSLocalizedString("medication.list.nextDose", comment: "Next dose")): \(next)")
+                    let baseList = List {
+                        if let headerView {
+                            headerView
+                                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+                        }
+                        Section {
+                            ForEach(viewModel.items) { item in
+                                let rowContent = HStack(alignment: .top, spacing: 12) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(item.name)
+                                            .font(.title3.weight(.semibold))
+                                            .accessibilityLabel("薬名 \(item.name)")
+                                        Text("\(NSLocalizedString("medication.list.startDate", comment: "Start date")): \(item.startDateText)")
                                             .font(.body)
-                                            .accessibilityLabel("次回予定 \(next)")
+                                            .accessibilityLabel("開始日 \(item.startDateText)")
+                                        if let next = item.nextScheduledText {
+                                            Text("\(NSLocalizedString("medication.list.nextDose", comment: "Next dose")): \(next)")
+                                                .font(.body)
+                                                .accessibilityLabel("次回予定 \(next)")
+                                        }
+                                    }
+                                    Spacer()
+                                    if sessionStore.mode == .caregiver {
+                                        Image(systemName: "chevron.right")
+                                            .foregroundColor(.secondary)
+                                            .padding(.top, 2)
                                     }
                                 }
-                                Spacer()
                                 if sessionStore.mode == .caregiver {
-                                    Image(systemName: "chevron.right")
-                                        .foregroundColor(.secondary)
-                                        .padding(.top, 2)
-                                }
-                            }
-                            if sessionStore.mode == .caregiver {
-                                Button(action: { selectedMedication = item.medication }) {
+                                    Button(action: { selectedMedication = item.medication }) {
+                                        rowContent
+                                            .padding(16)
+                                            .frame(maxWidth: .infinity)
+                                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                    .listRowSeparator(.hidden)
+                                } else {
                                     rowContent
                                         .padding(16)
                                         .frame(maxWidth: .infinity)
                                         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                                         .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                        .listRowSeparator(.hidden)
                                 }
-                                .buttonStyle(.plain)
-                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                .listRowSeparator(.hidden)
-                            } else {
-                                rowContent
-                                    .padding(16)
-                                    .frame(maxWidth: .infinity)
-                                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                    .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
-                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                    .listRowSeparator(.hidden)
+                            }
+                        } header: {
+                            Text(NSLocalizedString("medication.list.section.title", comment: "Medication list section"))
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                                .textCase(nil)
+                        }
+                        .listRowSeparator(.hidden)
+                    }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                    .background(Color.white)
+                    .safeAreaPadding(.bottom, 120)
+                    let listWithInsets = headerView == nil ? AnyView(baseList.safeAreaPadding(.top)) : AnyView(baseList)
+                    listWithInsets
+                        .overlay(alignment: .top) {
+                            if let toastMessage {
+                                Text(toastMessage)
+                                    .font(.subheadline.weight(.semibold))
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 10)
+                                    .background(.ultraThinMaterial)
+                                    .clipShape(Capsule())
+                                    .shadow(radius: 4)
+                                    .padding(.top, 8)
+                                    .transition(.move(edge: .top).combined(with: .opacity))
+                                    .accessibilityLabel(toastMessage)
                             }
                         }
-                    } header: {
-                        Text(NSLocalizedString("medication.list.section.title", comment: "Medication list section"))
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                            .textCase(nil)
-                    }
-                    .listRowSeparator(.hidden)
-                }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
-                .background(Color.white)
-                .safeAreaPadding(.top)
-                .safeAreaPadding(.bottom, 120)
                 }
             }
-            if let toastMessage {
-                Text(toastMessage)
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .shadow(radius: 4)
-                    .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .accessibilityLabel(toastMessage)
+
+            if viewModel.isLoading {
+                ZStack {
+                    Color.black.opacity(0.2)
+                        .ignoresSafeArea()
+                    VStack {
+                        Spacer()
+                        LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
+                            .padding(16)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .shadow(radius: 6)
+                        Spacer()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
         }
         .onAppear {
