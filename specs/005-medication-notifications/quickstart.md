@@ -7,6 +7,20 @@
 - Notification tap routing to Today + highlight
 - Caregiver in-app banner via realtime dose events
 
+## Notification Format
+
+- Identifier: `notif:{YYYY-MM-DD}:{slot}:{1|2}` (slot = morning/noon/evening/bedtime)
+- Body messages:
+  - 朝のお薬の時間です
+  - 昼のお薬の時間です
+  - 夜のお薬の時間です
+  - 眠前のお薬の時間です
+
+### Deep Link Example
+
+- Example identifier: `notif:2026-02-05:morning:1`
+- Expected behavior: open Today, scroll to morning slot, highlight briefly
+
 ## Key Endpoints Used
 
 - `GET /api/patient/history/month` (slot summary source)

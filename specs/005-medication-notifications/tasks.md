@@ -42,11 +42,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T010 [US3] Add `dose_record_events` model + migration in `api/prisma/schema.prisma` and `api/prisma/migrations/*_dose_record_events/` (Why: persist event payload; AC: migration applies and schema includes withinTime fields; Test: `npm test`)
-- [ ] T011 [US3] Implement event repository in `api/src/repositories/doseRecordEventRepo.ts` (Why: isolate write + read logic; AC: insert/read methods typed and covered by tests; Test: `npm test`)
-- [ ] T012 [US3] Emit event on TAKEN in `api/src/services/doseRecordService.ts` (Why: generate realtime payload; AC: event created only on TAKEN; withinTime computed as `takenAt <= scheduledAt + 60m`; Test: `npm test`)
-- [ ] T013 [US3] Add RLS policies + realtime publication in `api/prisma/migrations/*_dose_record_events/` (Why: restrict caregiver visibility; AC: caregivers see only linked patients; Test: `npm test`)
-- [ ] T014 [US3] Update tests/fixtures for caregiver linking in `api/tests/_db/testDb.ts` (Why: RLS tests need linkage; AC: fixtures create linked caregiver/patient; Test: `npm test`)
+- [x] T010 [US3] Add `dose_record_events` model + migration in `api/prisma/schema.prisma` and `api/prisma/migrations/*_dose_record_events/` (Why: persist event payload; AC: migration applies and schema includes withinTime fields; Test: `npm test`)
+- [x] T011 [US3] Implement event repository in `api/src/repositories/doseRecordEventRepo.ts` (Why: isolate write + read logic; AC: insert/read methods typed and covered by tests; Test: `npm test`)
+- [x] T012 [US3] Emit event on TAKEN in `api/src/services/doseRecordService.ts` (Why: generate realtime payload; AC: event created only on TAKEN; withinTime computed as `takenAt <= scheduledAt + 60m`; Test: `npm test`)
+- [x] T013 [US3] Add RLS policies + realtime publication in `api/prisma/migrations/*_dose_record_events/` (Why: restrict caregiver visibility; AC: caregivers see only linked patients; Test: `npm test`)
+- [x] T014 [US3] Update tests/fixtures for caregiver linking in `api/tests/_db/testDb.ts` (Why: RLS tests need linkage; AC: fixtures create linked caregiver/patient; Test: `npm test`)
 
 ---
 
@@ -56,17 +56,17 @@
 
 ### Implementation for User Story 1 (P1)
 
-- [ ] T015 [P] [US1] Create `NotificationPlanBuilder` in `ios/MedicationApp/Features/Notifications/NotificationPlanBuilder.swift` (Why: compute 7-day plan from slotSummary; AC: month crossover fetch, PENDING-only slots, Tokyo boundaries; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T016 [P] [US1] Create `NotificationScheduler` in `ios/MedicationApp/Features/Notifications/NotificationScheduler.swift` (Why: schedule/cancel local notifications; AC: identifiers use `notif:{YYYY-MM-DD}:{slot}:{1|2}` and secondary at +15; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T017 [US1] Implement `SchedulingRefreshCoordinator` in `ios/MedicationApp/Features/Notifications/SchedulingRefreshCoordinator.swift` (Why: auto refresh on launch/foreground/settings/TAKEN; AC: triggers per requirement and uses overlay; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T018 [US1] Integrate history month/day fetch in `ios/MedicationApp/Networking/HistoryClient.swift` (or existing) for plan building (Why: slotSummary source of truth; AC: fetches month and next month on boundary; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T019 [US1] Wire full-screen overlay for scheduling refresh in `ios/MedicationApp/Shared/Views/FullScreenContainer.swift` and Settings/Today flows (Why: block interactions during refresh; AC: overlay shows on refresh and removed on error with retry; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T015 [P] [US1] Create `NotificationPlanBuilder` in `ios/MedicationApp/Features/Notifications/NotificationPlanBuilder.swift` (Why: compute 7-day plan from slotSummary; AC: month crossover fetch, PENDING-only slots, Tokyo boundaries; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T016 [P] [US1] Create `NotificationScheduler` in `ios/MedicationApp/Features/Notifications/NotificationScheduler.swift` (Why: schedule/cancel local notifications; AC: identifiers use `notif:{YYYY-MM-DD}:{slot}:{1|2}` and secondary at +15; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T017 [US1] Implement `SchedulingRefreshCoordinator` in `ios/MedicationApp/Features/Notifications/SchedulingRefreshCoordinator.swift` (Why: auto refresh on launch/foreground/settings/TAKEN; AC: triggers per requirement and uses overlay; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T018 [US1] Integrate history month/day fetch in `ios/MedicationApp/Networking/HistoryClient.swift` (or existing) for plan building (Why: slotSummary source of truth; AC: fetches month and next month on boundary; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T019 [US1] Wire full-screen overlay for scheduling refresh in `ios/MedicationApp/Shared/Views/FullScreenContainer.swift` and Settings/Today flows (Why: block interactions during refresh; AC: overlay shows on refresh and removed on error with retry; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
 
 ### Implementation for User Story 2 (P2)
 
-- [ ] T020 [P] [US2] Create `NotificationPermissionManager` in `ios/MedicationApp/Features/Notifications/NotificationPermissionManager.swift` (Why: centralize authorization state; AC: can query/refresh permission and expose denied/authorized; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T021 [P] [US2] Create `NotificationPreferencesStore` in `ios/MedicationApp/Features/Notifications/NotificationPreferencesStore.swift` (Why: persist master/slot/rereminder toggles; AC: defaults master OFF, slot toggles ON, rereminder OFF; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T022 [US2] Update Settings UI in `ios/MedicationApp/Features/Settings/NotificationSettingsView.swift` (Why: master/slot/rereminder toggles + guidance; AC: denied state disables toggles and shows guidance text; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T020 [P] [US2] Create `NotificationPermissionManager` in `ios/MedicationApp/Features/Notifications/NotificationPermissionManager.swift` (Why: centralize authorization state; AC: can query/refresh permission and expose denied/authorized; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T021 [P] [US2] Create `NotificationPreferencesStore` in `ios/MedicationApp/Features/Notifications/NotificationPreferencesStore.swift` (Why: persist master/slot/rereminder toggles; AC: defaults master OFF, slot toggles ON, rereminder OFF; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T022 [US2] Update Settings UI in `ios/MedicationApp/Features/Settings/NotificationSettingsView.swift` (Why: master/slot/rereminder toggles + guidance; AC: denied state disables toggles and shows guidance text; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
 
 ---
 
@@ -76,10 +76,10 @@
 
 ### Implementation for User Story 1 (P1)
 
-- [ ] T023 [US1] Implement `NotificationDeepLinkRouter` in `ios/MedicationApp/Features/Notifications/NotificationDeepLinkRouter.swift` (Why: handle notification taps; AC: opens Today tab and routes slot target; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T024 [US1] Add slot highlight effect in `ios/MedicationApp/Features/Today/TodaySlotHighlight.swift` (Why: visual confirmation; AC: glow/pulse for a few seconds; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T025 [US1] Handle non-pending tap case in `ios/MedicationApp/Features/Today/TodayView.swift` (Why: clarify already recorded state; AC: shows brief “already recorded” message; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T026 [US1] Show in-app banner when reminder fires while open in `ios/MedicationApp/Shared/Banner/ReminderBannerPresenter.swift` (Why: foreground reminder cue; AC: banner appears; if on Today, highlight triggers; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T023 [US1] Implement `NotificationDeepLinkRouter` in `ios/MedicationApp/Features/Notifications/NotificationDeepLinkRouter.swift` (Why: handle notification taps; AC: opens Today tab and routes slot target; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T024 [US1] Add slot highlight effect in `ios/MedicationApp/Features/Today/TodaySlotHighlight.swift` (Why: visual confirmation; AC: glow/pulse for a few seconds; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T025 [US1] Handle non-pending tap case in `ios/MedicationApp/Features/Today/TodayView.swift` (Why: clarify already recorded state; AC: shows brief “already recorded” message; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T026 [US1] Show in-app banner when reminder fires while open in `ios/MedicationApp/Shared/Banner/ReminderBannerPresenter.swift` (Why: foreground reminder cue; AC: banner appears; if on Today, highlight triggers; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
 
 ---
 
@@ -89,10 +89,10 @@
 
 ### Implementation for User Story 3 (P3)
 
-- [ ] T027 [US3] Add `CaregiverEventSubscriber` in `ios/MedicationApp/Features/Caregiver/CaregiverEventSubscriber.swift` (Why: subscribe to realtime events; AC: listens while foreground and filters `withinTime == true`; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T028 [US3] Implement `GlobalBannerPresenter` in `ios/MedicationApp/Shared/Banner/GlobalBannerPresenter.swift` (Why: show caregiver banner; AC: top banner ~3 seconds, newest wins (queue length 1); Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T029 [US3] Wire lifecycle start/stop in `ios/MedicationApp/Features/Caregiver/CaregiverSessionController.swift` (Why: avoid background work; AC: subscribes on foreground, unsubscribes on background; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
-- [ ] T030 [US3] Handle revoked/unauthorized caregiver sessions in `ios/MedicationApp/Features/Caregiver/CaregiverEventSubscriber.swift` (Why: security/privacy; AC: no events shown when access revoked; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T027 [US3] Add `CaregiverEventSubscriber` in `ios/MedicationApp/Features/Caregiver/CaregiverEventSubscriber.swift` (Why: subscribe to realtime events; AC: listens while foreground and filters `withinTime == true`; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T028 [US3] Implement `GlobalBannerPresenter` in `ios/MedicationApp/Shared/Banner/GlobalBannerPresenter.swift` (Why: show caregiver banner; AC: top banner ~3 seconds, newest wins (queue length 1); Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T029 [US3] Wire lifecycle start/stop in `ios/MedicationApp/Features/Caregiver/CaregiverSessionController.swift` (Why: avoid background work; AC: subscribes on foreground, unsubscribes on background; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
+- [x] T030 [US3] Handle revoked/unauthorized caregiver sessions in `ios/MedicationApp/Features/Caregiver/CaregiverEventSubscriber.swift` (Why: security/privacy; AC: no events shown when access revoked; Test: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`)
 
 ---
 
@@ -100,9 +100,9 @@
 
 **Purpose**: Documentation and final verification
 
-- [ ] T031 [P] Update `specs/005-medication-notifications/quickstart.md` with test commands and reminder flows (Why: run/test guidance; AC: commands match plan; Test: N/A)
-- [ ] T032 [P] Update `specs/005-medication-notifications/contracts/openapi.yaml` with endpoints used + DoseRecordEvent schema (Why: contract traceability; AC: endpoints and event schema present; Test: N/A)
-- [ ] T033 [P] Update `specs/005-medication-notifications/data-model.md` if implementation diverges (Why: maintain spec alignment; AC: entities match code; Test: N/A)
+- [x] T031 [P] Update `specs/005-medication-notifications/quickstart.md` with test commands and reminder flows (Why: run/test guidance; AC: commands match plan; Test: N/A)
+- [x] T032 [P] Update `specs/005-medication-notifications/contracts/openapi.yaml` with endpoints used + DoseRecordEvent schema (Why: contract traceability; AC: endpoints and event schema present; Test: N/A)
+- [x] T033 [P] Update `specs/005-medication-notifications/data-model.md` if implementation diverges (Why: maintain spec alignment; AC: entities match code; Test: N/A)
 
 ---
 

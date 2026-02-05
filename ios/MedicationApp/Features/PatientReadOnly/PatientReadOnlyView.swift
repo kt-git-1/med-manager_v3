@@ -2,25 +2,58 @@ import SwiftUI
 
 struct PatientReadOnlyView: View {
     @EnvironmentObject private var sessionStore: SessionStore
+    @EnvironmentObject private var notificationRouter: NotificationDeepLinkRouter
+    @EnvironmentObject private var reminderBannerPresenter: ReminderBannerPresenter
     @State private var selectedTab: PatientTab = .today
+    @StateObject private var schedulingCoordinator = SchedulingRefreshCoordinator()
+    @State private var deepLinkTarget: NotificationDeepLinkTarget?
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                switch selectedTab {
-                case .today:
-                    PatientTodayView(sessionStore: sessionStore)
-                case .history:
-                    HistoryMonthView(sessionStore: sessionStore)
+        FullScreenContainer(content: {
+            NavigationStack {
+                ZStack {
+                    switch selectedTab {
+                    case .today:
+                        PatientTodayView(
+                            sessionStore: sessionStore,
+                            deepLinkTarget: $deepLinkTarget
+                        )
+                    case .history:
+                        HistoryMonthView(sessionStore: sessionStore)
                 case .settings:
-                    PatientSettingsView(onLogout: { sessionStore.clearPatientToken() })
+                    PatientSettingsView(
+                        sessionStore: sessionStore,
+                        schedulingCoordinator: schedulingCoordinator,
+                        onLogout: { sessionStore.clearPatientToken() }
+                    )
+                    }
+                }
+                .navigationTitle(navigationTitle)
+                .navigationBarTitleDisplayMode(navigationTitleDisplayMode)
+            }
+            .safeAreaInset(edge: .bottom) {
+                PatientBottomTabBar(selectedTab: $selectedTab)
+            }
+            .overlay(alignment: .top) {
+                if let banner = reminderBannerPresenter.banner {
+                    ReminderBannerView(banner: banner)
                 }
             }
-            .navigationTitle(navigationTitle)
-            .navigationBarTitleDisplayMode(navigationTitleDisplayMode)
+        }, overlay: schedulingCoordinator.isRefreshing ? AnyView(SchedulingRefreshOverlay()) : nil)
+        .onReceive(notificationRouter.$target) { target in
+            guard let target else { return }
+            selectedTab = .today
+            deepLinkTarget = target
+            notificationRouter.clear()
         }
-        .safeAreaInset(edge: .bottom) {
-            PatientBottomTabBar(selectedTab: $selectedTab)
+        .onReceive(reminderBannerPresenter.$banner) { banner in
+            guard let banner else { return }
+            if selectedTab == .today {
+                deepLinkTarget = NotificationDeepLinkTarget(
+                    dateKey: banner.dateKey,
+                    slot: banner.slot
+                )
+            }
         }
         .accessibilityIdentifier("PatientReadOnlyView")
     }
@@ -47,19 +80,116 @@ struct PatientReadOnlyView: View {
 }
 
 struct PatientSettingsView: View {
+    private let sessionStore: SessionStore
+    private let apiClient: APIClient
+    @ObservedObject private var schedulingCoordinator: SchedulingRefreshCoordinator
+    @StateObject private var permissionManager = NotificationPermissionManager()
+    @StateObject private var preferencesStore = NotificationPreferencesStore()
     let onLogout: () -> Void
 
+    init(
+        sessionStore: SessionStore,
+        schedulingCoordinator: SchedulingRefreshCoordinator,
+        onLogout: @escaping () -> Void
+    ) {
+        self.sessionStore = sessionStore
+        self.apiClient = APIClient(
+            baseURL: SessionStore.resolveBaseURL(),
+            sessionStore: sessionStore
+        )
+        self.schedulingCoordinator = schedulingCoordinator
+        self.onLogout = onLogout
+    }
+
     var body: some View {
-        VStack {
-            Spacer(minLength: 0)
-            Button(NSLocalizedString("common.logout", comment: "Logout")) {
-                onLogout()
+        Form {
+            Section {
+                Toggle(
+                    NSLocalizedString("patient.settings.notifications.master", comment: "Enable notifications"),
+                    isOn: $preferencesStore.masterEnabled
+                )
+                    .onChange(of: preferencesStore.masterEnabled) { _, enabled in
+                        Task { await handleMasterToggle(enabled) }
+                    }
+
+                Toggle(
+                    NSLocalizedString("patient.settings.notifications.rereminder", comment: "Rereminder"),
+                    isOn: $preferencesStore.rereminderEnabled
+                )
+                    .disabled(!preferencesStore.masterEnabled)
+                    .onChange(of: preferencesStore.rereminderEnabled) { _, _ in
+                        Task { await rescheduleIfNeeded() }
+                    }
             }
-            .buttonStyle(.borderedProminent)
-            .font(.headline)
-            Spacer(minLength: 0)
+
+            Section(header: Text(NSLocalizedString("patient.settings.notifications.slots.title", comment: "Slots title"))) {
+                toggleRow(title: NSLocalizedString("patient.settings.notifications.slot.morning", comment: "Morning"), slot: .morning)
+                toggleRow(title: NSLocalizedString("patient.settings.notifications.slot.noon", comment: "Noon"), slot: .noon)
+                toggleRow(title: NSLocalizedString("patient.settings.notifications.slot.evening", comment: "Evening"), slot: .evening)
+                toggleRow(title: NSLocalizedString("patient.settings.notifications.slot.bedtime", comment: "Bedtime"), slot: .bedtime)
+            }
+            .disabled(!preferencesStore.masterEnabled)
+
+            if permissionManager.status == .denied {
+                Section {
+                    Text(
+                        NSLocalizedString(
+                            "patient.settings.notifications.permission.denied",
+                            comment: "Permission denied guidance"
+                        )
+                    )
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section {
+                Button(NSLocalizedString("common.logout", comment: "Logout")) {
+                    onLogout()
+                }
+                .buttonStyle(.borderedProminent)
+                .font(.headline)
+            }
+        }
+        .disabled(permissionManager.status == .denied)
+        .onAppear {
+            Task { await permissionManager.refreshStatus() }
         }
         .accessibilityIdentifier("PatientSettingsView")
+    }
+
+    private func toggleRow(title: String, slot: NotificationSlot) -> some View {
+        Toggle(title, isOn: Binding(
+            get: { preferencesStore.isSlotEnabled(slot) },
+            set: { newValue in
+                preferencesStore.setSlotEnabled(slot, enabled: newValue)
+                Task { await rescheduleIfNeeded() }
+            }
+        ))
+    }
+
+    private func handleMasterToggle(_ enabled: Bool) async {
+        if enabled {
+            let granted = await permissionManager.requestAuthorizationIfNeeded()
+            if !granted {
+                preferencesStore.masterEnabled = false
+                return
+            }
+            await rescheduleIfNeeded()
+        } else {
+            let scheduler = NotificationScheduler()
+            await scheduler.schedule(planEntries: [], now: Date())
+        }
+    }
+
+    private func rescheduleIfNeeded() async {
+        guard preferencesStore.masterEnabled else { return }
+        await schedulingCoordinator.refresh(
+            apiClient: apiClient,
+            includeSecondary: preferencesStore.rereminderEnabled,
+            enabledSlots: preferencesStore.enabledSlots(),
+            trigger: .settingsChange
+        )
     }
 }
 

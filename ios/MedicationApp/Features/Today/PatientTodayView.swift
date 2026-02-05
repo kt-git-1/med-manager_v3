@@ -4,10 +4,16 @@ struct PatientTodayView: View {
     private let sessionStore: SessionStore
     @StateObject private var viewModel: PatientTodayViewModel
     @State private var showingConfirm = false
+    @Binding private var deepLinkTarget: NotificationDeepLinkTarget?
+    @State private var pendingScrollTarget: String?
 
-    init(sessionStore: SessionStore? = nil) {
+    init(
+        sessionStore: SessionStore? = nil,
+        deepLinkTarget: Binding<NotificationDeepLinkTarget?> = .constant(nil)
+    ) {
         let store = sessionStore ?? SessionStore()
         self.sessionStore = store
+        _deepLinkTarget = deepLinkTarget
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
             wrappedValue: PatientTodayViewModel(apiClient: APIClient(baseURL: baseURL, sessionStore: store))
@@ -51,6 +57,7 @@ struct PatientTodayView: View {
         }
         .onAppear {
             viewModel.handleAppear()
+            handleDeepLinkIfNeeded()
         }
         .onDisappear {
             viewModel.handleDisappear()
@@ -70,6 +77,12 @@ struct PatientTodayView: View {
         .onChange(of: viewModel.confirmDose) { _, newValue in
             showingConfirm = newValue != nil
         }
+        .onChange(of: deepLinkTarget) { _, _ in
+            handleDeepLinkIfNeeded()
+        }
+        .onChange(of: viewModel.items) { _, _ in
+            handleDeepLinkIfNeeded()
+        }
         .sensoryFeedback(.success, trigger: viewModel.toastMessage)
         .accessibilityIdentifier("PatientTodayView")
         .environmentObject(sessionStore)
@@ -87,46 +100,59 @@ struct PatientTodayView: View {
                     message: NSLocalizedString("patient.today.empty.message", comment: "Empty message")
                 )
             } else {
-                List {
-                    if !plannedItems.isEmpty {
-                        Section {
-                            ForEach(plannedItems) { dose in
-                                PatientTodayRow(
-                                    dose: dose,
-                                    timeText: viewModel.timeText(for: dose.scheduledAt),
-                                    onRecord: { viewModel.confirmRecord(for: dose) }
-                                )
-                                .listRowSeparator(.hidden)
+                ScrollViewReader { proxy in
+                    List {
+                        if !plannedItems.isEmpty {
+                            Section {
+                                ForEach(plannedItems) { dose in
+                                    PatientTodayRow(
+                                        dose: dose,
+                                        timeText: viewModel.timeText(for: dose.scheduledAt),
+                                        onRecord: { viewModel.confirmRecord(for: dose) },
+                                        isHighlighted: viewModel.highlightedSlot == slot(for: dose)
+                                    )
+                                    .id(dose.key)
+                                    .listRowSeparator(.hidden)
+                                }
+                            } header: {
+                                Text(NSLocalizedString("patient.today.section.planned", comment: "Today planned"))
+                                    .font(.headline)
+                                    .foregroundStyle(.primary)
+                                    .textCase(nil)
                             }
-                        } header: {
-                            Text(NSLocalizedString("patient.today.section.planned", comment: "Today planned"))
-                                .font(.headline)
-                                .foregroundStyle(.primary)
-                                .textCase(nil)
+                        }
+
+                        if !takenItems.isEmpty {
+                            Section {
+                                ForEach(takenItems) { dose in
+                                    PatientTodayRow(
+                                        dose: dose,
+                                        timeText: viewModel.timeText(for: dose.scheduledAt),
+                                        onRecord: { viewModel.confirmRecord(for: dose) },
+                                        isHighlighted: viewModel.highlightedSlot == slot(for: dose)
+                                    )
+                                    .id(dose.key)
+                                    .listRowSeparator(.hidden)
+                                }
+                            } header: {
+                                Text(NSLocalizedString("patient.today.section.taken", comment: "Taken"))
+                                    .font(.headline)
+                                    .foregroundStyle(.primary)
+                                    .textCase(nil)
+                            }
                         }
                     }
-
-                    if !takenItems.isEmpty {
-                        Section {
-                            ForEach(takenItems) { dose in
-                                PatientTodayRow(
-                                    dose: dose,
-                                    timeText: viewModel.timeText(for: dose.scheduledAt),
-                                    onRecord: { viewModel.confirmRecord(for: dose) }
-                                )
-                                .listRowSeparator(.hidden)
-                            }
-                        } header: {
-                            Text(NSLocalizedString("patient.today.section.taken", comment: "Taken"))
-                                .font(.headline)
-                                .foregroundStyle(.primary)
-                                .textCase(nil)
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                    .background(Color.white)
+                    .onChange(of: pendingScrollTarget) { _, target in
+                        guard let target else { return }
+                        withAnimation(.easeInOut) {
+                            proxy.scrollTo(target, anchor: .top)
                         }
+                        pendingScrollTarget = nil
                     }
                 }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
-                .background(Color.white)
             }
         }
         .safeAreaPadding(.top)
@@ -155,12 +181,24 @@ struct PatientTodayView: View {
             timeText
         )
     }
+
+    private func slot(for dose: ScheduleDoseDTO) -> NotificationSlot? {
+        NotificationSlot.from(date: dose.scheduledAt)
+    }
+
+    private func handleDeepLinkIfNeeded() {
+        guard let target = deepLinkTarget else { return }
+        guard !viewModel.isLoading else { return }
+        pendingScrollTarget = viewModel.handleDeepLink(target)
+        deepLinkTarget = nil
+    }
 }
 
 private struct PatientTodayRow: View {
     let dose: ScheduleDoseDTO
     let timeText: String
     let onRecord: () -> Void
+    let isHighlighted: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -208,6 +246,7 @@ private struct PatientTodayRow: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(isMissed ? Color.red.opacity(0.35) : Color.clear, lineWidth: 1)
         )
+        .todaySlotHighlight(isHighlighted)
         .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilitySummary)

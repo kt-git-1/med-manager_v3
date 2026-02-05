@@ -1,11 +1,36 @@
 import SwiftUI
 import UIKit
+import UserNotifications
 
 @main
 struct MedicationApp: App {
-    @StateObject private var sessionStore = SessionStore()
+    @StateObject private var sessionStore: SessionStore
+    @StateObject private var notificationRouter: NotificationDeepLinkRouter
+    @StateObject private var reminderBannerPresenter: ReminderBannerPresenter
+    @StateObject private var globalBannerPresenter: GlobalBannerPresenter
+    @StateObject private var caregiverSessionController: CaregiverSessionController
+    private let notificationCoordinator: NotificationCoordinator
 
     init() {
+        let sessionStore = SessionStore()
+        let notificationRouter = NotificationDeepLinkRouter()
+        let reminderBannerPresenter = ReminderBannerPresenter()
+        let globalBannerPresenter = GlobalBannerPresenter()
+        let caregiverSessionController = CaregiverSessionController(
+            sessionStore: sessionStore,
+            bannerPresenter: globalBannerPresenter
+        )
+        _sessionStore = StateObject(wrappedValue: sessionStore)
+        _notificationRouter = StateObject(wrappedValue: notificationRouter)
+        _reminderBannerPresenter = StateObject(wrappedValue: reminderBannerPresenter)
+        _globalBannerPresenter = StateObject(wrappedValue: globalBannerPresenter)
+        _caregiverSessionController = StateObject(wrappedValue: caregiverSessionController)
+        notificationCoordinator = NotificationCoordinator(
+            router: notificationRouter,
+            bannerPresenter: reminderBannerPresenter
+        )
+        UNUserNotificationCenter.current().delegate = notificationCoordinator
+
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = UIColor.systemBackground
@@ -33,6 +58,10 @@ struct MedicationApp: App {
                     .dynamicTypeSize(.xLarge)
             }
             .environmentObject(sessionStore)
+            .environmentObject(notificationRouter)
+            .environmentObject(reminderBannerPresenter)
+            .environmentObject(globalBannerPresenter)
+            .environmentObject(caregiverSessionController)
         }
     }
 }

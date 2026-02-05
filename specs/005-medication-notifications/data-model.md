@@ -41,3 +41,4 @@
 - Reminder plan is computed for a 7-day rolling window (today..today+6, Asia/Tokyo).
 - Only slots with slot summary == PENDING are scheduled.
 - Secondary reminders are cancelled after TAKEN if no pending remain in the slot.
+- Caregiver banner events are ignored when caregiver access is revoked or unauthorized.

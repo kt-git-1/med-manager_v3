@@ -2,6 +2,9 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var sessionStore: SessionStore
+    @EnvironmentObject private var globalBannerPresenter: GlobalBannerPresenter
+    @EnvironmentObject private var caregiverSessionController: CaregiverSessionController
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -21,6 +24,17 @@ struct RootView: View {
                     PatientReadOnlyView()
                 }
             }
+        }
+        .overlay(alignment: .top) {
+            if let banner = globalBannerPresenter.banner {
+                GlobalBannerView(banner: banner)
+            }
+        }
+        .onAppear {
+            caregiverSessionController.updateScenePhase(scenePhase)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            caregiverSessionController.updateScenePhase(phase)
         }
     }
 }

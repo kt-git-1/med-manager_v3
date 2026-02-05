@@ -39,6 +39,13 @@ components:
     DoseRecordEvent:
       type: object
       description: Realtime payload emitted on TAKEN record
+      required:
+        - id
+        - patientId
+        - displayName
+        - scheduledAt
+        - takenAt
+        - withinTime
       properties:
         id:
           type: string
