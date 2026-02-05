@@ -83,6 +83,7 @@ model Patient {
   linkingAttempts LinkingAttempt[]
   sessions        PatientSession[]
   doseRecords     DoseRecord[]
+  doseRecordEvents DoseRecordEvent[]
 }
 
 model CaregiverPatientLink {
@@ -145,6 +146,20 @@ model DoseRecord {
 
   @@unique([patientId, medicationId, scheduledAt])
   @@index([patientId, scheduledAt])
+}
+
+model DoseRecordEvent {
+  id         String   @id @default(uuid())
+  patientId  String
+  scheduledAt DateTime
+  takenAt    DateTime
+  withinTime Boolean
+  displayName String
+  createdAt  DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([patientId, createdAt])
 }
 
 model LinkingAttempt {

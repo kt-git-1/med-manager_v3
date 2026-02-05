@@ -6,6 +6,8 @@ import {
   upsertDoseRecord,
   type DoseRecordKey
 } from "../repositories/doseRecordRepo";
+import { createDoseRecordEvent } from "../repositories/doseRecordEventRepo";
+import { getPatientRecordById } from "../repositories/patientRepo";
 import { assertCaregiverPatientScope } from "../middleware/auth";
 
 export type DoseRecordCreateInput = DoseRecordKey & {
@@ -16,7 +18,32 @@ export type DoseRecordCreateInput = DoseRecordKey & {
 export async function createDoseRecordIdempotent(
   input: DoseRecordCreateInput
 ): Promise<DoseRecord> {
-  return upsertDoseRecord(input);
+  const existing = await getDoseRecordByKey({
+    patientId: input.patientId,
+    medicationId: input.medicationId,
+    scheduledAt: input.scheduledAt
+  });
+  if (existing) {
+    return existing;
+  }
+
+  const record = await upsertDoseRecord(input);
+  const patient = await getPatientRecordById(record.patientId);
+  if (!patient) {
+    return record;
+  }
+
+  const withinTime =
+    record.takenAt.getTime() <= record.scheduledAt.getTime() + 60 * 60 * 1000;
+  await createDoseRecordEvent({
+    patientId: record.patientId,
+    scheduledAt: record.scheduledAt,
+    takenAt: record.takenAt,
+    withinTime,
+    displayName: patient.displayName
+  });
+
+  return record;
 }
 
 export async function deleteDoseRecord(

@@ -88,6 +88,14 @@
 "patient.readonly.history.message" = "準備中です";
 "patient.readonly.settings.tab" = "設定";
 "patient.readonly.settings.title" = "設定";
+"patient.settings.notifications.master" = "通知を有効にする";
+"patient.settings.notifications.rereminder" = "再通知（15分後）";
+"patient.settings.notifications.slots.title" = "時間帯";
+"patient.settings.notifications.slot.morning" = "朝";
+"patient.settings.notifications.slot.noon" = "昼";
+"patient.settings.notifications.slot.evening" = "夜";
+"patient.settings.notifications.slot.bedtime" = "眠前";
+"patient.settings.notifications.permission.denied" = "通知が許可されていません。設定アプリで通知を許可してください。";
 "history.month.previous" = "前の月";
 "history.month.next" = "次の月";
 "history.legend.taken" = "記録済み";
@@ -154,6 +162,7 @@
 "caregiver.today.recordedBy" = "記録: %@";
 "caregiver.today.recordedBy.patient" = "本人";
 "caregiver.today.recordedBy.caregiver" = "家族";
+"caregiver.banner.withinTime" = "%@さんが時間内に薬を服用しました！";
 
 /* Patient management */
 "caregiver.patients.title" = "連携/患者";

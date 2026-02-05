@@ -24,7 +24,20 @@
 		E1F2A3B4C5D6E7F8091A2B3C /* PatientTodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A6978877665544 /* PatientTodayView.swift */; };
 		E7F8A9B0C1D2E3F405162738 /* CaregiverTodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E8F9A0B1C2D3E4F5061728 /* CaregiverTodayView.swift */; };
 		F8A9B0C1D2E3F40516273849 /* CaregiverTodayViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6D7E8F9A0B1C2D3E4F50617 /* CaregiverTodayViewModel.swift */; };
+		E2A3B4C5D6E7F8091A2B3C70 /* CaregiverEventSubscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A3B4C5D6E7F8091A2B3C70 /* CaregiverEventSubscriber.swift */; };
+		E2A3B4C5D6E7F8091A2B3C81 /* CaregiverSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A3B4C5D6E7F8091A2B3C81 /* CaregiverSessionController.swift */; };
 		F0F1F2F3F4F5F6F7F8F9FAFB /* FullScreenContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F1F2F3F4F5F6F7F8F9FAFC /* FullScreenContainer.swift */; };
+		E2A3B4C5D6E7F8091A2B3C4D /* NotificationPermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A3B4C5D6E7F8091A2B3C4D /* NotificationPermissionManager.swift */; };
+		E2A3B4C5D6E7F8091A2B3C4E /* NotificationPlanBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A3B4C5D6E7F8091A2B3C4E /* NotificationPlanBuilder.swift */; };
+		E2A3B4C5D6E7F8091A2B3C4F /* NotificationPreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A3B4C5D6E7F8091A2B3C4F /* NotificationPreferencesStore.swift */; };
+		E2A3B4C5D6E7F8091A2B3C50 /* NotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A3B4C5D6E7F8091A2B3C50 /* NotificationScheduler.swift */; };
+		E2A3B4C5D6E7F8091A2B3C51 /* SchedulingRefreshCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A3B4C5D6E7F8091A2B3C51 /* SchedulingRefreshCoordinator.swift */; };
+		E2A3B4C5D6E7F8091A2B3C52 /* HistoryClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A3B4C5D6E7F8091A2B3C52 /* HistoryClient.swift */; };
+		E2A3B4C5D6E7F8091A2B3C53 /* SchedulingRefreshOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A3B4C5D6E7F8091A2B3C53 /* SchedulingRefreshOverlay.swift */; };
+		E2A3B4C5D6E7F8091A2B3C60 /* NotificationDeepLinkRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A3B4C5D6E7F8091A2B3C60 /* NotificationDeepLinkRouter.swift */; };
+		E2A3B4C5D6E7F8091A2B3C61 /* TodaySlotHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A3B4C5D6E7F8091A2B3C61 /* TodaySlotHighlight.swift */; };
+		E2A3B4C5D6E7F8091A2B3C62 /* ReminderBannerPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A3B4C5D6E7F8091A2B3C62 /* ReminderBannerPresenter.swift */; };
+		E2A3B4C5D6E7F8091A2B3C80 /* GlobalBannerPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A3B4C5D6E7F8091A2B3C80 /* GlobalBannerPresenter.swift */; };
 		403B60DF0710DEE297E332E7 /* MedicationListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB55437B073B6E2D5D88F3AE /* MedicationListViewModelTests.swift */; };
 		48CB1ABF9F105E0E095F3EA4 /* MedicationFormViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F793F0C9A8BBA67CA9C46326 /* MedicationFormViewModelTests.swift */; };
 		4E5F60718293A4B5C6D7E8F9 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5F708192A3B4C5D6E7F8091A /* Localizable.strings */; };
@@ -86,10 +99,13 @@
 		B1C2D3E4F5061728394A5B6C /* PatientTodayViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientTodayViewModel.swift; sourceTree = "<group>"; };
 		C6D7E8F9A0B1C2D3E4F50617 /* CaregiverTodayViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverTodayViewModel.swift; sourceTree = "<group>"; };
 		D7E8F9A0B1C2D3E4F5061728 /* CaregiverTodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverTodayView.swift; sourceTree = "<group>"; };
+		F2A3B4C5D6E7F8091A2B3C70 /* CaregiverEventSubscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverEventSubscriber.swift; sourceTree = "<group>"; };
+		F2A3B4C5D6E7F8091A2B3C81 /* CaregiverSessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverSessionController.swift; sourceTree = "<group>"; };
 		48D944249F964B12755FD2DF /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		55D848B099AC94BF91C18A12 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		5EFC3080A97C8534B55D4B19 /* CaregiverLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverLoginView.swift; sourceTree = "<group>"; };
 		5F708192A3B4C5D6E7F8091A /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
+		F2A3B4C5D6E7F8091A2B3C80 /* GlobalBannerPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalBannerPresenter.swift; sourceTree = "<group>"; };
 		6422C8656A2A888B307E5A94 /* MedicationApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationApp.swift; sourceTree = "<group>"; };
 		816F71313F426FE0A622F4B3 /* MedicationFormViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationFormViewModel.swift; sourceTree = "<group>"; };
 		8F7E6D5C4B3A2F1E0D9C8B7A /* PatientReadOnlyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientReadOnlyView.swift; sourceTree = "<group>"; };
@@ -114,6 +130,16 @@
 		F416FC7961AEE499FB0C7826 /* EmptyDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyDTO.swift; sourceTree = "<group>"; };
 		F1E2D3C4B5A6978877665544 /* PatientTodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientTodayView.swift; sourceTree = "<group>"; };
 		F793F0C9A8BBA67CA9C46326 /* MedicationFormViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationFormViewModelTests.swift; sourceTree = "<group>"; };
+		F2A3B4C5D6E7F8091A2B3C4D /* NotificationPermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPermissionManager.swift; sourceTree = "<group>"; };
+		F2A3B4C5D6E7F8091A2B3C4E /* NotificationPlanBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPlanBuilder.swift; sourceTree = "<group>"; };
+		F2A3B4C5D6E7F8091A2B3C4F /* NotificationPreferencesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPreferencesStore.swift; sourceTree = "<group>"; };
+		F2A3B4C5D6E7F8091A2B3C50 /* NotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationScheduler.swift; sourceTree = "<group>"; };
+		F2A3B4C5D6E7F8091A2B3C51 /* SchedulingRefreshCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulingRefreshCoordinator.swift; sourceTree = "<group>"; };
+		F2A3B4C5D6E7F8091A2B3C52 /* HistoryClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryClient.swift; sourceTree = "<group>"; };
+		F2A3B4C5D6E7F8091A2B3C53 /* SchedulingRefreshOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulingRefreshOverlay.swift; sourceTree = "<group>"; };
+		F2A3B4C5D6E7F8091A2B3C60 /* NotificationDeepLinkRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationDeepLinkRouter.swift; sourceTree = "<group>"; };
+		F2A3B4C5D6E7F8091A2B3C61 /* TodaySlotHighlight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodaySlotHighlight.swift; sourceTree = "<group>"; };
+		F2A3B4C5D6E7F8091A2B3C62 /* ReminderBannerPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderBannerPresenter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -154,6 +180,7 @@
 			children = (
 				3C4D5E6F708192A3B4C5D6E7 /* StateViews.swift */,
 				F0F1F2F3F4F5F6F7F8F9FAFC /* FullScreenContainer.swift */,
+				F2A3B4C5D6E7F8091A2B3C53 /* SchedulingRefreshOverlay.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -222,6 +249,7 @@
 				C6D7E8F9A0B1C2D3E4F50617 /* CaregiverTodayViewModel.swift */,
 				F1E2D3C4B5A6978877665544 /* PatientTodayView.swift */,
 				B1C2D3E4F5061728394A5B6C /* PatientTodayViewModel.swift */,
+				F2A3B4C5D6E7F8091A2B3C61 /* TodaySlotHighlight.swift */,
 			);
 			path = Today;
 			sourceTree = "<group>";
@@ -293,10 +321,12 @@
 			isa = PBXGroup;
 			children = (
 				DDD6345900A1A06F62841CD8 /* Auth */,
+				F2A3B4C5D6E7F8091A2B3C71 /* Caregiver */,
 				1A2B3C4D5E6F708192A3B4C6 /* History */,
 				4DAD4572D6388ED051EC7DBC /* Linking */,
 				27B28F49BE53014BA49C37BC /* MedicationForm */,
 				C242C151CD5306FE53BA9275 /* MedicationList */,
+				E2F3A4B5C6D7E8F9012A3B4E /* Notifications */,
 				7C632D3DABFEBEC21887EB91 /* ModeSelect */,
 				A1B2C3D4E5F6A7B8C9D0E202 /* PatientManagement */,
 				8B7C6D5E4F3A2B1C0D9E8F7A /* PatientReadOnly */,
@@ -305,13 +335,45 @@
 			path = Features;
 			sourceTree = "<group>";
 		};
+		F2A3B4C5D6E7F8091A2B3C71 /* Caregiver */ = {
+			isa = PBXGroup;
+			children = (
+				F2A3B4C5D6E7F8091A2B3C70 /* CaregiverEventSubscriber.swift */,
+				F2A3B4C5D6E7F8091A2B3C81 /* CaregiverSessionController.swift */,
+			);
+			path = Caregiver;
+			sourceTree = "<group>";
+		};
+		E2F3A4B5C6D7E8F9012A3B4E /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+				F2A3B4C5D6E7F8091A2B3C4D /* NotificationPermissionManager.swift */,
+				F2A3B4C5D6E7F8091A2B3C4E /* NotificationPlanBuilder.swift */,
+				F2A3B4C5D6E7F8091A2B3C4F /* NotificationPreferencesStore.swift */,
+				F2A3B4C5D6E7F8091A2B3C50 /* NotificationScheduler.swift */,
+				F2A3B4C5D6E7F8091A2B3C51 /* SchedulingRefreshCoordinator.swift */,
+				F2A3B4C5D6E7F8091A2B3C60 /* NotificationDeepLinkRouter.swift */,
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
 		F4EAFFFD8DD887721209EAAC /* Shared */ = {
 			isa = PBXGroup;
 			children = (
 				55D848B099AC94BF91C18A12 /* SessionStore.swift */,
+				E2F3A4B5C6D7E8F9012A3B60 /* Banner */,
 				4D5E6F708192A3B4C5D6E7F8 /* Views */,
 			);
 			path = Shared;
+			sourceTree = "<group>";
+		};
+		E2F3A4B5C6D7E8F9012A3B60 /* Banner */ = {
+			isa = PBXGroup;
+			children = (
+				F2A3B4C5D6E7F8091A2B3C62 /* ReminderBannerPresenter.swift */,
+				F2A3B4C5D6E7F8091A2B3C80 /* GlobalBannerPresenter.swift */,
+			);
+			path = Banner;
 			sourceTree = "<group>";
 		};
 		F50EAA427463168A9B653C17 /* Networking */ = {
@@ -320,6 +382,7 @@
 				48D944249F964B12755FD2DF /* APIClient.swift */,
 				1B421542D92993BB7B79D9D3 /* APIError.swift */,
 				388F121B3382F1004EC82EBE /* DTOs */,
+				F2A3B4C5D6E7F8091A2B3C52 /* HistoryClient.swift */,
 			);
 			path = Networking;
 			sourceTree = "<group>";
@@ -414,9 +477,12 @@
 				CC241D83091F75F9817D86C1 /* AuthService.swift in Sources */,
 				9E32A2665B38F39DF6691477 /* CaregiverLoginView.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F5 /* CaregiverSignupView.swift in Sources */,
+				E2A3B4C5D6E7F8091A2B3C70 /* CaregiverEventSubscriber.swift in Sources */,
+				E2A3B4C5D6E7F8091A2B3C81 /* CaregiverSessionController.swift in Sources */,
 				D0A1B2C3D4E5F60718293A4B /* DoseRecordDTO.swift in Sources */,
 				291B6376A250F33FB5566E26 /* EmptyDTO.swift in Sources */,
 				B7C8D9E0F1A2031425364759 /* HistoryDTO.swift in Sources */,
+				E2A3B4C5D6E7F8091A2B3C52 /* HistoryClient.swift in Sources */,
 				2A2B3C4D5E6F708192A3B4CA /* CaregiverHistoryView.swift in Sources */,
 				2A2B3C4D5E6F708192A3B4C8 /* HistoryDayDetailView.swift in Sources */,
 				2A2B3C4D5E6F708192A3B4C7 /* HistoryMonthView.swift in Sources */,
@@ -430,6 +496,12 @@
 				9CD32F9777E00CA402463257 /* MedicationFormViewModel.swift in Sources */,
 				D427E43F32FD2C23CA3BB00A /* MedicationListView.swift in Sources */,
 				E865934EDE6E1079E23D6398 /* ModeSelectView.swift in Sources */,
+				E2A3B4C5D6E7F8091A2B3C4D /* NotificationPermissionManager.swift in Sources */,
+				E2A3B4C5D6E7F8091A2B3C4E /* NotificationPlanBuilder.swift in Sources */,
+				E2A3B4C5D6E7F8091A2B3C4F /* NotificationPreferencesStore.swift in Sources */,
+				E2A3B4C5D6E7F8091A2B3C50 /* NotificationScheduler.swift in Sources */,
+				E2A3B4C5D6E7F8091A2B3C51 /* SchedulingRefreshCoordinator.swift in Sources */,
+				E2A3B4C5D6E7F8091A2B3C60 /* NotificationDeepLinkRouter.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1FF /* CaregiverHomeView.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F7 /* PatientManagementView.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F9 /* PatientCreateView.swift in Sources */,
@@ -439,12 +511,16 @@
 				F8A9B0C1D2E3F40516273849 /* CaregiverTodayViewModel.swift in Sources */,
 				E1F2A3B4C5D6E7F8091A2B3C /* PatientTodayView.swift in Sources */,
 				A9B8C7D6E5F4031223344556 /* PatientTodayViewModel.swift in Sources */,
+				E2A3B4C5D6E7F8091A2B3C61 /* TodaySlotHighlight.swift in Sources */,
 				B4C5D6E7F8091A2B3C4D5E6F /* ReminderService.swift in Sources */,
+				E2A3B4C5D6E7F8091A2B3C62 /* ReminderBannerPresenter.swift in Sources */,
+				E2A3B4C5D6E7F8091A2B3C80 /* GlobalBannerPresenter.swift in Sources */,
 				7A8B9C0D1E2F3A4B5C6D7E8F /* PatientReadOnlyView.swift in Sources */,
 				C531B4EE2AF37C0A10FE41B1 /* RootView.swift in Sources */,
 				C6F26CAD5BC8841754DDEDEE /* SessionStore.swift in Sources */,
 				2D3E4F5A6B7C8D9E0F1A2B3C /* StateViews.swift in Sources */,
 				F0F1F2F3F4F5F6F7F8F9FAFB /* FullScreenContainer.swift in Sources */,
+				E2A3B4C5D6E7F8091A2B3C53 /* SchedulingRefreshOverlay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

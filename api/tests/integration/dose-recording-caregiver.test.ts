@@ -60,6 +60,28 @@ vi.mock("../../src/repositories/doseRecordRepo", () => ({
   }
 }));
 
+vi.mock("../../src/repositories/patientRepo", () => ({
+  getPatientRecordById: async (patientId: string) => ({
+    id: patientId,
+    caregiverId: "caregiver-1",
+    displayName: "Test Patient",
+    createdAt: new Date(),
+    updatedAt: new Date()
+  })
+}));
+
+vi.mock("../../src/repositories/doseRecordEventRepo", () => ({
+  createDoseRecordEvent: async () => ({
+    id: "event-1",
+    patientId: "patient-1",
+    scheduledAt: new Date(),
+    takenAt: new Date(),
+    withinTime: true,
+    displayName: "Test Patient",
+    createdAt: new Date()
+  })
+}));
+
 describe("dose recording caregiver integration", () => {
   it("creates caregiver dose record with recordedById", async () => {
     store.clear();

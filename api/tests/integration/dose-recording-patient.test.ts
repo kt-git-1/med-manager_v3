@@ -42,7 +42,33 @@ vi.mock("../../src/repositories/doseRecordRepo", () => ({
     };
     store.set(key, record);
     return record;
+  },
+  getDoseRecordByKey: async (key: { patientId: string; medicationId: string; scheduledAt: Date }) => {
+    const lookupKey = `${key.patientId}:${key.medicationId}:${key.scheduledAt.toISOString()}`;
+    return store.get(lookupKey) ?? null;
   }
+}));
+
+vi.mock("../../src/repositories/patientRepo", () => ({
+  getPatientRecordById: async (patientId: string) => ({
+    id: patientId,
+    caregiverId: "caregiver-1",
+    displayName: "Test Patient",
+    createdAt: new Date(),
+    updatedAt: new Date()
+  })
+}));
+
+vi.mock("../../src/repositories/doseRecordEventRepo", () => ({
+  createDoseRecordEvent: async () => ({
+    id: "event-1",
+    patientId: "patient-1",
+    scheduledAt: new Date(),
+    takenAt: new Date(),
+    withinTime: true,
+    displayName: "Test Patient",
+    createdAt: new Date()
+  })
 }));
 
 describe("dose recording patient integration", () => {

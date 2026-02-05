@@ -10,11 +10,14 @@ final class PatientTodayViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var toastMessage: String?
     @Published var confirmDose: ScheduleDoseDTO?
+    @Published var highlightedSlot: NotificationSlot?
 
     private let apiClient: APIClient
     private let reminderService: ReminderService
     private let dateFormatter: DateFormatter
     private let timeFormatter: DateFormatter
+    private let dateKeyFormatter: DateFormatter
+    private let calendar: Calendar
     private var foregroundTask: Task<Void, Never>?
 
     init(apiClient: APIClient, reminderService: ReminderService = ReminderService()) {
@@ -28,6 +31,15 @@ final class PatientTodayViewModel: ObservableObject {
         self.timeFormatter.locale = Locale(identifier: "ja_JP")
         self.timeFormatter.dateStyle = .none
         self.timeFormatter.timeStyle = .short
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        self.calendar = calendar
+        let dateKeyFormatter = DateFormatter()
+        dateKeyFormatter.calendar = calendar
+        dateKeyFormatter.timeZone = calendar.timeZone
+        dateKeyFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateKeyFormatter.dateFormat = "yyyy-MM-dd"
+        self.dateKeyFormatter = dateKeyFormatter
     }
 
     deinit {
@@ -103,6 +115,26 @@ final class PatientTodayViewModel: ObservableObject {
         dateFormatter.string(from: date)
     }
 
+    func handleDeepLink(_ target: NotificationDeepLinkTarget) -> String? {
+        guard let dose = items.first(where: { dose in
+            guard let slot = NotificationSlot.from(date: dose.scheduledAt, timeZone: calendar.timeZone) else {
+                return false
+            }
+            return slot == target.slot && dateKey(for: dose.scheduledAt) == target.dateKey
+        }) else {
+            showToast(NSLocalizedString("patient.today.alreadyRecorded", comment: "Already recorded"))
+            return nil
+        }
+
+        if dose.effectiveStatus != .pending {
+            showToast(NSLocalizedString("patient.today.alreadyRecorded", comment: "Already recorded"))
+        } else {
+            triggerHighlight(for: target.slot)
+        }
+
+        return dose.key
+    }
+
     private func showToast(_ message: String) {
         withAnimation {
             toastMessage = message
@@ -115,6 +147,22 @@ final class PatientTodayViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    private func triggerHighlight(for slot: NotificationSlot) {
+        highlightedSlot = slot
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            await MainActor.run {
+                if self?.highlightedSlot == slot {
+                    self?.highlightedSlot = nil
+                }
+            }
+        }
+    }
+
+    private func dateKey(for date: Date) -> String {
+        dateKeyFormatter.string(from: date)
     }
 
     private func sortDose(_ lhs: ScheduleDoseDTO, _ rhs: ScheduleDoseDTO) -> Bool {
