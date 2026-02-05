@@ -1,0 +1,190 @@
+openapi: 3.0.3
+info:
+  title: Inventory Tracking API (006)
+  version: 0.1.0
+  description: |
+    Caregiver inventory endpoints and realtime alert payloads.
+servers:
+  - url: /api
+paths:
+  /patients/{patientId}/inventory:
+    get:
+      summary: Get patient medication inventory (caregiver)
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Inventory list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryListResponse"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Patient not found (concealed)
+  /patients/{patientId}/medications/{medicationId}/inventory:
+    patch:
+      summary: Update medication inventory settings (caregiver)
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: medicationId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryUpdateRequest"
+      responses:
+        "200":
+          description: Inventory settings updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Patient or medication not found (concealed)
+        "422":
+          description: Validation error
+  /patients/{patientId}/medications/{medicationId}/inventory/adjust:
+    post:
+      summary: Adjust medication inventory (caregiver)
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: medicationId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryAdjustRequest"
+      responses:
+        "200":
+          description: Inventory adjusted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Patient or medication not found (concealed)
+        "422":
+          description: Validation error
+components:
+  schemas:
+    InventoryListResponse:
+      type: object
+      required:
+        - patientId
+        - medications
+      properties:
+        patientId:
+          type: string
+        medications:
+          type: array
+          items:
+            $ref: "#/components/schemas/InventoryItem"
+    InventoryItem:
+      type: object
+      required:
+        - medicationId
+        - name
+        - inventoryEnabled
+        - inventoryQuantity
+        - inventoryLowThreshold
+        - low
+        - out
+      properties:
+        medicationId:
+          type: string
+        name:
+          type: string
+        inventoryEnabled:
+          type: boolean
+        inventoryQuantity:
+          type: integer
+        inventoryLowThreshold:
+          type: integer
+        low:
+          type: boolean
+        out:
+          type: boolean
+    InventoryUpdateRequest:
+      type: object
+      properties:
+        inventoryEnabled:
+          type: boolean
+        inventoryQuantity:
+          type: integer
+        inventoryLowThreshold:
+          type: integer
+    InventoryAdjustRequest:
+      type: object
+      required:
+        - reason
+      properties:
+        delta:
+          type: integer
+          description: Positive or negative adjustment amount
+        absoluteQuantity:
+          type: integer
+          description: Set absolute quantity (use with reason=SET)
+        reason:
+          type: string
+          enum:
+            - REFILL
+            - SET
+            - CORRECTION
+    InventoryAlertEvent:
+      type: object
+      description: Realtime payload emitted on LOW/OUT transitions
+      required:
+        - id
+        - patientId
+        - medicationId
+        - type
+        - remaining
+        - threshold
+        - createdAt
+      properties:
+        id:
+          type: string
+        patientId:
+          type: string
+        medicationId:
+          type: string
+        type:
+          type: string
+          enum:
+            - LOW
+            - OUT
+        remaining:
+          type: integer
+        threshold:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
