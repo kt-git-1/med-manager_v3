@@ -12,6 +12,7 @@
 "common.logout" = "ログアウト";
 "common.toast.updated" = "更新しました";
 "caregiver.inventory.toast.saved" = "在庫情報を保存しました";
+"caregiver.inventory.toast.refilled" = "薬を補充しました";
 
 /* Mode select */
 "mode.select.title" = "モードを選択";

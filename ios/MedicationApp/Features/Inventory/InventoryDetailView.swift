@@ -5,6 +5,7 @@ struct InventoryDetailView: View {
     @ObservedObject var viewModel: InventoryViewModel
     @Environment(\.dismiss) private var dismiss
     private let onSaved: (() -> Void)?
+    private let onRefilled: (() -> Void)?
 
     @State private var inventoryEnabled: Bool
     @State private var quantity: Int
@@ -15,7 +16,6 @@ struct InventoryDetailView: View {
     @State private var savedLowThreshold: Int
     @State private var pendingRefillAmount: Int?
     @State private var showRefillConfirm = false
-    @State private var toastMessage: String?
     @State private var lastFailedAction: InventoryDetailAction?
     @FocusState private var focusedField: InventoryField?
 
@@ -26,10 +26,16 @@ struct InventoryDetailView: View {
         return formatter
     }()
 
-    init(item: InventoryItemDTO, viewModel: InventoryViewModel, onSaved: (() -> Void)? = nil) {
+    init(
+        item: InventoryItemDTO,
+        viewModel: InventoryViewModel,
+        onSaved: (() -> Void)? = nil,
+        onRefilled: (() -> Void)? = nil
+    ) {
         self.item = item
         self.viewModel = viewModel
         self.onSaved = onSaved
+        self.onRefilled = onRefilled
         _inventoryEnabled = State(initialValue: item.inventoryEnabled)
         _quantity = State(initialValue: item.inventoryQuantity)
         _lowThreshold = State(initialValue: item.inventoryLowThreshold)
@@ -154,21 +160,6 @@ struct InventoryDetailView: View {
                 )
             )
         }
-        .overlay(alignment: .top) {
-            if let toastMessage {
-                Text(toastMessage)
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .shadow(radius: 4)
-                    .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .accessibilityLabel(toastMessage)
-            }
-        }
-        .sensoryFeedback(.success, trigger: toastMessage)
     }
 
     private var inventoryHeader: some View {
@@ -251,7 +242,8 @@ struct InventoryDetailView: View {
         if let updated {
             quantity = updated.inventoryQuantity
             refillAmount = 0
-            showToast(NSLocalizedString("common.toast.updated", comment: "Updated toast"))
+            onRefilled?()
+            dismiss()
         } else {
             errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
             lastFailedAction = .refill(amount)
@@ -277,19 +269,6 @@ struct InventoryDetailView: View {
         .controlSize(.small)
     }
 
-    private func showToast(_ message: String) {
-        withAnimation {
-            toastMessage = message
-        }
-        Task {
-            try? await Task.sleep(for: .seconds(1))
-            await MainActor.run {
-                withAnimation {
-                    toastMessage = nil
-                }
-            }
-        }
-    }
 }
 
 private enum InventoryStatus {

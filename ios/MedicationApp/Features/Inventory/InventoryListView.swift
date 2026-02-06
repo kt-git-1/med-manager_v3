@@ -148,6 +148,9 @@ struct InventoryListView: View {
                 viewModel: viewModel,
                 onSaved: {
                     showToast(NSLocalizedString("caregiver.inventory.toast.saved", comment: "Inventory saved toast"))
+                },
+                onRefilled: {
+                    showToast(NSLocalizedString("caregiver.inventory.toast.refilled", comment: "Inventory refilled toast"))
                 }
             )
         }

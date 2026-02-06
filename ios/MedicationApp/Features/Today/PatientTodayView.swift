@@ -1,6 +1,11 @@
 import SwiftUI
 
 struct PatientTodayView: View {
+    private static let todayCalendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        return calendar
+    }()
     private let sessionStore: SessionStore
     @StateObject private var viewModel: PatientTodayViewModel
     @State private var showingConfirm = false
@@ -189,7 +194,11 @@ struct PatientTodayView: View {
     }
 
     private var takenItems: [ScheduleDoseDTO] {
-        viewModel.items.filter { $0.effectiveStatus == .taken }
+        let now = Date()
+        return viewModel.items.filter { dose in
+            dose.effectiveStatus == .taken
+                && Self.todayCalendar.isDate(dose.scheduledAt, inSameDayAs: now)
+        }
     }
 
     private func confirmMessage(for dose: ScheduleDoseDTO) -> String {
@@ -425,7 +434,7 @@ private struct PatientTodayRow: View {
                     Text(dose.medicationSnapshot.name)
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(isMissed ? Color.red : Color.primary)
-                    Text(dose.medicationSnapshot.dosageText)
+                    Text("1回\(dose.medicationSnapshot.doseCountPerIntake)錠")
                         .font(.body)
                         .foregroundColor(.secondary)
                 }
@@ -472,7 +481,7 @@ private struct PatientTodayRow: View {
     }
 
     private var accessibilitySummary: String {
-        var parts = [timeText, dose.medicationSnapshot.name, dose.medicationSnapshot.dosageText]
+        var parts = [timeText, dose.medicationSnapshot.name, "1回\(dose.medicationSnapshot.doseCountPerIntake)錠"]
         if let statusText = statusText(for: dose.effectiveStatus) {
             parts.append(statusText)
         }
