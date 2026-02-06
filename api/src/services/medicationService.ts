@@ -68,6 +68,7 @@ export async function archiveMedication(id: string) {
 export type InventoryItem = {
   medicationId: string;
   name: string;
+  doseCountPerIntake: number;
   inventoryEnabled: boolean;
   inventoryQuantity: number;
   inventoryLowThreshold: number;
@@ -115,6 +116,7 @@ function buildInventoryItem(
   return {
     medicationId: medication.id,
     name: medication.name,
+    doseCountPerIntake: medication.doseCountPerIntake,
     inventoryEnabled: enabled,
     inventoryQuantity: quantity,
     inventoryLowThreshold: threshold,

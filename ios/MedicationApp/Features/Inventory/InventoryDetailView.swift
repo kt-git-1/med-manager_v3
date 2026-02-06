@@ -164,6 +164,13 @@ struct InventoryDetailView: View {
 
     private var inventoryHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("薬名")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.secondary)
+                Text(item.name)
+                    .font(.headline)
+            }
             Text(NSLocalizedString("caregiver.inventory.remaining.label", comment: "Remaining label"))
                 .font(.subheadline.weight(.semibold))
                 .foregroundColor(.secondary)
@@ -176,6 +183,12 @@ struct InventoryDetailView: View {
                     .foregroundColor(.secondary)
                 Spacer()
                 statusBadge
+            }
+            HStack(spacing: 12) {
+                Text(dailyUnitsText)
+                    .font(.subheadline.weight(.semibold))
+                Text(dailyIntakesText)
+                    .font(.subheadline.weight(.semibold))
             }
             refillPlanSummary
         }
@@ -234,6 +247,21 @@ struct InventoryDetailView: View {
 
     private var refillDueDateText: String {
         item.refillDueDate ?? "—"
+    }
+
+    private var dailyUnitsText: String {
+        guard let dailyPlannedUnits = item.dailyPlannedUnits else {
+            return "1日—個"
+        }
+        return "1日\(dailyPlannedUnits)個"
+    }
+
+    private var dailyIntakesText: String {
+        guard let dailyPlannedUnits = item.dailyPlannedUnits, item.doseCountPerIntake > 0 else {
+            return "1日—回"
+        }
+        let count = dailyPlannedUnits / item.doseCountPerIntake
+        return "1日\(count)回"
     }
 
     private var hasSettingsChanges: Bool {
