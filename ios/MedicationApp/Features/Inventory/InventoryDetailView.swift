@@ -184,12 +184,8 @@ struct InventoryDetailView: View {
                 Spacer()
                 statusBadge
             }
-            HStack(spacing: 12) {
-                Text(dailyUnitsText)
-                    .font(.subheadline.weight(.semibold))
-                Text(dailyIntakesText)
-                    .font(.subheadline.weight(.semibold))
-            }
+            Text(dailyIntakeSummaryText)
+                .font(.subheadline.weight(.semibold))
             refillPlanSummary
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -249,19 +245,12 @@ struct InventoryDetailView: View {
         item.refillDueDate ?? "—"
     }
 
-    private var dailyUnitsText: String {
-        guard let dailyPlannedUnits = item.dailyPlannedUnits else {
-            return "1日—個"
-        }
-        return "1日\(dailyPlannedUnits)個"
-    }
-
-    private var dailyIntakesText: String {
+    private var dailyIntakeSummaryText: String {
         guard let dailyPlannedUnits = item.dailyPlannedUnits, item.doseCountPerIntake > 0 else {
-            return "1日—回"
+            return "1日—回（—個/回）"
         }
         let count = dailyPlannedUnits / item.doseCountPerIntake
-        return "1日\(count)回"
+        return "1日\(count)回（\(item.doseCountPerIntake)個ずつ）"
     }
 
     private var hasSettingsChanges: Bool {
