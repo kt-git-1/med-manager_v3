@@ -4,63 +4,84 @@ import UserNotifications
 @MainActor
 final class ReminderService {
     private let notificationCenter: UNUserNotificationCenter
-    private let timeFormatter: DateFormatter
+    private let calendar: Calendar
+    private let dateKeyFormatter: DateFormatter
     private let reminderPrefix = "dose-reminder-"
-    private let reminderOffsets: [TimeInterval] = [0, 5 * 60]
 
     init(notificationCenter: UNUserNotificationCenter = .current()) {
         self.notificationCenter = notificationCenter
-        self.timeFormatter = DateFormatter()
-        self.timeFormatter.locale = Locale(identifier: "ja_JP")
-        self.timeFormatter.dateStyle = .none
-        self.timeFormatter.timeStyle = .short
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        self.calendar = calendar
+        let dateKeyFormatter = DateFormatter()
+        dateKeyFormatter.calendar = calendar
+        dateKeyFormatter.timeZone = calendar.timeZone
+        dateKeyFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateKeyFormatter.dateFormat = "yyyy-MM-dd"
+        self.dateKeyFormatter = dateKeyFormatter
     }
 
     func scheduleReminders(for doses: [ScheduleDoseDTO]) async {
         await clearExistingReminders()
-        let todayDoses = doses.filter { Calendar.current.isDateInToday($0.scheduledAt) }
+        let now = Date()
+        let todayDoses = doses.filter { calendar.isDate($0.scheduledAt, inSameDayAs: now) }
         guard !todayDoses.isEmpty else { return }
         guard await ensureAuthorization() else { return }
-        let now = Date()
-        for dose in todayDoses {
-            guard dose.effectiveStatus != .taken else { continue }
-            await scheduleDoseReminders(dose, now: now)
+
+        let slots = Set(todayDoses.compactMap { dose -> NotificationSlot? in
+            guard dose.effectiveStatus == .pending || dose.effectiveStatus == .none else { return nil }
+            return NotificationSlot.from(date: dose.scheduledAt, timeZone: calendar.timeZone)
+        })
+
+        for slot in slots {
+            guard let scheduledAt = scheduledDate(for: slot, on: now) else { continue }
+            guard scheduledAt > now else { continue }
+            await scheduleSlotReminder(
+                slot,
+                dateKey: dateKey(for: scheduledAt),
+                scheduledAt: scheduledAt
+            )
         }
     }
 
-    private func scheduleDoseReminders(_ dose: ScheduleDoseDTO, now: Date) async {
-        let timeText = timeFormatter.string(from: dose.scheduledAt)
-        let title = NSLocalizedString("patient.today.reminder.title", comment: "Reminder title")
-        let body = String(
-            format: NSLocalizedString("patient.today.reminder.body", comment: "Reminder body"),
-            dose.medicationSnapshot.name,
-            timeText
+    private func scheduleSlotReminder(
+        _ slot: NotificationSlot,
+        dateKey: String,
+        scheduledAt: Date
+    ) async {
+        let content = UNMutableNotificationContent()
+        content.title = NSLocalizedString("patient.today.reminder.title", comment: "Reminder title")
+        content.body = slot.notificationBody
+        content.sound = .default
+        let trigger = UNCalendarNotificationTrigger(
+            dateMatching: calendar.dateComponents(
+                [.year, .month, .day, .hour, .minute, .second],
+                from: scheduledAt
+            ),
+            repeats: false
         )
-        for (index, offset) in reminderOffsets.enumerated() {
-            let fireDate = dose.scheduledAt.addingTimeInterval(offset)
-            guard fireDate > now else { continue }
-            let content = UNMutableNotificationContent()
-            content.title = title
-            content.body = body
-            content.sound = .default
-            let trigger = UNCalendarNotificationTrigger(
-                dateMatching: Calendar.current.dateComponents(
-                    [.year, .month, .day, .hour, .minute, .second],
-                    from: fireDate
-                ),
-                repeats: false
-            )
-            let request = UNNotificationRequest(
-                identifier: reminderIdentifier(for: dose, index: index),
-                content: content,
-                trigger: trigger
-            )
-            await addNotification(request)
-        }
+        let request = UNNotificationRequest(
+            identifier: reminderIdentifier(for: dateKey, slot: slot),
+            content: content,
+            trigger: trigger
+        )
+        await addNotification(request)
     }
 
-    private func reminderIdentifier(for dose: ScheduleDoseDTO, index: Int) -> String {
-        "\(reminderPrefix)\(dose.key)-\(index)"
+    private func reminderIdentifier(for dateKey: String, slot: NotificationSlot) -> String {
+        "\(reminderPrefix)\(dateKey)-\(slot.rawValue)"
+    }
+
+    private func scheduledDate(for slot: NotificationSlot, on date: Date) -> Date? {
+        var components = calendar.dateComponents([.year, .month, .day], from: date)
+        components.hour = slot.hourMinute.hour
+        components.minute = slot.hourMinute.minute
+        components.second = 0
+        return calendar.date(from: components)
+    }
+
+    private func dateKey(for date: Date) -> String {
+        dateKeyFormatter.string(from: date)
     }
 
     private func ensureAuthorization() async -> Bool {

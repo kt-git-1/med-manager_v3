@@ -37,8 +37,8 @@ struct MedicationApp: App {
         appearance.shadowColor = UIColor.separator
 
         let itemAppearance = UITabBarItemAppearance()
-        itemAppearance.normal.titleTextAttributes = [.font: UIFont.systemFont(ofSize: 15, weight: .semibold)]
-        itemAppearance.selected.titleTextAttributes = [.font: UIFont.systemFont(ofSize: 15, weight: .semibold)]
+        itemAppearance.normal.titleTextAttributes = [.font: UIFont.systemFont(ofSize: 10, weight: .semibold)]
+        itemAppearance.selected.titleTextAttributes = [.font: UIFont.systemFont(ofSize: 10, weight: .semibold)]
         appearance.stackedLayoutAppearance = itemAppearance
         appearance.inlineLayoutAppearance = itemAppearance
         appearance.compactInlineLayoutAppearance = itemAppearance

@@ -134,14 +134,14 @@
 "patient.today.reminder.body" = "%@を飲む時間です（%@）";
 
 /* Caregiver tabs */
-"caregiver.tabs.medications" = "薬/予定";
+"caregiver.tabs.medications" = "薬・予定";
 "caregiver.tabs.history" = "履歴";
 "caregiver.tabs.inventory" = "在庫管理";
-"caregiver.tabs.patients" = "連携/患者";
-"caregiver.patients.open" = "連携/患者を開く";
+"caregiver.tabs.patients" = "連携・設定";
+"caregiver.patients.open" = "連携・設定を開く";
 "caregiver.history.empty.title" = "患者を選択してください";
-"caregiver.history.empty.message" = "連携・患者タブから対象を選んでください";
-"caregiver.history.empty.action" = "連携・患者を開く";
+"caregiver.history.empty.message" = "連携・設定タブから対象を選んでください";
+"caregiver.history.empty.action" = "連携・設定を開く";
 "caregiver.medications.segment.medications" = "薬一覧";
 "caregiver.medications.segment.today" = "今日の予定";
 "caregiver.medications.placeholder.title" = "患者を選択してください";
@@ -150,7 +150,7 @@
 "caregiver.medications.noPatients.message" = "先に患者を作成してください";
 "caregiver.medications.noPatients.action" = "患者を追加する";
 "caregiver.medications.noSelection.title" = "患者を選択してください";
-"caregiver.medications.noSelection.message" = "連携・患者タブから対象を選んでください";
+"caregiver.medications.noSelection.message" = "連携・設定タブから対象を選んでください";
 "caregiver.medications.noSelection.action" = "患者一覧を開く";
 "caregiver.medications.currentPatient" = "対象患者: %@";
 "caregiver.medications.currentPatient.inline" = "対象患者：%@";
@@ -158,7 +158,7 @@
 
 /* Caregiver inventory */
 "caregiver.inventory.empty.title" = "患者を選択してください";
-"caregiver.inventory.empty.message" = "連携・患者タブから対象を選んでください";
+"caregiver.inventory.empty.message" = "連携・設定タブから対象を選んでください";
 "caregiver.inventory.list.section" = "在庫一覧";
 "caregiver.inventory.filter.all" = "すべて";
 "caregiver.inventory.filter.low" = "低在庫のみ";
@@ -213,7 +213,7 @@
 "caregiver.banner.withinTime" = "%@さんが時間内に薬を服用しました！";
 
 /* Patient management */
-"caregiver.patients.title" = "連携/患者";
+"caregiver.patients.title" = "連携・設定";
 "caregiver.patients.add" = "追加";
 "caregiver.patients.empty.title" = "患者がいません";
 "caregiver.patients.empty.message" = "右上の追加から作成できます";

@@ -24,13 +24,13 @@ enum NotificationSlot: String, CaseIterable {
     var notificationBody: String {
         switch self {
         case .morning:
-            return "朝のお薬の時間です"
+            return "朝のお薬の時間です！"
         case .noon:
-            return "昼のお薬の時間です"
+            return "昼のお薬の時間です！"
         case .evening:
-            return "夜のお薬の時間です"
+            return "夜のお薬の時間です！"
         case .bedtime:
-            return "眠前のお薬の時間です"
+            return "眠前のお薬の時間です！"
         }
     }
 
