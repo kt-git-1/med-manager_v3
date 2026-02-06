@@ -248,7 +248,9 @@ private struct PatientBottomTabBar: View {
                 Image(systemName: systemImage)
                     .font(.system(size: 18, weight: .semibold))
                 Text(title)
-                    .font(.headline)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
             }
             .foregroundColor(isSelected ? .accentColor : .secondary)
             .frame(maxWidth: .infinity)

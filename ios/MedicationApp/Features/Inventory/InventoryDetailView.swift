@@ -14,12 +14,9 @@ struct InventoryDetailView: View {
     @State private var savedEnabled: Bool
     @State private var savedLowThreshold: Int
     @State private var pendingRefillAmount: Int?
-    @State private var pendingCorrectionAmount: Int?
     @State private var showRefillConfirm = false
-    @State private var showCorrectionConfirm = false
     @State private var toastMessage: String?
     @State private var lastFailedAction: InventoryDetailAction?
-    @State private var correctionAmount: Int
     @FocusState private var focusedField: InventoryField?
 
     private let numberFormatter: NumberFormatter = {
@@ -39,7 +36,6 @@ struct InventoryDetailView: View {
         _refillAmount = State(initialValue: 0)
         _savedEnabled = State(initialValue: item.inventoryEnabled)
         _savedLowThreshold = State(initialValue: item.inventoryLowThreshold)
-        _correctionAmount = State(initialValue: item.inventoryQuantity)
     }
 
     var body: some View {
@@ -69,12 +65,24 @@ struct InventoryDetailView: View {
                         }
 
                         Section(header: Text(NSLocalizedString("caregiver.inventory.detail.section.adjust", comment: "Adjust section"))) {
+                            HStack(spacing: 12) {
+                                refillPresetButton(title: "+10", amount: 10)
+                                refillPresetButton(title: "+30", amount: 30)
+                                refillPresetButton(title: "+50", amount: 50)
+                                Button(NSLocalizedString("caregiver.inventory.actions.refill.sheet.custom", comment: "Custom input")) {
+                                    refillAmount = max(0, refillAmount)
+                                    focusedField = .refillAmount
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                            }
                             HStack {
                                 Text(NSLocalizedString("caregiver.inventory.detail.refill", comment: "Refill label"))
                                 Spacer()
                                 TextField("0", value: $refillAmount, formatter: numberFormatter)
                                     .multilineTextAlignment(.trailing)
                                     .keyboardType(.numberPad)
+                                    .focused($focusedField, equals: .refillAmount)
                             }
                             Button(NSLocalizedString("caregiver.inventory.actions.refill.sheet.confirm", comment: "Confirm refill")) {
                                 let amount = max(0, refillAmount)
@@ -83,21 +91,6 @@ struct InventoryDetailView: View {
                                 showRefillConfirm = true
                             }
                             .buttonStyle(.borderedProminent)
-                            .disabled(!inventoryEnabled)
-
-                            HStack {
-                                Text(NSLocalizedString("caregiver.inventory.detail.set", comment: "Set label"))
-                                Spacer()
-                                TextField("0", value: $correctionAmount, formatter: numberFormatter)
-                                    .multilineTextAlignment(.trailing)
-                                    .keyboardType(.numberPad)
-                            }
-                            Button(NSLocalizedString("caregiver.inventory.actions.correction.button", comment: "Correction action")) {
-                                let amount = max(0, correctionAmount)
-                                pendingCorrectionAmount = amount
-                                showCorrectionConfirm = true
-                            }
-                            .buttonStyle(.bordered)
                             .disabled(!inventoryEnabled)
                         }
 
@@ -158,26 +151,6 @@ struct InventoryDetailView: View {
                     amount,
                     quantity,
                     quantity + amount
-                )
-            )
-        }
-        .confirmationDialog(
-            NSLocalizedString("caregiver.inventory.correction.title", comment: "Correction title"),
-            isPresented: $showCorrectionConfirm,
-            presenting: pendingCorrectionAmount
-        ) { amount in
-            Button(NSLocalizedString("caregiver.inventory.actions.correction.button", comment: "Correction action")) {
-                Task { await applyCorrection(amount: amount) }
-            }
-            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
-        } message: { amount in
-            Text(
-                String(
-                    format: NSLocalizedString(
-                        "caregiver.inventory.correction.message",
-                        comment: "Correction confirm message"
-                    ),
-                    amount
                 )
             )
         }
@@ -285,24 +258,6 @@ struct InventoryDetailView: View {
         }
     }
 
-    private func applyCorrection(amount: Int) async {
-        errorMessage = nil
-        let updated = await viewModel.adjustInventory(
-            item: item,
-            reason: "SET",
-            delta: nil,
-            absoluteQuantity: amount
-        )
-        if let updated {
-            quantity = updated.inventoryQuantity
-            correctionAmount = updated.inventoryQuantity
-            showToast(NSLocalizedString("common.toast.updated", comment: "Updated toast"))
-        } else {
-            errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
-            lastFailedAction = .correction(amount)
-        }
-    }
-
     private func retryLastAction() async {
         guard let lastFailedAction else { return }
         self.lastFailedAction = nil
@@ -311,9 +266,15 @@ struct InventoryDetailView: View {
             await saveSettings()
         case let .refill(amount):
             await applyRefill(amount: amount)
-        case let .correction(amount):
-            await applyCorrection(amount: amount)
         }
+    }
+
+    private func refillPresetButton(title: String, amount: Int) -> some View {
+        Button(title) {
+            refillAmount = amount
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
     }
 
     private func showToast(_ message: String) {
@@ -367,9 +328,9 @@ private enum InventoryStatus {
 private enum InventoryDetailAction {
     case saveSettings
     case refill(Int)
-    case correction(Int)
 }
 
 private enum InventoryField {
     case lowThreshold
+    case refillAmount
 }

@@ -57,7 +57,7 @@ struct CaregiverHomeView: View {
                         .foregroundColor(.accentColor)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.accentColor.opacity(0.12), in: Capsule())
+                        .background(Color.accentColor.opacity(0.28), in: Capsule())
                         .overlay(
                             Capsule()
                                 .stroke(Color.accentColor, lineWidth: 1)
@@ -159,7 +159,9 @@ private struct CaregiverBottomTabBar: View {
                 Image(systemName: systemImage)
                     .font(.system(size: 18, weight: .semibold))
                 Text(title)
-                    .font(.headline)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
             }
             .foregroundColor(isSelected ? .accentColor : .secondary)
             .frame(maxWidth: .infinity)
