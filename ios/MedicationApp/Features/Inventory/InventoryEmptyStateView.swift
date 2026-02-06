@@ -14,7 +14,7 @@ struct InventoryEmptyStateView: View {
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
-                Button(NSLocalizedString("caregiver.tabs.patients", comment: "Patients tab")) {
+                Button(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab")) {
                     onOpenPatients()
                 }
                 .buttonStyle(.borderedProminent)

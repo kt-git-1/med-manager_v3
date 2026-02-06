@@ -1,11 +1,5 @@
 import SwiftUI
 
-struct InventoryListRow: Identifiable {
-    let item: InventoryItemDTO
-
-    var id: String { item.medicationId }
-}
-
 @MainActor
 final class InventoryViewModel: ObservableObject {
     @Published var items: [InventoryItemDTO] = []
@@ -43,12 +37,11 @@ final class InventoryViewModel: ObservableObject {
     func updateSettings(
         item: InventoryItemDTO,
         enabled: Bool,
-        quantity: Int,
+        quantity: Int?,
         threshold: Int
     ) async -> InventoryItemDTO? {
         guard !isUpdating else { return nil }
         isUpdating = true
-        errorMessage = nil
         defer { isUpdating = false }
         do {
             let updated = try await apiClient.updateInventory(
@@ -62,7 +55,6 @@ final class InventoryViewModel: ObservableObject {
             replaceItem(updated)
             return updated
         } catch {
-            errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
             return nil
         }
     }
@@ -75,7 +67,6 @@ final class InventoryViewModel: ObservableObject {
     ) async -> InventoryItemDTO? {
         guard !isUpdating else { return nil }
         isUpdating = true
-        errorMessage = nil
         defer { isUpdating = false }
         do {
             let updated = try await apiClient.adjustInventory(
@@ -89,7 +80,6 @@ final class InventoryViewModel: ObservableObject {
             replaceItem(updated)
             return updated
         } catch {
-            errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
             return nil
         }
     }
@@ -108,6 +98,8 @@ struct InventoryListView: View {
     private let onOpenPatients: () -> Void
     @StateObject private var viewModel: InventoryViewModel
     @State private var selectedItem: InventoryItemDTO?
+    @State private var filter: InventoryFilter = .all
+    @State private var toastMessage: String?
 
     init(sessionStore: SessionStore, onOpenPatients: @escaping () -> Void) {
         self.sessionStore = sessionStore
@@ -151,66 +143,75 @@ struct InventoryListView: View {
             viewModel.load()
         }
         .sheet(item: $selectedItem) { item in
-            InventoryDetailView(item: item, viewModel: viewModel)
+            InventoryDetailView(
+                item: item,
+                viewModel: viewModel,
+                onSaved: {
+                    showToast(NSLocalizedString("caregiver.inventory.toast.saved", comment: "Inventory saved toast"))
+                }
+            )
         }
+        .sensoryFeedback(.success, trigger: toastMessage)
         .accessibilityIdentifier("InventoryListView")
     }
 
     private var inventoryList: some View {
-        List {
-            Section {
-                ForEach(viewModel.items) { item in
-                    Button(action: { selectedItem = item }) {
-                        HStack(alignment: .center, spacing: 12) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(item.name)
-                                    .font(.title3.weight(.semibold))
-                                Text(
-                                    String(
-                                        format: NSLocalizedString(
-                                            "caregiver.inventory.list.remaining",
-                                            comment: "Remaining count"
-                                        ),
-                                        item.inventoryQuantity
-                                    )
-                                )
-                                .font(.body)
-                                .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            inventoryBadge(for: item)
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(16)
-                        .frame(maxWidth: .infinity)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
-                    }
-                    .buttonStyle(.plain)
-                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                    .listRowSeparator(.hidden)
+        VStack(spacing: 12) {
+            Picker(
+                NSLocalizedString("caregiver.inventory.filter.all", comment: "All filter"),
+                selection: $filter
+            ) {
+                ForEach(InventoryFilter.allCases) { filter in
+                    Text(filter.title).tag(filter)
                 }
-            } header: {
-                Text(NSLocalizedString("caregiver.inventory.list.section", comment: "Inventory list section"))
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-                    .textCase(nil)
             }
-            .listRowSeparator(.hidden)
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 16)
+
+            List {
+                Section {
+                    ForEach(filteredItems) { item in
+                        inventoryRow(for: item)
+                            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                            .listRowSeparator(.hidden)
+                    }
+                } header: {
+                    Text(NSLocalizedString("caregiver.inventory.list.section", comment: "Inventory list section"))
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                        .textCase(nil)
+                }
+                .listRowSeparator(.hidden)
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(Color.white)
+            .safeAreaPadding(.bottom, 120)
+            .overlay(alignment: .top) {
+                if let toastMessage {
+                    Text(toastMessage)
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Capsule())
+                        .shadow(radius: 4)
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .accessibilityLabel(toastMessage)
+                }
+            }
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .background(Color.white)
-        .safeAreaPadding(.bottom, 120)
     }
 
     @ViewBuilder
     private func inventoryBadge(for item: InventoryItemDTO) -> some View {
         if item.out {
-            badge(text: "OUT", color: .red)
+            badge(text: NSLocalizedString("caregiver.inventory.status.out", comment: "Out badge"), color: .red)
         } else if item.low {
-            badge(text: "LOW", color: .orange)
+            badge(text: NSLocalizedString("caregiver.inventory.status.low", comment: "Low badge"), color: .orange)
+        } else if !item.inventoryEnabled {
+            badge(text: NSLocalizedString("caregiver.inventory.status.unconfigured", comment: "Unconfigured badge"), color: .gray)
         }
     }
 
@@ -250,5 +251,129 @@ struct InventoryListView: View {
             .accessibilityIdentifier("InventoryRetryButton")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var filteredItems: [InventoryItemDTO] {
+        let baseItems: [InventoryItemDTO] = viewModel.items.filter { item in
+            switch filter {
+            case .all:
+                return true
+            case .lowOnly:
+                return item.inventoryEnabled && item.low
+            case .outOnly:
+                return item.inventoryEnabled && item.out
+            }
+        }
+        return baseItems.sorted { lhs, rhs in
+            let lhsRank = sortRank(for: lhs)
+            let rhsRank = sortRank(for: rhs)
+            if lhsRank != rhsRank {
+                return lhsRank < rhsRank
+            }
+            if lhs.inventoryQuantity != rhs.inventoryQuantity {
+                return lhs.inventoryQuantity < rhs.inventoryQuantity
+            }
+            return lhs.name < rhs.name
+        }
+    }
+
+    private func sortRank(for item: InventoryItemDTO) -> Int {
+        if !item.inventoryEnabled {
+            return 3
+        }
+        if item.out {
+            return 0
+        }
+        if item.low {
+            return 1
+        }
+        return 2
+    }
+
+    private func inventoryRow(for item: InventoryItemDTO) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            HStack(alignment: .center, spacing: 8) {
+                Text(item.name)
+                    .font(.title3.weight(.semibold))
+                inlineStatusBadge(for: item)
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 8) {
+                if item.inventoryEnabled {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text("\(item.inventoryQuantity)")
+                            .font(.title2.weight(.bold))
+                        Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            Image(systemName: "chevron.right")
+                .foregroundColor(.secondary)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            selectedItem = item
+        }
+    }
+
+    @ViewBuilder
+    private func inlineStatusBadge(for item: InventoryItemDTO) -> some View {
+        if item.out {
+            badge(
+                text: NSLocalizedString("caregiver.inventory.status.out", comment: "Out badge"),
+                color: .red
+            )
+        } else if item.inventoryEnabled, item.low {
+            badge(
+                text: NSLocalizedString("caregiver.inventory.status.low", comment: "Low badge"),
+                color: .orange
+            )
+        } else if !item.inventoryEnabled {
+            badge(
+                text: NSLocalizedString("caregiver.inventory.status.unconfigured", comment: "Unconfigured badge"),
+                color: .gray
+            )
+        } else {
+            EmptyView()
+        }
+    }
+
+    private func showToast(_ message: String) {
+        withAnimation {
+            toastMessage = message
+        }
+        Task {
+            try? await Task.sleep(for: .seconds(1))
+            await MainActor.run {
+                withAnimation {
+                    toastMessage = nil
+                }
+            }
+        }
+    }
+}
+
+private enum InventoryFilter: String, CaseIterable, Identifiable {
+    case all
+    case lowOnly
+    case outOnly
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all:
+            return NSLocalizedString("caregiver.inventory.filter.all", comment: "All filter")
+        case .lowOnly:
+            return NSLocalizedString("caregiver.inventory.filter.low", comment: "Low inventory filter")
+        case .outOnly:
+            return NSLocalizedString("caregiver.inventory.filter.out", comment: "Out of stock filter")
+        }
     }
 }

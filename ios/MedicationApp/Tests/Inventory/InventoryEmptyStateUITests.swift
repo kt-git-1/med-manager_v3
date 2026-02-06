@@ -11,7 +11,7 @@ final class InventoryEmptyStateUITests: XCTestCase {
         }
         inventoryTab.tap()
 
-        let cta = app.buttons["連携/患者"]
+        let cta = app.buttons["連携/患者を開く"]
         guard cta.waitForExistence(timeout: 2) else {
             throw XCTSkip("Inventory empty state CTA not visible yet.")
         }

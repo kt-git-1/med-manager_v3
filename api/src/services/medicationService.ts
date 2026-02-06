@@ -28,6 +28,9 @@ export type MedicationCreateInput = {
   endDate?: Date;
   inventoryCount?: number;
   inventoryUnit?: string;
+  inventoryEnabled?: boolean;
+  inventoryQuantity?: number;
+  inventoryUpdatedAt?: Date;
 };
 
 export type MedicationUpdateInput = Partial<MedicationCreateInput> & {
@@ -35,7 +38,8 @@ export type MedicationUpdateInput = Partial<MedicationCreateInput> & {
 };
 
 export async function createMedication(input: MedicationCreateInput) {
-  return createMedicationRecord(input);
+  const inventoryOverrides = buildInventoryOverrides(input.inventoryCount);
+  return createMedicationRecord({ ...input, ...inventoryOverrides });
 }
 
 export async function listMedications(patientId: string): Promise<Medication[]> {
@@ -47,7 +51,12 @@ export async function getMedication(id: string): Promise<Medication | null> {
 }
 
 export async function updateMedication(id: string, input: MedicationUpdateInput) {
-  return updateMedicationRecord(id, input);
+  const existing = await getMedicationRecord(id);
+  const inventoryOverrides =
+    existing && !existing.inventoryEnabled
+      ? buildInventoryOverrides(input.inventoryCount)
+      : {};
+  return updateMedicationRecord(id, { ...input, ...inventoryOverrides });
 }
 
 export async function archiveMedication(id: string) {
@@ -103,6 +112,18 @@ function buildInventoryItem(medication: Medication): InventoryItem {
     inventoryLowThreshold: threshold,
     low: state === "LOW",
     out: state === "OUT"
+  };
+}
+
+function buildInventoryOverrides(inventoryCount?: number | null) {
+  if (inventoryCount === undefined || inventoryCount === null) {
+    return {};
+  }
+  const clamped = Math.max(0, inventoryCount);
+  return {
+    inventoryEnabled: true,
+    inventoryQuantity: clamped,
+    inventoryUpdatedAt: new Date()
   };
 }
 

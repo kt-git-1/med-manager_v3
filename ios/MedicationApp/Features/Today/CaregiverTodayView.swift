@@ -85,7 +85,7 @@ struct CaregiverTodayView: View {
                             .font(.body)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
-                        Button(NSLocalizedString("caregiver.medications.noSelection.action", comment: "Go to patients action")) {
+                        Button(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab")) {
                             onOpenPatients()
                         }
                         .buttonStyle(.borderedProminent)

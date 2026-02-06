@@ -230,7 +230,7 @@ struct CaregiverMedicationView: View {
                             title: NSLocalizedString("caregiver.medications.noPatients.title", comment: "No patients title"),
                             message: NSLocalizedString("caregiver.medications.noPatients.message", comment: "No patients message")
                         )
-                        Button(NSLocalizedString("caregiver.medications.noPatients.action", comment: "Go to patients action")) {
+                        Button(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab")) {
                             onOpenPatients()
                         }
                         .buttonStyle(.borderedProminent)
@@ -252,7 +252,7 @@ struct CaregiverMedicationView: View {
                                 .font(.body)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
-                            Button(NSLocalizedString("caregiver.medications.noSelection.action", comment: "Go to patients action")) {
+                            Button(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab")) {
                                 onOpenPatients()
                             }
                             .buttonStyle(.borderedProminent)

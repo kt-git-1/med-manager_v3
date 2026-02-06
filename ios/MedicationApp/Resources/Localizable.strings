@@ -10,6 +10,8 @@
 "common.select" = "選択";
 "common.ok" = "OK";
 "common.logout" = "ログアウト";
+"common.toast.updated" = "更新しました";
+"caregiver.inventory.toast.saved" = "在庫情報を保存しました";
 
 /* Mode select */
 "mode.select.title" = "モードを選択";
@@ -134,6 +136,7 @@
 "caregiver.tabs.history" = "履歴";
 "caregiver.tabs.inventory" = "在庫管理";
 "caregiver.tabs.patients" = "連携/患者";
+"caregiver.patients.open" = "連携/患者を開く";
 "caregiver.history.empty.title" = "患者を選択してください";
 "caregiver.history.empty.message" = "連携・患者タブから対象を選んでください";
 "caregiver.history.empty.action" = "連携・患者を開く";
@@ -155,18 +158,36 @@
 "caregiver.inventory.empty.title" = "患者を選択してください";
 "caregiver.inventory.empty.message" = "連携・患者タブから対象を選んでください";
 "caregiver.inventory.list.section" = "在庫一覧";
-"caregiver.inventory.list.remaining" = "残数: %d";
+"caregiver.inventory.filter.all" = "すべて";
+"caregiver.inventory.filter.low" = "低在庫のみ";
+"caregiver.inventory.filter.out" = "在庫なし";
+"caregiver.inventory.list.quickRefill" = "+10";
 "caregiver.inventory.list.empty.title" = "在庫がありません";
 "caregiver.inventory.list.empty.message" = "薬の在庫を設定してください";
+"caregiver.inventory.remaining.label" = "残り";
+"caregiver.inventory.unit" = "個";
+"caregiver.inventory.status.available" = "在庫あり";
+"caregiver.inventory.status.low" = "少";
+"caregiver.inventory.status.out" = "なし";
+"caregiver.inventory.status.unconfigured" = "未設定";
 "caregiver.inventory.detail.section.settings" = "在庫設定";
 "caregiver.inventory.detail.section.adjust" = "在庫の調整";
 "caregiver.inventory.detail.enabled" = "在庫管理を有効にする";
-"caregiver.inventory.detail.quantity" = "現在数";
 "caregiver.inventory.detail.threshold" = "低在庫しきい値";
 "caregiver.inventory.detail.refill" = "補充数";
 "caregiver.inventory.detail.refill.action" = "補充する";
-"caregiver.inventory.detail.set" = "数を修正";
-"caregiver.inventory.detail.set.action" = "この数にする";
+"caregiver.inventory.detail.set" = "修正後の在庫数";
+"caregiver.inventory.settings.note" = "残りがしきい値未満で低在庫扱い";
+"caregiver.inventory.actions.refill" = "補充する";
+"caregiver.inventory.actions.refill.sheet.title" = "補充量";
+"caregiver.inventory.actions.refill.sheet.custom" = "+入力";
+"caregiver.inventory.actions.refill.sheet.confirm" = "補充";
+"caregiver.inventory.actions.correction" = "在庫を修正（誤入力の修正）";
+"caregiver.inventory.actions.correction.button" = "修正する";
+"caregiver.inventory.refill.confirm.title" = "在庫を補充しますか？";
+"caregiver.inventory.refill.confirm.message" = "%@ を +%d個（%d→%d）";
+"caregiver.inventory.correction.title" = "在庫を修正";
+"caregiver.inventory.correction.message" = "在庫を%d個に変更しますか？（補充ではなく修正です）";
 "caregiver.inventory.banner.low" = "%@：%@の在庫が少なくなりました（残り%d）";
 "caregiver.inventory.banner.out" = "%@：%@がなくなりました";
 "caregiver.inventory.banner.patientFallback" = "患者";
