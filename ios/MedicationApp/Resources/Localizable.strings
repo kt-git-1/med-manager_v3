@@ -62,6 +62,7 @@
 "medication.form.section.schedule" = "スケジュール";
 "medication.form.section.inventory" = "在庫";
 "medication.form.section.notes" = "メモ";
+"medication.detail.notes.empty" = "メモはありません";
 "medication.form.name" = "薬名";
 "medication.form.dosage.value" = "用量 (数値)";
 "medication.form.dosage.unit" = "用量単位";
@@ -126,7 +127,7 @@
 "patient.today.status.missed" = "飲み忘れ";
 "patient.today.alreadyRecorded" = "すでに記録済みです";
 "patient.today.recorded" = "記録しました";
-"patient.today.section.planned" = "今日の服用予定";
+"patient.today.section.planned" = "今日のお薬";
 "patient.today.section.taken" = "服用済み";
 "patient.today.reminder.title" = "服用リマインダー";
 "patient.today.reminder.body" = "%@を飲む時間です（%@）";

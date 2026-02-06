@@ -19,6 +19,7 @@ final class PatientTodayViewModel: ObservableObject {
     private let dateKeyFormatter: DateFormatter
     private let calendar: Calendar
     private var foregroundTask: Task<Void, Never>?
+    private var medicationCache: [String: MedicationDTO] = [:]
 
     init(apiClient: APIClient, reminderService: ReminderService = ReminderService()) {
         self.apiClient = apiClient
@@ -68,7 +69,8 @@ final class PatientTodayViewModel: ObservableObject {
             }
             do {
                 let doses = try await apiClient.fetchPatientToday()
-                let todayOnly = doses.filter { Calendar.current.isDateInToday($0.scheduledAt) }
+                let now = Date()
+                let todayOnly = doses.filter { calendar.isDate($0.scheduledAt, inSameDayAs: now) }
                 items = todayOnly.sorted(by: sortDose)
                 await reminderService.scheduleReminders(for: todayOnly)
             } catch {
@@ -133,6 +135,21 @@ final class PatientTodayViewModel: ObservableObject {
         }
 
         return dose.key
+    }
+
+    func fetchMedicationDetail(medicationId: String) async throws -> MedicationDTO? {
+        if let cached = medicationCache[medicationId] {
+            return cached
+        }
+        let medications = try await apiClient.fetchMedications(patientId: nil)
+        var matched: MedicationDTO?
+        for medication in medications {
+            medicationCache[medication.id] = medication
+            if medication.id == medicationId {
+                matched = medication
+            }
+        }
+        return matched
     }
 
     private func showToast(_ message: String) {

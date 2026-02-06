@@ -12,6 +12,7 @@ final class CaregiverTodayViewModel: ObservableObject {
     private let apiClient: APIClient
     private let dateFormatter: DateFormatter
     private let timeFormatter: DateFormatter
+    private let calendar: Calendar
 
     init(apiClient: APIClient) {
         self.apiClient = apiClient
@@ -23,6 +24,9 @@ final class CaregiverTodayViewModel: ObservableObject {
         self.timeFormatter.locale = Locale(identifier: "ja_JP")
         self.timeFormatter.dateStyle = .none
         self.timeFormatter.timeStyle = .short
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        self.calendar = calendar
     }
 
     func load(showLoading: Bool) {
@@ -37,7 +41,8 @@ final class CaregiverTodayViewModel: ObservableObject {
             }
             do {
                 let doses = try await apiClient.fetchCaregiverToday()
-                let todayOnly = doses.filter { Calendar.current.isDateInToday($0.scheduledAt) }
+                let now = Date()
+                let todayOnly = doses.filter { calendar.isDate($0.scheduledAt, inSameDayAs: now) }
                 items = todayOnly.sorted(by: sortDose)
             } catch {
                 items = []
