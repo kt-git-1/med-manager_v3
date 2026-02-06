@@ -15,9 +15,69 @@ type DoseRecord = {
 
 const store = new Map<string, DoseRecord>();
 
+const mockData = vi.hoisted(() => ({
+  medication: {
+    id: "med-1",
+    patientId: "patient-1",
+    name: "Medication A",
+    dosageText: "1 tablet",
+    doseCountPerIntake: 2,
+    dosageStrengthValue: 10,
+    dosageStrengthUnit: "mg",
+    notes: null,
+    startDate: new Date("2026-02-01T00:00:00.000Z"),
+    endDate: null,
+    inventoryCount: null,
+    inventoryUnit: null,
+    inventoryEnabled: true,
+    inventoryQuantity: 5,
+    inventoryLowThreshold: 2,
+    inventoryUpdatedAt: null,
+    inventoryLastAlertState: null,
+    isActive: true,
+    isArchived: false,
+    createdAt: new Date("2026-02-01T00:00:00.000Z"),
+    updatedAt: new Date("2026-02-01T00:00:00.000Z")
+  },
+  adjustments: [] as Array<{ delta: number }>
+}));
+
 function buildKey(input: { patientId: string; medicationId: string; scheduledAt: Date }) {
   return `${input.patientId}:${input.medicationId}:${input.scheduledAt.toISOString()}`;
 }
+
+vi.mock("../../src/repositories/prisma", () => {
+  const prisma = {
+    medication: {
+      findFirst: vi.fn(async (input: { where: { id: string; patientId: string } }) => {
+        if (
+          input.where.id === mockData.medication.id &&
+          input.where.patientId === mockData.medication.patientId
+        ) {
+          return mockData.medication;
+        }
+        return null;
+      }),
+      update: vi.fn(async (input: { data: Record<string, unknown> }) => {
+        mockData.medication = { ...mockData.medication, ...input.data };
+        return mockData.medication;
+      })
+    },
+    medicationInventoryAdjustment: {
+      create: vi.fn(async (input: { data: { delta: number } }) => {
+        mockData.adjustments.push({ delta: input.data.delta });
+        return { id: `adj-${mockData.adjustments.length}`, ...input.data };
+      })
+    },
+    inventoryAlertEvent: {
+      create: vi.fn(async () => ({
+        id: "alert-1"
+      }))
+    },
+    $transaction: async (callback: (tx: typeof prisma) => unknown) => callback(prisma)
+  };
+  return { prisma };
+});
 
 vi.mock("../../src/repositories/doseRecordRepo", () => ({
   upsertDoseRecord: async (input: {
@@ -61,8 +121,8 @@ vi.mock("../../src/repositories/doseRecordRepo", () => ({
 }));
 
 vi.mock("../../src/repositories/patientRepo", () => ({
-  getPatientRecordById: async (patientId: string) => ({
-    id: patientId,
+  getPatientRecordById: async () => ({
+    id: "patient-1",
     caregiverId: "caregiver-1",
     displayName: "Test Patient",
     createdAt: new Date(),
@@ -82,52 +142,13 @@ vi.mock("../../src/repositories/doseRecordEventRepo", () => ({
   })
 }));
 
-vi.mock("../../src/repositories/medicationRepo", () => ({
-  getMedicationRecordForPatient: async () => ({
-    id: "med-1",
-    patientId: "patient-1",
-    name: "Medication A",
-    dosageText: "1 tablet",
-    doseCountPerIntake: 1,
-    dosageStrengthValue: 10,
-    dosageStrengthUnit: "mg",
-    notes: null,
-    startDate: new Date(),
-    endDate: null,
-    inventoryCount: null,
-    inventoryUnit: null,
-    inventoryEnabled: false,
-    inventoryQuantity: 0,
-    inventoryLowThreshold: 0,
-    inventoryUpdatedAt: null,
-    inventoryLastAlertState: null,
-    isActive: true,
-    isArchived: false,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  })
-}));
-
-describe("dose recording caregiver integration", () => {
-  it("creates caregiver dose record with recordedById", async () => {
+describe("inventory adjustments on TAKEN delete", () => {
+  it("increments inventory when a TAKEN record is deleted", async () => {
     store.clear();
+    mockData.medication.inventoryQuantity = 5;
+    mockData.adjustments.length = 0;
     const scheduledAt = new Date("2026-02-02T08:00:00.000Z");
-    const record = await createDoseRecordIdempotent({
-      patientId: "patient-1",
-      medicationId: "med-1",
-      scheduledAt,
-      recordedByType: "CAREGIVER",
-      recordedById: "caregiver-1"
-    });
 
-    expect(record.recordedByType).toBe("CAREGIVER");
-    expect(record.recordedById).toBe("caregiver-1");
-    expect(store.size).toBe(1);
-  });
-
-  it("deletes caregiver dose record when present and returns null when missing", async () => {
-    store.clear();
-    const scheduledAt = new Date("2026-02-02T08:00:00.000Z");
     await createDoseRecordIdempotent({
       patientId: "patient-1",
       medicationId: "med-1",
@@ -135,20 +156,14 @@ describe("dose recording caregiver integration", () => {
       recordedByType: "CAREGIVER",
       recordedById: "caregiver-1"
     });
+    expect(mockData.medication.inventoryQuantity).toBe(3);
 
-    const deleted = await deleteDoseRecord({
+    await deleteDoseRecord({
       patientId: "patient-1",
       medicationId: "med-1",
       scheduledAt
     });
-    expect(deleted?.patientId).toBe("patient-1");
-    expect(store.size).toBe(0);
-
-    const missing = await deleteDoseRecord({
-      patientId: "patient-1",
-      medicationId: "med-1",
-      scheduledAt
-    });
-    expect(missing).toBeNull();
+    expect(mockData.medication.inventoryQuantity).toBe(5);
+    expect(mockData.adjustments).toHaveLength(2);
   });
 });

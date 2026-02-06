@@ -27,6 +27,30 @@ enum RecordedByType {
   CAREGIVER
 }
 
+enum InventoryAlertState {
+  NONE
+  LOW
+  OUT
+}
+
+enum InventoryAlertType {
+  LOW
+  OUT
+}
+
+enum InventoryAdjustmentReason {
+  REFILL
+  SET
+  CORRECTION
+  TAKEN_CREATE
+  TAKEN_DELETE
+}
+
+enum InventoryAdjustmentActorType {
+  CAREGIVER
+  SYSTEM
+}
+
 model Medication {
   id                  String   @id @default(uuid())
   patientId           String
@@ -40,13 +64,20 @@ model Medication {
   endDate             DateTime? @db.Date
   inventoryCount      Int?
   inventoryUnit       String?
+  inventoryEnabled    Boolean @default(false)
+  inventoryQuantity   Int     @default(0)
+  inventoryLowThreshold Int   @default(0)
+  inventoryUpdatedAt  DateTime?
+  inventoryLastAlertState InventoryAlertState?
   isActive            Boolean  @default(true)
   isArchived          Boolean  @default(false)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  regimens    Regimen[]
-  doseRecords DoseRecord[]
+  regimens            Regimen[]
+  doseRecords         DoseRecord[]
+  inventoryAdjustments MedicationInventoryAdjustment[]
+  inventoryAlertEvents InventoryAlertEvent[]
 
   @@index([patientId, isActive])
   @@index([patientId, startDate, endDate])
@@ -78,12 +109,14 @@ model Patient {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  links           CaregiverPatientLink[]
-  linkingCodes    LinkingCode[]
-  linkingAttempts LinkingAttempt[]
-  sessions        PatientSession[]
-  doseRecords     DoseRecord[]
-  doseRecordEvents DoseRecordEvent[]
+  links                 CaregiverPatientLink[]
+  linkingCodes          LinkingCode[]
+  linkingAttempts       LinkingAttempt[]
+  sessions              PatientSession[]
+  doseRecords           DoseRecord[]
+  doseRecordEvents      DoseRecordEvent[]
+  inventoryAdjustments  MedicationInventoryAdjustment[]
+  inventoryAlertEvents  InventoryAlertEvent[]
 }
 
 model CaregiverPatientLink {
@@ -160,6 +193,41 @@ model DoseRecordEvent {
   patient Patient @relation(fields: [patientId], references: [id])
 
   @@index([patientId, createdAt])
+}
+
+model MedicationInventoryAdjustment {
+  id          String                    @id @default(uuid())
+  patientId   String
+  medicationId String
+  delta       Int
+  reason      InventoryAdjustmentReason
+  actorType   InventoryAdjustmentActorType
+  actorId     String?
+  createdAt   DateTime                  @default(now())
+
+  patient     Patient                   @relation(fields: [patientId], references: [id])
+  medication  Medication                @relation(fields: [medicationId], references: [id])
+
+  @@index([patientId, createdAt])
+  @@index([medicationId, createdAt])
+}
+
+model InventoryAlertEvent {
+  id           String             @id @default(uuid())
+  patientId    String
+  medicationId String
+  type         InventoryAlertType
+  remaining    Int
+  threshold    Int
+  patientDisplayName String?
+  medicationName     String?
+  createdAt    DateTime           @default(now())
+
+  patient      Patient            @relation(fields: [patientId], references: [id])
+  medication   Medication         @relation(fields: [medicationId], references: [id])
+
+  @@index([patientId, createdAt])
+  @@index([medicationId, createdAt])
 }
 
 model LinkingAttempt {

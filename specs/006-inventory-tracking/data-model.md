@@ -29,6 +29,8 @@
 - **type**: LOW | OUT
 - **remaining**: integer at time of event
 - **threshold**: integer threshold at time of event
+- **patientDisplayName**: optional patient display name for caregiver banners
+- **medicationName**: optional medication name for caregiver banners
 - **createdAt**: timestamp
 
 ## Relationships

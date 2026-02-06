@@ -176,6 +176,12 @@ components:
           type: string
         medicationId:
           type: string
+        patientDisplayName:
+          type: string
+          nullable: true
+        medicationName:
+          type: string
+          nullable: true
         type:
           type: string
           enum:

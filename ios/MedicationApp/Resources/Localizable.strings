@@ -132,6 +132,7 @@
 /* Caregiver tabs */
 "caregiver.tabs.medications" = "薬/予定";
 "caregiver.tabs.history" = "履歴";
+"caregiver.tabs.inventory" = "在庫管理";
 "caregiver.tabs.patients" = "連携/患者";
 "caregiver.history.empty.title" = "患者を選択してください";
 "caregiver.history.empty.message" = "連携・患者タブから対象を選んでください";
@@ -149,6 +150,27 @@
 "caregiver.medications.currentPatient" = "対象患者: %@";
 "caregiver.medications.currentPatient.inline" = "対象患者：%@";
 "caregiver.medications.switch" = "切替";
+
+/* Caregiver inventory */
+"caregiver.inventory.empty.title" = "患者を選択してください";
+"caregiver.inventory.empty.message" = "連携・患者タブから対象を選んでください";
+"caregiver.inventory.list.section" = "在庫一覧";
+"caregiver.inventory.list.remaining" = "残数: %d";
+"caregiver.inventory.list.empty.title" = "在庫がありません";
+"caregiver.inventory.list.empty.message" = "薬の在庫を設定してください";
+"caregiver.inventory.detail.section.settings" = "在庫設定";
+"caregiver.inventory.detail.section.adjust" = "在庫の調整";
+"caregiver.inventory.detail.enabled" = "在庫管理を有効にする";
+"caregiver.inventory.detail.quantity" = "現在数";
+"caregiver.inventory.detail.threshold" = "低在庫しきい値";
+"caregiver.inventory.detail.refill" = "補充数";
+"caregiver.inventory.detail.refill.action" = "補充する";
+"caregiver.inventory.detail.set" = "数を修正";
+"caregiver.inventory.detail.set.action" = "この数にする";
+"caregiver.inventory.banner.low" = "%@：%@の在庫が少なくなりました（残り%d）";
+"caregiver.inventory.banner.out" = "%@：%@がなくなりました";
+"caregiver.inventory.banner.patientFallback" = "患者";
+"caregiver.inventory.banner.medicationFallback" = "薬";
 
 /* Caregiver today */
 "caregiver.today.empty.title" = "予定がありません";

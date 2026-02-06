@@ -15,7 +15,7 @@
 ## Realtime Event
 
 - Channel emits inventory alert events on LOW/OUT transitions only.
-- Expected payload includes patientId, medicationId, type, remaining, threshold, createdAt.
+- Expected payload includes patientId, medicationId, type, remaining, threshold, createdAt, patientDisplayName, medicationName.
 
 ## Constraints
 

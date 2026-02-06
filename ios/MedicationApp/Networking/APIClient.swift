@@ -2,8 +2,8 @@ import Foundation
 
 @MainActor
 final class APIClient {
-    private let baseURL: URL
-    private let sessionStore: SessionStore
+    let baseURL: URL
+    let sessionStore: SessionStore
 
     init(baseURL: URL, sessionStore: SessionStore) {
         self.baseURL = baseURL
@@ -324,7 +324,7 @@ final class APIClient {
     }
 
     @MainActor
-    private func tokenForCurrentMode() -> String? {
+    func tokenForCurrentMode() -> String? {
         switch sessionStore.mode {
         case .caregiver:
             return sessionStore.caregiverToken
@@ -336,7 +336,7 @@ final class APIClient {
     }
 
     @MainActor
-    private func mapErrorIfNeeded(response: URLResponse, data: Data) throws {
+    func mapErrorIfNeeded(response: URLResponse, data: Data) throws {
         guard let httpResponse = response as? HTTPURLResponse else {
             return
         }
@@ -518,7 +518,7 @@ final class APIClient {
     }
 
     @MainActor
-    private func resolvedCaregiverPatientId(requestedPatientId: String?) throws -> String {
+    func resolvedCaregiverPatientId(requestedPatientId: String?) throws -> String {
         if let requestedPatientId, !requestedPatientId.isEmpty {
             return requestedPatientId
         }

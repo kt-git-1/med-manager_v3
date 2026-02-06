@@ -3,6 +3,7 @@ import SwiftUI
 enum CaregiverTab: Hashable {
     case medications
     case history
+    case inventory
     case patients
 }
 
@@ -27,6 +28,13 @@ struct CaregiverHomeView: View {
                     )
                     .navigationTitle(NSLocalizedString("caregiver.tabs.history", comment: "History tab"))
                     .navigationBarTitleDisplayMode(.inline)
+                }
+            case .inventory:
+                NavigationStack {
+                    InventoryListView(
+                        sessionStore: sessionStore,
+                        onOpenPatients: { selectedTab = .patients }
+                    )
                 }
             case .patients:
                 PatientManagementView(sessionStore: sessionStore)
@@ -114,6 +122,13 @@ private struct CaregiverBottomTabBar: View {
                 isSelected: selectedTab == .history
             ) {
                 selectedTab = .history
+            }
+            tabButton(
+                title: NSLocalizedString("caregiver.tabs.inventory", comment: "Inventory tab"),
+                systemImage: "archivebox",
+                isSelected: selectedTab == .inventory
+            ) {
+                selectedTab = .inventory
             }
             tabButton(
                 title: NSLocalizedString("caregiver.tabs.patients", comment: "Patients tab"),

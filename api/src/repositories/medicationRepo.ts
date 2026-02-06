@@ -16,6 +16,12 @@ export async function getMedicationRecord(id: string) {
   return prisma.medication.findUnique({ where: { id } });
 }
 
+export async function getMedicationRecordForPatient(patientId: string, medicationId: string) {
+  return prisma.medication.findFirst({
+    where: { id: medicationId, patientId }
+  });
+}
+
 export async function updateMedicationRecord(id: string, input: MedicationUpdateInput) {
   return prisma.medication.update({ where: { id }, data: input });
 }
