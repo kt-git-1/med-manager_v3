@@ -162,7 +162,9 @@ struct CaregiverTodayView: View {
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
                 .background(Color.white)
-                let listWithInsets = headerView == nil ? AnyView(baseList.safeAreaPadding(.top)) : AnyView(baseList)
+                let listWithInsets = headerView == nil
+                    ? AnyView(baseList.safeAreaPadding(.top).safeAreaPadding(.bottom, 120))
+                    : AnyView(baseList.safeAreaPadding(.bottom, 120))
                 listWithInsets
             }
         }
