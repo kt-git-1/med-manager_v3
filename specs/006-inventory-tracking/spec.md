@@ -20,6 +20,7 @@ Caregivers can view and manage inventory per medication for a selected patient f
 1. **Given** no patient is selected, **When** the caregiver opens the Inventory tab, **Then** an empty state with a clear CTA to select/link a patient is shown.
 2. **Given** a patient is selected, **When** the caregiver views the Inventory list, **Then** each medication shows its name, remaining quantity, and low/out badge if applicable.
 3. **Given** a caregiver edits inventory settings for a medication, **When** the update succeeds, **Then** the new values appear in the list and detail views.
+4. **Given** inventory is enabled with a valid schedule, **When** the caregiver views the list or detail, **Then** the list shows `あとX日` and the detail shows `あとX日分` with a `補充目安` date; if no plan is available, show `—`.
 
 ---
 
@@ -77,6 +78,8 @@ Caregivers receive a transient banner when a medication transitions into low sto
 - **FR-009**: The system MUST emit a caregiver-visible alert only when inventory transitions into low or out-of-stock status.
 - **FR-010**: The system MUST restrict inventory visibility and edits to caregivers only.
 - **FR-011**: The system MUST conceal non-owned or non-linked patient access as not found.
+- **FR-012**: The system MUST compute refill plan fields (`dailyPlannedUnits`, `daysRemaining`, `refillDueDate`) using Tokyo day boundaries.
+- **FR-013**: The system MUST display `あとX日` in the list and `あとX日分` + `補充目安` in the detail, or `—` when any refill plan field is null.
 
 ### Non-Functional Requirements *(mandatory)*
 

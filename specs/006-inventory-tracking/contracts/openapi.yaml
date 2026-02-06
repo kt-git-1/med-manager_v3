@@ -117,6 +117,9 @@ components:
         - inventoryLowThreshold
         - low
         - out
+        - dailyPlannedUnits
+        - daysRemaining
+        - refillDueDate
       properties:
         medicationId:
           type: string
@@ -132,6 +135,16 @@ components:
           type: boolean
         out:
           type: boolean
+        dailyPlannedUnits:
+          type: integer
+          nullable: true
+        daysRemaining:
+          type: integer
+          nullable: true
+        refillDueDate:
+          type: string
+          format: date
+          nullable: true
     InventoryUpdateRequest:
       type: object
       properties:

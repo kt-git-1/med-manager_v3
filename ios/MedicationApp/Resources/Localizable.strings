@@ -172,6 +172,9 @@
 "caregiver.inventory.status.low" = "少";
 "caregiver.inventory.status.out" = "なし";
 "caregiver.inventory.status.unconfigured" = "未設定";
+"caregiver.inventory.plan.daysRemaining" = "あと%d日分";
+"caregiver.inventory.plan.daysRemaining.short" = "あと%d日";
+"caregiver.inventory.plan.refillDue" = "補充目安";
 "caregiver.inventory.detail.section.settings" = "在庫設定";
 "caregiver.inventory.detail.section.adjust" = "在庫の調整";
 "caregiver.inventory.detail.enabled" = "在庫管理を有効にする";

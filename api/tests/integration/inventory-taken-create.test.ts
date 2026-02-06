@@ -70,6 +70,9 @@ vi.mock("../../src/repositories/prisma", () => {
         return { id: `adj-${mockData.adjustments.length}`, ...input.data };
       })
     },
+    regimen: {
+      findMany: vi.fn(async () => [])
+    },
     inventoryAlertEvent: {
       create: vi.fn(async (input: { data: { type: string } }) => {
         mockData.alertEvents.push({ type: input.data.type });

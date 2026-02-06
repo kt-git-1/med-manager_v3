@@ -11,10 +11,12 @@ import type {
   InventoryAlertType,
   InventoryAdjustmentActorType,
   InventoryAdjustmentReason,
-  Medication
+  Medication,
+  Regimen
 } from "@prisma/client";
 import { prisma } from "../repositories/prisma";
 import { getPatientRecordById } from "../repositories/patientRepo";
+import { computeRefillPlan } from "../lib/computeRefillPlan";
 
 export type MedicationCreateInput = {
   patientId: string;
@@ -71,6 +73,9 @@ export type InventoryItem = {
   inventoryLowThreshold: number;
   low: boolean;
   out: boolean;
+  dailyPlannedUnits: number | null;
+  daysRemaining: number | null;
+  refillDueDate: string | null;
 };
 
 export type InventoryUpdateInput = {
@@ -99,7 +104,10 @@ function computeInventoryState(quantity: number, threshold: number): InventoryAl
   return "NONE";
 }
 
-function buildInventoryItem(medication: Medication): InventoryItem {
+function buildInventoryItem(
+  medication: Medication,
+  plan?: { dailyPlannedUnits: number | null; daysRemaining: number | null; refillDueDate: string | null }
+): InventoryItem {
   const enabled = medication.inventoryEnabled;
   const quantity = medication.inventoryQuantity;
   const threshold = medication.inventoryLowThreshold;
@@ -111,8 +119,27 @@ function buildInventoryItem(medication: Medication): InventoryItem {
     inventoryQuantity: quantity,
     inventoryLowThreshold: threshold,
     low: state === "LOW",
-    out: state === "OUT"
+    out: state === "OUT",
+    dailyPlannedUnits: plan?.dailyPlannedUnits ?? null,
+    daysRemaining: plan?.daysRemaining ?? null,
+    refillDueDate: plan?.refillDueDate ?? null
   };
+}
+
+function buildInventoryItemWithPlan(medication: Medication, regimens: Regimen[]): InventoryItem {
+  const plan = computeRefillPlan({
+    inventoryEnabled: medication.inventoryEnabled,
+    inventoryQuantity: medication.inventoryQuantity,
+    doseCountPerIntake: medication.doseCountPerIntake,
+    regimens: regimens.map((regimen) => ({
+      startDate: regimen.startDate,
+      endDate: regimen.endDate,
+      times: regimen.times,
+      daysOfWeek: regimen.daysOfWeek,
+      enabled: regimen.enabled
+    }))
+  });
+  return buildInventoryItem(medication, plan);
 }
 
 function buildInventoryOverrides(inventoryCount?: number | null) {
@@ -128,8 +155,19 @@ function buildInventoryOverrides(inventoryCount?: number | null) {
 }
 
 export async function listMedicationInventory(patientId: string): Promise<InventoryItem[]> {
-  const medications = await listMedicationRecords(patientId);
-  return medications.map(buildInventoryItem);
+  const [medications, regimens] = await Promise.all([
+    listMedicationRecords(patientId),
+    prisma.regimen.findMany({ where: { patientId } })
+  ]);
+  const regimenMap = new Map<string, Regimen[]>();
+  for (const regimen of regimens) {
+    const existing = regimenMap.get(regimen.medicationId) ?? [];
+    existing.push(regimen);
+    regimenMap.set(regimen.medicationId, existing);
+  }
+  return medications.map((medication) =>
+    buildInventoryItemWithPlan(medication, regimenMap.get(medication.id) ?? [])
+  );
 }
 
 export async function updateMedicationInventorySettings(input: {
@@ -183,7 +221,8 @@ export async function updateMedicationInventorySettings(input: {
     return updatedMedication;
   });
 
-  return buildInventoryItem(updated);
+  const regimens = await prisma.regimen.findMany({ where: { medicationId: updated.id } });
+  return buildInventoryItemWithPlan(updated, regimens);
 }
 
 export async function adjustMedicationInventory(
@@ -243,7 +282,8 @@ export async function adjustMedicationInventory(
     return updatedMedication;
   });
 
-  return buildInventoryItem(updated);
+  const regimens = await prisma.regimen.findMany({ where: { medicationId: updated.id } });
+  return buildInventoryItemWithPlan(updated, regimens);
 }
 
 export async function applyInventoryDeltaForDoseRecord(input: {

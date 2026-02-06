@@ -8,6 +8,9 @@ struct InventoryItemDTO: Decodable, Identifiable {
     let inventoryLowThreshold: Int
     let low: Bool
     let out: Bool
+    let dailyPlannedUnits: Int?
+    let daysRemaining: Int?
+    let refillDueDate: String?
 
     var id: String { medicationId }
 }

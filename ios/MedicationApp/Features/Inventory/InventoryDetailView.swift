@@ -177,8 +177,23 @@ struct InventoryDetailView: View {
                 Spacer()
                 statusBadge
             }
+            refillPlanSummary
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var refillPlanSummary: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(refillDaysText)
+                .font(.headline)
+            HStack(spacing: 8) {
+                Text(NSLocalizedString("caregiver.inventory.plan.refillDue", comment: "Refill due label"))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.secondary)
+                Text(refillDueDateText)
+                    .font(.subheadline.weight(.semibold))
+            }
+        }
     }
 
     private var statusBadge: some View {
@@ -202,6 +217,23 @@ struct InventoryDetailView: View {
             return .low
         }
         return .available
+    }
+
+    private var refillDaysText: String {
+        guard let daysRemaining = item.daysRemaining else {
+            return "—"
+        }
+        return String(
+            format: NSLocalizedString(
+                "caregiver.inventory.plan.daysRemaining",
+                comment: "Remaining days label"
+            ),
+            daysRemaining
+        )
+    }
+
+    private var refillDueDateText: String {
+        item.refillDueDate ?? "—"
     }
 
     private var hasSettingsChanges: Bool {

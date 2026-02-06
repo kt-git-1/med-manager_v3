@@ -9,6 +9,9 @@
 - **inventoryLowThreshold**: integer threshold (default 0)
 - **inventoryUpdatedAt**: timestamp
 - **inventoryLastAlertState**: enum (NONE | LOW | OUT) or null
+- **dailyPlannedUnits**: integer or null (computed, not stored)
+- **daysRemaining**: integer or null (computed, Tokyo day basis)
+- **refillDueDate**: string (YYYY-MM-DD, Tokyo) or null (computed)
 
 ### MedicationInventoryAdjustment
 
@@ -45,3 +48,6 @@
 - Low state is defined as remaining < threshold; out-of-stock is remaining == 0.
 - Inventory adjustments occur only when inventoryEnabled is true.
 - Alert events are emitted only on transitions into LOW or OUT.
+- Refill plan fields are computed from enabled schedules using Tokyo day boundaries.
+- If schedules are missing or inventory is disabled, refill plan fields are null.
+- If remaining quantity is 0, daysRemaining is 0 and refillDueDate is today (Tokyo).

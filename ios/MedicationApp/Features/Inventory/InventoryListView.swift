@@ -142,7 +142,9 @@ struct InventoryListView: View {
         .onChange(of: sessionStore.currentPatientId) { _, _ in
             viewModel.load()
         }
-        .sheet(item: $selectedItem) { item in
+        .sheet(item: $selectedItem, onDismiss: {
+            viewModel.load()
+        }) { item in
             InventoryDetailView(
                 item: item,
                 viewModel: viewModel,
@@ -295,10 +297,15 @@ struct InventoryListView: View {
 
     private func inventoryRow(for item: InventoryItemDTO) -> some View {
         HStack(alignment: .center, spacing: 12) {
-            HStack(alignment: .center, spacing: 8) {
-                Text(item.name)
-                    .font(.title3.weight(.semibold))
-                inlineStatusBadge(for: item)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .center, spacing: 8) {
+                    Text(item.name)
+                        .font(.title3.weight(.semibold))
+                    inlineStatusBadge(for: item)
+                }
+                Text(daysRemainingText(for: item))
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 8) {
@@ -345,6 +352,19 @@ struct InventoryListView: View {
         } else {
             EmptyView()
         }
+    }
+
+    private func daysRemainingText(for item: InventoryItemDTO) -> String {
+        guard let daysRemaining = item.daysRemaining else {
+            return "—"
+        }
+        return String(
+            format: NSLocalizedString(
+                "caregiver.inventory.plan.daysRemaining.short",
+                comment: "Remaining days short"
+            ),
+            daysRemaining
+        )
     }
 
     private func showToast(_ message: String) {
