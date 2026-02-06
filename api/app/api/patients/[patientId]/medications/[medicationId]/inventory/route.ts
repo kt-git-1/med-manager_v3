@@ -1,13 +1,13 @@
-import { errorResponse } from "../../../../../../src/middleware/error";
+import { errorResponse } from "../../../../../../../src/middleware/error";
 import {
   AuthError,
   getBearerToken,
   isCaregiverToken,
   requireCaregiver,
   assertCaregiverPatientScope
-} from "../../../../../../src/middleware/auth";
-import { validateInventoryUpdate } from "../../../../../../src/validators/inventory";
-import { updateMedicationInventorySettings } from "../../../../../../src/services/medicationService";
+} from "../../../../../../../src/middleware/auth";
+import { validateInventoryUpdate } from "../../../../../../../src/validators/inventory";
+import { updateMedicationInventorySettings } from "../../../../../../../src/services/medicationService";
 
 export const runtime = "nodejs";
 
