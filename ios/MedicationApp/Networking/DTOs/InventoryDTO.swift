@@ -3,6 +3,7 @@ import Foundation
 struct InventoryItemDTO: Decodable, Identifiable {
     let medicationId: String
     let name: String
+    let isPrn: Bool
     let doseCountPerIntake: Int
     let inventoryEnabled: Bool
     let inventoryQuantity: Int

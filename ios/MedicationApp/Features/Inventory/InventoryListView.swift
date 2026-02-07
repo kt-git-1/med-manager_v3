@@ -419,6 +419,9 @@ struct InventoryListView: View {
     }
 
     private func daysRemainingText(for item: InventoryItemDTO) -> String {
+        if item.isPrn {
+            return NSLocalizedString("medication.list.badge.prn", comment: "PRN badge")
+        }
         if item.periodEnded {
             return NSLocalizedString("caregiver.inventory.plan.ended", comment: "Plan ended")
         }

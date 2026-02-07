@@ -688,6 +688,7 @@ struct PatientManagementView: View {
                 InventoryItemDTO(
                     medicationId: item.medicationId,
                     name: item.name,
+                    isPrn: item.isPrn,
                     doseCountPerIntake: item.doseCountPerIntake,
                     inventoryEnabled: item.inventoryEnabled,
                     inventoryQuantity: item.inventoryQuantity,

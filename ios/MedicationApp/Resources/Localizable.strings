@@ -110,7 +110,7 @@
 "patient.readonly.settings.title" = "設定";
 "patient.settings.notifications.master" = "通知を有効にする";
 "patient.settings.notifications.rereminder" = "再通知（15分後）";
-"patient.settings.notifications.slots.title" = "時間帯";
+"patient.settings.notifications.slots.title" = "時間帯通知設定";
 "patient.settings.notifications.slot.morning" = "朝";
 "patient.settings.notifications.slot.noon" = "昼";
 "patient.settings.notifications.slot.evening" = "夜";

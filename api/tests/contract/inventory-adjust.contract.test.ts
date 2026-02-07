@@ -5,6 +5,7 @@ type InventoryItem = {
   patientId: string;
   medicationId: string;
   name: string;
+  isPrn: boolean;
   inventoryEnabled: boolean;
   inventoryQuantity: number;
   inventoryLowThreshold: number;
@@ -106,6 +107,7 @@ describe("inventory adjust contract", () => {
         patientId: "patient-1",
         medicationId: "med-1",
         name: "Medication A",
+        isPrn: false,
         inventoryEnabled: true,
         inventoryQuantity: 3,
         inventoryLowThreshold: 1,
@@ -133,6 +135,7 @@ describe("inventory adjust contract", () => {
         patientId: "patient-1",
         medicationId: "med-1",
         name: "Medication A",
+        isPrn: false,
         inventoryEnabled: true,
         inventoryQuantity: 3,
         inventoryLowThreshold: 1,

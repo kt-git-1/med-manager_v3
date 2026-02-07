@@ -189,14 +189,19 @@ struct InventoryDetailView: View {
 
     private var refillPlanSummary: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(refillDaysText)
-                .font(.headline)
-            HStack(spacing: 8) {
-                Text(NSLocalizedString("caregiver.inventory.plan.refillDue", comment: "Refill due label"))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.secondary)
-                Text(refillDueDateText)
-                    .font(.subheadline.weight(.semibold))
+            if item.isPrn {
+                Text(NSLocalizedString("medication.list.badge.prn", comment: "PRN badge"))
+                    .font(.headline)
+            } else {
+                Text(refillDaysText)
+                    .font(.headline)
+                HStack(spacing: 8) {
+                    Text(NSLocalizedString("caregiver.inventory.plan.refillDue", comment: "Refill due label"))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.secondary)
+                    Text(refillDueDateText)
+                        .font(.subheadline.weight(.semibold))
+                }
             }
         }
     }
@@ -229,6 +234,9 @@ struct InventoryDetailView: View {
     }
 
     private var refillDaysText: String {
+        if item.isPrn {
+            return NSLocalizedString("medication.list.badge.prn", comment: "PRN badge")
+        }
         guard let daysRemaining = item.daysRemaining else {
             return "—"
         }
@@ -246,6 +254,9 @@ struct InventoryDetailView: View {
     }
 
     private var dailyIntakeSummaryText: String {
+        if item.isPrn {
+            return NSLocalizedString("medication.list.badge.prn", comment: "PRN badge")
+        }
         guard let dailyPlannedUnits = item.dailyPlannedUnits, item.doseCountPerIntake > 0 else {
             return "1日—回（—個/回）"
         }
