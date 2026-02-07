@@ -5,6 +5,7 @@ struct MedicationFormView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel: MedicationFormViewModel
     @State private var hasEndDate = false
+    @State private var showingDeleteConfirm = false
     private let onSuccess: ((String) -> Void)?
     private let dosageUnits = ["", "mg", "g", "mcg", "mL"]
     private let inventoryUnits = ["", "錠", "包", "本", "個", "mL"]
@@ -214,24 +215,15 @@ struct MedicationFormView: View {
                         .foregroundColor(.secondary)
                 }
             } else {
-                Button(viewModel.isSubmitting ? "保存中..." : "保存") {
-                    Task {
-                        let saved = await viewModel.submit()
-                        if saved {
-                            let messageKey = viewModel.isEditing
-                                ? "medication.toast.updated"
-                                : "medication.toast.created"
-                            onSuccess?(NSLocalizedString(messageKey, comment: "Medication toast"))
-                            dismiss()
-                        }
+                if viewModel.isEditing {
+                    HStack(spacing: 12) {
+                        saveButton(isCaregiverMissingPatient: isCaregiverMissingPatient)
+                        deleteButton(isCaregiverMissingPatient: isCaregiverMissingPatient)
                     }
+                    .listRowBackground(Color(.secondarySystemBackground))
+                } else {
+                    saveButton(isCaregiverMissingPatient: isCaregiverMissingPatient)
                 }
-                .disabled(viewModel.isSubmitting || isCaregiverMissingPatient)
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .listRowBackground(Color(.secondarySystemBackground))
-                .accessibilityLabel(NSLocalizedString("common.save", comment: "Save"))
             }
         }
         .scrollContentBackground(.hidden)
@@ -259,6 +251,61 @@ struct MedicationFormView: View {
                 viewModel.selectedDays = []
             }
         }
+        .alert(
+            NSLocalizedString("medication.form.delete.confirm.title", comment: "Delete confirm title"),
+            isPresented: $showingDeleteConfirm
+        ) {
+            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
+            Button(NSLocalizedString("medication.form.delete.confirm.action", comment: "Delete confirm action"), role: .destructive) {
+                Task {
+                    let deleted = await viewModel.deleteMedication()
+                    if deleted {
+                        NotificationCenter.default.post(name: .medicationUpdated, object: nil)
+                        onSuccess?(NSLocalizedString("medication.toast.deleted", comment: "Medication deleted toast"))
+                        dismiss()
+                    }
+                }
+            }
+        } message: {
+            Text(NSLocalizedString("medication.form.delete.confirm.message", comment: "Delete confirm message"))
+        }
+    }
+
+    @ViewBuilder
+    private func saveButton(isCaregiverMissingPatient: Bool) -> some View {
+        Button(viewModel.isSubmitting ? "保存中..." : "保存") {
+            Task {
+                let saved = await viewModel.submit()
+                if saved {
+                    let messageKey = viewModel.isEditing
+                        ? "medication.toast.updated"
+                        : "medication.toast.created"
+                    NotificationCenter.default.post(name: .medicationUpdated, object: nil)
+                    onSuccess?(NSLocalizedString(messageKey, comment: "Medication toast"))
+                    dismiss()
+                }
+            }
+        }
+        .disabled(viewModel.isSubmitting || isCaregiverMissingPatient)
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .listRowBackground(Color(.secondarySystemBackground))
+        .accessibilityLabel(NSLocalizedString("common.save", comment: "Save"))
+    }
+
+    @ViewBuilder
+    private func deleteButton(isCaregiverMissingPatient: Bool) -> some View {
+        Button(NSLocalizedString("medication.form.delete", comment: "Delete medication")) {
+            showingDeleteConfirm = true
+        }
+        .disabled(viewModel.isDeleting || viewModel.isSubmitting || isCaregiverMissingPatient)
+        .buttonStyle(.bordered)
+        .tint(.red)
+        .controlSize(.large)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .listRowBackground(Color(.secondarySystemBackground))
+        .accessibilityLabel(NSLocalizedString("medication.form.delete", comment: "Delete medication"))
     }
 
     private func intBinding(for text: Binding<String>) -> Binding<Int> {

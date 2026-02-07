@@ -83,6 +83,11 @@
 "medication.form.notes" = "メモ";
 "medication.form.patient.readonly" = "患者モードでは編集できません";
 "medication.form.patient.required" = "対象患者を選択してください";
+"medication.form.delete" = "薬を削除する";
+"medication.form.delete.confirm.title" = "薬を削除しますか？";
+"medication.form.delete.confirm.message" = "この操作は取り消せません。";
+"medication.form.delete.confirm.action" = "削除する";
+"medication.toast.deleted" = "薬を削除しました";
 
 /* Patient view */
 "patient.readonly.title" = "薬一覧";
@@ -168,6 +173,8 @@
 "caregiver.inventory.empty.title" = "患者を選択してください";
 "caregiver.inventory.empty.message" = "連携・設定タブから対象を選んでください";
 "caregiver.inventory.list.section" = "在庫一覧";
+"caregiver.inventory.section.unconfigured" = "在庫未設定";
+"caregiver.inventory.section.periodEnded" = "服用期間終了";
 "caregiver.inventory.filter.all" = "すべて";
 "caregiver.inventory.filter.low" = "低在庫のみ";
 "caregiver.inventory.filter.out" = "在庫なし";
@@ -187,11 +194,12 @@
 "caregiver.inventory.detail.section.settings" = "在庫設定";
 "caregiver.inventory.detail.section.adjust" = "在庫の調整";
 "caregiver.inventory.detail.enabled" = "在庫管理を有効にする";
-"caregiver.inventory.detail.threshold" = "低在庫しきい値";
+"caregiver.inventory.detail.threshold" = "残り日数の目安";
 "caregiver.inventory.detail.refill" = "補充数";
 "caregiver.inventory.detail.refill.action" = "補充する";
 "caregiver.inventory.detail.set" = "修正後の在庫数";
-"caregiver.inventory.settings.note" = "残りがしきい値未満で低在庫扱い";
+"caregiver.inventory.settings.note" = "残り日数が目安以下で低在庫扱い";
+"common.days.unit" = "日";
 "caregiver.inventory.actions.refill" = "補充する";
 "caregiver.inventory.actions.refill.sheet.title" = "補充量";
 "caregiver.inventory.actions.refill.sheet.custom" = "+入力";

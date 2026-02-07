@@ -142,6 +142,9 @@ struct InventoryListView: View {
         .onChange(of: sessionStore.currentPatientId) { _, _ in
             viewModel.load()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .medicationUpdated)) { _ in
+            viewModel.load()
+        }
         .sheet(item: $selectedItem, onDismiss: {
             viewModel.load()
         }) { item in
@@ -174,19 +177,69 @@ struct InventoryListView: View {
             .padding(.horizontal, 16)
 
             List {
-                Section {
-                    ForEach(filteredItems) { item in
-                        inventoryRow(for: item)
-                            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                            .listRowSeparator(.hidden)
+                if filter == .all {
+                    if !configuredActiveItems.isEmpty {
+                        Section {
+                            ForEach(configuredActiveItems) { item in
+                                inventoryRow(for: item)
+                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                    .listRowSeparator(.hidden)
+                            }
+                        } header: {
+                            Text(NSLocalizedString("caregiver.inventory.list.section", comment: "Inventory list section"))
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                                .textCase(nil)
+                        }
+                        .listRowSeparator(.hidden)
                     }
-                } header: {
-                    Text(NSLocalizedString("caregiver.inventory.list.section", comment: "Inventory list section"))
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                        .textCase(nil)
+
+                    if !periodEndedItems.isEmpty {
+                        Section {
+                            ForEach(periodEndedItems) { item in
+                                inventoryRow(for: item)
+                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                    .listRowSeparator(.hidden)
+                            }
+                        } header: {
+                            Text(NSLocalizedString("caregiver.inventory.section.periodEnded", comment: "Period ended section"))
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                                .textCase(nil)
+                        }
+                        .listRowSeparator(.hidden)
+                    }
+
+                    if !unconfiguredItems.isEmpty {
+                        Section {
+                            ForEach(unconfiguredItems) { item in
+                                inventoryRow(for: item)
+                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                    .listRowSeparator(.hidden)
+                            }
+                        } header: {
+                            Text(NSLocalizedString("caregiver.inventory.section.unconfigured", comment: "Unconfigured section"))
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                                .textCase(nil)
+                        }
+                        .listRowSeparator(.hidden)
+                    }
+                } else {
+                    Section {
+                        ForEach(filteredItems) { item in
+                            inventoryRow(for: item)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                .listRowSeparator(.hidden)
+                        }
+                    } header: {
+                        Text(NSLocalizedString("caregiver.inventory.list.section", comment: "Inventory list section"))
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                            .textCase(nil)
+                    }
+                    .listRowSeparator(.hidden)
                 }
-                .listRowSeparator(.hidden)
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
@@ -270,6 +323,9 @@ struct InventoryListView: View {
             }
         }
         return baseItems.sorted { lhs, rhs in
+            if lhs.periodEnded != rhs.periodEnded {
+                return !lhs.periodEnded
+            }
             let lhsRank = sortRank(for: lhs)
             let rhsRank = sortRank(for: rhs)
             if lhsRank != rhsRank {
@@ -280,6 +336,30 @@ struct InventoryListView: View {
             }
             return lhs.name < rhs.name
         }
+    }
+
+    private var configuredActiveItems: [InventoryItemDTO] {
+        filteredItems
+            .filter { $0.inventoryEnabled && !$0.periodEnded }
+            .sorted { lhs, rhs in
+                let lhsDays = lhs.daysRemaining ?? Int.max
+                let rhsDays = rhs.daysRemaining ?? Int.max
+                if lhsDays != rhsDays {
+                    return lhsDays < rhsDays
+                }
+                if lhs.inventoryQuantity != rhs.inventoryQuantity {
+                    return lhs.inventoryQuantity < rhs.inventoryQuantity
+                }
+                return lhs.name < rhs.name
+            }
+    }
+
+    private var periodEndedItems: [InventoryItemDTO] {
+        filteredItems.filter { $0.periodEnded }
+    }
+
+    private var unconfiguredItems: [InventoryItemDTO] {
+        filteredItems.filter { !$0.inventoryEnabled }
     }
 
     private func sortRank(for item: InventoryItemDTO) -> Int {
@@ -305,7 +385,12 @@ struct InventoryListView: View {
                 }
                 Text(daysRemainingText(for: item))
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(daysRemainingColor(for: item))
+                if shouldShowLowDaysWarning(for: item) {
+                    Text(refillDueText(for: item))
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.red)
+                }
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 8) {
@@ -325,6 +410,10 @@ struct InventoryListView: View {
         .padding(16)
         .frame(maxWidth: .infinity)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(shouldShowLowDaysWarning(for: item) ? Color.red.opacity(0.6) : Color.clear, lineWidth: 2)
+        )
         .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
         .contentShape(Rectangle())
         .onTapGesture {
@@ -368,6 +457,28 @@ struct InventoryListView: View {
             ),
             daysRemaining
         )
+    }
+
+    private func shouldShowLowDaysWarning(for item: InventoryItemDTO) -> Bool {
+        guard item.inventoryEnabled, !item.periodEnded, let daysRemaining = item.daysRemaining else {
+            return false
+        }
+        return daysRemaining <= 3
+    }
+
+    private func daysRemainingColor(for item: InventoryItemDTO) -> Color {
+        if shouldShowLowDaysWarning(for: item) {
+            return .red
+        }
+        return .secondary
+    }
+
+    private func refillDueText(for item: InventoryItemDTO) -> String {
+        let label = NSLocalizedString("caregiver.inventory.plan.refillDue", comment: "Refill due label")
+        if let refillDueDate = item.refillDueDate, !refillDueDate.isEmpty {
+            return "\(label)：\(refillDueDate)"
+        }
+        return label
     }
 
     private func showToast(_ message: String) {

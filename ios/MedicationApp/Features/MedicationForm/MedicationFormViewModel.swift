@@ -88,6 +88,7 @@ final class MedicationFormViewModel: ObservableObject {
     @Published var inventoryUnit = ""
     @Published var errorMessage: String?
     @Published var isSubmitting = false
+    @Published var isDeleting = false
     @Published var scheduleFrequency: ScheduleFrequency = .daily
     @Published var selectedDays: Set<ScheduleDay> = []
     @Published var selectedTimeSlots: Set<ScheduleTimeSlot> = []
@@ -228,6 +229,36 @@ final class MedicationFormViewModel: ObservableObject {
                 let created = try await apiClient.createMedication(request)
                 try await persistRegimen(medicationId: created.id)
             }
+            return true
+        } catch {
+            errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
+            return false
+        }
+    }
+
+    func deleteMedication() async -> Bool {
+        guard let existingMedication else { return false }
+        if sessionStore.mode == .caregiver, sessionStore.currentPatientId == nil {
+            errorMessage = NSLocalizedString("medication.form.patient.required", comment: "Patient required")
+            return false
+        }
+        if isDeleting || isSubmitting {
+            return false
+        }
+        isDeleting = true
+        defer { isDeleting = false }
+        do {
+            let patientId: String
+            if sessionStore.mode == .caregiver {
+                guard let currentPatientId = sessionStore.currentPatientId, !currentPatientId.isEmpty else {
+                    errorMessage = NSLocalizedString("medication.form.patient.required", comment: "Patient required")
+                    return false
+                }
+                patientId = currentPatientId
+            } else {
+                patientId = existingMedication.patientId
+            }
+            try await apiClient.deleteMedication(id: existingMedication.id, patientId: patientId)
             return true
         } catch {
             errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")

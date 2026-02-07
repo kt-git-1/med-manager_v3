@@ -96,11 +96,15 @@ export type InventoryAdjustInput = {
   absoluteQuantity?: number;
 };
 
-function computeInventoryState(quantity: number, threshold: number): InventoryAlertState {
+function computeInventoryState(
+  quantity: number,
+  threshold: number,
+  daysRemaining: number | null
+): InventoryAlertState {
   if (quantity === 0) {
     return "OUT";
   }
-  if (quantity < threshold) {
+  if (threshold > 0 && daysRemaining !== null && daysRemaining <= threshold) {
     return "LOW";
   }
   return "NONE";
@@ -139,7 +143,7 @@ function buildInventoryItem(
   const enabled = medication.inventoryEnabled;
   const quantity = medication.inventoryQuantity;
   const threshold = medication.inventoryLowThreshold;
-  const state = enabled ? computeInventoryState(quantity, threshold) : "NONE";
+  const state = enabled ? computeInventoryState(quantity, threshold, plan?.daysRemaining ?? null) : "NONE";
   return {
     medicationId: medication.id,
     name: medication.name,

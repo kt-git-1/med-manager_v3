@@ -67,6 +67,8 @@ struct InventoryDetailView: View {
                                     .keyboardType(.numberPad)
                                     .focused($focusedField, equals: .lowThreshold)
                                     .accessibilityIdentifier("InventoryThresholdField")
+                                Text(NSLocalizedString("common.days.unit", comment: "Days unit"))
+                                    .foregroundColor(.secondary)
                             }
                         }
 
@@ -222,7 +224,7 @@ struct InventoryDetailView: View {
         if quantity == 0 {
             return .out
         }
-        if quantity < sanitizedThreshold {
+        if sanitizedThreshold > 0, let daysRemaining = item.daysRemaining, daysRemaining <= sanitizedThreshold {
             return .low
         }
         return .available
