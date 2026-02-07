@@ -123,21 +123,41 @@ struct PatientTodayView: View {
             } else {
                 ScrollViewReader { proxy in
                     List {
-                        if !plannedItems.isEmpty {
+                        ForEach(slotSections) { section in
                             Section {
-                                ForEach(plannedItems) { dose in
+                                ForEach(section.items) { dose in
                                     PatientTodayRow(
                                         dose: dose,
                                         timeText: viewModel.timeText(for: dose.scheduledAt),
                                         onRecord: { viewModel.confirmRecord(for: dose) },
-                                        isHighlighted: shouldHighlight(dose: dose)
+                                        isHighlighted: shouldHighlight(dose: dose),
+                                        slotColor: slotColor(for: section.slot)
                                     )
                                     .id(dose.key)
                                     .listRowSeparator(.hidden)
                                     .onTapGesture { presentDetail(for: dose) }
                                 }
                             } header: {
-                                Text(NSLocalizedString("patient.today.section.planned", comment: "Today planned"))
+                                slotHeader(for: section.slot)
+                            }
+                        }
+
+                        if !missedItems.isEmpty {
+                            Section {
+                                ForEach(missedItems) { dose in
+                                    PatientTodayRow(
+                                        dose: dose,
+                                        timeText: viewModel.timeText(for: dose.scheduledAt),
+                                        onRecord: { viewModel.confirmRecord(for: dose) },
+                                        isHighlighted: shouldHighlight(dose: dose),
+                                        slotColor: nil
+                                    )
+                                    .id(dose.key)
+                                    .listRowSeparator(.hidden)
+                                    .onTapGesture { presentDetail(for: dose) }
+                                }
+                            } header: {
+                                Text(NSLocalizedString("patient.today.section.missed", comment: "Missed"))
                                     .font(.headline)
                                     .foregroundStyle(.primary)
                                     .textCase(nil)
@@ -151,7 +171,8 @@ struct PatientTodayView: View {
                                         dose: dose,
                                         timeText: viewModel.timeText(for: dose.scheduledAt),
                                         onRecord: { viewModel.confirmRecord(for: dose) },
-                                        isHighlighted: shouldHighlight(dose: dose)
+                                        isHighlighted: shouldHighlight(dose: dose),
+                                        slotColor: nil
                                     )
                                     .id(dose.key)
                                     .listRowSeparator(.hidden)
@@ -182,15 +203,43 @@ struct PatientTodayView: View {
         .safeAreaPadding(.top)
     }
 
+    private struct SlotSection: Identifiable {
+        let id: String
+        let slot: NotificationSlot?
+        let items: [ScheduleDoseDTO]
+    }
+
+    private var slotSections: [SlotSection] {
+        let orderedSlots: [NotificationSlot] = [.morning, .noon, .evening, .bedtime]
+        var sections: [SlotSection] = []
+        for slotValue in orderedSlots {
+            let items = plannedItems.filter { slot(for: $0) == slotValue }
+            if !items.isEmpty {
+                sections.append(SlotSection(id: slotValue.rawValue, slot: slotValue, items: items))
+            }
+        }
+        let otherItems = plannedItems.filter { slot(for: $0) == nil }
+        if !otherItems.isEmpty {
+            sections.append(SlotSection(id: "other", slot: nil, items: otherItems))
+        }
+        return sections
+    }
+
     private var plannedItems: [ScheduleDoseDTO] {
         viewModel.items.filter { dose in
             switch dose.effectiveStatus {
             case .taken:
                 return false
-            case .pending, .missed, .none:
+            case .missed:
+                return false
+            case .pending, .none:
                 return true
             }
         }
+    }
+
+    private var missedItems: [ScheduleDoseDTO] {
+        viewModel.items.filter { $0.effectiveStatus == .missed }
     }
 
     private var takenItems: [ScheduleDoseDTO] {
@@ -198,6 +247,54 @@ struct PatientTodayView: View {
         return viewModel.items.filter { dose in
             dose.effectiveStatus == .taken
                 && Self.todayCalendar.isDate(dose.scheduledAt, inSameDayAs: now)
+        }
+    }
+
+    private func slotHeader(for slot: NotificationSlot?) -> some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(slotColor(for: slot))
+                .frame(width: 10, height: 10)
+            Text(slotTitle(for: slot))
+                .font(.headline)
+                .foregroundStyle(.primary)
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(slotColor(for: slot).opacity(0.18))
+        )
+        .textCase(nil)
+    }
+
+    private func slotTitle(for slot: NotificationSlot?) -> String {
+        switch slot {
+        case .morning:
+            return NSLocalizedString("patient.today.section.slot.morning", comment: "Morning slot")
+        case .noon:
+            return NSLocalizedString("patient.today.section.slot.noon", comment: "Noon slot")
+        case .evening:
+            return NSLocalizedString("patient.today.section.slot.evening", comment: "Evening slot")
+        case .bedtime:
+            return NSLocalizedString("patient.today.section.slot.bedtime", comment: "Bedtime slot")
+        case .none:
+            return NSLocalizedString("patient.today.section.slot.other", comment: "Other slot")
+        }
+    }
+
+    private func slotColor(for slot: NotificationSlot?) -> Color {
+        switch slot {
+        case .morning:
+            return Color.orange
+        case .noon:
+            return Color.blue
+        case .evening:
+            return Color.purple
+        case .bedtime:
+            return Color.indigo
+        case .none:
+            return Color.gray
         }
     }
 
@@ -423,6 +520,7 @@ private struct PatientTodayRow: View {
     let timeText: String
     let onRecord: () -> Void
     let isHighlighted: Bool
+    let slotColor: Color?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -466,6 +564,14 @@ private struct PatientTodayRow: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(backgroundColor(for: dose.effectiveStatus))
         )
+        .overlay(alignment: .leading) {
+            if let slotColor {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(slotColor)
+                    .frame(width: 6)
+                    .padding(.vertical, 12)
+            }
+        }
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(isMissed ? Color.red.opacity(0.35) : Color.clear, lineWidth: 1)

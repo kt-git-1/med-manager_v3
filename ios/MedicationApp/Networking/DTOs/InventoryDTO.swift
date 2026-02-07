@@ -7,6 +7,7 @@ struct InventoryItemDTO: Decodable, Identifiable {
     let inventoryEnabled: Bool
     let inventoryQuantity: Int
     let inventoryLowThreshold: Int
+    let periodEnded: Bool
     let low: Bool
     let out: Bool
     let dailyPlannedUnits: Int?

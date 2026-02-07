@@ -117,21 +117,41 @@ struct CaregiverTodayView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     }
-                    if !plannedItems.isEmpty {
+                    ForEach(slotSections) { section in
                         Section {
-                            ForEach(plannedItems) { dose in
+                            ForEach(section.items) { dose in
                                 CaregiverTodayRow(
                                     dose: dose,
                                     timeText: viewModel.timeText(for: dose.scheduledAt),
                                     actionTitle: NSLocalizedString("caregiver.today.record.button", comment: "Record"),
                                     recordedByText: nil,
                                     isDestructive: false,
+                                    slotColor: slotColor(for: section.slot),
                                     onAction: { viewModel.recordDose(dose) }
                                 )
                                 .listRowSeparator(.hidden)
                             }
                         } header: {
-                            Text(NSLocalizedString("caregiver.today.section.planned", comment: "Today planned"))
+                            slotHeader(for: section.slot)
+                        }
+                    }
+
+                    if !missedItems.isEmpty {
+                        Section {
+                            ForEach(missedItems) { dose in
+                                CaregiverTodayRow(
+                                    dose: dose,
+                                    timeText: viewModel.timeText(for: dose.scheduledAt),
+                                    actionTitle: NSLocalizedString("caregiver.today.record.button", comment: "Record"),
+                                    recordedByText: nil,
+                                    isDestructive: false,
+                                    slotColor: nil,
+                                    onAction: { viewModel.recordDose(dose) }
+                                )
+                                .listRowSeparator(.hidden)
+                            }
+                        } header: {
+                            Text(NSLocalizedString("caregiver.today.section.missed", comment: "Missed"))
                                 .font(.headline)
                                 .foregroundStyle(.primary)
                                 .textCase(nil)
@@ -147,6 +167,7 @@ struct CaregiverTodayView: View {
                                     actionTitle: NSLocalizedString("caregiver.today.delete.button", comment: "Delete"),
                                     recordedByText: recordedByText(for: dose),
                                     isDestructive: true,
+                                    slotColor: nil,
                                     onAction: { viewModel.deleteDose(dose) }
                                 )
                                 .listRowSeparator(.hidden)
@@ -170,15 +191,95 @@ struct CaregiverTodayView: View {
         }
     }
 
+    private struct SlotSection: Identifiable {
+        let id: String
+        let slot: NotificationSlot?
+        let items: [ScheduleDoseDTO]
+    }
+
+    private var slotSections: [SlotSection] {
+        let orderedSlots: [NotificationSlot] = [.morning, .noon, .evening, .bedtime]
+        var sections: [SlotSection] = []
+        for slotValue in orderedSlots {
+            let items = plannedItems.filter { slot(for: $0) == slotValue }
+            if !items.isEmpty {
+                sections.append(SlotSection(id: slotValue.rawValue, slot: slotValue, items: items))
+            }
+        }
+        let otherItems = plannedItems.filter { slot(for: $0) == nil }
+        if !otherItems.isEmpty {
+            sections.append(SlotSection(id: "other", slot: nil, items: otherItems))
+        }
+        return sections
+    }
+
+    private func slotHeader(for slot: NotificationSlot?) -> some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(slotColor(for: slot))
+                .frame(width: 10, height: 10)
+            Text(slotTitle(for: slot))
+                .font(.headline)
+                .foregroundStyle(.primary)
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(slotColor(for: slot).opacity(0.18))
+        )
+        .textCase(nil)
+    }
+
+    private func slotTitle(for slot: NotificationSlot?) -> String {
+        switch slot {
+        case .morning:
+            return NSLocalizedString("patient.today.section.slot.morning", comment: "Morning slot")
+        case .noon:
+            return NSLocalizedString("patient.today.section.slot.noon", comment: "Noon slot")
+        case .evening:
+            return NSLocalizedString("patient.today.section.slot.evening", comment: "Evening slot")
+        case .bedtime:
+            return NSLocalizedString("patient.today.section.slot.bedtime", comment: "Bedtime slot")
+        case .none:
+            return NSLocalizedString("patient.today.section.slot.other", comment: "Other slot")
+        }
+    }
+
+    private func slotColor(for slot: NotificationSlot?) -> Color {
+        switch slot {
+        case .morning:
+            return Color.orange
+        case .noon:
+            return Color.blue
+        case .evening:
+            return Color.purple
+        case .bedtime:
+            return Color.indigo
+        case .none:
+            return Color.gray
+        }
+    }
+
+    private func slot(for dose: ScheduleDoseDTO) -> NotificationSlot? {
+        NotificationSlot.from(date: dose.scheduledAt)
+    }
+
     private var plannedItems: [ScheduleDoseDTO] {
         viewModel.items.filter { dose in
             switch dose.effectiveStatus {
             case .taken:
                 return false
-            case .pending, .missed, .none:
+            case .missed:
+                return false
+            case .pending, .none:
                 return true
             }
         }
+    }
+
+    private var missedItems: [ScheduleDoseDTO] {
+        viewModel.items.filter { $0.effectiveStatus == .missed }
     }
 
     private var takenItems: [ScheduleDoseDTO] {
@@ -208,6 +309,7 @@ private struct CaregiverTodayRow: View {
     let actionTitle: String
     let recordedByText: String?
     let isDestructive: Bool
+    let slotColor: Color?
     let onAction: () -> Void
 
     var body: some View {
@@ -245,6 +347,14 @@ private struct CaregiverTodayRow: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(backgroundColor(for: dose.effectiveStatus))
         )
+        .overlay(alignment: .leading) {
+            if let slotColor {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(slotColor)
+                    .frame(width: 6)
+                    .padding(.vertical, 12)
+            }
+        }
         .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilitySummary)

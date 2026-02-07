@@ -72,6 +72,7 @@ export type InventoryItem = {
   inventoryEnabled: boolean;
   inventoryQuantity: number;
   inventoryLowThreshold: number;
+  periodEnded: boolean;
   low: boolean;
   out: boolean;
   dailyPlannedUnits: number | null;
@@ -105,6 +106,32 @@ function computeInventoryState(quantity: number, threshold: number): InventoryAl
   return "NONE";
 }
 
+const INVENTORY_TZ = "Asia/Tokyo";
+
+function inventoryDateKey(date: Date, tz: string) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  });
+  const parts = formatter.formatToParts(date);
+  const values: Record<string, string> = {};
+  for (const part of parts) {
+    if (part.type !== "literal") {
+      values[part.type] = part.value;
+    }
+  }
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function isPeriodEnded(endDate?: Date | null, now: Date = new Date()) {
+  if (!endDate) {
+    return false;
+  }
+  return inventoryDateKey(now, INVENTORY_TZ) >= inventoryDateKey(endDate, INVENTORY_TZ);
+}
+
 function buildInventoryItem(
   medication: Medication,
   plan?: { dailyPlannedUnits: number | null; daysRemaining: number | null; refillDueDate: string | null }
@@ -120,6 +147,7 @@ function buildInventoryItem(
     inventoryEnabled: enabled,
     inventoryQuantity: quantity,
     inventoryLowThreshold: threshold,
+    periodEnded: isPeriodEnded(medication.endDate),
     low: state === "LOW",
     out: state === "OUT",
     dailyPlannedUnits: plan?.dailyPlannedUnits ?? null,

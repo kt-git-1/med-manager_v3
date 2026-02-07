@@ -52,6 +52,7 @@
 "medication.list.empty.action" = "薬を追加する";
 "medication.list.add" = "追加";
 "medication.list.section.title" = "薬一覧";
+"medication.list.section.expired" = "期間終了";
 "medication.list.startDate" = "開始日";
 "medication.list.nextDose" = "次回予定";
 "medication.toast.created" = "薬を追加しました";
@@ -131,6 +132,12 @@
 "patient.today.recorded" = "記録しました";
 "patient.today.section.planned" = "今日のお薬";
 "patient.today.section.taken" = "服用済み";
+"patient.today.section.missed" = "飲み忘れ";
+"patient.today.section.slot.morning" = "朝";
+"patient.today.section.slot.noon" = "昼";
+"patient.today.section.slot.evening" = "夜";
+"patient.today.section.slot.bedtime" = "眠前";
+"patient.today.section.slot.other" = "その他";
 "patient.today.reminder.title" = "服用リマインダー";
 "patient.today.reminder.body" = "%@を飲む時間です（%@）";
 
@@ -175,6 +182,7 @@
 "caregiver.inventory.status.unconfigured" = "未設定";
 "caregiver.inventory.plan.daysRemaining" = "あと%d日分";
 "caregiver.inventory.plan.daysRemaining.short" = "あと%d日";
+"caregiver.inventory.plan.ended" = "服用期間終了";
 "caregiver.inventory.plan.refillDue" = "補充目安";
 "caregiver.inventory.detail.section.settings" = "在庫設定";
 "caregiver.inventory.detail.section.adjust" = "在庫の調整";
@@ -208,6 +216,7 @@
 "caregiver.today.deleted" = "記録を取り消しました";
 "caregiver.today.section.planned" = "今日の服用予定";
 "caregiver.today.section.taken" = "服用済み";
+"caregiver.today.section.missed" = "飲み忘れ";
 "caregiver.today.recordedBy" = "記録: %@";
 "caregiver.today.recordedBy.patient" = "本人";
 "caregiver.today.recordedBy.caregiver" = "家族";

@@ -355,6 +355,9 @@ struct InventoryListView: View {
     }
 
     private func daysRemainingText(for item: InventoryItemDTO) -> String {
+        if item.periodEnded {
+            return NSLocalizedString("caregiver.inventory.plan.ended", comment: "Plan ended")
+        }
         guard let daysRemaining = item.daysRemaining else {
             return "—"
         }

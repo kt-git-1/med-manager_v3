@@ -250,7 +250,7 @@ private struct PatientBottomTabBar: View {
                 Image(systemName: systemImage)
                     .font(.system(size: 18, weight: .semibold))
                 Text(title)
-                    .font(.caption2.weight(.semibold))
+                    .font(.callout.weight(.semibold))
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
             }
