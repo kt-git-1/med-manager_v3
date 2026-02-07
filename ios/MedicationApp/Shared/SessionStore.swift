@@ -106,12 +106,28 @@ final class SessionStore: ObservableObject {
     func handleAuthFailure(for mode: AppMode?) {
         switch mode {
         case .caregiver:
-            clearCaregiverToken()
+            invalidateCaregiverToken()
+            NotificationCenter.default.post(name: .authFailure, object: nil)
         case .patient:
-            clearPatientToken()
+            invalidatePatientToken()
+            NotificationCenter.default.post(name: .authFailure, object: nil)
         case .none:
             break
         }
+    }
+
+    func invalidateCaregiverToken() {
+        caregiverToken = nil
+        userDefaults.removeObject(forKey: SessionStore.caregiverTokenStorageKey)
+        clearCurrentPatientId()
+    }
+
+    func invalidatePatientToken() {
+        patientToken = nil
+        userDefaults.removeObject(forKey: SessionStore.patientTokenStorageKey)
+        patientRefreshTask?.cancel()
+        patientRefreshTask = nil
+        isRefreshingPatientToken = false
     }
 
     private func startPatientTokenRefreshLoop() {

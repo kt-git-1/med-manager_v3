@@ -9,9 +9,21 @@ struct DoseRecordEvent: Equatable, Decodable {
     let withinTime: Bool
 }
 
+struct InventoryAlertEvent: Equatable, Decodable {
+    let id: String
+    let patientId: String
+    let medicationId: String
+    let type: String
+    let remaining: Int
+    let threshold: Int
+    let patientDisplayName: String?
+    let medicationName: String?
+}
+
 @MainActor
 final class CaregiverEventSubscriber: ObservableObject {
     @Published private(set) var latestEvent: DoseRecordEvent?
+    @Published private(set) var latestInventoryAlert: InventoryAlertEvent?
 
     private let sessionStore: SessionStore
     private let decoder: JSONDecoder
@@ -69,8 +81,11 @@ final class CaregiverEventSubscriber: ObservableObject {
 
     func handleIncomingPayload(_ data: Data) {
         guard isAuthorized else { return }
-        guard let event = try? decoder.decode(DoseRecordEvent.self, from: data) else { return }
-        handleIncomingEvent(event)
+        if let event = try? decoder.decode(DoseRecordEvent.self, from: data) {
+            handleIncomingEvent(event)
+        } else if let event = try? decoder.decode(InventoryAlertEvent.self, from: data) {
+            handleIncomingInventoryEvent(event)
+        }
     }
 
     func handleIncomingEvent(_ event: DoseRecordEvent) {
@@ -79,13 +94,20 @@ final class CaregiverEventSubscriber: ObservableObject {
         latestEvent = event
     }
 
+    func handleIncomingInventoryEvent(_ event: InventoryAlertEvent) {
+        guard isAuthorized else { return }
+        latestInventoryAlert = event
+    }
+
     func handleUnauthorized() {
         latestEvent = nil
+        latestInventoryAlert = nil
         sessionStore.handleAuthFailure(for: .caregiver)
     }
 
     func resetForRevokedAccess() {
         latestEvent = nil
+        latestInventoryAlert = nil
     }
 
     private var isAuthorized: Bool {
@@ -141,9 +163,12 @@ final class CaregiverEventSubscriber: ObservableObject {
         }
         if event == "postgres_changes" {
             if let record = extractRecord(from: object),
-               let recordData = try? JSONSerialization.data(withJSONObject: record),
-               let event = try? decoder.decode(DoseRecordEvent.self, from: recordData) {
-                handleIncomingEvent(event)
+               let recordData = try? JSONSerialization.data(withJSONObject: record) {
+                if let event = try? decoder.decode(DoseRecordEvent.self, from: recordData) {
+                    handleIncomingEvent(event)
+                } else if let event = try? decoder.decode(InventoryAlertEvent.self, from: recordData) {
+                    handleIncomingInventoryEvent(event)
+                }
             }
         }
     }
@@ -162,7 +187,7 @@ final class CaregiverEventSubscriber: ObservableObject {
     }
 
     private func sendJoin(accessToken: String) async {
-        let joinPayload: [String: Any] = [
+        let doseRecordJoin: [String: Any] = [
             "topic": "realtime:public:dose_record_events",
             "event": "phx_join",
             "payload": [
@@ -177,7 +202,24 @@ final class CaregiverEventSubscriber: ObservableObject {
             ],
             "ref": nextRef()
         ]
-        await send(message: joinPayload)
+        await send(message: doseRecordJoin)
+
+        let inventoryJoin: [String: Any] = [
+            "topic": "realtime:public:inventory_alert_events",
+            "event": "phx_join",
+            "payload": [
+                "config": [
+                    "broadcast": ["self": false],
+                    "presence": ["key": ""],
+                    "postgres_changes": [
+                        ["event": "INSERT", "schema": "public", "table": "inventory_alert_events"]
+                    ]
+                ],
+                "access_token": accessToken
+            ],
+            "ref": nextRef()
+        ]
+        await send(message: inventoryJoin)
     }
 
     private func sendHeartbeatLoop() async {

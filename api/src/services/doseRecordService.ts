@@ -7,8 +7,10 @@ import {
   type DoseRecordKey
 } from "../repositories/doseRecordRepo";
 import { createDoseRecordEvent } from "../repositories/doseRecordEventRepo";
+import { getMedicationRecordForPatient } from "../repositories/medicationRepo";
 import { getPatientRecordById } from "../repositories/patientRepo";
 import { assertCaregiverPatientScope } from "../middleware/auth";
+import { applyInventoryDeltaForDoseRecord } from "./medicationService";
 
 export type DoseRecordCreateInput = DoseRecordKey & {
   recordedByType: RecordedByType;
@@ -43,6 +45,16 @@ export async function createDoseRecordIdempotent(
     displayName: patient.displayName
   });
 
+  const medication = await getMedicationRecordForPatient(record.patientId, record.medicationId);
+  if (medication) {
+    await applyInventoryDeltaForDoseRecord({
+      patientId: record.patientId,
+      medicationId: record.medicationId,
+      delta: -medication.doseCountPerIntake,
+      reason: "TAKEN_CREATE"
+    });
+  }
+
   return record;
 }
 
@@ -53,7 +65,20 @@ export async function deleteDoseRecord(
   if (!existing) {
     return null;
   }
-  return deleteDoseRecordByKey(key);
+  const deleted = await deleteDoseRecordByKey(key);
+  const medication = await getMedicationRecordForPatient(
+    existing.patientId,
+    existing.medicationId
+  );
+  if (medication) {
+    await applyInventoryDeltaForDoseRecord({
+      patientId: existing.patientId,
+      medicationId: existing.medicationId,
+      delta: medication.doseCountPerIntake,
+      reason: "TAKEN_DELETE"
+    });
+  }
+  return deleted;
 }
 
 export async function createCaregiverDoseRecord(input: {

@@ -36,5 +36,11 @@ struct RootView: View {
         .onChange(of: scenePhase) { _, phase in
             caregiverSessionController.updateScenePhase(phase)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .authFailure)) { _ in
+            globalBannerPresenter.show(
+                message: NSLocalizedString("common.error.unexpected", comment: "Unexpected error"),
+                duration: 6
+            )
+        }
     }
 }

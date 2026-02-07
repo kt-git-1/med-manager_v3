@@ -9,6 +9,7 @@ Auto-generated from all feature plans. Last updated: 2026-01-31
 - PostgreSQL via Prisma (003-dose-recording)
 - TypeScript (Node.js >=20), Swift (SwiftUI, iOS 17+ assumed by simulator target) + Next.js App Router, Prisma, Vitest, Playwright; SwiftUI, XCTes (004-history-schedule-view)
 - TypeScript (Node.js >=20), Swift 6.2.1 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Realtime; SwiftUI, UserNotifications, XCTes (005-medication-notifications)
+- TypeScript (Node.js >=20), Swift 6.2.1 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Realtime; SwiftUI, XCTes (006-inventory-tracking)
 
 - TypeScript (Node.js 20+), Swift 5.9+ + Next.js Route Handlers, Supabase Auth, Prisma ORM 7.3, SwiftUI (001-medication-regimen)
 
@@ -28,9 +29,9 @@ npm test && npm run lint
 TypeScript (Node.js 20+), Swift 5.9+: Follow standard conventions
 
 ## Recent Changes
+- 006-inventory-tracking: Added TypeScript (Node.js >=20), Swift 6.2.1 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Realtime; SwiftUI, XCTes
 - 005-medication-notifications: Added TypeScript (Node.js >=20), Swift 6.2.1 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Realtime; SwiftUI, UserNotifications, XCTes
 - 004-history-schedule-view: Added TypeScript (Node.js >=20), Swift (SwiftUI, iOS 17+ assumed by simulator target) + Next.js App Router, Prisma, Vitest, Playwright; SwiftUI, XCTes
-- 003-dose-recording: Added TypeScript 5.9 (Node >=20) for API; Swift 5.9 for iOS + Next.js 16 App Router API routes, Prisma 7.3, Vitest, Playwright; SwiftUI, XCTest, UserNotifications
 
 
 <!-- MANUAL ADDITIONS START -->

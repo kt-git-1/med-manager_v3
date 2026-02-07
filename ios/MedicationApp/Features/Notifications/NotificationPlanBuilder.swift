@@ -24,13 +24,13 @@ enum NotificationSlot: String, CaseIterable {
     var notificationBody: String {
         switch self {
         case .morning:
-            return "朝のお薬の時間です"
+            return "朝のお薬の時間です！"
         case .noon:
-            return "昼のお薬の時間です"
+            return "昼のお薬の時間です！"
         case .evening:
-            return "夜のお薬の時間です"
+            return "夜のお薬の時間です！"
         case .bedtime:
-            return "眠前のお薬の時間です"
+            return "眠前のお薬の時間です！"
         }
     }
 
@@ -82,6 +82,7 @@ struct NotificationPlanBuilder {
         monthSummaries: [HistoryMonthResponseDTO],
         includeSecondary: Bool,
         enabledSlots: Set<NotificationSlot> = Set(NotificationSlot.allCases),
+        slotTimes: [NotificationSlot: (hour: Int, minute: Int)] = [:],
         now: Date = Date()
     ) -> [NotificationPlanEntry] {
         let summariesByDate = Dictionary(
@@ -99,7 +100,9 @@ struct NotificationPlanBuilder {
             guard let summary = summariesByDate[dateKey] else { continue }
             for slot in NotificationSlot.allCases
                 where enabledSlots.contains(slot) && slot.status(from: summary) == .pending {
-                guard let scheduledAt = scheduledDate(for: slot, on: date) else { continue }
+                guard let scheduledAt = scheduledDate(for: slot, on: date, slotTimes: slotTimes) else {
+                    continue
+                }
                 entries.append(
                     NotificationPlanEntry(
                         dateKey: dateKey,
@@ -124,10 +127,15 @@ struct NotificationPlanBuilder {
         return entries.sorted { $0.scheduledAt < $1.scheduledAt }
     }
 
-    private func scheduledDate(for slot: NotificationSlot, on date: Date) -> Date? {
+    private func scheduledDate(
+        for slot: NotificationSlot,
+        on date: Date,
+        slotTimes: [NotificationSlot: (hour: Int, minute: Int)]
+    ) -> Date? {
         var components = calendar.dateComponents([.year, .month, .day], from: date)
-        components.hour = slot.hourMinute.hour
-        components.minute = slot.hourMinute.minute
+        let override = slotTimes[slot] ?? slot.hourMinute
+        components.hour = override.hour
+        components.minute = override.minute
         components.second = 0
         return calendar.date(from: components)
     }

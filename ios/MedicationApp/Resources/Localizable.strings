@@ -5,11 +5,15 @@
 "common.error.login" = "ログインに失敗しました";
 "common.error.signup" = "サインアップに失敗しました";
 "common.error.linking" = "連携に失敗しました";
+"common.error.unexpected" = "予期せぬエラーが発生しました";
 "common.save" = "保存";
 "common.cancel" = "キャンセル";
 "common.select" = "選択";
 "common.ok" = "OK";
 "common.logout" = "ログアウト";
+"common.toast.updated" = "更新しました";
+"caregiver.inventory.toast.saved" = "在庫情報を保存しました";
+"caregiver.inventory.toast.refilled" = "薬を補充しました";
 
 /* Mode select */
 "mode.select.title" = "モードを選択";
@@ -49,6 +53,7 @@
 "medication.list.empty.action" = "薬を追加する";
 "medication.list.add" = "追加";
 "medication.list.section.title" = "薬一覧";
+"medication.list.section.expired" = "期間終了";
 "medication.list.startDate" = "開始日";
 "medication.list.nextDose" = "次回予定";
 "medication.toast.created" = "薬を追加しました";
@@ -60,6 +65,7 @@
 "medication.form.section.schedule" = "スケジュール";
 "medication.form.section.inventory" = "在庫";
 "medication.form.section.notes" = "メモ";
+"medication.detail.notes.empty" = "メモはありません";
 "medication.form.name" = "薬名";
 "medication.form.dosage.value" = "用量 (数値)";
 "medication.form.dosage.unit" = "用量単位";
@@ -78,6 +84,11 @@
 "medication.form.notes" = "メモ";
 "medication.form.patient.readonly" = "患者モードでは編集できません";
 "medication.form.patient.required" = "対象患者を選択してください";
+"medication.form.delete" = "薬を削除する";
+"medication.form.delete.confirm.title" = "薬を削除しますか？";
+"medication.form.delete.confirm.message" = "この操作は取り消せません。";
+"medication.form.delete.confirm.action" = "削除する";
+"medication.toast.deleted" = "薬を削除しました";
 
 /* Patient view */
 "patient.readonly.title" = "薬一覧";
@@ -95,6 +106,7 @@
 "patient.settings.notifications.slot.noon" = "昼";
 "patient.settings.notifications.slot.evening" = "夜";
 "patient.settings.notifications.slot.bedtime" = "眠前";
+"patient.settings.notifications.detail.title" = "詳細設定";
 "patient.settings.notifications.permission.denied" = "通知が許可されていません。設定アプリで通知を許可してください。";
 "history.month.previous" = "前の月";
 "history.month.next" = "次の月";
@@ -124,18 +136,26 @@
 "patient.today.status.missed" = "飲み忘れ";
 "patient.today.alreadyRecorded" = "すでに記録済みです";
 "patient.today.recorded" = "記録しました";
-"patient.today.section.planned" = "今日の服用予定";
+"patient.today.section.planned" = "今日のお薬";
 "patient.today.section.taken" = "服用済み";
+"patient.today.section.missed" = "飲み忘れ";
+"patient.today.section.slot.morning" = "朝";
+"patient.today.section.slot.noon" = "昼";
+"patient.today.section.slot.evening" = "夜";
+"patient.today.section.slot.bedtime" = "眠前";
+"patient.today.section.slot.other" = "その他";
 "patient.today.reminder.title" = "服用リマインダー";
 "patient.today.reminder.body" = "%@を飲む時間です（%@）";
 
 /* Caregiver tabs */
-"caregiver.tabs.medications" = "薬/予定";
+"caregiver.tabs.medications" = "薬・予定";
 "caregiver.tabs.history" = "履歴";
-"caregiver.tabs.patients" = "連携/患者";
+"caregiver.tabs.inventory" = "在庫管理";
+"caregiver.tabs.patients" = "連携・設定";
+"caregiver.patients.open" = "連携・設定を開く";
 "caregiver.history.empty.title" = "患者を選択してください";
-"caregiver.history.empty.message" = "連携・患者タブから対象を選んでください";
-"caregiver.history.empty.action" = "連携・患者を開く";
+"caregiver.history.empty.message" = "連携・設定タブから対象を選んでください";
+"caregiver.history.empty.action" = "連携・設定を開く";
 "caregiver.medications.segment.medications" = "薬一覧";
 "caregiver.medications.segment.today" = "今日の予定";
 "caregiver.medications.placeholder.title" = "患者を選択してください";
@@ -144,11 +164,57 @@
 "caregiver.medications.noPatients.message" = "先に患者を作成してください";
 "caregiver.medications.noPatients.action" = "患者を追加する";
 "caregiver.medications.noSelection.title" = "患者を選択してください";
-"caregiver.medications.noSelection.message" = "連携・患者タブから対象を選んでください";
+"caregiver.medications.noSelection.message" = "連携・設定タブから対象を選んでください";
 "caregiver.medications.noSelection.action" = "患者一覧を開く";
 "caregiver.medications.currentPatient" = "対象患者: %@";
 "caregiver.medications.currentPatient.inline" = "対象患者：%@";
 "caregiver.medications.switch" = "切替";
+
+/* Caregiver inventory */
+"caregiver.inventory.empty.title" = "患者を選択してください";
+"caregiver.inventory.empty.message" = "連携・設定タブから対象を選んでください";
+"caregiver.inventory.list.section" = "在庫一覧";
+"caregiver.inventory.section.unconfigured" = "在庫未設定";
+"caregiver.inventory.section.periodEnded" = "服用期間終了";
+"caregiver.inventory.filter.all" = "すべて";
+"caregiver.inventory.filter.low" = "低在庫のみ";
+"caregiver.inventory.filter.out" = "在庫なし";
+"caregiver.inventory.list.quickRefill" = "+10";
+"caregiver.inventory.list.empty.title" = "在庫がありません";
+"caregiver.inventory.list.empty.message" = "薬の在庫を設定してください";
+"caregiver.inventory.remaining.label" = "残り";
+"caregiver.inventory.unit" = "個";
+"caregiver.inventory.status.available" = "在庫あり";
+"caregiver.inventory.status.low" = "少";
+"caregiver.inventory.status.out" = "なし";
+"caregiver.inventory.status.unconfigured" = "未設定";
+"caregiver.inventory.plan.daysRemaining" = "あと%d日分";
+"caregiver.inventory.plan.daysRemaining.short" = "あと%d日分";
+"caregiver.inventory.plan.ended" = "服用期間終了";
+"caregiver.inventory.plan.refillDue" = "補充目安";
+"caregiver.inventory.detail.section.settings" = "在庫設定";
+"caregiver.inventory.detail.section.adjust" = "在庫の調整";
+"caregiver.inventory.detail.enabled" = "在庫管理を有効にする";
+"caregiver.inventory.detail.threshold" = "残り日数の目安";
+"caregiver.inventory.detail.refill" = "補充数";
+"caregiver.inventory.detail.refill.action" = "補充する";
+"caregiver.inventory.detail.set" = "修正後の在庫数";
+"caregiver.inventory.settings.note" = "残り日数が目安以下で低在庫扱い";
+"common.days.unit" = "日";
+"caregiver.inventory.actions.refill" = "補充する";
+"caregiver.inventory.actions.refill.sheet.title" = "補充量";
+"caregiver.inventory.actions.refill.sheet.custom" = "+入力";
+"caregiver.inventory.actions.refill.sheet.confirm" = "補充";
+"caregiver.inventory.actions.correction" = "在庫を修正（誤入力の修正）";
+"caregiver.inventory.actions.correction.button" = "修正する";
+"caregiver.inventory.refill.confirm.title" = "在庫を補充しますか？";
+"caregiver.inventory.refill.confirm.message" = "%@ を +%d個（%d→%d）";
+"caregiver.inventory.correction.title" = "在庫を修正";
+"caregiver.inventory.correction.message" = "在庫を%d個に変更しますか？（補充ではなく修正です）";
+"caregiver.inventory.banner.low" = "%@：%@の在庫が少なくなりました（残り%d）";
+"caregiver.inventory.banner.out" = "%@：%@がなくなりました";
+"caregiver.inventory.banner.patientFallback" = "患者";
+"caregiver.inventory.banner.medicationFallback" = "薬";
 
 /* Caregiver today */
 "caregiver.today.empty.title" = "予定がありません";
@@ -159,13 +225,14 @@
 "caregiver.today.deleted" = "記録を取り消しました";
 "caregiver.today.section.planned" = "今日の服用予定";
 "caregiver.today.section.taken" = "服用済み";
+"caregiver.today.section.missed" = "飲み忘れ";
 "caregiver.today.recordedBy" = "記録: %@";
 "caregiver.today.recordedBy.patient" = "本人";
 "caregiver.today.recordedBy.caregiver" = "家族";
 "caregiver.banner.withinTime" = "%@さんが時間内に薬を服用しました！";
 
 /* Patient management */
-"caregiver.patients.title" = "連携/患者";
+"caregiver.patients.title" = "連携・設定";
 "caregiver.patients.add" = "追加";
 "caregiver.patients.empty.title" = "患者がいません";
 "caregiver.patients.empty.message" = "右上の追加から作成できます";

@@ -38,6 +38,13 @@ final class CaregiverSessionController: ObservableObject {
             }
             .store(in: &cancellables)
 
+        subscriber.$latestInventoryAlert
+            .compactMap { $0 }
+            .sink { [weak self] event in
+                self?.showInventoryBanner(for: event)
+            }
+            .store(in: &cancellables)
+
         sessionStore.$mode
             .combineLatest(sessionStore.$caregiverToken)
             .sink { [weak self] _, _ in
@@ -63,6 +70,23 @@ final class CaregiverSessionController: ObservableObject {
             comment: "Caregiver within time banner"
         )
         let message = String(format: format, event.displayName)
+        bannerPresenter.show(message: message)
+    }
+
+    private func showInventoryBanner(for event: InventoryAlertEvent) {
+        let patientName = event.patientDisplayName ?? NSLocalizedString(
+            "caregiver.inventory.banner.patientFallback",
+            comment: "Inventory banner patient fallback"
+        )
+        let medicationName = event.medicationName ?? NSLocalizedString(
+            "caregiver.inventory.banner.medicationFallback",
+            comment: "Inventory banner medication fallback"
+        )
+        let key = event.type == "OUT" ? "caregiver.inventory.banner.out" : "caregiver.inventory.banner.low"
+        let format = NSLocalizedString(key, comment: "Inventory banner")
+        let message = event.type == "OUT"
+            ? String(format: format, patientName, medicationName)
+            : String(format: format, patientName, medicationName, event.remaining)
         bannerPresenter.show(message: message)
     }
 }

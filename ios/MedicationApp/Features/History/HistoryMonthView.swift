@@ -62,13 +62,17 @@ struct HistoryMonthView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
-                .padding(.bottom, 24)
+                .padding(.bottom, 120)
             }
             },
             overlay: viewModel.isUpdating ? AnyView(updatingOverlay) : nil
         )
         .onAppear {
             loadMonth()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .presetTimesUpdated)) { _ in
+            loadMonth()
+            updateSelectionForDisplayedMonth()
         }
         .onChange(of: displayedMonth) { _, _ in
             loadMonth()

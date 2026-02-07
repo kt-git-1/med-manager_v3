@@ -10,6 +10,11 @@
 		07A122CD68554DEF139F0929 /* MedicationFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0822331373D994BC40BCB45F /* MedicationFormView.swift */; };
 		08F2E2D7265212F0DAEC48C8 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B421542D92993BB7B79D9D3 /* APIError.swift */; };
 		0E7183A7256CA67A2F98F040 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D944249F964B12755FD2DF /* APIClient.swift */; };
+		AFA1B2C3D4E5F60718293A01 /* InventoryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA1B2C3D4E5F60718293B01 /* InventoryListView.swift */; };
+		AFA1B2C3D4E5F60718293A02 /* InventoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA1B2C3D4E5F60718293B02 /* InventoryDetailView.swift */; };
+		AFA1B2C3D4E5F60718293A03 /* InventoryEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA1B2C3D4E5F60718293B03 /* InventoryEmptyStateView.swift */; };
+		AFA1B2C3D4E5F60718293A04 /* InventoryAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA1B2C3D4E5F60718293B04 /* InventoryAPI.swift */; };
+		AFA1B2C3D4E5F60718293A05 /* InventoryDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA1B2C3D4E5F60718293B05 /* InventoryDTO.swift */; };
 		1C2D3E4F5A6B7C8D9E0F1A2B /* MedicationDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B3C4D5E6F708192A3B4C5D6 /* MedicationDTO.swift */; };
 		2A2B3C4D5E6F708192A3B4C7 /* HistoryMonthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4C7 /* HistoryMonthView.swift */; };
 		2A2B3C4D5E6F708192A3B4C8 /* HistoryDayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4C8 /* HistoryDayDetailView.swift */; };
@@ -86,6 +91,11 @@
 		10B347F8F660C4110482F537 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		1936DBB41CFB0907EE79DBF6 /* MedicationFormValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationFormValidationTests.swift; sourceTree = "<group>"; };
 		1B421542D92993BB7B79D9D3 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
+		AFA1B2C3D4E5F60718293B01 /* InventoryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryListView.swift; sourceTree = "<group>"; };
+		AFA1B2C3D4E5F60718293B02 /* InventoryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryDetailView.swift; sourceTree = "<group>"; };
+		AFA1B2C3D4E5F60718293B03 /* InventoryEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryEmptyStateView.swift; sourceTree = "<group>"; };
+		AFA1B2C3D4E5F60718293B04 /* InventoryAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryAPI.swift; sourceTree = "<group>"; };
+		AFA1B2C3D4E5F60718293B05 /* InventoryDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryDTO.swift; sourceTree = "<group>"; };
 		1A2B3C4D5E6F708192A3B4C7 /* HistoryMonthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryMonthView.swift; sourceTree = "<group>"; };
 		1A2B3C4D5E6F708192A3B4C8 /* HistoryDayDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryDayDetailView.swift; sourceTree = "<group>"; };
 		1A2B3C4D5E6F708192A3B4C9 /* HistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewModel.swift; sourceTree = "<group>"; };
@@ -163,12 +173,23 @@
 			path = MedicationForm;
 			sourceTree = "<group>";
 		};
+		AFA1B2C3D4E5F60718293C01 /* Inventory */ = {
+			isa = PBXGroup;
+			children = (
+				AFA1B2C3D4E5F60718293B01 /* InventoryListView.swift */,
+				AFA1B2C3D4E5F60718293B02 /* InventoryDetailView.swift */,
+				AFA1B2C3D4E5F60718293B03 /* InventoryEmptyStateView.swift */,
+			);
+			path = Inventory;
+			sourceTree = "<group>";
+		};
 		388F121B3382F1004EC82EBE /* DTOs */ = {
 			isa = PBXGroup;
 			children = (
 				C1D2E3F405162738495A6B7C /* DoseRecordDTO.swift */,
 				F416FC7961AEE499FB0C7826 /* EmptyDTO.swift */,
 				A7B8C9D0E1F2031425364758 /* HistoryDTO.swift */,
+				AFA1B2C3D4E5F60718293B05 /* InventoryDTO.swift */,
 				2B3C4D5E6F708192A3B4C5D6 /* MedicationDTO.swift */,
 				A1B2C3D4E5F6A7B8C9D0E200 /* PatientDTO.swift */,
 			);
@@ -323,6 +344,7 @@
 				DDD6345900A1A06F62841CD8 /* Auth */,
 				F2A3B4C5D6E7F8091A2B3C71 /* Caregiver */,
 				1A2B3C4D5E6F708192A3B4C6 /* History */,
+				AFA1B2C3D4E5F60718293C01 /* Inventory */,
 				4DAD4572D6388ED051EC7DBC /* Linking */,
 				27B28F49BE53014BA49C37BC /* MedicationForm */,
 				C242C151CD5306FE53BA9275 /* MedicationList */,
@@ -381,6 +403,7 @@
 			children = (
 				48D944249F964B12755FD2DF /* APIClient.swift */,
 				1B421542D92993BB7B79D9D3 /* APIError.swift */,
+				AFA1B2C3D4E5F60718293B04 /* InventoryAPI.swift */,
 				388F121B3382F1004EC82EBE /* DTOs */,
 				F2A3B4C5D6E7F8091A2B3C52 /* HistoryClient.swift */,
 			);
@@ -473,6 +496,7 @@
 			files = (
 				0E7183A7256CA67A2F98F040 /* APIClient.swift in Sources */,
 				08F2E2D7265212F0DAEC48C8 /* APIError.swift in Sources */,
+				AFA1B2C3D4E5F60718293A04 /* InventoryAPI.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F3 /* CaregiverAuthChoiceView.swift in Sources */,
 				CC241D83091F75F9817D86C1 /* AuthService.swift in Sources */,
 				9E32A2665B38F39DF6691477 /* CaregiverLoginView.swift in Sources */,
@@ -487,6 +511,7 @@
 				2A2B3C4D5E6F708192A3B4C8 /* HistoryDayDetailView.swift in Sources */,
 				2A2B3C4D5E6F708192A3B4C7 /* HistoryMonthView.swift in Sources */,
 				2A2B3C4D5E6F708192A3B4C9 /* HistoryViewModel.swift in Sources */,
+				AFA1B2C3D4E5F60718293A05 /* InventoryDTO.swift in Sources */,
 				1C2D3E4F5A6B7C8D9E0F1A2B /* MedicationDTO.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E201 /* PatientDTO.swift in Sources */,
 				86383151B8A2885DF215EF2F /* LinkCodeEntryView.swift in Sources */,
@@ -495,6 +520,9 @@
 				07A122CD68554DEF139F0929 /* MedicationFormView.swift in Sources */,
 				9CD32F9777E00CA402463257 /* MedicationFormViewModel.swift in Sources */,
 				D427E43F32FD2C23CA3BB00A /* MedicationListView.swift in Sources */,
+				AFA1B2C3D4E5F60718293A01 /* InventoryListView.swift in Sources */,
+				AFA1B2C3D4E5F60718293A02 /* InventoryDetailView.swift in Sources */,
+				AFA1B2C3D4E5F60718293A03 /* InventoryEmptyStateView.swift in Sources */,
 				E865934EDE6E1079E23D6398 /* ModeSelectView.swift in Sources */,
 				E2A3B4C5D6E7F8091A2B3C4D /* NotificationPermissionManager.swift in Sources */,
 				E2A3B4C5D6E7F8091A2B3C4E /* NotificationPlanBuilder.swift in Sources */,

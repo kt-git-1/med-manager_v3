@@ -86,6 +86,12 @@ final class MedicationListViewModel: ObservableObject {
 }
 
 struct MedicationListView: View {
+    private static let listCalendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        return calendar
+    }()
+
     private let sessionStore: SessionStore
     private let onOpenPatients: (() -> Void)?
     private let headerView: AnyView?
@@ -152,57 +158,47 @@ struct MedicationListView: View {
                                 .listRowSeparator(.hidden)
                                 .listRowBackground(Color.clear)
                         }
-                        Section {
-                            ForEach(viewModel.items) { item in
-                                let rowContent = HStack(alignment: .top, spacing: 12) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(item.name)
-                                            .font(.title3.weight(.semibold))
-                                            .accessibilityLabel("薬名 \(item.name)")
-                                        Text("\(NSLocalizedString("medication.list.startDate", comment: "Start date")): \(item.startDateText)")
-                                            .font(.body)
-                                            .accessibilityLabel("開始日 \(item.startDateText)")
-                                        if let next = item.nextScheduledText {
-                                            Text("\(NSLocalizedString("medication.list.nextDose", comment: "Next dose")): \(next)")
-                                                .font(.body)
-                                                .accessibilityLabel("次回予定 \(next)")
-                                        }
+                        if sessionStore.mode == .caregiver {
+                            if !activeItems.isEmpty {
+                                Section {
+                                    ForEach(activeItems) { item in
+                                        medicationRow(item)
                                     }
-                                    Spacer()
-                                    if sessionStore.mode == .caregiver {
-                                        Image(systemName: "chevron.right")
-                                            .foregroundColor(.secondary)
-                                            .padding(.top, 2)
-                                    }
+                                } header: {
+                                    Text(NSLocalizedString("medication.list.section.title", comment: "Medication list section"))
+                                        .font(.headline)
+                                        .foregroundColor(.secondary)
+                                        .textCase(nil)
                                 }
-                                if sessionStore.mode == .caregiver {
-                                    Button(action: { selectedMedication = item.medication }) {
-                                        rowContent
-                                            .padding(16)
-                                            .frame(maxWidth: .infinity)
-                                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                    .listRowSeparator(.hidden)
-                                } else {
-                                    rowContent
-                                        .padding(16)
-                                        .frame(maxWidth: .infinity)
-                                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
-                                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                        .listRowSeparator(.hidden)
-                                }
+                                .listRowSeparator(.hidden)
                             }
-                        } header: {
-                            Text(NSLocalizedString("medication.list.section.title", comment: "Medication list section"))
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                                .textCase(nil)
+
+                            if !expiredItems.isEmpty {
+                                Section {
+                                    ForEach(expiredItems) { item in
+                                        medicationRow(item)
+                                    }
+                                } header: {
+                                    Text(NSLocalizedString("medication.list.section.expired", comment: "Expired section"))
+                                        .font(.headline)
+                                        .foregroundColor(.secondary)
+                                        .textCase(nil)
+                                }
+                                .listRowSeparator(.hidden)
+                            }
+                        } else {
+                            Section {
+                                ForEach(viewModel.items) { item in
+                                    medicationRow(item)
+                                }
+                            } header: {
+                                Text(NSLocalizedString("medication.list.section.title", comment: "Medication list section"))
+                                    .font(.headline)
+                                    .foregroundColor(.secondary)
+                                    .textCase(nil)
+                            }
+                            .listRowSeparator(.hidden)
                         }
-                        .listRowSeparator(.hidden)
                     }
                     .listStyle(.plain)
                     .scrollContentBackground(.hidden)
@@ -246,6 +242,9 @@ struct MedicationListView: View {
         .onAppear {
             viewModel.load()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .presetTimesUpdated)) { _ in
+            viewModel.load()
+        }
         .toolbar {
             if sessionStore.mode == .caregiver {
                 Button(NSLocalizedString("medication.list.add", comment: "Add medication")) {
@@ -286,6 +285,65 @@ struct MedicationListView: View {
                     toastMessage = nil
                 }
             }
+        }
+    }
+
+    private var activeItems: [MedicationListItem] {
+        viewModel.items.filter { !isExpired($0) }
+    }
+
+    private var expiredItems: [MedicationListItem] {
+        viewModel.items.filter(isExpired)
+    }
+
+    private func isExpired(_ item: MedicationListItem) -> Bool {
+        guard let endDate = item.medication.endDate else { return false }
+        let todayStart = Self.listCalendar.startOfDay(for: Date())
+        return endDate < todayStart
+    }
+
+    @ViewBuilder
+    private func medicationRow(_ item: MedicationListItem) -> some View {
+        let rowContent = HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.name)
+                    .font(.title3.weight(.semibold))
+                    .accessibilityLabel("薬名 \(item.name)")
+                Text("\(NSLocalizedString("medication.list.startDate", comment: "Start date")): \(item.startDateText)")
+                    .font(.body)
+                    .accessibilityLabel("開始日 \(item.startDateText)")
+                if let next = item.nextScheduledText {
+                    Text("\(NSLocalizedString("medication.list.nextDose", comment: "Next dose")): \(next)")
+                        .font(.body)
+                        .accessibilityLabel("次回予定 \(next)")
+                }
+            }
+            Spacer()
+            if sessionStore.mode == .caregiver {
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.secondary)
+                    .padding(.top, 2)
+            }
+        }
+        if sessionStore.mode == .caregiver {
+            Button(action: { selectedMedication = item.medication }) {
+                rowContent
+                    .padding(16)
+                    .frame(maxWidth: .infinity)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            }
+            .buttonStyle(.plain)
+            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+            .listRowSeparator(.hidden)
+        } else {
+            rowContent
+                .padding(16)
+                .frame(maxWidth: .infinity)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                .listRowSeparator(.hidden)
         }
     }
 }

@@ -23,7 +23,11 @@ final class HistoryClient {
         self.dateFormatter = formatter
     }
 
-    func fetchMonthSummaries(windowStart: Date, days: Int) async throws -> [HistoryMonthResponseDTO] {
+    func fetchMonthSummaries(
+        windowStart: Date,
+        days: Int,
+        caregiverPatientId: String? = nil
+    ) async throws -> [HistoryMonthResponseDTO] {
         let start = calendar.startOfDay(for: windowStart)
         let end = calendar.date(byAdding: .day, value: max(days - 1, 0), to: start) ?? start
 
@@ -35,6 +39,29 @@ final class HistoryClient {
               let endYear = endComponents.year,
               let endMonth = endComponents.month else {
             return []
+        }
+
+        if let caregiverPatientId {
+            if startYear == endYear && startMonth == endMonth {
+                let month = try await apiClient.fetchCaregiverHistoryMonth(
+                    patientId: caregiverPatientId,
+                    year: startYear,
+                    month: startMonth
+                )
+                return [month]
+            }
+
+            let currentMonth = try await apiClient.fetchCaregiverHistoryMonth(
+                patientId: caregiverPatientId,
+                year: startYear,
+                month: startMonth
+            )
+            let nextMonth = try await apiClient.fetchCaregiverHistoryMonth(
+                patientId: caregiverPatientId,
+                year: endYear,
+                month: endMonth
+            )
+            return [currentMonth, nextMonth]
         }
 
         if startYear == endYear && startMonth == endMonth {

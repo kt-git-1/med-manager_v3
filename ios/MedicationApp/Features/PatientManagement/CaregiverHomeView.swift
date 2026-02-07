@@ -3,6 +3,7 @@ import SwiftUI
 enum CaregiverTab: Hashable {
     case medications
     case history
+    case inventory
     case patients
 }
 
@@ -28,6 +29,13 @@ struct CaregiverHomeView: View {
                     .navigationTitle(NSLocalizedString("caregiver.tabs.history", comment: "History tab"))
                     .navigationBarTitleDisplayMode(.inline)
                 }
+            case .inventory:
+                NavigationStack {
+                    InventoryListView(
+                        sessionStore: sessionStore,
+                        onOpenPatients: { selectedTab = .patients }
+                    )
+                }
             case .patients:
                 PatientManagementView(sessionStore: sessionStore)
             }
@@ -49,7 +57,7 @@ struct CaregiverHomeView: View {
                         .foregroundColor(.accentColor)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.accentColor.opacity(0.12), in: Capsule())
+                        .background(Color.accentColor.opacity(0.28), in: Capsule())
                         .overlay(
                             Capsule()
                                 .stroke(Color.accentColor, lineWidth: 1)
@@ -116,6 +124,13 @@ private struct CaregiverBottomTabBar: View {
                 selectedTab = .history
             }
             tabButton(
+                title: NSLocalizedString("caregiver.tabs.inventory", comment: "Inventory tab"),
+                systemImage: "archivebox",
+                isSelected: selectedTab == .inventory
+            ) {
+                selectedTab = .inventory
+            }
+            tabButton(
                 title: NSLocalizedString("caregiver.tabs.patients", comment: "Patients tab"),
                 systemImage: "person.2",
                 isSelected: selectedTab == .patients
@@ -144,7 +159,9 @@ private struct CaregiverBottomTabBar: View {
                 Image(systemName: systemImage)
                     .font(.system(size: 18, weight: .semibold))
                 Text(title)
-                    .font(.headline)
+                    .font(.caption2.weight(.semibold))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
             }
             .foregroundColor(isSelected ? .accentColor : .secondary)
             .frame(maxWidth: .infinity)
@@ -215,7 +232,7 @@ struct CaregiverMedicationView: View {
                             title: NSLocalizedString("caregiver.medications.noPatients.title", comment: "No patients title"),
                             message: NSLocalizedString("caregiver.medications.noPatients.message", comment: "No patients message")
                         )
-                        Button(NSLocalizedString("caregiver.medications.noPatients.action", comment: "Go to patients action")) {
+                        Button(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab")) {
                             onOpenPatients()
                         }
                         .buttonStyle(.borderedProminent)
@@ -237,7 +254,7 @@ struct CaregiverMedicationView: View {
                                 .font(.body)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
-                            Button(NSLocalizedString("caregiver.medications.noSelection.action", comment: "Go to patients action")) {
+                            Button(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab")) {
                                 onOpenPatients()
                             }
                             .buttonStyle(.borderedProminent)

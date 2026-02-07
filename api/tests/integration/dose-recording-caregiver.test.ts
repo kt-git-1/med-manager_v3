@@ -82,6 +82,32 @@ vi.mock("../../src/repositories/doseRecordEventRepo", () => ({
   })
 }));
 
+vi.mock("../../src/repositories/medicationRepo", () => ({
+  getMedicationRecordForPatient: async () => ({
+    id: "med-1",
+    patientId: "patient-1",
+    name: "Medication A",
+    dosageText: "1 tablet",
+    doseCountPerIntake: 1,
+    dosageStrengthValue: 10,
+    dosageStrengthUnit: "mg",
+    notes: null,
+    startDate: new Date(),
+    endDate: null,
+    inventoryCount: null,
+    inventoryUnit: null,
+    inventoryEnabled: false,
+    inventoryQuantity: 0,
+    inventoryLowThreshold: 0,
+    inventoryUpdatedAt: null,
+    inventoryLastAlertState: null,
+    isActive: true,
+    isArchived: false,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  })
+}));
+
 describe("dose recording caregiver integration", () => {
   it("creates caregiver dose record with recordedById", async () => {
     store.clear();

@@ -23,7 +23,7 @@ struct CaregiverHistoryView: View {
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                             .accessibilityIdentifier("CaregiverHistoryEmptyState")
-                        Button(NSLocalizedString("caregiver.history.empty.action", comment: "Caregiver history empty action")) {
+                        Button(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab")) {
                             onOpenPatients()
                         }
                         .buttonStyle(.borderedProminent)
