@@ -96,6 +96,10 @@ struct PatientManagementView: View {
     @State private var toastMessage: String?
     @State private var draftTimes: [NotificationSlot: Date] = [:]
     @State private var isSavingDetail = false
+    @State private var inventoryThresholdText = ""
+    @State private var inventoryItems: [InventoryItemDTO] = []
+    @State private var showingTimePresetSheet = false
+    @State private var showingInventoryThresholdSheet = false
     private let timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
     private let apiClient: APIClient
 
@@ -107,108 +111,7 @@ struct PatientManagementView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if viewModel.isLoading {
-                    LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
-                } else if let errorMessage = viewModel.errorMessage {
-                    ErrorStateView(message: errorMessage)
-                } else if viewModel.patients.isEmpty {
-                    EmptyStateView(
-                        title: NSLocalizedString("caregiver.patients.empty.title", comment: "Empty patients title"),
-                        message: NSLocalizedString("caregiver.patients.empty.message", comment: "Empty patients message")
-                    )
-                    .padding(24)
-                    .frame(maxWidth: .infinity)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
-                    .padding(.horizontal, 24)
-                } else {
-                    let selectedPatient = viewModel.patients.first { $0.id == viewModel.selectedPatientId }
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 16) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(NSLocalizedString("caregiver.patients.select.label", comment: "Select label"))
-                                    .font(.headline)
-                                    .foregroundColor(.secondary)
-                                Picker(
-                                    NSLocalizedString("caregiver.patients.select.label", comment: "Select label"),
-                                    selection: Binding(
-                                        get: { viewModel.selectedPatientId ?? "" },
-                                        set: { newValue in
-                                            viewModel.setSelectedPatientId(newValue.isEmpty ? nil : newValue)
-                                        }
-                                    )
-                                ) {
-                                    Text(NSLocalizedString("caregiver.patients.select.placeholder", comment: "Select placeholder"))
-                                        .tag("")
-                                    ForEach(viewModel.patients) { patient in
-                                        Text(patient.displayName).tag(patient.id)
-                                    }
-                                }
-                                .pickerStyle(.menu)
-                                Text(NSLocalizedString("caregiver.patients.select.help", comment: "Select help text"))
-                                    .font(.body)
-                                    .foregroundColor(.secondary)
-                            }
-                            .padding(16)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
-
-                            if let selectedPatient {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    HStack {
-                                        Text(selectedPatient.displayName)
-                                            .font(.title3.weight(.semibold))
-                                        Spacer()
-                                        Text(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))
-                                            .font(.subheadline.weight(.semibold))
-                                            .padding(.horizontal, 12)
-                                            .padding(.vertical, 6)
-                                            .background(Color.accentColor.opacity(0.2))
-                                            .foregroundColor(.accentColor)
-                                            .clipShape(Capsule())
-                                    }
-                                    HStack {
-                                        Button(NSLocalizedString("caregiver.patients.issueCode", comment: "Issue code")) {
-                                            Task { await viewModel.issueLinkingCode(patientId: selectedPatient.id) }
-                                        }
-                                        .buttonStyle(.bordered)
-                                        .font(.headline)
-                                        Button(NSLocalizedString("caregiver.patients.revoke", comment: "Revoke")) {
-                                            revokeTarget = selectedPatient
-                                        }
-                                        .buttonStyle(.bordered)
-                                        .font(.headline)
-                                        .tint(.red)
-                                    }
-                                }
-                                .padding(16)
-                                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
-                                .accessibilityLabel("\(selectedPatient.displayName) \(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))")
-                            } else {
-                                EmptyStateView(
-                                    title: NSLocalizedString("caregiver.patients.select.empty.title", comment: "No selection title"),
-                                    message: NSLocalizedString("caregiver.patients.select.empty.message", comment: "No selection message")
-                                )
-                                .padding(16)
-                                .frame(maxWidth: .infinity)
-                                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
-                            }
-
-                            if viewModel.selectedPatientId != nil {
-                                settingsSection
-                            }
-                            logoutSection
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 16)
-                        .padding(.bottom, 64)
-                    }
-                }
-            }
+            contentView
             .navigationTitle(NSLocalizedString("caregiver.patients.title", comment: "Patients title"))
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
@@ -242,12 +145,64 @@ struct PatientManagementView: View {
                     }
                 )
             }
+        .sheet(isPresented: $showingTimePresetSheet) {
+            NavigationStack {
+                timePresetDetailSheet
+                    .navigationTitle(
+                        NSLocalizedString("patient.settings.notifications.detail.item", comment: "Detail settings item")
+                    )
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button(NSLocalizedString("common.save", comment: "Save")) {
+                                Task {
+                                    await saveDetailSettings()
+                                    showingTimePresetSheet = false
+                                }
+                            }
+                        }
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button(NSLocalizedString("common.close", comment: "Close")) {
+                                showingTimePresetSheet = false
+                            }
+                        }
+                    }
+            }
+        }
+        .sheet(isPresented: $showingInventoryThresholdSheet) {
+            NavigationStack {
+                inventoryThresholdDetailSheet
+                    .navigationTitle(
+                        NSLocalizedString("caregiver.inventory.settings.section.global", comment: "Inventory global settings title")
+                    )
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button(NSLocalizedString("common.save", comment: "Save")) {
+                                Task {
+                                    await saveInventoryThreshold()
+                                    showingInventoryThresholdSheet = false
+                                }
+                            }
+                        }
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button(NSLocalizedString("common.close", comment: "Close")) {
+                                showingInventoryThresholdSheet = false
+                            }
+                        }
+                    }
+            }
+        }
         }
         .onAppear {
             viewModel.load()
             if draftTimes.isEmpty {
                 draftTimes = buildDraftTimes()
             }
+            Task { await loadInventoryThreshold() }
+        }
+        .onChange(of: viewModel.selectedPatientId) { _, _ in
+            Task { await loadInventoryThreshold() }
         }
         .overlay(alignment: .top) {
             if let toastMessage {
@@ -283,31 +238,150 @@ struct PatientManagementView: View {
         .accessibilityIdentifier("PatientManagementView")
     }
 
+    @ViewBuilder
+    private var contentView: some View {
+        if viewModel.isLoading {
+            LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+        } else if let errorMessage = viewModel.errorMessage {
+            ErrorStateView(message: errorMessage)
+        } else if viewModel.patients.isEmpty {
+            EmptyStateView(
+                title: NSLocalizedString("caregiver.patients.empty.title", comment: "Empty patients title"),
+                message: NSLocalizedString("caregiver.patients.empty.message", comment: "Empty patients message")
+            )
+            .padding(24)
+            .frame(maxWidth: .infinity)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .padding(.horizontal, 24)
+        } else {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    linkHeader
+                    selectionCard
+                    selectedPatientSection
+                    detailSettingsSection
+                    logoutSection
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+                .padding(.bottom, 64)
+            }
+        }
+    }
+
+    private var linkHeader: some View {
+        Text(NSLocalizedString("caregiver.settings.section.link", comment: "Linking header"))
+            .font(.headline)
+            .foregroundColor(.secondary)
+    }
+
+    private var selectionCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(NSLocalizedString("caregiver.patients.select.label", comment: "Select label"))
+                .font(.headline)
+                .foregroundColor(.secondary)
+            Picker(
+                NSLocalizedString("caregiver.patients.select.label", comment: "Select label"),
+                selection: Binding(
+                    get: { viewModel.selectedPatientId ?? "" },
+                    set: { newValue in
+                        viewModel.setSelectedPatientId(newValue.isEmpty ? nil : newValue)
+                    }
+                )
+            ) {
+                Text(NSLocalizedString("caregiver.patients.select.placeholder", comment: "Select placeholder"))
+                    .tag("")
+                ForEach(viewModel.patients) { patient in
+                    Text(patient.displayName).tag(patient.id)
+                }
+            }
+            .pickerStyle(.menu)
+            Text(NSLocalizedString("caregiver.patients.select.help", comment: "Select help text"))
+                .font(.body)
+                .foregroundColor(.secondary)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+    }
+
+    @ViewBuilder
+    private var selectedPatientSection: some View {
+        if let selectedPatient {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text(selectedPatient.displayName)
+                        .font(.title3.weight(.semibold))
+                    Spacer()
+                    Text(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.accentColor.opacity(0.2))
+                        .foregroundColor(.accentColor)
+                        .clipShape(Capsule())
+                }
+                HStack {
+                    Button(NSLocalizedString("caregiver.patients.issueCode", comment: "Issue code")) {
+                        Task { await viewModel.issueLinkingCode(patientId: selectedPatient.id) }
+                    }
+                    .buttonStyle(.bordered)
+                    .font(.headline)
+                    Button(NSLocalizedString("caregiver.patients.revoke", comment: "Revoke")) {
+                        revokeTarget = selectedPatient
+                    }
+                    .buttonStyle(.bordered)
+                    .font(.headline)
+                    .tint(.red)
+                }
+            }
+            .padding(16)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .accessibilityLabel("\(selectedPatient.displayName) \(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))")
+        } else {
+            EmptyStateView(
+                title: NSLocalizedString("caregiver.patients.select.empty.title", comment: "No selection title"),
+                message: NSLocalizedString("caregiver.patients.select.empty.message", comment: "No selection message")
+            )
+            .padding(16)
+            .frame(maxWidth: .infinity)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+        }
+    }
+
+    @ViewBuilder
+    private var detailSettingsSection: some View {
+        if viewModel.selectedPatientId != nil {
+            Text(NSLocalizedString("caregiver.settings.section.detail", comment: "Detail settings header"))
+                .font(.headline)
+                .foregroundColor(.secondary)
+                .padding(.top, 16)
+            settingsSection
+            inventorySettingsSection
+        }
+    }
+
+    private var selectedPatient: PatientDTO? {
+        viewModel.patients.first { $0.id == viewModel.selectedPatientId }
+    }
+
     private var settingsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(NSLocalizedString("patient.settings.notifications.detail.title", comment: "Detail settings title"))
-                .font(.headline)
-            timePickerRow(
-                title: NSLocalizedString("patient.settings.notifications.slot.morning", comment: "Morning"),
-                slot: .morning
-            )
-            timePickerRow(
-                title: NSLocalizedString("patient.settings.notifications.slot.noon", comment: "Noon"),
-                slot: .noon
-            )
-            timePickerRow(
-                title: NSLocalizedString("patient.settings.notifications.slot.evening", comment: "Evening"),
-                slot: .evening
-            )
-            timePickerRow(
-                title: NSLocalizedString("patient.settings.notifications.slot.bedtime", comment: "Bedtime"),
-                slot: .bedtime
-            )
-            Button(NSLocalizedString("common.save", comment: "Save")) {
-                Task { await saveDetailSettings() }
+            Button {
+                showingTimePresetSheet = true
+            } label: {
+                HStack {
+                    Text(NSLocalizedString("patient.settings.notifications.detail.item", comment: "Detail settings item"))
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.secondary)
+                }
             }
-            .buttonStyle(.borderedProminent)
-            .font(.headline)
+            .buttonStyle(.plain)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -322,8 +396,98 @@ struct PatientManagementView: View {
         .buttonStyle(.borderedProminent)
         .tint(.red)
         .font(.headline)
-        .padding(.top, 4)
+        .padding(.top, 48)
         .padding(.bottom, 48)
+    }
+
+    private var inventorySettingsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button {
+                showingInventoryThresholdSheet = true
+            } label: {
+                HStack {
+                    Text(NSLocalizedString("caregiver.inventory.settings.item.threshold", comment: "Inventory threshold item"))
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.secondary)
+                }
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+    }
+
+    private var timePresetDetailSheet: some View {
+        Form {
+            Section {
+                timePickerRow(
+                    title: NSLocalizedString("patient.settings.notifications.slot.morning", comment: "Morning"),
+                    slot: .morning
+                )
+                timePickerRow(
+                    title: NSLocalizedString("patient.settings.notifications.slot.noon", comment: "Noon"),
+                    slot: .noon
+                )
+                timePickerRow(
+                    title: NSLocalizedString("patient.settings.notifications.slot.evening", comment: "Evening"),
+                    slot: .evening
+                )
+                timePickerRow(
+                    title: NSLocalizedString("patient.settings.notifications.slot.bedtime", comment: "Bedtime"),
+                    slot: .bedtime
+                )
+            } footer: {
+                Text(NSLocalizedString("patient.settings.notifications.detail.note", comment: "Detail settings note"))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .overlay { savingOverlay }
+    }
+
+    private var inventoryThresholdDetailSheet: some View {
+        Form {
+            Section {
+                HStack {
+                    Text(NSLocalizedString("caregiver.inventory.detail.threshold", comment: "Inventory threshold"))
+                    Spacer()
+                    TextField("0", text: $inventoryThresholdText)
+                        .keyboardType(.numberPad)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 80)
+                        .accessibilityIdentifier("InventoryGlobalThresholdField")
+                    Text("日")
+                        .foregroundStyle(.secondary)
+                }
+            } footer: {
+                Text(NSLocalizedString("caregiver.inventory.settings.note", comment: "Inventory settings note"))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .overlay { savingOverlay }
+    }
+
+    @ViewBuilder
+    private var savingOverlay: some View {
+        if isSavingDetail {
+            ZStack {
+                Color.black.opacity(0.2)
+                    .ignoresSafeArea()
+                VStack {
+                    Spacer()
+                    LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
+                        .padding(16)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .shadow(radius: 6)
+                    Spacer()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        }
     }
 
     private func timePickerRow(title: String, slot: NotificationSlot) -> some View {
@@ -474,6 +638,72 @@ struct PatientManagementView: View {
             }
         }
         return mapping
+    }
+
+    private func loadInventoryThreshold() async {
+        guard sessionStore.mode == .caregiver, let patientId = sessionStore.currentPatientId else {
+            inventoryItems = []
+            inventoryThresholdText = ""
+            return
+        }
+        do {
+            let items = try await apiClient.fetchInventory(patientId: patientId)
+            inventoryItems = items
+            if let first = items.first(where: { $0.inventoryEnabled }) {
+                inventoryThresholdText = String(first.inventoryLowThreshold)
+            } else {
+                inventoryThresholdText = ""
+            }
+        } catch {
+            showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+        }
+    }
+
+    private func saveInventoryThreshold() async {
+        guard sessionStore.mode == .caregiver, let patientId = sessionStore.currentPatientId else {
+            return
+        }
+        let trimmed = inventoryThresholdText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let threshold = Int(trimmed), threshold >= 0 else {
+            showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+            return
+        }
+        isSavingDetail = true
+        defer { isSavingDetail = false }
+        do {
+            let items = inventoryItems.isEmpty ? try await apiClient.fetchInventory(patientId: patientId) : inventoryItems
+            let targets = items.filter { $0.inventoryEnabled }
+            for item in targets {
+                _ = try await apiClient.updateInventory(
+                    patientId: patientId,
+                    medicationId: item.medicationId,
+                    input: InventoryUpdateRequestDTO(
+                        inventoryEnabled: nil,
+                        inventoryQuantity: nil,
+                        inventoryLowThreshold: threshold
+                    )
+                )
+            }
+            inventoryItems = items.map { item in
+                InventoryItemDTO(
+                    medicationId: item.medicationId,
+                    name: item.name,
+                    doseCountPerIntake: item.doseCountPerIntake,
+                    inventoryEnabled: item.inventoryEnabled,
+                    inventoryQuantity: item.inventoryQuantity,
+                    inventoryLowThreshold: threshold,
+                    periodEnded: item.periodEnded,
+                    low: item.low,
+                    out: item.out,
+                    dailyPlannedUnits: item.dailyPlannedUnits,
+                    daysRemaining: item.daysRemaining,
+                    refillDueDate: item.refillDueDate
+                )
+            }
+            showToast(NSLocalizedString("caregiver.inventory.toast.saved", comment: "Inventory saved"))
+        } catch {
+            showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+        }
     }
 
     private func defaultScheduleTimeString(for slot: NotificationSlot) -> String {
