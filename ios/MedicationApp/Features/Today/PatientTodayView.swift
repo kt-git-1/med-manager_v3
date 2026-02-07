@@ -330,7 +330,7 @@ private struct PatientTodayBaseView: View {
                 LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
             } else if let errorMessage = viewModel.errorMessage {
                 ErrorStateView(message: errorMessage)
-            } else if viewModel.items.isEmpty && viewModel.prnMedications.isEmpty {
+            } else if !hasScheduledContent {
                 EmptyStateView(
                     title: NSLocalizedString("patient.today.empty.title", comment: "Empty title"),
                     message: NSLocalizedString("patient.today.empty.message", comment: "Empty message")
@@ -361,6 +361,10 @@ private struct PatientTodayBaseView: View {
             }
         }
         .safeAreaPadding(.top)
+    }
+
+    private var hasScheduledContent: Bool {
+        !slotSections.isEmpty || !missedItems.isEmpty || !takenItems.isEmpty
     }
 }
 
