@@ -193,14 +193,12 @@ final class PatientTodayViewModel: ObservableObject {
         async let dosesTask = apiClient.fetchPatientToday()
         async let medicationsTask = apiClient.fetchMedications(patientId: nil)
         let (doses, medications) = try await (dosesTask, medicationsTask)
-        let now = Date()
-        let todayOnly = doses.filter { calendar.isDate($0.scheduledAt, inSameDayAs: now) }
-        items = todayOnly.sorted(by: sortDose)
+        items = doses.sorted(by: sortDose)
         prnMedications = medications.filter { $0.isPrn }
         for medication in medications {
             medicationCache[medication.id] = medication
         }
-        await reminderService.scheduleReminders(for: todayOnly)
+        await reminderService.scheduleReminders(for: items)
     }
 
     private func showToast(_ message: String) {
