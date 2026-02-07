@@ -1,12 +1,12 @@
-import { errorResponse } from "../../../../../../../src/middleware/error";
+import { errorResponse } from "../../../../../../src/middleware/error";
 import {
   AuthError,
   assertCaregiverPatientScope,
   getBearerToken,
   isCaregiverToken,
   requireCaregiver
-} from "../../../../../../../src/middleware/auth";
-import { deletePrnRecord } from "../../../../../../../src/services/prnDoseRecordService";
+} from "../../../../../../src/middleware/auth";
+import { deletePrnRecord } from "../../../../../../src/services/prnDoseRecordService";
 
 export const runtime = "nodejs";
 

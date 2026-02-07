@@ -1,4 +1,4 @@
-import { errorResponse } from "../../../../../../src/middleware/error";
+import { errorResponse } from "../../../../../src/middleware/error";
 import {
   assertCaregiverPatientScope,
   assertPatientScope,
@@ -6,9 +6,9 @@ import {
   isCaregiverToken,
   requireCaregiver,
   requirePatient
-} from "../../../../../../src/middleware/auth";
-import { validatePrnDoseRecordCreate } from "../../../../../../src/validators/prnDoseRecord";
-import { createPrnRecord } from "../../../../../../src/services/prnDoseRecordService";
+} from "../../../../../src/middleware/auth";
+import { validatePrnDoseRecordCreate } from "../../../../../src/validators/prnDoseRecord";
+import { createPrnRecord } from "../../../../../src/services/prnDoseRecordService";
 
 export const runtime = "nodejs";
 
