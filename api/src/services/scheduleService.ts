@@ -241,7 +241,7 @@ export async function generateScheduleForPatient({
 }) {
   const { prisma } = await import("../repositories/prisma");
   const [medications, regimens] = await Promise.all([
-    prisma.medication.findMany({ where: { patientId } }),
+    prisma.medication.findMany({ where: { patientId, isPrn: false } }),
     prisma.regimen.findMany({ where: { patientId } })
   ]);
   return generateSchedule({ medications, regimens, from, to });

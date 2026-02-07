@@ -3,6 +3,27 @@ import XCTest
 
 @MainActor
 final class MedicationFormViewModelTests: XCTestCase {
+    private func makeViewModelWithDefaultSlots() -> MedicationFormViewModel {
+        let defaults = UserDefaults(suiteName: "MedicationFormViewModelTests.defaults")!
+        defaults.removePersistentDomain(forName: "MedicationFormViewModelTests.defaults")
+        let preferencesStore = NotificationPreferencesStore(defaults: defaults)
+        preferencesStore.setSlotTime(.morning, hour: 8, minute: 0)
+        preferencesStore.setSlotTime(.noon, hour: 12, minute: 0)
+        preferencesStore.setSlotTime(.evening, hour: 18, minute: 0)
+        preferencesStore.setSlotTime(.bedtime, hour: 21, minute: 0)
+
+        let sessionStore = SessionStore(userDefaults: defaults)
+        let apiClient = APIClient(
+            baseURL: URL(string: "http://localhost:3000")!,
+            sessionStore: sessionStore
+        )
+        return MedicationFormViewModel(
+            apiClient: apiClient,
+            sessionStore: sessionStore,
+            preferencesStore: preferencesStore
+        )
+    }
+
     func testMedicationListRequestRequiresPatientIdForCaregiver() {
         let userDefaults = UserDefaults(suiteName: "MedicationFormViewModelTests")!
         userDefaults.removePersistentDomain(forName: "MedicationFormViewModelTests")
@@ -48,6 +69,8 @@ final class MedicationFormViewModelTests: XCTestCase {
             dosageStrengthValue: 10,
             dosageStrengthUnit: "mg",
             notes: nil,
+            isPrn: false,
+            prnInstructions: nil,
             startDate: Date(timeIntervalSince1970: 0),
             endDate: nil,
             inventoryCount: nil,
@@ -75,6 +98,8 @@ final class MedicationFormViewModelTests: XCTestCase {
             dosageStrengthValue: 10,
             dosageStrengthUnit: "mg",
             notes: nil,
+            isPrn: false,
+            prnInstructions: nil,
             startDate: Date(timeIntervalSince1970: 0),
             endDate: nil,
             inventoryCount: nil,
@@ -97,7 +122,7 @@ final class MedicationFormViewModelTests: XCTestCase {
     }
 
     func testScheduleSerializationOrdersTimesAndDays() {
-        let viewModel = MedicationFormViewModel()
+        let viewModel = makeViewModelWithDefaultSlots()
         viewModel.name = "Test"
         viewModel.selectedTimeSlots = [.bedtime, .morning, .evening]
         viewModel.selectedDays = [.fri, .mon, .wed]
@@ -108,7 +133,7 @@ final class MedicationFormViewModelTests: XCTestCase {
     }
 
     func testApplyRegimenPrefillsSchedule() {
-        let viewModel = MedicationFormViewModel()
+        let viewModel = makeViewModelWithDefaultSlots()
         let regimen = RegimenDTO(
             id: "reg-1",
             patientId: "patient-1",

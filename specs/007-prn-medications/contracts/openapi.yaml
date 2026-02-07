@@ -1,0 +1,197 @@
+openapi: 3.0.3
+info:
+  title: PRN Medications API (007)
+  version: 0.1.0
+  description: |
+    Endpoints and payloads for PRN medications and PRN dose records.
+servers:
+  - url: /api
+paths:
+  /patients/{patientId}/prn-dose-records:
+    post:
+      summary: Create PRN dose record (patient or caregiver)
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrnDoseRecordCreateRequest"
+      responses:
+        "200":
+          description: PRN record created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrnDoseRecordCreateResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Patient not found (concealed)
+        "422":
+          description: Validation error
+  /patients/{patientId}/prn-dose-records/{prnRecordId}:
+    delete:
+      summary: Delete PRN dose record (caregiver only)
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: prnRecordId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Patient or record not found (concealed)
+components:
+  schemas:
+    PrnDoseRecordCreateRequest:
+      type: object
+      required:
+        - medicationId
+      properties:
+        medicationId:
+          type: string
+        takenAt:
+          type: string
+          format: date-time
+          description: Optional client-provided timestamp; server time is default.
+        quantityTaken:
+          type: integer
+          description: Optional override; defaults to medication dose per intake.
+    PrnDoseRecordCreateResponse:
+      type: object
+      required:
+        - record
+      properties:
+        record:
+          $ref: "#/components/schemas/PrnDoseRecord"
+        medicationInventory:
+          $ref: "#/components/schemas/MedicationInventorySnapshot"
+    PrnDoseRecord:
+      type: object
+      required:
+        - id
+        - patientId
+        - medicationId
+        - takenAt
+        - quantityTaken
+        - actorType
+        - createdAt
+      properties:
+        id:
+          type: string
+        patientId:
+          type: string
+        medicationId:
+          type: string
+        takenAt:
+          type: string
+          format: date-time
+        quantityTaken:
+          type: integer
+        actorType:
+          type: string
+          enum:
+            - PATIENT
+            - CAREGIVER
+        createdAt:
+          type: string
+          format: date-time
+    MedicationInventorySnapshot:
+      type: object
+      description: Returned when inventory tracking is enabled.
+      nullable: true
+      properties:
+        medicationId:
+          type: string
+        inventoryEnabled:
+          type: boolean
+        inventoryQuantity:
+          type: integer
+        inventoryLowThreshold:
+          type: integer
+        low:
+          type: boolean
+        out:
+          type: boolean
+    HistoryDayResponse:
+      type: object
+      description: Existing history day response with PRN items appended.
+      properties:
+        date:
+          type: string
+          format: date
+        doses:
+          type: array
+          items:
+            type: object
+        prnItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/PrnHistoryItem"
+    PrnHistoryItem:
+      type: object
+      required:
+        - medicationId
+        - medicationName
+        - takenAt
+        - quantityTaken
+        - actorType
+      properties:
+        medicationId:
+          type: string
+        medicationName:
+          type: string
+        takenAt:
+          type: string
+          format: date-time
+        quantityTaken:
+          type: integer
+        actorType:
+          type: string
+          enum:
+            - PATIENT
+            - CAREGIVER
+    HistoryMonthResponse:
+      type: object
+      description: Existing history month response with optional PRN counts.
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+        days:
+          type: array
+          items:
+            type: object
+        prnCountByDay:
+          type: object
+          additionalProperties:
+            type: integer
+    MedicationPrnFields:
+      type: object
+      description: Fields added to medication create/update payloads.
+      properties:
+        isPrn:
+          type: boolean
+        prnInstructions:
+          type: string
+          nullable: true

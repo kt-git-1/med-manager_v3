@@ -12,6 +12,7 @@ import {
   getScheduleWithStatus
 } from "../../../../../../src/services/scheduleService";
 import { resolveSlot } from "../../../../../../src/services/scheduleResponse";
+import { listPrnHistoryItemsByRange } from "../../../../../../src/services/prnDoseRecordService";
 import { validateDateString } from "../../../../../../src/validators/schedule";
 
 export const runtime = "nodejs";
@@ -63,6 +64,12 @@ export async function GET(
       range.to,
       historyTimeZone
     );
+    const prn = await listPrnHistoryItemsByRange({
+      patientId,
+      from: range.from,
+      to: range.to,
+      timeZone: historyTimeZone
+    });
 
     const items = doses
       .map((dose) => {
@@ -92,7 +99,8 @@ export async function GET(
     return new Response(
       JSON.stringify({
         date: getLocalDateKey(range.from, historyTimeZone),
-        doses: items
+        doses: items,
+        prnItems: prn.items
       }),
       {
         headers: { "content-type": "application/json" }

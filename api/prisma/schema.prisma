@@ -60,6 +60,8 @@ model Medication {
   dosageStrengthValue Float
   dosageStrengthUnit  String
   notes               String?
+  isPrn               Boolean @default(false)
+  prnInstructions     String?
   startDate           DateTime @db.Date
   endDate             DateTime? @db.Date
   inventoryCount      Int?
@@ -76,6 +78,7 @@ model Medication {
 
   regimens            Regimen[]
   doseRecords         DoseRecord[]
+  prnDoseRecords      PrnDoseRecord[]
   inventoryAdjustments MedicationInventoryAdjustment[]
   inventoryAlertEvents InventoryAlertEvent[]
 
@@ -114,6 +117,7 @@ model Patient {
   linkingAttempts       LinkingAttempt[]
   sessions              PatientSession[]
   doseRecords           DoseRecord[]
+  prnDoseRecords        PrnDoseRecord[]
   doseRecordEvents      DoseRecordEvent[]
   inventoryAdjustments  MedicationInventoryAdjustment[]
   inventoryAlertEvents  InventoryAlertEvent[]
@@ -179,6 +183,23 @@ model DoseRecord {
 
   @@unique([patientId, medicationId, scheduledAt])
   @@index([patientId, scheduledAt])
+}
+
+model PrnDoseRecord {
+  id            String         @id @default(uuid())
+  patientId     String
+  medicationId  String
+  takenAt       DateTime       @default(now())
+  quantityTaken Int
+  actorType     RecordedByType
+  createdAt     DateTime       @default(now())
+
+  patient       Patient        @relation(fields: [patientId], references: [id])
+  medication    Medication     @relation(fields: [medicationId], references: [id])
+
+  @@index([patientId, takenAt(sort: Desc)])
+  @@index([patientId, medicationId, takenAt(sort: Desc)])
+  @@map("prn_dose_records")
 }
 
 model DoseRecordEvent {

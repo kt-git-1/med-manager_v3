@@ -10,6 +10,9 @@ final class PatientTodayViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var toastMessage: String?
     @Published var confirmDose: ScheduleDoseDTO?
+    @Published var prnMedications: [MedicationDTO] = []
+    @Published var confirmPrnMedication: MedicationDTO?
+    @Published var isPrnSubmitting = false
     @Published var highlightedSlot: NotificationSlot?
 
     private let apiClient: APIClient
@@ -68,13 +71,10 @@ final class PatientTodayViewModel: ObservableObject {
                 isUpdating = false
             }
             do {
-                let doses = try await apiClient.fetchPatientToday()
-                let now = Date()
-                let todayOnly = doses.filter { calendar.isDate($0.scheduledAt, inSameDayAs: now) }
-                items = todayOnly.sorted(by: sortDose)
-                await reminderService.scheduleReminders(for: todayOnly)
+                try await refreshTodayData()
             } catch {
                 items = []
+                prnMedications = []
                 errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
             }
         }
@@ -103,6 +103,38 @@ final class PatientTodayViewModel: ObservableObject {
                 )
                 showToast(NSLocalizedString("patient.today.recorded", comment: "Recorded"))
                 load(showLoading: false)
+            } catch {
+                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+            }
+        }
+    }
+
+    func confirmPrnRecord(for medication: MedicationDTO) {
+        confirmPrnMedication = medication
+    }
+
+    func recordConfirmedPrnDose() {
+        guard let medication = confirmPrnMedication else { return }
+        guard !isPrnSubmitting else { return }
+        confirmPrnMedication = nil
+        isUpdating = true
+        isPrnSubmitting = true
+        Task { @MainActor in
+            defer {
+                isUpdating = false
+                isPrnSubmitting = false
+            }
+            do {
+                _ = try await apiClient.createPrnDoseRecord(
+                    patientId: medication.patientId,
+                    input: PrnDoseRecordCreateRequestDTO(
+                        medicationId: medication.id,
+                        takenAt: nil,
+                        quantityTaken: nil
+                    )
+                )
+                showToast(NSLocalizedString("patient.today.prn.recorded", comment: "PRN recorded"))
+                try await refreshTodayData()
             } catch {
                 showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
             }
@@ -150,6 +182,20 @@ final class PatientTodayViewModel: ObservableObject {
             }
         }
         return matched
+    }
+
+    private func refreshTodayData() async throws {
+        async let dosesTask = apiClient.fetchPatientToday()
+        async let medicationsTask = apiClient.fetchMedications(patientId: nil)
+        let (doses, medications) = try await (dosesTask, medicationsTask)
+        let now = Date()
+        let todayOnly = doses.filter { calendar.isDate($0.scheduledAt, inSameDayAs: now) }
+        items = todayOnly.sorted(by: sortDose)
+        prnMedications = medications.filter { $0.isPrn }
+        for medication in medications {
+            medicationCache[medication.id] = medication
+        }
+        await reminderService.scheduleReminders(for: todayOnly)
     }
 
     private func showToast(_ message: String) {

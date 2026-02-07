@@ -26,6 +26,8 @@ export type MedicationCreateInput = {
   dosageStrengthValue: number;
   dosageStrengthUnit: string;
   notes?: string;
+  isPrn?: boolean;
+  prnInstructions?: string | null;
   startDate: Date;
   endDate?: Date;
   inventoryCount?: number;
@@ -104,8 +106,14 @@ function computeInventoryState(
   if (quantity === 0) {
     return "OUT";
   }
-  if (threshold > 0 && daysRemaining !== null && daysRemaining <= threshold) {
-    return "LOW";
+  if (threshold > 0) {
+    if (daysRemaining !== null) {
+      if (daysRemaining <= threshold) {
+        return "LOW";
+      }
+    } else if (quantity < threshold) {
+      return "LOW";
+    }
   }
   return "NONE";
 }

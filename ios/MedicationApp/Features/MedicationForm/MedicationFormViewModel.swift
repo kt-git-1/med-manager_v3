@@ -86,6 +86,8 @@ final class MedicationFormViewModel: ObservableObject {
     @Published var notes = ""
     @Published var inventoryCount = ""
     @Published var inventoryUnit = ""
+    @Published var isPrn = false
+    @Published var prnInstructions = ""
     @Published var errorMessage: String?
     @Published var isSubmitting = false
     @Published var isDeleting = false
@@ -126,6 +128,8 @@ final class MedicationFormViewModel: ObservableObject {
             notes = existingMedication.notes ?? ""
             inventoryCount = existingMedication.inventoryCount.map(String.init) ?? ""
             inventoryUnit = existingMedication.inventoryUnit ?? ""
+            isPrn = existingMedication.isPrn
+            prnInstructions = existingMedication.prnInstructions ?? ""
         }
     }
 
@@ -143,11 +147,13 @@ final class MedicationFormViewModel: ObservableObject {
         if let endDate, endDate < startDate {
             errors.append("終了日は開始日以降にしてください")
         }
-        if selectedTimeSlots.isEmpty {
-            errors.append("時間は1件以上選択してください")
-        }
-        if scheduleFrequency == .weekly && selectedDays.isEmpty {
-            errors.append("曜日は1つ以上選択してください")
+        if !isPrn {
+            if selectedTimeSlots.isEmpty {
+                errors.append("時間は1件以上選択してください")
+            }
+            if scheduleFrequency == .weekly && selectedDays.isEmpty {
+                errors.append("曜日は1つ以上選択してください")
+            }
         }
         return errors
     }
@@ -201,6 +207,10 @@ final class MedicationFormViewModel: ObservableObject {
                     dosageStrengthValue: strengthValue,
                     dosageStrengthUnit: dosageStrengthUnit,
                     notes: notes.isEmpty ? nil : notes,
+                    isPrn: isPrn,
+                    prnInstructions: prnInstructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        ? nil
+                        : prnInstructions,
                     startDate: startDate,
                     endDate: endDate,
                     inventoryCount: inventoryValue,
@@ -211,7 +221,9 @@ final class MedicationFormViewModel: ObservableObject {
                     patientId: patientId,
                     input: request
                 )
-                try await persistRegimen(medicationId: updated.id)
+                if !isPrn {
+                    try await persistRegimen(medicationId: updated.id)
+                }
             } else {
                 let request = MedicationCreateRequestDTO(
                     patientId: patientId,
@@ -221,13 +233,19 @@ final class MedicationFormViewModel: ObservableObject {
                     dosageStrengthValue: strengthValue,
                     dosageStrengthUnit: dosageStrengthUnit,
                     notes: notes.isEmpty ? nil : notes,
+                    isPrn: isPrn,
+                    prnInstructions: prnInstructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        ? nil
+                        : prnInstructions,
                     startDate: startDate,
                     endDate: endDate,
                     inventoryCount: inventoryValue,
                     inventoryUnit: inventoryUnit.isEmpty ? nil : inventoryUnit
                 )
                 let created = try await apiClient.createMedication(request)
-                try await persistRegimen(medicationId: created.id)
+                if !isPrn {
+                    try await persistRegimen(medicationId: created.id)
+                }
             }
             return true
         } catch {
@@ -268,6 +286,7 @@ final class MedicationFormViewModel: ObservableObject {
 
     func loadExistingScheduleIfNeeded() async {
         guard let existingMedication else { return }
+        guard !isPrn else { return }
         guard !didLoadSchedule else { return }
         didLoadSchedule = true
         scheduleIsLoading = true

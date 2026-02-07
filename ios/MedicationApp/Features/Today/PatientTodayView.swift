@@ -1,20 +1,9 @@
 import SwiftUI
 
 struct PatientTodayView: View {
-    private static let todayCalendar: Calendar = {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
-        return calendar
-    }()
     private let sessionStore: SessionStore
     @StateObject private var viewModel: PatientTodayViewModel
-    @State private var showingConfirm = false
     @Binding private var deepLinkTarget: NotificationDeepLinkTarget?
-    @State private var pendingScrollTarget: String?
-    @State private var selectedDose: ScheduleDoseDTO?
-    @State private var detailMedication: MedicationDTO?
-    @State private var isDetailLoading = false
-    @State private var detailErrorMessage: String?
 
     init(
         sessionStore: SessionStore? = nil,
@@ -24,74 +13,81 @@ struct PatientTodayView: View {
         self.sessionStore = store
         _deepLinkTarget = deepLinkTarget
         let baseURL = SessionStore.resolveBaseURL()
-        _viewModel = StateObject(
-            wrappedValue: PatientTodayViewModel(apiClient: APIClient(baseURL: baseURL, sessionStore: store))
-        )
+        let apiClient = APIClient(baseURL: baseURL, sessionStore: store)
+        let viewModel = PatientTodayViewModel(apiClient: apiClient)
+        _viewModel = StateObject(wrappedValue: viewModel)
     }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            Color.white
-                .ignoresSafeArea()
-            content
+        PatientTodayRootView(
+            sessionStore: sessionStore,
+            viewModel: viewModel,
+            deepLinkTarget: $deepLinkTarget
+        )
+    }
+}
 
-            if let toastMessage = viewModel.toastMessage {
-                Text(toastMessage)
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .shadow(radius: 4)
-                    .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .accessibilityLabel(toastMessage)
-            }
+private struct PatientTodayRootView: View {
+    private static let todayCalendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        return calendar
+    }()
+    let sessionStore: SessionStore
+    @ObservedObject var viewModel: PatientTodayViewModel
+    @Binding var deepLinkTarget: NotificationDeepLinkTarget?
+    @State private var showingConfirm = false
+    @State private var showingPrnConfirm = false
+    @State private var pendingScrollTarget: String?
+    @State private var selectedDose: ScheduleDoseDTO?
+    @State private var detailMedication: MedicationDTO?
+    @State private var isDetailLoading = false
+    @State private var detailErrorMessage: String?
 
-            if viewModel.isUpdating {
-                ZStack {
-                    Color.black.opacity(0.2)
-                        .ignoresSafeArea()
-                    VStack {
-                        Spacer()
-                        LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                            .padding(16)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .shadow(radius: 6)
-                        Spacer()
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-            }
-        }
-        .onAppear {
-            viewModel.handleAppear()
-            handleDeepLinkIfNeeded()
-        }
-        .onDisappear {
-            viewModel.handleDisappear()
-        }
-        .alert(
-            NSLocalizedString("patient.today.confirm.title", comment: "Confirm title"),
-            isPresented: $showingConfirm,
-            presenting: viewModel.confirmDose
-        ) { _ in
-            Button(NSLocalizedString("patient.today.confirm.action", comment: "Confirm action")) {
-                viewModel.recordConfirmedDose()
-            }
-            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
-        } message: { dose in
-            Text(confirmMessage(for: dose))
-        }
-        .onChange(of: viewModel.confirmDose) { _, newValue in
-            showingConfirm = newValue != nil
-        }
-        .onChange(of: deepLinkTarget) { _, _ in
-            handleDeepLinkIfNeeded()
-        }
-        .onChange(of: viewModel.items) { _, _ in
-            handleDeepLinkIfNeeded()
-        }
+    var body: some View {
+        PatientTodayBaseView(
+            viewModel: viewModel,
+            pendingScrollTarget: $pendingScrollTarget,
+            slotSections: slotSections,
+            missedItems: missedItems,
+            takenItems: takenItems,
+            onConfirmDose: { viewModel.confirmRecord(for: $0) },
+            onPresentDetail: presentDetail,
+            onConfirmPrn: { viewModel.confirmPrnRecord(for: $0) },
+            timeText: { viewModel.timeText(for: $0) },
+            shouldHighlight: shouldHighlight,
+            slotColor: slotColor,
+            slotTitle: slotTitle
+        )
+        .modifier(
+            PatientTodayLifecycleModifier(
+                viewModel: viewModel,
+                onHandleDeepLink: handleDeepLinkIfNeeded
+            )
+        )
+        .modifier(
+            PatientTodayAlertModifier(
+                showingConfirm: $showingConfirm,
+                showingPrnConfirm: $showingPrnConfirm,
+                confirmDose: viewModel.confirmDose,
+                confirmPrnMedication: viewModel.confirmPrnMedication,
+                confirmMessage: confirmMessage,
+                confirmPrnMessage: confirmPrnMessage,
+                onConfirmDose: { viewModel.recordConfirmedDose() },
+                onConfirmPrn: { viewModel.recordConfirmedPrnDose() }
+            )
+        )
+        .modifier(
+            PatientTodayChangeModifier(
+                showingConfirm: $showingConfirm,
+                showingPrnConfirm: $showingPrnConfirm,
+                confirmDose: viewModel.confirmDose,
+                confirmPrnMedication: viewModel.confirmPrnMedication,
+                deepLinkTarget: $deepLinkTarget,
+                items: viewModel.items,
+                onHandleDeepLink: handleDeepLinkIfNeeded
+            )
+        )
         .sheet(item: $selectedDose, onDismiss: resetDetailState) { dose in
             PatientTodayDoseDetailView(
                 dose: dose,
@@ -107,106 +103,6 @@ struct PatientTodayView: View {
         .sensoryFeedback(.success, trigger: viewModel.toastMessage)
         .accessibilityIdentifier("PatientTodayView")
         .environmentObject(sessionStore)
-    }
-
-    private var content: some View {
-        Group {
-            if viewModel.isLoading {
-                LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
-            } else if let errorMessage = viewModel.errorMessage {
-                ErrorStateView(message: errorMessage)
-            } else if viewModel.items.isEmpty {
-                EmptyStateView(
-                    title: NSLocalizedString("patient.today.empty.title", comment: "Empty title"),
-                    message: NSLocalizedString("patient.today.empty.message", comment: "Empty message")
-                )
-            } else {
-                ScrollViewReader { proxy in
-                    List {
-                        ForEach(slotSections) { section in
-                            Section {
-                                ForEach(section.items) { dose in
-                                    PatientTodayRow(
-                                        dose: dose,
-                                        timeText: viewModel.timeText(for: dose.scheduledAt),
-                                        onRecord: { viewModel.confirmRecord(for: dose) },
-                                        isHighlighted: shouldHighlight(dose: dose),
-                                        slotColor: slotColor(for: section.slot)
-                                    )
-                                    .id(dose.key)
-                                    .listRowSeparator(.hidden)
-                                    .onTapGesture { presentDetail(for: dose) }
-                                }
-                            } header: {
-                                slotHeader(for: section.slot)
-                            }
-                        }
-
-                        if !missedItems.isEmpty {
-                            Section {
-                                ForEach(missedItems) { dose in
-                                    PatientTodayRow(
-                                        dose: dose,
-                                        timeText: viewModel.timeText(for: dose.scheduledAt),
-                                        onRecord: { viewModel.confirmRecord(for: dose) },
-                                        isHighlighted: shouldHighlight(dose: dose),
-                                        slotColor: nil
-                                    )
-                                    .id(dose.key)
-                                    .listRowSeparator(.hidden)
-                                    .onTapGesture { presentDetail(for: dose) }
-                                }
-                            } header: {
-                                Text(NSLocalizedString("patient.today.section.missed", comment: "Missed"))
-                                    .font(.headline)
-                                    .foregroundStyle(.primary)
-                                    .textCase(nil)
-                            }
-                        }
-
-                        if !takenItems.isEmpty {
-                            Section {
-                                ForEach(takenItems) { dose in
-                                    PatientTodayRow(
-                                        dose: dose,
-                                        timeText: viewModel.timeText(for: dose.scheduledAt),
-                                        onRecord: { viewModel.confirmRecord(for: dose) },
-                                        isHighlighted: shouldHighlight(dose: dose),
-                                        slotColor: nil
-                                    )
-                                    .id(dose.key)
-                                    .listRowSeparator(.hidden)
-                                    .onTapGesture { presentDetail(for: dose) }
-                                }
-                            } header: {
-                                Text(NSLocalizedString("patient.today.section.taken", comment: "Taken"))
-                                    .font(.headline)
-                                    .foregroundStyle(.primary)
-                                    .textCase(nil)
-                            }
-                        }
-                    }
-                    .listStyle(.plain)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.white)
-                    .safeAreaPadding(.bottom, 120)
-                    .onChange(of: pendingScrollTarget) { _, target in
-                        guard let target else { return }
-                        withAnimation(.easeInOut) {
-                            proxy.scrollTo(target, anchor: .top)
-                        }
-                        pendingScrollTarget = nil
-                    }
-                }
-            }
-        }
-        .safeAreaPadding(.top)
-    }
-
-    private struct SlotSection: Identifiable {
-        let id: String
-        let slot: NotificationSlot?
-        let items: [ScheduleDoseDTO]
     }
 
     private var slotSections: [SlotSection] {
@@ -250,24 +146,6 @@ struct PatientTodayView: View {
         }
     }
 
-    private func slotHeader(for slot: NotificationSlot?) -> some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(slotColor(for: slot))
-                .frame(width: 10, height: 10)
-            Text(slotTitle(for: slot))
-                .font(.headline)
-                .foregroundStyle(.primary)
-        }
-        .padding(.vertical, 6)
-        .padding(.horizontal, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(slotColor(for: slot).opacity(0.18))
-        )
-        .textCase(nil)
-    }
-
     private func slotTitle(for slot: NotificationSlot?) -> String {
         switch slot {
         case .morning:
@@ -304,6 +182,13 @@ struct PatientTodayView: View {
             format: NSLocalizedString("patient.today.confirm.message", comment: "Confirm message"),
             dose.medicationSnapshot.name,
             timeText
+        )
+    }
+
+    private func confirmPrnMessage(for medication: MedicationDTO) -> String {
+        String(
+            format: NSLocalizedString("patient.today.prn.confirm.message", comment: "PRN confirm message"),
+            medication.name
         )
     }
 
@@ -352,6 +237,371 @@ struct PatientTodayView: View {
         guard !viewModel.isLoading else { return }
         pendingScrollTarget = viewModel.handleDeepLink(target)
         deepLinkTarget = nil
+    }
+}
+
+private struct PatientTodayBaseView: View {
+    @ObservedObject var viewModel: PatientTodayViewModel
+    @Binding var pendingScrollTarget: String?
+    let slotSections: [SlotSection]
+    let missedItems: [ScheduleDoseDTO]
+    let takenItems: [ScheduleDoseDTO]
+    let onConfirmDose: (ScheduleDoseDTO) -> Void
+    let onPresentDetail: (ScheduleDoseDTO) -> Void
+    let onConfirmPrn: (MedicationDTO) -> Void
+    let timeText: (Date) -> String
+    let shouldHighlight: (ScheduleDoseDTO) -> Bool
+    let slotColor: (NotificationSlot?) -> Color
+    let slotTitle: (NotificationSlot?) -> String
+
+    var body: some View {
+        baseView
+    }
+
+    private var baseView: some View {
+        ZStack(alignment: .top) {
+            Color.white
+                .ignoresSafeArea()
+            content
+            toastView
+            updatingOverlay
+        }
+    }
+
+    @ViewBuilder
+    private var toastView: some View {
+        if let toastMessage = viewModel.toastMessage {
+            Text(toastMessage)
+                .font(.subheadline.weight(.semibold))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(.ultraThinMaterial)
+                .clipShape(Capsule())
+                .shadow(radius: 4)
+                .padding(.top, 8)
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .accessibilityLabel(toastMessage)
+        }
+    }
+
+    @ViewBuilder
+    private var updatingOverlay: some View {
+        if viewModel.isUpdating {
+            ZStack {
+                Color.black.opacity(0.2)
+                    .ignoresSafeArea()
+                VStack {
+                    Spacer()
+                    LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
+                        .padding(16)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .shadow(radius: 6)
+                    Spacer()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        }
+    }
+
+    private var content: some View {
+        Group {
+            if viewModel.isLoading {
+                LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+            } else if let errorMessage = viewModel.errorMessage {
+                ErrorStateView(message: errorMessage)
+            } else if viewModel.items.isEmpty && viewModel.prnMedications.isEmpty {
+                EmptyStateView(
+                    title: NSLocalizedString("patient.today.empty.title", comment: "Empty title"),
+                    message: NSLocalizedString("patient.today.empty.message", comment: "Empty message")
+                )
+            } else {
+                ScrollViewReader { proxy in
+                    PatientTodayListView(
+                        viewModel: viewModel,
+                        slotSections: slotSections,
+                        missedItems: missedItems,
+                        takenItems: takenItems,
+                        onConfirmDose: onConfirmDose,
+                        onPresentDetail: onPresentDetail,
+                        onConfirmPrn: onConfirmPrn,
+                        timeText: timeText,
+                        shouldHighlight: shouldHighlight,
+                        slotColor: slotColor,
+                        slotTitle: slotTitle
+                    )
+                    .onChange(of: pendingScrollTarget) { _, target in
+                        guard let target else { return }
+                        withAnimation(.easeInOut) {
+                            proxy.scrollTo(target, anchor: .top)
+                        }
+                        pendingScrollTarget = nil
+                    }
+                }
+            }
+        }
+        .safeAreaPadding(.top)
+    }
+}
+
+private struct PatientTodayLifecycleModifier: ViewModifier {
+    @ObservedObject var viewModel: PatientTodayViewModel
+    let onHandleDeepLink: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                viewModel.handleAppear()
+                onHandleDeepLink()
+            }
+            .onDisappear {
+                viewModel.handleDisappear()
+            }
+    }
+}
+
+private struct PatientTodayAlertModifier: ViewModifier {
+    @Binding var showingConfirm: Bool
+    @Binding var showingPrnConfirm: Bool
+    let confirmDose: ScheduleDoseDTO?
+    let confirmPrnMedication: MedicationDTO?
+    let confirmMessage: (ScheduleDoseDTO) -> String
+    let confirmPrnMessage: (MedicationDTO) -> String
+    let onConfirmDose: () -> Void
+    let onConfirmPrn: () -> Void
+
+    func body(content: Content) -> some View {
+        let doseAlert = content.alert(
+            NSLocalizedString("patient.today.confirm.title", comment: "Confirm title"),
+            isPresented: $showingConfirm,
+            presenting: confirmDose
+        ) { _ in
+            Button(NSLocalizedString("patient.today.confirm.action", comment: "Confirm action")) {
+                onConfirmDose()
+            }
+            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
+        } message: { dose in
+            Text(confirmMessage(dose))
+        }
+        let prnAlert = doseAlert.alert(
+            NSLocalizedString("patient.today.prn.confirm.title", comment: "PRN confirm title"),
+            isPresented: $showingPrnConfirm,
+            presenting: confirmPrnMedication
+        ) { _ in
+            Button(NSLocalizedString("patient.today.prn.confirm.action", comment: "PRN confirm action")) {
+                onConfirmPrn()
+            }
+            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
+        } message: { medication in
+            Text(confirmPrnMessage(medication))
+        }
+        return prnAlert
+    }
+}
+
+private struct PatientTodayChangeModifier: ViewModifier {
+    @Binding var showingConfirm: Bool
+    @Binding var showingPrnConfirm: Bool
+    let confirmDose: ScheduleDoseDTO?
+    let confirmPrnMedication: MedicationDTO?
+    @Binding var deepLinkTarget: NotificationDeepLinkTarget?
+    let items: [ScheduleDoseDTO]
+    let onHandleDeepLink: () -> Void
+
+    func body(content: Content) -> some View {
+        let confirmLayer = content.onChange(of: confirmDose) { _, newValue in
+            showingConfirm = newValue != nil
+        }
+        let prnLayer = confirmLayer.onChange(of: confirmPrnMedication?.id) { _, newValue in
+            showingPrnConfirm = newValue != nil
+        }
+        let deepLinkLayer = prnLayer.onChange(of: deepLinkTarget) { _, _ in
+            onHandleDeepLink()
+        }
+        let itemsLayer = deepLinkLayer.onChange(of: items) { _, _ in
+            onHandleDeepLink()
+        }
+        return itemsLayer
+    }
+}
+
+private struct SlotSection: Identifiable {
+    let id: String
+    let slot: NotificationSlot?
+    let items: [ScheduleDoseDTO]
+}
+
+private struct PatientTodayListView: View {
+    let viewModel: PatientTodayViewModel
+    let slotSections: [SlotSection]
+    let missedItems: [ScheduleDoseDTO]
+    let takenItems: [ScheduleDoseDTO]
+    let onConfirmDose: (ScheduleDoseDTO) -> Void
+    let onPresentDetail: (ScheduleDoseDTO) -> Void
+    let onConfirmPrn: (MedicationDTO) -> Void
+    let timeText: (Date) -> String
+    let shouldHighlight: (ScheduleDoseDTO) -> Bool
+    let slotColor: (NotificationSlot?) -> Color
+    let slotTitle: (NotificationSlot?) -> String
+
+    var body: some View {
+        List {
+            PrnSectionView(
+                medications: viewModel.prnMedications,
+                isDisabled: viewModel.isUpdating || viewModel.isPrnSubmitting,
+                onConfirmPrn: onConfirmPrn
+            )
+            PlannedSectionsView(
+                slotSections: slotSections,
+                timeText: timeText,
+                shouldHighlight: shouldHighlight,
+                slotColor: slotColor,
+                slotTitle: slotTitle,
+                onConfirmDose: onConfirmDose,
+                onPresentDetail: onPresentDetail
+            )
+            DoseStatusSectionView(
+                titleKey: "patient.today.section.missed",
+                items: missedItems,
+                timeText: timeText,
+                shouldHighlight: shouldHighlight,
+                onConfirmDose: onConfirmDose,
+                onPresentDetail: onPresentDetail
+            )
+            DoseStatusSectionView(
+                titleKey: "patient.today.section.taken",
+                items: takenItems,
+                timeText: timeText,
+                shouldHighlight: shouldHighlight,
+                onConfirmDose: onConfirmDose,
+                onPresentDetail: onPresentDetail
+            )
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Color.white)
+        .safeAreaPadding(.bottom, 120)
+    }
+}
+
+private struct PrnSectionView: View {
+    let medications: [MedicationDTO]
+    let isDisabled: Bool
+    let onConfirmPrn: (MedicationDTO) -> Void
+
+    var body: some View {
+        if medications.isEmpty {
+            EmptyView()
+        } else {
+            Section {
+                ForEach(medications) { medication in
+                    PrnMedicationCard(
+                        medication: medication,
+                        isDisabled: isDisabled,
+                        onRecord: { onConfirmPrn(medication) }
+                    )
+                    .listRowSeparator(.hidden)
+                }
+            } header: {
+                Text(NSLocalizedString("patient.today.prn.section.title", comment: "PRN section"))
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .textCase(nil)
+            }
+        }
+    }
+}
+
+private struct PlannedSectionsView: View {
+    let slotSections: [SlotSection]
+    let timeText: (Date) -> String
+    let shouldHighlight: (ScheduleDoseDTO) -> Bool
+    let slotColor: (NotificationSlot?) -> Color
+    let slotTitle: (NotificationSlot?) -> String
+    let onConfirmDose: (ScheduleDoseDTO) -> Void
+    let onPresentDetail: (ScheduleDoseDTO) -> Void
+
+    var body: some View {
+        ForEach(slotSections) { section in
+            Section {
+                ForEach(section.items) { dose in
+                    PatientTodayRow(
+                        dose: dose,
+                        timeText: timeText(dose.scheduledAt),
+                        onRecord: { onConfirmDose(dose) },
+                        isHighlighted: shouldHighlight(dose),
+                        slotColor: slotColor(section.slot)
+                    )
+                    .id(dose.key)
+                    .listRowSeparator(.hidden)
+                    .onTapGesture { onPresentDetail(dose) }
+                }
+            } header: {
+                SlotHeaderView(
+                    slot: section.slot,
+                    slotColor: slotColor,
+                    slotTitle: slotTitle
+                )
+            }
+        }
+    }
+}
+
+private struct DoseStatusSectionView: View {
+    let titleKey: String
+    let items: [ScheduleDoseDTO]
+    let timeText: (Date) -> String
+    let shouldHighlight: (ScheduleDoseDTO) -> Bool
+    let onConfirmDose: (ScheduleDoseDTO) -> Void
+    let onPresentDetail: (ScheduleDoseDTO) -> Void
+
+    var body: some View {
+        if items.isEmpty {
+            EmptyView()
+        } else {
+            Section {
+                ForEach(items) { dose in
+                    PatientTodayRow(
+                        dose: dose,
+                        timeText: timeText(dose.scheduledAt),
+                        onRecord: { onConfirmDose(dose) },
+                        isHighlighted: shouldHighlight(dose),
+                        slotColor: nil
+                    )
+                    .id(dose.key)
+                    .listRowSeparator(.hidden)
+                    .onTapGesture { onPresentDetail(dose) }
+                }
+            } header: {
+                Text(NSLocalizedString(titleKey, comment: "Dose section title"))
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .textCase(nil)
+            }
+        }
+    }
+}
+
+private struct SlotHeaderView: View {
+    let slot: NotificationSlot?
+    let slotColor: (NotificationSlot?) -> Color
+    let slotTitle: (NotificationSlot?) -> String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(slotColor(slot))
+                .frame(width: 10, height: 10)
+            Text(slotTitle(slot))
+                .font(.headline)
+                .foregroundStyle(.primary)
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(slotColor(slot).opacity(0.18))
+        )
+        .textCase(nil)
     }
 }
 
@@ -653,3 +903,52 @@ private struct PatientTodayRow: View {
         dose.scheduledAt.addingTimeInterval(-30 * 60)
     }
 }
+
+private struct PrnMedicationCard: View {
+    let medication: MedicationDTO
+    let isDisabled: Bool
+    let onRecord: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(medication.name)
+                    .font(.title3.weight(.semibold))
+                Text(medication.dosageText)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                if let noteText, !noteText.isEmpty {
+                    Text(noteText)
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Button(action: onRecord) {
+                Text(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
+                    .font(.title3.weight(.bold))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .disabled(isDisabled)
+            .accessibilityLabel(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(.systemBackground))
+        )
+        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
+    }
+
+    private var noteText: String? {
+        let instruction = medication.prnInstructions?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !instruction.isEmpty {
+            return instruction
+        }
+        let notes = medication.notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return notes.isEmpty ? nil : notes
+    }
+}
+

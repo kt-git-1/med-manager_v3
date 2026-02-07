@@ -76,6 +76,8 @@ export async function PATCH(
     const body = await request.json();
     const input = {
       ...body,
+      isPrn: body.isPrn,
+      prnInstructions: body.prnInstructions,
       startDate: parseDate(body.startDate),
       endDate: parseDate(body.endDate)
     };

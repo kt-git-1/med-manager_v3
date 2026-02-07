@@ -61,6 +61,21 @@ struct MedicationFormView: View {
                 .accessibilityLabel("服用数")
             }
 
+            Section(NSLocalizedString("medication.form.section.prn", comment: "PRN section")) {
+                Toggle(
+                    NSLocalizedString("medication.form.prn.toggle", comment: "PRN toggle"),
+                    isOn: $viewModel.isPrn
+                )
+                .accessibilityLabel("頓服設定")
+                if viewModel.isPrn {
+                    TextField(
+                        NSLocalizedString("medication.form.prn.instructions", comment: "PRN instructions"),
+                        text: $viewModel.prnInstructions
+                    )
+                    .accessibilityLabel("頓服の説明")
+                }
+            }
+
             Section(NSLocalizedString("medication.form.section.period", comment: "Period")) {
                 DatePicker(NSLocalizedString("medication.form.startDate", comment: "Start date"), selection: $viewModel.startDate, displayedComponents: .date)
                     .accessibilityLabel("開始日")
@@ -79,94 +94,96 @@ struct MedicationFormView: View {
                 }
             }
 
-            Section(NSLocalizedString("medication.form.section.schedule", comment: "Schedule")) {
-                Picker(
-                    NSLocalizedString("medication.form.schedule.frequency", comment: "Schedule frequency"),
-                    selection: $viewModel.scheduleFrequency
-                ) {
-                    Text(NSLocalizedString("medication.form.schedule.daily", comment: "Daily")).tag(ScheduleFrequency.daily)
-                    Text(NSLocalizedString("medication.form.schedule.weekly", comment: "Weekly")).tag(ScheduleFrequency.weekly)
-                }
-                .pickerStyle(.segmented)
+            if !viewModel.isPrn {
+                Section(NSLocalizedString("medication.form.section.schedule", comment: "Schedule")) {
+                    Picker(
+                        NSLocalizedString("medication.form.schedule.frequency", comment: "Schedule frequency"),
+                        selection: $viewModel.scheduleFrequency
+                    ) {
+                        Text(NSLocalizedString("medication.form.schedule.daily", comment: "Daily")).tag(ScheduleFrequency.daily)
+                        Text(NSLocalizedString("medication.form.schedule.weekly", comment: "Weekly")).tag(ScheduleFrequency.weekly)
+                    }
+                    .pickerStyle(.segmented)
 
-                if viewModel.scheduleFrequency == .weekly {
+                    if viewModel.scheduleFrequency == .weekly {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(NSLocalizedString("medication.form.schedule.weekdays", comment: "Weekdays"))
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            LazyVGrid(columns: weekdayColumns, spacing: 8) {
+                                ForEach(ScheduleDay.allCases) { day in
+                                    let isSelected = viewModel.selectedDays.contains(day)
+                                    Button {
+                                        if isSelected {
+                                            viewModel.selectedDays.remove(day)
+                                        } else {
+                                            viewModel.selectedDays.insert(day)
+                                        }
+                                    } label: {
+                                        Text(day.shortLabel)
+                                            .font(.body.weight(.semibold))
+                                            .frame(maxWidth: .infinity, minHeight: 36)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .fill(isSelected ? Color.accentColor : Color(.secondarySystemBackground))
+                                            )
+                                            .foregroundColor(isSelected ? .white : .primary)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel("曜日 \(day.shortLabel)")
+                                    .accessibilityValue(isSelected ? "選択中" : "未選択")
+                                }
+                            }
+                        }
+                    }
+
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(NSLocalizedString("medication.form.schedule.weekdays", comment: "Weekdays"))
+                        Text(NSLocalizedString("medication.form.schedule.times", comment: "Times"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                        LazyVGrid(columns: weekdayColumns, spacing: 8) {
-                            ForEach(ScheduleDay.allCases) { day in
-                                let isSelected = viewModel.selectedDays.contains(day)
+                        LazyVGrid(columns: timeColumns, spacing: 12) {
+                            ForEach(ScheduleTimeSlot.allCases) { slot in
+                                let isSelected = viewModel.selectedTimeSlots.contains(slot)
                                 Button {
                                     if isSelected {
-                                        viewModel.selectedDays.remove(day)
+                                        viewModel.selectedTimeSlots.remove(slot)
                                     } else {
-                                        viewModel.selectedDays.insert(day)
+                                        viewModel.selectedTimeSlots.insert(slot)
                                     }
                                 } label: {
-                                    Text(day.shortLabel)
-                                        .font(.body.weight(.semibold))
-                                        .frame(maxWidth: .infinity, minHeight: 36)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .fill(isSelected ? Color.accentColor : Color(.secondarySystemBackground))
-                                        )
-                                        .foregroundColor(isSelected ? .white : .primary)
+                                    HStack(spacing: 12) {
+                                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                                            .foregroundColor(isSelected ? .accentColor : .secondary)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(slot.label)
+                                                .font(.body.weight(.semibold))
+                                            Text(viewModel.timeValue(for: slot))
+                                                .font(.footnote)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        Spacer()
+                                    }
+                                    .frame(maxWidth: .infinity, minHeight: 44)
+                                    .padding(.horizontal, 12)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color(.secondarySystemBackground))
+                                    )
                                 }
                                 .buttonStyle(.plain)
-                                .accessibilityLabel("曜日 \(day.shortLabel)")
+                                .accessibilityLabel("\(slot.label) \(viewModel.timeValue(for: slot))")
                                 .accessibilityValue(isSelected ? "選択中" : "未選択")
                             }
                         }
                     }
-                }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(NSLocalizedString("medication.form.schedule.times", comment: "Times"))
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    LazyVGrid(columns: timeColumns, spacing: 12) {
-                        ForEach(ScheduleTimeSlot.allCases) { slot in
-                            let isSelected = viewModel.selectedTimeSlots.contains(slot)
-                            Button {
-                                if isSelected {
-                                    viewModel.selectedTimeSlots.remove(slot)
-                                } else {
-                                    viewModel.selectedTimeSlots.insert(slot)
-                                }
-                            } label: {
-                                HStack(spacing: 12) {
-                                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                                        .foregroundColor(isSelected ? .accentColor : .secondary)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(slot.label)
-                                            .font(.body.weight(.semibold))
-                                        Text(viewModel.timeValue(for: slot))
-                                            .font(.footnote)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    Spacer()
-                                }
-                                .frame(maxWidth: .infinity, minHeight: 44)
-                                .padding(.horizontal, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color(.secondarySystemBackground))
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("\(slot.label) \(viewModel.timeValue(for: slot))")
-                            .accessibilityValue(isSelected ? "選択中" : "未選択")
-                        }
+                    if viewModel.scheduleIsLoading {
+                        ProgressView()
+                    } else if viewModel.scheduleNotSet && viewModel.isEditing {
+                        Text(NSLocalizedString("medication.form.schedule.unset", comment: "Schedule not set"))
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
                     }
-                }
-
-                if viewModel.scheduleIsLoading {
-                    ProgressView()
-                } else if viewModel.scheduleNotSet && viewModel.isEditing {
-                    Text(NSLocalizedString("medication.form.schedule.unset", comment: "Schedule not set"))
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
                 }
             }
 
@@ -251,6 +268,14 @@ struct MedicationFormView: View {
                 viewModel.selectedDays = []
             }
         }
+        .onChange(of: viewModel.isPrn) { _, isPrn in
+            if isPrn {
+                viewModel.selectedDays = []
+                viewModel.selectedTimeSlots = []
+                viewModel.scheduleFrequency = .daily
+                viewModel.scheduleNotSet = false
+            }
+        }
         .alert(
             NSLocalizedString("medication.form.delete.confirm.title", comment: "Delete confirm title"),
             isPresented: $showingDeleteConfirm
@@ -268,6 +293,11 @@ struct MedicationFormView: View {
             }
         } message: {
             Text(NSLocalizedString("medication.form.delete.confirm.message", comment: "Delete confirm message"))
+        }
+        .overlay {
+            if viewModel.isSubmitting || viewModel.isDeleting {
+                updatingOverlay
+            }
         }
     }
 
@@ -313,5 +343,22 @@ struct MedicationFormView: View {
             get: { Int(text.wrappedValue) ?? 0 },
             set: { text.wrappedValue = String(max(0, $0)) }
         )
+    }
+
+    private var updatingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.2)
+                .ignoresSafeArea()
+            VStack {
+                Spacer()
+                LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
+                    .padding(16)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .shadow(radius: 6)
+                Spacer()
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .accessibilityIdentifier("MedicationFormUpdatingOverlay")
     }
 }

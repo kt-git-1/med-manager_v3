@@ -231,6 +231,27 @@ final class APIClient {
         return try decoder.decode(DoseRecordResponseDTO.self, from: data).data
     }
 
+    func createPrnDoseRecord(
+        patientId: String,
+        input: PrnDoseRecordCreateRequestDTO
+    ) async throws -> PrnDoseRecordDTO {
+        let url = baseURL.appendingPathComponent("api/patients/\(patientId)/prn-dose-records")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        request.httpBody = try encoder.encode(input)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(PrnDoseRecordCreateResponseDTO.self, from: data).record
+    }
+
     func fetchCaregiverToday(patientId: String? = nil) async throws -> [ScheduleDoseDTO] {
         let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
         let url = baseURL.appendingPathComponent("api/patients/\(resolvedPatientId)/today")
@@ -505,6 +526,8 @@ final class APIClient {
                 dosageStrengthValue: input.dosageStrengthValue,
                 dosageStrengthUnit: input.dosageStrengthUnit,
                 notes: input.notes,
+                isPrn: input.isPrn,
+                prnInstructions: input.prnInstructions,
                 startDate: input.startDate,
                 endDate: input.endDate,
                 inventoryCount: input.inventoryCount,

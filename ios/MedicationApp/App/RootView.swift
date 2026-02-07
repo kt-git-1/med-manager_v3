@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct RootView: View {
     @EnvironmentObject private var sessionStore: SessionStore
@@ -25,6 +26,12 @@ struct RootView: View {
                 }
             }
         }
+        .contentShape(Rectangle())
+        .simultaneousGesture(
+            TapGesture().onEnded {
+                dismissKeyboard()
+            }
+        )
         .overlay(alignment: .top) {
             if let banner = globalBannerPresenter.banner {
                 GlobalBannerView(banner: banner)
@@ -42,5 +49,9 @@ struct RootView: View {
                 duration: 6
             )
         }
+    }
+
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
