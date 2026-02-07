@@ -144,6 +144,7 @@ struct HistoryMonthView: View {
     private func dayCell(for date: Date) -> some View {
         let dateKey = HistoryMonthView.dateKeyFormatter.string(from: date)
         let summary = summariesByDate[dateKey]
+        let prnCount = prnCountByDate[dateKey]
         let dayNumber = Self.calendar.component(.day, from: date)
         let isSelected = selectedDate.map { Self.calendar.isDate($0, inSameDayAs: date) } ?? false
 
@@ -158,6 +159,11 @@ struct HistoryMonthView: View {
                     slotDot(summary?.noon ?? .none, slotKey: "noon")
                     slotDot(summary?.evening ?? .none, slotKey: "evening")
                     slotDot(summary?.bedtime ?? .none, slotKey: "bedtime")
+                }
+                if let prnCount, prnCount > 0 {
+                    Text(prnCountLabel(count: prnCount))
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(isSelected ? Color.white.opacity(0.9) : Color.secondary)
                 }
             }
             .padding(.vertical, 6)
@@ -241,6 +247,10 @@ struct HistoryMonthView: View {
     private var summariesByDate: [String: HistorySlotSummaryDTO] {
         guard let month = viewModel.month else { return [:] }
         return Dictionary(uniqueKeysWithValues: month.days.map { ($0.date, $0.slotSummary) })
+    }
+
+    private var prnCountByDate: [String: Int] {
+        viewModel.month?.prnCountByDay ?? [:]
     }
 
     private var currentMonthStart: Date {
@@ -356,5 +366,12 @@ struct HistoryMonthView: View {
         case .none:
             return ""
         }
+    }
+
+    private func prnCountLabel(count: Int) -> String {
+        String(
+            format: NSLocalizedString("history.month.prn.count", comment: "PRN count label"),
+            count
+        )
     }
 }

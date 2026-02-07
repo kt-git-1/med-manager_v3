@@ -16,6 +16,7 @@
 		AFA1B2C3D4E5F60718293A04 /* InventoryAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA1B2C3D4E5F60718293B04 /* InventoryAPI.swift */; };
 		AFA1B2C3D4E5F60718293A05 /* InventoryDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA1B2C3D4E5F60718293B05 /* InventoryDTO.swift */; };
 		1C2D3E4F5A6B7C8D9E0F1A2B /* MedicationDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B3C4D5E6F708192A3B4C5D6 /* MedicationDTO.swift */; };
+		3E4F5A6B7C8D9E0F1A2B3C4D /* PrnDoseRecordDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F5A6B7C8D9E0F1A2B3C4D5E /* PrnDoseRecordDTO.swift */; };
 		2A2B3C4D5E6F708192A3B4C7 /* HistoryMonthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4C7 /* HistoryMonthView.swift */; };
 		2A2B3C4D5E6F708192A3B4C8 /* HistoryDayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4C8 /* HistoryDayDetailView.swift */; };
 		2A2B3C4D5E6F708192A3B4C9 /* HistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4C9 /* HistoryViewModel.swift */; };
@@ -101,6 +102,7 @@
 		1A2B3C4D5E6F708192A3B4C9 /* HistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewModel.swift; sourceTree = "<group>"; };
 		1A2B3C4D5E6F708192A3B4CA /* CaregiverHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverHistoryView.swift; sourceTree = "<group>"; };
 		2B3C4D5E6F708192A3B4C5D6 /* MedicationDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationDTO.swift; sourceTree = "<group>"; };
+		4F5A6B7C8D9E0F1A2B3C4D5E /* PrnDoseRecordDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrnDoseRecordDTO.swift; sourceTree = "<group>"; };
 		A7B8C9D0E1F2031425364758 /* HistoryDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryDTO.swift; sourceTree = "<group>"; };
 		2F3B3EC234D1D71D44BC2C6E /* LinkingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkingService.swift; sourceTree = "<group>"; };
 		30F0665AE9C17BFB7BD43D41 /* MedicationApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MedicationApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -192,6 +194,7 @@
 				AFA1B2C3D4E5F60718293B05 /* InventoryDTO.swift */,
 				2B3C4D5E6F708192A3B4C5D6 /* MedicationDTO.swift */,
 				A1B2C3D4E5F6A7B8C9D0E200 /* PatientDTO.swift */,
+				4F5A6B7C8D9E0F1A2B3C4D5E /* PrnDoseRecordDTO.swift */,
 			);
 			path = DTOs;
 			sourceTree = "<group>";
@@ -513,6 +516,7 @@
 				2A2B3C4D5E6F708192A3B4C9 /* HistoryViewModel.swift in Sources */,
 				AFA1B2C3D4E5F60718293A05 /* InventoryDTO.swift in Sources */,
 				1C2D3E4F5A6B7C8D9E0F1A2B /* MedicationDTO.swift in Sources */,
+				3E4F5A6B7C8D9E0F1A2B3C4D /* PrnDoseRecordDTO.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E201 /* PatientDTO.swift in Sources */,
 				86383151B8A2885DF215EF2F /* LinkCodeEntryView.swift in Sources */,
 				60E08AF3CCF0AE7F4FB97E8B /* LinkingService.swift in Sources */,

@@ -12,6 +12,7 @@ import {
   getScheduleWithStatus
 } from "../../../../../../src/services/scheduleService";
 import { buildSlotSummary, groupDosesByLocalDate } from "../../../../../../src/services/scheduleResponse";
+import { listPrnHistoryItemsByRange } from "../../../../../../src/services/prnDoseRecordService";
 import { validateYearMonth } from "../../../../../../src/validators/schedule";
 
 export const runtime = "nodejs";
@@ -51,6 +52,12 @@ export async function GET(
       historyTimeZone
     );
     const grouped = groupDosesByLocalDate(doses, historyTimeZone);
+    const prn = await listPrnHistoryItemsByRange({
+      patientId,
+      from: range.from,
+      to: range.to,
+      timeZone: historyTimeZone
+    });
 
     const days: { date: string; slotSummary: ReturnType<typeof buildSlotSummary> }[] = [];
     const cursor = new Date(range.from);
@@ -64,7 +71,7 @@ export async function GET(
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 
-    return new Response(JSON.stringify({ year, month, days }), {
+    return new Response(JSON.stringify({ year, month, days, prnCountByDay: prn.countByDay }), {
       headers: { "content-type": "application/json" }
     });
   } catch (error) {

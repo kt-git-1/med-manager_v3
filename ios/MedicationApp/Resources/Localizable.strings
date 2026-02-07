@@ -56,11 +56,14 @@
 "medication.list.section.expired" = "期間終了";
 "medication.list.startDate" = "開始日";
 "medication.list.nextDose" = "次回予定";
+"medication.list.badge.scheduled" = "定時";
+"medication.list.badge.prn" = "頓服";
 "medication.toast.created" = "薬を追加しました";
 "medication.toast.updated" = "薬を編集しました";
 
 /* Medication form */
 "medication.form.section.basic" = "基本情報";
+"medication.form.section.prn" = "頓服";
 "medication.form.section.period" = "期間";
 "medication.form.section.schedule" = "スケジュール";
 "medication.form.section.inventory" = "在庫";
@@ -70,6 +73,8 @@
 "medication.form.dosage.value" = "用量 (数値)";
 "medication.form.dosage.unit" = "用量単位";
 "medication.form.dose.count" = "服用数/回";
+"medication.form.prn.toggle" = "頓服（必要時に服用）";
+"medication.form.prn.instructions" = "頓服の説明（任意）";
 "medication.form.startDate" = "開始日";
 "medication.form.endDate" = "終了日";
 "medication.form.endDate.enabled" = "終了日を設定";
@@ -125,12 +130,18 @@
 "history.status.pending" = "未記録";
 "history.status.taken" = "記録済み";
 "history.status.missed" = "飲み忘れ";
+"history.month.prn.count" = "頓服 %d回";
 "patient.today.empty.title" = "予定がありません";
 "patient.today.empty.message" = "今日の服用予定はありません";
 "patient.today.taken.button" = "飲んだ";
 "patient.today.confirm.title" = "飲みましたか？";
 "patient.today.confirm.message" = "%@（%@）\n患者モードでは取り消しできません";
 "patient.today.confirm.action" = "記録する";
+"patient.today.prn.section.title" = "頓服";
+"patient.today.prn.confirm.title" = "飲みましたか？";
+"patient.today.prn.confirm.message" = "%@を今飲みましたか？";
+"patient.today.prn.confirm.action" = "飲んだ";
+"patient.today.prn.recorded" = "頓服を記録しました";
 "patient.today.status.pending" = "未記録";
 "patient.today.status.taken" = "記録済み";
 "patient.today.status.missed" = "飲み忘れ";

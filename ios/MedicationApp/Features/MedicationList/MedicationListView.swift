@@ -306,9 +306,14 @@ struct MedicationListView: View {
     private func medicationRow(_ item: MedicationListItem) -> some View {
         let rowContent = HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(item.name)
-                    .font(.title3.weight(.semibold))
-                    .accessibilityLabel("薬名 \(item.name)")
+                HStack(spacing: 8) {
+                    Text(item.name)
+                        .font(.title3.weight(.semibold))
+                        .accessibilityLabel("薬名 \(item.name)")
+                    if sessionStore.mode == .caregiver {
+                        medicationTypeBadge(isPrn: item.medication.isPrn)
+                    }
+                }
                 Text("\(NSLocalizedString("medication.list.startDate", comment: "Start date")): \(item.startDateText)")
                     .font(.body)
                     .accessibilityLabel("開始日 \(item.startDateText)")
@@ -345,5 +350,19 @@ struct MedicationListView: View {
                 .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                 .listRowSeparator(.hidden)
         }
+    }
+
+    private func medicationTypeBadge(isPrn: Bool) -> some View {
+        let text = isPrn
+            ? NSLocalizedString("medication.list.badge.prn", comment: "PRN badge")
+            : NSLocalizedString("medication.list.badge.scheduled", comment: "Scheduled badge")
+        let color: Color = isPrn ? .purple : .blue
+        return Text(text)
+            .font(.caption.weight(.bold))
+            .foregroundColor(color)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(color.opacity(0.15), in: Capsule())
+            .accessibilityLabel(text)
     }
 }

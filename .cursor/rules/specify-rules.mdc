@@ -29,9 +29,9 @@ npm test && npm run lint
 TypeScript (Node.js 20+), Swift 5.9+: Follow standard conventions
 
 ## Recent Changes
+- 007-prn-medications: Added TypeScript (Node.js >=20), Swift 6.2.1 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Realtime; SwiftUI, XCTes
 - 006-inventory-tracking: Added TypeScript (Node.js >=20), Swift 6.2.1 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Realtime; SwiftUI, XCTes
 - 005-medication-notifications: Added TypeScript (Node.js >=20), Swift 6.2.1 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Realtime; SwiftUI, UserNotifications, XCTes
-- 004-history-schedule-view: Added TypeScript (Node.js >=20), Swift (SwiftUI, iOS 17+ assumed by simulator target) + Next.js App Router, Prisma, Vitest, Playwright; SwiftUI, XCTes
 
 
 <!-- MANUAL ADDITIONS START -->

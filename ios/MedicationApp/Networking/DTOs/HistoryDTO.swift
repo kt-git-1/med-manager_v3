@@ -36,12 +36,14 @@ struct HistoryMonthResponseDTO: Decodable, Equatable {
     let year: Int
     let month: Int
     let days: [HistoryDaySummaryDTO]
+    let prnCountByDay: [String: Int]?
 
     enum CodingKeys: String, CodingKey {
         case year
         case month
         case days
         case monthSummary
+        case prnCountByDay
     }
 
     init(from decoder: Decoder) throws {
@@ -53,6 +55,7 @@ struct HistoryMonthResponseDTO: Decodable, Equatable {
         } else {
             self.days = try container.decode([HistoryDaySummaryDTO].self, forKey: .monthSummary)
         }
+        prnCountByDay = try container.decodeIfPresent([String: Int].self, forKey: .prnCountByDay)
     }
 }
 
@@ -66,14 +69,24 @@ struct HistoryDayItemDTO: Decodable, Equatable {
     let effectiveStatus: HistoryDoseStatusDTO
 }
 
+struct PrnHistoryItemDTO: Decodable, Equatable {
+    let medicationId: String
+    let medicationName: String
+    let takenAt: Date
+    let quantityTaken: Int
+    let actorType: PrnActorTypeDTO
+}
+
 struct HistoryDayResponseDTO: Decodable, Equatable {
     let date: String
     let doses: [HistoryDayItemDTO]
+    let prnItems: [PrnHistoryItemDTO]
 
     enum CodingKeys: String, CodingKey {
         case date
         case doses
         case dayDetails
+        case prnItems
     }
 
     init(from decoder: Decoder) throws {
@@ -84,5 +97,6 @@ struct HistoryDayResponseDTO: Decodable, Equatable {
         } else {
             self.doses = try container.decode([HistoryDayItemDTO].self, forKey: .dayDetails)
         }
+        prnItems = try container.decodeIfPresent([PrnHistoryItemDTO].self, forKey: .prnItems) ?? []
     }
 }

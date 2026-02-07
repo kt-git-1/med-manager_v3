@@ -42,7 +42,7 @@ struct HistoryDayDetailView: View {
                     .buttonStyle(.borderedProminent)
                     .accessibilityIdentifier("HistoryDayRetryButton")
                 }
-            } else if sortedDoses.isEmpty {
+            } else if timelineItems.isEmpty {
                 EmptyStateView(
                     title: NSLocalizedString("history.day.empty.title", comment: "History day empty title"),
                     message: NSLocalizedString("history.day.empty.message", comment: "History day empty message")
@@ -50,13 +50,22 @@ struct HistoryDayDetailView: View {
                 .accessibilityIdentifier("HistoryDayEmptyState")
             } else {
                 VStack(spacing: 12) {
-                    ForEach(Array(sortedDoses.enumerated()), id: \.offset) { _, dose in
-                        HistoryDayRow(
-                            timeText: HistoryDayDetailView.timeFormatter.string(from: dose.scheduledAt),
-                            name: dose.medicationName,
-                            dosage: dose.dosageText,
-                            status: dose.effectiveStatus
-                        )
+                    ForEach(timelineItems) { item in
+                        switch item {
+                        case .scheduled(let dose):
+                            HistoryDayRow(
+                                timeText: HistoryDayDetailView.timeFormatter.string(from: dose.scheduledAt),
+                                name: dose.medicationName,
+                                dosage: dose.dosageText,
+                                status: dose.effectiveStatus
+                            )
+                        case .prn(let record):
+                            HistoryDayPrnRow(
+                                timeText: HistoryDayDetailView.timeFormatter.string(from: record.takenAt),
+                                name: record.medicationName,
+                                quantity: record.quantityTaken
+                            )
+                        }
                     }
                 }
             }
@@ -72,27 +81,16 @@ struct HistoryDayDetailView: View {
         return HistoryDayDetailView.headerFormatter.string(from: selectedDate)
     }
 
-    private var sortedDoses: [HistoryDayItemDTO] {
+    private var timelineItems: [HistoryTimelineItem] {
         let doses = viewModel.day?.doses ?? []
-        return doses.sorted { left, right in
-            let slotDiff = slotOrderIndex(left.slot) - slotOrderIndex(right.slot)
-            if slotDiff != 0 {
-                return slotDiff < 0
+        let prnItems = viewModel.day?.prnItems ?? []
+        var items = doses.map { HistoryTimelineItem.scheduled($0) }
+        items.append(contentsOf: prnItems.map { HistoryTimelineItem.prn($0) })
+        return items.sorted { left, right in
+            if left.date != right.date {
+                return left.date < right.date
             }
-            return left.medicationName.localizedCompare(right.medicationName) == .orderedAscending
-        }
-    }
-
-    private func slotOrderIndex(_ slot: HistorySlotDTO) -> Int {
-        switch slot {
-        case .morning:
-            return 0
-        case .noon:
-            return 1
-        case .evening:
-            return 2
-        case .bedtime:
-            return 3
+            return left.sortName.localizedCompare(right.sortName) == .orderedAscending
         }
     }
 
@@ -175,5 +173,68 @@ private struct HistoryDayRow: View {
         case .pending:
             return Color(.secondarySystemBackground)
         }
+    }
+}
+
+private enum HistoryTimelineItem: Identifiable {
+    case scheduled(HistoryDayItemDTO)
+    case prn(PrnHistoryItemDTO)
+
+    var id: String {
+        switch self {
+        case .scheduled(let dose):
+            return "\(dose.medicationId)-\(dose.scheduledAt.timeIntervalSince1970)"
+        case .prn(let record):
+            return "\(record.medicationId)-\(record.takenAt.timeIntervalSince1970)"
+        }
+    }
+
+    var date: Date {
+        switch self {
+        case .scheduled(let dose):
+            return dose.scheduledAt
+        case .prn(let record):
+            return record.takenAt
+        }
+    }
+
+    var sortName: String {
+        switch self {
+        case .scheduled(let dose):
+            return dose.medicationName
+        case .prn(let record):
+            return record.medicationName
+        }
+    }
+}
+
+private struct HistoryDayPrnRow: View {
+    let timeText: String
+    let name: String
+    let quantity: Int
+
+    private var prnPrefix: String {
+        NSLocalizedString("medication.list.badge.prn", comment: "PRN badge")
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(timeText)
+                    .font(.headline)
+                Text("\(prnPrefix): \(name)")
+                    .font(.title3.weight(.semibold))
+                Text("1回\(quantity)錠")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .shadow(color: Color.black.opacity(0.05), radius: 6, y: 2)
     }
 }
