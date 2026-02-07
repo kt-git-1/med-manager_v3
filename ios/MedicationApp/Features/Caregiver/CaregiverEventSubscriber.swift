@@ -42,17 +42,25 @@ final class CaregiverEventSubscriber: ObservableObject {
     }
 
     func start() {
-        guard isAuthorized else { return }
-        guard webSocketTask == nil else { return }
+        guard isAuthorized else {
+            print("CaregiverEventSubscriber: start() blocked - not authorized")
+            return
+        }
+        guard webSocketTask == nil else {
+            print("CaregiverEventSubscriber: start() blocked - already running")
+            return
+        }
         guard let config = supabaseConfig() else {
             print("CaregiverEventSubscriber: missing SUPABASE config")
             return
         }
         guard let accessToken = caregiverAccessToken else {
+            print("CaregiverEventSubscriber: missing caregiver access token")
             handleUnauthorized()
             return
         }
         guard let websocketURL = websocketURL(for: config) else { return }
+        print("CaregiverEventSubscriber: start() connect \(websocketURL)")
         var request = URLRequest(url: websocketURL)
         request.addValue(config.anonKey, forHTTPHeaderField: "apikey")
         request.addValue("Bearer \(config.anonKey)", forHTTPHeaderField: "Authorization")
@@ -92,7 +100,6 @@ final class CaregiverEventSubscriber: ObservableObject {
 
     func handleIncomingEvent(_ event: DoseRecordEvent) {
         guard isAuthorized else { return }
-        guard event.withinTime else { return }
         latestEvent = event
     }
 
@@ -151,6 +158,7 @@ final class CaregiverEventSubscriber: ObservableObject {
         guard let data else { return }
         guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let event = object["event"] as? String else { return }
+        print("CaregiverEventSubscriber: event=\(event)")
         if event == "phx_reply" {
             if let payload = object["payload"] as? [String: Any],
                let status = payload["status"] as? String,
@@ -164,16 +172,100 @@ final class CaregiverEventSubscriber: ObservableObject {
             return
         }
         if event == "postgres_changes" {
-            if let record = extractRecord(from: object),
-               let recordData = try? JSONSerialization.data(withJSONObject: record) {
-                if let event = try? decoder.decode(DoseRecordEvent.self, from: recordData) {
+            if let record = extractRecord(from: object) {
+                print("CaregiverEventSubscriber: record=\(record)")
+                if let recordData = try? JSONSerialization.data(withJSONObject: record) {
+                    if let event = try? decoder.decode(DoseRecordEvent.self, from: recordData) {
+                        print("CaregiverEventSubscriber: decoded DoseRecordEvent id=\(event.id) withinTime=\(event.withinTime) isPrn=\(event.isPrn ?? false) medicationName=\(event.medicationName ?? "nil")")
+                        handleIncomingEvent(event)
+                        return
+                    }
+                    if let event = try? decoder.decode(InventoryAlertEvent.self, from: recordData) {
+                        print("CaregiverEventSubscriber: decoded InventoryAlertEvent id=\(event.id) type=\(event.type)")
+                        handleIncomingInventoryEvent(event)
+                        return
+                    }
+                }
+                if let event = parseDoseRecordEvent(from: record) {
+                    print("CaregiverEventSubscriber: parsed DoseRecordEvent id=\(event.id) withinTime=\(event.withinTime) isPrn=\(event.isPrn ?? false) medicationName=\(event.medicationName ?? "nil")")
                     handleIncomingEvent(event)
-                } else if let event = try? decoder.decode(InventoryAlertEvent.self, from: recordData) {
-                    handleIncomingInventoryEvent(event)
+                } else {
+                    print("CaregiverEventSubscriber: failed to parse record payload")
                 }
             }
         }
     }
+
+    private func parseDoseRecordEvent(from record: [String: Any]) -> DoseRecordEvent? {
+        guard let id = record["id"] as? String,
+              let patientId = record["patientId"] as? String,
+              let displayName = record["displayName"] as? String,
+              let scheduledAtRaw = record["scheduledAt"] as? String,
+              let takenAtRaw = record["takenAt"] as? String,
+              let scheduledAt = parseDate(scheduledAtRaw),
+              let takenAt = parseDate(takenAtRaw) else {
+            return nil
+        }
+        let withinTimeValue = record["withinTime"]
+        let withinTime = (withinTimeValue as? Bool)
+            ?? (withinTimeValue as? NSNumber)?.boolValue
+            ?? false
+        let medicationName = record["medicationName"] as? String
+        let isPrnValue = record["isPrn"]
+        let isPrn = (isPrnValue as? Bool) ?? (isPrnValue as? NSNumber)?.boolValue
+        return DoseRecordEvent(
+            id: id,
+            patientId: patientId,
+            displayName: displayName,
+            scheduledAt: scheduledAt,
+            takenAt: takenAt,
+            withinTime: withinTime,
+            medicationName: medicationName,
+            isPrn: isPrn
+        )
+    }
+
+    private func parseDate(_ value: String) -> Date? {
+        if let date = Self.isoFormatter.date(from: value) {
+            return date
+        }
+        if !value.contains("Z") && !value.contains("+") {
+            if let date = Self.isoFormatter.date(from: "\(value)Z") {
+                return date
+            }
+            if let date = Self.noZoneFormatter.date(from: value) {
+                return date
+            }
+            if let date = Self.noZoneFormatterNoFraction.date(from: value) {
+                return date
+            }
+        }
+        return Self.noZoneFormatter.date(from: value) ?? Self.noZoneFormatterNoFraction.date(from: value)
+    }
+
+    private static let isoFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    private static let noZoneFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+        return formatter
+    }()
+
+    private static let noZoneFormatterNoFraction: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        return formatter
+    }()
 
     private func extractRecord(from payload: [String: Any]) -> [String: Any]? {
         if let payload = payload["payload"] as? [String: Any] {
@@ -190,14 +282,14 @@ final class CaregiverEventSubscriber: ObservableObject {
 
     private func sendJoin(accessToken: String) async {
         let doseRecordJoin: [String: Any] = [
-            "topic": "realtime:public:dose_record_events",
+            "topic": "realtime:public:DoseRecordEvent",
             "event": "phx_join",
             "payload": [
                 "config": [
                     "broadcast": ["self": false],
                     "presence": ["key": ""],
                     "postgres_changes": [
-                        ["event": "INSERT", "schema": "public", "table": "dose_record_events"]
+                        ["event": "INSERT", "schema": "public", "table": "DoseRecordEvent"]
                     ]
                 ],
                 "access_token": accessToken

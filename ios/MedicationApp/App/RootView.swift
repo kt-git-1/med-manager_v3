@@ -37,6 +37,7 @@ struct RootView: View {
                 GlobalBannerView(banner: banner)
             }
         }
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: globalBannerPresenter.banner)
         .onAppear {
             caregiverSessionController.updateScenePhase(scenePhase)
         }

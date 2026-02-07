@@ -107,7 +107,9 @@ private struct PatientTodayRootView: View {
                         destination: PrnMedicationListView(
                             medications: viewModel.prnMedications,
                             isDisabled: viewModel.isUpdating || viewModel.isPrnSubmitting,
-                            onConfirmPrn: { viewModel.confirmPrnRecord(for: $0) }
+                            onRecordConfirmed: { medication, onSuccess in
+                                viewModel.recordPrnDose(for: medication, onSuccess: onSuccess)
+                            }
                         )
                     ) {
                         Text(NSLocalizedString("patient.today.prn.section.title", comment: "PRN section"))
@@ -500,7 +502,10 @@ private struct PatientTodayListView: View {
 private struct PrnMedicationListView: View {
     let medications: [MedicationDTO]
     let isDisabled: Bool
-    let onConfirmPrn: (MedicationDTO) -> Void
+    let onRecordConfirmed: (MedicationDTO, @escaping () -> Void) -> Void
+    @State private var showingConfirm = false
+    @State private var selectedMedication: MedicationDTO?
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         List {
@@ -508,7 +513,10 @@ private struct PrnMedicationListView: View {
                 PrnMedicationCard(
                     medication: medication,
                     isDisabled: isDisabled,
-                    onRecord: { onConfirmPrn(medication) }
+                    onRecord: {
+                        selectedMedication = medication
+                        showingConfirm = true
+                    }
                 )
                 .listRowSeparator(.hidden)
             }
@@ -518,6 +526,45 @@ private struct PrnMedicationListView: View {
         .background(Color.white)
         .navigationTitle(NSLocalizedString("patient.today.prn.section.title", comment: "PRN section"))
         .navigationBarTitleDisplayMode(.inline)
+        .overlay {
+            if isDisabled {
+                ZStack {
+                    Color.black.opacity(0.2)
+                        .ignoresSafeArea()
+                    VStack {
+                        Spacer()
+                        LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
+                            .padding(16)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .shadow(radius: 6)
+                        Spacer()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            }
+        }
+        .alert(
+            NSLocalizedString("patient.today.prn.confirm.title", comment: "PRN confirm title"),
+            isPresented: $showingConfirm,
+            presenting: selectedMedication
+        ) { medication in
+            Button(NSLocalizedString("patient.today.prn.confirm.action", comment: "PRN confirm action")) {
+                onRecordConfirmed(medication) {
+                    dismiss()
+                }
+                selectedMedication = nil
+            }
+            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {
+                selectedMedication = nil
+            }
+        } message: { medication in
+            Text(
+                String(
+                    format: NSLocalizedString("patient.today.prn.confirm.message", comment: "PRN confirm message"),
+                    medication.name
+                )
+            )
+        }
     }
 }
 

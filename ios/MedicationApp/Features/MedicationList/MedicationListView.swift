@@ -159,13 +159,13 @@ struct MedicationListView: View {
                                 .listRowBackground(Color.clear)
                         }
                         if sessionStore.mode == .caregiver {
-                            if !activeItems.isEmpty {
+                            if !activeScheduledItems.isEmpty {
                                 Section {
-                                    ForEach(activeItems) { item in
+                                    ForEach(activeScheduledItems) { item in
                                         medicationRow(item)
                                     }
                                 } header: {
-                                    Text(NSLocalizedString("medication.list.section.title", comment: "Medication list section"))
+                                    Text(NSLocalizedString("medication.list.section.scheduled", comment: "Scheduled section"))
                                         .font(.headline)
                                         .foregroundColor(.secondary)
                                         .textCase(nil)
@@ -173,13 +173,41 @@ struct MedicationListView: View {
                                 .listRowSeparator(.hidden)
                             }
 
-                            if !expiredItems.isEmpty {
+                            if !activePrnItems.isEmpty {
                                 Section {
-                                    ForEach(expiredItems) { item in
+                                    ForEach(activePrnItems) { item in
                                         medicationRow(item)
                                     }
                                 } header: {
-                                    Text(NSLocalizedString("medication.list.section.expired", comment: "Expired section"))
+                                    Text(NSLocalizedString("medication.list.section.prn", comment: "PRN section"))
+                                        .font(.headline)
+                                        .foregroundColor(.secondary)
+                                        .textCase(nil)
+                                }
+                                .listRowSeparator(.hidden)
+                            }
+
+                            if !expiredScheduledItems.isEmpty {
+                                Section {
+                                    ForEach(expiredScheduledItems) { item in
+                                        medicationRow(item)
+                                    }
+                                } header: {
+                                    Text(NSLocalizedString("medication.list.section.expired.scheduled", comment: "Expired scheduled section"))
+                                        .font(.headline)
+                                        .foregroundColor(.secondary)
+                                        .textCase(nil)
+                                }
+                                .listRowSeparator(.hidden)
+                            }
+
+                            if !expiredPrnItems.isEmpty {
+                                Section {
+                                    ForEach(expiredPrnItems) { item in
+                                        medicationRow(item)
+                                    }
+                                } header: {
+                                    Text(NSLocalizedString("medication.list.section.expired.prn", comment: "Expired PRN section"))
                                         .font(.headline)
                                         .foregroundColor(.secondary)
                                         .textCase(nil)
@@ -294,6 +322,22 @@ struct MedicationListView: View {
 
     private var expiredItems: [MedicationListItem] {
         viewModel.items.filter(isExpired)
+    }
+
+    private var activeScheduledItems: [MedicationListItem] {
+        activeItems.filter { !$0.medication.isPrn }
+    }
+
+    private var activePrnItems: [MedicationListItem] {
+        activeItems.filter { $0.medication.isPrn }
+    }
+
+    private var expiredScheduledItems: [MedicationListItem] {
+        expiredItems.filter { !$0.medication.isPrn }
+    }
+
+    private var expiredPrnItems: [MedicationListItem] {
+        expiredItems.filter { $0.medication.isPrn }
     }
 
     private func isExpired(_ item: MedicationListItem) -> Bool {

@@ -31,6 +31,7 @@ struct PatientReadOnlyView: View {
                 .navigationTitle(navigationTitle)
                 .navigationBarTitleDisplayMode(navigationTitleDisplayMode)
             }
+            .id(selectedTab)
             .safeAreaInset(edge: .bottom) {
                 PatientBottomTabBar(selectedTab: $selectedTab)
             }

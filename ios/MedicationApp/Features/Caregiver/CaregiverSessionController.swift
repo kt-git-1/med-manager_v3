@@ -54,6 +54,7 @@ final class CaregiverSessionController: ObservableObject {
     }
 
     private func updateSubscription() {
+        print("CaregiverSessionController: updateSubscription foreground=\(isForeground) mode=\(sessionStore.mode?.rawValue ?? "nil") token=\(sessionStore.caregiverToken != nil)")
         guard isForeground, sessionStore.mode == .caregiver, sessionStore.caregiverToken != nil else {
             subscriber.stop()
             if sessionStore.mode != .caregiver || sessionStore.caregiverToken == nil {
@@ -82,7 +83,7 @@ final class CaregiverSessionController: ObservableObject {
             comment: "Caregiver scheduled banner"
         )
         let message = String(format: format, event.displayName, slotLabel)
-        bannerPresenter.show(message: message)
+        bannerPresenter.show(message: message, duration: 4)
     }
 
     private func scheduledSlotLabel(for date: Date) -> String {

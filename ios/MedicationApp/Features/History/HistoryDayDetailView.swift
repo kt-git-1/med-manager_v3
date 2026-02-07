@@ -229,6 +229,13 @@ private struct HistoryDayPrnRow: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            Text(prnPrefix)
+                .font(.caption.weight(.semibold))
+                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .background(Color.purple.opacity(0.18))
+                .foregroundStyle(Color.purple)
+                .clipShape(Capsule())
         }
         .padding(14)
         .background(

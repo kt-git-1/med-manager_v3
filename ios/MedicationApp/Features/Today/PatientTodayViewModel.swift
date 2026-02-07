@@ -115,8 +115,12 @@ final class PatientTodayViewModel: ObservableObject {
 
     func recordConfirmedPrnDose() {
         guard let medication = confirmPrnMedication else { return }
-        guard !isPrnSubmitting else { return }
         confirmPrnMedication = nil
+        recordPrnDose(for: medication, onSuccess: {})
+    }
+
+    func recordPrnDose(for medication: MedicationDTO, onSuccess: @escaping () -> Void) {
+        guard !isPrnSubmitting else { return }
         isUpdating = true
         isPrnSubmitting = true
         Task { @MainActor in
@@ -135,6 +139,7 @@ final class PatientTodayViewModel: ObservableObject {
                 )
                 showToast(NSLocalizedString("patient.today.prn.recorded", comment: "PRN recorded"))
                 try await refreshTodayData()
+                onSuccess()
             } catch {
                 showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
             }
