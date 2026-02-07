@@ -37,15 +37,17 @@ export async function createDoseRecordIdempotent(
 
   const withinTime =
     record.takenAt.getTime() <= record.scheduledAt.getTime() + 60 * 60 * 1000;
+
+  const medication = await getMedicationRecordForPatient(record.patientId, record.medicationId);
   await createDoseRecordEvent({
     patientId: record.patientId,
     scheduledAt: record.scheduledAt,
     takenAt: record.takenAt,
     withinTime,
-    displayName: patient.displayName
+    displayName: patient.displayName,
+    medicationName: medication?.name,
+    isPrn: medication?.isPrn ?? false
   });
-
-  const medication = await getMedicationRecordForPatient(record.patientId, record.medicationId);
   if (medication) {
     await applyInventoryDeltaForDoseRecord({
       patientId: record.patientId,

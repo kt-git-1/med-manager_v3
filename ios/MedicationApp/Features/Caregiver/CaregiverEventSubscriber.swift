@@ -7,6 +7,8 @@ struct DoseRecordEvent: Equatable, Decodable {
     let scheduledAt: Date
     let takenAt: Date
     let withinTime: Bool
+    let medicationName: String?
+    let isPrn: Bool?
 }
 
 struct InventoryAlertEvent: Equatable, Decodable {

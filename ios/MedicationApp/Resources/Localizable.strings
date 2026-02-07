@@ -241,6 +241,8 @@
 "caregiver.today.recordedBy.patient" = "本人";
 "caregiver.today.recordedBy.caregiver" = "家族";
 "caregiver.banner.withinTime" = "%@さんが時間内に薬を服用しました！";
+"caregiver.banner.scheduled" = "%@さんが%@の薬を服用しました";
+"caregiver.banner.prn" = "%@さんが頓服（%@）を服用しました";
 
 /* Patient management */
 "caregiver.patients.title" = "連携・設定";

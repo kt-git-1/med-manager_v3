@@ -100,6 +100,25 @@ private struct PatientTodayRootView: View {
                 await loadDetail(for: dose)
             }
         }
+        .toolbar {
+            if !viewModel.prnMedications.isEmpty {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink(
+                        destination: PrnMedicationListView(
+                            medications: viewModel.prnMedications,
+                            isDisabled: viewModel.isUpdating || viewModel.isPrnSubmitting,
+                            onConfirmPrn: { viewModel.confirmPrnRecord(for: $0) }
+                        )
+                    ) {
+                        Text(NSLocalizedString("patient.today.prn.section.title", comment: "PRN section"))
+                            .font(.title3.weight(.semibold))
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 14)
+                    }
+                    .accessibilityIdentifier("PatientTodayPrnListButton")
+                }
+            }
+        }
         .sensoryFeedback(.success, trigger: viewModel.toastMessage)
         .accessibilityIdentifier("PatientTodayView")
         .environmentObject(sessionStore)
@@ -445,11 +464,6 @@ private struct PatientTodayListView: View {
 
     var body: some View {
         List {
-            PrnSectionView(
-                medications: viewModel.prnMedications,
-                isDisabled: viewModel.isUpdating || viewModel.isPrnSubmitting,
-                onConfirmPrn: onConfirmPrn
-            )
             PlannedSectionsView(
                 slotSections: slotSections,
                 timeText: timeText,
@@ -483,31 +497,27 @@ private struct PatientTodayListView: View {
     }
 }
 
-private struct PrnSectionView: View {
+private struct PrnMedicationListView: View {
     let medications: [MedicationDTO]
     let isDisabled: Bool
     let onConfirmPrn: (MedicationDTO) -> Void
 
     var body: some View {
-        if medications.isEmpty {
-            EmptyView()
-        } else {
-            Section {
-                ForEach(medications) { medication in
-                    PrnMedicationCard(
-                        medication: medication,
-                        isDisabled: isDisabled,
-                        onRecord: { onConfirmPrn(medication) }
-                    )
-                    .listRowSeparator(.hidden)
-                }
-            } header: {
-                Text(NSLocalizedString("patient.today.prn.section.title", comment: "PRN section"))
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                    .textCase(nil)
+        List {
+            ForEach(medications) { medication in
+                PrnMedicationCard(
+                    medication: medication,
+                    isDisabled: isDisabled,
+                    onRecord: { onConfirmPrn(medication) }
+                )
+                .listRowSeparator(.hidden)
             }
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Color.white)
+        .navigationTitle(NSLocalizedString("patient.today.prn.section.title", comment: "PRN section"))
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -914,7 +924,7 @@ private struct PrnMedicationCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(medication.name)
                     .font(.title3.weight(.semibold))
-                Text(medication.dosageText)
+                Text("1回\(medication.doseCountPerIntake)錠")
                     .font(.body)
                     .foregroundColor(.secondary)
                 if let noteText, !noteText.isEmpty {
