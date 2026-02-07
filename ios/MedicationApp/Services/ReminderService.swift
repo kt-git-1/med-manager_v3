@@ -7,9 +7,14 @@ final class ReminderService {
     private let calendar: Calendar
     private let dateKeyFormatter: DateFormatter
     private let reminderPrefix = "dose-reminder-"
+    private let preferencesStore: NotificationPreferencesStore
 
-    init(notificationCenter: UNUserNotificationCenter = .current()) {
+    init(
+        notificationCenter: UNUserNotificationCenter = .current(),
+        preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore()
+    ) {
         self.notificationCenter = notificationCenter
+        self.preferencesStore = preferencesStore
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
         self.calendar = calendar
@@ -74,8 +79,9 @@ final class ReminderService {
 
     private func scheduledDate(for slot: NotificationSlot, on date: Date) -> Date? {
         var components = calendar.dateComponents([.year, .month, .day], from: date)
-        components.hour = slot.hourMinute.hour
-        components.minute = slot.hourMinute.minute
+        let override = preferencesStore.slotTime(for: slot)
+        components.hour = override.hour
+        components.minute = override.minute
         components.second = 0
         return calendar.date(from: components)
     }

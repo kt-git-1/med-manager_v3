@@ -246,6 +246,9 @@ struct MedicationListView: View {
         .onAppear {
             viewModel.load()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .presetTimesUpdated)) { _ in
+            viewModel.load()
+        }
         .toolbar {
             if sessionStore.mode == .caregiver {
                 Button(NSLocalizedString("medication.list.add", comment: "Add medication")) {

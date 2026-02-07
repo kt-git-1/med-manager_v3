@@ -99,6 +99,7 @@
 "patient.settings.notifications.slot.noon" = "昼";
 "patient.settings.notifications.slot.evening" = "夜";
 "patient.settings.notifications.slot.bedtime" = "眠前";
+"patient.settings.notifications.detail.title" = "詳細設定";
 "patient.settings.notifications.permission.denied" = "通知が許可されていません。設定アプリで通知を許可してください。";
 "history.month.previous" = "前の月";
 "history.month.next" = "次の月";

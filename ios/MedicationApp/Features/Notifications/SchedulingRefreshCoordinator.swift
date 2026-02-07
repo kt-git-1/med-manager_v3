@@ -27,6 +27,8 @@ final class SchedulingRefreshCoordinator: ObservableObject {
         apiClient: APIClient,
         includeSecondary: Bool,
         enabledSlots: Set<NotificationSlot> = Set(NotificationSlot.allCases),
+        slotTimes: [NotificationSlot: (hour: Int, minute: Int)] = [:],
+        caregiverPatientId: String? = nil,
         trigger: RefreshTrigger,
         now: Date = Date()
     ) async {
@@ -36,11 +38,16 @@ final class SchedulingRefreshCoordinator: ObservableObject {
 
         do {
             let historyClient = HistoryClient(apiClient: apiClient)
-            let monthSummaries = try await historyClient.fetchMonthSummaries(windowStart: now, days: 7)
+            let monthSummaries = try await historyClient.fetchMonthSummaries(
+                windowStart: now,
+                days: 7,
+                caregiverPatientId: caregiverPatientId
+            )
             let plan = planBuilder.buildPlan(
                 monthSummaries: monthSummaries,
                 includeSecondary: includeSecondary,
                 enabledSlots: enabledSlots,
+                slotTimes: slotTimes,
                 now: now
             )
             await scheduler.schedule(planEntries: plan, now: now)

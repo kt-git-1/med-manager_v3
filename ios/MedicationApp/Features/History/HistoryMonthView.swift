@@ -70,6 +70,10 @@ struct HistoryMonthView: View {
         .onAppear {
             loadMonth()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .presetTimesUpdated)) { _ in
+            loadMonth()
+            updateSelectionForDisplayedMonth()
+        }
         .onChange(of: displayedMonth) { _, _ in
             loadMonth()
             updateSelectionForDisplayedMonth()

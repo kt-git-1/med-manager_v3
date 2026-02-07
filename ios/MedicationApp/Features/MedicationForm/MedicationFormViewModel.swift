@@ -57,6 +57,19 @@ enum ScheduleTimeSlot: String, CaseIterable, Identifiable {
         }
     }
 
+    var notificationSlot: NotificationSlot {
+        switch self {
+        case .morning:
+            return .morning
+        case .noon:
+            return .noon
+        case .evening:
+            return .evening
+        case .bedtime:
+            return .bedtime
+        }
+    }
+
     static func slot(for timeValue: String) -> ScheduleTimeSlot? {
         return ScheduleTimeSlot.allCases.first { $0.timeValue == timeValue }
     }
@@ -83,6 +96,7 @@ final class MedicationFormViewModel: ObservableObject {
 
     private let apiClient: APIClient
     private let sessionStore: SessionStore
+    private let preferencesStore: NotificationPreferencesStore
     private let existingMedication: MedicationDTO?
     private var existingRegimenId: String?
     private var didLoadSchedule = false
@@ -91,10 +105,16 @@ final class MedicationFormViewModel: ObservableObject {
         existingMedication != nil
     }
 
-    init(apiClient: APIClient, sessionStore: SessionStore, existingMedication: MedicationDTO? = nil) {
+    init(
+        apiClient: APIClient,
+        sessionStore: SessionStore,
+        existingMedication: MedicationDTO? = nil,
+        preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore()
+    ) {
         self.apiClient = apiClient
         self.sessionStore = sessionStore
         self.existingMedication = existingMedication
+        self.preferencesStore = preferencesStore
         if let existingMedication {
             name = existingMedication.name
             dosageStrengthValue = existingMedication.dosageStrengthValue == 0 ? "" : String(existingMedication.dosageStrengthValue)
@@ -134,7 +154,7 @@ final class MedicationFormViewModel: ObservableObject {
     func scheduleTimes() -> [String] {
         ScheduleTimeSlot.allCases
             .filter { selectedTimeSlots.contains($0) }
-            .map(\.timeValue)
+            .map { timeValue(for: $0) }
     }
 
     func scheduleDays() -> [String] {
@@ -241,8 +261,20 @@ final class MedicationFormViewModel: ObservableObject {
         selectedDays = Set(days)
         scheduleFrequency = days.isEmpty ? .daily : .weekly
         let timeSlots = regimen.times
-            .compactMap { ScheduleTimeSlot.slot(for: $0) }
+            .compactMap { slotForTimeValue($0) }
         selectedTimeSlots = Set(timeSlots)
+    }
+
+    func timeValue(for slot: ScheduleTimeSlot) -> String {
+        let time = preferencesStore.slotTime(for: slot.notificationSlot)
+        return String(format: "%02d:%02d", time.hour, time.minute)
+    }
+
+    private func slotForTimeValue(_ timeString: String) -> ScheduleTimeSlot? {
+        let normalized = timeString.trimmingCharacters(in: .whitespacesAndNewlines)
+        return ScheduleTimeSlot.allCases.first { slot in
+            self.timeValue(for: slot) == normalized
+        }
     }
 
     private func persistRegimen(medicationId: String) async throws {

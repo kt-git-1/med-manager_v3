@@ -188,6 +188,8 @@ struct PatientSettingsView: View {
             apiClient: apiClient,
             includeSecondary: preferencesStore.rereminderEnabled,
             enabledSlots: preferencesStore.enabledSlots(),
+            slotTimes: preferencesStore.slotTimesMap(),
+            caregiverPatientId: nil,
             trigger: .settingsChange
         )
     }

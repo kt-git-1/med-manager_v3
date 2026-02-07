@@ -140,7 +140,7 @@ struct MedicationFormView: View {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(slot.label)
                                             .font(.body.weight(.semibold))
-                                        Text(slot.timeValue)
+                                        Text(viewModel.timeValue(for: slot))
                                             .font(.footnote)
                                             .foregroundColor(.secondary)
                                     }
@@ -154,7 +154,7 @@ struct MedicationFormView: View {
                                 )
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel("\(slot.label) \(slot.timeValue)")
+                            .accessibilityLabel("\(slot.label) \(viewModel.timeValue(for: slot))")
                             .accessibilityValue(isSelected ? "選択中" : "未選択")
                         }
                     }
