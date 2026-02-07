@@ -160,18 +160,22 @@ function buildInventoryItem(
   };
 }
 
+function mapRegimensForPlan(regimens: Regimen[]) {
+  return regimens.map((regimen) => ({
+    startDate: regimen.startDate,
+    endDate: regimen.endDate,
+    times: regimen.times,
+    daysOfWeek: regimen.daysOfWeek,
+    enabled: regimen.enabled
+  }));
+}
+
 function buildInventoryItemWithPlan(medication: Medication, regimens: Regimen[]): InventoryItem {
   const plan = computeRefillPlan({
     inventoryEnabled: medication.inventoryEnabled,
     inventoryQuantity: medication.inventoryQuantity,
     doseCountPerIntake: medication.doseCountPerIntake,
-    regimens: regimens.map((regimen) => ({
-      startDate: regimen.startDate,
-      endDate: regimen.endDate,
-      times: regimen.times,
-      daysOfWeek: regimen.daysOfWeek,
-      enabled: regimen.enabled
-    }))
+    regimens: mapRegimensForPlan(regimens)
   });
   return buildInventoryItem(medication, plan);
 }
@@ -222,7 +226,16 @@ export async function updateMedicationInventorySettings(input: {
     0,
     input.update.inventoryLowThreshold ?? medication.inventoryLowThreshold
   );
-  const nextState = nextEnabled ? computeInventoryState(nextQuantity, nextThreshold) : "NONE";
+  const regimens = await prisma.regimen.findMany({ where: { medicationId: medication.id } });
+  const plan = computeRefillPlan({
+    inventoryEnabled: nextEnabled,
+    inventoryQuantity: nextQuantity,
+    doseCountPerIntake: medication.doseCountPerIntake,
+    regimens: mapRegimensForPlan(regimens)
+  });
+  const nextState = nextEnabled
+    ? computeInventoryState(nextQuantity, nextThreshold, plan.daysRemaining)
+    : "NONE";
   const previousState = medication.inventoryLastAlertState ?? "NONE";
   const shouldEmitAlert = nextEnabled && nextState !== previousState && nextState !== "NONE";
   const now = new Date();
@@ -255,7 +268,6 @@ export async function updateMedicationInventorySettings(input: {
     return updatedMedication;
   });
 
-  const regimens = await prisma.regimen.findMany({ where: { medicationId: updated.id } });
   return buildInventoryItemWithPlan(updated, regimens);
 }
 
@@ -272,8 +284,15 @@ export async function adjustMedicationInventory(
       ? input.absoluteQuantity - baseQuantity
       : (input.delta ?? 0);
   const nextQuantity = Math.max(0, baseQuantity + delta);
+  const regimens = await prisma.regimen.findMany({ where: { medicationId: medication.id } });
+  const plan = computeRefillPlan({
+    inventoryEnabled: medication.inventoryEnabled,
+    inventoryQuantity: nextQuantity,
+    doseCountPerIntake: medication.doseCountPerIntake,
+    regimens: mapRegimensForPlan(regimens)
+  });
   const nextState = medication.inventoryEnabled
-    ? computeInventoryState(nextQuantity, medication.inventoryLowThreshold)
+    ? computeInventoryState(nextQuantity, medication.inventoryLowThreshold, plan.daysRemaining)
     : "NONE";
   const previousState = medication.inventoryLastAlertState ?? "NONE";
   const shouldEmitAlert =
@@ -316,7 +335,6 @@ export async function adjustMedicationInventory(
     return updatedMedication;
   });
 
-  const regimens = await prisma.regimen.findMany({ where: { medicationId: updated.id } });
   return buildInventoryItemWithPlan(updated, regimens);
 }
 
