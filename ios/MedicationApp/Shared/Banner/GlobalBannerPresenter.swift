@@ -9,11 +9,11 @@ final class GlobalBannerPresenter: ObservableObject {
     @Published private(set) var banner: GlobalBanner?
     private var hideTask: Task<Void, Never>?
 
-    func show(message: String) {
+    func show(message: String, duration: TimeInterval = 3) {
         hideTask?.cancel()
         banner = GlobalBanner(message: message)
         hideTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(3))
+            try? await Task.sleep(for: .seconds(duration))
             await MainActor.run {
                 self?.banner = nil
             }

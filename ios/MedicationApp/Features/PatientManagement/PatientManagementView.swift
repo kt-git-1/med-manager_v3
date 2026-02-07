@@ -95,6 +95,7 @@ struct PatientManagementView: View {
     @State private var revokeTarget: PatientDTO?
     @State private var toastMessage: String?
     @State private var draftTimes: [NotificationSlot: Date] = [:]
+    @State private var isSavingDetail = false
     private let timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
     private let apiClient: APIClient
 
@@ -262,6 +263,23 @@ struct PatientManagementView: View {
                     .accessibilityLabel(toastMessage)
             }
         }
+        .overlay {
+            if isSavingDetail {
+                ZStack {
+                    Color.black.opacity(0.2)
+                        .ignoresSafeArea()
+                    VStack {
+                        Spacer()
+                        LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
+                            .padding(16)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .shadow(radius: 6)
+                        Spacer()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            }
+        }
         .accessibilityIdentifier("PatientManagementView")
     }
 
@@ -352,6 +370,9 @@ struct PatientManagementView: View {
     }
 
     private func saveDetailSettings() async {
+        guard !isSavingDetail else { return }
+        isSavingDetail = true
+        defer { isSavingDetail = false }
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         let oldSlotTimes = preferencesStore.slotTimesMap()

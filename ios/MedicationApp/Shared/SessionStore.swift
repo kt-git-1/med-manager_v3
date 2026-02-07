@@ -107,8 +107,10 @@ final class SessionStore: ObservableObject {
         switch mode {
         case .caregiver:
             invalidateCaregiverToken()
+            NotificationCenter.default.post(name: .authFailure, object: nil)
         case .patient:
             invalidatePatientToken()
+            NotificationCenter.default.post(name: .authFailure, object: nil)
         case .none:
             break
         }

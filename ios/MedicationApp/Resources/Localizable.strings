@@ -5,6 +5,7 @@
 "common.error.login" = "ログインに失敗しました";
 "common.error.signup" = "サインアップに失敗しました";
 "common.error.linking" = "連携に失敗しました";
+"common.error.unexpected" = "予期せぬエラーが発生しました";
 "common.save" = "保存";
 "common.cancel" = "キャンセル";
 "common.select" = "選択";
@@ -188,7 +189,7 @@
 "caregiver.inventory.status.out" = "なし";
 "caregiver.inventory.status.unconfigured" = "未設定";
 "caregiver.inventory.plan.daysRemaining" = "あと%d日分";
-"caregiver.inventory.plan.daysRemaining.short" = "あと%d日";
+"caregiver.inventory.plan.daysRemaining.short" = "あと%d日分";
 "caregiver.inventory.plan.ended" = "服用期間終了";
 "caregiver.inventory.plan.refillDue" = "補充目安";
 "caregiver.inventory.detail.section.settings" = "在庫設定";
