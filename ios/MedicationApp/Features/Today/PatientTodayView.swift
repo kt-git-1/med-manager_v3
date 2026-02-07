@@ -795,6 +795,11 @@ private struct PatientTodayRow: View {
                     Text("1回\(dose.medicationSnapshot.doseCountPerIntake)錠")
                         .font(.body)
                         .foregroundColor(.secondary)
+                    if let noteText, !noteText.isEmpty {
+                        Text(noteText)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 Spacer()
                 if let statusText = statusText(for: dose.effectiveStatus) {
@@ -851,7 +856,15 @@ private struct PatientTodayRow: View {
         if let statusText = statusText(for: dose.effectiveStatus) {
             parts.append(statusText)
         }
+        if let noteText, !noteText.isEmpty {
+            parts.append(noteText)
+        }
         return parts.joined(separator: ", ")
+    }
+
+    private var noteText: String? {
+        let trimmed = dose.medicationSnapshot.notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
     }
 
     private func statusText(for status: DoseStatusDTO?) -> String? {
@@ -918,6 +931,8 @@ private struct PrnMedicationCard: View {
     let medication: MedicationDTO
     let isDisabled: Bool
     let onRecord: () -> Void
+    @State private var recordTrigger = 0
+    @State private var isPressed = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -934,7 +949,7 @@ private struct PrnMedicationCard: View {
                 }
             }
 
-            Button(action: onRecord) {
+            Button(action: handleRecord) {
                 Text(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
                     .font(.title3.weight(.bold))
                     .frame(maxWidth: .infinity)
@@ -943,6 +958,9 @@ private struct PrnMedicationCard: View {
             .controlSize(.large)
             .disabled(isDisabled)
             .accessibilityLabel(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
+            .scaleEffect(isPressed ? 0.96 : 1.0)
+            .animation(.easeInOut(duration: 0.18), value: isPressed)
+            .sensoryFeedback(.success, trigger: recordTrigger)
         }
         .padding(16)
         .background(
@@ -959,6 +977,18 @@ private struct PrnMedicationCard: View {
         }
         let notes = medication.notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return notes.isEmpty ? nil : notes
+    }
+
+    private func handleRecord() {
+        recordTrigger += 1
+        withAnimation(.easeInOut(duration: 0.12)) {
+            isPressed = true
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(180))
+            isPressed = false
+        }
+        onRecord()
     }
 }
 

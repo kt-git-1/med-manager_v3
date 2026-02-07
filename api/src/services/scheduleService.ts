@@ -6,6 +6,7 @@ export type MedicationRecord = {
   doseCountPerIntake: number;
   dosageStrengthValue: number;
   dosageStrengthUnit: string;
+  notes?: string | null;
   isActive: boolean;
   isArchived: boolean;
   startDate: Date;
@@ -30,6 +31,7 @@ export type MedicationSnapshot = {
   doseCountPerIntake: number;
   dosageStrengthValue: number;
   dosageStrengthUnit: string;
+  notes?: string | null;
 };
 
 export type ScheduleDose = {
@@ -153,7 +155,8 @@ function buildMedicationSnapshot(medication: MedicationRecord): MedicationSnapsh
     dosageText: medication.dosageText,
     doseCountPerIntake: medication.doseCountPerIntake,
     dosageStrengthValue: medication.dosageStrengthValue,
-    dosageStrengthUnit: medication.dosageStrengthUnit
+    dosageStrengthUnit: medication.dosageStrengthUnit,
+    notes: medication.notes ?? null
   };
 }
 
