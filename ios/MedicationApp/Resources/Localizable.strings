@@ -53,7 +53,11 @@
 "medication.list.empty.action" = "薬を追加する";
 "medication.list.add" = "追加";
 "medication.list.section.title" = "薬一覧";
+"medication.list.section.scheduled" = "定時";
+"medication.list.section.prn" = "頓服";
 "medication.list.section.expired" = "期間終了";
+"medication.list.section.expired.scheduled" = "期間終了（定時）";
+"medication.list.section.expired.prn" = "期間終了（頓服）";
 "medication.list.startDate" = "開始日";
 "medication.list.nextDose" = "次回予定";
 "medication.list.badge.scheduled" = "定時";
@@ -106,20 +110,24 @@
 "patient.readonly.settings.title" = "設定";
 "patient.settings.notifications.master" = "通知を有効にする";
 "patient.settings.notifications.rereminder" = "再通知（15分後）";
-"patient.settings.notifications.slots.title" = "時間帯";
+"patient.settings.notifications.slots.title" = "時間帯通知設定";
 "patient.settings.notifications.slot.morning" = "朝";
 "patient.settings.notifications.slot.noon" = "昼";
 "patient.settings.notifications.slot.evening" = "夜";
 "patient.settings.notifications.slot.bedtime" = "眠前";
 "patient.settings.notifications.detail.title" = "詳細設定";
+"patient.settings.notifications.detail.item" = "時間プリセット設定";
+"patient.settings.notifications.detail.note" = "時間帯は患者の服用時間に反映されます";
 "patient.settings.notifications.permission.denied" = "通知が許可されていません。設定アプリで通知を許可してください。";
 "history.month.previous" = "前の月";
 "history.month.next" = "次の月";
 "history.legend.taken" = "記録済み";
 "history.legend.missed" = "飲み忘れ";
 "history.legend.pending" = "未記録";
+"history.legend.prn" = "頓服";
 "history.error.retry" = "読み込みに失敗しました。再試行してください。";
 "common.retry" = "再試行";
+"common.close" = "閉じる";
 "history.slot.morning" = "朝";
 "history.slot.noon" = "昼";
 "history.slot.evening" = "夜";
@@ -205,6 +213,8 @@
 "caregiver.inventory.plan.refillDue" = "補充目安";
 "caregiver.inventory.detail.section.settings" = "在庫設定";
 "caregiver.inventory.detail.section.adjust" = "在庫の調整";
+"caregiver.inventory.settings.section.global" = "低在庫残り日数設定";
+"caregiver.inventory.settings.item.threshold" = "低在庫残り日数設定";
 "caregiver.inventory.detail.enabled" = "在庫管理を有効にする";
 "caregiver.inventory.detail.threshold" = "残り日数の目安";
 "caregiver.inventory.detail.refill" = "補充数";
@@ -241,6 +251,8 @@
 "caregiver.today.recordedBy.patient" = "本人";
 "caregiver.today.recordedBy.caregiver" = "家族";
 "caregiver.banner.withinTime" = "%@さんが時間内に薬を服用しました！";
+"caregiver.banner.scheduled" = "%@さんが%@の薬を服用しました";
+"caregiver.banner.prn" = "%@さんが頓服（%@）を服用しました";
 
 /* Patient management */
 "caregiver.patients.title" = "連携・設定";
@@ -251,6 +263,8 @@
 "caregiver.patients.revoke" = "解除";
 "caregiver.patients.select.label" = "対象患者";
 "caregiver.patients.select.placeholder" = "未選択";
+"caregiver.settings.section.link" = "連携";
+"caregiver.settings.section.detail" = "詳細設定";
 "caregiver.patients.select.help" = "プルダウンから対象患者を選んでください";
 "caregiver.patients.select.caption" = "タップして対象患者を設定";
 "caregiver.patients.select.action" = "選択";

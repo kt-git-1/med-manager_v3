@@ -22,7 +22,7 @@ const baseRegimen = {
   id: "reg-1",
   patientId: "patient-1",
   medicationId: "med-1",
-  timezone: "UTC",
+  timezone: "Asia/Tokyo",
   startDate: new Date("2026-02-01T00:00:00Z"),
   endDate: null,
   times: ["08:00"],
@@ -43,8 +43,8 @@ describe("schedule generator", () => {
     });
 
     expect(doses.map((dose) => dose.scheduledAt)).toEqual([
-      "2026-02-02T08:00:00.000Z",
-      "2026-02-04T08:00:00.000Z"
+      "2026-02-01T23:00:00.000Z",
+      "2026-02-03T23:00:00.000Z"
     ]);
   });
 
@@ -108,10 +108,7 @@ describe("schedule generator", () => {
       to
     });
 
-    expect(doses.map((dose) => dose.scheduledAt)).toEqual([
-      "2026-02-01T08:00:00.000Z",
-      "2026-02-02T08:00:00.000Z"
-    ]);
+    expect(doses.map((dose) => dose.scheduledAt)).toEqual(["2026-02-01T23:00:00.000Z"]);
   });
 
   it("avoids duplicate doses across day boundary", () => {
@@ -144,7 +141,7 @@ describe("schedule generator", () => {
       regimens: [
         {
           ...baseRegimen,
-          timezone: "UTC",
+          timezone: "Asia/Tokyo",
           daysOfWeek: ["MON", "FRI"],
           times: ["08:00", "18:30"]
         }
@@ -154,10 +151,10 @@ describe("schedule generator", () => {
     });
 
     expect(doses.map((dose) => dose.scheduledAt)).toEqual([
-      "2026-02-02T08:00:00.000Z",
-      "2026-02-02T18:30:00.000Z",
-      "2026-02-06T08:00:00.000Z",
-      "2026-02-06T18:30:00.000Z"
+      "2026-02-02T09:30:00.000Z",
+      "2026-02-05T23:00:00.000Z",
+      "2026-02-06T09:30:00.000Z",
+      "2026-02-08T23:00:00.000Z"
     ]);
   });
 });

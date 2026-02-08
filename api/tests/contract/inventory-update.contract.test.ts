@@ -5,6 +5,7 @@ type InventoryItem = {
   patientId: string;
   medicationId: string;
   name: string;
+  isPrn: boolean;
   inventoryEnabled: boolean;
   inventoryQuantity: number;
   inventoryLowThreshold: number;
@@ -74,6 +75,7 @@ async function updateInventory(
     data: {
       medicationId: updated.medicationId,
       name: updated.name,
+      isPrn: updated.isPrn,
       inventoryEnabled: updated.inventoryEnabled,
       inventoryQuantity: updated.inventoryQuantity,
       inventoryLowThreshold: updated.inventoryLowThreshold,
@@ -127,6 +129,7 @@ describe("inventory update contract", () => {
         patientId: "patient-1",
         medicationId: "med-1",
         name: "Medication A",
+        isPrn: false,
         inventoryEnabled: false,
         inventoryQuantity: 0,
         inventoryLowThreshold: 0,
@@ -154,6 +157,7 @@ describe("inventory update contract", () => {
         patientId: "patient-1",
         medicationId: "med-1",
         name: "Medication A",
+        isPrn: false,
         inventoryEnabled: false,
         inventoryQuantity: 5,
         inventoryLowThreshold: 2,
@@ -167,6 +171,7 @@ describe("inventory update contract", () => {
     expect(payload.data).toEqual({
       medicationId: "med-1",
       name: "Medication A",
+      isPrn: false,
       inventoryEnabled: true,
       inventoryQuantity: 12,
       inventoryLowThreshold: 2,

@@ -77,7 +77,7 @@ test.describe("medication regimen e2e", () => {
     const regimen = await request.post(`/api/medications/${createdMedication.id}/regimens`, {
       headers: { authorization: `Bearer ${caregiverToken}` },
       data: {
-        timezone: "UTC",
+        timezone: "Asia/Tokyo",
         startDate: "2026-02-01",
         times: ["08:00"],
         daysOfWeek: ["MON", "WED"]
@@ -116,7 +116,7 @@ test.describe("medication regimen e2e", () => {
     await request.post(`/api/medications/${createdMedication.id}/regimens`, {
       headers: { authorization: `Bearer ${caregiverToken}` },
       data: {
-        timezone: "UTC",
+        timezone: "Asia/Tokyo",
         startDate: "2026-02-01",
         times: ["08:00"],
         daysOfWeek: []

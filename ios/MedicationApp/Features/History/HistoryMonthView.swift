@@ -159,11 +159,9 @@ struct HistoryMonthView: View {
                     slotDot(summary?.noon ?? .none, slotKey: "noon")
                     slotDot(summary?.evening ?? .none, slotKey: "evening")
                     slotDot(summary?.bedtime ?? .none, slotKey: "bedtime")
-                }
-                if let prnCount, prnCount > 0 {
-                    Text(prnCountLabel(count: prnCount))
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(isSelected ? Color.white.opacity(0.9) : Color.secondary)
+                    if let prnCount, prnCount > 0 {
+                        prnDot(count: prnCount)
+                    }
                 }
             }
             .padding(.vertical, 6)
@@ -200,11 +198,25 @@ struct HistoryMonthView: View {
         }
     }
 
+    private func prnDot(count: Int) -> some View {
+        Circle()
+            .fill(Color.purple)
+            .frame(width: 6, height: 6)
+            .accessibilityLabel(
+                String(
+                    format: NSLocalizedString("history.month.prn.count", comment: "PRN count label"),
+                    count
+                )
+            )
+            .accessibilityIdentifier("HistoryPrnDot")
+    }
+
     private var legend: some View {
         HStack(spacing: 16) {
             legendItem(color: Color.green, title: NSLocalizedString("history.legend.taken", comment: "Legend taken"))
             legendItem(color: Color.red, title: NSLocalizedString("history.legend.missed", comment: "Legend missed"))
             legendItem(color: Color.gray, title: NSLocalizedString("history.legend.pending", comment: "Legend pending"))
+            legendItem(color: Color.purple, title: NSLocalizedString("history.legend.prn", comment: "Legend PRN"))
         }
         .font(.caption)
         .foregroundStyle(.secondary)

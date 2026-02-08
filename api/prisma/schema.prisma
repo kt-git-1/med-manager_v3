@@ -209,6 +209,8 @@ model DoseRecordEvent {
   takenAt    DateTime
   withinTime Boolean
   displayName String
+  medicationName String?
+  isPrn      Boolean @default(false)
   createdAt  DateTime @default(now())
 
   patient Patient @relation(fields: [patientId], references: [id])

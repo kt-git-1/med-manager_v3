@@ -317,7 +317,7 @@ struct InventoryListView: View {
             case .all:
                 return true
             case .lowOnly:
-                return item.inventoryEnabled && item.low
+                return shouldShowLowDaysWarning(for: item)
             case .outOnly:
                 return item.inventoryEnabled && item.out
             }
@@ -326,10 +326,10 @@ struct InventoryListView: View {
             if lhs.periodEnded != rhs.periodEnded {
                 return !lhs.periodEnded
             }
-            let lhsRank = sortRank(for: lhs)
-            let rhsRank = sortRank(for: rhs)
-            if lhsRank != rhsRank {
-                return lhsRank < rhsRank
+            let lhsDays = lhs.daysRemaining ?? Int.max
+            let rhsDays = rhs.daysRemaining ?? Int.max
+            if lhsDays != rhsDays {
+                return lhsDays < rhsDays
             }
             if lhs.inventoryQuantity != rhs.inventoryQuantity {
                 return lhs.inventoryQuantity < rhs.inventoryQuantity
@@ -339,19 +339,7 @@ struct InventoryListView: View {
     }
 
     private var configuredActiveItems: [InventoryItemDTO] {
-        filteredItems
-            .filter { $0.inventoryEnabled && !$0.periodEnded }
-            .sorted { lhs, rhs in
-                let lhsDays = lhs.daysRemaining ?? Int.max
-                let rhsDays = rhs.daysRemaining ?? Int.max
-                if lhsDays != rhsDays {
-                    return lhsDays < rhsDays
-                }
-                if lhs.inventoryQuantity != rhs.inventoryQuantity {
-                    return lhs.inventoryQuantity < rhs.inventoryQuantity
-                }
-                return lhs.name < rhs.name
-            }
+        filteredItems.filter { $0.inventoryEnabled && !$0.periodEnded }
     }
 
     private var periodEndedItems: [InventoryItemDTO] {
@@ -360,19 +348,6 @@ struct InventoryListView: View {
 
     private var unconfiguredItems: [InventoryItemDTO] {
         filteredItems.filter { !$0.inventoryEnabled }
-    }
-
-    private func sortRank(for item: InventoryItemDTO) -> Int {
-        if !item.inventoryEnabled {
-            return 3
-        }
-        if item.out {
-            return 0
-        }
-        if item.low {
-            return 1
-        }
-        return 2
     }
 
     private func inventoryRow(for item: InventoryItemDTO) -> some View {
@@ -428,7 +403,7 @@ struct InventoryListView: View {
                 text: NSLocalizedString("caregiver.inventory.status.out", comment: "Out badge"),
                 color: .red
             )
-        } else if item.inventoryEnabled, item.low {
+        } else if shouldShowLowDaysWarning(for: item) {
             badge(
                 text: NSLocalizedString("caregiver.inventory.status.low", comment: "Low badge"),
                 color: .orange
@@ -444,6 +419,9 @@ struct InventoryListView: View {
     }
 
     private func daysRemainingText(for item: InventoryItemDTO) -> String {
+        if item.isPrn {
+            return NSLocalizedString("medication.list.badge.prn", comment: "PRN badge")
+        }
         if item.periodEnded {
             return NSLocalizedString("caregiver.inventory.plan.ended", comment: "Plan ended")
         }
@@ -463,7 +441,9 @@ struct InventoryListView: View {
         guard item.inventoryEnabled, !item.periodEnded, let daysRemaining = item.daysRemaining else {
             return false
         }
-        return daysRemaining <= 3
+        let threshold = max(0, item.inventoryLowThreshold)
+        guard threshold > 0 else { return false }
+        return daysRemaining <= threshold
     }
 
     private func daysRemainingColor(for item: InventoryItemDTO) -> Color {

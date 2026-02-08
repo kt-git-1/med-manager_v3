@@ -100,6 +100,27 @@ private struct PatientTodayRootView: View {
                 await loadDetail(for: dose)
             }
         }
+        .toolbar {
+            if !viewModel.prnMedications.isEmpty {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink(
+                        destination: PrnMedicationListView(
+                            medications: viewModel.prnMedications,
+                            isDisabled: viewModel.isUpdating || viewModel.isPrnSubmitting,
+                            onRecordConfirmed: { medication, onSuccess in
+                                viewModel.recordPrnDose(for: medication, onSuccess: onSuccess)
+                            }
+                        )
+                    ) {
+                        Text(NSLocalizedString("patient.today.prn.section.title", comment: "PRN section"))
+                            .font(.title3.weight(.semibold))
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 14)
+                    }
+                    .accessibilityIdentifier("PatientTodayPrnListButton")
+                }
+            }
+        }
         .sensoryFeedback(.success, trigger: viewModel.toastMessage)
         .accessibilityIdentifier("PatientTodayView")
         .environmentObject(sessionStore)
@@ -309,7 +330,7 @@ private struct PatientTodayBaseView: View {
                 LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
             } else if let errorMessage = viewModel.errorMessage {
                 ErrorStateView(message: errorMessage)
-            } else if viewModel.items.isEmpty && viewModel.prnMedications.isEmpty {
+            } else if !hasScheduledContent {
                 EmptyStateView(
                     title: NSLocalizedString("patient.today.empty.title", comment: "Empty title"),
                     message: NSLocalizedString("patient.today.empty.message", comment: "Empty message")
@@ -340,6 +361,10 @@ private struct PatientTodayBaseView: View {
             }
         }
         .safeAreaPadding(.top)
+    }
+
+    private var hasScheduledContent: Bool {
+        !slotSections.isEmpty || !missedItems.isEmpty || !takenItems.isEmpty
     }
 }
 
@@ -445,11 +470,6 @@ private struct PatientTodayListView: View {
 
     var body: some View {
         List {
-            PrnSectionView(
-                medications: viewModel.prnMedications,
-                isDisabled: viewModel.isUpdating || viewModel.isPrnSubmitting,
-                onConfirmPrn: onConfirmPrn
-            )
             PlannedSectionsView(
                 slotSections: slotSections,
                 timeText: timeText,
@@ -483,30 +503,71 @@ private struct PatientTodayListView: View {
     }
 }
 
-private struct PrnSectionView: View {
+private struct PrnMedicationListView: View {
     let medications: [MedicationDTO]
     let isDisabled: Bool
-    let onConfirmPrn: (MedicationDTO) -> Void
+    let onRecordConfirmed: (MedicationDTO, @escaping () -> Void) -> Void
+    @State private var showingConfirm = false
+    @State private var selectedMedication: MedicationDTO?
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        if medications.isEmpty {
-            EmptyView()
-        } else {
-            Section {
-                ForEach(medications) { medication in
-                    PrnMedicationCard(
-                        medication: medication,
-                        isDisabled: isDisabled,
-                        onRecord: { onConfirmPrn(medication) }
-                    )
-                    .listRowSeparator(.hidden)
-                }
-            } header: {
-                Text(NSLocalizedString("patient.today.prn.section.title", comment: "PRN section"))
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                    .textCase(nil)
+        List {
+            ForEach(medications) { medication in
+                PrnMedicationCard(
+                    medication: medication,
+                    isDisabled: isDisabled,
+                    onRecord: {
+                        selectedMedication = medication
+                        showingConfirm = true
+                    }
+                )
+                .listRowSeparator(.hidden)
             }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Color.white)
+        .navigationTitle(NSLocalizedString("patient.today.prn.section.title", comment: "PRN section"))
+        .navigationBarTitleDisplayMode(.inline)
+        .overlay {
+            if isDisabled {
+                ZStack {
+                    Color.black.opacity(0.2)
+                        .ignoresSafeArea()
+                    VStack {
+                        Spacer()
+                        LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
+                            .padding(16)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .shadow(radius: 6)
+                        Spacer()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            }
+        }
+        .alert(
+            NSLocalizedString("patient.today.prn.confirm.title", comment: "PRN confirm title"),
+            isPresented: $showingConfirm,
+            presenting: selectedMedication
+        ) { medication in
+            Button(NSLocalizedString("patient.today.prn.confirm.action", comment: "PRN confirm action")) {
+                onRecordConfirmed(medication) {
+                    dismiss()
+                }
+                selectedMedication = nil
+            }
+            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {
+                selectedMedication = nil
+            }
+        } message: { medication in
+            Text(
+                String(
+                    format: NSLocalizedString("patient.today.prn.confirm.message", comment: "PRN confirm message"),
+                    medication.name
+                )
+            )
         }
     }
 }
@@ -785,6 +846,11 @@ private struct PatientTodayRow: View {
                     Text("1回\(dose.medicationSnapshot.doseCountPerIntake)錠")
                         .font(.body)
                         .foregroundColor(.secondary)
+                    if let noteText, !noteText.isEmpty {
+                        Text(noteText)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 Spacer()
                 if let statusText = statusText(for: dose.effectiveStatus) {
@@ -841,7 +907,15 @@ private struct PatientTodayRow: View {
         if let statusText = statusText(for: dose.effectiveStatus) {
             parts.append(statusText)
         }
+        if let noteText, !noteText.isEmpty {
+            parts.append(noteText)
+        }
         return parts.joined(separator: ", ")
+    }
+
+    private var noteText: String? {
+        let trimmed = dose.medicationSnapshot.notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
     }
 
     private func statusText(for status: DoseStatusDTO?) -> String? {
@@ -908,13 +982,15 @@ private struct PrnMedicationCard: View {
     let medication: MedicationDTO
     let isDisabled: Bool
     let onRecord: () -> Void
+    @State private var recordTrigger = 0
+    @State private var isPressed = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(medication.name)
                     .font(.title3.weight(.semibold))
-                Text(medication.dosageText)
+                Text("1回\(medication.doseCountPerIntake)錠")
                     .font(.body)
                     .foregroundColor(.secondary)
                 if let noteText, !noteText.isEmpty {
@@ -924,7 +1000,7 @@ private struct PrnMedicationCard: View {
                 }
             }
 
-            Button(action: onRecord) {
+            Button(action: handleRecord) {
                 Text(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
                     .font(.title3.weight(.bold))
                     .frame(maxWidth: .infinity)
@@ -933,6 +1009,9 @@ private struct PrnMedicationCard: View {
             .controlSize(.large)
             .disabled(isDisabled)
             .accessibilityLabel(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
+            .scaleEffect(isPressed ? 0.96 : 1.0)
+            .animation(.easeInOut(duration: 0.18), value: isPressed)
+            .sensoryFeedback(.success, trigger: recordTrigger)
         }
         .padding(16)
         .background(
@@ -949,6 +1028,18 @@ private struct PrnMedicationCard: View {
         }
         let notes = medication.notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return notes.isEmpty ? nil : notes
+    }
+
+    private func handleRecord() {
+        recordTrigger += 1
+        withAnimation(.easeInOut(duration: 0.12)) {
+            isPressed = true
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(180))
+            isPressed = false
+        }
+        onRecord()
     }
 }
 

@@ -11,6 +11,7 @@ export type ScheduleResponseDose = {
     doseCountPerIntake: number;
     dosageStrengthValue: number;
     dosageStrengthUnit: string;
+    notes?: string | null;
   };
 };
 

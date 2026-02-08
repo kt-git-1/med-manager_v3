@@ -21,7 +21,7 @@ const mockData = vi.hoisted(() => ({
       id: "regimen-1",
       patientId: "patient-1",
       medicationId: "med-1",
-      timezone: "UTC",
+      timezone: "Asia/Tokyo",
       startDate: new Date("2026-02-01T00:00:00.000Z"),
       times: ["08:00"],
       enabled: true
@@ -47,15 +47,15 @@ describe("history day status integration", () => {
   });
 
   it("marks a dose missed only after 60 minutes have passed", async () => {
-    const from = new Date("2026-02-02T00:00:00.000Z");
-    const to = new Date("2026-02-03T00:00:00.000Z");
+    const from = new Date("2026-02-01T15:00:00.000Z");
+    const to = new Date("2026-02-02T15:00:00.000Z");
 
     const atThreshold = await getScheduleWithStatus(
       "patient-1",
       from,
       to,
-      "UTC",
-      new Date("2026-02-02T09:00:00.000Z")
+      "Asia/Tokyo",
+      new Date("2026-02-02T00:00:00.000Z")
     );
     expect(atThreshold[0]?.effectiveStatus).toBe("pending");
 
@@ -63,8 +63,8 @@ describe("history day status integration", () => {
       "patient-1",
       from,
       to,
-      "UTC",
-      new Date("2026-02-02T09:00:01.000Z")
+      "Asia/Tokyo",
+      new Date("2026-02-02T00:00:01.000Z")
     );
     expect(afterThreshold[0]?.effectiveStatus).toBe("missed");
   });
@@ -74,17 +74,17 @@ describe("history day status integration", () => {
       {
         patientId: "patient-1",
         medicationId: "med-1",
-        scheduledAt: new Date("2026-02-02T08:00:00.000Z"),
+        scheduledAt: new Date("2026-02-01T23:00:00.000Z"),
         recordedByType: "PATIENT"
       }
     ]);
 
     const result = await getScheduleWithStatus(
       "patient-1",
-      new Date("2026-02-02T00:00:00.000Z"),
-      new Date("2026-02-03T00:00:00.000Z"),
-      "UTC",
-      new Date("2026-02-02T10:00:00.000Z")
+      new Date("2026-02-01T15:00:00.000Z"),
+      new Date("2026-02-02T15:00:00.000Z"),
+      "Asia/Tokyo",
+      new Date("2026-02-02T01:00:00.000Z")
     );
 
     expect(result[0]?.effectiveStatus).toBe("taken");

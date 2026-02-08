@@ -17,6 +17,7 @@ struct MedicationSnapshotDTO: Decodable, Equatable {
     let doseCountPerIntake: Int
     let dosageStrengthValue: Double
     let dosageStrengthUnit: String
+    let notes: String?
 }
 
 struct ScheduleDoseDTO: Decodable, Identifiable, Equatable {

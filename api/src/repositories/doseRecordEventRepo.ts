@@ -7,6 +7,8 @@ export type DoseRecordEventCreateInput = {
   takenAt: Date;
   withinTime: boolean;
   displayName: string;
+  medicationName?: string | null;
+  isPrn?: boolean;
 };
 
 export async function createDoseRecordEvent(

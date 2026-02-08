@@ -22,7 +22,7 @@ function buildRegimen(index: number) {
     id: `reg-${index}`,
     patientId: "patient-1",
     medicationId: `med-${index}`,
-    timezone: "UTC",
+    timezone: "Asia/Tokyo",
     startDate: new Date("2026-02-01T00:00:00Z"),
     endDate: null,
     times: ["08:00", "12:00", "18:00", "22:00"],

@@ -11,6 +11,22 @@ import { getRegimen, updateRegimen } from "../../../../src/services/regimenServi
 
 export const runtime = "nodejs";
 
+const DEFAULT_REGIMEN_TZ = "Asia/Tokyo";
+
+function normalizeRegimenTimeZone(value: unknown) {
+  if (typeof value !== "string") {
+    return DEFAULT_REGIMEN_TZ;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return DEFAULT_REGIMEN_TZ;
+  }
+  if (trimmed === "UTC" || trimmed === "Etc/UTC") {
+    return DEFAULT_REGIMEN_TZ;
+  }
+  return trimmed;
+}
+
 function parseDate(value: string | undefined) {
   return value ? new Date(value) : undefined;
 }
@@ -37,10 +53,11 @@ export async function PATCH(
     }
     await assertCaregiverPatientScope(session.caregiverUserId, existing.patientId);
     const body = await request.json();
+    const normalizedTimeZone = normalizeRegimenTimeZone(body.timezone ?? existing.timezone);
     const merged = {
       medicationId: existing.medicationId,
       patientId: existing.patientId,
-      timezone: body.timezone ?? existing.timezone,
+      timezone: normalizedTimeZone,
       startDate: parseDate(body.startDate) ?? existing.startDate,
       endDate: parseDate(body.endDate) ?? existing.endDate ?? undefined,
       times: body.times ?? existing.times,
@@ -54,7 +71,7 @@ export async function PATCH(
       });
     }
     const updated = await updateRegimen(id, {
-      timezone: body.timezone,
+      timezone: normalizedTimeZone,
       startDate: parseDate(body.startDate),
       endDate: parseDate(body.endDate),
       times: body.times,

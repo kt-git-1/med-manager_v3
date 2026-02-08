@@ -9,11 +9,9 @@ struct InventoryDetailView: View {
 
     @State private var inventoryEnabled: Bool
     @State private var quantity: Int
-    @State private var lowThreshold: Int
     @State private var refillAmount: Int
     @State private var errorMessage: String?
     @State private var savedEnabled: Bool
-    @State private var savedLowThreshold: Int
     @State private var pendingRefillAmount: Int?
     @State private var showRefillConfirm = false
     @State private var lastFailedAction: InventoryDetailAction?
@@ -38,10 +36,8 @@ struct InventoryDetailView: View {
         self.onRefilled = onRefilled
         _inventoryEnabled = State(initialValue: item.inventoryEnabled)
         _quantity = State(initialValue: item.inventoryQuantity)
-        _lowThreshold = State(initialValue: item.inventoryLowThreshold)
         _refillAmount = State(initialValue: 0)
         _savedEnabled = State(initialValue: item.inventoryEnabled)
-        _savedLowThreshold = State(initialValue: item.inventoryLowThreshold)
     }
 
     var body: some View {
@@ -53,30 +49,16 @@ struct InventoryDetailView: View {
 
                     Form {
                         Section(
-                            header: Text(NSLocalizedString("caregiver.inventory.detail.section.settings", comment: "Settings section")),
-                            footer: Text(NSLocalizedString("caregiver.inventory.settings.note", comment: "Low stock note"))
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
+                            header: Text(NSLocalizedString("caregiver.inventory.detail.section.settings", comment: "Settings section"))
                         ) {
                             Toggle(NSLocalizedString("caregiver.inventory.detail.enabled", comment: "Inventory enabled"), isOn: $inventoryEnabled)
-                            HStack {
-                                Text(NSLocalizedString("caregiver.inventory.detail.threshold", comment: "Threshold label"))
-                                Spacer()
-                                TextField("0", value: $lowThreshold, formatter: numberFormatter)
-                                    .multilineTextAlignment(.trailing)
-                                    .keyboardType(.numberPad)
-                                    .focused($focusedField, equals: .lowThreshold)
-                                    .accessibilityIdentifier("InventoryThresholdField")
-                                Text(NSLocalizedString("common.days.unit", comment: "Days unit"))
-                                    .foregroundColor(.secondary)
-                            }
                         }
 
                         Section(header: Text(NSLocalizedString("caregiver.inventory.detail.section.adjust", comment: "Adjust section"))) {
                             HStack(spacing: 12) {
-                                refillPresetButton(title: "+10", amount: 10)
-                                refillPresetButton(title: "+30", amount: 30)
-                                refillPresetButton(title: "+50", amount: 50)
+                                refillPresetButton(title: "+7", amount: 7)
+                                refillPresetButton(title: "+14", amount: 14)
+                                refillPresetButton(title: "+21", amount: 21)
                                 Button(NSLocalizedString("caregiver.inventory.actions.refill.sheet.custom", comment: "Custom input")) {
                                     refillAmount = max(0, refillAmount)
                                     focusedField = .refillAmount
@@ -191,18 +173,35 @@ struct InventoryDetailView: View {
             refillPlanSummary
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay {
+            if shouldHighlightLowStock {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.red.opacity(0.7), lineWidth: 2)
+                    .shadow(color: Color.red.opacity(0.3), radius: 8)
+            }
+        }
     }
 
     private var refillPlanSummary: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(refillDaysText)
-                .font(.headline)
-            HStack(spacing: 8) {
-                Text(NSLocalizedString("caregiver.inventory.plan.refillDue", comment: "Refill due label"))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.secondary)
-                Text(refillDueDateText)
-                    .font(.subheadline.weight(.semibold))
+            if item.isPrn {
+                Text(NSLocalizedString("medication.list.badge.prn", comment: "PRN badge"))
+                    .font(.headline)
+            } else {
+                Text(refillDaysText)
+                    .font(.headline)
+                HStack(spacing: 8) {
+                    Text(NSLocalizedString("caregiver.inventory.plan.refillDue", comment: "Refill due label"))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.secondary)
+                    Text(refillDueDateText)
+                        .font(.subheadline.weight(.semibold))
+                }
             }
         }
     }
@@ -220,7 +219,7 @@ struct InventoryDetailView: View {
         if !inventoryEnabled {
             return .unconfigured
         }
-        let sanitizedThreshold = max(0, lowThreshold)
+        let sanitizedThreshold = max(0, item.inventoryLowThreshold)
         if quantity == 0 {
             return .out
         }
@@ -230,7 +229,14 @@ struct InventoryDetailView: View {
         return .available
     }
 
+    private var shouldHighlightLowStock: Bool {
+        inventoryStatus == .low || inventoryStatus == .out
+    }
+
     private var refillDaysText: String {
+        if item.isPrn {
+            return NSLocalizedString("medication.list.badge.prn", comment: "PRN badge")
+        }
         guard let daysRemaining = item.daysRemaining else {
             return "—"
         }
@@ -248,6 +254,9 @@ struct InventoryDetailView: View {
     }
 
     private var dailyIntakeSummaryText: String {
+        if item.isPrn {
+            return NSLocalizedString("medication.list.badge.prn", comment: "PRN badge")
+        }
         guard let dailyPlannedUnits = item.dailyPlannedUnits, item.doseCountPerIntake > 0 else {
             return "1日—回（—個/回）"
         }
@@ -256,24 +265,20 @@ struct InventoryDetailView: View {
     }
 
     private var hasSettingsChanges: Bool {
-        let sanitizedThreshold = max(0, lowThreshold)
-        return inventoryEnabled != savedEnabled || sanitizedThreshold != savedLowThreshold
+        return inventoryEnabled != savedEnabled
     }
 
     private func saveSettings() async {
         errorMessage = nil
-        let sanitizedThreshold = max(0, lowThreshold)
         let updated = await viewModel.updateSettings(
             item: item,
             enabled: inventoryEnabled,
             quantity: nil,
-            threshold: sanitizedThreshold
+            threshold: item.inventoryLowThreshold
         )
         if let updated {
             quantity = updated.inventoryQuantity
-            lowThreshold = updated.inventoryLowThreshold
             savedEnabled = updated.inventoryEnabled
-            savedLowThreshold = updated.inventoryLowThreshold
             onSaved?()
             dismiss()
         } else {
@@ -361,6 +366,5 @@ private enum InventoryDetailAction {
 }
 
 private enum InventoryField {
-    case lowThreshold
     case refillAmount
 }

@@ -54,6 +54,7 @@ final class CaregiverSessionController: ObservableObject {
     }
 
     private func updateSubscription() {
+        print("CaregiverSessionController: updateSubscription foreground=\(isForeground) mode=\(sessionStore.mode?.rawValue ?? "nil") token=\(sessionStore.caregiverToken != nil)")
         guard isForeground, sessionStore.mode == .caregiver, sessionStore.caregiverToken != nil else {
             subscriber.stop()
             if sessionStore.mode != .caregiver || sessionStore.caregiverToken == nil {
@@ -65,13 +66,49 @@ final class CaregiverSessionController: ObservableObject {
     }
 
     private func showBanner(for event: DoseRecordEvent) {
+        if event.isPrn == true {
+            let format = NSLocalizedString(
+                "caregiver.banner.prn",
+                comment: "Caregiver PRN banner"
+            )
+            let medicationName = event.medicationName ?? ""
+            let message = String(format: format, event.displayName, medicationName)
+            bannerPresenter.show(message: message)
+            return
+        }
+
+        let slotLabel = scheduledSlotLabel(for: event.scheduledAt)
         let format = NSLocalizedString(
-            "caregiver.banner.withinTime",
-            comment: "Caregiver within time banner"
+            "caregiver.banner.scheduled",
+            comment: "Caregiver scheduled banner"
         )
-        let message = String(format: format, event.displayName)
-        bannerPresenter.show(message: message)
+        let message = String(format: format, event.displayName, slotLabel)
+        bannerPresenter.show(message: message, duration: 4)
     }
+
+    private func scheduledSlotLabel(for date: Date) -> String {
+        if let slot = NotificationSlot.from(date: date) {
+            switch slot {
+            case .morning:
+                return NSLocalizedString("history.slot.morning", comment: "Morning slot")
+            case .noon:
+                return NSLocalizedString("history.slot.noon", comment: "Noon slot")
+            case .evening:
+                return NSLocalizedString("history.slot.evening", comment: "Evening slot")
+            case .bedtime:
+                return NSLocalizedString("history.slot.bedtime", comment: "Bedtime slot")
+            }
+        }
+        return Self.timeFormatter.string(from: date)
+    }
+
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
 
     private func showInventoryBanner(for event: InventoryAlertEvent) {
         let patientName = event.patientDisplayName ?? NSLocalizedString(

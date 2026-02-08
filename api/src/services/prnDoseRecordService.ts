@@ -5,7 +5,9 @@ import {
   getPrnDoseRecordById,
   listPrnDoseRecordsByPatientRange
 } from "../repositories/prnDoseRecordRepo";
+import { createDoseRecordEvent } from "../repositories/doseRecordEventRepo";
 import { getMedicationRecordForPatient } from "../repositories/medicationRepo";
+import { getPatientRecordById } from "../repositories/patientRepo";
 import { applyInventoryDeltaForDoseRecord } from "./medicationService";
 import { getLocalDateKey } from "./scheduleService";
 
@@ -39,6 +41,19 @@ export async function createPrnRecord(
     quantityTaken: input.quantityTaken ?? medication.doseCountPerIntake,
     actorType: input.actorType
   });
+
+  const patient = await getPatientRecordById(record.patientId);
+  if (patient) {
+    await createDoseRecordEvent({
+      patientId: record.patientId,
+      scheduledAt: record.takenAt,
+      takenAt: record.takenAt,
+      withinTime: true,
+      displayName: patient.displayName,
+      medicationName: medication.name,
+      isPrn: true
+    });
+  }
 
   await applyInventoryDeltaForDoseRecord({
     patientId: input.patientId,

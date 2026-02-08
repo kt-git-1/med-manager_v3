@@ -41,9 +41,7 @@ final class CaregiverTodayViewModel: ObservableObject {
             }
             do {
                 let doses = try await apiClient.fetchCaregiverToday()
-                let now = Date()
-                let todayOnly = doses.filter { calendar.isDate($0.scheduledAt, inSameDayAs: now) }
-                items = todayOnly.sorted(by: sortDose)
+                items = doses.sorted(by: sortDose)
             } catch {
                 items = []
                 errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
