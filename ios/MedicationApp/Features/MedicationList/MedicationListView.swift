@@ -132,18 +132,30 @@ struct MedicationListView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         VStack {
                             Spacer(minLength: 0)
-                            VStack(spacing: 12) {
+                            VStack(spacing: 16) {
+                                Image(systemName: "pills")
+                                    .font(.system(size: 44))
+                                    .foregroundStyle(.secondary)
                                 EmptyStateView(
                                     title: NSLocalizedString("medication.list.empty.title", comment: "Empty list title"),
                                     message: NSLocalizedString("medication.list.empty.message", comment: "Empty list message")
                                 )
                                 if sessionStore.mode == .caregiver {
-                                    Button(NSLocalizedString("medication.list.empty.action", comment: "Add medication action")) {
+                                    Button {
                                         showingCreate = true
+                                    } label: {
+                                        Text(NSLocalizedString("medication.list.empty.action", comment: "Add medication action"))
+                                            .font(.headline)
+                                            .foregroundStyle(.white)
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 50)
+                                            .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
                                     }
-                                    .buttonStyle(.borderedProminent)
                                 }
                             }
+                            .padding(24)
+                            .frame(maxWidth: .infinity)
+                            .glassEffect(.regular, in: .rect(cornerRadius: 20))
                             .padding(.horizontal, 24)
                             Spacer(minLength: 0)
                         }

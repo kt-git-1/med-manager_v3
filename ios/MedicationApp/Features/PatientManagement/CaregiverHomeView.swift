@@ -223,16 +223,24 @@ struct CaregiverMedicationView: View {
                 } else if let errorMessage = viewModel.errorMessage {
                     ErrorStateView(message: errorMessage)
                 } else if viewModel.patients.isEmpty {
-                    VStack(spacing: 12) {
+                    VStack(spacing: 16) {
+                        Image(systemName: "person.crop.circle.badge.plus")
+                            .font(.system(size: 44))
+                            .foregroundStyle(.secondary)
                         EmptyStateView(
                             title: NSLocalizedString("caregiver.medications.noPatients.title", comment: "No patients title"),
                             message: NSLocalizedString("caregiver.medications.noPatients.message", comment: "No patients message")
                         )
-                        Button(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab")) {
+                        Button {
                             onOpenPatients()
+                        } label: {
+                            Text(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab"))
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
                         }
-                        .buttonStyle(.borderedProminent)
-                        .font(.headline)
                     }
                     .padding(24)
                     .frame(maxWidth: .infinity)
@@ -241,7 +249,10 @@ struct CaregiverMedicationView: View {
                 } else if sessionStore.currentPatientId == nil {
                     VStack(spacing: 12) {
                         Spacer(minLength: 0)
-                        VStack(spacing: 12) {
+                        VStack(spacing: 16) {
+                            Image(systemName: "person.crop.circle.badge.questionmark")
+                                .font(.system(size: 44))
+                                .foregroundStyle(.secondary)
                             Text(NSLocalizedString("caregiver.medications.noSelection.title", comment: "No selection title"))
                                 .font(.title3.weight(.semibold))
                                 .multilineTextAlignment(.center)
@@ -249,15 +260,18 @@ struct CaregiverMedicationView: View {
                                 .font(.body)
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
-                            Button(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab")) {
+                            Button {
                                 onOpenPatients()
+                            } label: {
+                                Text(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab"))
+                                    .font(.headline)
+                                    .foregroundStyle(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 50)
+                                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
                             }
-                            .buttonStyle(.borderedProminent)
-                            .font(.headline)
-                            .padding(.top, 4)
                         }
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 16)
+                        .padding(24)
                         .frame(maxWidth: .infinity)
                         .glassEffect(.regular, in: .rect(cornerRadius: 20))
                         .padding(.horizontal, 24)

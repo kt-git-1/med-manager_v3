@@ -14,7 +14,10 @@ struct CaregiverHistoryView: View {
             if sessionStore.currentPatientId == nil {
                 VStack(spacing: 12) {
                     Spacer(minLength: 0)
-                    VStack(spacing: 12) {
+                    VStack(spacing: 16) {
+                        Image(systemName: "clock.badge.questionmark")
+                            .font(.system(size: 44))
+                            .foregroundStyle(.secondary)
                         Text(NSLocalizedString("caregiver.history.empty.title", comment: "Caregiver history empty title"))
                             .font(.title3.weight(.semibold))
                             .multilineTextAlignment(.center)
@@ -23,15 +26,18 @@ struct CaregiverHistoryView: View {
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                             .accessibilityIdentifier("CaregiverHistoryEmptyState")
-                        Button(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab")) {
+                        Button {
                             onOpenPatients()
+                        } label: {
+                            Text(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab"))
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
                         }
-                        .buttonStyle(.borderedProminent)
-                        .font(.headline)
-                        .padding(.top, 4)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 16)
+                    .padding(24)
                     .frame(maxWidth: .infinity)
                     .glassEffect(.regular, in: .rect(cornerRadius: 20))
                     .padding(.horizontal, 24)

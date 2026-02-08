@@ -55,7 +55,7 @@ struct InventoryDetailView: View {
                         }
 
                         Section(header: Text(NSLocalizedString("caregiver.inventory.detail.section.adjust", comment: "Adjust section"))) {
-                            HStack(spacing: 12) {
+                            HStack(spacing: 10) {
                                 refillPresetButton(title: "+7", amount: 7)
                                 refillPresetButton(title: "+14", amount: 14)
                                 refillPresetButton(title: "+21", amount: 21)
@@ -74,14 +74,25 @@ struct InventoryDetailView: View {
                                     .keyboardType(.numberPad)
                                     .focused($focusedField, equals: .refillAmount)
                             }
-                            Button(NSLocalizedString("caregiver.inventory.actions.refill.sheet.confirm", comment: "Confirm refill")) {
+                            Button {
                                 let amount = max(0, refillAmount)
                                 guard amount > 0 else { return }
                                 pendingRefillAmount = amount
                                 showRefillConfirm = true
+                            } label: {
+                                Label(
+                                    NSLocalizedString("caregiver.inventory.actions.refill.sheet.confirm", comment: "Confirm refill"),
+                                    systemImage: "plus.circle.fill"
+                                )
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 12))
                             }
-                            .buttonStyle(.borderedProminent)
                             .disabled(!inventoryEnabled)
+                            .opacity(inventoryEnabled ? 1 : 0.5)
+                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                         }
 
                         if let errorMessage {
@@ -146,29 +157,38 @@ struct InventoryDetailView: View {
     }
 
     private var inventoryHeader: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("薬名")
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                Image(systemName: "archivebox.circle.fill")
+                    .font(.system(size: 36))
+                    .foregroundStyle(.tint)
+                    .symbolRenderingMode(.hierarchical)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.name)
+                        .font(.title3.weight(.bold))
+                    Text(dailyIntakeSummaryText)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                statusBadge
+            }
+
+            Divider()
+
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(NSLocalizedString("caregiver.inventory.remaining.label", comment: "Remaining label"))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
-                Text(item.name)
-                    .font(.headline)
-            }
-            Text(NSLocalizedString("caregiver.inventory.remaining.label", comment: "Remaining label"))
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Spacer()
                 Text(inventoryEnabled ? "\(quantity)" : "—")
                     .font(.largeTitle.weight(.bold))
                     .foregroundStyle(inventoryEnabled ? Color.primary : Color.secondary)
                 Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
                     .font(.headline)
                     .foregroundStyle(.secondary)
-                Spacer()
-                statusBadge
             }
-            Text(dailyIntakeSummaryText)
-                .font(.subheadline.weight(.semibold))
+
             refillPlanSummary
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -313,11 +333,22 @@ struct InventoryDetailView: View {
     }
 
     private func refillPresetButton(title: String, amount: Int) -> some View {
-        Button(title) {
+        Button {
             refillAmount = amount
+        } label: {
+            Text(title)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(refillAmount == amount ? Color.white : Color.accentColor)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(
+                    refillAmount == amount
+                        ? Color.accentColor
+                        : Color.accentColor.opacity(0.12),
+                    in: Capsule()
+                )
         }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
+        .buttonStyle(.plain)
     }
 
 }

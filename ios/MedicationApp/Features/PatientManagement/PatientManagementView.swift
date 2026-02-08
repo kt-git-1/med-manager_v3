@@ -249,10 +249,15 @@ struct PatientManagementView: View {
         } else if let errorMessage = viewModel.errorMessage {
             ErrorStateView(message: errorMessage)
         } else if viewModel.patients.isEmpty {
-            EmptyStateView(
-                title: NSLocalizedString("caregiver.patients.empty.title", comment: "Empty patients title"),
-                message: NSLocalizedString("caregiver.patients.empty.message", comment: "Empty patients message")
-            )
+            VStack(spacing: 16) {
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .font(.system(size: 44))
+                    .foregroundStyle(.secondary)
+                EmptyStateView(
+                    title: NSLocalizedString("caregiver.patients.empty.title", comment: "Empty patients title"),
+                    message: NSLocalizedString("caregiver.patients.empty.message", comment: "Empty patients message")
+                )
+            }
             .padding(24)
             .frame(maxWidth: .infinity)
             .glassEffect(.regular, in: .rect(cornerRadius: 20))
@@ -312,10 +317,15 @@ struct PatientManagementView: View {
     @ViewBuilder
     private var selectedPatientSection: some View {
         if let selectedPatient {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 14) {
                 HStack {
-                    Text(selectedPatient.displayName)
-                        .font(.title3.weight(.semibold))
+                    HStack(spacing: 10) {
+                        Image(systemName: "person.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.tint)
+                        Text(selectedPatient.displayName)
+                            .font(.title3.weight(.semibold))
+                    }
                     Spacer()
                     Text(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))
                         .font(.subheadline.weight(.semibold))
@@ -325,18 +335,31 @@ struct PatientManagementView: View {
                         .foregroundStyle(Color.accentColor)
                         .clipShape(Capsule())
                 }
-                HStack {
-                    Button(NSLocalizedString("caregiver.patients.issueCode", comment: "Issue code")) {
+                HStack(spacing: 12) {
+                    Button {
                         Task { await viewModel.issueLinkingCode(patientId: selectedPatient.id) }
+                    } label: {
+                        Label(NSLocalizedString("caregiver.patients.issueCode", comment: "Issue code"), systemImage: "link.badge.plus")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(Color.accentColor.opacity(0.12))
+                            .foregroundStyle(.tint)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
-                    .buttonStyle(.bordered)
-                    .font(.headline)
-                    Button(NSLocalizedString("caregiver.patients.revoke", comment: "Revoke")) {
+                    .buttonStyle(.plain)
+                    Button {
                         revokeTarget = selectedPatient
+                    } label: {
+                        Label(NSLocalizedString("caregiver.patients.revoke", comment: "Revoke"), systemImage: "person.crop.circle.badge.minus")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(Color.red.opacity(0.12))
+                            .foregroundStyle(.red)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
-                    .buttonStyle(.bordered)
-                    .font(.headline)
-                    .tint(.red)
+                    .buttonStyle(.plain)
                 }
             }
             .padding(16)
@@ -374,7 +397,10 @@ struct PatientManagementView: View {
             Button {
                 showingTimePresetSheet = true
             } label: {
-                HStack {
+                HStack(spacing: 12) {
+                    Image(systemName: "clock.fill")
+                        .foregroundStyle(.tint)
+                        .frame(width: 20)
                     Text(NSLocalizedString("patient.settings.notifications.detail.item", comment: "Detail settings item"))
                     Spacer()
                     Image(systemName: "chevron.right")
@@ -389,12 +415,16 @@ struct PatientManagementView: View {
     }
 
     private var logoutSection: some View {
-        Button(NSLocalizedString("common.logout", comment: "Logout")) {
+        Button {
             sessionStore.clearCaregiverToken()
+        } label: {
+            Text(NSLocalizedString("common.logout", comment: "Logout"))
+                .font(.headline)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Color.red, in: RoundedRectangle(cornerRadius: 14))
         }
-        .buttonStyle(.borderedProminent)
-        .tint(.red)
-        .font(.headline)
         .padding(.top, 48)
         .padding(.bottom, 48)
     }
@@ -404,7 +434,10 @@ struct PatientManagementView: View {
             Button {
                 showingInventoryThresholdSheet = true
             } label: {
-                HStack {
+                HStack(spacing: 12) {
+                    Image(systemName: "archivebox.fill")
+                        .foregroundStyle(.tint)
+                        .frame(width: 20)
                     Text(NSLocalizedString("caregiver.inventory.settings.item.threshold", comment: "Inventory threshold item"))
                     Spacer()
                     Image(systemName: "chevron.right")
@@ -421,26 +454,52 @@ struct PatientManagementView: View {
     private var timePresetDetailSheet: some View {
         Form {
             Section {
+                VStack(spacing: 10) {
+                    Image(systemName: "clock.circle.fill")
+                        .font(.system(size: 40))
+                        .foregroundStyle(.tint)
+                        .symbolRenderingMode(.hierarchical)
+                    Text(NSLocalizedString("patient.settings.notifications.detail.item", comment: "Detail settings item"))
+                        .font(.title3.weight(.bold))
+                }
+                .frame(maxWidth: .infinity)
+                .listRowBackground(Color.clear)
+            }
+
+            Section {
                 timePickerRow(
                     title: NSLocalizedString("patient.settings.notifications.slot.morning", comment: "Morning"),
+                    icon: "sunrise.fill",
+                    iconColor: .orange,
                     slot: .morning
                 )
                 timePickerRow(
                     title: NSLocalizedString("patient.settings.notifications.slot.noon", comment: "Noon"),
+                    icon: "sun.max.fill",
+                    iconColor: .yellow,
                     slot: .noon
                 )
                 timePickerRow(
                     title: NSLocalizedString("patient.settings.notifications.slot.evening", comment: "Evening"),
+                    icon: "sunset.fill",
+                    iconColor: .orange,
                     slot: .evening
                 )
                 timePickerRow(
                     title: NSLocalizedString("patient.settings.notifications.slot.bedtime", comment: "Bedtime"),
+                    icon: "moon.fill",
+                    iconColor: .indigo,
                     slot: .bedtime
                 )
-            } footer: {
-                Text(NSLocalizedString("patient.settings.notifications.detail.note", comment: "Detail settings note"))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+            } header: {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(.tint)
+                    Text(NSLocalizedString("patient.settings.notifications.detail.note", comment: "Detail settings note"))
+                }
+                .font(.subheadline)
+                .textCase(nil)
             }
         }
         .overlay { savingOverlay }
@@ -449,7 +508,24 @@ struct PatientManagementView: View {
     private var inventoryThresholdDetailSheet: some View {
         Form {
             Section {
-                HStack {
+                VStack(spacing: 10) {
+                    Image(systemName: "archivebox.circle.fill")
+                        .font(.system(size: 40))
+                        .foregroundStyle(.tint)
+                        .symbolRenderingMode(.hierarchical)
+                    Text(NSLocalizedString("caregiver.inventory.settings.section.global", comment: "Inventory global settings title"))
+                        .font(.title3.weight(.bold))
+                }
+                .frame(maxWidth: .infinity)
+                .listRowBackground(Color.clear)
+            }
+
+            Section {
+                HStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(.orange)
+                        .frame(width: 20)
                     Text(NSLocalizedString("caregiver.inventory.detail.threshold", comment: "Inventory threshold"))
                     Spacer()
                     TextField("0", text: $inventoryThresholdText)
@@ -460,10 +536,15 @@ struct PatientManagementView: View {
                     Text("日")
                         .foregroundStyle(.secondary)
                 }
-            } footer: {
-                Text(NSLocalizedString("caregiver.inventory.settings.note", comment: "Inventory settings note"))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+            } header: {
+                HStack(spacing: 6) {
+                    Image(systemName: "archivebox.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(.tint)
+                    Text(NSLocalizedString("caregiver.inventory.settings.note", comment: "Inventory settings note"))
+                }
+                .font(.subheadline)
+                .textCase(nil)
             }
         }
         .overlay { savingOverlay }
@@ -487,8 +568,12 @@ struct PatientManagementView: View {
         }
     }
 
-    private func timePickerRow(title: String, slot: NotificationSlot) -> some View {
-        HStack {
+    private func timePickerRow(title: String, icon: String = "clock", iconColor: Color = .blue, slot: NotificationSlot) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.subheadline)
+                .foregroundStyle(iconColor)
+                .frame(width: 20)
             Text(title)
             Spacer()
             DatePicker(

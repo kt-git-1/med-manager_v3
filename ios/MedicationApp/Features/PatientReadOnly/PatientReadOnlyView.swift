@@ -167,11 +167,17 @@ struct PatientSettingsView: View {
             }
 
             Section {
-                Button(NSLocalizedString("common.logout", comment: "Logout")) {
+                Button {
                     onLogout()
+                } label: {
+                    Text(NSLocalizedString("common.logout", comment: "Logout"))
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.red, in: RoundedRectangle(cornerRadius: 14))
                 }
-                .buttonStyle(.borderedProminent)
-                .font(.headline)
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
             }
         }
         .disabled(permissionManager.status == .denied)
@@ -252,7 +258,7 @@ private struct PatientBottomTabBar: View {
             }
         }
         .padding(.horizontal, 18)
-        .padding(.vertical, 12)
+        .padding(.vertical, 14)
         .glassEffect(.regular, in: .capsule)
         .padding(.bottom, 6)
     }
@@ -266,15 +272,15 @@ private struct PatientBottomTabBar: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 22, weight: .semibold))
                 Text(title)
-                    .font(.callout.weight(.semibold))
+                    .font(.subheadline.weight(.bold))
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
             }
             .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
+            .padding(.vertical, 14)
             .background(isSelected ? AnyShapeStyle(Color.accentColor.opacity(0.12)) : AnyShapeStyle(Color.clear), in: Capsule())
         }
         .buttonStyle(.plain)

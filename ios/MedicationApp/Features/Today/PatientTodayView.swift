@@ -635,7 +635,7 @@ private struct DoseStatusSectionView: View {
                 }
             } header: {
                 Text(NSLocalizedString(titleKey, comment: "Dose section title"))
-                    .font(.headline)
+                    .font(.title3.weight(.semibold))
                     .foregroundStyle(.primary)
                     .textCase(nil)
             }
@@ -649,18 +649,18 @@ private struct SlotHeaderView: View {
     let slotTitle: (NotificationSlot?) -> String
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Circle()
                 .fill(slotColor(slot))
-                .frame(width: 10, height: 10)
+                .frame(width: 14, height: 14)
             Text(slotTitle(slot))
-                .font(.headline)
+                .font(.title3.weight(.semibold))
                 .foregroundStyle(.primary)
         }
-        .padding(.vertical, 6)
-        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 14)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(slotColor(slot).opacity(0.18))
         )
         .textCase(nil)
@@ -718,11 +718,11 @@ private struct PatientTodayDoseDetailView: View {
     }
 
     private var headerCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             Text(dose.medicationSnapshot.name)
-                .font(.title2.weight(.semibold))
+                .font(.title.weight(.bold))
             Text(dose.medicationSnapshot.dosageText)
-                .font(.body)
+                .font(.title3)
                 .foregroundStyle(.secondary)
             HStack(spacing: 8) {
                 Image(systemName: "clock")
@@ -821,32 +821,32 @@ private struct PatientTodayRow: View {
     let slotColor: Color?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 14) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(timeText)
-                        .font(.headline)
+                        .font(.title3.weight(.semibold))
                         .foregroundStyle(isMissed ? Color.red : Color.primary)
                     Text(dose.medicationSnapshot.name)
-                        .font(.title3.weight(.semibold))
+                        .font(.title2.weight(.bold))
                         .foregroundStyle(isMissed ? Color.red : Color.primary)
                     if shouldShowDoseCount {
                         Text("1回\(dose.medicationSnapshot.doseCountPerIntake)錠")
-                            .font(.body)
+                            .font(.title3)
                             .foregroundStyle(.secondary)
                     }
                     if let noteText, !noteText.isEmpty {
                         Text(noteText)
-                            .font(.callout)
+                            .font(.body)
                             .foregroundStyle(.secondary)
                     }
                 }
                 Spacer()
                 if let statusText = statusText(for: dose.effectiveStatus) {
                     Text(statusText)
-                        .font(.caption.weight(.semibold))
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 8)
+                        .font(.subheadline.weight(.bold))
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 10)
                         .background(statusBackground(for: dose.effectiveStatus))
                         .foregroundStyle(statusForeground(for: dose.effectiveStatus))
                         .clipShape(Capsule())
@@ -856,16 +856,17 @@ private struct PatientTodayRow: View {
             if shouldShowRecordButton(for: dose.effectiveStatus) {
                 Button(action: onRecord) {
                     Text(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
-                        .font(.title3.weight(.bold))
+                        .font(.title2.weight(.bold))
                         .frame(maxWidth: .infinity)
+                        .frame(minHeight: 56)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .accessibilityLabel(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
             }
         }
-        .padding(16)
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        .padding(20)
+        .glassEffect(.regular, in: .rect(cornerRadius: 18))
         .overlay(alignment: .leading) {
             if let slotColor {
                 RoundedRectangle(cornerRadius: 3)
@@ -969,26 +970,27 @@ private struct PrnMedicationCard: View {
     @State private var isPressed = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(medication.name)
-                    .font(.title3.weight(.semibold))
+                    .font(.title2.weight(.bold))
                 if shouldShowDoseCount {
                     Text("1回\(medication.doseCountPerIntake)錠")
-                        .font(.body)
+                        .font(.title3)
                         .foregroundStyle(.secondary)
                 }
                 if let noteText, !noteText.isEmpty {
                     Text(noteText)
-                        .font(.callout)
+                        .font(.body)
                         .foregroundStyle(.secondary)
                 }
             }
 
             Button(action: handleRecord) {
                 Text(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
-                    .font(.title3.weight(.bold))
+                    .font(.title2.weight(.bold))
                     .frame(maxWidth: .infinity)
+                    .frame(minHeight: 56)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
@@ -998,8 +1000,8 @@ private struct PrnMedicationCard: View {
             .animation(.easeInOut(duration: 0.18), value: isPressed)
             .sensoryFeedback(.success, trigger: recordTrigger)
         }
-        .padding(16)
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        .padding(20)
+        .glassEffect(.regular, in: .rect(cornerRadius: 18))
     }
 
     private var noteText: String? {
