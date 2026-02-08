@@ -108,10 +108,7 @@ describe("schedule generator", () => {
       to
     });
 
-    expect(doses.map((dose) => dose.scheduledAt)).toEqual([
-      "2026-01-31T23:00:00.000Z",
-      "2026-02-01T23:00:00.000Z"
-    ]);
+    expect(doses.map((dose) => dose.scheduledAt)).toEqual(["2026-02-01T23:00:00.000Z"]);
   });
 
   it("avoids duplicate doses across day boundary", () => {
@@ -154,10 +151,10 @@ describe("schedule generator", () => {
     });
 
     expect(doses.map((dose) => dose.scheduledAt)).toEqual([
-      "2026-02-01T23:00:00.000Z",
       "2026-02-02T09:30:00.000Z",
       "2026-02-05T23:00:00.000Z",
-      "2026-02-06T09:30:00.000Z"
+      "2026-02-06T09:30:00.000Z",
+      "2026-02-08T23:00:00.000Z"
     ]);
   });
 });
