@@ -17,8 +17,11 @@
 
 /* Mode select */
 "mode.select.title" = "モードを選択";
+"mode.select.subtitle" = "あなたの立場を選んでください";
 "mode.select.caregiver" = "家族モード";
+"mode.select.caregiver.subtitle" = "薬の管理・患者の見守り";
 "mode.select.patient" = "患者モード";
+"mode.select.patient.subtitle" = "服用記録・リマインダー";
 
 /* Caregiver login */
 "caregiver.login.title" = "家族ログイン";
@@ -29,8 +32,12 @@
 
 /* Caregiver auth choice */
 "caregiver.auth.title" = "家族アカウント";
+"caregiver.auth.subtitle" = "ログインまたは新規登録してください";
 "caregiver.auth.login" = "ログイン";
+"caregiver.auth.login.subtitle" = "既にアカウントをお持ちの方";
 "caregiver.auth.signup" = "サインアップ";
+"caregiver.auth.signup.subtitle" = "はじめてご利用の方";
+"caregiver.auth.back" = "モードを選び直す";
 
 /* Caregiver signup */
 "caregiver.signup.title" = "家族サインアップ";
@@ -41,9 +48,11 @@
 
 /* Link code */
 "link.code.title" = "連携コード";
+"link.code.subtitle" = "家族から受け取った6桁のコードを入力";
 "link.code.placeholder" = "コードを入力";
 "link.code.button" = "送信";
 "link.code.button.loading" = "送信中...";
+"link.code.back" = "モードを選び直す";
 "link.code.error.invalid" = "6桁の数字コードを入力してください";
 "link.code.error.not_found" = "コードが見つからないか期限切れです";
 
@@ -276,6 +285,7 @@
 "caregiver.patients.create.name" = "表示名";
 "caregiver.patients.create.validation" = "表示名は必須です";
 "caregiver.patients.code.title" = "連携コード";
+"caregiver.patients.code.subtitle" = "患者にこのコードを伝えてください";
 "caregiver.patients.code.expires" = "有効期限: %@";
 "caregiver.patients.code.copy" = "コピー";
 "caregiver.patients.code.share" = "共有";

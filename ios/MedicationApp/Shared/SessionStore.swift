@@ -66,6 +66,11 @@ final class SessionStore: ObservableObject {
         userDefaults.set(mode.rawValue, forKey: SessionStore.lastModeStorageKey)
     }
 
+    func resetMode() {
+        mode = nil
+        userDefaults.removeObject(forKey: SessionStore.lastModeStorageKey)
+    }
+
     func saveCaregiverToken(_ token: String) {
         if token.starts(with: "caregiver-") {
             caregiverToken = token

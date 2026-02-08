@@ -10,43 +10,79 @@ struct CaregiverLoginView: View {
     private let authService = AuthService()
 
     var body: some View {
-        VStack {
-            Spacer(minLength: 0)
-            VStack(spacing: 16) {
-                Text(NSLocalizedString("caregiver.login.title", comment: "Caregiver login title"))
-                    .font(.title2.weight(.semibold))
+        VStack(spacing: 0) {
+            Spacer()
+
+            VStack(spacing: 28) {
+                // Header
                 VStack(spacing: 12) {
-                    TextField(NSLocalizedString("caregiver.login.email", comment: "Email label"), text: $email)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.emailAddress)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.body)
-                        .accessibilityLabel("メールアドレス")
-                    SecureField(NSLocalizedString("caregiver.login.password", comment: "Password label"), text: $password)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.body)
-                        .accessibilityLabel("パスワード")
+                    Image(systemName: "person.circle.fill")
+                        .font(.system(size: 52))
+                        .foregroundStyle(.tint)
+                        .symbolRenderingMode(.hierarchical)
+                    Text(NSLocalizedString("caregiver.login.title", comment: "Caregiver login title"))
+                        .font(.title.weight(.bold))
                 }
+
+                // Form fields
+                VStack(spacing: 12) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "envelope.fill")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20)
+                        TextField(NSLocalizedString("caregiver.login.email", comment: "Email label"), text: $email)
+                            .textInputAutocapitalization(.never)
+                            .keyboardType(.emailAddress)
+                            .accessibilityLabel("メールアドレス")
+                    }
+                    .padding(14)
+                    .background(.fill.quaternary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                    HStack(spacing: 12) {
+                        Image(systemName: "lock.fill")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20)
+                        SecureField(NSLocalizedString("caregiver.login.password", comment: "Password label"), text: $password)
+                            .accessibilityLabel("パスワード")
+                    }
+                    .padding(14)
+                    .background(.fill.quaternary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+
                 if let errorMessage {
                     ErrorStateView(message: errorMessage)
                 }
-                Button(
-                    isLoading
-                        ? NSLocalizedString("caregiver.login.button.loading", comment: "Logging in")
-                        : NSLocalizedString("caregiver.login.button", comment: "Login button")
-                ) {
+
+                // Login button
+                Button {
                     Task { await login() }
+                } label: {
+                    Group {
+                        if isLoading {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Text(NSLocalizedString("caregiver.login.button", comment: "Login button"))
+                        }
+                    }
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
                 }
-                .buttonStyle(.borderedProminent)
-                .font(.headline)
-                .disabled(isLoading)
+                .disabled(isLoading || email.isEmpty || password.isEmpty)
+                .opacity(email.isEmpty || password.isEmpty ? 0.5 : 1)
                 .accessibilityLabel("ログイン")
             }
-            .padding(24)
+            .padding(28)
             .frame(maxWidth: .infinity)
-            .glassEffect(.regular, in: .rect(cornerRadius: 20))
+            .glassEffect(.regular, in: .rect(cornerRadius: 24))
             .padding(.horizontal, 24)
-            Spacer(minLength: 0)
+
+            Spacer()
         }
         .accessibilityIdentifier("CaregiverLoginView")
     }
