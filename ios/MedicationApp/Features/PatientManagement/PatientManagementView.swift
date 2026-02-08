@@ -203,12 +203,13 @@ struct PatientManagementView: View {
         }
         .onAppear {
             viewModel.load()
-            if draftTimes.isEmpty {
-                draftTimes = buildDraftTimes()
-            }
+            preferencesStore.switchPatient(viewModel.selectedPatientId)
+            draftTimes = buildDraftTimes()
             Task { await loadInventoryThreshold() }
         }
-        .onChange(of: viewModel.selectedPatientId) { _, _ in
+        .onChange(of: viewModel.selectedPatientId) { _, newPatientId in
+            preferencesStore.switchPatient(newPatientId)
+            draftTimes = buildDraftTimes()
             Task { await loadInventoryThreshold() }
         }
         .overlay(alignment: .top) {

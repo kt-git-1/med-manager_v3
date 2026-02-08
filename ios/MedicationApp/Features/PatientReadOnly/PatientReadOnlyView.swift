@@ -125,6 +125,7 @@ struct PatientSettingsView: View {
     }
 
     var body: some View {
+        let notificationsDisabled = permissionManager.status == .denied
         Form {
             Section {
                 Toggle(
@@ -144,6 +145,7 @@ struct PatientSettingsView: View {
                         Task { await rescheduleIfNeeded() }
                     }
             }
+            .disabled(notificationsDisabled)
 
             Section(header: Text(NSLocalizedString("patient.settings.notifications.slots.title", comment: "Slots title"))) {
                 toggleRow(title: NSLocalizedString("patient.settings.notifications.slot.morning", comment: "Morning"), slot: .morning)
@@ -151,9 +153,9 @@ struct PatientSettingsView: View {
                 toggleRow(title: NSLocalizedString("patient.settings.notifications.slot.evening", comment: "Evening"), slot: .evening)
                 toggleRow(title: NSLocalizedString("patient.settings.notifications.slot.bedtime", comment: "Bedtime"), slot: .bedtime)
             }
-            .disabled(!preferencesStore.masterEnabled)
+            .disabled(!preferencesStore.masterEnabled || notificationsDisabled)
 
-            if permissionManager.status == .denied {
+            if notificationsDisabled {
                 Section {
                     Text(
                         NSLocalizedString(
@@ -180,7 +182,6 @@ struct PatientSettingsView: View {
                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
             }
         }
-        .disabled(permissionManager.status == .denied)
         .onAppear {
             Task { await permissionManager.refreshStatus() }
         }

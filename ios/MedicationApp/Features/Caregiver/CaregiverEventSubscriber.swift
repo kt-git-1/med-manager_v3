@@ -111,7 +111,7 @@ final class CaregiverEventSubscriber: ObservableObject {
     func handleUnauthorized() {
         latestEvent = nil
         latestInventoryAlert = nil
-        sessionStore.handleAuthFailure(for: .caregiver)
+        stop()
     }
 
     func resetForRevokedAccess() {
@@ -163,11 +163,13 @@ final class CaregiverEventSubscriber: ObservableObject {
             if let payload = object["payload"] as? [String: Any],
                let status = payload["status"] as? String,
                status != "ok" {
+                print("CaregiverEventSubscriber: phx_reply non-ok status=\(status)")
                 handleUnauthorized()
             }
             return
         }
         if event == "phx_error" {
+            print("CaregiverEventSubscriber: phx_error received, stopping subscriber")
             handleUnauthorized()
             return
         }

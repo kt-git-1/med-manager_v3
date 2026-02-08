@@ -11,6 +11,7 @@ struct CaregiverHomeView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @State private var selectedTab: CaregiverTab = .medications
     @State private var currentPatientName: String?
+    @State private var hasLowStock = false
 
     var body: some View {
         ZStack {
@@ -49,39 +50,32 @@ struct CaregiverHomeView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 8) {
-                if let patientName = currentPatientName {
-                    HStack {
-                        Text(
-                            String(
-                                format: NSLocalizedString(
-                                    "caregiver.medications.currentPatient.inline",
-                                    comment: "Current patient inline label"
-                                ),
-                                patientName
-                            )
-                        )
-                        .font(.caption)
-                        .foregroundStyle(Color.accentColor)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.accentColor.opacity(0.15), in: Capsule())
-                        Spacer()
-                    }
-                }
-                CaregiverBottomTabBar(selectedTab: $selectedTab)
+            VStack(spacing: 6) {
+                patientIndicator
+                CaregiverBottomTabBar(selectedTab: $selectedTab, hasLowStock: hasLowStock)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 6)
         }
         .onAppear {
             loadCurrentPatientName()
+            checkLowStock()
         }
         .onChange(of: sessionStore.currentPatientId) { _, _ in
             loadCurrentPatientName()
+            checkLowStock()
         }
         .onChange(of: sessionStore.mode) { _, _ in
             loadCurrentPatientName()
+            checkLowStock()
+        }
+        .onChange(of: selectedTab) { _, newTab in
+            if newTab == .inventory || newTab == .medications {
+                checkLowStock()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .medicationUpdated)) { _ in
+            checkLowStock()
         }
         .onChange(of: sessionStore.shouldRedirectCaregiverToMedicationTab) { _, shouldRedirect in
             guard shouldRedirect else { return }
@@ -89,6 +83,42 @@ struct CaregiverHomeView: View {
             sessionStore.shouldRedirectCaregiverToMedicationTab = false
         }
     }
+
+    // MARK: - Patient Indicator
+
+    @ViewBuilder
+    private var patientIndicator: some View {
+        if let name = currentPatientName {
+            HStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.accentColor, Color.accentColor.opacity(0.7)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 24, height: 24)
+                    Text(String(name.prefix(1)))
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                }
+                Text(name)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+            }
+            .padding(.leading, 10)
+            .padding(.trailing, 14)
+            .padding(.vertical, 6)
+            .background(.thinMaterial, in: Capsule())
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .transition(.opacity.combined(with: .move(edge: .bottom)))
+        }
+    }
+
+    // MARK: - Data Loading
 
     private func loadCurrentPatientName() {
         guard sessionStore.mode == .caregiver,
@@ -106,10 +136,28 @@ struct CaregiverHomeView: View {
             }
         }
     }
+
+    private func checkLowStock() {
+        guard sessionStore.mode == .caregiver,
+              sessionStore.currentPatientId != nil else {
+            hasLowStock = false
+            return
+        }
+        Task { @MainActor in
+            do {
+                let apiClient = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: sessionStore)
+                let items = try await apiClient.fetchInventory()
+                hasLowStock = items.contains { $0.inventoryEnabled && ($0.low || $0.out) }
+            } catch {
+                // Keep the current value on error
+            }
+        }
+    }
 }
 
 private struct CaregiverBottomTabBar: View {
     @Binding var selectedTab: CaregiverTab
+    var hasLowStock: Bool = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -130,7 +178,8 @@ private struct CaregiverBottomTabBar: View {
             tabButton(
                 title: NSLocalizedString("caregiver.tabs.inventory", comment: "Inventory tab"),
                 systemImage: "archivebox",
-                isSelected: selectedTab == .inventory
+                isSelected: selectedTab == .inventory,
+                showBadge: hasLowStock
             ) {
                 selectedTab = .inventory
             }
@@ -142,30 +191,38 @@ private struct CaregiverBottomTabBar: View {
                 selectedTab = .patients
             }
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 12)
-        .glassEffect(.regular, in: .capsule)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 10)
+        .glassEffect(.regular, in: .rect(cornerRadius: 22))
     }
 
     private func tabButton(
         title: String,
         systemImage: String,
         isSelected: Bool,
+        showBadge: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 8) {
+            VStack(spacing: 5) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 22, weight: .semibold))
+                    .overlay(alignment: .topTrailing) {
+                        if showBadge {
+                            Circle()
+                                .fill(.red)
+                                .frame(width: 9, height: 9)
+                                .offset(x: 4, y: -3)
+                        }
+                    }
                 Text(title)
-                    .font(.caption2.weight(.semibold))
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
+                    .font(.system(size: 11, weight: .semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
             .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(isSelected ? AnyShapeStyle(Color.accentColor.opacity(0.12)) : AnyShapeStyle(Color.clear), in: Capsule())
         }
         .buttonStyle(.plain)
     }

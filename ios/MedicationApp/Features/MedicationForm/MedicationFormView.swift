@@ -17,11 +17,16 @@ struct MedicationFormView: View {
         let store = sessionStore ?? SessionStore()
         self.onSuccess = onSuccess
         let baseURL = SessionStore.resolveBaseURL()
+        let prefs = NotificationPreferencesStore()
+        if store.mode == .caregiver, let patientId = store.currentPatientId {
+            prefs.switchPatient(patientId)
+        }
         _viewModel = StateObject(
             wrappedValue: MedicationFormViewModel(
                 apiClient: APIClient(baseURL: baseURL, sessionStore: store),
                 sessionStore: store,
-                existingMedication: medication
+                existingMedication: medication,
+                preferencesStore: prefs
             )
         )
     }
