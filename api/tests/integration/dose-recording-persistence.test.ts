@@ -43,7 +43,7 @@ describe("dose recording persistence integration", () => {
         id: "reg-1",
         patientId: "patient-1",
         medicationId: "med-1",
-        timezone: "UTC",
+        timezone: "Asia/Tokyo",
         startDate: new Date("2026-02-01T00:00:00.000Z"),
         endDate: null,
         times: ["08:00", "09:00"],
@@ -53,9 +53,9 @@ describe("dose recording persistence integration", () => {
     ]);
     doseRecordRepoMock.listDoseRecordsByPatientRange.mockResolvedValue([]);
 
-    const from = new Date("2026-02-02T00:00:00.000Z");
-    const to = new Date("2026-02-03T00:00:00.000Z");
-    const now = new Date("2026-02-02T09:30:00.000Z");
+    const from = new Date("2026-02-01T15:00:00.000Z");
+    const to = new Date("2026-02-02T15:00:00.000Z");
+    const now = new Date("2026-02-02T00:30:00.000Z");
 
     const schedule = await generateScheduleForPatientWithStatus({
       patientId: "patient-1",
@@ -72,7 +72,7 @@ describe("dose recording persistence integration", () => {
     expect(schedule).toHaveLength(2);
 
     const statusByTime = new Map(schedule.map((dose) => [dose.scheduledAt, dose.effectiveStatus]));
-    expect(statusByTime.get(new Date("2026-02-02T08:00:00.000Z").toISOString())).toBe("missed");
-    expect(statusByTime.get(new Date("2026-02-02T09:00:00.000Z").toISOString())).toBe("pending");
+    expect(statusByTime.get(new Date("2026-02-01T23:00:00.000Z").toISOString())).toBe("missed");
+    expect(statusByTime.get(new Date("2026-02-02T00:00:00.000Z").toISOString())).toBe("pending");
   });
 });

@@ -5,11 +5,11 @@ describe("history month aggregation integration", () => {
   it("applies MISSED > PENDING > TAKEN precedence per slot", () => {
     const summary = buildSlotSummary(
       [
-        { scheduledAt: "2026-02-02T08:00:00.000Z", effectiveStatus: "taken" },
-        { scheduledAt: "2026-02-02T08:00:00.000Z", effectiveStatus: "pending" },
-        { scheduledAt: "2026-02-02T08:00:00.000Z", effectiveStatus: "missed" }
+        { scheduledAt: "2026-02-01T23:00:00.000Z", effectiveStatus: "taken" },
+        { scheduledAt: "2026-02-01T23:00:00.000Z", effectiveStatus: "pending" },
+        { scheduledAt: "2026-02-01T23:00:00.000Z", effectiveStatus: "missed" }
       ],
-      "UTC"
+      "Asia/Tokyo"
     );
 
     expect(summary).toEqual({
@@ -23,10 +23,10 @@ describe("history month aggregation integration", () => {
   it("keeps pending when no missed doses exist for a slot", () => {
     const summary = buildSlotSummary(
       [
-        { scheduledAt: "2026-02-02T08:00:00.000Z", effectiveStatus: "taken" },
-        { scheduledAt: "2026-02-02T08:00:00.000Z", effectiveStatus: "pending" }
+        { scheduledAt: "2026-02-01T23:00:00.000Z", effectiveStatus: "taken" },
+        { scheduledAt: "2026-02-01T23:00:00.000Z", effectiveStatus: "pending" }
       ],
-      "UTC"
+      "Asia/Tokyo"
     );
 
     expect(summary.morning).toBe("pending");

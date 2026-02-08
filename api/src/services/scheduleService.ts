@@ -48,6 +48,22 @@ export type ScheduleDoseWithStatus = ScheduleDose & {
   recordedByType?: "patient" | "caregiver";
 };
 
+const DEFAULT_REGIMEN_TZ = "Asia/Tokyo";
+
+function normalizeRegimenTimeZone(timezone: string | null | undefined) {
+  if (!timezone) {
+    return DEFAULT_REGIMEN_TZ;
+  }
+  const trimmed = timezone.trim();
+  if (!trimmed) {
+    return DEFAULT_REGIMEN_TZ;
+  }
+  if (trimmed === "UTC" || trimmed === "Etc/UTC") {
+    return DEFAULT_REGIMEN_TZ;
+  }
+  return trimmed;
+}
+
 const weekdayMap: Record<string, string> = {
   Sun: "SUN",
   Mon: "MON",
@@ -180,10 +196,7 @@ export function generateSchedule({
       continue;
     }
 
-    const tz = regimen.timezone;
-    if (!tz || tz.trim().length === 0) {
-      throw new Error("Missing timezone");
-    }
+    const tz = normalizeRegimenTimeZone(regimen.timezone);
     const normalizedFrom = truncateToMinutes(from, tz);
     const normalizedTo = truncateToMinutes(to, tz);
     const regimenStart = startOfLocalDay(regimen.startDate, tz);
