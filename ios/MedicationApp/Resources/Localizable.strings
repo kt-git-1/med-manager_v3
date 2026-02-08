@@ -12,6 +12,7 @@
 "common.ok" = "OK";
 "common.logout" = "ログアウト";
 "common.toast.updated" = "更新しました";
+"caregiver.timePreset.toast.updated" = "時間を更新しました";
 "caregiver.inventory.toast.saved" = "在庫情報を保存しました";
 "caregiver.inventory.toast.refilled" = "薬を補充しました";
 
@@ -174,6 +175,10 @@
 "patient.today.section.slot.other" = "その他";
 "patient.today.reminder.title" = "服用リマインダー";
 "patient.today.reminder.body" = "%@を飲む時間です（%@）";
+"patient.logout.confirm.title" = "ログアウトしますか？";
+"patient.logout.confirm.message" = "患者モードからログアウトします。";
+"patient.logout.confirm.action" = "ログアウト";
+"patient.logout.toast" = "ログアウトしました";
 
 /* Caregiver tabs */
 "caregiver.tabs.medications" = "薬・予定";
@@ -293,3 +298,10 @@
 "caregiver.patients.revoke.confirm.title" = "リンク解除";
 "caregiver.patients.revoke.confirm.message" = "この患者のリンクを解除します。既存セッションは失効します。";
 "caregiver.patients.revoke.confirm.action" = "解除する";
+"caregiver.logout.confirm.title" = "ログアウトしますか？";
+"caregiver.logout.confirm.message" = "家族モードからログアウトします。";
+"caregiver.logout.confirm.action" = "ログアウト";
+"caregiver.logout.toast" = "ログアウトしました";
+"caregiver.patients.toast.created" = "患者を追加しました";
+"caregiver.patients.toast.revoked" = "リンクを解除しました";
+"common.error.save" = "保存に失敗しました";

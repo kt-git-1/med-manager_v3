@@ -1,10 +1,21 @@
 import SwiftUI
 
 struct PatientCreateView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var displayName = ""
     @State private var errorMessage: String?
+    @State private var isSaving = false
 
-    let onSave: (String) -> Void
+    let onSave: (String) async -> Bool
+    let onSuccess: ((String) -> Void)?
+
+    init(
+        onSave: @escaping (String) async -> Bool,
+        onSuccess: ((String) -> Void)? = nil
+    ) {
+        self.onSave = onSave
+        self.onSuccess = onSuccess
+    }
 
     var body: some View {
         NavigationStack {
@@ -58,15 +69,34 @@ struct PatientCreateView: View {
                                 )
                                 return
                             }
-                            onSave(trimmed)
+                            Task {
+                                guard !isSaving else { return }
+                                isSaving = true
+                                let success = await onSave(trimmed)
+                                isSaving = false
+                                if success {
+                                    onSuccess?(NSLocalizedString("caregiver.patients.toast.created", comment: "Patient created"))
+                                    dismiss()
+                                } else {
+                                    errorMessage = NSLocalizedString("common.error.save", comment: "Save error")
+                                }
+                            }
                         } label: {
-                            Text(NSLocalizedString("common.save", comment: "Save"))
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 50)
-                                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
+                            Group {
+                                if isSaving {
+                                    ProgressView()
+                                        .tint(.white)
+                                } else {
+                                    Text(NSLocalizedString("common.save", comment: "Save"))
+                                }
+                            }
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
                         }
+                        .disabled(isSaving || displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         .listRowBackground(Color.clear)
                         .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
                         .opacity(displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.5 : 1)
@@ -76,6 +106,22 @@ struct PatientCreateView: View {
                 .background(Color(.systemGroupedBackground))
             }
             .background(Color(.systemGroupedBackground))
+            .overlay {
+                if isSaving {
+                    ZStack {
+                        Color.black.opacity(0.2)
+                            .ignoresSafeArea()
+                        VStack {
+                            Spacer()
+                            LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
+                                .padding(16)
+                                .glassEffect(.regular, in: .rect(cornerRadius: 16))
+                            Spacer()
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                }
+            }
         }
     }
 }

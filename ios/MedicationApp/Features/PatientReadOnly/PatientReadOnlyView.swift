@@ -103,11 +103,13 @@ struct PatientReadOnlyView: View {
 }
 
 struct PatientSettingsView: View {
+    @EnvironmentObject private var globalBannerPresenter: GlobalBannerPresenter
     private let sessionStore: SessionStore
     private let apiClient: APIClient
     @ObservedObject private var schedulingCoordinator: SchedulingRefreshCoordinator
     @StateObject private var permissionManager = NotificationPermissionManager()
     @StateObject private var preferencesStore = NotificationPreferencesStore()
+    @State private var showingLogoutConfirm = false
     let onLogout: () -> Void
 
     init(
@@ -170,7 +172,7 @@ struct PatientSettingsView: View {
 
             Section {
                 Button {
-                    onLogout()
+                    showingLogoutConfirm = true
                 } label: {
                     Text(NSLocalizedString("common.logout", comment: "Logout"))
                         .font(.headline)
@@ -180,6 +182,21 @@ struct PatientSettingsView: View {
                         .background(Color.red, in: RoundedRectangle(cornerRadius: 14))
                 }
                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .alert(
+                    NSLocalizedString("patient.logout.confirm.title", comment: "Logout confirm title"),
+                    isPresented: $showingLogoutConfirm
+                ) {
+                    Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
+                    Button(NSLocalizedString("patient.logout.confirm.action", comment: "Logout confirm action"), role: .destructive) {
+                        onLogout()
+                        globalBannerPresenter.show(
+                            message: NSLocalizedString("patient.logout.toast", comment: "Logout toast"),
+                            duration: 2
+                        )
+                    }
+                } message: {
+                    Text(NSLocalizedString("patient.logout.confirm.message", comment: "Logout confirm message"))
+                }
             }
         }
         .onAppear {

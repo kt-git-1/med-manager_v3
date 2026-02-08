@@ -474,7 +474,7 @@ struct InventoryListView: View {
             toastMessage = message
         }
         Task {
-            try? await Task.sleep(for: .seconds(1))
+            try? await Task.sleep(for: .seconds(2))
             await MainActor.run {
                 withAnimation {
                     toastMessage = nil
