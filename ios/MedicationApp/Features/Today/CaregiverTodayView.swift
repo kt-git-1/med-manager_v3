@@ -24,16 +24,13 @@ struct CaregiverTodayView: View {
     var body: some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(Color(.systemBackground))
             .overlay(alignment: .top) {
                 if let toastMessage = viewModel.toastMessage {
                     Text(toastMessage)
                         .font(.subheadline.weight(.semibold))
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
-                        .background(.regularMaterial, in: Capsule())
-                        .overlay(Capsule().strokeBorder(Color(.separator).opacity(0.3)))
-                        .shadow(color: Color.black.opacity(0.15), radius: 8, y: 4)
+                        .glassEffect(.regular, in: .capsule)
                         .padding(.top, 8)
                         .transition(.move(edge: .top).combined(with: .opacity))
                         .accessibilityLabel(toastMessage)
@@ -48,8 +45,7 @@ struct CaregiverTodayView: View {
                             Spacer()
                             LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
                                 .padding(16)
-                                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                .shadow(radius: 6)
+                                .glassEffect(.regular, in: .rect(cornerRadius: 16))
                             Spacer()
                         }
                     }
@@ -83,7 +79,7 @@ struct CaregiverTodayView: View {
                             .multilineTextAlignment(.center)
                         Text(NSLocalizedString("caregiver.medications.noSelection.message", comment: "No selection message"))
                             .font(.body)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                         Button(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab")) {
                             onOpenPatients()
@@ -95,8 +91,7 @@ struct CaregiverTodayView: View {
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
                     .frame(maxWidth: .infinity)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 20))
                     .padding(.horizontal, 24)
                     Spacer(minLength: 0)
                 }
@@ -130,6 +125,8 @@ struct CaregiverTodayView: View {
                                     onAction: { viewModel.recordDose(dose) }
                                 )
                                 .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                             }
                         } header: {
                             slotHeader(for: section.slot)
@@ -149,6 +146,8 @@ struct CaregiverTodayView: View {
                                     onAction: { viewModel.recordDose(dose) }
                                 )
                                 .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                             }
                         } header: {
                             Text(NSLocalizedString("caregiver.today.section.missed", comment: "Missed"))
@@ -171,6 +170,8 @@ struct CaregiverTodayView: View {
                                     onAction: { viewModel.deleteDose(dose) }
                                 )
                                 .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                             }
                         } header: {
                             Text(NSLocalizedString("caregiver.today.section.taken", comment: "Taken"))
@@ -182,7 +183,6 @@ struct CaregiverTodayView: View {
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
-                .background(Color(.systemBackground))
                 .refreshable {
                     viewModel.load(showLoading: false)
                 }
@@ -326,12 +326,12 @@ private struct CaregiverTodayRow: View {
                     if let dosageText {
                         Text(dosageText)
                             .font(.body)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     if let recordedByText {
                         Text(recordedByText)
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 Spacer()
@@ -348,10 +348,7 @@ private struct CaregiverTodayRow: View {
             actionButton
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(backgroundColor(for: dose.effectiveStatus))
-        )
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
         .overlay(alignment: .leading) {
             if let slotColor {
                 RoundedRectangle(cornerRadius: 3)
@@ -360,7 +357,6 @@ private struct CaregiverTodayRow: View {
                     .padding(.vertical, 12)
             }
         }
-        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilitySummary)
     }
@@ -431,21 +427,9 @@ private struct CaregiverTodayRow: View {
             return Color.red.opacity(0.15)
         case .taken:
             return Color.green.opacity(0.12)
-        case .pending:
-            return Color(.secondarySystemBackground)
-        case .none:
-            return Color(.secondarySystemBackground)
+        case .pending, .none:
+            return Color.primary.opacity(0.06)
         }
     }
 
-    private func backgroundColor(for status: DoseStatusDTO?) -> Color {
-        switch status {
-        case .missed:
-            return Color.red.opacity(0.08)
-        case .taken:
-            return Color.green.opacity(0.06)
-        case .pending, .none:
-            return Color(.systemBackground)
-        }
-    }
 }

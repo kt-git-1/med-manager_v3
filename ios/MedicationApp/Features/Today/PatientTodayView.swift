@@ -281,8 +281,6 @@ private struct PatientTodayBaseView: View {
 
     private var baseView: some View {
         ZStack(alignment: .top) {
-            Color(.systemBackground)
-                .ignoresSafeArea()
             content
             toastView
             updatingOverlay
@@ -296,9 +294,7 @@ private struct PatientTodayBaseView: View {
                 .font(.subheadline.weight(.semibold))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .background(.regularMaterial, in: Capsule())
-                .overlay(Capsule().strokeBorder(Color(.separator).opacity(0.3)))
-                .shadow(color: Color.black.opacity(0.15), radius: 8, y: 4)
+                .glassEffect(.regular, in: .capsule)
                 .padding(.top, 8)
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .accessibilityLabel(toastMessage)
@@ -315,8 +311,7 @@ private struct PatientTodayBaseView: View {
                     Spacer()
                     LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
                         .padding(16)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .shadow(radius: 6)
+                        .glassEffect(.regular, in: .rect(cornerRadius: 16))
                     Spacer()
                 }
             }
@@ -498,7 +493,6 @@ private struct PatientTodayListView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(Color(.systemBackground))
         .refreshable {
             viewModel.load(showLoading: false)
         }
@@ -526,11 +520,12 @@ private struct PrnMedicationListView: View {
                     }
                 )
                 .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
             }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(Color(.systemBackground))
         .navigationTitle(NSLocalizedString("patient.today.prn.section.title", comment: "PRN section"))
         .navigationBarTitleDisplayMode(.inline)
         .overlay {
@@ -542,8 +537,7 @@ private struct PrnMedicationListView: View {
                         Spacer()
                         LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
                             .padding(16)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .shadow(radius: 6)
+                            .glassEffect(.regular, in: .rect(cornerRadius: 16))
                         Spacer()
                     }
                 }
@@ -597,6 +591,8 @@ private struct PlannedSectionsView: View {
                     )
                     .id(dose.key)
                     .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                     .onTapGesture { onPresentDetail(dose) }
                 }
             } header: {
@@ -633,6 +629,8 @@ private struct DoseStatusSectionView: View {
                     )
                     .id(dose.key)
                     .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                     .onTapGesture { onPresentDetail(dose) }
                 }
             } header: {
@@ -712,8 +710,7 @@ private struct PatientTodayDoseDetailView: View {
                             .ignoresSafeArea()
                         LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
                             .padding(16)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .shadow(radius: 6)
+                            .glassEffect(.regular, in: .rect(cornerRadius: 16))
                     }
                 }
             }
@@ -726,10 +723,10 @@ private struct PatientTodayDoseDetailView: View {
                 .font(.title2.weight(.semibold))
             Text(dose.medicationSnapshot.dosageText)
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             HStack(spacing: 8) {
                 Image(systemName: "clock")
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 Text(Self.dateFormatter.string(from: dose.scheduledAt))
                     .font(.subheadline.weight(.semibold))
             }
@@ -744,10 +741,7 @@ private struct PatientTodayDoseDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 
     private var notesCard: some View {
@@ -756,24 +750,17 @@ private struct PatientTodayDoseDetailView: View {
                 .font(.headline)
             Text(notesText)
                 .font(.body)
-                .foregroundColor(notesForeground)
+                .foregroundStyle(notesForeground)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color(.tertiarySystemBackground))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Color(.separator).opacity(0.5), lineWidth: 1)
+                        .fill(Color.primary.opacity(0.04))
                 )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 
     private var intakeCard: some View {
@@ -785,10 +772,7 @@ private struct PatientTodayDoseDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 
     private var notesText: String {
@@ -824,7 +808,7 @@ private struct PatientTodayDoseDetailView: View {
         case .taken:
             return Color.green.opacity(0.12)
         case .pending, .none:
-            return Color(.secondarySystemBackground)
+            return Color.primary.opacity(0.06)
         }
     }
 }
@@ -849,7 +833,7 @@ private struct PatientTodayRow: View {
                     if shouldShowDoseCount {
                         Text("1回\(dose.medicationSnapshot.doseCountPerIntake)錠")
                             .font(.body)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     if let noteText, !noteText.isEmpty {
                         Text(noteText)
@@ -881,10 +865,7 @@ private struct PatientTodayRow: View {
             }
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(backgroundColor(for: dose.effectiveStatus))
-        )
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
         .overlay(alignment: .leading) {
             if let slotColor {
                 RoundedRectangle(cornerRadius: 3)
@@ -898,7 +879,6 @@ private struct PatientTodayRow: View {
                 .stroke(isMissed ? Color.red.opacity(0.35) : Color.clear, lineWidth: 1)
         )
         .todaySlotHighlight(isHighlighted)
-        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilitySummary)
     }
@@ -962,21 +942,8 @@ private struct PatientTodayRow: View {
             return Color.red.opacity(0.15)
         case .taken:
             return Color.green.opacity(0.12)
-        case .pending:
-            return Color(.secondarySystemBackground)
-        case .none:
-            return Color(.secondarySystemBackground)
-        }
-    }
-
-    private func backgroundColor(for status: DoseStatusDTO?) -> Color {
-        switch status {
-        case .missed:
-            return Color.red.opacity(0.08)
-        case .taken:
-            return Color.green.opacity(0.06)
         case .pending, .none:
-            return Color(.systemBackground)
+            return Color.primary.opacity(0.06)
         }
     }
 
@@ -1009,12 +976,12 @@ private struct PrnMedicationCard: View {
                 if shouldShowDoseCount {
                     Text("1回\(medication.doseCountPerIntake)錠")
                         .font(.body)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 if let noteText, !noteText.isEmpty {
                     Text(noteText)
                         .font(.callout)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -1032,11 +999,7 @@ private struct PrnMedicationCard: View {
             .sensoryFeedback(.success, trigger: recordTrigger)
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(.systemBackground))
-        )
-        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 
     private var noteText: String? {

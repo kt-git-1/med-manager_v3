@@ -12,7 +12,7 @@ struct InventoryEmptyStateView: View {
                     .multilineTextAlignment(.center)
                 Text(NSLocalizedString("caregiver.inventory.empty.message", comment: "Inventory empty message"))
                     .font(.body)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                 Button(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab")) {
                     onOpenPatients()
@@ -25,8 +25,7 @@ struct InventoryEmptyStateView: View {
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
             .frame(maxWidth: .infinity)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .glassEffect(.regular, in: .rect(cornerRadius: 20))
             .padding(.horizontal, 24)
             Spacer(minLength: 0)
         }

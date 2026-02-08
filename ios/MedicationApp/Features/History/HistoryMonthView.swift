@@ -175,7 +175,7 @@ struct HistoryMonthView: View {
             .frame(maxWidth: .infinity, minHeight: 44)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(isSelected ? Color.accentColor : Color(.secondarySystemBackground))
+                    .fill(isSelected ? Color.accentColor : Color.primary.opacity(0.05))
             )
         }
         .buttonStyle(.plain)
@@ -339,8 +339,7 @@ struct HistoryMonthView: View {
                 Spacer()
                 LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
                     .padding(16)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(radius: 6)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 16))
                 Spacer()
             }
         }

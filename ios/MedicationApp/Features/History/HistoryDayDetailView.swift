@@ -137,11 +137,7 @@ private struct HistoryDayRow: View {
                 .clipShape(Capsule())
         }
         .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
-        .shadow(color: Color.black.opacity(0.05), radius: 6, y: 2)
+        .glassEffect(.regular, in: .rect(cornerRadius: 14))
     }
 
     private var dosageText: String? {
@@ -181,7 +177,7 @@ private struct HistoryDayRow: View {
         case .taken:
             return Color.green.opacity(0.12)
         case .pending:
-            return Color(.secondarySystemBackground)
+            return Color.primary.opacity(0.06)
         }
     }
 }
@@ -248,10 +244,6 @@ private struct HistoryDayPrnRow: View {
                 .clipShape(Capsule())
         }
         .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
-        .shadow(color: Color.black.opacity(0.05), radius: 6, y: 2)
+        .glassEffect(.regular, in: .rect(cornerRadius: 14))
     }
 }

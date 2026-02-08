@@ -112,12 +112,13 @@ struct PatientManagementView: View {
     var body: some View {
         NavigationStack {
             contentView
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
             .navigationTitle(NSLocalizedString("caregiver.patients.title", comment: "Patients title"))
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Image(systemName: "person.2")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                         .accessibilityHidden(true)
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
@@ -216,9 +217,7 @@ struct PatientManagementView: View {
                     .font(.subheadline.weight(.semibold))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .background(.regularMaterial, in: Capsule())
-                    .overlay(Capsule().strokeBorder(Color(.separator).opacity(0.3)))
-                    .shadow(color: Color.black.opacity(0.15), radius: 8, y: 4)
+                    .glassEffect(.regular, in: .capsule)
                     .padding(.top, 8)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .accessibilityLabel(toastMessage)
@@ -233,8 +232,7 @@ struct PatientManagementView: View {
                         Spacer()
                         LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
                             .padding(16)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .shadow(radius: 6)
+                            .glassEffect(.regular, in: .rect(cornerRadius: 16))
                         Spacer()
                     }
                 }
@@ -257,8 +255,7 @@ struct PatientManagementView: View {
             )
             .padding(24)
             .frame(maxWidth: .infinity)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .glassEffect(.regular, in: .rect(cornerRadius: 20))
             .padding(.horizontal, 24)
         } else {
             ScrollView {
@@ -279,14 +276,14 @@ struct PatientManagementView: View {
     private var linkHeader: some View {
         Text(NSLocalizedString("caregiver.settings.section.link", comment: "Linking header"))
             .font(.headline)
-            .foregroundColor(.secondary)
+            .foregroundStyle(.secondary)
     }
 
     private var selectionCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(NSLocalizedString("caregiver.patients.select.label", comment: "Select label"))
                 .font(.headline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             Picker(
                 NSLocalizedString("caregiver.patients.select.label", comment: "Select label"),
                 selection: Binding(
@@ -305,12 +302,11 @@ struct PatientManagementView: View {
             .pickerStyle(.menu)
             Text(NSLocalizedString("caregiver.patients.select.help", comment: "Select help text"))
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 
     @ViewBuilder
@@ -326,7 +322,7 @@ struct PatientManagementView: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
                         .background(Color.accentColor.opacity(0.2))
-                        .foregroundColor(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                         .clipShape(Capsule())
                 }
                 HStack {
@@ -344,8 +340,7 @@ struct PatientManagementView: View {
                 }
             }
             .padding(16)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .glassEffect(.regular, in: .rect(cornerRadius: 16))
             .accessibilityLabel("\(selectedPatient.displayName) \(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))")
         } else {
             EmptyStateView(
@@ -354,8 +349,7 @@ struct PatientManagementView: View {
             )
             .padding(16)
             .frame(maxWidth: .infinity)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .glassEffect(.regular, in: .rect(cornerRadius: 16))
         }
     }
 
@@ -364,7 +358,7 @@ struct PatientManagementView: View {
         if viewModel.selectedPatientId != nil {
             Text(NSLocalizedString("caregiver.settings.section.detail", comment: "Detail settings header"))
                 .font(.headline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .padding(.top, 16)
             settingsSection
             inventorySettingsSection
@@ -384,15 +378,14 @@ struct PatientManagementView: View {
                     Text(NSLocalizedString("patient.settings.notifications.detail.item", comment: "Detail settings item"))
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
             .buttonStyle(.plain)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 
     private var logoutSection: some View {
@@ -415,15 +408,14 @@ struct PatientManagementView: View {
                     Text(NSLocalizedString("caregiver.inventory.settings.item.threshold", comment: "Inventory threshold item"))
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
             .buttonStyle(.plain)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 
     private var timePresetDetailSheet: some View {
@@ -487,8 +479,7 @@ struct PatientManagementView: View {
                     Spacer()
                     LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
                         .padding(16)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .shadow(radius: 6)
+                        .glassEffect(.regular, in: .rect(cornerRadius: 16))
                     Spacer()
                 }
             }

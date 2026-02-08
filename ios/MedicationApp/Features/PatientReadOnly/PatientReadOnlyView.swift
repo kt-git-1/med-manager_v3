@@ -12,6 +12,9 @@ struct PatientReadOnlyView: View {
         FullScreenContainer(content: {
             NavigationStack {
                 ZStack {
+                    Color(.systemGroupedBackground)
+                        .ignoresSafeArea()
+
                     switch selectedTab {
                     case .today:
                         PatientTodayView(
@@ -34,7 +37,7 @@ struct PatientReadOnlyView: View {
                     ToolbarItem(placement: .topBarLeading) {
                         Image(systemName: navigationIconName)
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.accentColor)
+                            .foregroundStyle(Color.accentColor)
                             .accessibilityHidden(true)
                     }
                 }
@@ -250,12 +253,7 @@ private struct PatientBottomTabBar: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(
-            Capsule()
-                .strokeBorder(Color(.separator).opacity(0.4))
-        )
-        .shadow(color: Color.black.opacity(0.12), radius: 18, y: 10)
+        .glassEffect(.regular, in: .capsule)
         .padding(.bottom, 6)
     }
 
@@ -274,13 +272,10 @@ private struct PatientBottomTabBar: View {
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
             }
-            .foregroundColor(isSelected ? .accentColor : .secondary)
+            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(
-                Capsule()
-                    .fill(isSelected ? Color(.secondarySystemBackground) : Color.clear)
-            )
+            .background(isSelected ? AnyShapeStyle(Color.accentColor.opacity(0.12)) : AnyShapeStyle(Color.clear), in: Capsule())
         }
         .buttonStyle(.plain)
     }
@@ -295,12 +290,11 @@ struct PatientHistoryPlaceholderView: View {
                     .font(.title3.weight(.semibold))
                 Text(NSLocalizedString("patient.readonly.history.message", comment: "History message"))
                     .font(.body)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
             .padding(24)
             .frame(maxWidth: .infinity)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .glassEffect(.regular, in: .rect(cornerRadius: 20))
             .padding(.horizontal, 24)
             Spacer(minLength: 0)
         }

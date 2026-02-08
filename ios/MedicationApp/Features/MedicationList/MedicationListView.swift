@@ -122,14 +122,13 @@ struct MedicationListView: View {
         ZStack {
             Group {
                 if viewModel.isLoading {
-                    Color(.systemBackground)
+                    Color.clear
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let errorMessage = viewModel.errorMessage {
                     ErrorStateView(message: errorMessage)
                 } else if viewModel.items.isEmpty {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 0)
-                            .fill(Color(.secondarySystemBackground))
+                        Color.clear
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         VStack {
                             Spacer(minLength: 0)
@@ -167,7 +166,7 @@ struct MedicationListView: View {
                                 } header: {
                                     Text(NSLocalizedString("medication.list.section.scheduled", comment: "Scheduled section"))
                                         .font(.headline)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                         .textCase(nil)
                                 }
                                 .listRowSeparator(.hidden)
@@ -181,7 +180,7 @@ struct MedicationListView: View {
                                 } header: {
                                     Text(NSLocalizedString("medication.list.section.prn", comment: "PRN section"))
                                         .font(.headline)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                         .textCase(nil)
                                 }
                                 .listRowSeparator(.hidden)
@@ -195,7 +194,7 @@ struct MedicationListView: View {
                                 } header: {
                                     Text(NSLocalizedString("medication.list.section.expired.scheduled", comment: "Expired scheduled section"))
                                         .font(.headline)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                         .textCase(nil)
                                 }
                                 .listRowSeparator(.hidden)
@@ -209,7 +208,7 @@ struct MedicationListView: View {
                                 } header: {
                                     Text(NSLocalizedString("medication.list.section.expired.prn", comment: "Expired PRN section"))
                                         .font(.headline)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                         .textCase(nil)
                                 }
                                 .listRowSeparator(.hidden)
@@ -222,15 +221,14 @@ struct MedicationListView: View {
                             } header: {
                                 Text(NSLocalizedString("medication.list.section.title", comment: "Medication list section"))
                                     .font(.headline)
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(.secondary)
                                     .textCase(nil)
                             }
                             .listRowSeparator(.hidden)
                         }
                     }
-                    .listStyle(.plain)
-                    .scrollContentBackground(.hidden)
-                    .background(Color(.systemBackground))
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
                     .safeAreaPadding(.bottom, 120)
                     .refreshable {
                         viewModel.load()
@@ -241,11 +239,9 @@ struct MedicationListView: View {
                             if let toastMessage {
                                 Text(toastMessage)
                                     .font(.subheadline.weight(.semibold))
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 10)
-                                    .background(.regularMaterial, in: Capsule())
-                                    .overlay(Capsule().strokeBorder(Color(.separator).opacity(0.3)))
-                                    .shadow(color: Color.black.opacity(0.15), radius: 8, y: 4)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .glassEffect(.regular, in: .capsule)
                                     .padding(.top, 8)
                                     .transition(.move(edge: .top).combined(with: .opacity))
                                     .accessibilityLabel(toastMessage)
@@ -262,8 +258,7 @@ struct MedicationListView: View {
                         Spacer()
                         LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
                             .padding(16)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .shadow(radius: 6)
+                .glassEffect(.regular, in: .rect(cornerRadius: 16))
                         Spacer()
                     }
                 }
@@ -373,7 +368,7 @@ struct MedicationListView: View {
             Spacer()
             if sessionStore.mode == .caregiver {
                 Image(systemName: "chevron.right")
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .padding(.top, 2)
             }
         }
@@ -382,20 +377,20 @@ struct MedicationListView: View {
                 rowContent
                     .padding(16)
                     .frame(maxWidth: .infinity)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 16))
             }
             .buttonStyle(.plain)
             .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
             .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
         } else {
             rowContent
                 .padding(16)
                 .frame(maxWidth: .infinity)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                .glassEffect(.regular, in: .rect(cornerRadius: 16))
                 .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                 .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
         }
     }
 
@@ -406,7 +401,7 @@ struct MedicationListView: View {
         let color: Color = isPrn ? .purple : .blue
         return Text(text)
             .font(.caption.weight(.bold))
-            .foregroundColor(color)
+            .foregroundStyle(color)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(color.opacity(0.15), in: Capsule())

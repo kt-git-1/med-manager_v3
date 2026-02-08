@@ -32,7 +32,7 @@ struct CaregiverHomeView: View {
                         ToolbarItem(placement: .topBarLeading) {
                             Image(systemName: "clock")
                                 .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.accentColor)
+                                .foregroundStyle(Color.accentColor)
                                 .accessibilityHidden(true)
                         }
                     }
@@ -62,14 +62,10 @@ struct CaregiverHomeView: View {
                             )
                         )
                         .font(.caption)
-                        .foregroundColor(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.accentColor.opacity(0.28), in: Capsule())
-                        .overlay(
-                            Capsule()
-                                .stroke(Color.accentColor, lineWidth: 1)
-                        )
+                        .background(Color.accentColor.opacity(0.15), in: Capsule())
                         Spacer()
                     }
                 }
@@ -148,12 +144,7 @@ private struct CaregiverBottomTabBar: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(
-            Capsule()
-                .strokeBorder(Color(.separator).opacity(0.4))
-        )
-        .shadow(color: Color.black.opacity(0.12), radius: 18, y: 10)
+        .glassEffect(.regular, in: .capsule)
     }
 
     private func tabButton(
@@ -171,13 +162,10 @@ private struct CaregiverBottomTabBar: View {
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
             }
-            .foregroundColor(isSelected ? .accentColor : .secondary)
+            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(
-                Capsule()
-                    .fill(isSelected ? Color(.secondarySystemBackground) : Color.clear)
-            )
+            .background(isSelected ? AnyShapeStyle(Color.accentColor.opacity(0.12)) : AnyShapeStyle(Color.clear), in: Capsule())
         }
         .buttonStyle(.plain)
     }
@@ -248,8 +236,7 @@ struct CaregiverMedicationView: View {
                     }
                     .padding(24)
                     .frame(maxWidth: .infinity)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 20))
                     .padding(.horizontal, 24)
                 } else if sessionStore.currentPatientId == nil {
                     VStack(spacing: 12) {
@@ -260,7 +247,7 @@ struct CaregiverMedicationView: View {
                                 .multilineTextAlignment(.center)
                             Text(NSLocalizedString("caregiver.medications.noSelection.message", comment: "No selection message"))
                                 .font(.body)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
                             Button(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab")) {
                                 onOpenPatients()
@@ -272,8 +259,7 @@ struct CaregiverMedicationView: View {
                         .padding(.horizontal, 24)
                         .padding(.vertical, 16)
                         .frame(maxWidth: .infinity)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                        .glassEffect(.regular, in: .rect(cornerRadius: 20))
                         .padding(.horizontal, 24)
                         Spacer(minLength: 0)
                     }
@@ -295,13 +281,14 @@ struct CaregiverMedicationView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
             .navigationTitle(NSLocalizedString("caregiver.tabs.medications", comment: "Medications tab"))
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Image(systemName: "pills")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                         .accessibilityHidden(true)
                 }
             }

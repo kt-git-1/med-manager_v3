@@ -41,11 +41,10 @@ struct PatientLinkCodeView: View {
                 )
             )
             .font(.subheadline)
-            .foregroundColor(.secondary)
+            .foregroundStyle(.secondary)
         }
         .padding(20)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+        .glassEffect(.regular, in: .rect(cornerRadius: 20))
         .padding(16)
         .alert(
             NSLocalizedString("caregiver.patients.code.copied", comment: "Copied alert"),

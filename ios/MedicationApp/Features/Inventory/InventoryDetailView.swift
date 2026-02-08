@@ -104,8 +104,7 @@ struct InventoryDetailView: View {
                             .ignoresSafeArea()
                         LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
                             .padding(16)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .shadow(radius: 6)
+                            .glassEffect(.regular, in: .rect(cornerRadius: 16))
                     }
                     .accessibilityIdentifier("InventoryUpdatingOverlay")
                 }
@@ -151,20 +150,20 @@ struct InventoryDetailView: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("薬名")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 Text(item.name)
                     .font(.headline)
             }
             Text(NSLocalizedString("caregiver.inventory.remaining.label", comment: "Remaining label"))
                 .font(.subheadline.weight(.semibold))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(inventoryEnabled ? "\(quantity)" : "—")
                     .font(.largeTitle.weight(.bold))
-                    .foregroundColor(inventoryEnabled ? .primary : .secondary)
+                    .foregroundStyle(inventoryEnabled ? Color.primary : Color.secondary)
                 Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
                     .font(.headline)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 Spacer()
                 statusBadge
             }
@@ -174,15 +173,11 @@ struct InventoryDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
         .overlay {
             if shouldHighlightLowStock {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(Color.red.opacity(0.7), lineWidth: 2)
-                    .shadow(color: Color.red.opacity(0.3), radius: 8)
             }
         }
     }
@@ -198,7 +193,7 @@ struct InventoryDetailView: View {
                 HStack(spacing: 8) {
                     Text(NSLocalizedString("caregiver.inventory.plan.refillDue", comment: "Refill due label"))
                         .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     Text(refillDueDateText)
                         .font(.subheadline.weight(.semibold))
                 }
@@ -209,7 +204,7 @@ struct InventoryDetailView: View {
     private var statusBadge: some View {
         Text(inventoryStatus.title)
             .font(.caption.weight(.bold))
-            .foregroundColor(inventoryStatus.color)
+            .foregroundStyle(inventoryStatus.color)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(inventoryStatus.color.opacity(0.15), in: Capsule())

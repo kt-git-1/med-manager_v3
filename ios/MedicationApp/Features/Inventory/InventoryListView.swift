@@ -137,7 +137,7 @@ struct InventoryListView: View {
                     ToolbarItem(placement: .topBarLeading) {
                         Image(systemName: "archivebox")
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.accentColor)
+                            .foregroundStyle(Color.accentColor)
                             .accessibilityHidden(true)
                     }
                 }
@@ -183,7 +183,7 @@ struct InventoryListView: View {
                     } header: {
                         Text(NSLocalizedString(section.titleKey, comment: section.titleComment))
                             .font(.headline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .textCase(nil)
                     }
                     .listRowSeparator(.hidden)
@@ -192,7 +192,6 @@ struct InventoryListView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(Color(.systemBackground))
         .safeAreaPadding(.bottom, 120)
         .refreshable {
             viewModel.load()
@@ -203,9 +202,7 @@ struct InventoryListView: View {
                     .font(.subheadline.weight(.semibold))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .background(.regularMaterial, in: Capsule())
-                    .overlay(Capsule().strokeBorder(Color(.separator).opacity(0.3)))
-                    .shadow(color: Color.black.opacity(0.15), radius: 8, y: 4)
+                    .glassEffect(.regular, in: .capsule)
                     .padding(.top, 8)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .accessibilityLabel(toastMessage)
@@ -225,6 +222,7 @@ struct InventoryListView: View {
         .pickerStyle(.segmented)
         .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
         .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
     }
 
     private var sectionData: [InventorySectionData] {
@@ -264,6 +262,7 @@ struct InventoryListView: View {
         inventoryRow(for: item)
             .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
             .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
     }
 
     private struct InventorySectionData: Identifiable {
@@ -287,7 +286,7 @@ struct InventoryListView: View {
     private func badge(text: String, color: Color) -> some View {
         Text(text)
             .font(.caption.weight(.bold))
-            .foregroundColor(color)
+            .foregroundStyle(color)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(color.opacity(0.15), in: Capsule())
@@ -301,8 +300,7 @@ struct InventoryListView: View {
                 Spacer()
                 LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
                     .padding(16)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(radius: 6)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 16))
                 Spacer()
             }
         }
@@ -371,11 +369,11 @@ struct InventoryListView: View {
                 }
                 Text(daysRemainingText(for: item))
                     .font(.subheadline)
-                    .foregroundColor(daysRemainingColor(for: item))
+                    .foregroundStyle(daysRemainingColor(for: item))
                 if shouldShowLowDaysWarning(for: item) {
                     Text(refillDueText(for: item))
                         .font(.caption.weight(.semibold))
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                 }
             }
             Spacer()
@@ -386,21 +384,20 @@ struct InventoryListView: View {
                             .font(.title2.weight(.bold))
                         Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
             Image(systemName: "chevron.right")
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(shouldShowLowDaysWarning(for: item) ? Color.red.opacity(0.6) : Color.clear, lineWidth: 2)
         )
-        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
         .contentShape(Rectangle())
         .onTapGesture {
             selectedItem = item

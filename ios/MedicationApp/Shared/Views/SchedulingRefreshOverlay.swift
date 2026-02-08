@@ -7,8 +7,7 @@ struct SchedulingRefreshOverlay: View {
                 .ignoresSafeArea()
             LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
                 .padding(16)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .shadow(radius: 6)
+                .glassEffect(.regular, in: .rect(cornerRadius: 16))
         }
         .accessibilityIdentifier("SchedulingRefreshOverlay")
     }

@@ -32,9 +32,7 @@ struct MedicationApp: App {
         UNUserNotificationCenter.current().delegate = notificationCoordinator
 
         let appearance = UITabBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor.systemBackground
-        appearance.shadowColor = UIColor.separator
+        appearance.configureWithTransparentBackground()
 
         let itemAppearance = UITabBarItemAppearance()
         itemAppearance.normal.titleTextAttributes = [.font: UIFont.systemFont(ofSize: 10, weight: .semibold)]
@@ -45,10 +43,6 @@ struct MedicationApp: App {
 
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
-        UITabBar.appearance().isTranslucent = false
-        UITabBar.appearance().itemPositioning = .fill
-        UITabBar.appearance().itemWidth = 90
-        UITabBar.appearance().itemSpacing = 12
     }
 
     var body: some Scene {

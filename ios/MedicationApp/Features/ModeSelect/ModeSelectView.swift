@@ -24,16 +24,10 @@ struct ModeSelectView: View {
             }
             .padding(24)
             .frame(maxWidth: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color(.systemBackground))
-            )
-            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .glassEffect(.regular, in: .rect(cornerRadius: 20))
             .padding(.horizontal, 24)
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
-        .ignoresSafeArea(edges: .bottom)
     }
 }

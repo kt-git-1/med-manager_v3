@@ -55,7 +55,7 @@ struct MedicationFormView: View {
                         Text(NSLocalizedString("medication.form.dose.count", comment: "Dose count"))
                         Spacer()
                         Text(viewModel.doseCountPerIntake.isEmpty ? "0" : viewModel.doseCountPerIntake)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .accessibilityLabel("服用数")
@@ -111,7 +111,7 @@ struct MedicationFormView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(NSLocalizedString("medication.form.schedule.weekdays", comment: "Weekdays"))
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                             LazyVGrid(columns: weekdayColumns, spacing: 8) {
                                 ForEach(ScheduleDay.allCases) { day in
                                     let isSelected = viewModel.selectedDays.contains(day)
@@ -127,9 +127,9 @@ struct MedicationFormView: View {
                                             .frame(maxWidth: .infinity, minHeight: 36)
                                             .background(
                                                 RoundedRectangle(cornerRadius: 8)
-                                                    .fill(isSelected ? Color.accentColor : Color(.secondarySystemBackground))
+                                                    .fill(isSelected ? Color.accentColor : Color.primary.opacity(0.05))
                                             )
-                                            .foregroundColor(isSelected ? .white : .primary)
+                                            .foregroundStyle(isSelected ? Color.white : Color.primary)
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityLabel("曜日 \(day.shortLabel)")
@@ -142,7 +142,7 @@ struct MedicationFormView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(NSLocalizedString("medication.form.schedule.times", comment: "Times"))
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                         LazyVGrid(columns: timeColumns, spacing: 12) {
                             ForEach(ScheduleTimeSlot.allCases) { slot in
                                 let isSelected = viewModel.selectedTimeSlots.contains(slot)
@@ -155,13 +155,13 @@ struct MedicationFormView: View {
                                 } label: {
                                     HStack(spacing: 12) {
                                         Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                                            .foregroundColor(isSelected ? .accentColor : .secondary)
+                                            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(slot.label)
                                                 .font(.body.weight(.semibold))
                                             Text(viewModel.timeValue(for: slot))
                                                 .font(.footnote)
-                                                .foregroundColor(.secondary)
+                                                .foregroundStyle(.secondary)
                                         }
                                         Spacer()
                                     }
@@ -169,7 +169,7 @@ struct MedicationFormView: View {
                                     .padding(.horizontal, 12)
                                     .background(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color(.secondarySystemBackground))
+                                            .fill(Color.primary.opacity(0.05))
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -184,7 +184,7 @@ struct MedicationFormView: View {
                     } else if viewModel.scheduleNotSet && viewModel.isEditing {
                         Text(NSLocalizedString("medication.form.schedule.unset", comment: "Schedule not set"))
                             .font(.footnote)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -199,7 +199,7 @@ struct MedicationFormView: View {
                             Text(NSLocalizedString("medication.form.inventory.count", comment: "Inventory count"))
                             Spacer()
                             Text(viewModel.inventoryCount.isEmpty ? "0" : viewModel.inventoryCount)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                     }
                     .accessibilityLabel("在庫数")
@@ -220,14 +220,14 @@ struct MedicationFormView: View {
             if isCaregiverMissingPatient {
                 Section {
                     Text(NSLocalizedString("medication.form.patient.required", comment: "Patient required"))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
 
             if sessionStore.mode == .patient {
                 Section {
                     Text(NSLocalizedString("medication.form.patient.readonly", comment: "Read-only message"))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             } else {
                 if viewModel.isEditing {
@@ -235,7 +235,7 @@ struct MedicationFormView: View {
                         saveButton(isCaregiverMissingPatient: isCaregiverMissingPatient)
                         deleteButton(isCaregiverMissingPatient: isCaregiverMissingPatient)
                     }
-                    .listRowBackground(Color(.secondarySystemBackground))
+                    .listRowBackground(Color.clear)
                 } else {
                     saveButton(isCaregiverMissingPatient: isCaregiverMissingPatient)
                 }
@@ -323,7 +323,7 @@ struct MedicationFormView: View {
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
         .frame(maxWidth: .infinity, alignment: .center)
-        .listRowBackground(Color(.secondarySystemBackground))
+        .listRowBackground(Color.clear)
         .accessibilityLabel(NSLocalizedString("common.save", comment: "Save"))
     }
 
@@ -337,7 +337,7 @@ struct MedicationFormView: View {
         .tint(.red)
         .controlSize(.large)
         .frame(maxWidth: .infinity, alignment: .center)
-        .listRowBackground(Color(.secondarySystemBackground))
+        .listRowBackground(Color.clear)
         .accessibilityLabel(NSLocalizedString("medication.form.delete", comment: "Delete medication"))
     }
 
@@ -356,8 +356,7 @@ struct MedicationFormView: View {
                 Spacer()
                 LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
                     .padding(16)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(radius: 6)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 16))
                 Spacer()
             }
         }

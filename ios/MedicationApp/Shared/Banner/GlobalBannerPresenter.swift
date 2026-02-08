@@ -29,12 +29,7 @@ struct GlobalBannerView: View {
             .font(.subheadline.weight(.semibold))
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(Color.white, in: Capsule())
-            .overlay(
-                Capsule()
-                    .stroke(Color.yellow.opacity(0.9), lineWidth: 2)
-            )
-            .shadow(color: Color.black.opacity(0.12), radius: 10, y: 6)
+            .glassEffect(.regular, in: .capsule)
             .padding(.top, 8)
             .padding(.horizontal, 16)
             .transition(.move(edge: .top).combined(with: .opacity))
