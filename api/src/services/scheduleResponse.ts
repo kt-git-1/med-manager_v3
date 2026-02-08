@@ -54,15 +54,23 @@ function getLocalTimeString(scheduledAt: string, tz: string) {
   return `${values.hour}:${values.minute}`;
 }
 
-export function resolveSlot(scheduledAt: string, tz: string): HistorySlot | null {
+export function resolveSlot(
+  scheduledAt: string,
+  tz: string,
+  customSlotTimes?: Partial<Record<HistorySlot, string>>
+): HistorySlot | null {
   const localTime = getLocalTimeString(scheduledAt, tz);
-  const entry = Object.entries(slotTimes).find(([, time]) => time === localTime);
+  const effectiveTimes = customSlotTimes
+    ? { ...slotTimes, ...customSlotTimes }
+    : slotTimes;
+  const entry = Object.entries(effectiveTimes).find(([, time]) => time === localTime);
   return (entry?.[0] as HistorySlot | undefined) ?? null;
 }
 
 export function buildSlotSummary(
   doses: { scheduledAt: string; effectiveStatus?: "pending" | "taken" | "missed" }[],
-  tz: string
+  tz: string,
+  customSlotTimes?: Partial<Record<HistorySlot, string>>
 ) {
   const summary: Record<HistorySlot, SlotSummaryStatus> = {
     morning: "none",
@@ -71,7 +79,7 @@ export function buildSlotSummary(
     bedtime: "none"
   };
   for (const dose of doses) {
-    const slot = resolveSlot(dose.scheduledAt, tz);
+    const slot = resolveSlot(dose.scheduledAt, tz, customSlotTimes);
     if (!slot) {
       continue;
     }
@@ -90,6 +98,24 @@ export function buildSlotSummary(
     }
   }
   return summary;
+}
+
+const timePattern = /^\d{2}:\d{2}$/;
+
+export function parseSlotTimesFromParams(
+  searchParams: URLSearchParams
+): Partial<Record<HistorySlot, string>> | undefined {
+  const slots: HistorySlot[] = ["morning", "noon", "evening", "bedtime"];
+  const result: Partial<Record<HistorySlot, string>> = {};
+  let hasAny = false;
+  for (const slot of slots) {
+    const value = searchParams.get(`${slot}Time`);
+    if (value && timePattern.test(value)) {
+      result[slot] = value;
+      hasAny = true;
+    }
+  }
+  return hasAny ? result : undefined;
 }
 
 export function groupDosesByLocalDate(

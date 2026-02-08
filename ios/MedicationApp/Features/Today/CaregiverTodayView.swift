@@ -5,6 +5,7 @@ struct CaregiverTodayView: View {
     private let onOpenPatients: () -> Void
     private let headerView: AnyView?
     @StateObject private var viewModel: CaregiverTodayViewModel
+    private let preferencesStore = NotificationPreferencesStore()
 
     init(
         sessionStore: SessionStore? = nil,
@@ -271,7 +272,7 @@ struct CaregiverTodayView: View {
     }
 
     private func slot(for dose: ScheduleDoseDTO) -> NotificationSlot? {
-        NotificationSlot.from(date: dose.scheduledAt)
+        NotificationSlot.from(date: dose.scheduledAt, slotTimes: preferencesStore.slotTimesMap())
     }
 
     private var plannedItems: [ScheduleDoseDTO] {

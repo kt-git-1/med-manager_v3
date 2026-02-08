@@ -21,11 +21,30 @@ extension View {
 }
 
 extension NotificationSlot {
-    static func from(date: Date, timeZone: TimeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current) -> NotificationSlot? {
+    static func from(
+        date: Date,
+        timeZone: TimeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current,
+        slotTimes: [NotificationSlot: (hour: Int, minute: Int)]? = nil
+    ) -> NotificationSlot? {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         let components = calendar.dateComponents([.hour, .minute], from: date)
-        switch (components.hour, components.minute) {
+        let hour = components.hour ?? -1
+        let minute = components.minute ?? -1
+
+        // When custom slot times are provided, match against them first.
+        if let slotTimes {
+            for slot in NotificationSlot.allCases {
+                let time = slotTimes[slot] ?? slot.hourMinute
+                if time.hour == hour && time.minute == minute {
+                    return slot
+                }
+            }
+            return nil
+        }
+
+        // Fallback: match against built-in defaults.
+        switch (hour, minute) {
         case (8, 0):
             return .morning
         case (12, 0):

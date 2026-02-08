@@ -186,13 +186,19 @@ final class APIClient {
         return try decoder.decode(ScheduleResponseDTO.self, from: data).data
     }
 
-    func fetchPatientHistoryMonth(year: Int, month: Int) async throws -> HistoryMonthResponseDTO {
+    func fetchPatientHistoryMonth(
+        year: Int,
+        month: Int,
+        slotTimeItems: [URLQueryItem] = []
+    ) async throws -> HistoryMonthResponseDTO {
+        var queryItems = [
+            URLQueryItem(name: "year", value: String(year)),
+            URLQueryItem(name: "month", value: String(month))
+        ]
+        queryItems.append(contentsOf: slotTimeItems)
         let request = try makeHistoryRequest(
             path: "api/patient/history/month",
-            queryItems: [
-                URLQueryItem(name: "year", value: String(year)),
-                URLQueryItem(name: "month", value: String(month))
-            ]
+            queryItems: queryItems
         )
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
@@ -201,10 +207,15 @@ final class APIClient {
         return try decoder.decode(HistoryMonthResponseDTO.self, from: data)
     }
 
-    func fetchPatientHistoryDay(date: String) async throws -> HistoryDayResponseDTO {
+    func fetchPatientHistoryDay(
+        date: String,
+        slotTimeItems: [URLQueryItem] = []
+    ) async throws -> HistoryDayResponseDTO {
+        var queryItems = [URLQueryItem(name: "date", value: date)]
+        queryItems.append(contentsOf: slotTimeItems)
         let request = try makeHistoryRequest(
             path: "api/patient/history/day",
-            queryItems: [URLQueryItem(name: "date", value: date)]
+            queryItems: queryItems
         )
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
@@ -267,14 +278,21 @@ final class APIClient {
         return try decoder.decode(ScheduleResponseDTO.self, from: data).data
     }
 
-    func fetchCaregiverHistoryMonth(patientId: String? = nil, year: Int, month: Int) async throws -> HistoryMonthResponseDTO {
+    func fetchCaregiverHistoryMonth(
+        patientId: String? = nil,
+        year: Int,
+        month: Int,
+        slotTimeItems: [URLQueryItem] = []
+    ) async throws -> HistoryMonthResponseDTO {
         let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
+        var queryItems = [
+            URLQueryItem(name: "year", value: String(year)),
+            URLQueryItem(name: "month", value: String(month))
+        ]
+        queryItems.append(contentsOf: slotTimeItems)
         let request = try makeHistoryRequest(
             path: "api/patients/\(resolvedPatientId)/history/month",
-            queryItems: [
-                URLQueryItem(name: "year", value: String(year)),
-                URLQueryItem(name: "month", value: String(month))
-            ]
+            queryItems: queryItems
         )
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
@@ -283,11 +301,17 @@ final class APIClient {
         return try decoder.decode(HistoryMonthResponseDTO.self, from: data)
     }
 
-    func fetchCaregiverHistoryDay(patientId: String? = nil, date: String) async throws -> HistoryDayResponseDTO {
+    func fetchCaregiverHistoryDay(
+        patientId: String? = nil,
+        date: String,
+        slotTimeItems: [URLQueryItem] = []
+    ) async throws -> HistoryDayResponseDTO {
         let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
+        var queryItems = [URLQueryItem(name: "date", value: date)]
+        queryItems.append(contentsOf: slotTimeItems)
         let request = try makeHistoryRequest(
             path: "api/patients/\(resolvedPatientId)/history/day",
-            queryItems: [URLQueryItem(name: "date", value: date)]
+            queryItems: queryItems
         )
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)

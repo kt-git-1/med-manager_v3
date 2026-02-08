@@ -17,6 +17,7 @@ final class PatientTodayViewModel: ObservableObject {
 
     private let apiClient: APIClient
     private let reminderService: ReminderService
+    private let preferencesStore: NotificationPreferencesStore
     private let dateFormatter: DateFormatter
     private let timeFormatter: DateFormatter
     private let dateKeyFormatter: DateFormatter
@@ -24,9 +25,14 @@ final class PatientTodayViewModel: ObservableObject {
     private var foregroundTask: Task<Void, Never>?
     private var medicationCache: [String: MedicationDTO] = [:]
 
-    init(apiClient: APIClient, reminderService: ReminderService = ReminderService()) {
+    init(
+        apiClient: APIClient,
+        reminderService: ReminderService = ReminderService(),
+        preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore()
+    ) {
         self.apiClient = apiClient
         self.reminderService = reminderService
+        self.preferencesStore = preferencesStore
         self.dateFormatter = DateFormatter()
         self.dateFormatter.locale = Locale(identifier: "ja_JP")
         self.dateFormatter.dateStyle = .medium
@@ -156,7 +162,7 @@ final class PatientTodayViewModel: ObservableObject {
 
     func handleDeepLink(_ target: NotificationDeepLinkTarget) -> String? {
         guard let dose = items.first(where: { dose in
-            guard let slot = NotificationSlot.from(date: dose.scheduledAt, timeZone: calendar.timeZone) else {
+            guard let slot = NotificationSlot.from(date: dose.scheduledAt, timeZone: calendar.timeZone, slotTimes: preferencesStore.slotTimesMap()) else {
                 return false
             }
             return slot == target.slot && dateKey(for: dose.scheduledAt) == target.dateKey

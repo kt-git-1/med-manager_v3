@@ -35,7 +35,7 @@ final class ReminderService {
 
         let slots = Set(todayDoses.compactMap { dose -> NotificationSlot? in
             guard dose.effectiveStatus == .pending || dose.effectiveStatus == .none else { return nil }
-            return NotificationSlot.from(date: dose.scheduledAt, timeZone: calendar.timeZone)
+            return NotificationSlot.from(date: dose.scheduledAt, timeZone: calendar.timeZone, slotTimes: preferencesStore.slotTimesMap())
         })
 
         for slot in slots {

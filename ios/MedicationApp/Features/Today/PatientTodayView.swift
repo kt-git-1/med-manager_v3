@@ -44,6 +44,8 @@ private struct PatientTodayRootView: View {
     @State private var isDetailLoading = false
     @State private var detailErrorMessage: String?
 
+    private let preferencesStore = NotificationPreferencesStore()
+
     var body: some View {
         PatientTodayBaseView(
             viewModel: viewModel,
@@ -214,7 +216,7 @@ private struct PatientTodayRootView: View {
     }
 
     private func slot(for dose: ScheduleDoseDTO) -> NotificationSlot? {
-        NotificationSlot.from(date: dose.scheduledAt)
+        NotificationSlot.from(date: dose.scheduledAt, slotTimes: preferencesStore.slotTimesMap())
     }
 
     private func shouldHighlight(dose: ScheduleDoseDTO) -> Bool {

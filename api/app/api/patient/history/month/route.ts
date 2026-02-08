@@ -5,7 +5,7 @@ import {
   getMonthRange,
   getScheduleWithStatus
 } from "../../../../../src/services/scheduleService";
-import { buildSlotSummary, groupDosesByLocalDate } from "../../../../../src/services/scheduleResponse";
+import { buildSlotSummary, groupDosesByLocalDate, parseSlotTimesFromParams } from "../../../../../src/services/scheduleResponse";
 import { listPrnHistoryItemsByRange } from "../../../../../src/services/prnDoseRecordService";
 import { validateYearMonth } from "../../../../../src/validators/schedule";
 
@@ -43,6 +43,7 @@ export async function GET(request: Request) {
       timeZone: historyTimeZone
     });
 
+    const customSlotTimes = parseSlotTimesFromParams(searchParams);
     const days: { date: string; slotSummary: ReturnType<typeof buildSlotSummary> }[] = [];
     const cursor = new Date(range.from);
     while (cursor < range.to) {
@@ -50,7 +51,7 @@ export async function GET(request: Request) {
       const dayDoses = grouped.get(dateKey) ?? [];
       days.push({
         date: dateKey,
-        slotSummary: buildSlotSummary(dayDoses, historyTimeZone)
+        slotSummary: buildSlotSummary(dayDoses, historyTimeZone, customSlotTimes)
       });
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }

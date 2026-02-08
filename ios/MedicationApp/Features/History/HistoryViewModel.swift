@@ -12,11 +12,17 @@ final class HistoryViewModel: ObservableObject {
 
     private let apiClient: APIClient
     private let sessionStore: SessionStore
+    private let preferencesStore: NotificationPreferencesStore
     private var activeRequests = 0
 
-    init(apiClient: APIClient, sessionStore: SessionStore) {
+    init(
+        apiClient: APIClient,
+        sessionStore: SessionStore,
+        preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore()
+    ) {
         self.apiClient = apiClient
         self.sessionStore = sessionStore
+        self.preferencesStore = preferencesStore
     }
 
     func loadMonth(year: Int, month: Int) {
@@ -30,11 +36,12 @@ final class HistoryViewModel: ObservableObject {
                 isLoadingMonth = false
             }
             do {
+                let slotItems = preferencesStore.slotTimeQueryItems()
                 switch sessionStore.mode {
                 case .patient:
-                    self.month = try await apiClient.fetchPatientHistoryMonth(year: year, month: month)
+                    self.month = try await apiClient.fetchPatientHistoryMonth(year: year, month: month, slotTimeItems: slotItems)
                 case .caregiver:
-                    self.month = try await apiClient.fetchCaregiverHistoryMonth(year: year, month: month)
+                    self.month = try await apiClient.fetchCaregiverHistoryMonth(year: year, month: month, slotTimeItems: slotItems)
                 case .none:
                     self.month = nil
                 }
@@ -58,11 +65,12 @@ final class HistoryViewModel: ObservableObject {
                 isLoadingDay = false
             }
             do {
+                let slotItems = preferencesStore.slotTimeQueryItems()
                 switch sessionStore.mode {
                 case .patient:
-                    self.day = try await apiClient.fetchPatientHistoryDay(date: date)
+                    self.day = try await apiClient.fetchPatientHistoryDay(date: date, slotTimeItems: slotItems)
                 case .caregiver:
-                    self.day = try await apiClient.fetchCaregiverHistoryDay(date: date)
+                    self.day = try await apiClient.fetchCaregiverHistoryDay(date: date, slotTimeItems: slotItems)
                 case .none:
                     self.day = nil
                 }

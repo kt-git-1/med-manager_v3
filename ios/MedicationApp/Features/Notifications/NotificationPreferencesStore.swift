@@ -142,6 +142,14 @@ final class NotificationPreferencesStore: ObservableObject {
         slotTimes = times
     }
 
+    func slotTimeQueryItems() -> [URLQueryItem] {
+        NotificationSlot.allCases.map { slot in
+            let time = slotTime(for: slot)
+            let value = String(format: "%02d:%02d", time.hour, time.minute)
+            return URLQueryItem(name: "\(slot.rawValue)Time", value: value)
+        }
+    }
+
     private static func parseTimeString(_ value: String?) -> DateComponents? {
         guard let value, !value.isEmpty else { return nil }
         let parts = value.split(separator: ":").map { Int($0) }

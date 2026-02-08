@@ -6,12 +6,18 @@ final class CaregiverSessionController: ObservableObject {
     private let sessionStore: SessionStore
     private let bannerPresenter: GlobalBannerPresenter
     private let subscriber: CaregiverEventSubscriber
+    private let preferencesStore: NotificationPreferencesStore
     private var cancellables = Set<AnyCancellable>()
     private var isForeground = false
 
-    init(sessionStore: SessionStore, bannerPresenter: GlobalBannerPresenter) {
+    init(
+        sessionStore: SessionStore,
+        bannerPresenter: GlobalBannerPresenter,
+        preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore()
+    ) {
         self.sessionStore = sessionStore
         self.bannerPresenter = bannerPresenter
+        self.preferencesStore = preferencesStore
         self.subscriber = CaregiverEventSubscriber(sessionStore: sessionStore)
         bind()
     }
@@ -87,7 +93,7 @@ final class CaregiverSessionController: ObservableObject {
     }
 
     private func scheduledSlotLabel(for date: Date) -> String {
-        if let slot = NotificationSlot.from(date: date) {
+        if let slot = NotificationSlot.from(date: date, slotTimes: preferencesStore.slotTimesMap()) {
             switch slot {
             case .morning:
                 return NSLocalizedString("history.slot.morning", comment: "Morning slot")

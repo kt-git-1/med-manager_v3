@@ -11,7 +11,7 @@ import {
   getLocalDateKey,
   getScheduleWithStatus
 } from "../../../../../../src/services/scheduleService";
-import { resolveSlot } from "../../../../../../src/services/scheduleResponse";
+import { resolveSlot, parseSlotTimesFromParams } from "../../../../../../src/services/scheduleResponse";
 import { listPrnHistoryItemsByRange } from "../../../../../../src/services/prnDoseRecordService";
 import { validateDateString } from "../../../../../../src/validators/schedule";
 
@@ -71,9 +71,10 @@ export async function GET(
       timeZone: historyTimeZone
     });
 
+    const customSlotTimes = parseSlotTimesFromParams(searchParams);
     const items = doses
       .map((dose) => {
-        const slot = resolveSlot(dose.scheduledAt, historyTimeZone);
+        const slot = resolveSlot(dose.scheduledAt, historyTimeZone, customSlotTimes);
         if (!slot) {
           return null;
         }
