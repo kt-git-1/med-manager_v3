@@ -281,7 +281,7 @@ private struct PatientTodayBaseView: View {
 
     private var baseView: some View {
         ZStack(alignment: .top) {
-            Color.white
+            Color(.systemBackground)
                 .ignoresSafeArea()
             content
             toastView
@@ -296,9 +296,9 @@ private struct PatientTodayBaseView: View {
                 .font(.subheadline.weight(.semibold))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .background(.ultraThinMaterial)
-                .clipShape(Capsule())
-                .shadow(radius: 4)
+                .background(.regularMaterial, in: Capsule())
+                .overlay(Capsule().strokeBorder(Color(.separator).opacity(0.3)))
+                .shadow(color: Color.black.opacity(0.15), radius: 8, y: 4)
                 .padding(.top, 8)
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .accessibilityLabel(toastMessage)
@@ -498,7 +498,7 @@ private struct PatientTodayListView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .refreshable {
             viewModel.load(showLoading: false)
         }
@@ -530,7 +530,7 @@ private struct PrnMedicationListView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .navigationTitle(NSLocalizedString("patient.today.prn.section.title", comment: "PRN section"))
         .navigationBarTitleDisplayMode(.inline)
         .overlay {
@@ -761,11 +761,11 @@ private struct PatientTodayDoseDetailView: View {
                 .padding(12)
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.white)
+                        .fill(Color(.tertiarySystemBackground))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Color.black.opacity(0.08), lineWidth: 1)
+                        .stroke(Color(.separator).opacity(0.5), lineWidth: 1)
                 )
         }
         .frame(maxWidth: .infinity, alignment: .leading)

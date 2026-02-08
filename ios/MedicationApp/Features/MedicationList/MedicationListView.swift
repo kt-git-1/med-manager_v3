@@ -122,7 +122,7 @@ struct MedicationListView: View {
         ZStack {
             Group {
                 if viewModel.isLoading {
-                    Color.white
+                    Color(.systemBackground)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let errorMessage = viewModel.errorMessage {
                     ErrorStateView(message: errorMessage)
@@ -230,7 +230,7 @@ struct MedicationListView: View {
                     }
                     .listStyle(.plain)
                     .scrollContentBackground(.hidden)
-                    .background(Color.white)
+                    .background(Color(.systemBackground))
                     .safeAreaPadding(.bottom, 120)
                     .refreshable {
                         viewModel.load()
@@ -243,9 +243,9 @@ struct MedicationListView: View {
                                     .font(.subheadline.weight(.semibold))
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
-                                    .background(.ultraThinMaterial)
-                                    .clipShape(Capsule())
-                                    .shadow(radius: 4)
+                                    .background(.regularMaterial, in: Capsule())
+                                    .overlay(Capsule().strokeBorder(Color(.separator).opacity(0.3)))
+                                    .shadow(color: Color.black.opacity(0.15), radius: 8, y: 4)
                                     .padding(.top, 8)
                                     .transition(.move(edge: .top).combined(with: .opacity))
                                     .accessibilityLabel(toastMessage)

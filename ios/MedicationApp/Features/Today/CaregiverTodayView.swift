@@ -24,16 +24,16 @@ struct CaregiverTodayView: View {
     var body: some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(Color.white)
+            .background(Color(.systemBackground))
             .overlay(alignment: .top) {
                 if let toastMessage = viewModel.toastMessage {
                     Text(toastMessage)
                         .font(.subheadline.weight(.semibold))
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Capsule())
-                        .shadow(radius: 4)
+                        .background(.regularMaterial, in: Capsule())
+                        .overlay(Capsule().strokeBorder(Color(.separator).opacity(0.3)))
+                        .shadow(color: Color.black.opacity(0.15), radius: 8, y: 4)
                         .padding(.top, 8)
                         .transition(.move(edge: .top).combined(with: .opacity))
                         .accessibilityLabel(toastMessage)
@@ -182,7 +182,7 @@ struct CaregiverTodayView: View {
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
-                .background(Color.white)
+                .background(Color(.systemBackground))
                 .refreshable {
                     viewModel.load(showLoading: false)
                 }
