@@ -46,24 +46,31 @@ struct HistoryMonthView: View {
         FullScreenContainer(
             content: {
                 ScrollView {
-                LazyVStack(spacing: 16) {
-                    header
+                    LazyVStack(spacing: 16) {
+                        header
 
-                    if viewModel.isLoadingMonth && viewModel.month == nil {
-                        LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
-                    } else if let errorMessage = viewModel.monthErrorMessage {
-                        errorSection(message: errorMessage, retry: loadMonth)
-                    } else {
-                        calendarGrid
-                        legend
-                        HistoryDayDetailView(viewModel: viewModel, selectedDate: selectedDate)
+                        if viewModel.isLoadingMonth && viewModel.month == nil {
+                            LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+                        } else if let errorMessage = viewModel.monthErrorMessage {
+                            errorSection(message: errorMessage, retry: loadMonth)
+                        } else {
+                            calendarGrid
+                            legend
+                            HistoryDayDetailView(viewModel: viewModel, selectedDate: selectedDate)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 120)
+                }
+                .refreshable {
+                    loadMonth()
+                    updateSelectionForDisplayedMonth()
+                    if let selectedDate {
+                        viewModel.loadDay(date: HistoryMonthView.dateKeyFormatter.string(from: selectedDate))
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 120)
-            }
             },
             overlay: viewModel.isUpdating ? AnyView(updatingOverlay) : nil
         )

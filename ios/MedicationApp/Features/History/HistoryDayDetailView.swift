@@ -121,9 +121,11 @@ private struct HistoryDayRow: View {
                     .font(.headline)
                 Text(name)
                     .font(.title3.weight(.semibold))
-                Text(dosage)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                if let dosageText {
+                    Text(dosageText)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
             Text(statusText)
@@ -140,6 +142,14 @@ private struct HistoryDayRow: View {
                 .fill(Color(.secondarySystemBackground))
         )
         .shadow(color: Color.black.opacity(0.05), radius: 6, y: 2)
+    }
+
+    private var dosageText: String? {
+        let trimmed = dosage.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == "不明" {
+            return nil
+        }
+        return trimmed
     }
 
     private var statusText: String {

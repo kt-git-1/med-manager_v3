@@ -183,6 +183,9 @@ struct CaregiverTodayView: View {
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
                 .background(Color.white)
+                .refreshable {
+                    viewModel.load(showLoading: false)
+                }
                 let listWithInsets = headerView == nil
                     ? AnyView(baseList.safeAreaPadding(.top).safeAreaPadding(.bottom, 120))
                     : AnyView(baseList.safeAreaPadding(.bottom, 120))
@@ -320,9 +323,11 @@ private struct CaregiverTodayRow: View {
                         .font(.headline)
                     Text(dose.medicationSnapshot.name)
                         .font(.title3.weight(.semibold))
-                    Text(dose.medicationSnapshot.dosageText)
-                        .font(.body)
-                        .foregroundColor(.secondary)
+                    if let dosageText {
+                        Text(dosageText)
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
                     if let recordedByText {
                         Text(recordedByText)
                             .font(.caption)
@@ -361,7 +366,10 @@ private struct CaregiverTodayRow: View {
     }
 
     private var accessibilitySummary: String {
-        var parts = [timeText, dose.medicationSnapshot.name, dose.medicationSnapshot.dosageText]
+        var parts = [timeText, dose.medicationSnapshot.name]
+        if let dosageText {
+            parts.append(dosageText)
+        }
         if let recordedByText {
             parts.append(recordedByText)
         }
@@ -369,6 +377,14 @@ private struct CaregiverTodayRow: View {
             parts.append(statusText)
         }
         return parts.joined(separator: ", ")
+    }
+
+    private var dosageText: String? {
+        let trimmed = dose.medicationSnapshot.dosageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == "不明" {
+            return nil
+        }
+        return trimmed
     }
 
     private func statusText(for status: DoseStatusDTO?) -> String? {

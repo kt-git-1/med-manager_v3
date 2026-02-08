@@ -7,8 +7,7 @@ struct MedicationFormView: View {
     @State private var hasEndDate = false
     @State private var showingDeleteConfirm = false
     private let onSuccess: ((String) -> Void)?
-    private let dosageUnits = ["", "mg", "g", "mcg", "mL"]
-    private let inventoryUnits = ["", "錠", "包", "本", "個", "mL"]
+    private let dosageUnits = ["", "不明", "mg", "g", "mcg", "mL"]
 
     init(
         sessionStore: SessionStore? = nil,
@@ -40,6 +39,7 @@ struct MedicationFormView: View {
                     .accessibilityLabel("薬名")
                 TextField(NSLocalizedString("medication.form.dosage.value", comment: "Dosage value"), text: $viewModel.dosageStrengthValue)
                     .keyboardType(.decimalPad)
+                    .disabled(viewModel.dosageStrengthUnit == "不明")
                     .accessibilityLabel("用量数値")
                 Picker(NSLocalizedString("medication.form.dosage.unit", comment: "Dosage unit"), selection: $viewModel.dosageStrengthUnit) {
                     ForEach(dosageUnits, id: \.self) { unit in
@@ -61,18 +61,20 @@ struct MedicationFormView: View {
                 .accessibilityLabel("服用数")
             }
 
-            Section(NSLocalizedString("medication.form.section.prn", comment: "PRN section")) {
-                Toggle(
-                    NSLocalizedString("medication.form.prn.toggle", comment: "PRN toggle"),
-                    isOn: $viewModel.isPrn
-                )
-                .accessibilityLabel("頓服設定")
-                if viewModel.isPrn {
-                    TextField(
-                        NSLocalizedString("medication.form.prn.instructions", comment: "PRN instructions"),
-                        text: $viewModel.prnInstructions
+            if !viewModel.isEditing {
+                Section(NSLocalizedString("medication.form.section.prn", comment: "PRN section")) {
+                    Toggle(
+                        NSLocalizedString("medication.form.prn.toggle", comment: "PRN toggle"),
+                        isOn: $viewModel.isPrn
                     )
-                    .accessibilityLabel("頓服の説明")
+                    .accessibilityLabel("頓服設定")
+                    if viewModel.isPrn {
+                        TextField(
+                            NSLocalizedString("medication.form.prn.instructions", comment: "PRN instructions"),
+                            text: $viewModel.prnInstructions
+                        )
+                        .accessibilityLabel("頓服の説明")
+                    }
                 }
             }
 
@@ -187,25 +189,21 @@ struct MedicationFormView: View {
                 }
             }
 
-            Section(NSLocalizedString("medication.form.section.inventory", comment: "Inventory")) {
-                Stepper(
-                    value: intBinding(for: $viewModel.inventoryCount),
-                    in: 0...9999
-                ) {
-                    HStack {
-                        Text(NSLocalizedString("medication.form.inventory.count", comment: "Inventory count"))
-                        Spacer()
-                        Text(viewModel.inventoryCount.isEmpty ? "0" : viewModel.inventoryCount)
-                            .foregroundColor(.secondary)
+            if !viewModel.isEditing {
+                Section(NSLocalizedString("medication.form.section.inventory", comment: "Inventory")) {
+                    Stepper(
+                        value: intBinding(for: $viewModel.inventoryCount),
+                        in: 0...9999
+                    ) {
+                        HStack {
+                            Text(NSLocalizedString("medication.form.inventory.count", comment: "Inventory count"))
+                            Spacer()
+                            Text(viewModel.inventoryCount.isEmpty ? "0" : viewModel.inventoryCount)
+                                .foregroundColor(.secondary)
+                        }
                     }
+                    .accessibilityLabel("在庫数")
                 }
-                .accessibilityLabel("在庫数")
-                Picker(NSLocalizedString("medication.form.inventory.unit", comment: "Inventory unit"), selection: $viewModel.inventoryUnit) {
-                    ForEach(inventoryUnits, id: \.self) { unit in
-                        Text(unit.isEmpty ? NSLocalizedString("common.select", comment: "Select") : unit).tag(unit)
-                    }
-                }
-                .accessibilityLabel("在庫単位")
             }
 
             Section(NSLocalizedString("medication.form.section.notes", comment: "Notes")) {
@@ -274,6 +272,11 @@ struct MedicationFormView: View {
                 viewModel.selectedTimeSlots = []
                 viewModel.scheduleFrequency = .daily
                 viewModel.scheduleNotSet = false
+            }
+        }
+        .onChange(of: viewModel.dosageStrengthUnit) { _, unit in
+            if unit == "不明" {
+                viewModel.dosageStrengthValue = ""
             }
         }
         .alert(

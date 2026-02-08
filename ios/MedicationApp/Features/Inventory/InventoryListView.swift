@@ -133,6 +133,14 @@ struct InventoryListView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .navigationTitle(NSLocalizedString("caregiver.tabs.inventory", comment: "Inventory tab"))
                 .navigationBarTitleDisplayMode(.large)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Image(systemName: "archivebox")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.accentColor)
+                            .accessibilityHidden(true)
+                    }
+                }
             },
             overlay: viewModel.isUpdating ? AnyView(updatingOverlay) : nil
         )
@@ -164,76 +172,16 @@ struct InventoryListView: View {
     }
 
     private var inventoryList: some View {
-        VStack(spacing: 12) {
-            Picker(
-                NSLocalizedString("caregiver.inventory.filter.all", comment: "All filter"),
-                selection: $filter
-            ) {
-                ForEach(InventoryFilter.allCases) { filter in
-                    Text(filter.title).tag(filter)
-                }
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal, 16)
-
-            List {
-                if filter == .all {
-                    if !configuredActiveItems.isEmpty {
-                        Section {
-                            ForEach(configuredActiveItems) { item in
-                                inventoryRow(for: item)
-                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                    .listRowSeparator(.hidden)
-                            }
-                        } header: {
-                            Text(NSLocalizedString("caregiver.inventory.list.section", comment: "Inventory list section"))
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                                .textCase(nil)
-                        }
-                        .listRowSeparator(.hidden)
-                    }
-
-                    if !periodEndedItems.isEmpty {
-                        Section {
-                            ForEach(periodEndedItems) { item in
-                                inventoryRow(for: item)
-                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                    .listRowSeparator(.hidden)
-                            }
-                        } header: {
-                            Text(NSLocalizedString("caregiver.inventory.section.periodEnded", comment: "Period ended section"))
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                                .textCase(nil)
-                        }
-                        .listRowSeparator(.hidden)
-                    }
-
-                    if !unconfiguredItems.isEmpty {
-                        Section {
-                            ForEach(unconfiguredItems) { item in
-                                inventoryRow(for: item)
-                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                    .listRowSeparator(.hidden)
-                            }
-                        } header: {
-                            Text(NSLocalizedString("caregiver.inventory.section.unconfigured", comment: "Unconfigured section"))
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                                .textCase(nil)
-                        }
-                        .listRowSeparator(.hidden)
-                    }
-                } else {
+        List {
+            filterPickerRow
+            ForEach(sectionData) { section in
+                if !section.items.isEmpty {
                     Section {
-                        ForEach(filteredItems) { item in
-                            inventoryRow(for: item)
-                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                .listRowSeparator(.hidden)
+                        ForEach(section.items) { item in
+                            inventoryRowCell(item)
                         }
                     } header: {
-                        Text(NSLocalizedString("caregiver.inventory.list.section", comment: "Inventory list section"))
+                        Text(NSLocalizedString(section.titleKey, comment: section.titleComment))
                             .font(.headline)
                             .foregroundColor(.secondary)
                             .textCase(nil)
@@ -241,25 +189,88 @@ struct InventoryListView: View {
                     .listRowSeparator(.hidden)
                 }
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(Color.white)
-            .safeAreaPadding(.bottom, 120)
-            .overlay(alignment: .top) {
-                if let toastMessage {
-                    Text(toastMessage)
-                        .font(.subheadline.weight(.semibold))
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Capsule())
-                        .shadow(radius: 4)
-                        .padding(.top, 8)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                        .accessibilityLabel(toastMessage)
-                }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Color.white)
+        .safeAreaPadding(.bottom, 120)
+        .refreshable {
+            viewModel.load()
+        }
+        .overlay(alignment: .top) {
+            if let toastMessage {
+                Text(toastMessage)
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .shadow(radius: 4)
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .accessibilityLabel(toastMessage)
             }
         }
+    }
+
+    private var filterPickerRow: some View {
+        Picker(
+            NSLocalizedString("caregiver.inventory.filter.all", comment: "All filter"),
+            selection: $filter
+        ) {
+            ForEach(InventoryFilter.allCases) { filter in
+                Text(filter.title).tag(filter)
+            }
+        }
+        .pickerStyle(.segmented)
+        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+        .listRowSeparator(.hidden)
+    }
+
+    private var sectionData: [InventorySectionData] {
+        if filter == .all {
+            return [
+                InventorySectionData(
+                    id: "configured",
+                    titleKey: "caregiver.inventory.list.section",
+                    titleComment: "Inventory list section",
+                    items: configuredActiveItems
+                ),
+                InventorySectionData(
+                    id: "periodEnded",
+                    titleKey: "caregiver.inventory.section.periodEnded",
+                    titleComment: "Period ended section",
+                    items: periodEndedItems
+                ),
+                InventorySectionData(
+                    id: "unconfigured",
+                    titleKey: "caregiver.inventory.section.unconfigured",
+                    titleComment: "Unconfigured section",
+                    items: unconfiguredItems
+                )
+            ]
+        }
+        return [
+            InventorySectionData(
+                id: "filtered",
+                titleKey: "caregiver.inventory.list.section",
+                titleComment: "Inventory list section",
+                items: filteredItems
+            )
+        ]
+    }
+
+    private func inventoryRowCell(_ item: InventoryItemDTO) -> some View {
+        inventoryRow(for: item)
+            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+            .listRowSeparator(.hidden)
+    }
+
+    private struct InventorySectionData: Identifiable {
+        let id: String
+        let titleKey: String
+        let titleComment: String
+        let items: [InventoryItemDTO]
     }
 
     @ViewBuilder

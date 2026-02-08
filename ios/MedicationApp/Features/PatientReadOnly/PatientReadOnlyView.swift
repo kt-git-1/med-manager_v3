@@ -30,6 +30,14 @@ struct PatientReadOnlyView: View {
                 }
                 .navigationTitle(navigationTitle)
                 .navigationBarTitleDisplayMode(navigationTitleDisplayMode)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Image(systemName: navigationIconName)
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.accentColor)
+                            .accessibilityHidden(true)
+                    }
+                }
             }
             .id(selectedTab)
             .safeAreaInset(edge: .bottom) {
@@ -76,6 +84,17 @@ struct PatientReadOnlyView: View {
             return .large
         case .history, .settings:
             return .inline
+        }
+    }
+
+    private var navigationIconName: String {
+        switch selectedTab {
+        case .today:
+            return "calendar"
+        case .history:
+            return "clock"
+        case .settings:
+            return "gearshape"
         }
     }
 }

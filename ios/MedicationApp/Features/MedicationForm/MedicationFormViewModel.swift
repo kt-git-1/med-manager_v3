@@ -85,7 +85,7 @@ final class MedicationFormViewModel: ObservableObject {
     @Published var endDate: Date?
     @Published var notes = ""
     @Published var inventoryCount = ""
-    @Published var inventoryUnit = ""
+    @Published var inventoryUnit = "錠"
     @Published var isPrn = false
     @Published var prnInstructions = ""
     @Published var errorMessage: String?
@@ -127,7 +127,7 @@ final class MedicationFormViewModel: ObservableObject {
             endDate = existingMedication.endDate
             notes = existingMedication.notes ?? ""
             inventoryCount = existingMedication.inventoryCount.map(String.init) ?? ""
-            inventoryUnit = existingMedication.inventoryUnit ?? ""
+            inventoryUnit = "錠"
             isPrn = existingMedication.isPrn
             prnInstructions = existingMedication.prnInstructions ?? ""
         }
@@ -143,6 +143,13 @@ final class MedicationFormViewModel: ObservableObject {
         var errors: [String] = []
         if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             errors.append("薬名は必須です")
+        }
+        let dosageValue = dosageStrengthValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let dosageUnit = dosageStrengthUnit.trimmingCharacters(in: .whitespacesAndNewlines)
+        if dosageUnit.isEmpty {
+            errors.append("用量は必須です")
+        } else if dosageUnit != "不明" && dosageValue.isEmpty {
+            errors.append("用量の数値を入力してください")
         }
         if let endDate, endDate < startDate {
             errors.append("終了日は開始日以降にしてください")
@@ -199,6 +206,7 @@ final class MedicationFormViewModel: ObservableObject {
             let doseCountValue = Int(doseCountPerIntake) ?? 0
             let strengthValue = Double(dosageStrengthValue) ?? 0
             let inventoryValue = Int(inventoryCount)
+            let inventoryUnitValue = "錠"
             if let existingMedication {
                 let request = MedicationUpdateRequestDTO(
                     name: name,
@@ -214,7 +222,7 @@ final class MedicationFormViewModel: ObservableObject {
                     startDate: startDate,
                     endDate: endDate,
                     inventoryCount: inventoryValue,
-                    inventoryUnit: inventoryUnit.isEmpty ? nil : inventoryUnit
+                    inventoryUnit: inventoryUnitValue
                 )
                 let updated = try await apiClient.updateMedication(
                     id: existingMedication.id,
@@ -240,7 +248,7 @@ final class MedicationFormViewModel: ObservableObject {
                     startDate: startDate,
                     endDate: endDate,
                     inventoryCount: inventoryValue,
-                    inventoryUnit: inventoryUnit.isEmpty ? nil : inventoryUnit
+                    inventoryUnit: inventoryUnitValue
                 )
                 let created = try await apiClient.createMedication(request)
                 if !isPrn {

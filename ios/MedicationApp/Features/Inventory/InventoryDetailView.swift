@@ -258,10 +258,10 @@ struct InventoryDetailView: View {
             return NSLocalizedString("medication.list.badge.prn", comment: "PRN badge")
         }
         guard let dailyPlannedUnits = item.dailyPlannedUnits, item.doseCountPerIntake > 0 else {
-            return "1日—回（—個/回）"
+            return "1日—回（—錠/回）"
         }
         let count = dailyPlannedUnits / item.doseCountPerIntake
-        return "1日\(count)回（\(item.doseCountPerIntake)個ずつ）"
+        return "1日\(count)回（\(item.doseCountPerIntake)錠ずつ）"
     }
 
     private var hasSettingsChanges: Bool {

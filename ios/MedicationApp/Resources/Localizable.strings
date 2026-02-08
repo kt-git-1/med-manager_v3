@@ -88,7 +88,7 @@
 "medication.form.schedule.weekdays" = "曜日";
 "medication.form.schedule.times" = "時刻";
 "medication.form.schedule.unset" = "スケジュール未設定";
-"medication.form.inventory.count" = "在庫数";
+"medication.form.inventory.count" = "在庫数（錠）";
 "medication.form.inventory.unit" = "在庫単位";
 "medication.form.notes" = "メモ";
 "medication.form.patient.readonly" = "患者モードでは編集できません";
@@ -202,7 +202,7 @@
 "caregiver.inventory.list.empty.title" = "在庫がありません";
 "caregiver.inventory.list.empty.message" = "薬の在庫を設定してください";
 "caregiver.inventory.remaining.label" = "残り";
-"caregiver.inventory.unit" = "個";
+"caregiver.inventory.unit" = "錠";
 "caregiver.inventory.status.available" = "在庫あり";
 "caregiver.inventory.status.low" = "少";
 "caregiver.inventory.status.out" = "なし";

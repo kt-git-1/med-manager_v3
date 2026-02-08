@@ -114,6 +114,12 @@ struct PatientManagementView: View {
             contentView
             .navigationTitle(NSLocalizedString("caregiver.patients.title", comment: "Patients title"))
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Image(systemName: "person.2")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.accentColor)
+                        .accessibilityHidden(true)
+                }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button(NSLocalizedString("caregiver.patients.add", comment: "Add patient")) {
                         showingCreate = true

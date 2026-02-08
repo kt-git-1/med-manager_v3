@@ -232,6 +232,9 @@ struct MedicationListView: View {
                     .scrollContentBackground(.hidden)
                     .background(Color.white)
                     .safeAreaPadding(.bottom, 120)
+                    .refreshable {
+                        viewModel.load()
+                    }
                     let listWithInsets = headerView == nil ? AnyView(baseList.safeAreaPadding(.top)) : AnyView(baseList)
                     listWithInsets
                         .overlay(alignment: .top) {

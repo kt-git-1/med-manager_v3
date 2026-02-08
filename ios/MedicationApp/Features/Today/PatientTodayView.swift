@@ -499,6 +499,9 @@ private struct PatientTodayListView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(Color.white)
+        .refreshable {
+            viewModel.load(showLoading: false)
+        }
         .safeAreaPadding(.bottom, 120)
     }
 }
@@ -843,9 +846,11 @@ private struct PatientTodayRow: View {
                     Text(dose.medicationSnapshot.name)
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(isMissed ? Color.red : Color.primary)
-                    Text("1回\(dose.medicationSnapshot.doseCountPerIntake)錠")
-                        .font(.body)
-                        .foregroundColor(.secondary)
+                    if shouldShowDoseCount {
+                        Text("1回\(dose.medicationSnapshot.doseCountPerIntake)錠")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
                     if let noteText, !noteText.isEmpty {
                         Text(noteText)
                             .font(.callout)
@@ -903,7 +908,10 @@ private struct PatientTodayRow: View {
     }
 
     private var accessibilitySummary: String {
-        var parts = [timeText, dose.medicationSnapshot.name, "1回\(dose.medicationSnapshot.doseCountPerIntake)錠"]
+        var parts = [timeText, dose.medicationSnapshot.name]
+        if shouldShowDoseCount {
+            parts.append("1回\(dose.medicationSnapshot.doseCountPerIntake)錠")
+        }
         if let statusText = statusText(for: dose.effectiveStatus) {
             parts.append(statusText)
         }
@@ -911,6 +919,14 @@ private struct PatientTodayRow: View {
             parts.append(noteText)
         }
         return parts.joined(separator: ", ")
+    }
+
+    private var shouldShowDoseCount: Bool {
+        let trimmed = dose.medicationSnapshot.dosageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == "不明" {
+            return false
+        }
+        return true
     }
 
     private var noteText: String? {
@@ -990,9 +1006,11 @@ private struct PrnMedicationCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(medication.name)
                     .font(.title3.weight(.semibold))
-                Text("1回\(medication.doseCountPerIntake)錠")
-                    .font(.body)
-                    .foregroundColor(.secondary)
+                if shouldShowDoseCount {
+                    Text("1回\(medication.doseCountPerIntake)錠")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                }
                 if let noteText, !noteText.isEmpty {
                     Text(noteText)
                         .font(.callout)
@@ -1028,6 +1046,14 @@ private struct PrnMedicationCard: View {
         }
         let notes = medication.notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return notes.isEmpty ? nil : notes
+    }
+
+    private var shouldShowDoseCount: Bool {
+        let trimmed = medication.dosageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == "不明" {
+            return false
+        }
+        return true
     }
 
     private func handleRecord() {

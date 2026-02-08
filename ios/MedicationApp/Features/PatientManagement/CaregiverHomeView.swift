@@ -28,6 +28,14 @@ struct CaregiverHomeView: View {
                     )
                     .navigationTitle(NSLocalizedString("caregiver.tabs.history", comment: "History tab"))
                     .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.accentColor)
+                                .accessibilityHidden(true)
+                        }
+                    }
                 }
             case .inventory:
                 NavigationStack {
@@ -289,6 +297,14 @@ struct CaregiverMedicationView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .navigationTitle(NSLocalizedString("caregiver.tabs.medications", comment: "Medications tab"))
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Image(systemName: "pills")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.accentColor)
+                        .accessibilityHidden(true)
+                }
+            }
         }
         .onAppear {
             viewModel.loadPatients()
