@@ -10,6 +10,7 @@ struct MedicationApp: App {
     @StateObject private var globalBannerPresenter: GlobalBannerPresenter
     @StateObject private var caregiverSessionController: CaregiverSessionController
     private let notificationCoordinator: NotificationCoordinator
+    @State private var showSplash = true
 
     init() {
         let sessionStore = SessionStore()
@@ -48,8 +49,16 @@ struct MedicationApp: App {
     var body: some Scene {
         WindowGroup {
             FullScreenContainer {
-                RootView()
-                    .dynamicTypeSize(.xLarge)
+                if showSplash {
+                    SplashView {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            showSplash = false
+                        }
+                    }
+                } else {
+                    RootView()
+                        .dynamicTypeSize(.xLarge)
+                }
             }
             .environmentObject(sessionStore)
             .environmentObject(notificationRouter)

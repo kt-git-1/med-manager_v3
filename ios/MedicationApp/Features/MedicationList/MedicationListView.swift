@@ -157,7 +157,7 @@ struct MedicationListView: View {
                             .frame(maxWidth: .infinity)
                             .glassEffect(.regular, in: .rect(cornerRadius: 20))
                             .padding(.horizontal, 24)
-                            Spacer(minLength: 0)
+                            Spacer(minLength: 120)
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
