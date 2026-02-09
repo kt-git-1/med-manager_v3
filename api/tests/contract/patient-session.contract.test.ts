@@ -91,6 +91,25 @@ describe("patient session contract", () => {
     expect(payload.error).toBe("validation");
   });
 
+  it("rejects non-string code types with 422", async () => {
+    const invalidBodies = [{ code: 123456 }, { code: null }, { code: { value: "123456" } }];
+
+    for (const body of invalidBodies) {
+      const request = new Request("http://localhost/api/patient/link", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body)
+      });
+
+      const response = await exchangeLinkCode(request, new Set(["123456"]));
+      const payload = await response.json();
+
+      expect(response.status).toBe(422);
+      expect(payload.error).toBe("validation");
+      expect(payload.messages).toContain("code must be a string");
+    }
+  });
+
   it("returns 404 for missing link code", async () => {
     const validCodes = new Set<string>(["123456"]);
     const request = new Request("http://localhost/api/patient/link", {

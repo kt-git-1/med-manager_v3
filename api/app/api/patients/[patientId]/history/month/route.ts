@@ -11,7 +11,11 @@ import {
   getMonthRange,
   getScheduleWithStatus
 } from "../../../../../../src/services/scheduleService";
-import { buildSlotSummary, groupDosesByLocalDate } from "../../../../../../src/services/scheduleResponse";
+import {
+  buildSlotSummary,
+  groupDosesByLocalDate,
+  parseSlotTimesFromParams
+} from "../../../../../../src/services/scheduleResponse";
 import { listPrnHistoryItemsByRange } from "../../../../../../src/services/prnDoseRecordService";
 import { validateYearMonth } from "../../../../../../src/validators/schedule";
 
@@ -35,6 +39,15 @@ export async function GET(
       });
     }
 
+    const { slotTimes: customSlotTimes, errors: slotTimeErrors } =
+      parseSlotTimesFromParams(searchParams);
+    if (slotTimeErrors.length) {
+      return new Response(JSON.stringify({ error: "validation", messages: slotTimeErrors }), {
+        status: 422,
+        headers: { "content-type": "application/json" }
+      });
+    }
+
     const authHeader = request.headers.get("authorization") ?? undefined;
     const token = getBearerToken(authHeader);
     if (!isCaregiverToken(token)) {
@@ -45,12 +58,7 @@ export async function GET(
     await assertCaregiverPatientScope(session.caregiverUserId, patientId);
 
     const range = getMonthRange(year, month, historyTimeZone);
-    const doses = await getScheduleWithStatus(
-      patientId,
-      range.from,
-      range.to,
-      historyTimeZone
-    );
+    const doses = await getScheduleWithStatus(patientId, range.from, range.to, historyTimeZone);
     const grouped = groupDosesByLocalDate(doses, historyTimeZone);
     const prn = await listPrnHistoryItemsByRange({
       patientId,
@@ -66,7 +74,7 @@ export async function GET(
       const dayDoses = grouped.get(dateKey) ?? [];
       days.push({
         date: dateKey,
-        slotSummary: buildSlotSummary(dayDoses, historyTimeZone)
+        slotSummary: buildSlotSummary(dayDoses, historyTimeZone, customSlotTimes)
       });
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }

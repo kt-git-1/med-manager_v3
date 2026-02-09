@@ -11,7 +11,10 @@ import {
   getLocalDateKey,
   getScheduleWithStatus
 } from "../../../../../../src/services/scheduleService";
-import { resolveSlot } from "../../../../../../src/services/scheduleResponse";
+import {
+  resolveSlot,
+  parseSlotTimesFromParams
+} from "../../../../../../src/services/scheduleResponse";
 import { listPrnHistoryItemsByRange } from "../../../../../../src/services/prnDoseRecordService";
 import { validateDateString } from "../../../../../../src/validators/schedule";
 
@@ -48,6 +51,15 @@ export async function GET(
       });
     }
 
+    const { slotTimes: customSlotTimes, errors: slotTimeErrors } =
+      parseSlotTimesFromParams(searchParams);
+    if (slotTimeErrors.length) {
+      return new Response(JSON.stringify({ error: "validation", messages: slotTimeErrors }), {
+        status: 422,
+        headers: { "content-type": "application/json" }
+      });
+    }
+
     const authHeader = request.headers.get("authorization") ?? undefined;
     const token = getBearerToken(authHeader);
     if (!isCaregiverToken(token)) {
@@ -58,12 +70,7 @@ export async function GET(
     await assertCaregiverPatientScope(session.caregiverUserId, patientId);
 
     const range = getDayRange(parsedDate, historyTimeZone);
-    const doses = await getScheduleWithStatus(
-      patientId,
-      range.from,
-      range.to,
-      historyTimeZone
-    );
+    const doses = await getScheduleWithStatus(patientId, range.from, range.to, historyTimeZone);
     const prn = await listPrnHistoryItemsByRange({
       patientId,
       from: range.from,
@@ -73,7 +80,7 @@ export async function GET(
 
     const items = doses
       .map((dose) => {
-        const slot = resolveSlot(dose.scheduledAt, historyTimeZone);
+        const slot = resolveSlot(dose.scheduledAt, historyTimeZone, customSlotTimes);
         if (!slot) {
           return null;
         }

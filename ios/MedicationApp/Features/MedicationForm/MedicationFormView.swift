@@ -7,8 +7,7 @@ struct MedicationFormView: View {
     @State private var hasEndDate = false
     @State private var showingDeleteConfirm = false
     private let onSuccess: ((String) -> Void)?
-    private let dosageUnits = ["", "mg", "g", "mcg", "mL"]
-    private let inventoryUnits = ["", "錠", "包", "本", "個", "mL"]
+    private let dosageUnits = ["", NSLocalizedString("common.dosage.unknown", comment: "Unknown dosage"), "mg", "g", "μg", "mL", "IU", "mEq", "%", "滴", "包", "枚", "吸入"]
 
     init(
         sessionStore: SessionStore? = nil,
@@ -18,11 +17,16 @@ struct MedicationFormView: View {
         let store = sessionStore ?? SessionStore()
         self.onSuccess = onSuccess
         let baseURL = SessionStore.resolveBaseURL()
+        let prefs = NotificationPreferencesStore()
+        if store.mode == .caregiver, let patientId = store.currentPatientId {
+            prefs.switchPatient(patientId)
+        }
         _viewModel = StateObject(
             wrappedValue: MedicationFormViewModel(
                 apiClient: APIClient(baseURL: baseURL, sessionStore: store),
                 sessionStore: store,
-                existingMedication: medication
+                existingMedication: medication,
+                preferencesStore: prefs
             )
         )
     }
@@ -35,52 +39,105 @@ struct MedicationFormView: View {
             GridItem(.flexible(), spacing: 12)
         ]
         Form {
-            Section(NSLocalizedString("medication.form.section.basic", comment: "Basic info")) {
-                TextField(NSLocalizedString("medication.form.name", comment: "Medication name"), text: $viewModel.name)
-                    .accessibilityLabel("薬名")
-                TextField(NSLocalizedString("medication.form.dosage.value", comment: "Dosage value"), text: $viewModel.dosageStrengthValue)
-                    .keyboardType(.decimalPad)
-                    .accessibilityLabel("用量数値")
-                Picker(NSLocalizedString("medication.form.dosage.unit", comment: "Dosage unit"), selection: $viewModel.dosageStrengthUnit) {
-                    ForEach(dosageUnits, id: \.self) { unit in
-                        Text(unit.isEmpty ? NSLocalizedString("common.select", comment: "Select") : unit).tag(unit)
-                    }
-                }
-                .accessibilityLabel("用量単位")
-                Stepper(
-                    value: intBinding(for: $viewModel.doseCountPerIntake),
-                    in: 0...999
-                ) {
-                    HStack {
-                        Text(NSLocalizedString("medication.form.dose.count", comment: "Dose count"))
-                        Spacer()
-                        Text(viewModel.doseCountPerIntake.isEmpty ? "0" : viewModel.doseCountPerIntake)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .accessibilityLabel("服用数")
-            }
-
-            Section(NSLocalizedString("medication.form.section.prn", comment: "PRN section")) {
-                Toggle(
-                    NSLocalizedString("medication.form.prn.toggle", comment: "PRN toggle"),
-                    isOn: $viewModel.isPrn
-                )
-                .accessibilityLabel("頓服設定")
-                if viewModel.isPrn {
-                    TextField(
-                        NSLocalizedString("medication.form.prn.instructions", comment: "PRN instructions"),
-                        text: $viewModel.prnInstructions
+            // Header
+            Section {
+                VStack(spacing: 10) {
+                    Image(systemName: viewModel.isEditing ? "pencil.circle.fill" : "pills.circle.fill")
+                        .font(.system(size: 44))
+                        .foregroundStyle(.tint)
+                        .symbolRenderingMode(.hierarchical)
+                    Text(viewModel.isEditing
+                        ? viewModel.name.isEmpty ? NSLocalizedString("medication.form.title.edit", comment: "Edit medication") : viewModel.name
+                        : NSLocalizedString("medication.form.title.add", comment: "Add medication")
                     )
-                    .accessibilityLabel("頓服の説明")
+                        .font(.title3.weight(.bold))
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .listRowBackground(Color.clear)
+            }
+
+            // Basic info
+            Section {
+                formRow(icon: "character.cursor.ibeam", iconColor: .blue) {
+                    TextField(NSLocalizedString("medication.form.name", comment: "Medication name"), text: $viewModel.name)
+                        .accessibilityLabel(NSLocalizedString("a11y.medication.name", comment: "Name"))
+                }
+                formRow(icon: "scalemass", iconColor: .orange) {
+                    HStack(spacing: 8) {
+                        TextField(
+                            NSLocalizedString("medication.form.dosage.value", comment: "Dosage value"),
+                            text: $viewModel.dosageStrengthValue
+                        )
+                        .keyboardType(.decimalPad)
+                        .disabled(viewModel.dosageStrengthUnit == NSLocalizedString("common.dosage.unknown", comment: "Unknown dosage"))
+                        .accessibilityLabel(NSLocalizedString("a11y.medication.dosageValue", comment: "Dosage value"))
+
+                        Divider()
+                            .frame(height: 20)
+
+                        Picker(NSLocalizedString("medication.form.dosage.unit", comment: "Dosage unit"), selection: $viewModel.dosageStrengthUnit) {
+                            ForEach(dosageUnits, id: \.self) { unit in
+                                Text(unit.isEmpty ? NSLocalizedString("common.select", comment: "Select") : unit).tag(unit)
+                            }
+                        }
+                        .labelsHidden()
+                        .fixedSize()
+                        .accessibilityLabel(NSLocalizedString("a11y.medication.dosageUnit", comment: "Dosage unit"))
+                    }
+                    .accessibilityElement(children: .contain)
+                    .accessibilityLabel(NSLocalizedString("a11y.medication.dosage", comment: "Dosage"))
+                }
+                HStack(spacing: 12) {
+                    formIconLabel(icon: "square.stack.fill", color: .teal)
+                    Text(NSLocalizedString("medication.form.dose.count", comment: "Dose count"))
+                    Spacer()
+                    TextField("0", text: $viewModel.doseCountPerIntake)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 60)
+                    Stepper(
+                        "",
+                        value: decimalBinding(for: $viewModel.doseCountPerIntake),
+                        in: 0...999,
+                        step: 0.5
+                    )
+                    .labelsHidden()
+                    .fixedSize()
+                }
+                .accessibilityLabel(NSLocalizedString("a11y.medication.doseCount", comment: "Dose count"))
+            } header: {
+                sectionHeader(NSLocalizedString("medication.form.section.basic", comment: "Basic info"), icon: "pill.fill")
+            }
+
+            // PRN
+            if !viewModel.isEditing {
+                Section {
+                    Toggle(
+                        NSLocalizedString("medication.form.prn.toggle", comment: "PRN toggle"),
+                        isOn: $viewModel.isPrn
+                    )
+                    .accessibilityLabel(NSLocalizedString("a11y.medication.prn", comment: "PRN toggle"))
+                    if viewModel.isPrn {
+                        formRow(icon: "text.alignleft", iconColor: .gray) {
+                            TextField(
+                                NSLocalizedString("medication.form.prn.instructions", comment: "PRN instructions"),
+                                text: $viewModel.prnInstructions
+                            )
+                            .accessibilityLabel(NSLocalizedString("a11y.medication.prnInstructions", comment: "PRN instructions"))
+                        }
+                    }
+                } header: {
+                    sectionHeader(NSLocalizedString("medication.form.section.prn", comment: "PRN section"), icon: "cross.case.fill")
                 }
             }
 
-            Section(NSLocalizedString("medication.form.section.period", comment: "Period")) {
+            // Period
+            Section {
                 DatePicker(NSLocalizedString("medication.form.startDate", comment: "Start date"), selection: $viewModel.startDate, displayedComponents: .date)
-                    .accessibilityLabel("開始日")
+                    .accessibilityLabel(NSLocalizedString("a11y.medication.startDate", comment: "Start date"))
                 Toggle(NSLocalizedString("medication.form.endDate.enabled", comment: "Enable end date"), isOn: $hasEndDate)
-                    .accessibilityLabel("終了日を設定")
+                    .accessibilityLabel(NSLocalizedString("a11y.medication.endDate.toggle", comment: "End date toggle"))
                 if hasEndDate {
                     DatePicker(
                         NSLocalizedString("medication.form.endDate", comment: "End date"),
@@ -90,12 +147,15 @@ struct MedicationFormView: View {
                         ),
                         displayedComponents: .date
                     )
-                    .accessibilityLabel("終了日")
+                    .accessibilityLabel(NSLocalizedString("a11y.medication.endDate", comment: "End date"))
                 }
+            } header: {
+                sectionHeader(NSLocalizedString("medication.form.section.period", comment: "Period"), icon: "calendar")
             }
 
+            // Schedule
             if !viewModel.isPrn {
-                Section(NSLocalizedString("medication.form.section.schedule", comment: "Schedule")) {
+                Section {
                     Picker(
                         NSLocalizedString("medication.form.schedule.frequency", comment: "Schedule frequency"),
                         selection: $viewModel.scheduleFrequency
@@ -108,8 +168,8 @@ struct MedicationFormView: View {
                     if viewModel.scheduleFrequency == .weekly {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(NSLocalizedString("medication.form.schedule.weekdays", comment: "Weekdays"))
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(.secondary)
                             LazyVGrid(columns: weekdayColumns, spacing: 8) {
                                 ForEach(ScheduleDay.allCases) { day in
                                     let isSelected = viewModel.selectedDays.contains(day)
@@ -121,17 +181,17 @@ struct MedicationFormView: View {
                                         }
                                     } label: {
                                         Text(day.shortLabel)
-                                            .font(.body.weight(.semibold))
-                                            .frame(maxWidth: .infinity, minHeight: 36)
+                                            .font(.body.weight(.bold))
+                                            .frame(maxWidth: .infinity, minHeight: 44)
                                             .background(
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .fill(isSelected ? Color.accentColor : Color(.secondarySystemBackground))
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .fill(isSelected ? Color.accentColor : Color.primary.opacity(0.06))
                                             )
-                                            .foregroundColor(isSelected ? .white : .primary)
+                                            .foregroundStyle(isSelected ? Color.white : Color.primary)
                                     }
                                     .buttonStyle(.plain)
-                                    .accessibilityLabel("曜日 \(day.shortLabel)")
-                                    .accessibilityValue(isSelected ? "選択中" : "未選択")
+                                    .accessibilityLabel(String(format: NSLocalizedString("a11y.weekday.format", comment: "Weekday"), day.shortLabel))
+                                    .accessibilityValue(isSelected ? NSLocalizedString("a11y.selected", comment: "Selected") : NSLocalizedString("a11y.notSelected", comment: "Not selected"))
                                 }
                             }
                         }
@@ -139,8 +199,8 @@ struct MedicationFormView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(NSLocalizedString("medication.form.schedule.times", comment: "Times"))
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.secondary)
                         LazyVGrid(columns: timeColumns, spacing: 12) {
                             ForEach(ScheduleTimeSlot.allCases) { slot in
                                 let isSelected = viewModel.selectedTimeSlots.contains(slot)
@@ -151,28 +211,33 @@ struct MedicationFormView: View {
                                         viewModel.selectedTimeSlots.insert(slot)
                                     }
                                 } label: {
-                                    HStack(spacing: 12) {
+                                    HStack(spacing: 10) {
                                         Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                                            .foregroundColor(isSelected ? .accentColor : .secondary)
+                                            .font(.title3)
+                                            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(slot.label)
                                                 .font(.body.weight(.semibold))
                                             Text(viewModel.timeValue(for: slot))
-                                                .font(.footnote)
-                                                .foregroundColor(.secondary)
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
                                         }
                                         Spacer()
                                     }
-                                    .frame(maxWidth: .infinity, minHeight: 44)
+                                    .frame(maxWidth: .infinity, minHeight: 48)
                                     .padding(.horizontal, 12)
                                     .background(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color(.secondarySystemBackground))
+                                            .fill(isSelected ? Color.accentColor.opacity(0.08) : Color.primary.opacity(0.04))
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(isSelected ? Color.accentColor.opacity(0.3) : Color.clear, lineWidth: 1.5)
                                     )
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("\(slot.label) \(viewModel.timeValue(for: slot))")
-                                .accessibilityValue(isSelected ? "選択中" : "未選択")
+                                .accessibilityValue(isSelected ? NSLocalizedString("a11y.selected", comment: "Selected") : NSLocalizedString("a11y.notSelected", comment: "Not selected"))
                             }
                         }
                     }
@@ -182,37 +247,49 @@ struct MedicationFormView: View {
                     } else if viewModel.scheduleNotSet && viewModel.isEditing {
                         Text(NSLocalizedString("medication.form.schedule.unset", comment: "Schedule not set"))
                             .font(.footnote)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
+                } header: {
+                    sectionHeader(NSLocalizedString("medication.form.section.schedule", comment: "Schedule"), icon: "clock.fill")
                 }
             }
 
-            Section(NSLocalizedString("medication.form.section.inventory", comment: "Inventory")) {
-                Stepper(
-                    value: intBinding(for: $viewModel.inventoryCount),
-                    in: 0...9999
-                ) {
-                    HStack {
+            // Inventory
+            if !viewModel.isEditing {
+                Section {
+                    HStack(spacing: 12) {
                         Text(NSLocalizedString("medication.form.inventory.count", comment: "Inventory count"))
                         Spacer()
-                        Text(viewModel.inventoryCount.isEmpty ? "0" : viewModel.inventoryCount)
-                            .foregroundColor(.secondary)
+                        TextField("0", text: $viewModel.inventoryCount)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 60)
+                        Stepper(
+                            "",
+                            value: decimalBinding(for: $viewModel.inventoryCount),
+                            in: 0...9999,
+                            step: 1
+                        )
+                        .labelsHidden()
+                        .fixedSize()
                     }
+                    .accessibilityLabel(NSLocalizedString("a11y.medication.inventory", comment: "Inventory count"))
+                } header: {
+                    sectionHeader(NSLocalizedString("medication.form.section.inventory", comment: "Inventory"), icon: "archivebox.fill")
                 }
-                .accessibilityLabel("在庫数")
-                Picker(NSLocalizedString("medication.form.inventory.unit", comment: "Inventory unit"), selection: $viewModel.inventoryUnit) {
-                    ForEach(inventoryUnits, id: \.self) { unit in
-                        Text(unit.isEmpty ? NSLocalizedString("common.select", comment: "Select") : unit).tag(unit)
-                    }
-                }
-                .accessibilityLabel("在庫単位")
             }
 
-            Section(NSLocalizedString("medication.form.section.notes", comment: "Notes")) {
-                TextField(NSLocalizedString("medication.form.notes", comment: "Notes"), text: $viewModel.notes)
-                    .accessibilityLabel("メモ")
+            // Notes
+            Section {
+                formRow(icon: "note.text", iconColor: .orange) {
+                    TextField(NSLocalizedString("medication.form.notes", comment: "Notes"), text: $viewModel.notes)
+                        .accessibilityLabel(NSLocalizedString("a11y.medication.notes", comment: "Notes"))
+                }
+            } header: {
+                sectionHeader(NSLocalizedString("medication.form.section.notes", comment: "Notes"), icon: "note.text")
             }
 
+            // Errors
             if let errorMessage = viewModel.errorMessage {
                 Section {
                     ErrorStateView(message: errorMessage)
@@ -222,25 +299,24 @@ struct MedicationFormView: View {
             if isCaregiverMissingPatient {
                 Section {
                     Text(NSLocalizedString("medication.form.patient.required", comment: "Patient required"))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
 
+            // Actions
             if sessionStore.mode == .patient {
                 Section {
                     Text(NSLocalizedString("medication.form.patient.readonly", comment: "Read-only message"))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             } else {
-                if viewModel.isEditing {
-                    HStack(spacing: 12) {
-                        saveButton(isCaregiverMissingPatient: isCaregiverMissingPatient)
+                Section {
+                    saveButton(isCaregiverMissingPatient: isCaregiverMissingPatient)
+                    if viewModel.isEditing {
                         deleteButton(isCaregiverMissingPatient: isCaregiverMissingPatient)
                     }
-                    .listRowBackground(Color(.secondarySystemBackground))
-                } else {
-                    saveButton(isCaregiverMissingPatient: isCaregiverMissingPatient)
                 }
+                .listRowBackground(Color.clear)
             }
         }
         .scrollContentBackground(.hidden)
@@ -276,6 +352,11 @@ struct MedicationFormView: View {
                 viewModel.scheduleNotSet = false
             }
         }
+        .onChange(of: viewModel.dosageStrengthUnit) { _, unit in
+            if unit == NSLocalizedString("common.dosage.unknown", comment: "Unknown dosage") {
+                viewModel.dosageStrengthValue = ""
+            }
+        }
         .alert(
             NSLocalizedString("medication.form.delete.confirm.title", comment: "Delete confirm title"),
             isPresented: $showingDeleteConfirm
@@ -301,9 +382,43 @@ struct MedicationFormView: View {
         }
     }
 
+    // MARK: - Section Header
+
+    private func sectionHeader(_ title: String, icon: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.subheadline)
+                .foregroundStyle(.tint)
+            Text(title)
+        }
+        .font(.subheadline)
+        .textCase(nil)
+    }
+
+    // MARK: - Form Row with Icon
+
+    private func formRow<Content: View>(icon: String, iconColor: Color, @ViewBuilder content: () -> Content) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.subheadline)
+                .foregroundStyle(iconColor)
+                .frame(width: 20)
+            content()
+        }
+    }
+
+    private func formIconLabel(icon: String, color: Color) -> some View {
+        Image(systemName: icon)
+            .font(.subheadline)
+            .foregroundStyle(color)
+            .frame(width: 20)
+    }
+
+    // MARK: - Buttons
+
     @ViewBuilder
     private func saveButton(isCaregiverMissingPatient: Bool) -> some View {
-        Button(viewModel.isSubmitting ? "保存中..." : "保存") {
+        Button {
             Task {
                 let saved = await viewModel.submit()
                 if saved {
@@ -315,50 +430,52 @@ struct MedicationFormView: View {
                     dismiss()
                 }
             }
+        } label: {
+            Group {
+                if viewModel.isSubmitting {
+                    ProgressView()
+                        .tint(.white)
+                } else {
+                    Text(NSLocalizedString("common.save", comment: "Save"))
+                }
+            }
+            .font(.headline)
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
         }
         .disabled(viewModel.isSubmitting || isCaregiverMissingPatient)
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
-        .frame(maxWidth: .infinity, alignment: .center)
-        .listRowBackground(Color(.secondarySystemBackground))
+        .opacity(isCaregiverMissingPatient ? 0.5 : 1)
+        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
         .accessibilityLabel(NSLocalizedString("common.save", comment: "Save"))
     }
 
     @ViewBuilder
     private func deleteButton(isCaregiverMissingPatient: Bool) -> some View {
-        Button(NSLocalizedString("medication.form.delete", comment: "Delete medication")) {
+        Button {
             showingDeleteConfirm = true
+        } label: {
+            Text(NSLocalizedString("medication.form.delete", comment: "Delete medication"))
+                .font(.headline)
+                .foregroundStyle(.red)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Color.red.opacity(0.15), in: RoundedRectangle(cornerRadius: 14))
         }
         .disabled(viewModel.isDeleting || viewModel.isSubmitting || isCaregiverMissingPatient)
-        .buttonStyle(.bordered)
-        .tint(.red)
-        .controlSize(.large)
-        .frame(maxWidth: .infinity, alignment: .center)
-        .listRowBackground(Color(.secondarySystemBackground))
+        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
         .accessibilityLabel(NSLocalizedString("medication.form.delete", comment: "Delete medication"))
     }
 
-    private func intBinding(for text: Binding<String>) -> Binding<Int> {
+    private func decimalBinding(for text: Binding<String>) -> Binding<Double> {
         Binding(
-            get: { Int(text.wrappedValue) ?? 0 },
-            set: { text.wrappedValue = String(max(0, $0)) }
+            get: { Double(text.wrappedValue) ?? 0 },
+            set: { text.wrappedValue = AppConstants.formatDecimal(max(0, $0)) }
         )
     }
 
     private var updatingOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.2)
-                .ignoresSafeArea()
-            VStack {
-                Spacer()
-                LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                    .padding(16)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(radius: 6)
-                Spacer()
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .accessibilityIdentifier("MedicationFormUpdatingOverlay")
+        SchedulingRefreshOverlay()
     }
 }

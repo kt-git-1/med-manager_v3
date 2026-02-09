@@ -5,7 +5,11 @@ import {
   getMonthRange,
   getScheduleWithStatus
 } from "../../../../../src/services/scheduleService";
-import { buildSlotSummary, groupDosesByLocalDate } from "../../../../../src/services/scheduleResponse";
+import {
+  buildSlotSummary,
+  groupDosesByLocalDate,
+  parseSlotTimesFromParams
+} from "../../../../../src/services/scheduleResponse";
 import { listPrnHistoryItemsByRange } from "../../../../../src/services/prnDoseRecordService";
 import { validateYearMonth } from "../../../../../src/validators/schedule";
 
@@ -21,6 +25,15 @@ export async function GET(request: Request) {
     const errors = validateYearMonth(year, month);
     if (errors.length) {
       return new Response(JSON.stringify({ error: "validation", messages: errors }), {
+        status: 422,
+        headers: { "content-type": "application/json" }
+      });
+    }
+
+    const { slotTimes: customSlotTimes, errors: slotTimeErrors } =
+      parseSlotTimesFromParams(searchParams);
+    if (slotTimeErrors.length) {
+      return new Response(JSON.stringify({ error: "validation", messages: slotTimeErrors }), {
         status: 422,
         headers: { "content-type": "application/json" }
       });
@@ -50,7 +63,7 @@ export async function GET(request: Request) {
       const dayDoses = grouped.get(dateKey) ?? [];
       days.push({
         date: dateKey,
-        slotSummary: buildSlotSummary(dayDoses, historyTimeZone)
+        slotSummary: buildSlotSummary(dayDoses, historyTimeZone, customSlotTimes)
       });
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }

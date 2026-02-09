@@ -17,6 +17,8 @@ import type {
 import { prisma } from "../repositories/prisma";
 import { getPatientRecordById } from "../repositories/patientRepo";
 import { computeRefillPlan } from "../lib/computeRefillPlan";
+import { notifyCaregiversOfInventoryAlert } from "./pushNotificationService";
+import { DEFAULT_TIMEZONE, INTL_PARSE_LOCALE } from "../constants";
 
 export type MedicationCreateInput = {
   patientId: string;
@@ -42,12 +44,23 @@ export type MedicationUpdateInput = Partial<MedicationCreateInput> & {
 };
 
 export async function createMedication(input: MedicationCreateInput) {
-  const inventoryOverrides = buildInventoryOverrides(input.inventoryCount);
+  const base = buildInventoryOverrides(input.inventoryCount);
+  if (!base) {
+    return createMedicationRecord(input);
+  }
+  const threshold = await resolvePatientInventoryThreshold(input.patientId);
+  const inventoryOverrides = threshold > 0
+    ? { ...base, inventoryLowThreshold: threshold }
+    : base;
   return createMedicationRecord({ ...input, ...inventoryOverrides });
 }
 
 export async function listMedications(patientId: string): Promise<Medication[]> {
   return listMedicationRecords(patientId);
+}
+
+export async function listActiveRegimens(patientId: string): Promise<Regimen[]> {
+  return prisma.regimen.findMany({ where: { patientId, enabled: true } });
 }
 
 export async function getMedication(id: string): Promise<Medication | null> {
@@ -56,10 +69,20 @@ export async function getMedication(id: string): Promise<Medication | null> {
 
 export async function updateMedication(id: string, input: MedicationUpdateInput) {
   const existing = await getMedicationRecord(id);
-  const inventoryOverrides =
-    existing && !existing.inventoryEnabled
-      ? buildInventoryOverrides(input.inventoryCount)
-      : {};
+  if (!existing) {
+    return updateMedicationRecord(id, input);
+  }
+  if (existing.inventoryEnabled) {
+    return updateMedicationRecord(id, input);
+  }
+  const base = buildInventoryOverrides(input.inventoryCount);
+  if (!base) {
+    return updateMedicationRecord(id, input);
+  }
+  const threshold = await resolvePatientInventoryThreshold(existing.patientId);
+  const inventoryOverrides = threshold > 0
+    ? { ...base, inventoryLowThreshold: threshold }
+    : base;
   return updateMedicationRecord(id, { ...input, ...inventoryOverrides });
 }
 
@@ -104,7 +127,11 @@ function computeInventoryState(
   threshold: number,
   daysRemaining: number | null
 ): InventoryAlertState {
-  if (quantity === 0) {
+  if (daysRemaining !== null) {
+    if (daysRemaining <= 0) {
+      return "OUT";
+    }
+  } else if (quantity <= 0) {
     return "OUT";
   }
   if (threshold > 0) {
@@ -119,10 +146,10 @@ function computeInventoryState(
   return "NONE";
 }
 
-const INVENTORY_TZ = "Asia/Tokyo";
+const INVENTORY_TZ = DEFAULT_TIMEZONE;
 
 function inventoryDateKey(date: Date, tz: string) {
-  const formatter = new Intl.DateTimeFormat("en-US", {
+  const formatter = new Intl.DateTimeFormat(INTL_PARSE_LOCALE, {
     timeZone: tz,
     year: "numeric",
     month: "2-digit",
@@ -190,9 +217,19 @@ function buildInventoryItemWithPlan(medication: Medication, regimens: Regimen[])
   return buildInventoryItem(medication, plan);
 }
 
+async function resolvePatientInventoryThreshold(patientId: string): Promise<number> {
+  const existing = await listMedicationRecords(patientId);
+  for (const medication of existing) {
+    if (medication.inventoryEnabled && medication.inventoryLowThreshold > 0) {
+      return medication.inventoryLowThreshold;
+    }
+  }
+  return 0;
+}
+
 function buildInventoryOverrides(inventoryCount?: number | null) {
   if (inventoryCount === undefined || inventoryCount === null) {
-    return {};
+    return null;
   }
   const clamped = Math.max(0, inventoryCount);
   return {
@@ -278,6 +315,16 @@ export async function updateMedicationInventorySettings(input: {
     return updatedMedication;
   });
 
+  if (shouldEmitAlert) {
+    void notifyCaregiversOfInventoryAlert({
+      patientId: medication.patientId,
+      patientDisplayName: patient?.displayName,
+      medicationName: medication.name,
+      alertType: nextState as "LOW" | "OUT",
+      remaining: nextQuantity,
+    });
+  }
+
   return buildInventoryItemWithPlan(updated, regimens);
 }
 
@@ -344,6 +391,16 @@ export async function adjustMedicationInventory(
     }
     return updatedMedication;
   });
+
+  if (shouldEmitAlert) {
+    void notifyCaregiversOfInventoryAlert({
+      patientId: medication.patientId,
+      patientDisplayName: patient?.displayName,
+      medicationName: medication.name,
+      alertType: nextState as "LOW" | "OUT",
+      remaining: nextQuantity,
+    });
+  }
 
   return buildInventoryItemWithPlan(updated, regimens);
 }

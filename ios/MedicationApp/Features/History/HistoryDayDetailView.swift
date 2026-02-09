@@ -1,11 +1,11 @@
 import SwiftUI
 
 struct HistoryDayDetailView: View {
-    private static let historyTimeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+    private static let historyTimeZone = AppConstants.defaultTimeZone
     private static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = historyTimeZone
-        calendar.locale = Locale(identifier: "ja_JP")
+        calendar.locale = AppConstants.japaneseLocale
         return calendar
     }()
     private static let headerFormatter: DateFormatter = {
@@ -119,11 +119,8 @@ private struct HistoryDayRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(timeText)
                     .font(.headline)
-                Text(name)
+                Text(medicationDisplayName)
                     .font(.title3.weight(.semibold))
-                Text(dosage)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
             }
             Spacer()
             Text(statusText)
@@ -135,11 +132,15 @@ private struct HistoryDayRow: View {
                 .clipShape(Capsule())
         }
         .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
-        .shadow(color: Color.black.opacity(0.05), radius: 6, y: 2)
+        .glassEffect(.regular, in: .rect(cornerRadius: 14))
+    }
+
+    private var medicationDisplayName: String {
+        let trimmed = dosage.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == NSLocalizedString("common.dosage.unknown", comment: "Unknown dosage") {
+            return name
+        }
+        return "\(name) \(trimmed)"
     }
 
     private var statusText: String {
@@ -169,9 +170,9 @@ private struct HistoryDayRow: View {
         case .missed:
             return Color.red.opacity(0.15)
         case .taken:
-            return Color.green.opacity(0.12)
+            return Color.green.opacity(0.15)
         case .pending:
-            return Color(.secondarySystemBackground)
+            return Color.primary.opacity(0.06)
         }
     }
 }
@@ -211,7 +212,7 @@ private enum HistoryTimelineItem: Identifiable {
 private struct HistoryDayPrnRow: View {
     let timeText: String
     let name: String
-    let quantity: Int
+    let quantity: Double
 
     private var prnPrefix: String {
         NSLocalizedString("medication.list.badge.prn", comment: "PRN badge")
@@ -224,9 +225,6 @@ private struct HistoryDayPrnRow: View {
                     .font(.headline)
                 Text("\(prnPrefix): \(name)")
                     .font(.title3.weight(.semibold))
-                Text("1回\(quantity)錠")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
             }
             Spacer()
             Text(prnPrefix)
@@ -238,10 +236,6 @@ private struct HistoryDayPrnRow: View {
                 .clipShape(Capsule())
         }
         .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
-        .shadow(color: Color.black.opacity(0.05), radius: 6, y: 2)
+        .glassEffect(.regular, in: .rect(cornerRadius: 14))
     }
 }

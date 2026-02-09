@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { LINKING_CODE_LENGTH } from "../../src/services/linkingConstants";
+import { validateLinkCodeInput } from "../../src/validators/patient";
 
 type SessionStore = Map<string, string>;
 
@@ -17,6 +18,16 @@ function exchangeLinkCode(code: string, validCodes: Set<string>, sessions: Sessi
   return token;
 }
 
+
+function exchangeLinkCodeRequest(body: { code: unknown }, validCodes: Set<string>, sessions: SessionStore) {
+  const { errors, code } = validateLinkCodeInput({ code: body.code });
+  if (errors.length) {
+    return { status: 422, error: "validation", messages: errors };
+  }
+  const token = exchangeLinkCode(code, validCodes, sessions);
+  return { status: 200, data: { patientSessionToken: token } };
+}
+
 function refreshSessionToken(currentToken: string, sessions: SessionStore) {
   if (!sessions.has(currentToken)) {
     throw new Error("unauthorized");
@@ -28,6 +39,18 @@ function refreshSessionToken(currentToken: string, sessions: SessionStore) {
 }
 
 describe("patient session integration", () => {
+
+  it("rejects non-string link code types", () => {
+    const validCodes = new Set<string>([issueLinkCode()]);
+    const sessions: SessionStore = new Map();
+
+    for (const body of [{ code: 123456 }, { code: null }, { code: { value: "777777" } }]) {
+      const response = exchangeLinkCodeRequest(body, validCodes, sessions);
+      expect(response.status).toBe(422);
+      expect(response.error).toBe("validation");
+    }
+  });
+
   it("exchanges code and rotates token", () => {
     const validCodes = new Set<string>();
     const sessions: SessionStore = new Map();

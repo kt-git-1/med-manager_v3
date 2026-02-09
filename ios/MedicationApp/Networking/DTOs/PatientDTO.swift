@@ -31,6 +31,14 @@ struct RevokeResultDTO: Decodable {
     let revoked: Bool
 }
 
+struct DeletePatientResponseDTO: Decodable {
+    let data: DeletePatientResultDTO
+}
+
+struct DeletePatientResultDTO: Decodable {
+    let deleted: Bool
+}
+
 struct PatientSessionResponseDTO: Decodable {
     let data: PatientSessionTokenDTO
 }

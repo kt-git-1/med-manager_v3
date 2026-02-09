@@ -6,7 +6,7 @@ struct LoadingStateView: View {
     var body: some View {
         ProgressView(message)
             .font(.body)
-            .foregroundColor(.secondary)
+            .foregroundStyle(.secondary)
         .accessibilityLabel(message)
     }
 }
@@ -35,7 +35,7 @@ struct ErrorStateView: View {
     var body: some View {
         Label(message, systemImage: "exclamationmark.triangle.fill")
             .font(.subheadline)
-            .foregroundColor(.red)
+            .foregroundStyle(.red)
             .accessibilityLabel(message)
     }
 }

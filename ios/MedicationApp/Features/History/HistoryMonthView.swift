@@ -1,11 +1,11 @@
 import SwiftUI
 
 struct HistoryMonthView: View {
-    private static let historyTimeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+    private static let historyTimeZone = AppConstants.defaultTimeZone
     private static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = historyTimeZone
-        calendar.locale = Locale(identifier: "ja_JP")
+        calendar.locale = AppConstants.japaneseLocale
         calendar.firstWeekday = 1
         return calendar
     }()
@@ -46,24 +46,31 @@ struct HistoryMonthView: View {
         FullScreenContainer(
             content: {
                 ScrollView {
-                LazyVStack(spacing: 16) {
-                    header
+                    LazyVStack(spacing: 16) {
+                        header
 
-                    if viewModel.isLoadingMonth && viewModel.month == nil {
-                        LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
-                    } else if let errorMessage = viewModel.monthErrorMessage {
-                        errorSection(message: errorMessage, retry: loadMonth)
-                    } else {
-                        calendarGrid
-                        legend
-                        HistoryDayDetailView(viewModel: viewModel, selectedDate: selectedDate)
+                        if viewModel.isLoadingMonth && viewModel.month == nil {
+                            LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+                        } else if let errorMessage = viewModel.monthErrorMessage {
+                            errorSection(message: errorMessage, retry: loadMonth)
+                        } else {
+                            calendarGrid
+                            legend
+                            HistoryDayDetailView(viewModel: viewModel, selectedDate: selectedDate)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 120)
+                }
+                .refreshable {
+                    loadMonth()
+                    updateSelectionForDisplayedMonth()
+                    if let selectedDate {
+                        viewModel.loadDay(date: HistoryMonthView.dateKeyFormatter.string(from: selectedDate))
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 120)
-            }
             },
             overlay: viewModel.isUpdating ? AnyView(updatingOverlay) : nil
         )
@@ -93,7 +100,8 @@ struct HistoryMonthView: View {
             Button(action: showPreviousMonth) {
                 Image(systemName: "chevron.left")
                     .font(.headline)
-                    .padding(8)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .disabled(!canGoToPreviousMonth)
@@ -109,7 +117,8 @@ struct HistoryMonthView: View {
             Button(action: showNextMonth) {
                 Image(systemName: "chevron.right")
                     .font(.headline)
-                    .padding(8)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .disabled(!canGoToNextMonth)
@@ -168,7 +177,7 @@ struct HistoryMonthView: View {
             .frame(maxWidth: .infinity, minHeight: 44)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(isSelected ? Color.accentColor : Color(.secondarySystemBackground))
+                    .fill(isSelected ? Color.accentColor : Color.primary.opacity(0.05))
             )
         }
         .buttonStyle(.plain)
@@ -236,7 +245,7 @@ struct HistoryMonthView: View {
 
     private var weekdaySymbols: [String] {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.locale = AppConstants.japaneseLocale
         formatter.calendar = HistoryMonthView.calendar
         return formatter.shortWeekdaySymbols
     }
@@ -286,7 +295,9 @@ struct HistoryMonthView: View {
               let previous = Self.calendar.date(byAdding: .month, value: -1, to: displayedMonth) else {
             return
         }
-        displayedMonth = Self.calendar.date(from: Self.calendar.dateComponents([.year, .month], from: previous)) ?? previous
+        withAnimation(.easeInOut(duration: 0.25)) {
+            displayedMonth = Self.calendar.date(from: Self.calendar.dateComponents([.year, .month], from: previous)) ?? previous
+        }
     }
 
     private func showNextMonth() {
@@ -294,7 +305,9 @@ struct HistoryMonthView: View {
               let next = Self.calendar.date(byAdding: .month, value: 1, to: displayedMonth) else {
             return
         }
-        displayedMonth = Self.calendar.date(from: Self.calendar.dateComponents([.year, .month], from: next)) ?? next
+        withAnimation(.easeInOut(duration: 0.25)) {
+            displayedMonth = Self.calendar.date(from: Self.calendar.dateComponents([.year, .month], from: next)) ?? next
+        }
     }
 
     private func loadMonth() {
@@ -325,20 +338,7 @@ struct HistoryMonthView: View {
     }
 
     private var updatingOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.2)
-                .ignoresSafeArea()
-            VStack {
-                Spacer()
-                LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                    .padding(16)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(radius: 6)
-                Spacer()
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .accessibilityIdentifier("HistoryUpdatingOverlay")
+        SchedulingRefreshOverlay()
     }
 
     private func errorSection(message: String, retry: @escaping () -> Void) -> some View {

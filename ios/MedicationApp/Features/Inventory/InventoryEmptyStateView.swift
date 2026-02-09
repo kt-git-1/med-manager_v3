@@ -6,27 +6,32 @@ struct InventoryEmptyStateView: View {
     var body: some View {
         VStack(spacing: 12) {
             Spacer(minLength: 0)
-            VStack(spacing: 12) {
+            VStack(spacing: 16) {
+                Image(systemName: "archivebox")
+                    .font(.system(size: 44))
+                    .foregroundStyle(.secondary)
                 Text(NSLocalizedString("caregiver.inventory.empty.title", comment: "Inventory empty title"))
                     .font(.title3.weight(.semibold))
                     .multilineTextAlignment(.center)
                 Text(NSLocalizedString("caregiver.inventory.empty.message", comment: "Inventory empty message"))
                     .font(.body)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                Button(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab")) {
+                Button {
                     onOpenPatients()
+                } label: {
+                    Text(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab"))
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
                 }
-                .buttonStyle(.borderedProminent)
-                .font(.headline)
-                .padding(.top, 4)
                 .accessibilityIdentifier("InventoryEmptyStateCTA")
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
+            .padding(24)
             .frame(maxWidth: .infinity)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .glassEffect(.regular, in: .rect(cornerRadius: 20))
             .padding(.horizontal, 24)
             Spacer(minLength: 0)
         }

@@ -14,7 +14,7 @@ enum RecordedByTypeDTO: String, Decodable {
 struct MedicationSnapshotDTO: Decodable, Equatable {
     let name: String
     let dosageText: String
-    let doseCountPerIntake: Int
+    let doseCountPerIntake: Double
     let dosageStrengthValue: Double
     let dosageStrengthUnit: String
     let notes: String?

@@ -24,13 +24,13 @@ enum NotificationSlot: String, CaseIterable {
     var notificationBody: String {
         switch self {
         case .morning:
-            return "朝のお薬の時間です！"
+            return NSLocalizedString("notification.slot.morning.body", comment: "Morning medication notification")
         case .noon:
-            return "昼のお薬の時間です！"
+            return NSLocalizedString("notification.slot.noon.body", comment: "Noon medication notification")
         case .evening:
-            return "夜のお薬の時間です！"
+            return NSLocalizedString("notification.slot.evening.body", comment: "Evening medication notification")
         case .bedtime:
-            return "眠前のお薬の時間です！"
+            return NSLocalizedString("notification.slot.bedtime.body", comment: "Bedtime medication notification")
         }
     }
 
@@ -65,7 +65,7 @@ struct NotificationPlanBuilder {
     private let calendar: Calendar
     private let dateFormatter: DateFormatter
 
-    init(timeZone: TimeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current) {
+    init(timeZone: TimeZone = AppConstants.defaultTimeZone) {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         self.calendar = calendar
@@ -73,7 +73,7 @@ struct NotificationPlanBuilder {
         let formatter = DateFormatter()
         formatter.calendar = calendar
         formatter.timeZone = timeZone
-        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.locale = AppConstants.posixLocale
         formatter.dateFormat = "yyyy-MM-dd"
         self.dateFormatter = formatter
     }
@@ -92,7 +92,7 @@ struct NotificationPlanBuilder {
         )
 
         let start = calendar.startOfDay(for: now)
-        let dates = (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: start) }
+        let dates = (0..<AppConstants.notificationLookaheadDays).compactMap { calendar.date(byAdding: .day, value: $0, to: start) }
 
         var entries: [NotificationPlanEntry] = []
         for date in dates {
@@ -117,7 +117,7 @@ struct NotificationPlanBuilder {
                             dateKey: dateKey,
                             slot: slot,
                             sequence: 2,
-                            scheduledAt: scheduledAt.addingTimeInterval(15 * 60)
+                            scheduledAt: scheduledAt.addingTimeInterval(AppConstants.secondaryReminderDelay)
                         )
                     )
                 }

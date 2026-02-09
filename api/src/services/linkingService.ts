@@ -149,3 +149,31 @@ export async function registerLinkingAttemptFailure(patientId: string) {
 export async function resetLinkingAttempts(patientId: string) {
   await resetLinkingAttempt(patientId);
 }
+
+export async function deletePatientForCaregiver(
+  caregiverUserId: string,
+  patientId: string
+) {
+  const patient = await getPatientRecordForCaregiver(patientId, caregiverUserId);
+  if (!patient) {
+    throw new AuthError("Not found", 404);
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // Delete all related records in dependency order
+    await tx.inventoryAlertEvent.deleteMany({ where: { patientId } });
+    await tx.medicationInventoryAdjustment.deleteMany({ where: { patientId } });
+    await tx.prnDoseRecord.deleteMany({ where: { patientId } });
+    await tx.doseRecord.deleteMany({ where: { patientId } });
+    await tx.doseRecordEvent.deleteMany({ where: { patientId } });
+    await tx.regimen.deleteMany({ where: { patientId } });
+    await tx.medication.deleteMany({ where: { patientId } });
+    await tx.patientSession.deleteMany({ where: { patientId } });
+    await tx.linkingCode.deleteMany({ where: { patientId } });
+    await tx.linkingAttempt.deleteMany({ where: { patientId } });
+    await tx.caregiverPatientLink.deleteMany({ where: { patientId } });
+    await tx.patient.delete({ where: { id: patientId } });
+  });
+
+  return { deleted: true };
+}

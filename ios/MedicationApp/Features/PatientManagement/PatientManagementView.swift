@@ -76,23 +76,39 @@ final class PatientManagementViewModel: ObservableObject {
         }
     }
 
-    func revokePatient(patientId: String) async {
+    func revokePatient(patientId: String) async -> Bool {
         do {
             try await apiClient.revokePatient(patientId: patientId)
             patients.removeAll { $0.id == patientId }
+            return true
         } catch {
             errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
+            return false
+        }
+    }
+
+    func deletePatient(patientId: String) async -> Bool {
+        do {
+            try await apiClient.deletePatient(patientId: patientId)
+            patients.removeAll { $0.id == patientId }
+            return true
+        } catch {
+            errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
+            return false
         }
     }
 }
 
 struct PatientManagementView: View {
     @EnvironmentObject private var sessionStore: SessionStore
+    @EnvironmentObject private var globalBannerPresenter: GlobalBannerPresenter
     @StateObject private var viewModel: PatientManagementViewModel
     @StateObject private var preferencesStore = NotificationPreferencesStore()
     @StateObject private var schedulingCoordinator = SchedulingRefreshCoordinator()
     @State private var showingCreate = false
     @State private var revokeTarget: PatientDTO?
+    @State private var deleteTarget: PatientDTO?
+    @State private var showingLogoutConfirm = false
     @State private var toastMessage: String?
     @State private var draftTimes: [NotificationSlot: Date] = [:]
     @State private var isSavingDetail = false
@@ -100,8 +116,9 @@ struct PatientManagementView: View {
     @State private var inventoryItems: [InventoryItemDTO] = []
     @State private var showingTimePresetSheet = false
     @State private var showingInventoryThresholdSheet = false
-    private let timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+    private let timeZone = AppConstants.defaultTimeZone
     private let apiClient: APIClient
+    private static let thresholdKeyPrefix = "inventory.threshold."
 
     init(sessionStore: SessionStore? = nil) {
         let store = sessionStore ?? SessionStore()
@@ -112,8 +129,14 @@ struct PatientManagementView: View {
     var body: some View {
         NavigationStack {
             contentView
-            .navigationTitle(NSLocalizedString("caregiver.patients.title", comment: "Patients title"))
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                NavigationHeaderView(
+                    icon: "person.2.circle.fill",
+                    title: NSLocalizedString("caregiver.patients.title", comment: "Patients title")
+                )
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button(NSLocalizedString("caregiver.patients.add", comment: "Add patient")) {
                         showingCreate = true
@@ -121,14 +144,12 @@ struct PatientManagementView: View {
                 }
             }
             .sheet(isPresented: $showingCreate) {
-                PatientCreateView { displayName in
-                    Task {
-                        let created = await viewModel.createPatient(displayName: displayName)
-                        if created {
-                            showingCreate = false
-                        }
-                    }
-                }
+                PatientCreateView(
+                    onSave: { displayName in
+                        await viewModel.createPatient(displayName: displayName)
+                    },
+                    onSuccess: showToast
+                )
             }
             .sheet(item: $viewModel.issuedCode) { code in
                 PatientLinkCodeView(code: code)
@@ -137,11 +158,27 @@ struct PatientManagementView: View {
                 PatientRevokeView(
                     patient: patient,
                     onConfirm: {
-                        Task { await viewModel.revokePatient(patientId: patient.id) }
-                        revokeTarget = nil
+                        await viewModel.revokePatient(patientId: patient.id)
+                    },
+                    onSuccess: { message in
+                        globalBannerPresenter.show(message: message, duration: 2)
                     },
                     onCancel: {
                         revokeTarget = nil
+                    }
+                )
+            }
+            .sheet(item: $deleteTarget) { patient in
+                PatientDeleteView(
+                    patient: patient,
+                    onConfirm: {
+                        await viewModel.deletePatient(patientId: patient.id)
+                    },
+                    onSuccess: { message in
+                        globalBannerPresenter.show(message: message, duration: 2)
+                    },
+                    onCancel: {
+                        deleteTarget = nil
                     }
                 )
             }
@@ -156,15 +193,20 @@ struct PatientManagementView: View {
                         ToolbarItem(placement: .topBarTrailing) {
                             Button(NSLocalizedString("common.save", comment: "Save")) {
                                 Task {
-                                    await saveDetailSettings()
+                                    let success = await saveDetailSettings()
                                     showingTimePresetSheet = false
+                                    showToast(success
+                                        ? NSLocalizedString("caregiver.timePreset.toast.updated", comment: "Time preset updated toast")
+                                        : NSLocalizedString("common.error.save", comment: "Save error"))
                                 }
                             }
+                            .disabled(isSavingDetail)
                         }
                         ToolbarItem(placement: .topBarLeading) {
                             Button(NSLocalizedString("common.close", comment: "Close")) {
                                 showingTimePresetSheet = false
                             }
+                            .disabled(isSavingDetail)
                         }
                     }
             }
@@ -180,15 +222,20 @@ struct PatientManagementView: View {
                         ToolbarItem(placement: .topBarTrailing) {
                             Button(NSLocalizedString("common.save", comment: "Save")) {
                                 Task {
-                                    await saveInventoryThreshold()
+                                    let success = await saveInventoryThreshold()
                                     showingInventoryThresholdSheet = false
+                                    showToast(success
+                                        ? NSLocalizedString("caregiver.inventory.toast.saved", comment: "Inventory saved")
+                                        : NSLocalizedString("common.error.save", comment: "Save error"))
                                 }
                             }
+                            .disabled(isSavingDetail)
                         }
                         ToolbarItem(placement: .topBarLeading) {
                             Button(NSLocalizedString("common.close", comment: "Close")) {
                                 showingInventoryThresholdSheet = false
                             }
+                            .disabled(isSavingDetail)
                         }
                     }
             }
@@ -196,12 +243,18 @@ struct PatientManagementView: View {
         }
         .onAppear {
             viewModel.load()
-            if draftTimes.isEmpty {
-                draftTimes = buildDraftTimes()
-            }
+            preferencesStore.switchPatient(viewModel.selectedPatientId)
+            draftTimes = buildDraftTimes()
             Task { await loadInventoryThreshold() }
         }
-        .onChange(of: viewModel.selectedPatientId) { _, _ in
+        .onChange(of: viewModel.selectedPatientId) { _, newPatientId in
+            preferencesStore.switchPatient(newPatientId)
+            draftTimes = buildDraftTimes()
+            if let patientId = newPatientId, let saved = Self.loadSavedThreshold(for: patientId) {
+                inventoryThresholdText = String(saved)
+            } else {
+                inventoryThresholdText = ""
+            }
             Task { await loadInventoryThreshold() }
         }
         .overlay(alignment: .top) {
@@ -210,29 +263,15 @@ struct PatientManagementView: View {
                     .font(.subheadline.weight(.semibold))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .shadow(radius: 4)
+                    .glassEffect(.regular, in: .capsule)
                     .padding(.top, 8)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .accessibilityLabel(toastMessage)
             }
         }
         .overlay {
-            if isSavingDetail {
-                ZStack {
-                    Color.black.opacity(0.2)
-                        .ignoresSafeArea()
-                    VStack {
-                        Spacer()
-                        LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                            .padding(16)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .shadow(radius: 6)
-                        Spacer()
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            if viewModel.isLoading || isSavingDetail {
+                SchedulingRefreshOverlay()
             }
         }
         .accessibilityIdentifier("PatientManagementView")
@@ -241,18 +280,23 @@ struct PatientManagementView: View {
     @ViewBuilder
     private var contentView: some View {
         if viewModel.isLoading {
-            LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let errorMessage = viewModel.errorMessage {
             ErrorStateView(message: errorMessage)
         } else if viewModel.patients.isEmpty {
-            EmptyStateView(
-                title: NSLocalizedString("caregiver.patients.empty.title", comment: "Empty patients title"),
-                message: NSLocalizedString("caregiver.patients.empty.message", comment: "Empty patients message")
-            )
+            VStack(spacing: 16) {
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .font(.system(size: 44))
+                    .foregroundStyle(.secondary)
+                EmptyStateView(
+                    title: NSLocalizedString("caregiver.patients.empty.title", comment: "Empty patients title"),
+                    message: NSLocalizedString("caregiver.patients.empty.message", comment: "Empty patients message")
+                )
+            }
             .padding(24)
             .frame(maxWidth: .infinity)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .glassEffect(.regular, in: .rect(cornerRadius: 20))
             .padding(.horizontal, 24)
         } else {
             ScrollView {
@@ -273,14 +317,14 @@ struct PatientManagementView: View {
     private var linkHeader: some View {
         Text(NSLocalizedString("caregiver.settings.section.link", comment: "Linking header"))
             .font(.headline)
-            .foregroundColor(.secondary)
+            .foregroundStyle(.secondary)
     }
 
     private var selectionCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(NSLocalizedString("caregiver.patients.select.label", comment: "Select label"))
                 .font(.headline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             Picker(
                 NSLocalizedString("caregiver.patients.select.label", comment: "Select label"),
                 selection: Binding(
@@ -299,47 +343,75 @@ struct PatientManagementView: View {
             .pickerStyle(.menu)
             Text(NSLocalizedString("caregiver.patients.select.help", comment: "Select help text"))
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 
     @ViewBuilder
     private var selectedPatientSection: some View {
         if let selectedPatient {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 14) {
                 HStack {
-                    Text(selectedPatient.displayName)
-                        .font(.title3.weight(.semibold))
+                    HStack(spacing: 10) {
+                        Image(systemName: "person.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.tint)
+                        Text(selectedPatient.displayName)
+                            .font(.title3.weight(.semibold))
+                    }
                     Spacer()
                     Text(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))
                         .font(.subheadline.weight(.semibold))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
                         .background(Color.accentColor.opacity(0.2))
-                        .foregroundColor(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                         .clipShape(Capsule())
                 }
-                HStack {
-                    Button(NSLocalizedString("caregiver.patients.issueCode", comment: "Issue code")) {
+                HStack(spacing: 12) {
+                    Button {
                         Task { await viewModel.issueLinkingCode(patientId: selectedPatient.id) }
+                    } label: {
+                        Label(NSLocalizedString("caregiver.patients.issueCode", comment: "Issue code"), systemImage: "link.badge.plus")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(Color.accentColor.opacity(0.12))
+                            .foregroundStyle(.tint)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
-                    .buttonStyle(.bordered)
-                    .font(.headline)
-                    Button(NSLocalizedString("caregiver.patients.revoke", comment: "Revoke")) {
+                    .buttonStyle(.plain)
+                    Button {
                         revokeTarget = selectedPatient
+                    } label: {
+                        Label(NSLocalizedString("caregiver.patients.revoke", comment: "Revoke"), systemImage: "person.crop.circle.badge.minus")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(Color.red.opacity(0.15))
+                            .foregroundStyle(.red)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
-                    .buttonStyle(.bordered)
-                    .font(.headline)
-                    .tint(.red)
+                    .buttonStyle(.plain)
                 }
+                Button {
+                    deleteTarget = selectedPatient
+                } label: {
+                    Label(NSLocalizedString("caregiver.patients.delete", comment: "Delete patient"), systemImage: "trash")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(Color.red.opacity(0.15))
+                        .foregroundStyle(.red)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
             }
             .padding(16)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .glassEffect(.regular, in: .rect(cornerRadius: 16))
             .accessibilityLabel("\(selectedPatient.displayName) \(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))")
         } else {
             EmptyStateView(
@@ -348,8 +420,7 @@ struct PatientManagementView: View {
             )
             .padding(16)
             .frame(maxWidth: .infinity)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .glassEffect(.regular, in: .rect(cornerRadius: 16))
         }
     }
 
@@ -358,7 +429,7 @@ struct PatientManagementView: View {
         if viewModel.selectedPatientId != nil {
             Text(NSLocalizedString("caregiver.settings.section.detail", comment: "Detail settings header"))
                 .font(.headline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .padding(.top, 16)
             settingsSection
             inventorySettingsSection
@@ -374,30 +445,51 @@ struct PatientManagementView: View {
             Button {
                 showingTimePresetSheet = true
             } label: {
-                HStack {
+                HStack(spacing: 12) {
+                    Image(systemName: "clock.fill")
+                        .foregroundStyle(.tint)
+                        .frame(width: 20)
                     Text(NSLocalizedString("patient.settings.notifications.detail.item", comment: "Detail settings item"))
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
             .buttonStyle(.plain)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 
     private var logoutSection: some View {
-        Button(NSLocalizedString("common.logout", comment: "Logout")) {
-            sessionStore.clearCaregiverToken()
+        Button {
+            showingLogoutConfirm = true
+        } label: {
+            Text(NSLocalizedString("common.logout", comment: "Logout"))
+                .font(.headline)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Color.red, in: RoundedRectangle(cornerRadius: 14))
         }
-        .buttonStyle(.borderedProminent)
-        .tint(.red)
-        .font(.headline)
         .padding(.top, 48)
         .padding(.bottom, 48)
+        .alert(
+            NSLocalizedString("caregiver.logout.confirm.title", comment: "Logout confirm title"),
+            isPresented: $showingLogoutConfirm
+        ) {
+            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
+            Button(NSLocalizedString("caregiver.logout.confirm.action", comment: "Logout confirm action"), role: .destructive) {
+                sessionStore.clearCaregiverToken()
+                globalBannerPresenter.show(
+                    message: NSLocalizedString("caregiver.logout.toast", comment: "Logout toast"),
+                    duration: 2
+                )
+            }
+        } message: {
+            Text(NSLocalizedString("caregiver.logout.confirm.message", comment: "Logout confirm message"))
+        }
     }
 
     private var inventorySettingsSection: some View {
@@ -405,44 +497,72 @@ struct PatientManagementView: View {
             Button {
                 showingInventoryThresholdSheet = true
             } label: {
-                HStack {
+                HStack(spacing: 12) {
+                    Image(systemName: "archivebox.fill")
+                        .foregroundStyle(.tint)
+                        .frame(width: 20)
                     Text(NSLocalizedString("caregiver.inventory.settings.item.threshold", comment: "Inventory threshold item"))
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
             .buttonStyle(.plain)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 
     private var timePresetDetailSheet: some View {
         Form {
             Section {
+                VStack(spacing: 10) {
+                    Image(systemName: "clock.circle.fill")
+                        .font(.system(size: 40))
+                        .foregroundStyle(.tint)
+                        .symbolRenderingMode(.hierarchical)
+                    Text(NSLocalizedString("patient.settings.notifications.detail.item", comment: "Detail settings item"))
+                        .font(.title3.weight(.bold))
+                }
+                .frame(maxWidth: .infinity)
+                .listRowBackground(Color.clear)
+            }
+
+            Section {
                 timePickerRow(
                     title: NSLocalizedString("patient.settings.notifications.slot.morning", comment: "Morning"),
+                    icon: "sunrise.fill",
+                    iconColor: .orange,
                     slot: .morning
                 )
                 timePickerRow(
                     title: NSLocalizedString("patient.settings.notifications.slot.noon", comment: "Noon"),
+                    icon: "sun.max.fill",
+                    iconColor: .yellow,
                     slot: .noon
                 )
                 timePickerRow(
                     title: NSLocalizedString("patient.settings.notifications.slot.evening", comment: "Evening"),
+                    icon: "sunset.fill",
+                    iconColor: .orange,
                     slot: .evening
                 )
                 timePickerRow(
                     title: NSLocalizedString("patient.settings.notifications.slot.bedtime", comment: "Bedtime"),
+                    icon: "moon.fill",
+                    iconColor: .indigo,
                     slot: .bedtime
                 )
-            } footer: {
-                Text(NSLocalizedString("patient.settings.notifications.detail.note", comment: "Detail settings note"))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+            } header: {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(.tint)
+                    Text(NSLocalizedString("patient.settings.notifications.detail.note", comment: "Detail settings note"))
+                }
+                .font(.subheadline)
+                .textCase(nil)
             }
         }
         .overlay { savingOverlay }
@@ -451,7 +571,24 @@ struct PatientManagementView: View {
     private var inventoryThresholdDetailSheet: some View {
         Form {
             Section {
-                HStack {
+                VStack(spacing: 10) {
+                    Image(systemName: "archivebox.circle.fill")
+                        .font(.system(size: 40))
+                        .foregroundStyle(.tint)
+                        .symbolRenderingMode(.hierarchical)
+                    Text(NSLocalizedString("caregiver.inventory.settings.section.global", comment: "Inventory global settings title"))
+                        .font(.title3.weight(.bold))
+                }
+                .frame(maxWidth: .infinity)
+                .listRowBackground(Color.clear)
+            }
+
+            Section {
+                HStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(.orange)
+                        .frame(width: 20)
                     Text(NSLocalizedString("caregiver.inventory.detail.threshold", comment: "Inventory threshold"))
                     Spacer()
                     TextField("0", text: $inventoryThresholdText)
@@ -459,13 +596,18 @@ struct PatientManagementView: View {
                         .multilineTextAlignment(.trailing)
                         .frame(width: 80)
                         .accessibilityIdentifier("InventoryGlobalThresholdField")
-                    Text("日")
+                    Text(NSLocalizedString("common.days.unit", comment: "Days unit"))
                         .foregroundStyle(.secondary)
                 }
-            } footer: {
-                Text(NSLocalizedString("caregiver.inventory.settings.note", comment: "Inventory settings note"))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+            } header: {
+                HStack(spacing: 6) {
+                    Image(systemName: "archivebox.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(.tint)
+                    Text(NSLocalizedString("caregiver.inventory.settings.note", comment: "Inventory settings note"))
+                }
+                .font(.subheadline)
+                .textCase(nil)
             }
         }
         .overlay { savingOverlay }
@@ -474,24 +616,16 @@ struct PatientManagementView: View {
     @ViewBuilder
     private var savingOverlay: some View {
         if isSavingDetail {
-            ZStack {
-                Color.black.opacity(0.2)
-                    .ignoresSafeArea()
-                VStack {
-                    Spacer()
-                    LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                        .padding(16)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .shadow(radius: 6)
-                    Spacer()
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            SchedulingRefreshOverlay()
         }
     }
 
-    private func timePickerRow(title: String, slot: NotificationSlot) -> some View {
-        HStack {
+    private func timePickerRow(title: String, icon: String = "clock", iconColor: Color = .blue, slot: NotificationSlot) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.subheadline)
+                .foregroundStyle(iconColor)
+                .frame(width: 20)
             Text(title)
             Spacer()
             DatePicker(
@@ -533,8 +667,8 @@ struct PatientManagementView: View {
         return calendar.date(from: components) ?? Date()
     }
 
-    private func saveDetailSettings() async {
-        guard !isSavingDetail else { return }
+    private func saveDetailSettings() async -> Bool {
+        guard !isSavingDetail else { return false }
         isSavingDetail = true
         defer { isSavingDetail = false }
         var calendar = Calendar(identifier: .gregorian)
@@ -557,10 +691,10 @@ struct PatientManagementView: View {
                 newSlotTimes: newSlotTimes
             )
             await rescheduleIfNeeded()
-            showToast(NSLocalizedString("common.toast.updated", comment: "Updated toast"))
             NotificationCenter.default.post(name: .presetTimesUpdated, object: nil)
+            return true
         } catch {
-            showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+            return false
         }
     }
 
@@ -651,29 +785,33 @@ struct PatientManagementView: View {
             inventoryItems = items
             if let first = items.first(where: { $0.inventoryEnabled }) {
                 inventoryThresholdText = String(first.inventoryLowThreshold)
+                Self.saveThresholdLocally(first.inventoryLowThreshold, for: patientId)
+            } else if let saved = Self.loadSavedThreshold(for: patientId) {
+                inventoryThresholdText = String(saved)
             } else {
                 inventoryThresholdText = ""
             }
         } catch {
+            if let saved = Self.loadSavedThreshold(for: patientId) {
+                inventoryThresholdText = String(saved)
+            }
             showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
         }
     }
 
-    private func saveInventoryThreshold() async {
+    private func saveInventoryThreshold() async -> Bool {
         guard sessionStore.mode == .caregiver, let patientId = sessionStore.currentPatientId else {
-            return
+            return false
         }
         let trimmed = inventoryThresholdText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let threshold = Int(trimmed), threshold >= 0 else {
-            showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
-            return
+            return false
         }
         isSavingDetail = true
         defer { isSavingDetail = false }
         do {
             let items = inventoryItems.isEmpty ? try await apiClient.fetchInventory(patientId: patientId) : inventoryItems
-            let targets = items.filter { $0.inventoryEnabled }
-            for item in targets {
+            for item in items {
                 _ = try await apiClient.updateInventory(
                     patientId: patientId,
                     medicationId: item.medicationId,
@@ -701,9 +839,10 @@ struct PatientManagementView: View {
                     refillDueDate: item.refillDueDate
                 )
             }
-            showToast(NSLocalizedString("caregiver.inventory.toast.saved", comment: "Inventory saved"))
+            Self.saveThresholdLocally(threshold, for: patientId)
+            return true
         } catch {
-            showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+            return false
         }
     }
 
@@ -725,12 +864,23 @@ struct PatientManagementView: View {
             toastMessage = message
         }
         Task {
-            try? await Task.sleep(for: .seconds(1))
+            try? await Task.sleep(for: .seconds(AppConstants.toastDuration))
             await MainActor.run {
                 withAnimation {
                     toastMessage = nil
                 }
             }
         }
+    }
+
+    // MARK: - Inventory Threshold Local Persistence
+
+    private static func saveThresholdLocally(_ threshold: Int, for patientId: String) {
+        UserDefaults.standard.set(threshold, forKey: "\(thresholdKeyPrefix)\(patientId)")
+    }
+
+    private static func loadSavedThreshold(for patientId: String) -> Int? {
+        let value = UserDefaults.standard.object(forKey: "\(thresholdKeyPrefix)\(patientId)")
+        return value as? Int
     }
 }

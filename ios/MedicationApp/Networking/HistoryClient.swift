@@ -8,7 +8,7 @@ final class HistoryClient {
 
     init(
         apiClient: APIClient,
-        timeZone: TimeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        timeZone: TimeZone = AppConstants.defaultTimeZone
     ) {
         self.apiClient = apiClient
         var calendar = Calendar(identifier: .gregorian)
@@ -18,7 +18,7 @@ final class HistoryClient {
         let formatter = DateFormatter()
         formatter.calendar = calendar
         formatter.timeZone = timeZone
-        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.locale = AppConstants.posixLocale
         formatter.dateFormat = "yyyy-MM-dd"
         self.dateFormatter = formatter
     }

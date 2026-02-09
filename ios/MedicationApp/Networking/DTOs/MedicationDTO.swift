@@ -5,7 +5,7 @@ struct MedicationDTO: Decodable, Identifiable {
     let patientId: String
     let name: String
     let dosageText: String
-    let doseCountPerIntake: Int
+    let doseCountPerIntake: Double
     let dosageStrengthValue: Double
     let dosageStrengthUnit: String
     let notes: String?
@@ -13,11 +13,20 @@ struct MedicationDTO: Decodable, Identifiable {
     let prnInstructions: String?
     let startDate: Date
     let endDate: Date?
-    let inventoryCount: Int?
+    let inventoryCount: Double?
     let inventoryUnit: String?
+    let inventoryEnabled: Bool
+    let inventoryQuantity: Double
+    let inventoryOut: Bool
     let isActive: Bool
     let isArchived: Bool
     let nextScheduledAt: Date?
+    let regimenTimes: [String]?
+    let regimenDaysOfWeek: [String]?
+
+    var isOutOfStock: Bool {
+        inventoryEnabled && inventoryOut
+    }
 
     private enum CodingKeys: String, CodingKey {
         case id
@@ -34,9 +43,14 @@ struct MedicationDTO: Decodable, Identifiable {
         case endDate
         case inventoryCount
         case inventoryUnit
+        case inventoryEnabled
+        case inventoryQuantity
+        case inventoryOut
         case isActive
         case isArchived
         case nextScheduledAt
+        case regimenTimes
+        case regimenDaysOfWeek
     }
 
     init(from decoder: Decoder) throws {
@@ -45,7 +59,7 @@ struct MedicationDTO: Decodable, Identifiable {
         patientId = try container.decode(String.self, forKey: .patientId)
         name = try container.decode(String.self, forKey: .name)
         dosageText = try container.decode(String.self, forKey: .dosageText)
-        doseCountPerIntake = try container.decode(Int.self, forKey: .doseCountPerIntake)
+        doseCountPerIntake = try container.decode(Double.self, forKey: .doseCountPerIntake)
         dosageStrengthValue = try container.decode(Double.self, forKey: .dosageStrengthValue)
         dosageStrengthUnit = try container.decode(String.self, forKey: .dosageStrengthUnit)
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
@@ -53,11 +67,16 @@ struct MedicationDTO: Decodable, Identifiable {
         prnInstructions = try container.decodeIfPresent(String.self, forKey: .prnInstructions)
         startDate = try container.decode(Date.self, forKey: .startDate)
         endDate = try container.decodeIfPresent(Date.self, forKey: .endDate)
-        inventoryCount = try container.decodeIfPresent(Int.self, forKey: .inventoryCount)
+        inventoryCount = try container.decodeIfPresent(Double.self, forKey: .inventoryCount)
         inventoryUnit = try container.decodeIfPresent(String.self, forKey: .inventoryUnit)
+        inventoryEnabled = try container.decodeIfPresent(Bool.self, forKey: .inventoryEnabled) ?? false
+        inventoryQuantity = try container.decodeIfPresent(Double.self, forKey: .inventoryQuantity) ?? 0
+        inventoryOut = try container.decodeIfPresent(Bool.self, forKey: .inventoryOut) ?? false
         isActive = try container.decode(Bool.self, forKey: .isActive)
         isArchived = try container.decode(Bool.self, forKey: .isArchived)
         nextScheduledAt = try container.decodeIfPresent(Date.self, forKey: .nextScheduledAt)
+        regimenTimes = try container.decodeIfPresent([String].self, forKey: .regimenTimes)
+        regimenDaysOfWeek = try container.decodeIfPresent([String].self, forKey: .regimenDaysOfWeek)
     }
 }
 
@@ -73,7 +92,7 @@ struct MedicationCreateRequestDTO: Encodable {
     let patientId: String
     let name: String
     let dosageText: String
-    let doseCountPerIntake: Int
+    let doseCountPerIntake: Double
     let dosageStrengthValue: Double
     let dosageStrengthUnit: String
     let notes: String?
@@ -81,14 +100,14 @@ struct MedicationCreateRequestDTO: Encodable {
     let prnInstructions: String?
     let startDate: Date
     let endDate: Date?
-    let inventoryCount: Int?
+    let inventoryCount: Double?
     let inventoryUnit: String?
 }
 
 struct MedicationUpdateRequestDTO: Encodable {
     let name: String
     let dosageText: String
-    let doseCountPerIntake: Int
+    let doseCountPerIntake: Double
     let dosageStrengthValue: Double
     let dosageStrengthUnit: String
     let notes: String?
@@ -96,7 +115,7 @@ struct MedicationUpdateRequestDTO: Encodable {
     let prnInstructions: String?
     let startDate: Date
     let endDate: Date?
-    let inventoryCount: Int?
+    let inventoryCount: Double?
     let inventoryUnit: String?
 }
 

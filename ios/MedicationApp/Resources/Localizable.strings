@@ -8,17 +8,21 @@
 "common.error.unexpected" = "予期せぬエラーが発生しました";
 "common.save" = "保存";
 "common.cancel" = "キャンセル";
-"common.select" = "選択";
+"common.select" = "単位";
 "common.ok" = "OK";
 "common.logout" = "ログアウト";
 "common.toast.updated" = "更新しました";
+"caregiver.timePreset.toast.updated" = "時間を更新しました";
 "caregiver.inventory.toast.saved" = "在庫情報を保存しました";
 "caregiver.inventory.toast.refilled" = "薬を補充しました";
 
 /* Mode select */
 "mode.select.title" = "モードを選択";
+"mode.select.subtitle" = "あなたの立場を選んでください";
 "mode.select.caregiver" = "家族モード";
+"mode.select.caregiver.subtitle" = "薬の管理・患者の見守り";
 "mode.select.patient" = "患者モード";
+"mode.select.patient.subtitle" = "服用記録・リマインダー";
 
 /* Caregiver login */
 "caregiver.login.title" = "家族ログイン";
@@ -29,8 +33,12 @@
 
 /* Caregiver auth choice */
 "caregiver.auth.title" = "家族アカウント";
+"caregiver.auth.subtitle" = "ログインまたは新規登録してください";
 "caregiver.auth.login" = "ログイン";
+"caregiver.auth.login.subtitle" = "既にアカウントをお持ちの方";
 "caregiver.auth.signup" = "サインアップ";
+"caregiver.auth.signup.subtitle" = "はじめてご利用の方";
+"caregiver.auth.back" = "モードを選び直す";
 
 /* Caregiver signup */
 "caregiver.signup.title" = "家族サインアップ";
@@ -38,12 +46,15 @@
 "caregiver.signup.password" = "Password";
 "caregiver.signup.button" = "サインアップ";
 "caregiver.signup.button.loading" = "登録中...";
+"caregiver.signup.confirm.email" = "アカウントを確認するためにメールをご確認ください。";
 
 /* Link code */
 "link.code.title" = "連携コード";
+"link.code.subtitle" = "家族から受け取った6桁のコードを入力";
 "link.code.placeholder" = "コードを入力";
 "link.code.button" = "送信";
 "link.code.button.loading" = "送信中...";
+"link.code.back" = "モードを選び直す";
 "link.code.error.invalid" = "6桁の数字コードを入力してください";
 "link.code.error.not_found" = "コードが見つからないか期限切れです";
 
@@ -60,6 +71,9 @@
 "medication.list.section.expired.prn" = "期間終了（頓服）";
 "medication.list.startDate" = "開始日";
 "medication.list.nextDose" = "次回予定";
+"medication.list.schedule.daily.format" = "毎日 %@";
+"medication.list.schedule.weekly.format" = "%@ %@";
+"medication.list.dose.format" = "1回%@錠";
 "medication.list.badge.scheduled" = "定時";
 "medication.list.badge.prn" = "頓服";
 "medication.toast.created" = "薬を追加しました";
@@ -74,8 +88,8 @@
 "medication.form.section.notes" = "メモ";
 "medication.detail.notes.empty" = "メモはありません";
 "medication.form.name" = "薬名";
-"medication.form.dosage.value" = "用量 (数値)";
-"medication.form.dosage.unit" = "用量単位";
+"medication.form.dosage.value" = "用量";
+"medication.form.dosage.unit" = "単位";
 "medication.form.dose.count" = "服用数/回";
 "medication.form.prn.toggle" = "頓服（必要時に服用）";
 "medication.form.prn.instructions" = "頓服の説明（任意）";
@@ -88,7 +102,7 @@
 "medication.form.schedule.weekdays" = "曜日";
 "medication.form.schedule.times" = "時刻";
 "medication.form.schedule.unset" = "スケジュール未設定";
-"medication.form.inventory.count" = "在庫数";
+"medication.form.inventory.count" = "在庫数（錠）";
 "medication.form.inventory.unit" = "在庫単位";
 "medication.form.notes" = "メモ";
 "medication.form.patient.readonly" = "患者モードでは編集できません";
@@ -155,6 +169,7 @@
 "patient.today.status.missed" = "飲み忘れ";
 "patient.today.alreadyRecorded" = "すでに記録済みです";
 "patient.today.recorded" = "記録しました";
+"patient.today.outOfStock" = "在庫切れ";
 "patient.today.section.planned" = "今日のお薬";
 "patient.today.section.taken" = "服用済み";
 "patient.today.section.missed" = "飲み忘れ";
@@ -165,6 +180,10 @@
 "patient.today.section.slot.other" = "その他";
 "patient.today.reminder.title" = "服用リマインダー";
 "patient.today.reminder.body" = "%@を飲む時間です（%@）";
+"patient.logout.confirm.title" = "ログアウトしますか？";
+"patient.logout.confirm.message" = "患者モードからログアウトします。";
+"patient.logout.confirm.action" = "ログアウト";
+"patient.logout.toast" = "ログアウトしました";
 
 /* Caregiver tabs */
 "caregiver.tabs.medications" = "薬・予定";
@@ -202,7 +221,7 @@
 "caregiver.inventory.list.empty.title" = "在庫がありません";
 "caregiver.inventory.list.empty.message" = "薬の在庫を設定してください";
 "caregiver.inventory.remaining.label" = "残り";
-"caregiver.inventory.unit" = "個";
+"caregiver.inventory.unit" = "錠";
 "caregiver.inventory.status.available" = "在庫あり";
 "caregiver.inventory.status.low" = "少";
 "caregiver.inventory.status.out" = "なし";
@@ -229,10 +248,10 @@
 "caregiver.inventory.actions.correction" = "在庫を修正（誤入力の修正）";
 "caregiver.inventory.actions.correction.button" = "修正する";
 "caregiver.inventory.refill.confirm.title" = "在庫を補充しますか？";
-"caregiver.inventory.refill.confirm.message" = "%@ を +%d個（%d→%d）";
+"caregiver.inventory.refill.confirm.message" = "%@ を +%@個（%@→%@）";
 "caregiver.inventory.correction.title" = "在庫を修正";
-"caregiver.inventory.correction.message" = "在庫を%d個に変更しますか？（補充ではなく修正です）";
-"caregiver.inventory.banner.low" = "%@：%@の在庫が少なくなりました（残り%d）";
+"caregiver.inventory.correction.message" = "在庫を%@個に変更しますか？（補充ではなく修正です）";
+"caregiver.inventory.banner.low" = "%@：%@の在庫が少なくなりました（残り%@）";
 "caregiver.inventory.banner.out" = "%@：%@がなくなりました";
 "caregiver.inventory.banner.patientFallback" = "患者";
 "caregiver.inventory.banner.medicationFallback" = "薬";
@@ -276,6 +295,7 @@
 "caregiver.patients.create.name" = "表示名";
 "caregiver.patients.create.validation" = "表示名は必須です";
 "caregiver.patients.code.title" = "連携コード";
+"caregiver.patients.code.subtitle" = "患者にこのコードを伝えてください";
 "caregiver.patients.code.expires" = "有効期限: %@";
 "caregiver.patients.code.copy" = "コピー";
 "caregiver.patients.code.share" = "共有";
@@ -283,3 +303,85 @@
 "caregiver.patients.revoke.confirm.title" = "リンク解除";
 "caregiver.patients.revoke.confirm.message" = "この患者のリンクを解除します。既存セッションは失効します。";
 "caregiver.patients.revoke.confirm.action" = "解除する";
+"caregiver.logout.confirm.title" = "ログアウトしますか？";
+"caregiver.logout.confirm.message" = "家族モードからログアウトします。";
+"caregiver.logout.confirm.action" = "ログアウト";
+"caregiver.logout.toast" = "ログアウトしました";
+"caregiver.patients.toast.created" = "患者を追加しました";
+"caregiver.patients.toast.revoked" = "リンクを解除しました";
+"caregiver.patients.delete" = "患者を削除";
+"caregiver.patients.delete.confirm.title" = "患者を削除";
+"caregiver.patients.delete.confirm.message" = "この患者とすべての関連データ（お薬・服薬記録・在庫など）を完全に削除します。この操作は取り消せません。";
+"caregiver.patients.delete.confirm.action" = "削除する";
+"caregiver.patients.toast.deleted" = "患者を削除しました";
+"common.error.save" = "保存に失敗しました";
+"common.error.linking.generic" = "連携に失敗しました";
+"common.unit.tablet" = "錠";
+"common.dosage.unknown" = "不明";
+
+/* Medication form - additional */
+"medication.form.title.edit" = "薬を編集";
+"medication.form.title.add" = "新しい薬を追加";
+"medication.form.validation.name.required" = "薬名は必須です";
+"medication.form.validation.dosage.required" = "用量は必須です";
+"medication.form.validation.dosage.value.required" = "用量の数値を入力してください";
+"medication.form.validation.endDate.invalid" = "終了日は開始日以降にしてください";
+"medication.form.validation.timeSlot.required" = "時間は1件以上選択してください";
+"medication.form.validation.weekday.required" = "曜日は1つ以上選択してください";
+
+/* Schedule day labels */
+"schedule.day.mon" = "月";
+"schedule.day.tue" = "火";
+"schedule.day.wed" = "水";
+"schedule.day.thu" = "木";
+"schedule.day.fri" = "金";
+"schedule.day.sat" = "土";
+"schedule.day.sun" = "日";
+
+/* Schedule time slot labels */
+"schedule.slot.morning" = "朝";
+"schedule.slot.noon" = "昼";
+"schedule.slot.evening" = "夜";
+"schedule.slot.bedtime" = "眠前";
+
+/* Inventory detail */
+"caregiver.inventory.dailyIntake.unknown" = "1日—回（—錠/回）";
+"caregiver.inventory.dailyIntake.format" = "1日%@回（%@錠ずつ）";
+
+/* History day detail */
+"history.day.prn.doseCount" = "1回%@錠";
+
+/* Patient today */
+"patient.today.doseCount.label" = "服用数/回";
+"patient.today.doseCount.format" = "1回%@錠";
+
+/* Accessibility labels */
+"a11y.email" = "メールアドレス";
+"a11y.password" = "パスワード";
+"a11y.login" = "ログイン";
+"a11y.signup" = "サインアップ";
+"a11y.linkCode" = "連携コード";
+"a11y.linkCode.submit" = "連携コード送信";
+"a11y.medication.name" = "薬名";
+"a11y.medication.dosageValue" = "用量数値";
+"a11y.medication.dosageUnit" = "用量単位";
+"a11y.medication.dosage" = "用量";
+"a11y.medication.schedule" = "スケジュール";
+"a11y.medication.doseCount" = "服用数";
+"a11y.medication.prn" = "頓服設定";
+"a11y.medication.prnInstructions" = "頓服の説明";
+"a11y.medication.startDate" = "開始日";
+"a11y.medication.endDate" = "終了日";
+"a11y.medication.endDate.toggle" = "終了日を設定";
+"a11y.medication.inventory" = "在庫数";
+"a11y.medication.notes" = "メモ";
+"a11y.weekday.format" = "曜日 %@";
+"a11y.selected" = "選択中";
+"a11y.notSelected" = "未選択";
+"a11y.patient.displayName" = "表示名";
+
+/* Notification bodies */
+"notification.slot.morning.body" = "朝のお薬の時間です！";
+"notification.slot.noon.body" = "昼のお薬の時間です！";
+"notification.slot.evening.body" = "夜のお薬の時間です！";
+"notification.slot.bedtime.body" = "眠前のお薬の時間です！";

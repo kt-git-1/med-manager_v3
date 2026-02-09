@@ -8,6 +8,7 @@ final class CaregiverTodayViewModel: ObservableObject {
     @Published var isUpdating = false
     @Published var errorMessage: String?
     @Published var toastMessage: String?
+    @Published var outOfStockMedicationIds: Set<String> = []
 
     private let apiClient: APIClient
     private let dateFormatter: DateFormatter
@@ -17,15 +18,15 @@ final class CaregiverTodayViewModel: ObservableObject {
     init(apiClient: APIClient) {
         self.apiClient = apiClient
         self.dateFormatter = DateFormatter()
-        self.dateFormatter.locale = Locale(identifier: "ja_JP")
+        self.dateFormatter.locale = AppConstants.japaneseLocale
         self.dateFormatter.dateStyle = .medium
         self.dateFormatter.timeStyle = .none
         self.timeFormatter = DateFormatter()
-        self.timeFormatter.locale = Locale(identifier: "ja_JP")
+        self.timeFormatter.locale = AppConstants.japaneseLocale
         self.timeFormatter.dateStyle = .none
         self.timeFormatter.timeStyle = .short
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        calendar.timeZone = AppConstants.defaultTimeZone
         self.calendar = calendar
     }
 
@@ -40,17 +41,28 @@ final class CaregiverTodayViewModel: ObservableObject {
                 isUpdating = false
             }
             do {
-                let doses = try await apiClient.fetchCaregiverToday()
+                async let dosesTask = apiClient.fetchCaregiverToday()
+                async let inventoryTask = apiClient.fetchInventory()
+                let (doses, inventory) = try await (dosesTask, inventoryTask)
                 items = doses.sorted(by: sortDose)
+                outOfStockMedicationIds = Set(
+                    inventory.filter { $0.inventoryEnabled && $0.out }.map { $0.medicationId }
+                )
             } catch {
                 items = []
+                outOfStockMedicationIds = []
                 errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
             }
         }
     }
 
+    func isMedicationOutOfStock(_ medicationId: String) -> Bool {
+        outOfStockMedicationIds.contains(medicationId)
+    }
+
     func reset() {
         items = []
+        outOfStockMedicationIds = []
         isLoading = false
         isUpdating = false
         errorMessage = nil
@@ -108,7 +120,7 @@ final class CaregiverTodayViewModel: ObservableObject {
             toastMessage = message
         }
         Task { [weak self] in
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(for: .seconds(AppConstants.toastDuration))
             await MainActor.run {
                 withAnimation {
                     self?.toastMessage = nil

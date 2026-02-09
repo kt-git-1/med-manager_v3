@@ -10,47 +10,79 @@ struct CaregiverSignupView: View {
     private let authService = AuthService()
 
     var body: some View {
-        VStack {
-            Spacer(minLength: 0)
-            VStack(spacing: 16) {
-                Text(NSLocalizedString("caregiver.signup.title", comment: "Caregiver signup title"))
-                    .font(.title2.weight(.semibold))
+        VStack(spacing: 0) {
+            Spacer()
+
+            VStack(spacing: 28) {
+                // Header
                 VStack(spacing: 12) {
-                    TextField(NSLocalizedString("caregiver.signup.email", comment: "Email label"), text: $email)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.emailAddress)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.body)
-                        .accessibilityLabel("メールアドレス")
-                    SecureField(NSLocalizedString("caregiver.signup.password", comment: "Password label"), text: $password)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.body)
-                        .accessibilityLabel("パスワード")
+                    Image(systemName: "person.badge.plus.fill")
+                        .font(.system(size: 52))
+                        .foregroundStyle(.tint)
+                        .symbolRenderingMode(.hierarchical)
+                    Text(NSLocalizedString("caregiver.signup.title", comment: "Caregiver signup title"))
+                        .font(.title.weight(.bold))
                 }
+
+                // Form fields
+                VStack(spacing: 12) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "envelope.fill")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20)
+                        TextField(NSLocalizedString("caregiver.signup.email", comment: "Email label"), text: $email)
+                            .textInputAutocapitalization(.never)
+                            .keyboardType(.emailAddress)
+                            .accessibilityLabel(NSLocalizedString("a11y.email", comment: "Email"))
+                    }
+                    .padding(14)
+                    .background(.fill.quaternary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                    HStack(spacing: 12) {
+                        Image(systemName: "lock.fill")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20)
+                        SecureField(NSLocalizedString("caregiver.signup.password", comment: "Password label"), text: $password)
+                            .accessibilityLabel(NSLocalizedString("a11y.password", comment: "Password"))
+                    }
+                    .padding(14)
+                    .background(.fill.quaternary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+
                 if let errorMessage {
                     ErrorStateView(message: errorMessage)
                 }
-                Button(
-                    isLoading
-                        ? NSLocalizedString("caregiver.signup.button.loading", comment: "Signing up")
-                        : NSLocalizedString("caregiver.signup.button", comment: "Signup button")
-                ) {
+
+                // Signup button
+                Button {
                     Task { await signup() }
+                } label: {
+                    Group {
+                        if isLoading {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Text(NSLocalizedString("caregiver.signup.button", comment: "Signup button"))
+                        }
+                    }
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
                 }
-                .buttonStyle(.borderedProminent)
-                .font(.headline)
-                .disabled(isLoading)
-                .accessibilityLabel("サインアップ")
+                .disabled(isLoading || email.isEmpty || password.isEmpty)
+                .opacity(email.isEmpty || password.isEmpty ? 0.5 : 1)
+                .accessibilityLabel(NSLocalizedString("a11y.signup", comment: "Signup"))
             }
-            .padding(24)
+            .padding(28)
             .frame(maxWidth: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color(.systemBackground))
-            )
-            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .glassEffect(.regular, in: .rect(cornerRadius: 24))
             .padding(.horizontal, 24)
-            Spacer(minLength: 0)
+
+            Spacer()
         }
         .accessibilityIdentifier("CaregiverSignupView")
     }
@@ -62,7 +94,7 @@ struct CaregiverSignupView: View {
         do {
             let token = try await authService.signup(email: email, password: password)
             if token.isEmpty {
-                errorMessage = "Check your email to confirm your account."
+                errorMessage = NSLocalizedString("caregiver.signup.confirm.email", comment: "Email confirmation required")
             } else {
                 sessionStore.saveCaregiverToken(token)
             }

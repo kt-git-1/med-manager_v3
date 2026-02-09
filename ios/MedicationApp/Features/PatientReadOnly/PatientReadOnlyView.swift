@@ -12,6 +12,9 @@ struct PatientReadOnlyView: View {
         FullScreenContainer(content: {
             NavigationStack {
                 ZStack {
+                    Color(.systemGroupedBackground)
+                        .ignoresSafeArea()
+
                     switch selectedTab {
                     case .today:
                         PatientTodayView(
@@ -28,8 +31,14 @@ struct PatientReadOnlyView: View {
                     )
                     }
                 }
-                .navigationTitle(navigationTitle)
-                .navigationBarTitleDisplayMode(navigationTitleDisplayMode)
+                .navigationTitle("")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    NavigationHeaderView(
+                        icon: navigationIconName,
+                        title: navigationTitle
+                    )
+                }
             }
             .id(selectedTab)
             .safeAreaInset(edge: .bottom) {
@@ -70,22 +79,26 @@ struct PatientReadOnlyView: View {
         }
     }
 
-    private var navigationTitleDisplayMode: NavigationBarItem.TitleDisplayMode {
+    private var navigationIconName: String {
         switch selectedTab {
         case .today:
-            return .large
-        case .history, .settings:
-            return .inline
+            return "calendar.circle.fill"
+        case .history:
+            return "clock.circle.fill"
+        case .settings:
+            return "gearshape.circle.fill"
         }
     }
 }
 
 struct PatientSettingsView: View {
+    @EnvironmentObject private var globalBannerPresenter: GlobalBannerPresenter
     private let sessionStore: SessionStore
     private let apiClient: APIClient
     @ObservedObject private var schedulingCoordinator: SchedulingRefreshCoordinator
     @StateObject private var permissionManager = NotificationPermissionManager()
     @StateObject private var preferencesStore = NotificationPreferencesStore()
+    @State private var showingLogoutConfirm = false
     let onLogout: () -> Void
 
     init(
@@ -103,6 +116,7 @@ struct PatientSettingsView: View {
     }
 
     var body: some View {
+        let notificationsDisabled = permissionManager.status == .denied
         Form {
             Section {
                 Toggle(
@@ -122,6 +136,7 @@ struct PatientSettingsView: View {
                         Task { await rescheduleIfNeeded() }
                     }
             }
+            .disabled(notificationsDisabled)
 
             Section(header: Text(NSLocalizedString("patient.settings.notifications.slots.title", comment: "Slots title"))) {
                 toggleRow(title: NSLocalizedString("patient.settings.notifications.slot.morning", comment: "Morning"), slot: .morning)
@@ -129,9 +144,9 @@ struct PatientSettingsView: View {
                 toggleRow(title: NSLocalizedString("patient.settings.notifications.slot.evening", comment: "Evening"), slot: .evening)
                 toggleRow(title: NSLocalizedString("patient.settings.notifications.slot.bedtime", comment: "Bedtime"), slot: .bedtime)
             }
-            .disabled(!preferencesStore.masterEnabled)
+            .disabled(!preferencesStore.masterEnabled || notificationsDisabled)
 
-            if permissionManager.status == .denied {
+            if notificationsDisabled {
                 Section {
                     Text(
                         NSLocalizedString(
@@ -145,14 +160,37 @@ struct PatientSettingsView: View {
             }
 
             Section {
-                Button(NSLocalizedString("common.logout", comment: "Logout")) {
-                    onLogout()
+                Button {
+                    showingLogoutConfirm = true
+                } label: {
+                    Text(NSLocalizedString("common.logout", comment: "Logout"))
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.red, in: RoundedRectangle(cornerRadius: 14))
                 }
-                .buttonStyle(.borderedProminent)
-                .font(.headline)
+                .buttonStyle(.plain)
+                .listRowInsets(EdgeInsets(top: 48, leading: 16, bottom: 48, trailing: 16))
+                .listRowBackground(Color(uiColor: .systemGroupedBackground))
+                .listRowSeparator(.hidden)
+                .alert(
+                    NSLocalizedString("patient.logout.confirm.title", comment: "Logout confirm title"),
+                    isPresented: $showingLogoutConfirm
+                ) {
+                    Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
+                    Button(NSLocalizedString("patient.logout.confirm.action", comment: "Logout confirm action"), role: .destructive) {
+                        onLogout()
+                        globalBannerPresenter.show(
+                            message: NSLocalizedString("patient.logout.toast", comment: "Logout toast"),
+                            duration: 2
+                        )
+                    }
+                } message: {
+                    Text(NSLocalizedString("patient.logout.confirm.message", comment: "Logout confirm message"))
+                }
             }
         }
-        .disabled(permissionManager.status == .denied)
         .onAppear {
             Task { await permissionManager.refreshStatus() }
         }
@@ -230,13 +268,8 @@ private struct PatientBottomTabBar: View {
             }
         }
         .padding(.horizontal, 18)
-        .padding(.vertical, 12)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(
-            Capsule()
-                .strokeBorder(Color(.separator).opacity(0.4))
-        )
-        .shadow(color: Color.black.opacity(0.12), radius: 18, y: 10)
+        .padding(.vertical, 14)
+        .glassEffect(.regular, in: .capsule)
         .padding(.bottom, 6)
     }
 
@@ -249,19 +282,17 @@ private struct PatientBottomTabBar: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 22, weight: .semibold))
                 Text(title)
-                    .font(.callout.weight(.semibold))
+                    .font(.subheadline.weight(.bold))
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
             }
-            .foregroundColor(isSelected ? .accentColor : .secondary)
+            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(
-                Capsule()
-                    .fill(isSelected ? Color(.secondarySystemBackground) : Color.clear)
-            )
+            .padding(.vertical, 14)
+            .contentShape(Capsule())
+            .background(isSelected ? AnyShapeStyle(Color.accentColor.opacity(0.12)) : AnyShapeStyle(Color.clear), in: Capsule())
         }
         .buttonStyle(.plain)
     }
@@ -276,12 +307,11 @@ struct PatientHistoryPlaceholderView: View {
                     .font(.title3.weight(.semibold))
                 Text(NSLocalizedString("patient.readonly.history.message", comment: "History message"))
                     .font(.body)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
             .padding(24)
             .frame(maxWidth: .infinity)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .glassEffect(.regular, in: .rect(cornerRadius: 20))
             .padding(.horizontal, 24)
             Spacer(minLength: 0)
         }

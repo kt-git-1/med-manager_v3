@@ -23,6 +23,8 @@ final class NotificationPreferencesStore: ObservableObject {
     @Published private var slotEnabled: [NotificationSlot: Bool]
     @Published private var slotTimes: [NotificationSlot: DateComponents]
 
+    private(set) var currentPatientId: String?
+
     private let defaults: UserDefaults
     private let masterKey = "notif.masterEnabled"
     private let rereminderKey = "notif.rereminderEnabled"
@@ -55,6 +57,13 @@ final class NotificationPreferencesStore: ObservableObject {
             }
         }
         self.slotTimes = times
+    }
+
+    /// Switch the patient context and reload slot times scoped to the patient.
+    /// Falls back to global settings when no patient-specific setting exists.
+    func switchPatient(_ patientId: String?) {
+        currentPatientId = patientId
+        reloadSlotTimes()
     }
 
     func isSlotEnabled(_ slot: NotificationSlot) -> Bool {
@@ -92,8 +101,53 @@ final class NotificationPreferencesStore: ObservableObject {
         slotTimes[slot] = DateComponents(hour: sanitizedHour, minute: sanitizedMinute)
         defaults.set(
             String(format: "%02d:%02d", sanitizedHour, sanitizedMinute),
-            forKey: slotTimeKeyPrefix + slot.rawValue
+            forKey: slotTimeKey(for: slot)
         )
+    }
+
+    // MARK: - Patient-scoped key helpers
+
+    /// Returns the UserDefaults key for a slot time.
+    /// When a patient is selected, uses `notif.slotTime.{patientId}.{slot}`;
+    /// otherwise uses the global key `notif.slotTime.{slot}`.
+    private func slotTimeKey(for slot: NotificationSlot) -> String {
+        if let patientId = currentPatientId, !patientId.isEmpty {
+            return "\(slotTimeKeyPrefix)\(patientId).\(slot.rawValue)"
+        }
+        return slotTimeKeyPrefix + slot.rawValue
+    }
+
+    /// Reload slot times from UserDefaults using the current patient context.
+    /// Falls back to global settings, then to built-in defaults.
+    private func reloadSlotTimes() {
+        var times: [NotificationSlot: DateComponents] = [:]
+        for slot in NotificationSlot.allCases {
+            let patientKey = slotTimeKey(for: slot)
+            let patientValue = defaults.string(forKey: patientKey)
+            if let parsed = Self.parseTimeString(patientValue) {
+                times[slot] = parsed
+            } else {
+                // Fall back to global setting
+                let globalValue = defaults.string(forKey: slotTimeKeyPrefix + slot.rawValue)
+                if let parsed = Self.parseTimeString(globalValue) {
+                    times[slot] = parsed
+                } else {
+                    times[slot] = DateComponents(
+                        hour: slot.hourMinute.hour,
+                        minute: slot.hourMinute.minute
+                    )
+                }
+            }
+        }
+        slotTimes = times
+    }
+
+    func slotTimeQueryItems() -> [URLQueryItem] {
+        NotificationSlot.allCases.map { slot in
+            let time = slotTime(for: slot)
+            let value = String(format: "%02d:%02d", time.hour, time.minute)
+            return URLQueryItem(name: "\(slot.rawValue)Time", value: value)
+        }
     }
 
     private static func parseTimeString(_ value: String?) -> DateComponents? {

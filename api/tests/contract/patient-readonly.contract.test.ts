@@ -5,6 +5,8 @@ vi.mock("../../src/services/medicationService", () => ({
   listMedications: vi.fn(async () => [
     { id: "med-1", patientId: "patient-1", name: "Medication A", startDate: new Date() }
   ]),
+  listMedicationInventory: vi.fn(async () => []),
+  listActiveRegimens: vi.fn(async () => []),
   createMedication: vi.fn(async () => ({ id: "med-1" }))
 }));
 

@@ -14,41 +14,94 @@ struct LinkCodeEntryView: View {
     }
 
     var body: some View {
-        VStack {
-            Spacer(minLength: 0)
+        VStack(spacing: 0) {
+            Spacer()
+
+            // Header
             VStack(spacing: 16) {
-                Text(NSLocalizedString("link.code.title", comment: "Link code title"))
-                    .font(.title2.weight(.semibold))
-                TextField(NSLocalizedString("link.code.placeholder", comment: "Link code placeholder"), text: $code)
-                    .keyboardType(.numberPad)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.body)
-                    .accessibilityLabel("連携コード")
+                Image(systemName: "link.circle.fill")
+                    .font(.system(size: 56))
+                    .foregroundStyle(.tint)
+                    .symbolRenderingMode(.hierarchical)
+
+                VStack(spacing: 8) {
+                    Text(NSLocalizedString("link.code.title", comment: "Link code title"))
+                        .font(.largeTitle.weight(.bold))
+                    Text(NSLocalizedString("link.code.subtitle", comment: "Link code subtitle"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+
+            Spacer()
+                .frame(maxHeight: 40)
+
+            // Code input card
+            VStack(spacing: 20) {
+                HStack(spacing: 12) {
+                    Image(systemName: "number")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 20)
+                    TextField(NSLocalizedString("link.code.placeholder", comment: "Link code placeholder"), text: $code)
+                        .keyboardType(.numberPad)
+                        .font(.title3.monospacedDigit())
+                        .accessibilityLabel(NSLocalizedString("a11y.linkCode", comment: "Link code"))
+                }
+                .padding(14)
+                .background(.fill.quaternary)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+
                 if let errorMessage {
                     ErrorStateView(message: errorMessage)
                 }
-                Button(
-                    isLoading
-                        ? NSLocalizedString("link.code.button.loading", comment: "Sending link code")
-                        : NSLocalizedString("link.code.button", comment: "Send link code")
-                ) {
+
+                // Submit button
+                Button {
                     Task { await link() }
+                } label: {
+                    Group {
+                        if isLoading {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Text(NSLocalizedString("link.code.button", comment: "Send link code"))
+                        }
+                    }
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
                 }
-                .buttonStyle(.borderedProminent)
-                .font(.headline)
-                .disabled(isLoading)
-                .accessibilityLabel("連携コード送信")
+                .disabled(isLoading || code.isEmpty)
+                .opacity(code.isEmpty ? 0.5 : 1)
+                .accessibilityLabel(NSLocalizedString("a11y.linkCode.submit", comment: "Submit link code"))
             }
-            .padding(24)
+            .padding(28)
             .frame(maxWidth: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color(.systemBackground))
-            )
-            .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+            .glassEffect(.regular, in: .rect(cornerRadius: 24))
             .padding(.horizontal, 24)
-            Spacer(minLength: 0)
+
+            Spacer()
+
+            // Back to mode select
+            Button {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    sessionStore.resetMode()
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "chevron.left")
+                        .font(.subheadline.weight(.medium))
+                    Text(NSLocalizedString("link.code.back", comment: "Back to mode select"))
+                        .font(.subheadline)
+                }
+                .foregroundStyle(.secondary)
+            }
+            .padding(.bottom, 24)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier("LinkCodeEntryView")
     }
 
@@ -74,13 +127,13 @@ struct LinkCodeEntryView: View {
                     if let message = apiError.errorDescription {
                         errorMessage = message
                     } else {
-                        errorMessage = "Linking failed: \(apiError)"
+                        errorMessage = NSLocalizedString("common.error.linking.generic", comment: "Linking failed")
                     }
                 }
             } else if let message = (error as? LocalizedError)?.errorDescription {
                 errorMessage = message
             } else {
-                errorMessage = "Linking failed: \(error)"
+                errorMessage = NSLocalizedString("common.error.linking.generic", comment: "Linking failed")
             }
         }
     }

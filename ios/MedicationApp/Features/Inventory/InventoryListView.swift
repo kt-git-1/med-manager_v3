@@ -37,8 +37,8 @@ final class InventoryViewModel: ObservableObject {
     func updateSettings(
         item: InventoryItemDTO,
         enabled: Bool,
-        quantity: Int?,
-        threshold: Int
+        quantity: Double?,
+        threshold: Int? = nil
     ) async -> InventoryItemDTO? {
         guard !isUpdating else { return nil }
         isUpdating = true
@@ -62,8 +62,8 @@ final class InventoryViewModel: ObservableObject {
     func adjustInventory(
         item: InventoryItemDTO,
         reason: String,
-        delta: Int?,
-        absoluteQuantity: Int?
+        delta: Double?,
+        absoluteQuantity: Double?
     ) async -> InventoryItemDTO? {
         guard !isUpdating else { return nil }
         isUpdating = true
@@ -131,8 +131,14 @@ struct InventoryListView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .navigationTitle(NSLocalizedString("caregiver.tabs.inventory", comment: "Inventory tab"))
-                .navigationBarTitleDisplayMode(.large)
+                .navigationTitle("")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    NavigationHeaderView(
+                        icon: "archivebox.circle.fill",
+                        title: NSLocalizedString("caregiver.tabs.inventory", comment: "Inventory tab")
+                    )
+                }
             },
             overlay: viewModel.isUpdating ? AnyView(updatingOverlay) : nil
         )
@@ -164,102 +170,104 @@ struct InventoryListView: View {
     }
 
     private var inventoryList: some View {
-        VStack(spacing: 12) {
-            Picker(
-                NSLocalizedString("caregiver.inventory.filter.all", comment: "All filter"),
-                selection: $filter
-            ) {
-                ForEach(InventoryFilter.allCases) { filter in
-                    Text(filter.title).tag(filter)
-                }
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal, 16)
-
-            List {
-                if filter == .all {
-                    if !configuredActiveItems.isEmpty {
-                        Section {
-                            ForEach(configuredActiveItems) { item in
-                                inventoryRow(for: item)
-                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                    .listRowSeparator(.hidden)
-                            }
-                        } header: {
-                            Text(NSLocalizedString("caregiver.inventory.list.section", comment: "Inventory list section"))
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                                .textCase(nil)
-                        }
-                        .listRowSeparator(.hidden)
-                    }
-
-                    if !periodEndedItems.isEmpty {
-                        Section {
-                            ForEach(periodEndedItems) { item in
-                                inventoryRow(for: item)
-                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                    .listRowSeparator(.hidden)
-                            }
-                        } header: {
-                            Text(NSLocalizedString("caregiver.inventory.section.periodEnded", comment: "Period ended section"))
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                                .textCase(nil)
-                        }
-                        .listRowSeparator(.hidden)
-                    }
-
-                    if !unconfiguredItems.isEmpty {
-                        Section {
-                            ForEach(unconfiguredItems) { item in
-                                inventoryRow(for: item)
-                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                    .listRowSeparator(.hidden)
-                            }
-                        } header: {
-                            Text(NSLocalizedString("caregiver.inventory.section.unconfigured", comment: "Unconfigured section"))
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                                .textCase(nil)
-                        }
-                        .listRowSeparator(.hidden)
-                    }
-                } else {
+        List {
+            filterPickerRow
+            ForEach(sectionData) { section in
+                if !section.items.isEmpty {
                     Section {
-                        ForEach(filteredItems) { item in
-                            inventoryRow(for: item)
-                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                .listRowSeparator(.hidden)
+                        ForEach(section.items) { item in
+                            inventoryRowCell(item)
                         }
                     } header: {
-                        Text(NSLocalizedString("caregiver.inventory.list.section", comment: "Inventory list section"))
+                        Text(NSLocalizedString(section.titleKey, comment: section.titleComment))
                             .font(.headline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .textCase(nil)
                     }
                     .listRowSeparator(.hidden)
                 }
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(Color.white)
-            .safeAreaPadding(.bottom, 120)
-            .overlay(alignment: .top) {
-                if let toastMessage {
-                    Text(toastMessage)
-                        .font(.subheadline.weight(.semibold))
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Capsule())
-                        .shadow(radius: 4)
-                        .padding(.top, 8)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                        .accessibilityLabel(toastMessage)
-                }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .safeAreaPadding(.bottom, 120)
+        .refreshable {
+            viewModel.load()
+        }
+        .overlay(alignment: .top) {
+            if let toastMessage {
+                Text(toastMessage)
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .glassEffect(.regular, in: .capsule)
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .accessibilityLabel(toastMessage)
             }
         }
+    }
+
+    private var filterPickerRow: some View {
+        Picker(
+            NSLocalizedString("caregiver.inventory.filter.all", comment: "All filter"),
+            selection: $filter
+        ) {
+            ForEach(InventoryFilter.allCases) { filter in
+                Text(filter.title).tag(filter)
+            }
+        }
+        .pickerStyle(.segmented)
+        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
+    }
+
+    private var sectionData: [InventorySectionData] {
+        if filter == .all {
+            return [
+                InventorySectionData(
+                    id: "configured",
+                    titleKey: "caregiver.inventory.list.section",
+                    titleComment: "Inventory list section",
+                    items: configuredActiveItems
+                ),
+                InventorySectionData(
+                    id: "periodEnded",
+                    titleKey: "caregiver.inventory.section.periodEnded",
+                    titleComment: "Period ended section",
+                    items: periodEndedItems
+                ),
+                InventorySectionData(
+                    id: "unconfigured",
+                    titleKey: "caregiver.inventory.section.unconfigured",
+                    titleComment: "Unconfigured section",
+                    items: unconfiguredItems
+                )
+            ]
+        }
+        return [
+            InventorySectionData(
+                id: "filtered",
+                titleKey: "caregiver.inventory.list.section",
+                titleComment: "Inventory list section",
+                items: filteredItems
+            )
+        ]
+    }
+
+    private func inventoryRowCell(_ item: InventoryItemDTO) -> some View {
+        inventoryRow(for: item)
+            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+    }
+
+    private struct InventorySectionData: Identifiable {
+        let id: String
+        let titleKey: String
+        let titleComment: String
+        let items: [InventoryItemDTO]
     }
 
     @ViewBuilder
@@ -276,27 +284,14 @@ struct InventoryListView: View {
     private func badge(text: String, color: Color) -> some View {
         Text(text)
             .font(.caption.weight(.bold))
-            .foregroundColor(color)
+            .foregroundStyle(color)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(color.opacity(0.15), in: Capsule())
     }
 
     private var updatingOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.2)
-                .ignoresSafeArea()
-            VStack {
-                Spacer()
-                LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                    .padding(16)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(radius: 6)
-                Spacer()
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .accessibilityIdentifier("InventoryUpdatingOverlay")
+        SchedulingRefreshOverlay()
     }
 
     private func errorSection(message: String) -> some View {
@@ -360,36 +355,35 @@ struct InventoryListView: View {
                 }
                 Text(daysRemainingText(for: item))
                     .font(.subheadline)
-                    .foregroundColor(daysRemainingColor(for: item))
+                    .foregroundStyle(daysRemainingColor(for: item))
                 if shouldShowLowDaysWarning(for: item) {
                     Text(refillDueText(for: item))
                         .font(.caption.weight(.semibold))
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                 }
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 8) {
                 if item.inventoryEnabled {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text("\(item.inventoryQuantity)")
+                        Text(AppConstants.formatDecimal(item.inventoryQuantity))
                             .font(.title2.weight(.bold))
                         Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
             Image(systemName: "chevron.right")
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(shouldShowLowDaysWarning(for: item) ? Color.red.opacity(0.6) : Color.clear, lineWidth: 2)
         )
-        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
         .contentShape(Rectangle())
         .onTapGesture {
             selectedItem = item
@@ -466,7 +460,7 @@ struct InventoryListView: View {
             toastMessage = message
         }
         Task {
-            try? await Task.sleep(for: .seconds(1))
+            try? await Task.sleep(for: .seconds(AppConstants.toastDuration))
             await MainActor.run {
                 withAnimation {
                     toastMessage = nil

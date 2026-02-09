@@ -42,7 +42,9 @@ vi.mock("../../src/services/medicationService", () => ({
     medicationsByPatient.set(input.patientId, bucket);
     return record;
   }),
-  listMedications: vi.fn(async (patientId: string) => medicationsByPatient.get(patientId) ?? [])
+  listMedications: vi.fn(async (patientId: string) => medicationsByPatient.get(patientId) ?? []),
+  listMedicationInventory: vi.fn(async () => []),
+  listActiveRegimens: vi.fn(async () => [])
 }));
 
 vi.mock("../../src/services/scheduleService", () => ({

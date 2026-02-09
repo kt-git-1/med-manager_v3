@@ -16,6 +16,10 @@ export type InventoryAdjustValidationResult = {
 
 const allowedReasons: InventoryAdjustmentReason[] = ["REFILL", "SET", "CORRECTION"];
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
 function isInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value);
 }
@@ -46,8 +50,8 @@ export function validateInventoryUpdate(input: {
   }
 
   if (input.inventoryQuantity !== undefined) {
-    if (!isInteger(input.inventoryQuantity)) {
-      errors.push("inventoryQuantity must be an integer");
+    if (!isFiniteNumber(input.inventoryQuantity)) {
+      errors.push("inventoryQuantity must be a number");
     } else if (input.inventoryQuantity < 0) {
       errors.push("inventoryQuantity must be >= 0");
     } else {
@@ -93,8 +97,8 @@ export function validateInventoryAdjust(input: {
       errors.push("absoluteQuantity is required for SET");
       return result;
     }
-    if (!isInteger(input.absoluteQuantity)) {
-      errors.push("absoluteQuantity must be an integer");
+    if (!isFiniteNumber(input.absoluteQuantity)) {
+      errors.push("absoluteQuantity must be a number");
       return result;
     }
     result.absoluteQuantity = input.absoluteQuantity;
@@ -108,8 +112,8 @@ export function validateInventoryAdjust(input: {
     errors.push("delta is required for REFILL or CORRECTION");
     return result;
   }
-  if (!isInteger(input.delta)) {
-    errors.push("delta must be an integer");
+  if (!isFiniteNumber(input.delta)) {
+    errors.push("delta must be a number");
     return result;
   }
   result.delta = input.delta;

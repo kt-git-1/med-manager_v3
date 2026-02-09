@@ -5,6 +5,7 @@ struct CaregiverTodayView: View {
     private let onOpenPatients: () -> Void
     private let headerView: AnyView?
     @StateObject private var viewModel: CaregiverTodayViewModel
+    private let preferencesStore = NotificationPreferencesStore()
 
     init(
         sessionStore: SessionStore? = nil,
@@ -24,16 +25,13 @@ struct CaregiverTodayView: View {
     var body: some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(Color.white)
             .overlay(alignment: .top) {
                 if let toastMessage = viewModel.toastMessage {
                     Text(toastMessage)
                         .font(.subheadline.weight(.semibold))
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Capsule())
-                        .shadow(radius: 4)
+                        .glassEffect(.regular, in: .capsule)
                         .padding(.top, 8)
                         .transition(.move(edge: .top).combined(with: .opacity))
                         .accessibilityLabel(toastMessage)
@@ -41,19 +39,7 @@ struct CaregiverTodayView: View {
             }
             .overlay {
                 if viewModel.isUpdating {
-                    ZStack {
-                        Color.black.opacity(0.2)
-                            .ignoresSafeArea()
-                        VStack {
-                            Spacer()
-                            LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                                .padding(16)
-                                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                .shadow(radius: 6)
-                            Spacer()
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    SchedulingRefreshOverlay()
                 }
             }
             .onAppear {
@@ -77,26 +63,31 @@ struct CaregiverTodayView: View {
             if sessionStore.currentPatientId == nil {
                 VStack(spacing: 12) {
                     Spacer(minLength: 0)
-                    VStack(spacing: 12) {
+                    VStack(spacing: 16) {
+                        Image(systemName: "calendar.badge.questionmark")
+                            .font(.system(size: 44))
+                            .foregroundStyle(.secondary)
                         Text(NSLocalizedString("caregiver.medications.noSelection.title", comment: "No selection title"))
                             .font(.title3.weight(.semibold))
                             .multilineTextAlignment(.center)
                         Text(NSLocalizedString("caregiver.medications.noSelection.message", comment: "No selection message"))
                             .font(.body)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
-                        Button(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab")) {
+                        Button {
                             onOpenPatients()
+                        } label: {
+                            Text(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab"))
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
                         }
-                        .buttonStyle(.borderedProminent)
-                        .font(.headline)
-                        .padding(.top, 4)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
+                    .padding(24)
                     .frame(maxWidth: .infinity)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 20))
                     .padding(.horizontal, 24)
                     Spacer(minLength: 0)
                 }
@@ -127,9 +118,12 @@ struct CaregiverTodayView: View {
                                     recordedByText: nil,
                                     isDestructive: false,
                                     slotColor: slotColor(for: section.slot),
-                                    onAction: { viewModel.recordDose(dose) }
+                                    onAction: { viewModel.recordDose(dose) },
+                                    isOutOfStock: viewModel.isMedicationOutOfStock(dose.medicationId)
                                 )
                                 .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                             }
                         } header: {
                             slotHeader(for: section.slot)
@@ -146,9 +140,12 @@ struct CaregiverTodayView: View {
                                     recordedByText: nil,
                                     isDestructive: false,
                                     slotColor: nil,
-                                    onAction: { viewModel.recordDose(dose) }
+                                    onAction: { viewModel.recordDose(dose) },
+                                    isOutOfStock: viewModel.isMedicationOutOfStock(dose.medicationId)
                                 )
                                 .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                             }
                         } header: {
                             Text(NSLocalizedString("caregiver.today.section.missed", comment: "Missed"))
@@ -171,6 +168,8 @@ struct CaregiverTodayView: View {
                                     onAction: { viewModel.deleteDose(dose) }
                                 )
                                 .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                             }
                         } header: {
                             Text(NSLocalizedString("caregiver.today.section.taken", comment: "Taken"))
@@ -182,7 +181,9 @@ struct CaregiverTodayView: View {
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
-                .background(Color.white)
+                .refreshable {
+                    viewModel.load(showLoading: false)
+                }
                 let listWithInsets = headerView == nil
                     ? AnyView(baseList.safeAreaPadding(.top).safeAreaPadding(.bottom, 120))
                     : AnyView(baseList.safeAreaPadding(.bottom, 120))
@@ -247,22 +248,11 @@ struct CaregiverTodayView: View {
     }
 
     private func slotColor(for slot: NotificationSlot?) -> Color {
-        switch slot {
-        case .morning:
-            return Color.orange
-        case .noon:
-            return Color.blue
-        case .evening:
-            return Color.purple
-        case .bedtime:
-            return Color.indigo
-        case .none:
-            return Color.gray
-        }
+        AppConstants.slotColor(for: slot)
     }
 
     private func slot(for dose: ScheduleDoseDTO) -> NotificationSlot? {
-        NotificationSlot.from(date: dose.scheduledAt)
+        NotificationSlot.from(date: dose.scheduledAt, slotTimes: preferencesStore.slotTimesMap())
     }
 
     private var plannedItems: [ScheduleDoseDTO] {
@@ -311,6 +301,7 @@ private struct CaregiverTodayRow: View {
     let isDestructive: Bool
     let slotColor: Color?
     let onAction: () -> Void
+    var isOutOfStock: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -318,15 +309,24 @@ private struct CaregiverTodayRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(timeText)
                         .font(.headline)
-                    Text(dose.medicationSnapshot.name)
+                    Text(medicationDisplayName)
                         .font(.title3.weight(.semibold))
-                    Text(dose.medicationSnapshot.dosageText)
+                    Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(dose.medicationSnapshot.doseCountPerIntake)))
                         .font(.body)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     if let recordedByText {
                         Text(recordedByText)
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
+                    }
+                    if isOutOfStock {
+                        Text(NSLocalizedString("patient.today.outOfStock", comment: "Out of stock"))
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.white)
+                            .padding(.vertical, 3)
+                            .padding(.horizontal, 8)
+                            .background(Color.red)
+                            .clipShape(Capsule())
                     }
                 }
                 Spacer()
@@ -343,10 +343,7 @@ private struct CaregiverTodayRow: View {
             actionButton
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(backgroundColor(for: dose.effectiveStatus))
-        )
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
         .overlay(alignment: .leading) {
             if let slotColor {
                 RoundedRectangle(cornerRadius: 3)
@@ -355,13 +352,21 @@ private struct CaregiverTodayRow: View {
                     .padding(.vertical, 12)
             }
         }
-        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilitySummary)
     }
 
+    private var medicationDisplayName: String {
+        let trimmed = dose.medicationSnapshot.dosageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == "不明" {
+            return dose.medicationSnapshot.name
+        }
+        return "\(dose.medicationSnapshot.name) \(trimmed)"
+    }
+
     private var accessibilitySummary: String {
-        var parts = [timeText, dose.medicationSnapshot.name, dose.medicationSnapshot.dosageText]
+        var parts = [timeText, medicationDisplayName]
+        parts.append(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(dose.medicationSnapshot.doseCountPerIntake)))
         if let recordedByText {
             parts.append(recordedByText)
         }
@@ -405,6 +410,7 @@ private struct CaregiverTodayRow: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .tint(.accentColor)
+            .disabled(isOutOfStock)
             .accessibilityLabel(actionTitle)
         }
     }
@@ -414,22 +420,10 @@ private struct CaregiverTodayRow: View {
         case .missed:
             return Color.red.opacity(0.15)
         case .taken:
-            return Color.green.opacity(0.12)
-        case .pending:
-            return Color(.secondarySystemBackground)
-        case .none:
-            return Color(.secondarySystemBackground)
+            return Color.green.opacity(0.15)
+        case .pending, .none:
+            return Color.primary.opacity(0.06)
         }
     }
 
-    private func backgroundColor(for status: DoseStatusDTO?) -> Color {
-        switch status {
-        case .missed:
-            return Color.red.opacity(0.08)
-        case .taken:
-            return Color.green.opacity(0.06)
-        case .pending, .none:
-            return Color(.systemBackground)
-        }
-    }
 }

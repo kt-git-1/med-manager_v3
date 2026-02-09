@@ -57,8 +57,8 @@ final class SessionStore: ObservableObject {
         if let infoValue, let url = URL(string: infoValue) {
             return url
         }
-        print("SessionStore: API_BASE_URL missing or invalid, defaulting to http://localhost:3000")
-        return URL(string: "http://localhost:3000")!
+        print("SessionStore: API_BASE_URL missing or invalid, defaulting to \(AppConstants.defaultAPIBaseURL)")
+        return AppConstants.defaultAPIBaseURL
     }
 
     func setMode(_ mode: AppMode) {
@@ -66,11 +66,16 @@ final class SessionStore: ObservableObject {
         userDefaults.set(mode.rawValue, forKey: SessionStore.lastModeStorageKey)
     }
 
+    func resetMode() {
+        mode = nil
+        userDefaults.removeObject(forKey: SessionStore.lastModeStorageKey)
+    }
+
     func saveCaregiverToken(_ token: String) {
-        if token.starts(with: "caregiver-") {
+        if token.starts(with: AppConstants.caregiverTokenPrefix) {
             caregiverToken = token
         } else {
-            caregiverToken = "caregiver-\(token)"
+            caregiverToken = "\(AppConstants.caregiverTokenPrefix)\(token)"
         }
         userDefaults.set(caregiverToken, forKey: SessionStore.caregiverTokenStorageKey)
     }
@@ -135,7 +140,7 @@ final class SessionStore: ObservableObject {
         patientRefreshTask = Task { @MainActor [weak self] in
             guard let self else { return }
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(600))
+                try? await Task.sleep(for: .seconds(AppConstants.patientTokenRefreshInterval))
                 await refreshPatientTokenIfNeeded()
             }
         }

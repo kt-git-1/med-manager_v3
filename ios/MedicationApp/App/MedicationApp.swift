@@ -4,21 +4,24 @@ import UserNotifications
 
 @main
 struct MedicationApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var sessionStore: SessionStore
     @StateObject private var notificationRouter: NotificationDeepLinkRouter
     @StateObject private var reminderBannerPresenter: ReminderBannerPresenter
     @StateObject private var globalBannerPresenter: GlobalBannerPresenter
     @StateObject private var caregiverSessionController: CaregiverSessionController
     private let notificationCoordinator: NotificationCoordinator
+    @State private var showSplash = true
 
     init() {
         let sessionStore = SessionStore()
         let notificationRouter = NotificationDeepLinkRouter()
         let reminderBannerPresenter = ReminderBannerPresenter()
         let globalBannerPresenter = GlobalBannerPresenter()
+        let deviceTokenManager = DeviceTokenManager()
         let caregiverSessionController = CaregiverSessionController(
             sessionStore: sessionStore,
-            bannerPresenter: globalBannerPresenter
+            deviceTokenManager: deviceTokenManager
         )
         _sessionStore = StateObject(wrappedValue: sessionStore)
         _notificationRouter = StateObject(wrappedValue: notificationRouter)
@@ -32,9 +35,7 @@ struct MedicationApp: App {
         UNUserNotificationCenter.current().delegate = notificationCoordinator
 
         let appearance = UITabBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor.systemBackground
-        appearance.shadowColor = UIColor.separator
+        appearance.configureWithTransparentBackground()
 
         let itemAppearance = UITabBarItemAppearance()
         itemAppearance.normal.titleTextAttributes = [.font: UIFont.systemFont(ofSize: 10, weight: .semibold)]
@@ -45,23 +46,31 @@ struct MedicationApp: App {
 
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
-        UITabBar.appearance().isTranslucent = false
-        UITabBar.appearance().itemPositioning = .fill
-        UITabBar.appearance().itemWidth = 90
-        UITabBar.appearance().itemSpacing = 12
     }
 
     var body: some Scene {
         WindowGroup {
             FullScreenContainer {
-                RootView()
-                    .dynamicTypeSize(.xLarge)
+                if showSplash {
+                    SplashView {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            showSplash = false
+                        }
+                    }
+                } else {
+                    RootView()
+                        .dynamicTypeSize(.xLarge)
+                }
             }
             .environmentObject(sessionStore)
             .environmentObject(notificationRouter)
             .environmentObject(reminderBannerPresenter)
             .environmentObject(globalBannerPresenter)
             .environmentObject(caregiverSessionController)
+            .onAppear {
+                // Wire AppDelegate → DeviceTokenManager for APNs callbacks
+                appDelegate.deviceTokenManager = caregiverSessionController.tokenManager
+            }
         }
     }
 }

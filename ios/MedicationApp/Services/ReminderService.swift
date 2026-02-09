@@ -16,12 +16,12 @@ final class ReminderService {
         self.notificationCenter = notificationCenter
         self.preferencesStore = preferencesStore
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        calendar.timeZone = AppConstants.defaultTimeZone
         self.calendar = calendar
         let dateKeyFormatter = DateFormatter()
         dateKeyFormatter.calendar = calendar
         dateKeyFormatter.timeZone = calendar.timeZone
-        dateKeyFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateKeyFormatter.locale = AppConstants.posixLocale
         dateKeyFormatter.dateFormat = "yyyy-MM-dd"
         self.dateKeyFormatter = dateKeyFormatter
     }
@@ -35,7 +35,7 @@ final class ReminderService {
 
         let slots = Set(todayDoses.compactMap { dose -> NotificationSlot? in
             guard dose.effectiveStatus == .pending || dose.effectiveStatus == .none else { return nil }
-            return NotificationSlot.from(date: dose.scheduledAt, timeZone: calendar.timeZone)
+            return NotificationSlot.from(date: dose.scheduledAt, timeZone: calendar.timeZone, slotTimes: preferencesStore.slotTimesMap())
         })
 
         for slot in slots {

@@ -5,11 +5,11 @@ import UserNotifications
 final class NotificationScheduler {
     private let notificationCenter: UNUserNotificationCenter
     private let calendar: Calendar
-    private let identifierPrefix = "notif:"
+    private let identifierPrefix = AppConstants.notificationIdentifierPrefix
 
     init(
         notificationCenter: UNUserNotificationCenter = .current(),
-        timeZone: TimeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        timeZone: TimeZone = AppConstants.defaultTimeZone
     ) {
         self.notificationCenter = notificationCenter
         var calendar = Calendar(identifier: .gregorian)

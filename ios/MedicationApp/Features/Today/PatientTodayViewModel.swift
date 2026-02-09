@@ -14,9 +14,11 @@ final class PatientTodayViewModel: ObservableObject {
     @Published var confirmPrnMedication: MedicationDTO?
     @Published var isPrnSubmitting = false
     @Published var highlightedSlot: NotificationSlot?
+    @Published var outOfStockMedicationIds: Set<String> = []
 
     private let apiClient: APIClient
     private let reminderService: ReminderService
+    private let preferencesStore: NotificationPreferencesStore
     private let dateFormatter: DateFormatter
     private let timeFormatter: DateFormatter
     private let dateKeyFormatter: DateFormatter
@@ -24,24 +26,29 @@ final class PatientTodayViewModel: ObservableObject {
     private var foregroundTask: Task<Void, Never>?
     private var medicationCache: [String: MedicationDTO] = [:]
 
-    init(apiClient: APIClient, reminderService: ReminderService = ReminderService()) {
+    init(
+        apiClient: APIClient,
+        reminderService: ReminderService = ReminderService(),
+        preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore()
+    ) {
         self.apiClient = apiClient
         self.reminderService = reminderService
+        self.preferencesStore = preferencesStore
         self.dateFormatter = DateFormatter()
-        self.dateFormatter.locale = Locale(identifier: "ja_JP")
+        self.dateFormatter.locale = AppConstants.japaneseLocale
         self.dateFormatter.dateStyle = .medium
         self.dateFormatter.timeStyle = .none
         self.timeFormatter = DateFormatter()
-        self.timeFormatter.locale = Locale(identifier: "ja_JP")
+        self.timeFormatter.locale = AppConstants.japaneseLocale
         self.timeFormatter.dateStyle = .none
         self.timeFormatter.timeStyle = .short
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        calendar.timeZone = AppConstants.defaultTimeZone
         self.calendar = calendar
         let dateKeyFormatter = DateFormatter()
         dateKeyFormatter.calendar = calendar
         dateKeyFormatter.timeZone = calendar.timeZone
-        dateKeyFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateKeyFormatter.locale = AppConstants.posixLocale
         dateKeyFormatter.dateFormat = "yyyy-MM-dd"
         self.dateKeyFormatter = dateKeyFormatter
     }
@@ -156,7 +163,7 @@ final class PatientTodayViewModel: ObservableObject {
 
     func handleDeepLink(_ target: NotificationDeepLinkTarget) -> String? {
         guard let dose = items.first(where: { dose in
-            guard let slot = NotificationSlot.from(date: dose.scheduledAt, timeZone: calendar.timeZone) else {
+            guard let slot = NotificationSlot.from(date: dose.scheduledAt, timeZone: calendar.timeZone, slotTimes: preferencesStore.slotTimesMap()) else {
                 return false
             }
             return slot == target.slot && dateKey(for: dose.scheduledAt) == target.dateKey
@@ -189,12 +196,17 @@ final class PatientTodayViewModel: ObservableObject {
         return matched
     }
 
+    func isMedicationOutOfStock(_ medicationId: String) -> Bool {
+        outOfStockMedicationIds.contains(medicationId)
+    }
+
     private func refreshTodayData() async throws {
         async let dosesTask = apiClient.fetchPatientToday()
         async let medicationsTask = apiClient.fetchMedications(patientId: nil)
         let (doses, medications) = try await (dosesTask, medicationsTask)
         items = doses.sorted(by: sortDose)
         prnMedications = medications.filter { $0.isPrn }
+        outOfStockMedicationIds = Set(medications.filter { $0.isOutOfStock }.map { $0.id })
         for medication in medications {
             medicationCache[medication.id] = medication
         }
@@ -206,7 +218,7 @@ final class PatientTodayViewModel: ObservableObject {
             toastMessage = message
         }
         Task { [weak self] in
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(for: .seconds(AppConstants.toastDuration))
             await MainActor.run {
                 withAnimation {
                     self?.toastMessage = nil
@@ -218,7 +230,7 @@ final class PatientTodayViewModel: ObservableObject {
     private func triggerHighlight(for slot: NotificationSlot) {
         highlightedSlot = slot
         Task { [weak self] in
-            try? await Task.sleep(for: .seconds(3))
+            try? await Task.sleep(for: .seconds(AppConstants.slotHighlightDuration))
             await MainActor.run {
                 if self?.highlightedSlot == slot {
                     self?.highlightedSlot = nil

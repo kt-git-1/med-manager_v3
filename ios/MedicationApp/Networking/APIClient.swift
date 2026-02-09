@@ -79,6 +79,20 @@ final class APIClient {
         sessionStore.handlePatientRevoked(patientId)
     }
 
+    func deletePatient(patientId: String) async throws {
+        let url = baseURL.appendingPathComponent("api/patients/\(patientId)")
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        _ = try decoder.decode(DeletePatientResponseDTO.self, from: data)
+        sessionStore.handlePatientRevoked(patientId)
+    }
+
     func fetchMedications(patientId: String?) async throws -> [MedicationDTO] {
         let request = try makeMedicationListRequest(patientId: patientId)
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -186,13 +200,19 @@ final class APIClient {
         return try decoder.decode(ScheduleResponseDTO.self, from: data).data
     }
 
-    func fetchPatientHistoryMonth(year: Int, month: Int) async throws -> HistoryMonthResponseDTO {
+    func fetchPatientHistoryMonth(
+        year: Int,
+        month: Int,
+        slotTimeItems: [URLQueryItem] = []
+    ) async throws -> HistoryMonthResponseDTO {
+        var queryItems = [
+            URLQueryItem(name: "year", value: String(year)),
+            URLQueryItem(name: "month", value: String(month))
+        ]
+        queryItems.append(contentsOf: slotTimeItems)
         let request = try makeHistoryRequest(
             path: "api/patient/history/month",
-            queryItems: [
-                URLQueryItem(name: "year", value: String(year)),
-                URLQueryItem(name: "month", value: String(month))
-            ]
+            queryItems: queryItems
         )
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
@@ -201,10 +221,15 @@ final class APIClient {
         return try decoder.decode(HistoryMonthResponseDTO.self, from: data)
     }
 
-    func fetchPatientHistoryDay(date: String) async throws -> HistoryDayResponseDTO {
+    func fetchPatientHistoryDay(
+        date: String,
+        slotTimeItems: [URLQueryItem] = []
+    ) async throws -> HistoryDayResponseDTO {
+        var queryItems = [URLQueryItem(name: "date", value: date)]
+        queryItems.append(contentsOf: slotTimeItems)
         let request = try makeHistoryRequest(
             path: "api/patient/history/day",
-            queryItems: [URLQueryItem(name: "date", value: date)]
+            queryItems: queryItems
         )
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
@@ -267,14 +292,21 @@ final class APIClient {
         return try decoder.decode(ScheduleResponseDTO.self, from: data).data
     }
 
-    func fetchCaregiverHistoryMonth(patientId: String? = nil, year: Int, month: Int) async throws -> HistoryMonthResponseDTO {
+    func fetchCaregiverHistoryMonth(
+        patientId: String? = nil,
+        year: Int,
+        month: Int,
+        slotTimeItems: [URLQueryItem] = []
+    ) async throws -> HistoryMonthResponseDTO {
         let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
+        var queryItems = [
+            URLQueryItem(name: "year", value: String(year)),
+            URLQueryItem(name: "month", value: String(month))
+        ]
+        queryItems.append(contentsOf: slotTimeItems)
         let request = try makeHistoryRequest(
             path: "api/patients/\(resolvedPatientId)/history/month",
-            queryItems: [
-                URLQueryItem(name: "year", value: String(year)),
-                URLQueryItem(name: "month", value: String(month))
-            ]
+            queryItems: queryItems
         )
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
@@ -283,11 +315,17 @@ final class APIClient {
         return try decoder.decode(HistoryMonthResponseDTO.self, from: data)
     }
 
-    func fetchCaregiverHistoryDay(patientId: String? = nil, date: String) async throws -> HistoryDayResponseDTO {
+    func fetchCaregiverHistoryDay(
+        patientId: String? = nil,
+        date: String,
+        slotTimeItems: [URLQueryItem] = []
+    ) async throws -> HistoryDayResponseDTO {
         let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
+        var queryItems = [URLQueryItem(name: "date", value: date)]
+        queryItems.append(contentsOf: slotTimeItems)
         let request = try makeHistoryRequest(
             path: "api/patients/\(resolvedPatientId)/history/day",
-            queryItems: [URLQueryItem(name: "date", value: date)]
+            queryItems: queryItems
         )
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
@@ -583,6 +621,38 @@ final class APIClient {
         }
         return url
     }
+
+    // MARK: - Device Tokens (Push Notifications)
+
+    func registerDeviceToken(token: String, platform: String = "ios") async throws {
+        let url = baseURL.appendingPathComponent("api/device-tokens")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let authToken = tokenForCurrentMode() {
+            request.addValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        }
+        let payload: [String: String] = ["token": token, "platform": platform]
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+    }
+
+    func unregisterDeviceToken(token: String) async throws {
+        let url = baseURL.appendingPathComponent("api/device-tokens")
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let authToken = tokenForCurrentMode() {
+            request.addValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        }
+        let payload: [String: String] = ["token": token]
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+    }
+
+    // MARK: - Private Helpers
 
     private func medicationEncoder() -> JSONEncoder {
         let encoder = JSONEncoder()

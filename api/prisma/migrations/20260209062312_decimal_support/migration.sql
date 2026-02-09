@@ -1,0 +1,14 @@
+-- AlterTable
+ALTER TABLE "InventoryAlertEvent" ALTER COLUMN "remaining" SET DATA TYPE DOUBLE PRECISION;
+
+-- AlterTable
+ALTER TABLE "Medication" ALTER COLUMN "doseCountPerIntake" SET DATA TYPE DOUBLE PRECISION,
+ALTER COLUMN "inventoryCount" SET DATA TYPE DOUBLE PRECISION,
+ALTER COLUMN "inventoryQuantity" SET DEFAULT 0,
+ALTER COLUMN "inventoryQuantity" SET DATA TYPE DOUBLE PRECISION;
+
+-- AlterTable
+ALTER TABLE "MedicationInventoryAdjustment" ALTER COLUMN "delta" SET DATA TYPE DOUBLE PRECISION;
+
+-- AlterTable
+ALTER TABLE "prn_dose_records" ALTER COLUMN "quantityTaken" SET DATA TYPE DOUBLE PRECISION;
