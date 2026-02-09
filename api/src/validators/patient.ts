@@ -7,7 +7,7 @@ export type PatientCreateInput = {
 };
 
 export type LinkCodeInput = {
-  code: string;
+  code: unknown;
 };
 
 const linkCodeRegex = new RegExp(`^\\d{${LINKING_CODE_LENGTH}}$`);
@@ -27,13 +27,19 @@ export function validatePatientCreate(input: PatientCreateInput) {
   return { errors, displayName };
 }
 
-export function normalizeLinkCode(code: string) {
+export function normalizeLinkCode(code: unknown) {
+  if (typeof code !== "string") {
+    return "";
+  }
   return code.trim();
 }
 
 export function validateLinkCodeInput(input: LinkCodeInput) {
   const errors: string[] = [];
-  const code = normalizeLinkCode(input.code ?? "");
+  if (typeof input.code !== "string") {
+    errors.push("code must be a string");
+  }
+  const code = normalizeLinkCode(input.code);
   if (!code) {
     errors.push("code is required");
   } else if (!linkCodeRegex.test(code)) {
