@@ -86,6 +86,17 @@ final class PatientManagementViewModel: ObservableObject {
             return false
         }
     }
+
+    func deletePatient(patientId: String) async -> Bool {
+        do {
+            try await apiClient.deletePatient(patientId: patientId)
+            patients.removeAll { $0.id == patientId }
+            return true
+        } catch {
+            errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
+            return false
+        }
+    }
 }
 
 struct PatientManagementView: View {
@@ -96,6 +107,7 @@ struct PatientManagementView: View {
     @StateObject private var schedulingCoordinator = SchedulingRefreshCoordinator()
     @State private var showingCreate = false
     @State private var revokeTarget: PatientDTO?
+    @State private var deleteTarget: PatientDTO?
     @State private var showingLogoutConfirm = false
     @State private var toastMessage: String?
     @State private var draftTimes: [NotificationSlot: Date] = [:]
@@ -152,6 +164,18 @@ struct PatientManagementView: View {
                     onSuccess: showToast,
                     onCancel: {
                         revokeTarget = nil
+                    }
+                )
+            }
+            .sheet(item: $deleteTarget) { patient in
+                PatientDeleteView(
+                    patient: patient,
+                    onConfirm: {
+                        await viewModel.deletePatient(patientId: patient.id)
+                    },
+                    onSuccess: showToast,
+                    onCancel: {
+                        deleteTarget = nil
                     }
                 )
             }
@@ -381,6 +405,18 @@ struct PatientManagementView: View {
                     }
                     .buttonStyle(.plain)
                 }
+                Button {
+                    deleteTarget = selectedPatient
+                } label: {
+                    Label(NSLocalizedString("caregiver.patients.delete", comment: "Delete patient"), systemImage: "trash")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(Color.red.opacity(0.12))
+                        .foregroundStyle(.red)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
             }
             .padding(16)
             .glassEffect(.regular, in: .rect(cornerRadius: 16))

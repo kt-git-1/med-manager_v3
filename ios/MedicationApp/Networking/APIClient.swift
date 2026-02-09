@@ -79,6 +79,20 @@ final class APIClient {
         sessionStore.handlePatientRevoked(patientId)
     }
 
+    func deletePatient(patientId: String) async throws {
+        let url = baseURL.appendingPathComponent("api/patients/\(patientId)")
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        _ = try decoder.decode(DeletePatientResponseDTO.self, from: data)
+        sessionStore.handlePatientRevoked(patientId)
+    }
+
     func fetchMedications(patientId: String?) async throws -> [MedicationDTO] {
         let request = try makeMedicationListRequest(patientId: patientId)
         let (data, response) = try await URLSession.shared.data(for: request)

@@ -304,4 +304,9 @@
 "caregiver.logout.toast" = "ログアウトしました";
 "caregiver.patients.toast.created" = "患者を追加しました";
 "caregiver.patients.toast.revoked" = "リンクを解除しました";
+"caregiver.patients.delete" = "患者を削除";
+"caregiver.patients.delete.confirm.title" = "患者を削除";
+"caregiver.patients.delete.confirm.message" = "この患者とすべての関連データ（お薬・服薬記録・在庫など）を完全に削除します。この操作は取り消せません。";
+"caregiver.patients.delete.confirm.action" = "削除する";
+"caregiver.patients.toast.deleted" = "患者を削除しました";
 "common.error.save" = "保存に失敗しました";
