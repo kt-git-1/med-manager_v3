@@ -121,7 +121,11 @@ function computeInventoryState(
   threshold: number,
   daysRemaining: number | null
 ): InventoryAlertState {
-  if (quantity === 0) {
+  if (daysRemaining !== null) {
+    if (daysRemaining <= 0) {
+      return "OUT";
+    }
+  } else if (quantity <= 0) {
     return "OUT";
   }
   if (threshold > 0) {

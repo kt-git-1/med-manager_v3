@@ -17,12 +17,13 @@ struct MedicationDTO: Decodable, Identifiable {
     let inventoryUnit: String?
     let inventoryEnabled: Bool
     let inventoryQuantity: Int
+    let inventoryOut: Bool
     let isActive: Bool
     let isArchived: Bool
     let nextScheduledAt: Date?
 
     var isOutOfStock: Bool {
-        inventoryEnabled && inventoryQuantity <= 0
+        inventoryEnabled && inventoryOut
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -42,6 +43,7 @@ struct MedicationDTO: Decodable, Identifiable {
         case inventoryUnit
         case inventoryEnabled
         case inventoryQuantity
+        case inventoryOut
         case isActive
         case isArchived
         case nextScheduledAt
@@ -65,6 +67,7 @@ struct MedicationDTO: Decodable, Identifiable {
         inventoryUnit = try container.decodeIfPresent(String.self, forKey: .inventoryUnit)
         inventoryEnabled = try container.decodeIfPresent(Bool.self, forKey: .inventoryEnabled) ?? false
         inventoryQuantity = try container.decodeIfPresent(Int.self, forKey: .inventoryQuantity) ?? 0
+        inventoryOut = try container.decodeIfPresent(Bool.self, forKey: .inventoryOut) ?? false
         isActive = try container.decode(Bool.self, forKey: .isActive)
         isArchived = try container.decode(Bool.self, forKey: .isArchived)
         nextScheduledAt = try container.decodeIfPresent(Date.self, forKey: .nextScheduledAt)

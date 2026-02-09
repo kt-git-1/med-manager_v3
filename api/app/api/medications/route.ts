@@ -9,7 +9,7 @@ import {
   requirePatient
 } from "../../../src/middleware/auth";
 import { validateMedication } from "../../../src/validators/medication";
-import { createMedication, listMedications } from "../../../src/services/medicationService";
+import { createMedication, listMedications, listMedicationInventory } from "../../../src/services/medicationService";
 import { generateScheduleForPatient } from "../../../src/services/scheduleService";
 
 export const runtime = "nodejs";
@@ -50,20 +50,28 @@ export async function GET(request: Request) {
     const medications = await listMedications(resolvedPatientId);
     const rangeStart = new Date();
     const rangeEnd = new Date(rangeStart.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const doses = await generateScheduleForPatient({
-      patientId: resolvedPatientId,
-      from: rangeStart,
-      to: rangeEnd
-    });
+    const [doses, inventoryItems] = await Promise.all([
+      generateScheduleForPatient({
+        patientId: resolvedPatientId,
+        from: rangeStart,
+        to: rangeEnd
+      }),
+      listMedicationInventory(resolvedPatientId)
+    ]);
     const nextByMedication = new Map<string, string>();
     for (const dose of doses) {
       if (!nextByMedication.has(dose.medicationId)) {
         nextByMedication.set(dose.medicationId, dose.scheduledAt);
       }
     }
+    const inventoryOutMap = new Map<string, boolean>();
+    for (const item of inventoryItems) {
+      inventoryOutMap.set(item.medicationId, item.out);
+    }
     const enriched = medications.map((medication) => ({
       ...medication,
-      nextScheduledAt: nextByMedication.get(medication.id) ?? null
+      nextScheduledAt: nextByMedication.get(medication.id) ?? null,
+      inventoryOut: inventoryOutMap.get(medication.id) ?? false
     }));
     return new Response(JSON.stringify({ data: enriched }), {
       headers: { "content-type": "application/json" }
