@@ -14,6 +14,7 @@ final class PatientTodayViewModel: ObservableObject {
     @Published var confirmPrnMedication: MedicationDTO?
     @Published var isPrnSubmitting = false
     @Published var highlightedSlot: NotificationSlot?
+    @Published var outOfStockMedicationIds: Set<String> = []
 
     private let apiClient: APIClient
     private let reminderService: ReminderService
@@ -195,12 +196,17 @@ final class PatientTodayViewModel: ObservableObject {
         return matched
     }
 
+    func isMedicationOutOfStock(_ medicationId: String) -> Bool {
+        outOfStockMedicationIds.contains(medicationId)
+    }
+
     private func refreshTodayData() async throws {
         async let dosesTask = apiClient.fetchPatientToday()
         async let medicationsTask = apiClient.fetchMedications(patientId: nil)
         let (doses, medications) = try await (dosesTask, medicationsTask)
         items = doses.sorted(by: sortDose)
         prnMedications = medications.filter { $0.isPrn }
+        outOfStockMedicationIds = Set(medications.filter { $0.isOutOfStock }.map { $0.id })
         for medication in medications {
             medicationCache[medication.id] = medication
         }

@@ -59,7 +59,8 @@ private struct PatientTodayRootView: View {
             timeText: { viewModel.timeText(for: $0) },
             shouldHighlight: shouldHighlight,
             slotColor: slotColor,
-            slotTitle: slotTitle
+            slotTitle: slotTitle,
+            isOutOfStock: { viewModel.isMedicationOutOfStock($0) }
         )
         .modifier(
             PatientTodayLifecycleModifier(
@@ -276,6 +277,7 @@ private struct PatientTodayBaseView: View {
     let shouldHighlight: (ScheduleDoseDTO) -> Bool
     let slotColor: (NotificationSlot?) -> Color
     let slotTitle: (NotificationSlot?) -> String
+    let isOutOfStock: (String) -> Bool
 
     var body: some View {
         baseView
@@ -345,7 +347,8 @@ private struct PatientTodayBaseView: View {
                         timeText: timeText,
                         shouldHighlight: shouldHighlight,
                         slotColor: slotColor,
-                        slotTitle: slotTitle
+                        slotTitle: slotTitle,
+                        isOutOfStock: isOutOfStock
                     )
                     .onChange(of: pendingScrollTarget) { _, target in
                         guard let target else { return }
@@ -464,6 +467,7 @@ private struct PatientTodayListView: View {
     let shouldHighlight: (ScheduleDoseDTO) -> Bool
     let slotColor: (NotificationSlot?) -> Color
     let slotTitle: (NotificationSlot?) -> String
+    let isOutOfStock: (String) -> Bool
 
     var body: some View {
         List {
@@ -474,7 +478,8 @@ private struct PatientTodayListView: View {
                 slotColor: slotColor,
                 slotTitle: slotTitle,
                 onConfirmDose: onConfirmDose,
-                onPresentDetail: onPresentDetail
+                onPresentDetail: onPresentDetail,
+                isOutOfStock: isOutOfStock
             )
             DoseStatusSectionView(
                 titleKey: "patient.today.section.missed",
@@ -482,7 +487,8 @@ private struct PatientTodayListView: View {
                 timeText: timeText,
                 shouldHighlight: shouldHighlight,
                 onConfirmDose: onConfirmDose,
-                onPresentDetail: onPresentDetail
+                onPresentDetail: onPresentDetail,
+                isOutOfStock: isOutOfStock
             )
             DoseStatusSectionView(
                 titleKey: "patient.today.section.taken",
@@ -490,7 +496,8 @@ private struct PatientTodayListView: View {
                 timeText: timeText,
                 shouldHighlight: shouldHighlight,
                 onConfirmDose: onConfirmDose,
-                onPresentDetail: onPresentDetail
+                onPresentDetail: onPresentDetail,
+                isOutOfStock: isOutOfStock
             )
         }
         .listStyle(.plain)
@@ -579,6 +586,7 @@ private struct PlannedSectionsView: View {
     let slotTitle: (NotificationSlot?) -> String
     let onConfirmDose: (ScheduleDoseDTO) -> Void
     let onPresentDetail: (ScheduleDoseDTO) -> Void
+    let isOutOfStock: (String) -> Bool
 
     var body: some View {
         ForEach(slotSections) { section in
@@ -589,7 +597,8 @@ private struct PlannedSectionsView: View {
                         timeText: timeText(dose.scheduledAt),
                         onRecord: { onConfirmDose(dose) },
                         isHighlighted: shouldHighlight(dose),
-                        slotColor: slotColor(section.slot)
+                        slotColor: slotColor(section.slot),
+                        isOutOfStock: isOutOfStock(dose.medicationId)
                     )
                     .id(dose.key)
                     .listRowSeparator(.hidden)
@@ -615,6 +624,7 @@ private struct DoseStatusSectionView: View {
     let shouldHighlight: (ScheduleDoseDTO) -> Bool
     let onConfirmDose: (ScheduleDoseDTO) -> Void
     let onPresentDetail: (ScheduleDoseDTO) -> Void
+    let isOutOfStock: (String) -> Bool
 
     var body: some View {
         if items.isEmpty {
@@ -627,7 +637,8 @@ private struct DoseStatusSectionView: View {
                         timeText: timeText(dose.scheduledAt),
                         onRecord: { onConfirmDose(dose) },
                         isHighlighted: shouldHighlight(dose),
-                        slotColor: nil
+                        slotColor: nil,
+                        isOutOfStock: isOutOfStock(dose.medicationId)
                     )
                     .id(dose.key)
                     .listRowSeparator(.hidden)
@@ -821,6 +832,7 @@ private struct PatientTodayRow: View {
     let onRecord: () -> Void
     let isHighlighted: Bool
     let slotColor: Color?
+    var isOutOfStock: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -841,6 +853,15 @@ private struct PatientTodayRow: View {
                         Text(noteText)
                             .font(.body)
                             .foregroundStyle(.secondary)
+                    }
+                    if isOutOfStock {
+                        Text(NSLocalizedString("patient.today.outOfStock", comment: "Out of stock"))
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(.white)
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 10)
+                            .background(Color.red)
+                            .clipShape(Capsule())
                     }
                 }
                 Spacer()
@@ -864,6 +885,7 @@ private struct PatientTodayRow: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
+                .disabled(isOutOfStock)
                 .accessibilityLabel(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
             }
         }
@@ -971,6 +993,10 @@ private struct PrnMedicationCard: View {
     @State private var recordTrigger = 0
     @State private var isPressed = false
 
+    private var isOutOfStock: Bool {
+        medication.isOutOfStock
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
@@ -986,6 +1012,15 @@ private struct PrnMedicationCard: View {
                         .font(.body)
                         .foregroundStyle(.secondary)
                 }
+                if isOutOfStock {
+                    Text(NSLocalizedString("patient.today.outOfStock", comment: "Out of stock"))
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 10)
+                        .background(Color.red)
+                        .clipShape(Capsule())
+                }
             }
 
             Button(action: handleRecord) {
@@ -996,7 +1031,7 @@ private struct PrnMedicationCard: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .disabled(isDisabled)
+            .disabled(isDisabled || isOutOfStock)
             .accessibilityLabel(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
             .scaleEffect(isPressed ? 0.96 : 1.0)
             .animation(.easeInOut(duration: 0.18), value: isPressed)

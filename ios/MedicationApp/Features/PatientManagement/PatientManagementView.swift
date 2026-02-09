@@ -833,8 +833,7 @@ struct PatientManagementView: View {
         defer { isSavingDetail = false }
         do {
             let items = inventoryItems.isEmpty ? try await apiClient.fetchInventory(patientId: patientId) : inventoryItems
-            let targets = items.filter { $0.inventoryEnabled }
-            for item in targets {
+            for item in items {
                 _ = try await apiClient.updateInventory(
                     patientId: patientId,
                     medicationId: item.medicationId,

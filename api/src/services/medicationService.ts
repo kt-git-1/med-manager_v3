@@ -42,7 +42,14 @@ export type MedicationUpdateInput = Partial<MedicationCreateInput> & {
 };
 
 export async function createMedication(input: MedicationCreateInput) {
-  const inventoryOverrides = buildInventoryOverrides(input.inventoryCount);
+  const base = buildInventoryOverrides(input.inventoryCount);
+  if (!base) {
+    return createMedicationRecord(input);
+  }
+  const threshold = await resolvePatientInventoryThreshold(input.patientId);
+  const inventoryOverrides = threshold > 0
+    ? { ...base, inventoryLowThreshold: threshold }
+    : base;
   return createMedicationRecord({ ...input, ...inventoryOverrides });
 }
 
@@ -56,10 +63,20 @@ export async function getMedication(id: string): Promise<Medication | null> {
 
 export async function updateMedication(id: string, input: MedicationUpdateInput) {
   const existing = await getMedicationRecord(id);
-  const inventoryOverrides =
-    existing && !existing.inventoryEnabled
-      ? buildInventoryOverrides(input.inventoryCount)
-      : {};
+  if (!existing) {
+    return updateMedicationRecord(id, input);
+  }
+  if (existing.inventoryEnabled) {
+    return updateMedicationRecord(id, input);
+  }
+  const base = buildInventoryOverrides(input.inventoryCount);
+  if (!base) {
+    return updateMedicationRecord(id, input);
+  }
+  const threshold = await resolvePatientInventoryThreshold(existing.patientId);
+  const inventoryOverrides = threshold > 0
+    ? { ...base, inventoryLowThreshold: threshold }
+    : base;
   return updateMedicationRecord(id, { ...input, ...inventoryOverrides });
 }
 
@@ -190,9 +207,19 @@ function buildInventoryItemWithPlan(medication: Medication, regimens: Regimen[])
   return buildInventoryItem(medication, plan);
 }
 
+async function resolvePatientInventoryThreshold(patientId: string): Promise<number> {
+  const existing = await listMedicationRecords(patientId);
+  for (const medication of existing) {
+    if (medication.inventoryEnabled && medication.inventoryLowThreshold > 0) {
+      return medication.inventoryLowThreshold;
+    }
+  }
+  return 0;
+}
+
 function buildInventoryOverrides(inventoryCount?: number | null) {
   if (inventoryCount === undefined || inventoryCount === null) {
-    return {};
+    return null;
   }
   const clamped = Math.max(0, inventoryCount);
   return {

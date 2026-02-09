@@ -166,6 +166,7 @@
 "patient.today.status.missed" = "飲み忘れ";
 "patient.today.alreadyRecorded" = "すでに記録済みです";
 "patient.today.recorded" = "記録しました";
+"patient.today.outOfStock" = "在庫切れ";
 "patient.today.section.planned" = "今日のお薬";
 "patient.today.section.taken" = "服用済み";
 "patient.today.section.missed" = "飲み忘れ";

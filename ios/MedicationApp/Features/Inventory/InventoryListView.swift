@@ -38,7 +38,7 @@ final class InventoryViewModel: ObservableObject {
         item: InventoryItemDTO,
         enabled: Bool,
         quantity: Int?,
-        threshold: Int
+        threshold: Int? = nil
     ) async -> InventoryItemDTO? {
         guard !isUpdating else { return nil }
         isUpdating = true

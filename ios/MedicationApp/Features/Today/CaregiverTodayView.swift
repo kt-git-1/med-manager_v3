@@ -129,7 +129,8 @@ struct CaregiverTodayView: View {
                                     recordedByText: nil,
                                     isDestructive: false,
                                     slotColor: slotColor(for: section.slot),
-                                    onAction: { viewModel.recordDose(dose) }
+                                    onAction: { viewModel.recordDose(dose) },
+                                    isOutOfStock: viewModel.isMedicationOutOfStock(dose.medicationId)
                                 )
                                 .listRowSeparator(.hidden)
                                 .listRowBackground(Color.clear)
@@ -150,7 +151,8 @@ struct CaregiverTodayView: View {
                                     recordedByText: nil,
                                     isDestructive: false,
                                     slotColor: nil,
-                                    onAction: { viewModel.recordDose(dose) }
+                                    onAction: { viewModel.recordDose(dose) },
+                                    isOutOfStock: viewModel.isMedicationOutOfStock(dose.medicationId)
                                 )
                                 .listRowSeparator(.hidden)
                                 .listRowBackground(Color.clear)
@@ -321,6 +323,7 @@ private struct CaregiverTodayRow: View {
     let isDestructive: Bool
     let slotColor: Color?
     let onAction: () -> Void
+    var isOutOfStock: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -339,6 +342,15 @@ private struct CaregiverTodayRow: View {
                         Text(recordedByText)
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                    }
+                    if isOutOfStock {
+                        Text(NSLocalizedString("patient.today.outOfStock", comment: "Out of stock"))
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.white)
+                            .padding(.vertical, 3)
+                            .padding(.horizontal, 8)
+                            .background(Color.red)
+                            .clipShape(Capsule())
                     }
                 }
                 Spacer()
@@ -424,6 +436,7 @@ private struct CaregiverTodayRow: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .tint(.accentColor)
+            .disabled(isOutOfStock)
             .accessibilityLabel(actionTitle)
         }
     }

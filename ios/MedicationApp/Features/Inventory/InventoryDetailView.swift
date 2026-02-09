@@ -292,8 +292,7 @@ struct InventoryDetailView: View {
         let updated = await viewModel.updateSettings(
             item: item,
             enabled: inventoryEnabled,
-            quantity: nil,
-            threshold: item.inventoryLowThreshold
+            quantity: nil
         )
         if let updated {
             quantity = updated.inventoryQuantity
