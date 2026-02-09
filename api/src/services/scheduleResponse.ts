@@ -68,9 +68,7 @@ export function resolveSlot(
   customSlotTimes?: Partial<Record<HistorySlot, string>>
 ): HistorySlot | null {
   const localTime = getLocalTimeString(scheduledAt, tz);
-  const effectiveTimes = customSlotTimes
-    ? { ...slotTimes, ...customSlotTimes }
-    : slotTimes;
+  const effectiveTimes = customSlotTimes ? { ...slotTimes, ...customSlotTimes } : slotTimes;
   const entry = Object.entries(effectiveTimes).find(([, time]) => time === localTime);
   if (entry) {
     return entry[0] as HistorySlot;
@@ -114,28 +112,36 @@ export function buildSlotSummary(
   return summary;
 }
 
-const timePattern = /^\d{2}:\d{2}$/;
+const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-export function parseSlotTimesFromParams(
-  searchParams: URLSearchParams
-): Partial<Record<HistorySlot, string>> | undefined {
+export type SlotTimeParseResult = {
+  slotTimes?: Partial<Record<HistorySlot, string>>;
+  errors: string[];
+};
+
+export function parseSlotTimesFromParams(searchParams: URLSearchParams): SlotTimeParseResult {
   const slots: HistorySlot[] = ["morning", "noon", "evening", "bedtime"];
   const result: Partial<Record<HistorySlot, string>> = {};
+  const errors: string[] = [];
   let hasAny = false;
   for (const slot of slots) {
     const value = searchParams.get(`${slot}Time`);
-    if (value && timePattern.test(value)) {
-      result[slot] = value;
-      hasAny = true;
+    if (value) {
+      if (timePattern.test(value)) {
+        result[slot] = value;
+        hasAny = true;
+      } else {
+        errors.push(`${slot}Time must be HH:MM between 00:00 and 23:59`);
+      }
     }
   }
-  return hasAny ? result : undefined;
+  return {
+    slotTimes: hasAny ? result : undefined,
+    errors
+  };
 }
 
-export function groupDosesByLocalDate(
-  doses: { scheduledAt: string }[],
-  tz: string
-) {
+export function groupDosesByLocalDate(doses: { scheduledAt: string }[], tz: string) {
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: tz,
     year: "numeric",
