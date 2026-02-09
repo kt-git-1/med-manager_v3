@@ -54,6 +54,14 @@ function getLocalTimeString(scheduledAt: string, tz: string) {
   return `${values.hour}:${values.minute}`;
 }
 
+function resolveSlotByRange(hour: number): HistorySlot {
+  if (hour >= 4 && hour <= 10) return "morning";
+  if (hour >= 11 && hour <= 15) return "noon";
+  if (hour >= 16 && hour <= 20) return "evening";
+  // 21-23 and 0-3
+  return "bedtime";
+}
+
 export function resolveSlot(
   scheduledAt: string,
   tz: string,
@@ -64,7 +72,13 @@ export function resolveSlot(
     ? { ...slotTimes, ...customSlotTimes }
     : slotTimes;
   const entry = Object.entries(effectiveTimes).find(([, time]) => time === localTime);
-  return (entry?.[0] as HistorySlot | undefined) ?? null;
+  if (entry) {
+    return entry[0] as HistorySlot;
+  }
+  // Fallback: assign slot by time-of-day range.
+  const hour = Number(localTime.split(":")[0]);
+  if (Number.isNaN(hour)) return null;
+  return resolveSlotByRange(hour);
 }
 
 export function buildSlotSummary(

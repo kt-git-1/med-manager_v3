@@ -32,7 +32,7 @@ extension NotificationSlot {
         let hour = components.hour ?? -1
         let minute = components.minute ?? -1
 
-        // When custom slot times are provided, match against them first.
+        // When custom slot times are provided, try exact match first.
         if let slotTimes {
             for slot in NotificationSlot.allCases {
                 let time = slotTimes[slot] ?? slot.hourMinute
@@ -40,18 +40,36 @@ extension NotificationSlot {
                     return slot
                 }
             }
-            return nil
+        } else {
+            // Try exact match against built-in defaults.
+            switch (hour, minute) {
+            case (8, 0):
+                return .morning
+            case (12, 0):
+                return .noon
+            case (19, 0):
+                return .evening
+            case (22, 0):
+                return .bedtime
+            default:
+                break
+            }
         }
 
-        // Fallback: match against built-in defaults.
-        switch (hour, minute) {
-        case (8, 0):
+        // Fallback: assign slot by time-of-day range.
+        return slotByRange(hour: hour)
+    }
+
+    /// Assigns a slot based on the hour using broad time-of-day ranges.
+    private static func slotByRange(hour: Int) -> NotificationSlot? {
+        switch hour {
+        case 4...10:
             return .morning
-        case (12, 0):
+        case 11...15:
             return .noon
-        case (19, 0):
+        case 16...20:
             return .evening
-        case (22, 0):
+        case 21...23, 0...3:
             return .bedtime
         default:
             return nil
