@@ -30,7 +30,7 @@ struct PatientTodayView: View {
 private struct PatientTodayRootView: View {
     private static let todayCalendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        calendar.timeZone = AppConstants.defaultTimeZone
         return calendar
     }()
     let sessionStore: SessionStore
@@ -186,18 +186,7 @@ private struct PatientTodayRootView: View {
     }
 
     private func slotColor(for slot: NotificationSlot?) -> Color {
-        switch slot {
-        case .morning:
-            return Color.orange
-        case .noon:
-            return Color.blue
-        case .evening:
-            return Color.purple
-        case .bedtime:
-            return Color.indigo
-        case .none:
-            return Color.gray
-        }
+        AppConstants.slotColor(for: slot)
     }
 
     private func confirmMessage(for dose: ScheduleDoseDTO) -> String {
@@ -309,7 +298,7 @@ private struct PatientTodayBaseView: View {
     private var updatingOverlay: some View {
         if viewModel.isUpdating {
             ZStack {
-                Color.black.opacity(0.2)
+                Color.black.opacity(AppConstants.overlayOpacity)
                     .ignoresSafeArea()
                 VStack {
                     Spacer()
@@ -540,7 +529,7 @@ private struct PrnMedicationListView: View {
         .overlay {
             if isDisabled {
                 ZStack {
-                    Color.black.opacity(0.2)
+                    Color.black.opacity(AppConstants.overlayOpacity)
                         .ignoresSafeArea()
                     VStack {
                         Spacer()
@@ -683,7 +672,7 @@ private struct SlotHeaderView: View {
 private struct PatientTodayDoseDetailView: View {
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.locale = AppConstants.japaneseLocale
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
@@ -719,7 +708,7 @@ private struct PatientTodayDoseDetailView: View {
             .overlay {
                 if isLoading {
                     ZStack {
-                        Color.black.opacity(0.2)
+                        Color.black.opacity(AppConstants.overlayOpacity)
                             .ignoresSafeArea()
                         LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
                             .padding(16)

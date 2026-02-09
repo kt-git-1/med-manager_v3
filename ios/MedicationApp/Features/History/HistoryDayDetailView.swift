@@ -1,11 +1,11 @@
 import SwiftUI
 
 struct HistoryDayDetailView: View {
-    private static let historyTimeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+    private static let historyTimeZone = AppConstants.defaultTimeZone
     private static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = historyTimeZone
-        calendar.locale = Locale(identifier: "ja_JP")
+        calendar.locale = AppConstants.japaneseLocale
         return calendar
     }()
     private static let headerFormatter: DateFormatter = {

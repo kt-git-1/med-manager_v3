@@ -116,7 +116,7 @@ struct PatientManagementView: View {
     @State private var inventoryItems: [InventoryItemDTO] = []
     @State private var showingTimePresetSheet = false
     @State private var showingInventoryThresholdSheet = false
-    private let timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+    private let timeZone = AppConstants.defaultTimeZone
     private let apiClient: APIClient
     private static let thresholdKeyPrefix = "inventory.threshold."
 
@@ -272,7 +272,7 @@ struct PatientManagementView: View {
         .overlay {
             if viewModel.isLoading || isSavingDetail {
                 ZStack {
-                    Color.black.opacity(0.2)
+                    Color.black.opacity(AppConstants.overlayOpacity)
                         .ignoresSafeArea()
                     VStack {
                         Spacer()
@@ -628,7 +628,7 @@ struct PatientManagementView: View {
     private var savingOverlay: some View {
         if isSavingDetail {
             ZStack {
-                Color.black.opacity(0.2)
+                Color.black.opacity(AppConstants.overlayOpacity)
                     .ignoresSafeArea()
                 VStack {
                     Spacer()
@@ -886,7 +886,7 @@ struct PatientManagementView: View {
             toastMessage = message
         }
         Task {
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(for: .seconds(AppConstants.toastDuration))
             await MainActor.run {
                 withAnimation {
                     toastMessage = nil

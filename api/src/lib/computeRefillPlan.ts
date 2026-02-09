@@ -1,5 +1,7 @@
-const TOKYO_TIMEZONE = "Asia/Tokyo";
-const MAX_SIMULATION_DAYS = 180;
+import { DEFAULT_TIMEZONE, INTL_PARSE_LOCALE, MAX_REFILL_SIMULATION_DAYS } from "../constants";
+
+const TOKYO_TIMEZONE = DEFAULT_TIMEZONE;
+const MAX_SIMULATION_DAYS = MAX_REFILL_SIMULATION_DAYS;
 
 export type RefillPlanRegimen = {
   startDate: Date;
@@ -33,7 +35,7 @@ const weekdayMap: Record<string, string> = {
 };
 
 function getZonedParts(date: Date, timeZone: string) {
-  const formatter = new Intl.DateTimeFormat("en-US", {
+  const formatter = new Intl.DateTimeFormat(INTL_PARSE_LOCALE, {
     timeZone,
     year: "numeric",
     month: "2-digit",
@@ -92,12 +94,12 @@ function nextLocalDay(date: Date, tz: string) {
 }
 
 function getWeekday(date: Date, tz: string) {
-  const label = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" }).format(date);
+  const label = new Intl.DateTimeFormat(INTL_PARSE_LOCALE, { timeZone: tz, weekday: "short" }).format(date);
   return weekdayMap[label];
 }
 
 function dateKey(date: Date, tz: string) {
-  const formatter = new Intl.DateTimeFormat("en-US", {
+  const formatter = new Intl.DateTimeFormat(INTL_PARSE_LOCALE, {
     timeZone: tz,
     year: "numeric",
     month: "2-digit",

@@ -253,7 +253,7 @@ final class CaregiverEventSubscriber: ObservableObject {
 
     private static let noZoneFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.locale = AppConstants.posixLocale
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS"
@@ -262,7 +262,7 @@ final class CaregiverEventSubscriber: ObservableObject {
 
     private static let noZoneFormatterNoFraction: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.locale = AppConstants.posixLocale
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
@@ -320,7 +320,7 @@ final class CaregiverEventSubscriber: ObservableObject {
 
     private func sendHeartbeatLoop() async {
         while !Task.isCancelled {
-            try? await Task.sleep(for: .seconds(25))
+            try? await Task.sleep(for: .seconds(AppConstants.websocketHeartbeatInterval))
             await sendHeartbeat()
         }
     }

@@ -7,7 +7,7 @@ struct PatientLinkCodeView: View {
 
     private let formatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.locale = AppConstants.japaneseLocale
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter

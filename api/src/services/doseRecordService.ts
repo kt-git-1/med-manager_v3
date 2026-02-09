@@ -11,6 +11,7 @@ import { getMedicationRecordForPatient } from "../repositories/medicationRepo";
 import { getPatientRecordById } from "../repositories/patientRepo";
 import { assertCaregiverPatientScope } from "../middleware/auth";
 import { applyInventoryDeltaForDoseRecord } from "./medicationService";
+import { DOSE_MISSED_WINDOW_MS } from "../constants";
 
 export type DoseRecordCreateInput = DoseRecordKey & {
   recordedByType: RecordedByType;
@@ -36,7 +37,7 @@ export async function createDoseRecordIdempotent(
   }
 
   const withinTime =
-    record.takenAt.getTime() <= record.scheduledAt.getTime() + 60 * 60 * 1000;
+    record.takenAt.getTime() <= record.scheduledAt.getTime() + DOSE_MISSED_WINDOW_MS;
 
   const medication = await getMedicationRecordForPatient(record.patientId, record.medicationId);
   await createDoseRecordEvent({

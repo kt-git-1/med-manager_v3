@@ -456,7 +456,7 @@ struct MedicationFormView: View {
 
     private var updatingOverlay: some View {
         ZStack {
-            Color.black.opacity(0.2)
+            Color.black.opacity(AppConstants.overlayOpacity)
                 .ignoresSafeArea()
             VStack {
                 Spacer()

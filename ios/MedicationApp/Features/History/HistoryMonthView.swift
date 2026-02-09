@@ -1,11 +1,11 @@
 import SwiftUI
 
 struct HistoryMonthView: View {
-    private static let historyTimeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+    private static let historyTimeZone = AppConstants.defaultTimeZone
     private static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = historyTimeZone
-        calendar.locale = Locale(identifier: "ja_JP")
+        calendar.locale = AppConstants.japaneseLocale
         calendar.firstWeekday = 1
         return calendar
     }()
@@ -245,7 +245,7 @@ struct HistoryMonthView: View {
 
     private var weekdaySymbols: [String] {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.locale = AppConstants.japaneseLocale
         formatter.calendar = HistoryMonthView.calendar
         return formatter.shortWeekdaySymbols
     }
@@ -339,7 +339,7 @@ struct HistoryMonthView: View {
 
     private var updatingOverlay: some View {
         ZStack {
-            Color.black.opacity(0.2)
+            Color.black.opacity(AppConstants.overlayOpacity)
                 .ignoresSafeArea()
             VStack {
                 Spacer()

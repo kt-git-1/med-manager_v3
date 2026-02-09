@@ -1,3 +1,5 @@
+import { INTL_PARSE_LOCALE, DEFAULT_SLOT_TIMES, SLOT_HOUR_RANGES } from "../constants";
+
 export type ScheduleResponseDose = {
   key: string;
   patientId: string;
@@ -29,16 +31,11 @@ export function buildScheduleResponse(doses: ScheduleResponseInput[]) {
 export type HistorySlot = "morning" | "noon" | "evening" | "bedtime";
 export type SlotSummaryStatus = "pending" | "taken" | "missed" | "none";
 
-const slotTimes: Record<HistorySlot, string> = {
-  morning: "08:00",
-  noon: "12:00",
-  evening: "19:00",
-  bedtime: "22:00"
-};
+const slotTimes: Record<HistorySlot, string> = { ...DEFAULT_SLOT_TIMES };
 
 function getLocalTimeString(scheduledAt: string, tz: string) {
   const date = new Date(scheduledAt);
-  const formatter = new Intl.DateTimeFormat("en-US", {
+  const formatter = new Intl.DateTimeFormat(INTL_PARSE_LOCALE, {
     timeZone: tz,
     hour: "2-digit",
     minute: "2-digit",
@@ -55,9 +52,9 @@ function getLocalTimeString(scheduledAt: string, tz: string) {
 }
 
 function resolveSlotByRange(hour: number): HistorySlot {
-  if (hour >= 4 && hour <= 10) return "morning";
-  if (hour >= 11 && hour <= 15) return "noon";
-  if (hour >= 16 && hour <= 20) return "evening";
+  if (hour >= SLOT_HOUR_RANGES.morning.min && hour <= SLOT_HOUR_RANGES.morning.max) return "morning";
+  if (hour >= SLOT_HOUR_RANGES.noon.min && hour <= SLOT_HOUR_RANGES.noon.max) return "noon";
+  if (hour >= SLOT_HOUR_RANGES.evening.min && hour <= SLOT_HOUR_RANGES.evening.max) return "evening";
   // 21-23 and 0-3
   return "bedtime";
 }
@@ -142,7 +139,7 @@ export function parseSlotTimesFromParams(searchParams: URLSearchParams): SlotTim
 }
 
 export function groupDosesByLocalDate(doses: { scheduledAt: string }[], tz: string) {
-  const formatter = new Intl.DateTimeFormat("en-US", {
+  const formatter = new Intl.DateTimeFormat(INTL_PARSE_LOCALE, {
     timeZone: tz,
     year: "numeric",
     month: "2-digit",

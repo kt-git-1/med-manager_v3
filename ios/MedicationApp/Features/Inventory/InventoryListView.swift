@@ -292,7 +292,7 @@ struct InventoryListView: View {
 
     private var updatingOverlay: some View {
         ZStack {
-            Color.black.opacity(0.2)
+            Color.black.opacity(AppConstants.overlayOpacity)
                 .ignoresSafeArea()
             VStack {
                 Spacer()
@@ -472,7 +472,7 @@ struct InventoryListView: View {
             toastMessage = message
         }
         Task {
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(for: .seconds(AppConstants.toastDuration))
             await MainActor.run {
                 withAnimation {
                     toastMessage = nil

@@ -23,7 +23,7 @@ extension View {
 extension NotificationSlot {
     static func from(
         date: Date,
-        timeZone: TimeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current,
+        timeZone: TimeZone = AppConstants.defaultTimeZone,
         slotTimes: [NotificationSlot: (hour: Int, minute: Int)]? = nil
     ) -> NotificationSlot? {
         var calendar = Calendar(identifier: .gregorian)

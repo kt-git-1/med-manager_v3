@@ -374,3 +374,9 @@
 "a11y.selected" = "選択中";
 "a11y.notSelected" = "未選択";
 "a11y.patient.displayName" = "表示名";
+
+/* Notification bodies */
+"notification.slot.morning.body" = "朝のお薬の時間です！";
+"notification.slot.noon.body" = "昼のお薬の時間です！";
+"notification.slot.evening.body" = "夜のお薬の時間です！";
+"notification.slot.bedtime.body" = "眠前のお薬の時間です！";

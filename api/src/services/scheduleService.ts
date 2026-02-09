@@ -48,7 +48,9 @@ export type ScheduleDoseWithStatus = ScheduleDose & {
   recordedByType?: "patient" | "caregiver";
 };
 
-const DEFAULT_REGIMEN_TZ = "Asia/Tokyo";
+import { DEFAULT_TIMEZONE, INTL_PARSE_LOCALE, DOSE_MISSED_WINDOW_MS } from "../constants";
+
+const DEFAULT_REGIMEN_TZ = DEFAULT_TIMEZONE;
 
 function normalizeRegimenTimeZone(timezone: string | null | undefined) {
   if (!timezone) {
@@ -75,7 +77,7 @@ const weekdayMap: Record<string, string> = {
 };
 
 function getZonedParts(date: Date, timeZone: string) {
-  const formatter = new Intl.DateTimeFormat("en-US", {
+  const formatter = new Intl.DateTimeFormat(INTL_PARSE_LOCALE, {
     timeZone,
     year: "numeric",
     month: "2-digit",
@@ -142,7 +144,7 @@ function nextLocalDay(date: Date, tz: string) {
 }
 
 function getWeekday(date: Date, tz: string) {
-  const label = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" }).format(date);
+  const label = new Intl.DateTimeFormat(INTL_PARSE_LOCALE, { timeZone: tz, weekday: "short" }).format(date);
   return weekdayMap[label];
 }
 
@@ -280,7 +282,7 @@ function deriveDoseStatus({
     return "taken";
   }
   const scheduledTime = new Date(scheduledAt).getTime();
-  const missedAfter = scheduledTime + 60 * 60 * 1000;
+  const missedAfter = scheduledTime + DOSE_MISSED_WINDOW_MS;
   return now.getTime() > missedAfter ? "missed" : "pending";
 }
 

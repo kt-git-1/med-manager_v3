@@ -1,6 +1,7 @@
 import { patientSessionVerifier } from "../auth/patientSessionVerifier";
 import { verifySupabaseJwt } from "../auth/supabaseJwt";
 import { getPatientRecordForCaregiver } from "../repositories/patientRepo";
+import { CAREGIVER_TOKEN_PREFIX, CAREGIVER_PLACEHOLDER_TOKEN } from "../constants";
 
 export type AuthRole = "caregiver" | "patient";
 
@@ -25,7 +26,7 @@ export function getBearerToken(authHeader?: string): string | null {
 }
 
 export function isCaregiverToken(token: string | null): boolean {
-  return !!token && token.startsWith("caregiver-") && token !== "caregiver-placeholder";
+  return !!token && token.startsWith(CAREGIVER_TOKEN_PREFIX) && token !== CAREGIVER_PLACEHOLDER_TOKEN;
 }
 
 export async function requireCaregiver(authHeader?: string) {
@@ -33,10 +34,10 @@ export async function requireCaregiver(authHeader?: string) {
   if (!token) {
     throw new AuthError("Unauthorized", 401);
   }
-  if (!token.startsWith("caregiver-")) {
+  if (!token.startsWith(CAREGIVER_TOKEN_PREFIX)) {
     throw new AuthError("Unauthorized", 401);
   }
-  const rawToken = token.slice("caregiver-".length);
+  const rawToken = token.slice(CAREGIVER_TOKEN_PREFIX.length);
   try {
     const session = await verifySupabaseJwt(rawToken);
     return { role: "caregiver" as const, caregiverUserId: session.caregiverUserId };

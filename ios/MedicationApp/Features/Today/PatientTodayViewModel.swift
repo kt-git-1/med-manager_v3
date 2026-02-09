@@ -35,20 +35,20 @@ final class PatientTodayViewModel: ObservableObject {
         self.reminderService = reminderService
         self.preferencesStore = preferencesStore
         self.dateFormatter = DateFormatter()
-        self.dateFormatter.locale = Locale(identifier: "ja_JP")
+        self.dateFormatter.locale = AppConstants.japaneseLocale
         self.dateFormatter.dateStyle = .medium
         self.dateFormatter.timeStyle = .none
         self.timeFormatter = DateFormatter()
-        self.timeFormatter.locale = Locale(identifier: "ja_JP")
+        self.timeFormatter.locale = AppConstants.japaneseLocale
         self.timeFormatter.dateStyle = .none
         self.timeFormatter.timeStyle = .short
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        calendar.timeZone = AppConstants.defaultTimeZone
         self.calendar = calendar
         let dateKeyFormatter = DateFormatter()
         dateKeyFormatter.calendar = calendar
         dateKeyFormatter.timeZone = calendar.timeZone
-        dateKeyFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateKeyFormatter.locale = AppConstants.posixLocale
         dateKeyFormatter.dateFormat = "yyyy-MM-dd"
         self.dateKeyFormatter = dateKeyFormatter
     }
@@ -218,7 +218,7 @@ final class PatientTodayViewModel: ObservableObject {
             toastMessage = message
         }
         Task { [weak self] in
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(for: .seconds(AppConstants.toastDuration))
             await MainActor.run {
                 withAnimation {
                     self?.toastMessage = nil
@@ -230,7 +230,7 @@ final class PatientTodayViewModel: ObservableObject {
     private func triggerHighlight(for slot: NotificationSlot) {
         highlightedSlot = slot
         Task { [weak self] in
-            try? await Task.sleep(for: .seconds(3))
+            try? await Task.sleep(for: .seconds(AppConstants.slotHighlightDuration))
             await MainActor.run {
                 if self?.highlightedSlot == slot {
                     self?.highlightedSlot = nil

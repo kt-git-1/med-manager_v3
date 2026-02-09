@@ -83,7 +83,7 @@ struct PatientDeleteView: View {
             .padding(28)
 
             if isDeleting {
-                Color.black.opacity(0.2)
+                Color.black.opacity(AppConstants.overlayOpacity)
                     .ignoresSafeArea()
                 LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
                     .padding(16)

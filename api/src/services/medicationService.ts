@@ -17,6 +17,7 @@ import type {
 import { prisma } from "../repositories/prisma";
 import { getPatientRecordById } from "../repositories/patientRepo";
 import { computeRefillPlan } from "../lib/computeRefillPlan";
+import { DEFAULT_TIMEZONE, INTL_PARSE_LOCALE } from "../constants";
 
 export type MedicationCreateInput = {
   patientId: string;
@@ -140,10 +141,10 @@ function computeInventoryState(
   return "NONE";
 }
 
-const INVENTORY_TZ = "Asia/Tokyo";
+const INVENTORY_TZ = DEFAULT_TIMEZONE;
 
 function inventoryDateKey(date: Date, tz: string) {
-  const formatter = new Intl.DateTimeFormat("en-US", {
+  const formatter = new Intl.DateTimeFormat(INTL_PARSE_LOCALE, {
     timeZone: tz,
     year: "numeric",
     month: "2-digit",

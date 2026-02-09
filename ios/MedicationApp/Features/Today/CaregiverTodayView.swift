@@ -40,7 +40,7 @@ struct CaregiverTodayView: View {
             .overlay {
                 if viewModel.isUpdating {
                     ZStack {
-                        Color.black.opacity(0.2)
+                        Color.black.opacity(AppConstants.overlayOpacity)
                             .ignoresSafeArea()
                         VStack {
                             Spacer()
@@ -259,18 +259,7 @@ struct CaregiverTodayView: View {
     }
 
     private func slotColor(for slot: NotificationSlot?) -> Color {
-        switch slot {
-        case .morning:
-            return Color.orange
-        case .noon:
-            return Color.blue
-        case .evening:
-            return Color.purple
-        case .bedtime:
-            return Color.indigo
-        case .none:
-            return Color.gray
-        }
+        AppConstants.slotColor(for: slot)
     }
 
     private func slot(for dose: ScheduleDoseDTO) -> NotificationSlot? {

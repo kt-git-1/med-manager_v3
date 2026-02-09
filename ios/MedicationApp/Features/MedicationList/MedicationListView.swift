@@ -24,11 +24,11 @@ final class MedicationListViewModel: ObservableObject {
         self.apiClient = apiClient
         self.sessionStore = sessionStore
         self.dateFormatter = DateFormatter()
-        self.dateFormatter.locale = Locale(identifier: "ja_JP")
+        self.dateFormatter.locale = AppConstants.japaneseLocale
         self.dateFormatter.dateStyle = .medium
         self.dateFormatter.timeStyle = .none
         self.dateTimeFormatter = DateFormatter()
-        self.dateTimeFormatter.locale = Locale(identifier: "ja_JP")
+        self.dateTimeFormatter.locale = AppConstants.japaneseLocale
         self.dateTimeFormatter.dateStyle = .medium
         self.dateTimeFormatter.timeStyle = .short
     }
@@ -88,7 +88,7 @@ final class MedicationListViewModel: ObservableObject {
 struct MedicationListView: View {
     private static let listCalendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        calendar.timeZone = AppConstants.defaultTimeZone
         return calendar
     }()
 
@@ -264,7 +264,7 @@ struct MedicationListView: View {
 
             if viewModel.isLoading {
                 ZStack {
-                    Color.black.opacity(0.2)
+                    Color.black.opacity(AppConstants.overlayOpacity)
                         .ignoresSafeArea()
                     VStack {
                         Spacer()
@@ -317,7 +317,7 @@ struct MedicationListView: View {
             toastMessage = message
         }
         Task {
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(for: .seconds(AppConstants.toastDuration))
             await MainActor.run {
                 withAnimation {
                     toastMessage = nil

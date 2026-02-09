@@ -89,7 +89,7 @@ final class CaregiverSessionController: ObservableObject {
             comment: "Caregiver scheduled banner"
         )
         let message = String(format: format, event.displayName, slotLabel)
-        bannerPresenter.show(message: message, duration: 4)
+        bannerPresenter.show(message: message, duration: AppConstants.bannerDefaultDuration + 1)
     }
 
     private func scheduledSlotLabel(for date: Date) -> String {
@@ -110,7 +110,7 @@ final class CaregiverSessionController: ObservableObject {
 
     private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.locale = AppConstants.japaneseLocale
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.dateFormat = "HH:mm"
         return formatter

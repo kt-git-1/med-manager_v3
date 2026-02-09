@@ -16,12 +16,12 @@ final class ReminderService {
         self.notificationCenter = notificationCenter
         self.preferencesStore = preferencesStore
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        calendar.timeZone = AppConstants.defaultTimeZone
         self.calendar = calendar
         let dateKeyFormatter = DateFormatter()
         dateKeyFormatter.calendar = calendar
         dateKeyFormatter.timeZone = calendar.timeZone
-        dateKeyFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateKeyFormatter.locale = AppConstants.posixLocale
         dateKeyFormatter.dateFormat = "yyyy-MM-dd"
         self.dateKeyFormatter = dateKeyFormatter
     }

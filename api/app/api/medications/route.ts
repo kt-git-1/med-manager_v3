@@ -11,6 +11,7 @@ import {
 import { validateMedication } from "../../../src/validators/medication";
 import { createMedication, listMedications, listMedicationInventory } from "../../../src/services/medicationService";
 import { generateScheduleForPatient } from "../../../src/services/scheduleService";
+import { SCHEDULE_LOOKAHEAD_DAYS } from "../../../src/constants";
 
 export const runtime = "nodejs";
 
@@ -49,7 +50,7 @@ export async function GET(request: Request) {
 
     const medications = await listMedications(resolvedPatientId);
     const rangeStart = new Date();
-    const rangeEnd = new Date(rangeStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const rangeEnd = new Date(rangeStart.getTime() + SCHEDULE_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000);
     const [doses, inventoryItems] = await Promise.all([
       generateScheduleForPatient({
         patientId: resolvedPatientId,

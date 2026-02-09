@@ -83,7 +83,7 @@ struct PatientRevokeView: View {
             .padding(28)
 
             if isRevoking {
-                Color.black.opacity(0.2)
+                Color.black.opacity(AppConstants.overlayOpacity)
                     .ignoresSafeArea()
                 LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
                     .padding(16)
