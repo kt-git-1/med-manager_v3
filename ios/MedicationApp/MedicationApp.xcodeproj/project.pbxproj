@@ -17,6 +17,7 @@
 		2A2B3C4D5E6F708192A3B4C9 /* HistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4C9 /* HistoryViewModel.swift */; };
 		2A2B3C4D5E6F708192A3B4CA /* CaregiverHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4CA /* CaregiverHistoryView.swift */; };
 		2D3E4F5A6B7C8D9E0F1A2B3C /* StateViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C4D5E6F708192A3B4C5D6E7 /* StateViews.swift */; };
+		2D3E4F5A6B7C8D9E0F1A2B3D /* NavigationHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C4D5E6F708192A3B4C5D6E8 /* NavigationHeaderView.swift */; };
 		3E4F5A6B7C8D9E0F1A2B3C4D /* PrnDoseRecordDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F5A6B7C8D9E0F1A2B3C4D5E /* PrnDoseRecordDTO.swift */; };
 		403B60DF0710DEE297E332E7 /* MedicationListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB55437B073B6E2D5D88F3AE /* MedicationListViewModelTests.swift */; };
 		4390B9302F3778C600C4A488 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4390B92F2F3778C600C4A488 /* Assets.xcassets */; };
@@ -35,6 +36,7 @@
 		A1B2C3D4E5F6A7B8C9D0E1F9 /* PatientCreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F8 /* PatientCreateView.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1FB /* PatientLinkCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1FA /* PatientLinkCodeView.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1FD /* PatientRevokeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1FC /* PatientRevokeView.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E203 /* PatientDeleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E204 /* PatientDeleteView.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1FF /* CaregiverHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1FE /* CaregiverHomeView.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E201 /* PatientDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E200 /* PatientDTO.swift */; };
 		A2B3C4D5E6F708192A3B4C5D /* SessionStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B3C4D5E6F708192A3B4C5C /* SessionStoreTests.swift */; };
@@ -101,6 +103,7 @@
 		2F3B3EC234D1D71D44BC2C6E /* LinkingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkingService.swift; sourceTree = "<group>"; };
 		30F0665AE9C17BFB7BD43D41 /* MedicationApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MedicationApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3C4D5E6F708192A3B4C5D6E7 /* StateViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateViews.swift; sourceTree = "<group>"; };
+		3C4D5E6F708192A3B4C5D6E8 /* NavigationHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationHeaderView.swift; sourceTree = "<group>"; };
 		4390B92F2F3778C600C4A488 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		48D944249F964B12755FD2DF /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		4F5A6B7C8D9E0F1A2B3C4D5E /* PrnDoseRecordDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrnDoseRecordDTO.swift; sourceTree = "<group>"; };
@@ -116,6 +119,7 @@
 		A1B2C3D4E5F6A7B8C9D0E1F8 /* PatientCreateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientCreateView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6A7B8C9D0E1FA /* PatientLinkCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientLinkCodeView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6A7B8C9D0E1FC /* PatientRevokeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientRevokeView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E204 /* PatientDeleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientDeleteView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6A7B8C9D0E1FE /* CaregiverHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverHomeView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6A7B8C9D0E200 /* PatientDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientDTO.swift; sourceTree = "<group>"; };
 		A2B3C4D5E6F708192A3B4C5C /* SessionStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStoreTests.swift; sourceTree = "<group>"; };
@@ -209,6 +213,7 @@
 			isa = PBXGroup;
 			children = (
 				3C4D5E6F708192A3B4C5D6E7 /* StateViews.swift */,
+				3C4D5E6F708192A3B4C5D6E8 /* NavigationHeaderView.swift */,
 				F0F1F2F3F4F5F6F7F8F9FAFC /* FullScreenContainer.swift */,
 				F2A3B4C5D6E7F8091A2B3C53 /* SchedulingRefreshOverlay.swift */,
 			);
@@ -270,6 +275,7 @@
 				A1B2C3D4E5F6A7B8C9D0E1F8 /* PatientCreateView.swift */,
 				A1B2C3D4E5F6A7B8C9D0E1FA /* PatientLinkCodeView.swift */,
 				A1B2C3D4E5F6A7B8C9D0E1FC /* PatientRevokeView.swift */,
+				A1B2C3D4E5F6A7B8C9D0E204 /* PatientDeleteView.swift */,
 			);
 			path = PatientManagement;
 			sourceTree = "<group>";
@@ -546,6 +552,7 @@
 				A1B2C3D4E5F6A7B8C9D0E1F9 /* PatientCreateView.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1FB /* PatientLinkCodeView.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1FD /* PatientRevokeView.swift in Sources */,
+				A1B2C3D4E5F6A7B8C9D0E203 /* PatientDeleteView.swift in Sources */,
 				E7F8A9B0C1D2E3F405162738 /* CaregiverTodayView.swift in Sources */,
 				F8A9B0C1D2E3F40516273849 /* CaregiverTodayViewModel.swift in Sources */,
 				E1F2A3B4C5D6E7F8091A2B3C /* PatientTodayView.swift in Sources */,
@@ -558,6 +565,7 @@
 				C531B4EE2AF37C0A10FE41B1 /* RootView.swift in Sources */,
 				C6F26CAD5BC8841754DDEDEE /* SessionStore.swift in Sources */,
 				2D3E4F5A6B7C8D9E0F1A2B3C /* StateViews.swift in Sources */,
+				2D3E4F5A6B7C8D9E0F1A2B3D /* NavigationHeaderView.swift in Sources */,
 				F0F1F2F3F4F5F6F7F8F9FAFB /* FullScreenContainer.swift in Sources */,
 				E2A3B4C5D6E7F8091A2B3C53 /* SchedulingRefreshOverlay.swift in Sources */,
 				F0F1F2F3F4F5F6F7F8F9FB01 /* SplashView.swift in Sources */,

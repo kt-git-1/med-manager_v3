@@ -130,14 +130,13 @@ struct PatientManagementView: View {
         NavigationStack {
             contentView
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
-            .navigationTitle(NSLocalizedString("caregiver.patients.title", comment: "Patients title"))
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Image(systemName: "person.2")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(Color.accentColor)
-                        .accessibilityHidden(true)
-                }
+                NavigationHeaderView(
+                    icon: "person.2.circle.fill",
+                    title: NSLocalizedString("caregiver.patients.title", comment: "Patients title")
+                )
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button(NSLocalizedString("caregiver.patients.add", comment: "Add patient")) {
                         showingCreate = true
@@ -161,7 +160,9 @@ struct PatientManagementView: View {
                     onConfirm: {
                         await viewModel.revokePatient(patientId: patient.id)
                     },
-                    onSuccess: showToast,
+                    onSuccess: { message in
+                        globalBannerPresenter.show(message: message, duration: 2)
+                    },
                     onCancel: {
                         revokeTarget = nil
                     }
@@ -173,7 +174,9 @@ struct PatientManagementView: View {
                     onConfirm: {
                         await viewModel.deletePatient(patientId: patient.id)
                     },
-                    onSuccess: showToast,
+                    onSuccess: { message in
+                        globalBannerPresenter.show(message: message, duration: 2)
+                    },
                     onCancel: {
                         deleteTarget = nil
                     }

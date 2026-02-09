@@ -31,15 +31,13 @@ struct PatientReadOnlyView: View {
                     )
                     }
                 }
-                .navigationTitle(navigationTitle)
-                .navigationBarTitleDisplayMode(navigationTitleDisplayMode)
+                .navigationTitle("")
+                .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Image(systemName: navigationIconName)
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(Color.accentColor)
-                            .accessibilityHidden(true)
-                    }
+                    NavigationHeaderView(
+                        icon: navigationIconName,
+                        title: navigationTitle
+                    )
                 }
             }
             .id(selectedTab)
@@ -81,23 +79,14 @@ struct PatientReadOnlyView: View {
         }
     }
 
-    private var navigationTitleDisplayMode: NavigationBarItem.TitleDisplayMode {
-        switch selectedTab {
-        case .today:
-            return .large
-        case .history, .settings:
-            return .inline
-        }
-    }
-
     private var navigationIconName: String {
         switch selectedTab {
         case .today:
-            return "calendar"
+            return "calendar.circle.fill"
         case .history:
-            return "clock"
+            return "clock.circle.fill"
         case .settings:
-            return "gearshape"
+            return "gearshape.circle.fill"
         }
     }
 }

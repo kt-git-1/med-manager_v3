@@ -27,15 +27,13 @@ struct CaregiverHomeView: View {
                         sessionStore: sessionStore,
                         onOpenPatients: { selectedTab = .patients }
                     )
-                    .navigationTitle(NSLocalizedString("caregiver.tabs.history", comment: "History tab"))
+                    .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Image(systemName: "clock")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(Color.accentColor)
-                                .accessibilityHidden(true)
-                        }
+                        NavigationHeaderView(
+                            icon: "clock.circle.fill",
+                            title: NSLocalizedString("caregiver.tabs.history", comment: "History tab")
+                        )
                     }
                 }
             case .inventory:
@@ -353,15 +351,13 @@ struct CaregiverMedicationView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
-            .navigationTitle(NSLocalizedString("caregiver.tabs.medications", comment: "Medications tab"))
-            .navigationBarTitleDisplayMode(.large)
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Image(systemName: "pills")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(Color.accentColor)
-                        .accessibilityHidden(true)
-                }
+                NavigationHeaderView(
+                    icon: "pills.circle.fill",
+                    title: NSLocalizedString("caregiver.tabs.medications", comment: "Medications tab")
+                )
             }
         }
         .onAppear {

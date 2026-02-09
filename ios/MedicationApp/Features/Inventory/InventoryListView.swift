@@ -131,15 +131,13 @@ struct InventoryListView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .navigationTitle(NSLocalizedString("caregiver.tabs.inventory", comment: "Inventory tab"))
-                .navigationBarTitleDisplayMode(.large)
+                .navigationTitle("")
+                .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Image(systemName: "archivebox")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(Color.accentColor)
-                            .accessibilityHidden(true)
-                    }
+                    NavigationHeaderView(
+                        icon: "archivebox.circle.fill",
+                        title: NSLocalizedString("caregiver.tabs.inventory", comment: "Inventory tab")
+                    )
                 }
             },
             overlay: viewModel.isUpdating ? AnyView(updatingOverlay) : nil
