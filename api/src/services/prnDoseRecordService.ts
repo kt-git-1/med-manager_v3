@@ -9,6 +9,7 @@ import { createDoseRecordEvent } from "../repositories/doseRecordEventRepo";
 import { getMedicationRecordForPatient } from "../repositories/medicationRepo";
 import { getPatientRecordById } from "../repositories/patientRepo";
 import { applyInventoryDeltaForDoseRecord } from "./medicationService";
+import { notifyCaregiversOfDoseRecord } from "./pushNotificationService";
 import { getLocalDateKey } from "./scheduleService";
 
 export type PrnDoseRecordCreateInput = {
@@ -54,6 +55,15 @@ export async function createPrnRecord(
       displayName: patient.displayName,
       medicationName: medication.name,
       isPrn: true
+    });
+
+    // Fire-and-forget: send push notifications to linked caregivers
+    void notifyCaregiversOfDoseRecord({
+      patientId: record.patientId,
+      displayName: patient.displayName,
+      medicationName: medication.name,
+      isPrn: true,
+      takenAt: record.takenAt,
     });
   }
 

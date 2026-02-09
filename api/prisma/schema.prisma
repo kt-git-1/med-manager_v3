@@ -264,3 +264,15 @@ model LinkingAttempt {
 
   @@index([lockedUntil])
 }
+
+model DeviceToken {
+  id           String   @id @default(uuid())
+  caregiverId  String
+  token        String
+  platform     String   @default("ios")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([caregiverId, token])
+  @@index([caregiverId])
+}

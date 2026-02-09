@@ -108,18 +108,7 @@ struct PatientCreateView: View {
             .background(Color(.systemGroupedBackground))
             .overlay {
                 if isSaving {
-                    ZStack {
-                        Color.black.opacity(AppConstants.overlayOpacity)
-                            .ignoresSafeArea()
-                        VStack {
-                            Spacer()
-                            LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                                .padding(16)
-                                .glassEffect(.regular, in: .rect(cornerRadius: 16))
-                            Spacer()
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    SchedulingRefreshOverlay()
                 }
             }
         }

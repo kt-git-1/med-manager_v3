@@ -622,6 +622,38 @@ final class APIClient {
         return url
     }
 
+    // MARK: - Device Tokens (Push Notifications)
+
+    func registerDeviceToken(token: String, platform: String = "ios") async throws {
+        let url = baseURL.appendingPathComponent("api/device-tokens")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let authToken = tokenForCurrentMode() {
+            request.addValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        }
+        let payload: [String: String] = ["token": token, "platform": platform]
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+    }
+
+    func unregisterDeviceToken(token: String) async throws {
+        let url = baseURL.appendingPathComponent("api/device-tokens")
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let authToken = tokenForCurrentMode() {
+            request.addValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        }
+        let payload: [String: String] = ["token": token]
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+    }
+
+    // MARK: - Private Helpers
+
     private func medicationEncoder() -> JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601

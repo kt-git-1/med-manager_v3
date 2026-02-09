@@ -297,18 +297,7 @@ private struct PatientTodayBaseView: View {
     @ViewBuilder
     private var updatingOverlay: some View {
         if viewModel.isUpdating {
-            ZStack {
-                Color.black.opacity(AppConstants.overlayOpacity)
-                    .ignoresSafeArea()
-                VStack {
-                    Spacer()
-                    LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                        .padding(16)
-                        .glassEffect(.regular, in: .rect(cornerRadius: 16))
-                    Spacer()
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            SchedulingRefreshOverlay()
         }
     }
 
@@ -528,18 +517,7 @@ private struct PrnMedicationListView: View {
         .navigationBarTitleDisplayMode(.inline)
         .overlay {
             if isDisabled {
-                ZStack {
-                    Color.black.opacity(AppConstants.overlayOpacity)
-                        .ignoresSafeArea()
-                    VStack {
-                        Spacer()
-                        LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                            .padding(16)
-                            .glassEffect(.regular, in: .rect(cornerRadius: 16))
-                        Spacer()
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                SchedulingRefreshOverlay()
             }
         }
         .alert(
@@ -916,10 +894,6 @@ private struct PatientTodayRow: View {
     }
 
     private var shouldShowDoseCount: Bool {
-        let trimmed = dose.medicationSnapshot.dosageText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty || trimmed == "不明" {
-            return false
-        }
         return true
     }
 
@@ -1040,10 +1014,6 @@ private struct PrnMedicationCard: View {
     }
 
     private var shouldShowDoseCount: Bool {
-        let trimmed = medication.dosageText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty || trimmed == "不明" {
-            return false
-        }
         return true
     }
 

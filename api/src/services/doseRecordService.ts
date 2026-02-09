@@ -11,6 +11,7 @@ import { getMedicationRecordForPatient } from "../repositories/medicationRepo";
 import { getPatientRecordById } from "../repositories/patientRepo";
 import { assertCaregiverPatientScope } from "../middleware/auth";
 import { applyInventoryDeltaForDoseRecord } from "./medicationService";
+import { notifyCaregiversOfDoseRecord } from "./pushNotificationService";
 import { DOSE_MISSED_WINDOW_MS } from "../constants";
 
 export type DoseRecordCreateInput = DoseRecordKey & {
@@ -49,6 +50,16 @@ export async function createDoseRecordIdempotent(
     medicationName: medication?.name,
     isPrn: medication?.isPrn ?? false
   });
+
+  // Fire-and-forget: send push notifications to linked caregivers
+  void notifyCaregiversOfDoseRecord({
+    patientId: record.patientId,
+    displayName: patient.displayName,
+    medicationName: medication?.name,
+    isPrn: medication?.isPrn ?? false,
+    takenAt: record.takenAt,
+  });
+
   if (medication) {
     await applyInventoryDeltaForDoseRecord({
       patientId: record.patientId,

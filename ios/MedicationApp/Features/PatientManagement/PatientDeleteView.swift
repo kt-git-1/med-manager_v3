@@ -83,11 +83,7 @@ struct PatientDeleteView: View {
             .padding(28)
 
             if isDeleting {
-                Color.black.opacity(AppConstants.overlayOpacity)
-                    .ignoresSafeArea()
-                LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                    .padding(16)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 16))
+                SchedulingRefreshOverlay()
             }
         }
         .accessibilityIdentifier("PatientDeleteView")

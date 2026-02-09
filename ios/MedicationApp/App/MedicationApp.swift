@@ -4,6 +4,7 @@ import UserNotifications
 
 @main
 struct MedicationApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var sessionStore: SessionStore
     @StateObject private var notificationRouter: NotificationDeepLinkRouter
     @StateObject private var reminderBannerPresenter: ReminderBannerPresenter
@@ -17,9 +18,10 @@ struct MedicationApp: App {
         let notificationRouter = NotificationDeepLinkRouter()
         let reminderBannerPresenter = ReminderBannerPresenter()
         let globalBannerPresenter = GlobalBannerPresenter()
+        let deviceTokenManager = DeviceTokenManager()
         let caregiverSessionController = CaregiverSessionController(
             sessionStore: sessionStore,
-            bannerPresenter: globalBannerPresenter
+            deviceTokenManager: deviceTokenManager
         )
         _sessionStore = StateObject(wrappedValue: sessionStore)
         _notificationRouter = StateObject(wrappedValue: notificationRouter)
@@ -65,6 +67,10 @@ struct MedicationApp: App {
             .environmentObject(reminderBannerPresenter)
             .environmentObject(globalBannerPresenter)
             .environmentObject(caregiverSessionController)
+            .onAppear {
+                // Wire AppDelegate → DeviceTokenManager for APNs callbacks
+                appDelegate.deviceTokenManager = caregiverSessionController.tokenManager
+            }
         }
     }
 }

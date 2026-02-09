@@ -144,14 +144,7 @@ struct InventoryDetailView: View {
                 }
 
                 if viewModel.isUpdating {
-                    ZStack {
-                        Color.black.opacity(AppConstants.overlayOpacity)
-                            .ignoresSafeArea()
-                        LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                            .padding(16)
-                            .glassEffect(.regular, in: .rect(cornerRadius: 16))
-                    }
-                    .accessibilityIdentifier("InventoryUpdatingOverlay")
+                    SchedulingRefreshOverlay()
                 }
             }
             .navigationTitle(NSLocalizedString("caregiver.tabs.inventory", comment: "Inventory tab"))

@@ -83,11 +83,7 @@ struct PatientRevokeView: View {
             .padding(28)
 
             if isRevoking {
-                Color.black.opacity(AppConstants.overlayOpacity)
-                    .ignoresSafeArea()
-                LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                    .padding(16)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 16))
+                SchedulingRefreshOverlay()
             }
         }
         .accessibilityIdentifier("PatientRevokeView")

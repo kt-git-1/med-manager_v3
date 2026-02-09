@@ -318,18 +318,7 @@ struct MedicationListView: View {
             }
 
             if viewModel.isLoading {
-                ZStack {
-                    Color.black.opacity(AppConstants.overlayOpacity)
-                        .ignoresSafeArea()
-                    VStack {
-                        Spacer()
-                        LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                            .padding(16)
-                .glassEffect(.regular, in: .rect(cornerRadius: 16))
-                        Spacer()
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                SchedulingRefreshOverlay()
             }
         }
         .onAppear {

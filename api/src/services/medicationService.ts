@@ -17,6 +17,7 @@ import type {
 import { prisma } from "../repositories/prisma";
 import { getPatientRecordById } from "../repositories/patientRepo";
 import { computeRefillPlan } from "../lib/computeRefillPlan";
+import { notifyCaregiversOfInventoryAlert } from "./pushNotificationService";
 import { DEFAULT_TIMEZONE, INTL_PARSE_LOCALE } from "../constants";
 
 export type MedicationCreateInput = {
@@ -314,6 +315,16 @@ export async function updateMedicationInventorySettings(input: {
     return updatedMedication;
   });
 
+  if (shouldEmitAlert) {
+    void notifyCaregiversOfInventoryAlert({
+      patientId: medication.patientId,
+      patientDisplayName: patient?.displayName,
+      medicationName: medication.name,
+      alertType: nextState as "LOW" | "OUT",
+      remaining: nextQuantity,
+    });
+  }
+
   return buildInventoryItemWithPlan(updated, regimens);
 }
 
@@ -380,6 +391,16 @@ export async function adjustMedicationInventory(
     }
     return updatedMedication;
   });
+
+  if (shouldEmitAlert) {
+    void notifyCaregiversOfInventoryAlert({
+      patientId: medication.patientId,
+      patientDisplayName: patient?.displayName,
+      medicationName: medication.name,
+      alertType: nextState as "LOW" | "OUT",
+      remaining: nextQuantity,
+    });
+  }
 
   return buildInventoryItemWithPlan(updated, regimens);
 }

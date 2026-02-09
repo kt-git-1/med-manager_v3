@@ -271,18 +271,7 @@ struct PatientManagementView: View {
         }
         .overlay {
             if viewModel.isLoading || isSavingDetail {
-                ZStack {
-                    Color.black.opacity(AppConstants.overlayOpacity)
-                        .ignoresSafeArea()
-                    VStack {
-                        Spacer()
-                        LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                            .padding(16)
-                            .glassEffect(.regular, in: .rect(cornerRadius: 16))
-                        Spacer()
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                SchedulingRefreshOverlay()
             }
         }
         .accessibilityIdentifier("PatientManagementView")
@@ -627,18 +616,7 @@ struct PatientManagementView: View {
     @ViewBuilder
     private var savingOverlay: some View {
         if isSavingDetail {
-            ZStack {
-                Color.black.opacity(AppConstants.overlayOpacity)
-                    .ignoresSafeArea()
-                VStack {
-                    Spacer()
-                    LoadingStateView(message: NSLocalizedString("common.updating", comment: "Updating"))
-                        .padding(16)
-                        .glassEffect(.regular, in: .rect(cornerRadius: 16))
-                    Spacer()
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            SchedulingRefreshOverlay()
         }
     }
 
