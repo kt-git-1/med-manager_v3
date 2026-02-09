@@ -73,6 +73,7 @@
 "medication.list.nextDose" = "次回予定";
 "medication.list.schedule.daily.format" = "毎日 %@";
 "medication.list.schedule.weekly.format" = "%@ %@";
+"medication.list.dose.format" = "1回%@錠";
 "medication.list.badge.scheduled" = "定時";
 "medication.list.badge.prn" = "頓服";
 "medication.toast.created" = "薬を追加しました";

@@ -4,6 +4,7 @@ struct MedicationListItem: Identifiable {
     let medication: MedicationDTO
     let name: String
     let scheduleText: String?
+    let doseText: String
 
     var id: String { medication.id }
 }
@@ -58,7 +59,8 @@ final class MedicationListViewModel: ObservableObject {
                     MedicationListItem(
                         medication: medication,
                         name: medication.name,
-                        scheduleText: buildScheduleText(medication)
+                        scheduleText: buildScheduleText(medication),
+                        doseText: buildDoseText(medication)
                     )
                 }
             } catch {
@@ -66,6 +68,16 @@ final class MedicationListViewModel: ObservableObject {
                 errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
             }
         }
+    }
+
+    // MARK: - Dose text
+
+    private func buildDoseText(_ medication: MedicationDTO) -> String {
+        let count = AppConstants.formatDecimal(medication.doseCountPerIntake)
+        return String(
+            format: NSLocalizedString("medication.list.dose.format", comment: "Dose per intake"),
+            count
+        )
     }
 
     // MARK: - Schedule text
@@ -411,11 +423,20 @@ struct MedicationListView: View {
                         medicationTypeBadge(isPrn: item.medication.isPrn)
                     }
                 }
-                if let schedule = item.scheduleText {
-                    Text(schedule)
-                        .font(.body)
+                HStack(spacing: 6) {
+                    if let schedule = item.scheduleText {
+                        Text(schedule)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel(NSLocalizedString("a11y.medication.schedule", comment: "Schedule") + " " + schedule)
+                        Text("·")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Text(item.doseText)
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .accessibilityLabel(NSLocalizedString("a11y.medication.schedule", comment: "Schedule") + " " + schedule)
+                        .accessibilityLabel(item.doseText)
                 }
             }
             Spacer()
