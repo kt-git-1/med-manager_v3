@@ -9,7 +9,7 @@ import {
   requirePatient
 } from "../../../src/middleware/auth";
 import { validateMedication } from "../../../src/validators/medication";
-import { createMedication, listMedications, listMedicationInventory } from "../../../src/services/medicationService";
+import { createMedication, listMedications, listMedicationInventory, listActiveRegimens } from "../../../src/services/medicationService";
 import { generateScheduleForPatient } from "../../../src/services/scheduleService";
 import { SCHEDULE_LOOKAHEAD_DAYS } from "../../../src/constants";
 
@@ -51,13 +51,14 @@ export async function GET(request: Request) {
     const medications = await listMedications(resolvedPatientId);
     const rangeStart = new Date();
     const rangeEnd = new Date(rangeStart.getTime() + SCHEDULE_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000);
-    const [doses, inventoryItems] = await Promise.all([
+    const [doses, inventoryItems, regimens] = await Promise.all([
       generateScheduleForPatient({
         patientId: resolvedPatientId,
         from: rangeStart,
         to: rangeEnd
       }),
-      listMedicationInventory(resolvedPatientId)
+      listMedicationInventory(resolvedPatientId),
+      listActiveRegimens(resolvedPatientId)
     ]);
     const nextByMedication = new Map<string, string>();
     for (const dose of doses) {
@@ -69,10 +70,21 @@ export async function GET(request: Request) {
     for (const item of inventoryItems) {
       inventoryOutMap.set(item.medicationId, item.out);
     }
+    const regimenByMedication = new Map<string, { times: string[]; daysOfWeek: string[] }>();
+    for (const regimen of regimens) {
+      if (!regimenByMedication.has(regimen.medicationId)) {
+        regimenByMedication.set(regimen.medicationId, {
+          times: regimen.times,
+          daysOfWeek: regimen.daysOfWeek
+        });
+      }
+    }
     const enriched = medications.map((medication) => ({
       ...medication,
       nextScheduledAt: nextByMedication.get(medication.id) ?? null,
-      inventoryOut: inventoryOutMap.get(medication.id) ?? false
+      inventoryOut: inventoryOutMap.get(medication.id) ?? false,
+      regimenTimes: regimenByMedication.get(medication.id)?.times ?? null,
+      regimenDaysOfWeek: regimenByMedication.get(medication.id)?.daysOfWeek ?? null
     }));
     return new Response(JSON.stringify({ data: enriched }), {
       headers: { "content-type": "application/json" }

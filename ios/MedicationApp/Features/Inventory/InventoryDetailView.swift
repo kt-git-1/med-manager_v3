@@ -207,6 +207,12 @@ struct InventoryDetailView: View {
             if item.isPrn {
                 Text(NSLocalizedString("medication.list.badge.prn", comment: "PRN badge"))
                     .font(.headline)
+                Text(String(
+                    format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"),
+                    item.doseCountPerIntake
+                ))
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
             } else {
                 Text(refillDaysText)
                     .font(.headline)

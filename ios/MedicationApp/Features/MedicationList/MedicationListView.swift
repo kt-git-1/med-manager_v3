@@ -3,8 +3,7 @@ import SwiftUI
 struct MedicationListItem: Identifiable {
     let medication: MedicationDTO
     let name: String
-    let startDateText: String
-    let nextScheduledText: String?
+    let scheduleText: String?
 
     var id: String { medication.id }
 }
@@ -17,26 +16,23 @@ final class MedicationListViewModel: ObservableObject {
 
     private let apiClient: APIClient
     private let sessionStore: SessionStore
-    private let dateFormatter: DateFormatter
-    private let dateTimeFormatter: DateFormatter
+    private let preferencesStore: NotificationPreferencesStore
 
-    init(apiClient: APIClient, sessionStore: SessionStore) {
+    init(apiClient: APIClient, sessionStore: SessionStore, preferencesStore: NotificationPreferencesStore) {
         self.apiClient = apiClient
         self.sessionStore = sessionStore
-        self.dateFormatter = DateFormatter()
-        self.dateFormatter.locale = AppConstants.japaneseLocale
-        self.dateFormatter.dateStyle = .medium
-        self.dateFormatter.timeStyle = .none
-        self.dateTimeFormatter = DateFormatter()
-        self.dateTimeFormatter.locale = AppConstants.japaneseLocale
-        self.dateTimeFormatter.dateStyle = .medium
-        self.dateTimeFormatter.timeStyle = .short
+        self.preferencesStore = preferencesStore
     }
 
     convenience init() {
         let sessionStore = SessionStore()
         let baseURL = SessionStore.resolveBaseURL()
-        self.init(apiClient: APIClient(baseURL: baseURL, sessionStore: sessionStore), sessionStore: sessionStore)
+        let prefs = NotificationPreferencesStore()
+        self.init(
+            apiClient: APIClient(baseURL: baseURL, sessionStore: sessionStore),
+            sessionStore: sessionStore,
+            preferencesStore: prefs
+        )
     }
 
     func load() {
@@ -62,8 +58,7 @@ final class MedicationListViewModel: ObservableObject {
                     MedicationListItem(
                         medication: medication,
                         name: medication.name,
-                        startDateText: dateFormatter.string(from: medication.startDate),
-                        nextScheduledText: medication.nextScheduledAt.map { dateTimeFormatter.string(from: $0) }
+                        scheduleText: buildScheduleText(medication)
                     )
                 }
             } catch {
@@ -71,6 +66,49 @@ final class MedicationListViewModel: ObservableObject {
                 errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
             }
         }
+    }
+
+    // MARK: - Schedule text
+
+    private func buildScheduleText(_ medication: MedicationDTO) -> String? {
+        if medication.isPrn {
+            return nil
+        }
+        guard let times = medication.regimenTimes, !times.isEmpty else {
+            return nil
+        }
+        let slotLabels = times.compactMap { slotLabel(for: $0) }
+        let timePart = slotLabels.isEmpty ? times.joined(separator: "・") : slotLabels.joined(separator: "・")
+
+        let daysOfWeek = medication.regimenDaysOfWeek ?? []
+        if daysOfWeek.isEmpty {
+            return String(
+                format: NSLocalizedString("medication.list.schedule.daily.format", comment: "Daily schedule"),
+                timePart
+            )
+        } else {
+            let dayLabels = ScheduleDay.allCases
+                .filter { daysOfWeek.contains($0.rawValue) }
+                .map(\.shortLabel)
+            let dayPart = dayLabels.joined(separator: "・")
+            return String(
+                format: NSLocalizedString("medication.list.schedule.weekly.format", comment: "Weekly schedule"),
+                dayPart,
+                timePart
+            )
+        }
+    }
+
+    private func slotLabel(for timeString: String) -> String? {
+        let normalized = timeString.trimmingCharacters(in: .whitespacesAndNewlines)
+        for slot in ScheduleTimeSlot.allCases {
+            let time = preferencesStore.slotTime(for: slot.notificationSlot)
+            let configured = String(format: "%02d:%02d", time.hour, time.minute)
+            if configured == normalized {
+                return slot.label
+            }
+        }
+        return nil
     }
 
     private func currentPatientId() -> String? {
@@ -110,10 +148,15 @@ struct MedicationListView: View {
         self.onOpenPatients = onOpenPatients
         self.headerView = headerView
         let baseURL = SessionStore.resolveBaseURL()
+        let prefs = NotificationPreferencesStore()
+        if store.mode == .caregiver, let patientId = store.currentPatientId {
+            prefs.switchPatient(patientId)
+        }
         _viewModel = StateObject(
             wrappedValue: MedicationListViewModel(
                 apiClient: APIClient(baseURL: baseURL, sessionStore: store),
-                sessionStore: store
+                sessionStore: store,
+                preferencesStore: prefs
             )
         )
     }
@@ -368,13 +411,11 @@ struct MedicationListView: View {
                         medicationTypeBadge(isPrn: item.medication.isPrn)
                     }
                 }
-                Text("\(NSLocalizedString("medication.list.startDate", comment: "Start date")): \(item.startDateText)")
-                    .font(.body)
-                    .accessibilityLabel("開始日 \(item.startDateText)")
-                if let next = item.nextScheduledText {
-                    Text("\(NSLocalizedString("medication.list.nextDose", comment: "Next dose")): \(next)")
+                if let schedule = item.scheduleText {
+                    Text(schedule)
                         .font(.body)
-                        .accessibilityLabel("次回予定 \(next)")
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(NSLocalizedString("a11y.medication.schedule", comment: "Schedule") + " " + schedule)
                 }
             }
             Spacer()

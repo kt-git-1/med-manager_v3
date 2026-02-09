@@ -71,6 +71,8 @@
 "medication.list.section.expired.prn" = "期間終了（頓服）";
 "medication.list.startDate" = "開始日";
 "medication.list.nextDose" = "次回予定";
+"medication.list.schedule.daily.format" = "毎日 %@";
+"medication.list.schedule.weekly.format" = "%@ %@";
 "medication.list.badge.scheduled" = "定時";
 "medication.list.badge.prn" = "頓服";
 "medication.toast.created" = "薬を追加しました";
@@ -85,8 +87,8 @@
 "medication.form.section.notes" = "メモ";
 "medication.detail.notes.empty" = "メモはありません";
 "medication.form.name" = "薬名";
-"medication.form.dosage.value" = "用量 (数値)";
-"medication.form.dosage.unit" = "用量単位";
+"medication.form.dosage.value" = "用量";
+"medication.form.dosage.unit" = "単位";
 "medication.form.dose.count" = "服用数/回";
 "medication.form.prn.toggle" = "頓服（必要時に服用）";
 "medication.form.prn.instructions" = "頓服の説明（任意）";
@@ -362,6 +364,8 @@
 "a11y.medication.name" = "薬名";
 "a11y.medication.dosageValue" = "用量数値";
 "a11y.medication.dosageUnit" = "用量単位";
+"a11y.medication.dosage" = "用量";
+"a11y.medication.schedule" = "スケジュール";
 "a11y.medication.doseCount" = "服用数";
 "a11y.medication.prn" = "頓服設定";
 "a11y.medication.prnInstructions" = "頓服の説明";

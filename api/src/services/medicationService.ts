@@ -58,6 +58,10 @@ export async function listMedications(patientId: string): Promise<Medication[]> 
   return listMedicationRecords(patientId);
 }
 
+export async function listActiveRegimens(patientId: string): Promise<Regimen[]> {
+  return prisma.regimen.findMany({ where: { patientId, enabled: true } });
+}
+
 export async function getMedication(id: string): Promise<Medication | null> {
   return getMedicationRecord(id);
 }

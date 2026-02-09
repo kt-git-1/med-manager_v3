@@ -63,19 +63,30 @@ struct MedicationFormView: View {
                     TextField(NSLocalizedString("medication.form.name", comment: "Medication name"), text: $viewModel.name)
                         .accessibilityLabel(NSLocalizedString("a11y.medication.name", comment: "Name"))
                 }
-                formRow(icon: "number", iconColor: .orange) {
-                    TextField(NSLocalizedString("medication.form.dosage.value", comment: "Dosage value"), text: $viewModel.dosageStrengthValue)
+                formRow(icon: "scalemass", iconColor: .orange) {
+                    HStack(spacing: 8) {
+                        TextField(
+                            NSLocalizedString("medication.form.dosage.value", comment: "Dosage value"),
+                            text: $viewModel.dosageStrengthValue
+                        )
                         .keyboardType(.decimalPad)
                         .disabled(viewModel.dosageStrengthUnit == NSLocalizedString("common.dosage.unknown", comment: "Unknown dosage"))
                         .accessibilityLabel(NSLocalizedString("a11y.medication.dosageValue", comment: "Dosage value"))
-                }
-                formRow(icon: "scalemass", iconColor: .purple) {
-                    Picker(NSLocalizedString("medication.form.dosage.unit", comment: "Dosage unit"), selection: $viewModel.dosageStrengthUnit) {
-                        ForEach(dosageUnits, id: \.self) { unit in
-                            Text(unit.isEmpty ? NSLocalizedString("common.select", comment: "Select") : unit).tag(unit)
+
+                        Divider()
+                            .frame(height: 20)
+
+                        Picker(NSLocalizedString("medication.form.dosage.unit", comment: "Dosage unit"), selection: $viewModel.dosageStrengthUnit) {
+                            ForEach(dosageUnits, id: \.self) { unit in
+                                Text(unit.isEmpty ? NSLocalizedString("common.select", comment: "Select") : unit).tag(unit)
+                            }
                         }
+                        .labelsHidden()
+                        .fixedSize()
+                        .accessibilityLabel(NSLocalizedString("a11y.medication.dosageUnit", comment: "Dosage unit"))
                     }
-                    .accessibilityLabel(NSLocalizedString("a11y.medication.dosageUnit", comment: "Dosage unit"))
+                    .accessibilityElement(children: .contain)
+                    .accessibilityLabel(NSLocalizedString("a11y.medication.dosage", comment: "Dosage"))
                 }
                 Stepper(
                     value: intBinding(for: $viewModel.doseCountPerIntake),

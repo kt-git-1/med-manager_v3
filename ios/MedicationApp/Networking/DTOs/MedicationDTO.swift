@@ -21,6 +21,8 @@ struct MedicationDTO: Decodable, Identifiable {
     let isActive: Bool
     let isArchived: Bool
     let nextScheduledAt: Date?
+    let regimenTimes: [String]?
+    let regimenDaysOfWeek: [String]?
 
     var isOutOfStock: Bool {
         inventoryEnabled && inventoryOut
@@ -47,6 +49,8 @@ struct MedicationDTO: Decodable, Identifiable {
         case isActive
         case isArchived
         case nextScheduledAt
+        case regimenTimes
+        case regimenDaysOfWeek
     }
 
     init(from decoder: Decoder) throws {
@@ -71,6 +75,8 @@ struct MedicationDTO: Decodable, Identifiable {
         isActive = try container.decode(Bool.self, forKey: .isActive)
         isArchived = try container.decode(Bool.self, forKey: .isArchived)
         nextScheduledAt = try container.decodeIfPresent(Date.self, forKey: .nextScheduledAt)
+        regimenTimes = try container.decodeIfPresent([String].self, forKey: .regimenTimes)
+        regimenDaysOfWeek = try container.decodeIfPresent([String].self, forKey: .regimenDaysOfWeek)
     }
 }
 
