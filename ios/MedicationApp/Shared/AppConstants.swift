@@ -57,6 +57,17 @@ enum AppConstants {
     /// Standard overlay opacity for loading states.
     static let overlayOpacity: Double = 0.2
 
+    // MARK: - Number Formatting
+
+    /// Format a decimal number for display, removing unnecessary trailing zeros.
+    /// Examples: 1.0 → "1", 0.5 → "0.5", 2.5 → "2.5"
+    static func formatDecimal(_ value: Double) -> String {
+        if value.truncatingRemainder(dividingBy: 1) == 0 {
+            return String(Int(value))
+        }
+        return String(format: "%.1f", value)
+    }
+
     // MARK: - Slot Colors
 
     /// Returns the canonical color for a given notification slot.

@@ -122,11 +122,11 @@ final class MedicationFormViewModel: ObservableObject {
             name = existingMedication.name
             dosageStrengthValue = existingMedication.dosageStrengthValue == 0 ? "" : String(existingMedication.dosageStrengthValue)
             dosageStrengthUnit = existingMedication.dosageStrengthUnit
-            doseCountPerIntake = String(existingMedication.doseCountPerIntake)
+            doseCountPerIntake = existingMedication.doseCountPerIntake == 0 ? "" : AppConstants.formatDecimal(existingMedication.doseCountPerIntake)
             startDate = existingMedication.startDate
             endDate = existingMedication.endDate
             notes = existingMedication.notes ?? ""
-            inventoryCount = existingMedication.inventoryCount.map(String.init) ?? ""
+            inventoryCount = existingMedication.inventoryCount.map { AppConstants.formatDecimal($0) } ?? ""
             inventoryUnit = NSLocalizedString("common.unit.tablet", comment: "Tablet unit")
             isPrn = existingMedication.isPrn
             prnInstructions = existingMedication.prnInstructions ?? ""
@@ -204,9 +204,9 @@ final class MedicationFormViewModel: ObservableObject {
             } else {
                 patientId = existingMedication?.patientId ?? ""
             }
-            let doseCountValue = Int(doseCountPerIntake) ?? 0
+            let doseCountValue = Double(doseCountPerIntake) ?? 0
             let strengthValue = Double(dosageStrengthValue) ?? 0
-            let inventoryValue = Int(inventoryCount)
+            let inventoryValue = Double(inventoryCount)
             let inventoryUnitValue = NSLocalizedString("common.unit.tablet", comment: "Tablet unit")
             if let existingMedication {
                 let request = MedicationUpdateRequestDTO(

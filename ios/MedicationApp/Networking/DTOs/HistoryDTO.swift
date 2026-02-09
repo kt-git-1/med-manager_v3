@@ -63,7 +63,7 @@ struct HistoryDayItemDTO: Decodable, Equatable {
     let medicationId: String
     let medicationName: String
     let dosageText: String
-    let doseCountPerIntake: Int
+    let doseCountPerIntake: Double
     let scheduledAt: Date
     let slot: HistorySlotDTO
     let effectiveStatus: HistoryDoseStatusDTO
@@ -73,7 +73,7 @@ struct PrnHistoryItemDTO: Decodable, Equatable {
     let medicationId: String
     let medicationName: String
     let takenAt: Date
-    let quantityTaken: Int
+    let quantityTaken: Double
     let actorType: PrnActorTypeDTO
 }
 

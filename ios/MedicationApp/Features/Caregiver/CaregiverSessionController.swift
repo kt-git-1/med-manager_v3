@@ -129,7 +129,7 @@ final class CaregiverSessionController: ObservableObject {
         let format = NSLocalizedString(key, comment: "Inventory banner")
         let message = event.type == "OUT"
             ? String(format: format, patientName, medicationName)
-            : String(format: format, patientName, medicationName, event.remaining)
+            : String(format: format, patientName, medicationName, AppConstants.formatDecimal(event.remaining))
         bannerPresenter.show(message: message)
     }
 }

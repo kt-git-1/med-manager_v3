@@ -8,19 +8,22 @@ struct InventoryDetailView: View {
     private let onRefilled: (() -> Void)?
 
     @State private var inventoryEnabled: Bool
-    @State private var quantity: Int
-    @State private var refillAmount: Int
+    @State private var quantity: Double
+    @State private var refillAmount: Double
     @State private var errorMessage: String?
     @State private var savedEnabled: Bool
-    @State private var pendingRefillAmount: Int?
+    @State private var correctionQuantity: Double = 0
+    @State private var showCorrectionConfirm = false
+    @State private var pendingRefillAmount: Double?
     @State private var showRefillConfirm = false
     @State private var lastFailedAction: InventoryDetailAction?
     @FocusState private var focusedField: InventoryField?
 
     private let numberFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
-        formatter.numberStyle = .none
-        formatter.maximumFractionDigits = 0
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 1
+        formatter.minimumFractionDigits = 0
         return formatter
     }()
 
@@ -37,6 +40,7 @@ struct InventoryDetailView: View {
         _inventoryEnabled = State(initialValue: item.inventoryEnabled)
         _quantity = State(initialValue: item.inventoryQuantity)
         _refillAmount = State(initialValue: 0)
+        _correctionQuantity = State(initialValue: item.inventoryQuantity)
         _savedEnabled = State(initialValue: item.inventoryEnabled)
     }
 
@@ -89,6 +93,36 @@ struct InventoryDetailView: View {
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 44)
                                 .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 12))
+                            }
+                            .disabled(!inventoryEnabled)
+                            .opacity(inventoryEnabled ? 1 : 0.5)
+                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        }
+
+                        Section(header: Text(NSLocalizedString("caregiver.inventory.actions.correction", comment: "Correction section"))) {
+                            HStack {
+                                Text(NSLocalizedString("caregiver.inventory.detail.set", comment: "Correction quantity label"))
+                                Spacer()
+                                TextField("0", value: $correctionQuantity, formatter: numberFormatter)
+                                    .multilineTextAlignment(.trailing)
+                                    .keyboardType(.decimalPad)
+                                    .focused($focusedField, equals: .correctionQuantity)
+                                    .frame(width: 80)
+                                Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Button {
+                                showCorrectionConfirm = true
+                            } label: {
+                                Label(
+                                    NSLocalizedString("caregiver.inventory.actions.correction.button", comment: "Correction button"),
+                                    systemImage: "pencil.circle.fill"
+                                )
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(Color.orange, in: RoundedRectangle(cornerRadius: 12))
                             }
                             .disabled(!inventoryEnabled)
                             .opacity(inventoryEnabled ? 1 : 0.5)
@@ -148,9 +182,28 @@ struct InventoryDetailView: View {
                         comment: "Refill confirm message"
                     ),
                     item.name,
-                    amount,
-                    quantity,
-                    quantity + amount
+                    AppConstants.formatDecimal(amount),
+                    AppConstants.formatDecimal(quantity),
+                    AppConstants.formatDecimal(quantity + amount)
+                )
+            )
+        }
+        .alert(
+            NSLocalizedString("caregiver.inventory.correction.title", comment: "Correction confirm title"),
+            isPresented: $showCorrectionConfirm
+        ) {
+            Button(NSLocalizedString("caregiver.inventory.actions.correction.button", comment: "Correction action")) {
+                Task { await applyCorrection() }
+            }
+            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
+        } message: {
+            Text(
+                String(
+                    format: NSLocalizedString(
+                        "caregiver.inventory.correction.message",
+                        comment: "Correction confirm message"
+                    ),
+                    AppConstants.formatDecimal(max(0, correctionQuantity))
                 )
             )
         }
@@ -181,7 +234,7 @@ struct InventoryDetailView: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text(inventoryEnabled ? "\(quantity)" : "—")
+                Text(inventoryEnabled ? AppConstants.formatDecimal(quantity) : "—")
                     .font(.largeTitle.weight(.bold))
                     .foregroundStyle(inventoryEnabled ? Color.primary : Color.secondary)
                 Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
@@ -209,7 +262,7 @@ struct InventoryDetailView: View {
                     .font(.headline)
                 Text(String(
                     format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"),
-                    item.doseCountPerIntake
+                    AppConstants.formatDecimal(item.doseCountPerIntake)
                 ))
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
@@ -288,8 +341,8 @@ struct InventoryDetailView: View {
         let count = dailyPlannedUnits / item.doseCountPerIntake
         return String(
             format: NSLocalizedString("caregiver.inventory.dailyIntake.format", comment: "Daily intake format"),
-            count,
-            item.doseCountPerIntake
+            AppConstants.formatDecimal(count),
+            AppConstants.formatDecimal(item.doseCountPerIntake)
         )
     }
 
@@ -315,7 +368,7 @@ struct InventoryDetailView: View {
         }
     }
 
-    private func applyRefill(amount: Int) async {
+    private func applyRefill(amount: Double) async {
         errorMessage = nil
         let updated = await viewModel.adjustInventory(
             item: item,
@@ -334,6 +387,25 @@ struct InventoryDetailView: View {
         }
     }
 
+    private func applyCorrection() async {
+        errorMessage = nil
+        let newQuantity = max(0, correctionQuantity)
+        let updated = await viewModel.adjustInventory(
+            item: item,
+            reason: "SET",
+            delta: nil,
+            absoluteQuantity: newQuantity
+        )
+        if let updated {
+            quantity = updated.inventoryQuantity
+            onSaved?()
+            dismiss()
+        } else {
+            errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
+            lastFailedAction = .correction(newQuantity)
+        }
+    }
+
     private func retryLastAction() async {
         guard let lastFailedAction else { return }
         self.lastFailedAction = nil
@@ -342,10 +414,12 @@ struct InventoryDetailView: View {
             await saveSettings()
         case let .refill(amount):
             await applyRefill(amount: amount)
+        case .correction:
+            await applyCorrection()
         }
     }
 
-    private func refillPresetButton(title: String, amount: Int) -> some View {
+    private func refillPresetButton(title: String, amount: Double) -> some View {
         Button {
             refillAmount = amount
         } label: {
@@ -401,9 +475,11 @@ private enum InventoryStatus {
 
 private enum InventoryDetailAction {
     case saveSettings
-    case refill(Int)
+    case refill(Double)
+    case correction(Double)
 }
 
 private enum InventoryField {
     case refillAmount
+    case correctionQuantity
 }

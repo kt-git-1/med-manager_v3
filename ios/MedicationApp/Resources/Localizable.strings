@@ -8,7 +8,7 @@
 "common.error.unexpected" = "予期せぬエラーが発生しました";
 "common.save" = "保存";
 "common.cancel" = "キャンセル";
-"common.select" = "選択";
+"common.select" = "単位";
 "common.ok" = "OK";
 "common.logout" = "ログアウト";
 "common.toast.updated" = "更新しました";
@@ -247,10 +247,10 @@
 "caregiver.inventory.actions.correction" = "在庫を修正（誤入力の修正）";
 "caregiver.inventory.actions.correction.button" = "修正する";
 "caregiver.inventory.refill.confirm.title" = "在庫を補充しますか？";
-"caregiver.inventory.refill.confirm.message" = "%@ を +%d個（%d→%d）";
+"caregiver.inventory.refill.confirm.message" = "%@ を +%@個（%@→%@）";
 "caregiver.inventory.correction.title" = "在庫を修正";
-"caregiver.inventory.correction.message" = "在庫を%d個に変更しますか？（補充ではなく修正です）";
-"caregiver.inventory.banner.low" = "%@：%@の在庫が少なくなりました（残り%d）";
+"caregiver.inventory.correction.message" = "在庫を%@個に変更しますか？（補充ではなく修正です）";
+"caregiver.inventory.banner.low" = "%@：%@の在庫が少なくなりました（残り%@）";
 "caregiver.inventory.banner.out" = "%@：%@がなくなりました";
 "caregiver.inventory.banner.patientFallback" = "患者";
 "caregiver.inventory.banner.medicationFallback" = "薬";
@@ -345,14 +345,14 @@
 
 /* Inventory detail */
 "caregiver.inventory.dailyIntake.unknown" = "1日—回（—錠/回）";
-"caregiver.inventory.dailyIntake.format" = "1日%d回（%d錠ずつ）";
+"caregiver.inventory.dailyIntake.format" = "1日%@回（%@錠ずつ）";
 
 /* History day detail */
-"history.day.prn.doseCount" = "1回%d錠";
+"history.day.prn.doseCount" = "1回%@錠";
 
 /* Patient today */
 "patient.today.doseCount.label" = "服用数/回";
-"patient.today.doseCount.format" = "1回%d錠";
+"patient.today.doseCount.format" = "1回%@錠";
 
 /* Accessibility labels */
 "a11y.email" = "メールアドレス";

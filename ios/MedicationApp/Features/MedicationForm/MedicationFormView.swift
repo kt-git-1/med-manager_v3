@@ -7,7 +7,7 @@ struct MedicationFormView: View {
     @State private var hasEndDate = false
     @State private var showingDeleteConfirm = false
     private let onSuccess: ((String) -> Void)?
-    private let dosageUnits = ["", NSLocalizedString("common.dosage.unknown", comment: "Unknown dosage"), "mg", "g", "mcg", "mL"]
+    private let dosageUnits = ["", NSLocalizedString("common.dosage.unknown", comment: "Unknown dosage"), "mg", "g", "μg", "mL", "IU", "mEq", "%", "滴", "包", "枚", "吸入"]
 
     init(
         sessionStore: SessionStore? = nil,
@@ -88,17 +88,22 @@ struct MedicationFormView: View {
                     .accessibilityElement(children: .contain)
                     .accessibilityLabel(NSLocalizedString("a11y.medication.dosage", comment: "Dosage"))
                 }
-                Stepper(
-                    value: intBinding(for: $viewModel.doseCountPerIntake),
-                    in: 0...999
-                ) {
-                    HStack {
-                        formIconLabel(icon: "square.stack.fill", color: .teal)
-                        Text(NSLocalizedString("medication.form.dose.count", comment: "Dose count"))
-                        Spacer()
-                        Text(viewModel.doseCountPerIntake.isEmpty ? "0" : viewModel.doseCountPerIntake)
-                            .foregroundStyle(.secondary)
-                    }
+                HStack(spacing: 12) {
+                    formIconLabel(icon: "square.stack.fill", color: .teal)
+                    Text(NSLocalizedString("medication.form.dose.count", comment: "Dose count"))
+                    Spacer()
+                    TextField("0", text: $viewModel.doseCountPerIntake)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 60)
+                    Stepper(
+                        "",
+                        value: decimalBinding(for: $viewModel.doseCountPerIntake),
+                        in: 0...999,
+                        step: 0.5
+                    )
+                    .labelsHidden()
+                    .fixedSize()
                 }
                 .accessibilityLabel(NSLocalizedString("a11y.medication.doseCount", comment: "Dose count"))
             } header: {
@@ -252,16 +257,21 @@ struct MedicationFormView: View {
             // Inventory
             if !viewModel.isEditing {
                 Section {
-                    Stepper(
-                        value: intBinding(for: $viewModel.inventoryCount),
-                        in: 0...9999
-                    ) {
-                        HStack {
-                            Text(NSLocalizedString("medication.form.inventory.count", comment: "Inventory count"))
-                            Spacer()
-                            Text(viewModel.inventoryCount.isEmpty ? "0" : viewModel.inventoryCount)
-                                .foregroundStyle(.secondary)
-                        }
+                    HStack(spacing: 12) {
+                        Text(NSLocalizedString("medication.form.inventory.count", comment: "Inventory count"))
+                        Spacer()
+                        TextField("0", text: $viewModel.inventoryCount)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 60)
+                        Stepper(
+                            "",
+                            value: decimalBinding(for: $viewModel.inventoryCount),
+                            in: 0...9999,
+                            step: 1
+                        )
+                        .labelsHidden()
+                        .fixedSize()
                     }
                     .accessibilityLabel(NSLocalizedString("a11y.medication.inventory", comment: "Inventory count"))
                 } header: {
@@ -458,10 +468,10 @@ struct MedicationFormView: View {
         .accessibilityLabel(NSLocalizedString("medication.form.delete", comment: "Delete medication"))
     }
 
-    private func intBinding(for text: Binding<String>) -> Binding<Int> {
+    private func decimalBinding(for text: Binding<String>) -> Binding<Double> {
         Binding(
-            get: { Int(text.wrappedValue) ?? 0 },
-            set: { text.wrappedValue = String(max(0, $0)) }
+            get: { Double(text.wrappedValue) ?? 0 },
+            set: { text.wrappedValue = AppConstants.formatDecimal(max(0, $0)) }
         )
     }
 

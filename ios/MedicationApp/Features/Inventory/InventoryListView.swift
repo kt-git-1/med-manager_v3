@@ -37,7 +37,7 @@ final class InventoryViewModel: ObservableObject {
     func updateSettings(
         item: InventoryItemDTO,
         enabled: Bool,
-        quantity: Int?,
+        quantity: Double?,
         threshold: Int? = nil
     ) async -> InventoryItemDTO? {
         guard !isUpdating else { return nil }
@@ -62,8 +62,8 @@ final class InventoryViewModel: ObservableObject {
     func adjustInventory(
         item: InventoryItemDTO,
         reason: String,
-        delta: Int?,
-        absoluteQuantity: Int?
+        delta: Double?,
+        absoluteQuantity: Double?
     ) async -> InventoryItemDTO? {
         guard !isUpdating else { return nil }
         isUpdating = true
@@ -378,7 +378,7 @@ struct InventoryListView: View {
             VStack(alignment: .trailing, spacing: 8) {
                 if item.inventoryEnabled {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text("\(item.inventoryQuantity)")
+                        Text(AppConstants.formatDecimal(item.inventoryQuantity))
                             .font(.title2.weight(.bold))
                         Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
                             .font(.caption)

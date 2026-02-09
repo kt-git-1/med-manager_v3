@@ -43,7 +43,8 @@ vi.mock("../../src/services/medicationService", () => ({
     return record;
   }),
   listMedications: vi.fn(async (patientId: string) => medicationsByPatient.get(patientId) ?? []),
-  listMedicationInventory: vi.fn(async () => [])
+  listMedicationInventory: vi.fn(async () => []),
+  listActiveRegimens: vi.fn(async () => [])
 }));
 
 vi.mock("../../src/services/scheduleService", () => ({

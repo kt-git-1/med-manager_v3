@@ -65,7 +65,7 @@ final class MedicationFormViewModelTests: XCTestCase {
             patientId: "patient-1",
             name: "Test",
             dosageText: "10 mg",
-            doseCountPerIntake: 1,
+            doseCountPerIntake: 1.0,
             dosageStrengthValue: 10,
             dosageStrengthUnit: "mg",
             notes: nil,
@@ -94,7 +94,7 @@ final class MedicationFormViewModelTests: XCTestCase {
         let updateInput = MedicationUpdateRequestDTO(
             name: "Updated",
             dosageText: "10 mg",
-            doseCountPerIntake: 1,
+            doseCountPerIntake: 1.0,
             dosageStrengthValue: 10,
             dosageStrengthUnit: "mg",
             notes: nil,

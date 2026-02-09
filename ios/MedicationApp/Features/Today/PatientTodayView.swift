@@ -769,7 +769,7 @@ private struct PatientTodayDoseDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(NSLocalizedString("patient.today.doseCount.label", comment: "Dose count label"))
                 .font(.headline)
-            Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), dose.medicationSnapshot.doseCountPerIntake))
+            Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(dose.medicationSnapshot.doseCountPerIntake)))
                 .font(.title2.weight(.bold))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -834,7 +834,7 @@ private struct PatientTodayRow: View {
                         .font(.title2.weight(.bold))
                         .foregroundStyle(isMissed ? Color.red : Color.primary)
                     if shouldShowDoseCount {
-                        Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), dose.medicationSnapshot.doseCountPerIntake))
+                        Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(dose.medicationSnapshot.doseCountPerIntake)))
                             .font(.title3)
                             .foregroundStyle(.secondary)
                     }
@@ -904,7 +904,7 @@ private struct PatientTodayRow: View {
     private var accessibilitySummary: String {
         var parts = [timeText, dose.medicationSnapshot.name]
         if shouldShowDoseCount {
-            parts.append(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), dose.medicationSnapshot.doseCountPerIntake))
+            parts.append(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(dose.medicationSnapshot.doseCountPerIntake)))
         }
         if let statusText = statusText(for: dose.effectiveStatus) {
             parts.append(statusText)
@@ -992,7 +992,7 @@ private struct PrnMedicationCard: View {
                 Text(medication.name)
                     .font(.title2.weight(.bold))
                 if shouldShowDoseCount {
-                    Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), medication.doseCountPerIntake))
+                    Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(medication.doseCountPerIntake)))
                         .font(.title3)
                         .foregroundStyle(.secondary)
                 }

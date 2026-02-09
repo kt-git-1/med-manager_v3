@@ -56,7 +56,7 @@ model Medication {
   patientId           String
   name                String
   dosageText          String
-  doseCountPerIntake  Int
+  doseCountPerIntake  Float
   dosageStrengthValue Float
   dosageStrengthUnit  String
   notes               String?
@@ -64,10 +64,10 @@ model Medication {
   prnInstructions     String?
   startDate           DateTime @db.Date
   endDate             DateTime? @db.Date
-  inventoryCount      Int?
+  inventoryCount      Float?
   inventoryUnit       String?
   inventoryEnabled    Boolean @default(false)
-  inventoryQuantity   Int     @default(0)
+  inventoryQuantity   Float   @default(0)
   inventoryLowThreshold Int   @default(0)
   inventoryUpdatedAt  DateTime?
   inventoryLastAlertState InventoryAlertState?
@@ -190,7 +190,7 @@ model PrnDoseRecord {
   patientId     String
   medicationId  String
   takenAt       DateTime       @default(now())
-  quantityTaken Int
+  quantityTaken Float
   actorType     RecordedByType
   createdAt     DateTime       @default(now())
 
@@ -222,7 +222,7 @@ model MedicationInventoryAdjustment {
   id          String                    @id @default(uuid())
   patientId   String
   medicationId String
-  delta       Int
+  delta       Float
   reason      InventoryAdjustmentReason
   actorType   InventoryAdjustmentActorType
   actorId     String?
@@ -240,7 +240,7 @@ model InventoryAlertEvent {
   patientId    String
   medicationId String
   type         InventoryAlertType
-  remaining    Int
+  remaining    Float
   threshold    Int
   patientDisplayName String?
   medicationName     String?

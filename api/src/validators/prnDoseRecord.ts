@@ -20,8 +20,8 @@ export function validatePrnDoseRecordCreate(input: PrnDoseRecordCreateInput) {
     }
   }
   if (input.quantityTaken !== undefined) {
-    if (!Number.isInteger(input.quantityTaken) || input.quantityTaken <= 0) {
-      errors.push("quantityTaken must be a positive integer");
+    if (!Number.isFinite(input.quantityTaken) || input.quantityTaken <= 0) {
+      errors.push("quantityTaken must be a positive number");
     }
   }
 

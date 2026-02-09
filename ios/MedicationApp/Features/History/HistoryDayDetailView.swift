@@ -217,7 +217,7 @@ private enum HistoryTimelineItem: Identifiable {
 private struct HistoryDayPrnRow: View {
     let timeText: String
     let name: String
-    let quantity: Int
+    let quantity: Double
 
     private var prnPrefix: String {
         NSLocalizedString("medication.list.badge.prn", comment: "PRN badge")
@@ -230,7 +230,7 @@ private struct HistoryDayPrnRow: View {
                     .font(.headline)
                 Text("\(prnPrefix): \(name)")
                     .font(.title3.weight(.semibold))
-                Text(String(format: NSLocalizedString("history.day.prn.doseCount", comment: "PRN dose count"), quantity))
+                Text(String(format: NSLocalizedString("history.day.prn.doseCount", comment: "PRN dose count"), AppConstants.formatDecimal(quantity)))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

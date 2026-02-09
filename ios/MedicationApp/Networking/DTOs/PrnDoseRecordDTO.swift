@@ -10,7 +10,7 @@ struct PrnDoseRecordDTO: Decodable, Identifiable {
     let patientId: String
     let medicationId: String
     let takenAt: Date
-    let quantityTaken: Int
+    let quantityTaken: Double
     let actorType: PrnActorTypeDTO
     let createdAt: Date
 }
@@ -18,7 +18,7 @@ struct PrnDoseRecordDTO: Decodable, Identifiable {
 struct MedicationInventorySnapshotDTO: Decodable {
     let medicationId: String
     let inventoryEnabled: Bool
-    let inventoryQuantity: Int
+    let inventoryQuantity: Double
     let inventoryLowThreshold: Int
     let low: Bool
     let out: Bool
@@ -27,7 +27,7 @@ struct MedicationInventorySnapshotDTO: Decodable {
 struct PrnDoseRecordCreateRequestDTO: Encodable {
     let medicationId: String
     let takenAt: Date?
-    let quantityTaken: Int?
+    let quantityTaken: Double?
 }
 
 struct PrnDoseRecordCreateResponseDTO: Decodable {

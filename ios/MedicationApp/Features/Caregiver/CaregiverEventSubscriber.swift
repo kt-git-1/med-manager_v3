@@ -16,7 +16,7 @@ struct InventoryAlertEvent: Equatable, Decodable {
     let patientId: String
     let medicationId: String
     let type: String
-    let remaining: Int
+    let remaining: Double
     let threshold: Int
     let patientDisplayName: String?
     let medicationName: String?

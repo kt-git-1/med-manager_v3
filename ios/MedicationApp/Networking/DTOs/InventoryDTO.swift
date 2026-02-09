@@ -4,14 +4,14 @@ struct InventoryItemDTO: Decodable, Identifiable {
     let medicationId: String
     let name: String
     let isPrn: Bool
-    let doseCountPerIntake: Int
+    let doseCountPerIntake: Double
     let inventoryEnabled: Bool
-    let inventoryQuantity: Int
+    let inventoryQuantity: Double
     let inventoryLowThreshold: Int
     let periodEnded: Bool
     let low: Bool
     let out: Bool
-    let dailyPlannedUnits: Int?
+    let dailyPlannedUnits: Double?
     let daysRemaining: Int?
     let refillDueDate: String?
 
@@ -33,12 +33,12 @@ struct InventoryResponseDTO: Decodable {
 
 struct InventoryUpdateRequestDTO: Encodable {
     let inventoryEnabled: Bool?
-    let inventoryQuantity: Int?
+    let inventoryQuantity: Double?
     let inventoryLowThreshold: Int?
 }
 
 struct InventoryAdjustRequestDTO: Encodable {
     let reason: String
-    let delta: Int?
-    let absoluteQuantity: Int?
+    let delta: Double?
+    let absoluteQuantity: Double?
 }
