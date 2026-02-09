@@ -217,21 +217,53 @@ describe("prn dose records integration", () => {
     expect(concealedResponse.status).toBe(404);
   });
 
-  it("adjusts inventory on create/delete when enabled", async () => {
+  it("adjusts inventory on create/delete when PRN quantityTaken differs from default", async () => {
     applyInventoryDeltaMock.mockClear();
+    const quantityTaken = 3;
+    (createPrnDoseRecordRepo as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      id: "prn-quantity-1",
+      patientId: "patient-1",
+      medicationId: "med-1",
+      takenAt: new Date("2026-02-02T00:10:00.000Z"),
+      quantityTaken,
+      actorType: "PATIENT",
+      createdAt: new Date("2026-02-02T00:10:00.000Z")
+    });
+    (getPrnDoseRecordById as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      id: "prn-quantity-1",
+      patientId: "patient-1",
+      medicationId: "med-1",
+      takenAt: new Date("2026-02-02T00:10:00.000Z"),
+      quantityTaken,
+      actorType: "PATIENT",
+      createdAt: new Date("2026-02-02T00:10:00.000Z")
+    });
+    (deletePrnDoseRecordById as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      id: "prn-quantity-1",
+      patientId: "patient-1",
+      medicationId: "med-1",
+      takenAt: new Date("2026-02-02T00:10:00.000Z"),
+      quantityTaken,
+      actorType: "PATIENT",
+      createdAt: new Date("2026-02-02T00:10:00.000Z")
+    });
+
     const created = await createPrnRecord({
       patientId: "patient-1",
       medicationId: "med-1",
+      quantityTaken,
       actorType: "PATIENT"
     });
     expect(created && "record" in created).toBe(true);
-    expect(applyInventoryDeltaMock).toHaveBeenCalledWith(
-      expect.objectContaining({ delta: -2, reason: "TAKEN_CREATE" })
+    expect(applyInventoryDeltaMock).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ delta: -quantityTaken, reason: "TAKEN_CREATE" })
     );
 
-    await deletePrnRecord({ patientId: "patient-1", prnRecordId: "prn-1" });
-    expect(applyInventoryDeltaMock).toHaveBeenCalledWith(
-      expect.objectContaining({ delta: 2, reason: "TAKEN_DELETE" })
+    await deletePrnRecord({ patientId: "patient-1", prnRecordId: "prn-quantity-1" });
+    expect(applyInventoryDeltaMock).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ delta: quantityTaken, reason: "TAKEN_DELETE" })
     );
   });
 
