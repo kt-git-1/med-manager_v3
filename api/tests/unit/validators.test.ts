@@ -44,4 +44,19 @@ describe("link code validator", () => {
       "code must be 6 digits"
     ]);
   });
+
+  it("rejects non-string codes", () => {
+    expect(validateLinkCodeInput({ code: 123456 }).errors).toEqual([
+      "code must be a string",
+      "code is required"
+    ]);
+    expect(validateLinkCodeInput({ code: null }).errors).toEqual([
+      "code must be a string",
+      "code is required"
+    ]);
+    expect(validateLinkCodeInput({ code: { value: "123456" } }).errors).toEqual([
+      "code must be a string",
+      "code is required"
+    ]);
+  });
 });
