@@ -5,7 +5,11 @@ import {
   getMonthRange,
   getScheduleWithStatus
 } from "../../../../../src/services/scheduleService";
-import { buildSlotSummary, groupDosesByLocalDate, parseSlotTimesFromParams } from "../../../../../src/services/scheduleResponse";
+import {
+  buildSlotSummary,
+  groupDosesByLocalDate,
+  parseSlotTimesFromParams
+} from "../../../../../src/services/scheduleResponse";
 import { listPrnHistoryItemsByRange } from "../../../../../src/services/prnDoseRecordService";
 import { validateYearMonth } from "../../../../../src/validators/schedule";
 
@@ -21,6 +25,15 @@ export async function GET(request: Request) {
     const errors = validateYearMonth(year, month);
     if (errors.length) {
       return new Response(JSON.stringify({ error: "validation", messages: errors }), {
+        status: 422,
+        headers: { "content-type": "application/json" }
+      });
+    }
+
+    const { slotTimes: customSlotTimes, errors: slotTimeErrors } =
+      parseSlotTimesFromParams(searchParams);
+    if (slotTimeErrors.length) {
+      return new Response(JSON.stringify({ error: "validation", messages: slotTimeErrors }), {
         status: 422,
         headers: { "content-type": "application/json" }
       });
@@ -43,7 +56,6 @@ export async function GET(request: Request) {
       timeZone: historyTimeZone
     });
 
-    const customSlotTimes = parseSlotTimesFromParams(searchParams);
     const days: { date: string; slotSummary: ReturnType<typeof buildSlotSummary> }[] = [];
     const cursor = new Date(range.from);
     while (cursor < range.to) {

@@ -5,7 +5,10 @@ import {
   getLocalDateKey,
   getScheduleWithStatus
 } from "../../../../../src/services/scheduleService";
-import { resolveSlot, parseSlotTimesFromParams } from "../../../../../src/services/scheduleResponse";
+import {
+  resolveSlot,
+  parseSlotTimesFromParams
+} from "../../../../../src/services/scheduleResponse";
 import { listPrnHistoryItemsByRange } from "../../../../../src/services/prnDoseRecordService";
 import { validateDateString } from "../../../../../src/validators/schedule";
 
@@ -39,6 +42,15 @@ export async function GET(request: Request) {
       });
     }
 
+    const { slotTimes: customSlotTimes, errors: slotTimeErrors } =
+      parseSlotTimesFromParams(searchParams);
+    if (slotTimeErrors.length) {
+      return new Response(JSON.stringify({ error: "validation", messages: slotTimeErrors }), {
+        status: 422,
+        headers: { "content-type": "application/json" }
+      });
+    }
+
     const authHeader = request.headers.get("authorization") ?? undefined;
     const session = await requirePatient(authHeader);
     const range = getDayRange(parsedDate, historyTimeZone);
@@ -55,7 +67,6 @@ export async function GET(request: Request) {
       timeZone: historyTimeZone
     });
 
-    const customSlotTimes = parseSlotTimesFromParams(searchParams);
     const items = doses
       .map((dose) => {
         const slot = resolveSlot(dose.scheduledAt, historyTimeZone, customSlotTimes);
