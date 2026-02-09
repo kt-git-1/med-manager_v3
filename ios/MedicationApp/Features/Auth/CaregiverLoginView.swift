@@ -33,7 +33,7 @@ struct CaregiverLoginView: View {
                         TextField(NSLocalizedString("caregiver.login.email", comment: "Email label"), text: $email)
                             .textInputAutocapitalization(.never)
                             .keyboardType(.emailAddress)
-                            .accessibilityLabel("メールアドレス")
+                            .accessibilityLabel(NSLocalizedString("a11y.email", comment: "Email"))
                     }
                     .padding(14)
                     .background(.fill.quaternary)
@@ -44,7 +44,7 @@ struct CaregiverLoginView: View {
                             .foregroundStyle(.secondary)
                             .frame(width: 20)
                         SecureField(NSLocalizedString("caregiver.login.password", comment: "Password label"), text: $password)
-                            .accessibilityLabel("パスワード")
+                            .accessibilityLabel(NSLocalizedString("a11y.password", comment: "Password"))
                     }
                     .padding(14)
                     .background(.fill.quaternary)
@@ -75,7 +75,7 @@ struct CaregiverLoginView: View {
                 }
                 .disabled(isLoading || email.isEmpty || password.isEmpty)
                 .opacity(email.isEmpty || password.isEmpty ? 0.5 : 1)
-                .accessibilityLabel("ログイン")
+                .accessibilityLabel(NSLocalizedString("a11y.login", comment: "Login"))
             }
             .padding(28)
             .frame(maxWidth: .infinity)

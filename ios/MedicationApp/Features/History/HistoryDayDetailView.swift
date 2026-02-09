@@ -142,7 +142,7 @@ private struct HistoryDayRow: View {
 
     private var dosageText: String? {
         let trimmed = dosage.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty || trimmed == "不明" {
+        if trimmed.isEmpty || trimmed == NSLocalizedString("common.dosage.unknown", comment: "Unknown dosage") {
             return nil
         }
         return trimmed
@@ -175,7 +175,7 @@ private struct HistoryDayRow: View {
         case .missed:
             return Color.red.opacity(0.15)
         case .taken:
-            return Color.green.opacity(0.12)
+            return Color.green.opacity(0.15)
         case .pending:
             return Color.primary.opacity(0.06)
         }
@@ -230,7 +230,7 @@ private struct HistoryDayPrnRow: View {
                     .font(.headline)
                 Text("\(prnPrefix): \(name)")
                     .font(.title3.weight(.semibold))
-                Text("1回\(quantity)錠")
+                Text(String(format: NSLocalizedString("history.day.prn.doseCount", comment: "PRN dose count"), quantity))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

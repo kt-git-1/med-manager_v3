@@ -767,9 +767,9 @@ private struct PatientTodayDoseDetailView: View {
 
     private var intakeCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("服用数/回")
+            Text(NSLocalizedString("patient.today.doseCount.label", comment: "Dose count label"))
                 .font(.headline)
-            Text("1回\(dose.medicationSnapshot.doseCountPerIntake)錠")
+            Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), dose.medicationSnapshot.doseCountPerIntake))
                 .font(.title2.weight(.bold))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -808,7 +808,7 @@ private struct PatientTodayDoseDetailView: View {
         case .missed:
             return Color.red.opacity(0.15)
         case .taken:
-            return Color.green.opacity(0.12)
+            return Color.green.opacity(0.15)
         case .pending, .none:
             return Color.primary.opacity(0.06)
         }
@@ -833,7 +833,7 @@ private struct PatientTodayRow: View {
                         .font(.title2.weight(.bold))
                         .foregroundStyle(isMissed ? Color.red : Color.primary)
                     if shouldShowDoseCount {
-                        Text("1回\(dose.medicationSnapshot.doseCountPerIntake)錠")
+                        Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), dose.medicationSnapshot.doseCountPerIntake))
                             .font(.title3)
                             .foregroundStyle(.secondary)
                     }
@@ -868,7 +868,7 @@ private struct PatientTodayRow: View {
             }
         }
         .padding(20)
-        .glassEffect(.regular, in: .rect(cornerRadius: 18))
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
         .overlay(alignment: .leading) {
             if let slotColor {
                 RoundedRectangle(cornerRadius: 3)
@@ -893,7 +893,7 @@ private struct PatientTodayRow: View {
     private var accessibilitySummary: String {
         var parts = [timeText, dose.medicationSnapshot.name]
         if shouldShowDoseCount {
-            parts.append("1回\(dose.medicationSnapshot.doseCountPerIntake)錠")
+            parts.append(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), dose.medicationSnapshot.doseCountPerIntake))
         }
         if let statusText = statusText(for: dose.effectiveStatus) {
             parts.append(statusText)
@@ -944,7 +944,7 @@ private struct PatientTodayRow: View {
         case .missed:
             return Color.red.opacity(0.15)
         case .taken:
-            return Color.green.opacity(0.12)
+            return Color.green.opacity(0.15)
         case .pending, .none:
             return Color.primary.opacity(0.06)
         }
@@ -977,7 +977,7 @@ private struct PrnMedicationCard: View {
                 Text(medication.name)
                     .font(.title2.weight(.bold))
                 if shouldShowDoseCount {
-                    Text("1回\(medication.doseCountPerIntake)錠")
+                    Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), medication.doseCountPerIntake))
                         .font(.title3)
                         .foregroundStyle(.secondary)
                 }
@@ -1003,7 +1003,7 @@ private struct PrnMedicationCard: View {
             .sensoryFeedback(.success, trigger: recordTrigger)
         }
         .padding(20)
-        .glassEffect(.regular, in: .rect(cornerRadius: 18))
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 
     private var noteText: String? {

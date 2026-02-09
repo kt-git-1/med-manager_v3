@@ -273,10 +273,14 @@ struct InventoryDetailView: View {
             return NSLocalizedString("medication.list.badge.prn", comment: "PRN badge")
         }
         guard let dailyPlannedUnits = item.dailyPlannedUnits, item.doseCountPerIntake > 0 else {
-            return "1日—回（—錠/回）"
+            return NSLocalizedString("caregiver.inventory.dailyIntake.unknown", comment: "Unknown daily intake")
         }
         let count = dailyPlannedUnits / item.doseCountPerIntake
-        return "1日\(count)回（\(item.doseCountPerIntake)錠ずつ）"
+        return String(
+            format: NSLocalizedString("caregiver.inventory.dailyIntake.format", comment: "Daily intake format"),
+            count,
+            item.doseCountPerIntake
+        )
     }
 
     private var hasSettingsChanges: Bool {

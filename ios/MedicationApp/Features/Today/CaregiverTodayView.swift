@@ -433,7 +433,7 @@ private struct CaregiverTodayRow: View {
         case .missed:
             return Color.red.opacity(0.15)
         case .taken:
-            return Color.green.opacity(0.12)
+            return Color.green.opacity(0.15)
         case .pending, .none:
             return Color.primary.opacity(0.06)
         }

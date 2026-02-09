@@ -43,7 +43,7 @@ struct PatientCreateView: View {
                                 NSLocalizedString("caregiver.patients.create.name", comment: "Display name"),
                                 text: $displayName
                             )
-                            .accessibilityLabel("表示名")
+                            .accessibilityLabel(NSLocalizedString("a11y.patient.displayName", comment: "Display name"))
                         }
                         if let errorMessage {
                             ErrorStateView(message: errorMessage)

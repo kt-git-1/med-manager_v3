@@ -311,3 +311,65 @@
 "caregiver.patients.delete.confirm.action" = "削除する";
 "caregiver.patients.toast.deleted" = "患者を削除しました";
 "common.error.save" = "保存に失敗しました";
+"common.error.linking.generic" = "連携に失敗しました";
+"common.unit.tablet" = "錠";
+"common.dosage.unknown" = "不明";
+
+/* Medication form - additional */
+"medication.form.title.edit" = "薬を編集";
+"medication.form.title.add" = "新しい薬を追加";
+"medication.form.validation.name.required" = "薬名は必須です";
+"medication.form.validation.dosage.required" = "用量は必須です";
+"medication.form.validation.dosage.value.required" = "用量の数値を入力してください";
+"medication.form.validation.endDate.invalid" = "終了日は開始日以降にしてください";
+"medication.form.validation.timeSlot.required" = "時間は1件以上選択してください";
+"medication.form.validation.weekday.required" = "曜日は1つ以上選択してください";
+
+/* Schedule day labels */
+"schedule.day.mon" = "月";
+"schedule.day.tue" = "火";
+"schedule.day.wed" = "水";
+"schedule.day.thu" = "木";
+"schedule.day.fri" = "金";
+"schedule.day.sat" = "土";
+"schedule.day.sun" = "日";
+
+/* Schedule time slot labels */
+"schedule.slot.morning" = "朝";
+"schedule.slot.noon" = "昼";
+"schedule.slot.evening" = "夜";
+"schedule.slot.bedtime" = "眠前";
+
+/* Inventory detail */
+"caregiver.inventory.dailyIntake.unknown" = "1日—回（—錠/回）";
+"caregiver.inventory.dailyIntake.format" = "1日%d回（%d錠ずつ）";
+
+/* History day detail */
+"history.day.prn.doseCount" = "1回%d錠";
+
+/* Patient today */
+"patient.today.doseCount.label" = "服用数/回";
+"patient.today.doseCount.format" = "1回%d錠";
+
+/* Accessibility labels */
+"a11y.email" = "メールアドレス";
+"a11y.password" = "パスワード";
+"a11y.login" = "ログイン";
+"a11y.signup" = "サインアップ";
+"a11y.linkCode" = "連携コード";
+"a11y.linkCode.submit" = "連携コード送信";
+"a11y.medication.name" = "薬名";
+"a11y.medication.dosageValue" = "用量数値";
+"a11y.medication.dosageUnit" = "用量単位";
+"a11y.medication.doseCount" = "服用数";
+"a11y.medication.prn" = "頓服設定";
+"a11y.medication.prnInstructions" = "頓服の説明";
+"a11y.medication.startDate" = "開始日";
+"a11y.medication.endDate" = "終了日";
+"a11y.medication.endDate.toggle" = "終了日を設定";
+"a11y.medication.inventory" = "在庫数";
+"a11y.medication.notes" = "メモ";
+"a11y.weekday.format" = "曜日 %@";
+"a11y.selected" = "選択中";
+"a11y.notSelected" = "未選択";
+"a11y.patient.displayName" = "表示名";

@@ -402,7 +402,7 @@ struct PatientManagementView: View {
                             .font(.subheadline.weight(.semibold))
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
-                            .background(Color.red.opacity(0.12))
+                            .background(Color.red.opacity(0.15))
                             .foregroundStyle(.red)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
@@ -415,7 +415,7 @@ struct PatientManagementView: View {
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
-                        .background(Color.red.opacity(0.12))
+                        .background(Color.red.opacity(0.15))
                         .foregroundStyle(.red)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
@@ -607,7 +607,7 @@ struct PatientManagementView: View {
                         .multilineTextAlignment(.trailing)
                         .frame(width: 80)
                         .accessibilityIdentifier("InventoryGlobalThresholdField")
-                    Text("日")
+                    Text(NSLocalizedString("common.days.unit", comment: "Days unit"))
                         .foregroundStyle(.secondary)
                 }
             } header: {

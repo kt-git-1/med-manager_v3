@@ -103,8 +103,8 @@ struct CaregiverAuthChoiceView: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.tertiary)
         }
-        .padding(20)
+        .padding(24)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        .glassEffect(.regular, in: .rect(cornerRadius: 20))
     }
 }

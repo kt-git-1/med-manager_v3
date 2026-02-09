@@ -20,13 +20,13 @@ enum ScheduleDay: String, CaseIterable, Identifiable {
 
     var shortLabel: String {
         switch self {
-        case .mon: return "月"
-        case .tue: return "火"
-        case .wed: return "水"
-        case .thu: return "木"
-        case .fri: return "金"
-        case .sat: return "土"
-        case .sun: return "日"
+        case .mon: return NSLocalizedString("schedule.day.mon", comment: "Monday")
+        case .tue: return NSLocalizedString("schedule.day.tue", comment: "Tuesday")
+        case .wed: return NSLocalizedString("schedule.day.wed", comment: "Wednesday")
+        case .thu: return NSLocalizedString("schedule.day.thu", comment: "Thursday")
+        case .fri: return NSLocalizedString("schedule.day.fri", comment: "Friday")
+        case .sat: return NSLocalizedString("schedule.day.sat", comment: "Saturday")
+        case .sun: return NSLocalizedString("schedule.day.sun", comment: "Sunday")
         }
     }
 }
@@ -41,10 +41,10 @@ enum ScheduleTimeSlot: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .morning: return "朝"
-        case .noon: return "昼"
-        case .evening: return "夜"
-        case .bedtime: return "眠前"
+        case .morning: return NSLocalizedString("schedule.slot.morning", comment: "Morning")
+        case .noon: return NSLocalizedString("schedule.slot.noon", comment: "Noon")
+        case .evening: return NSLocalizedString("schedule.slot.evening", comment: "Evening")
+        case .bedtime: return NSLocalizedString("schedule.slot.bedtime", comment: "Bedtime")
         }
     }
 
@@ -85,7 +85,7 @@ final class MedicationFormViewModel: ObservableObject {
     @Published var endDate: Date?
     @Published var notes = ""
     @Published var inventoryCount = ""
-    @Published var inventoryUnit = "錠"
+    @Published var inventoryUnit = NSLocalizedString("common.unit.tablet", comment: "Tablet unit")
     @Published var isPrn = false
     @Published var prnInstructions = ""
     @Published var errorMessage: String?
@@ -127,7 +127,7 @@ final class MedicationFormViewModel: ObservableObject {
             endDate = existingMedication.endDate
             notes = existingMedication.notes ?? ""
             inventoryCount = existingMedication.inventoryCount.map(String.init) ?? ""
-            inventoryUnit = "錠"
+            inventoryUnit = NSLocalizedString("common.unit.tablet", comment: "Tablet unit")
             isPrn = existingMedication.isPrn
             prnInstructions = existingMedication.prnInstructions ?? ""
         }
@@ -142,24 +142,25 @@ final class MedicationFormViewModel: ObservableObject {
     func validate() -> [String] {
         var errors: [String] = []
         if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors.append("薬名は必須です")
+            errors.append(NSLocalizedString("medication.form.validation.name.required", comment: "Name required"))
         }
         let dosageValue = dosageStrengthValue.trimmingCharacters(in: .whitespacesAndNewlines)
         let dosageUnit = dosageStrengthUnit.trimmingCharacters(in: .whitespacesAndNewlines)
+        let unknownLabel = NSLocalizedString("common.dosage.unknown", comment: "Unknown dosage")
         if dosageUnit.isEmpty {
-            errors.append("用量は必須です")
-        } else if dosageUnit != "不明" && dosageValue.isEmpty {
-            errors.append("用量の数値を入力してください")
+            errors.append(NSLocalizedString("medication.form.validation.dosage.required", comment: "Dosage required"))
+        } else if dosageUnit != unknownLabel && dosageValue.isEmpty {
+            errors.append(NSLocalizedString("medication.form.validation.dosage.value.required", comment: "Dosage value required"))
         }
         if let endDate, endDate < startDate {
-            errors.append("終了日は開始日以降にしてください")
+            errors.append(NSLocalizedString("medication.form.validation.endDate.invalid", comment: "End date invalid"))
         }
         if !isPrn {
             if selectedTimeSlots.isEmpty {
-                errors.append("時間は1件以上選択してください")
+                errors.append(NSLocalizedString("medication.form.validation.timeSlot.required", comment: "Time slot required"))
             }
             if scheduleFrequency == .weekly && selectedDays.isEmpty {
-                errors.append("曜日は1つ以上選択してください")
+                errors.append(NSLocalizedString("medication.form.validation.weekday.required", comment: "Weekday required"))
             }
         }
         return errors
@@ -206,7 +207,7 @@ final class MedicationFormViewModel: ObservableObject {
             let doseCountValue = Int(doseCountPerIntake) ?? 0
             let strengthValue = Double(dosageStrengthValue) ?? 0
             let inventoryValue = Int(inventoryCount)
-            let inventoryUnitValue = "錠"
+            let inventoryUnitValue = NSLocalizedString("common.unit.tablet", comment: "Tablet unit")
             if let existingMedication {
                 let request = MedicationUpdateRequestDTO(
                     name: name,

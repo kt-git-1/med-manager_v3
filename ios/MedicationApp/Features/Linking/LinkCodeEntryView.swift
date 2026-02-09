@@ -46,7 +46,7 @@ struct LinkCodeEntryView: View {
                     TextField(NSLocalizedString("link.code.placeholder", comment: "Link code placeholder"), text: $code)
                         .keyboardType(.numberPad)
                         .font(.title3.monospacedDigit())
-                        .accessibilityLabel("連携コード")
+                        .accessibilityLabel(NSLocalizedString("a11y.linkCode", comment: "Link code"))
                 }
                 .padding(14)
                 .background(.fill.quaternary)
@@ -76,7 +76,7 @@ struct LinkCodeEntryView: View {
                 }
                 .disabled(isLoading || code.isEmpty)
                 .opacity(code.isEmpty ? 0.5 : 1)
-                .accessibilityLabel("連携コード送信")
+                .accessibilityLabel(NSLocalizedString("a11y.linkCode.submit", comment: "Submit link code"))
             }
             .padding(28)
             .frame(maxWidth: .infinity)
@@ -127,13 +127,13 @@ struct LinkCodeEntryView: View {
                     if let message = apiError.errorDescription {
                         errorMessage = message
                     } else {
-                        errorMessage = "Linking failed: \(apiError)"
+                        errorMessage = NSLocalizedString("common.error.linking.generic", comment: "Linking failed")
                     }
                 }
             } else if let message = (error as? LocalizedError)?.errorDescription {
                 errorMessage = message
             } else {
-                errorMessage = "Linking failed: \(error)"
+                errorMessage = NSLocalizedString("common.error.linking.generic", comment: "Linking failed")
             }
         }
     }

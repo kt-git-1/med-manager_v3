@@ -100,7 +100,8 @@ struct HistoryMonthView: View {
             Button(action: showPreviousMonth) {
                 Image(systemName: "chevron.left")
                     .font(.headline)
-                    .padding(8)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .disabled(!canGoToPreviousMonth)
@@ -116,7 +117,8 @@ struct HistoryMonthView: View {
             Button(action: showNextMonth) {
                 Image(systemName: "chevron.right")
                     .font(.headline)
-                    .padding(8)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .disabled(!canGoToNextMonth)
@@ -293,7 +295,9 @@ struct HistoryMonthView: View {
               let previous = Self.calendar.date(byAdding: .month, value: -1, to: displayedMonth) else {
             return
         }
-        displayedMonth = Self.calendar.date(from: Self.calendar.dateComponents([.year, .month], from: previous)) ?? previous
+        withAnimation(.easeInOut(duration: 0.25)) {
+            displayedMonth = Self.calendar.date(from: Self.calendar.dateComponents([.year, .month], from: previous)) ?? previous
+        }
     }
 
     private func showNextMonth() {
@@ -301,7 +305,9 @@ struct HistoryMonthView: View {
               let next = Self.calendar.date(byAdding: .month, value: 1, to: displayedMonth) else {
             return
         }
-        displayedMonth = Self.calendar.date(from: Self.calendar.dateComponents([.year, .month], from: next)) ?? next
+        withAnimation(.easeInOut(duration: 0.25)) {
+            displayedMonth = Self.calendar.date(from: Self.calendar.dateComponents([.year, .month], from: next)) ?? next
+        }
     }
 
     private func loadMonth() {
