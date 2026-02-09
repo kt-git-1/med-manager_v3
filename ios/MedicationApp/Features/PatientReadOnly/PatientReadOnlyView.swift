@@ -170,7 +170,10 @@ struct PatientSettingsView: View {
                         .frame(height: 50)
                         .background(Color.red, in: RoundedRectangle(cornerRadius: 14))
                 }
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .buttonStyle(.plain)
+                .listRowInsets(EdgeInsets(top: 48, leading: 16, bottom: 48, trailing: 16))
+                .listRowBackground(Color(uiColor: .systemGroupedBackground))
+                .listRowSeparator(.hidden)
                 .alert(
                     NSLocalizedString("patient.logout.confirm.title", comment: "Logout confirm title"),
                     isPresented: $showingLogoutConfirm
