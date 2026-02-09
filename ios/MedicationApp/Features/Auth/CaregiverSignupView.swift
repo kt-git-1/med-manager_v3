@@ -94,7 +94,7 @@ struct CaregiverSignupView: View {
         do {
             let token = try await authService.signup(email: email, password: password)
             if token.isEmpty {
-                errorMessage = "Check your email to confirm your account."
+                errorMessage = NSLocalizedString("caregiver.signup.confirm.email", comment: "Email confirmation required")
             } else {
                 sessionStore.saveCaregiverToken(token)
             }

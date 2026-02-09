@@ -46,6 +46,7 @@
 "caregiver.signup.password" = "Password";
 "caregiver.signup.button" = "サインアップ";
 "caregiver.signup.button.loading" = "登録中...";
+"caregiver.signup.confirm.email" = "アカウントを確認するためにメールをご確認ください。";
 
 /* Link code */
 "link.code.title" = "連携コード";
