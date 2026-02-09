@@ -34,11 +34,13 @@ export async function createPrnRecord(
     return { error: "not_prn" };
   }
 
+  const quantityTaken = input.quantityTaken ?? medication.doseCountPerIntake;
+
   const record = await createPrnDoseRecord({
     patientId: input.patientId,
     medicationId: input.medicationId,
     takenAt: input.takenAt ?? new Date(),
-    quantityTaken: input.quantityTaken ?? medication.doseCountPerIntake,
+    quantityTaken,
     actorType: input.actorType
   });
 
@@ -58,7 +60,7 @@ export async function createPrnRecord(
   await applyInventoryDeltaForDoseRecord({
     patientId: input.patientId,
     medicationId: input.medicationId,
-    delta: -medication.doseCountPerIntake,
+    delta: -quantityTaken,
     reason: "TAKEN_CREATE"
   });
 
@@ -85,7 +87,7 @@ export async function deletePrnRecord(input: {
     await applyInventoryDeltaForDoseRecord({
       patientId: existing.patientId,
       medicationId: existing.medicationId,
-      delta: medication.doseCountPerIntake,
+      delta: existing.quantityTaken,
       reason: "TAKEN_DELETE"
     });
   }
