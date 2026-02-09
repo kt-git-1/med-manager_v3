@@ -119,13 +119,8 @@ private struct HistoryDayRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(timeText)
                     .font(.headline)
-                Text(name)
+                Text(medicationDisplayName)
                     .font(.title3.weight(.semibold))
-                if let dosageText {
-                    Text(dosageText)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
             }
             Spacer()
             Text(statusText)
@@ -140,12 +135,12 @@ private struct HistoryDayRow: View {
         .glassEffect(.regular, in: .rect(cornerRadius: 14))
     }
 
-    private var dosageText: String? {
+    private var medicationDisplayName: String {
         let trimmed = dosage.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty || trimmed == NSLocalizedString("common.dosage.unknown", comment: "Unknown dosage") {
-            return nil
+            return name
         }
-        return trimmed
+        return "\(name) \(trimmed)"
     }
 
     private var statusText: String {
@@ -230,9 +225,6 @@ private struct HistoryDayPrnRow: View {
                     .font(.headline)
                 Text("\(prnPrefix): \(name)")
                     .font(.title3.weight(.semibold))
-                Text(String(format: NSLocalizedString("history.day.prn.doseCount", comment: "PRN dose count"), AppConstants.formatDecimal(quantity)))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
             }
             Spacer()
             Text(prnPrefix)

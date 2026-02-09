@@ -973,11 +973,9 @@ private struct PrnMedicationCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(prnMedicationDisplayName)
                     .font(.title2.weight(.bold))
-                if shouldShowDoseCount {
-                    Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(medication.doseCountPerIntake)))
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                }
+                Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(medication.doseCountPerIntake)))
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
                 if let noteText, !noteText.isEmpty {
                     Text(noteText)
                         .font(.body)
@@ -1027,10 +1025,6 @@ private struct PrnMedicationCard: View {
         }
         let notes = medication.notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return notes.isEmpty ? nil : notes
-    }
-
-    private var shouldShowDoseCount: Bool {
-        return true
     }
 
     private func handleRecord() {
