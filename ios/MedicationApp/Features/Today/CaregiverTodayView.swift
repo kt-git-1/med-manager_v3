@@ -309,13 +309,11 @@ private struct CaregiverTodayRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(timeText)
                         .font(.headline)
-                    Text(dose.medicationSnapshot.name)
+                    Text(medicationDisplayName)
                         .font(.title3.weight(.semibold))
-                    if let dosageText {
-                        Text(dosageText)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                    }
+                    Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(dose.medicationSnapshot.doseCountPerIntake)))
+                        .font(.body)
+                        .foregroundStyle(.secondary)
                     if let recordedByText {
                         Text(recordedByText)
                             .font(.caption)
@@ -358,11 +356,17 @@ private struct CaregiverTodayRow: View {
         .accessibilityLabel(accessibilitySummary)
     }
 
-    private var accessibilitySummary: String {
-        var parts = [timeText, dose.medicationSnapshot.name]
-        if let dosageText {
-            parts.append(dosageText)
+    private var medicationDisplayName: String {
+        let trimmed = dose.medicationSnapshot.dosageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == "不明" {
+            return dose.medicationSnapshot.name
         }
+        return "\(dose.medicationSnapshot.name) \(trimmed)"
+    }
+
+    private var accessibilitySummary: String {
+        var parts = [timeText, medicationDisplayName]
+        parts.append(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(dose.medicationSnapshot.doseCountPerIntake)))
         if let recordedByText {
             parts.append(recordedByText)
         }
@@ -370,14 +374,6 @@ private struct CaregiverTodayRow: View {
             parts.append(statusText)
         }
         return parts.joined(separator: ", ")
-    }
-
-    private var dosageText: String? {
-        let trimmed = dose.medicationSnapshot.dosageText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty || trimmed == "不明" {
-            return nil
-        }
-        return trimmed
     }
 
     private func statusText(for status: DoseStatusDTO?) -> String? {

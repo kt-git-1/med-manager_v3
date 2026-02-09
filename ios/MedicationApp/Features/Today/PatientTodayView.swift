@@ -808,7 +808,7 @@ private struct PatientTodayRow: View {
                     Text(timeText)
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(isMissed ? Color.red : Color.primary)
-                    Text(dose.medicationSnapshot.name)
+                    Text(medicationDisplayName)
                         .font(.title2.weight(.bold))
                         .foregroundStyle(isMissed ? Color.red : Color.primary)
                     if shouldShowDoseCount {
@@ -879,8 +879,16 @@ private struct PatientTodayRow: View {
         dose.effectiveStatus == .missed
     }
 
+    private var medicationDisplayName: String {
+        let trimmed = dose.medicationSnapshot.dosageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == "不明" {
+            return dose.medicationSnapshot.name
+        }
+        return "\(dose.medicationSnapshot.name) \(trimmed)"
+    }
+
     private var accessibilitySummary: String {
-        var parts = [timeText, dose.medicationSnapshot.name]
+        var parts = [timeText, medicationDisplayName]
         if shouldShowDoseCount {
             parts.append(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(dose.medicationSnapshot.doseCountPerIntake)))
         }
@@ -963,7 +971,7 @@ private struct PrnMedicationCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
-                Text(medication.name)
+                Text(prnMedicationDisplayName)
                     .font(.title2.weight(.bold))
                 if shouldShowDoseCount {
                     Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(medication.doseCountPerIntake)))
@@ -1002,6 +1010,14 @@ private struct PrnMedicationCard: View {
         }
         .padding(20)
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
+    }
+
+    private var prnMedicationDisplayName: String {
+        let trimmed = medication.dosageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == "不明" {
+            return medication.name
+        }
+        return "\(medication.name) \(trimmed)"
     }
 
     private var noteText: String? {
