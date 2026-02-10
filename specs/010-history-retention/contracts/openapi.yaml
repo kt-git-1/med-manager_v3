@@ -1,0 +1,300 @@
+openapi: 3.0.3
+info:
+  title: History Retention Limit API (010)
+  version: 0.1.0
+  description: |
+    Extends the 4 existing history endpoints (from feature 004) with a retention
+    gate. Free users can only view history within the last 30 days (cutoffDate
+    through today, Asia/Tokyo). Premium users can view all history. The gate is
+    enforced server-side and returns a stable HISTORY_RETENTION_LIMIT error.
+servers:
+  - url: /api
+paths:
+  /patient/history/month:
+    get:
+      summary: Get history month summary (patient, with retention gate)
+      description: |
+        Returns the month calendar summary for the authenticated patient.
+        If the patient is on the free plan (linked caregiver is not premium)
+        and the requested month contains dates before cutoffDate, the request
+        is rejected with HISTORY_RETENTION_LIMIT.
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+      responses:
+        "200":
+          description: History month summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryMonthResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: |
+            History retention limit — free user requesting history before cutoffDate.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryRetentionLimitResponse"
+        "422":
+          description: Validation error
+  /patient/history/day:
+    get:
+      summary: Get history day detail (patient, with retention gate)
+      description: |
+        Returns the day detail for the authenticated patient.
+        If the patient is on the free plan and the requested date is before
+        cutoffDate, the request is rejected with HISTORY_RETENTION_LIMIT.
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: History day detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryDayResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: |
+            History retention limit — free user requesting history before cutoffDate.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryRetentionLimitResponse"
+        "422":
+          description: Validation error
+  /patients/{patientId}/history/month:
+    get:
+      summary: Get history month summary (caregiver, with retention gate)
+      description: |
+        Returns the month calendar summary for the specified patient,
+        authenticated as the linked caregiver. If the caregiver is on the
+        free plan and the requested month contains dates before cutoffDate,
+        the request is rejected with HISTORY_RETENTION_LIMIT.
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+      responses:
+        "200":
+          description: History month summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryMonthResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: |
+            History retention limit — free caregiver requesting history before cutoffDate.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryRetentionLimitResponse"
+        "404":
+          description: Not found (concealed — patient not linked to caregiver)
+        "422":
+          description: Validation error
+  /patients/{patientId}/history/day:
+    get:
+      summary: Get history day detail (caregiver, with retention gate)
+      description: |
+        Returns the day detail for the specified patient, authenticated as the
+        linked caregiver. If the caregiver is on the free plan and the requested
+        date is before cutoffDate, the request is rejected with
+        HISTORY_RETENTION_LIMIT.
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: History day detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryDayResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: |
+            History retention limit — free caregiver requesting history before cutoffDate.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryRetentionLimitResponse"
+        "404":
+          description: Not found (concealed — patient not linked to caregiver)
+        "422":
+          description: Validation error
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Caregiver Bearer token (Supabase JWT with caregiver- prefix) or
+        Patient Bearer token (patient session token).
+  schemas:
+    HistoryRetentionLimitResponse:
+      type: object
+      required:
+        - code
+        - message
+        - cutoffDate
+        - retentionDays
+      properties:
+        code:
+          type: string
+          enum:
+            - HISTORY_RETENTION_LIMIT
+          description: Stable machine-readable error identifier
+        message:
+          type: string
+          description: Human-readable message (informational, do not parse)
+          example: "履歴の閲覧は直近30日間に制限されています。"
+        cutoffDate:
+          type: string
+          format: date
+          description: Earliest viewable date (YYYY-MM-DD, Asia/Tokyo)
+          example: "2026-01-12"
+        retentionDays:
+          type: integer
+          description: Number of days of history available on the free plan
+          example: 30
+    HistoryMonthResponse:
+      description: Month calendar summary (same schema as 004)
+      type: object
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryDaySummary"
+        prnCountByDay:
+          type: object
+          additionalProperties:
+            type: integer
+    HistoryDayResponse:
+      description: Day detail with doses and PRN items (same schema as 004)
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        doses:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryDayItem"
+        prnItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/PrnHistoryItem"
+    HistoryDaySummary:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        slotSummary:
+          type: object
+          properties:
+            morning:
+              $ref: "#/components/schemas/SlotSummaryStatus"
+            noon:
+              $ref: "#/components/schemas/SlotSummaryStatus"
+            evening:
+              $ref: "#/components/schemas/SlotSummaryStatus"
+            bedtime:
+              $ref: "#/components/schemas/SlotSummaryStatus"
+    SlotSummaryStatus:
+      type: string
+      enum:
+        - pending
+        - taken
+        - missed
+        - none
+    HistoryDayItem:
+      type: object
+      properties:
+        medicationId:
+          type: string
+        medicationName:
+          type: string
+        dosageText:
+          type: string
+        doseCountPerIntake:
+          type: number
+        scheduledAt:
+          type: string
+          format: date-time
+        slot:
+          type: string
+          enum:
+            - morning
+            - noon
+            - evening
+            - bedtime
+        effectiveStatus:
+          type: string
+          enum:
+            - pending
+            - taken
+            - missed
+    PrnHistoryItem:
+      type: object
+      properties:
+        medicationId:
+          type: string
+        medicationName:
+          type: string
+        takenAt:
+          type: string
+          format: date-time
+        quantityTaken:
+          type: number
+        actorType:
+          type: string

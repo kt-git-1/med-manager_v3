@@ -8,6 +8,7 @@ enum APIError: Error {
     case validation(String)
     case network(String)
     case patientLimitExceeded(limit: Int, current: Int)
+    case historyRetentionLimit(cutoffDate: String, retentionDays: Int)
     case unknown
 }
 
@@ -30,6 +31,11 @@ extension APIError: LocalizedError {
             return NSLocalizedString(
                 "billing.gate.patientLimit.body",
                 comment: "Patient limit exceeded"
+            )
+        case .historyRetentionLimit:
+            return NSLocalizedString(
+                "history.retention.lock.caregiver.body",
+                comment: "History retention limit"
             )
         case .unknown:
             return "Unexpected error"

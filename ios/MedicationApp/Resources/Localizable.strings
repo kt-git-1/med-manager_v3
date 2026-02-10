@@ -404,3 +404,15 @@
 /* Billing / Patient Limit Gate (009) */
 "billing.gate.patientLimit.title" = "プレミアムで複数患者を登録";
 "billing.gate.patientLimit.body" = "無料プランでは登録できる患者は1人までです。プレミアムで無制限に登録できます。";
+
+/* History Retention (010) */
+"history.retention.banner.free" = "無料：直近30日まで（%@〜今日）";
+"history.retention.banner.premium" = "全期間表示中";
+"history.retention.lock.caregiver.title" = "プレミアムで全期間の履歴を閲覧";
+"history.retention.lock.caregiver.body" = "30日より前の履歴はプレミアムで閲覧できます";
+"history.retention.lock.patient.title" = "履歴の閲覧制限";
+"history.retention.lock.patient.body" = "30日より前の履歴はプレミアムで閲覧できます。家族がプレミアムの場合は自動で表示されます。";
+"history.retention.lock.upgrade" = "アップグレード";
+"history.retention.lock.restore" = "購入を復元";
+"history.retention.lock.close" = "閉じる";
+"history.retention.lock.refresh" = "更新";

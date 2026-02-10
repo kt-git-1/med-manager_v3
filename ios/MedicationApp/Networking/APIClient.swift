@@ -413,6 +413,11 @@ final class APIClient {
             if let limitError = parsePatientLimitExceeded(from: data) {
                 throw limitError
             }
+            // Check for HISTORY_RETENTION_LIMIT before generic 403 handling.
+            // Retention errors must not clear the session.
+            if let retentionError = parseHistoryRetentionLimit(from: data) {
+                throw retentionError
+            }
             sessionStore.handleAuthFailure(for: sessionStore.mode)
             throw APIError.forbidden
         case 404:
@@ -458,6 +463,22 @@ final class APIClient {
             return nil
         }
         return .patientLimitExceeded(limit: payload.limit, current: payload.current)
+    }
+
+    /// Parses the HISTORY_RETENTION_LIMIT error response from a 403 body.
+    /// Returns `APIError.historyRetentionLimit` if the response matches the contract,
+    /// or `nil` if it's not a retention error.
+    private func parseHistoryRetentionLimit(from data: Data) -> APIError? {
+        struct RetentionPayload: Decodable {
+            let code: String
+            let cutoffDate: String
+            let retentionDays: Int
+        }
+        guard let payload = try? JSONDecoder().decode(RetentionPayload.self, from: data),
+              payload.code == "HISTORY_RETENTION_LIMIT" else {
+            return nil
+        }
+        return .historyRetentionLimit(cutoffDate: payload.cutoffDate, retentionDays: payload.retentionDays)
     }
 
     @MainActor

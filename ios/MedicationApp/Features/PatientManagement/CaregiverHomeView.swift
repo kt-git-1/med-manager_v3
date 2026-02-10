@@ -26,6 +26,7 @@ struct CaregiverHomeView: View {
                 NavigationStack {
                     CaregiverHistoryView(
                         sessionStore: sessionStore,
+                        entitlementStore: entitlementStore,
                         onOpenPatients: { selectedTab = .patients }
                     )
                     .navigationTitle("")

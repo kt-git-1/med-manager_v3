@@ -25,13 +25,16 @@ struct HistoryMonthView: View {
     }()
 
     private let sessionStore: SessionStore
+    private let entitlementStore: EntitlementStore?
     @StateObject private var viewModel: HistoryViewModel
     @State private var displayedMonth: Date
     @State private var selectedDate: Date?
+    @State private var showRetentionLock = false
 
-    init(sessionStore: SessionStore? = nil) {
+    init(sessionStore: SessionStore? = nil, entitlementStore: EntitlementStore? = nil) {
         let store = sessionStore ?? SessionStore()
         self.sessionStore = store
+        self.entitlementStore = entitlementStore
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
             wrappedValue: HistoryViewModel(
@@ -48,6 +51,7 @@ struct HistoryMonthView: View {
                 ScrollView {
                     LazyVStack(spacing: 16) {
                         header
+                        retentionBanner
 
                         if viewModel.isLoadingMonth && viewModel.month == nil {
                             LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
@@ -92,6 +96,29 @@ struct HistoryMonthView: View {
             guard let date = newValue else { return }
             viewModel.loadDay(date: HistoryMonthView.dateKeyFormatter.string(from: date))
         }
+        .onChange(of: viewModel.retentionLocked) { _, locked in
+            showRetentionLock = locked
+        }
+        .fullScreenCover(isPresented: $showRetentionLock) {
+            if let cutoffDate = viewModel.retentionCutoffDate {
+                HistoryRetentionLockView(
+                    mode: sessionStore.mode ?? .caregiver,
+                    cutoffDate: cutoffDate,
+                    entitlementStore: entitlementStore ?? EntitlementStore(),
+                    onDismiss: {
+                        showRetentionLock = false
+                        // Navigate back to the current month
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            displayedMonth = HistoryMonthView.startOfMonth(for: Date())
+                        }
+                    },
+                    onRefresh: {
+                        showRetentionLock = false
+                        loadMonth()
+                    }
+                )
+            }
+        }
         .accessibilityIdentifier("HistoryMonthView")
     }
 
@@ -123,6 +150,37 @@ struct HistoryMonthView: View {
             .buttonStyle(.plain)
             .disabled(!canGoToNextMonth)
             .accessibilityLabel(NSLocalizedString("history.month.next", comment: "Next month"))
+        }
+    }
+
+    private var retentionBanner: some View {
+        Group {
+            if let entitlementStore, entitlementStore.isPremium {
+                Text(NSLocalizedString(
+                    "history.retention.banner.premium",
+                    comment: "Premium retention banner"
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 6)
+                .background(Color.green.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                .accessibilityIdentifier("HistoryRetentionBannerPremium")
+            } else {
+                Text(String(
+                    format: NSLocalizedString(
+                        "history.retention.banner.free",
+                        comment: "Free retention banner"
+                    ),
+                    FeatureGate.historyCutoffDate()
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 6)
+                .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                .accessibilityIdentifier("HistoryRetentionBannerFree")
+            }
         }
     }
 
@@ -279,7 +337,9 @@ struct HistoryMonthView: View {
     }
 
     private var minMonth: Date {
-        Self.calendar.date(byAdding: .month, value: -2, to: currentMonthStart) ?? currentMonthStart
+        // Allow navigating back up to 36 months. The backend enforces the actual
+        // retention limit and the lock UI handles the restriction display.
+        Self.calendar.date(byAdding: .month, value: -36, to: currentMonthStart) ?? currentMonthStart
     }
 
     private var canGoToPreviousMonth: Bool {

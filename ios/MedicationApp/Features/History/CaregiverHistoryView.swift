@@ -2,10 +2,12 @@ import SwiftUI
 
 struct CaregiverHistoryView: View {
     private let sessionStore: SessionStore
+    private let entitlementStore: EntitlementStore?
     private let onOpenPatients: () -> Void
 
-    init(sessionStore: SessionStore, onOpenPatients: @escaping () -> Void) {
+    init(sessionStore: SessionStore, entitlementStore: EntitlementStore? = nil, onOpenPatients: @escaping () -> Void) {
         self.sessionStore = sessionStore
+        self.entitlementStore = entitlementStore
         self.onOpenPatients = onOpenPatients
     }
 
@@ -44,7 +46,7 @@ struct CaregiverHistoryView: View {
                     Spacer(minLength: 0)
                 }
             } else {
-                HistoryMonthView(sessionStore: sessionStore)
+                HistoryMonthView(sessionStore: sessionStore, entitlementStore: entitlementStore)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
