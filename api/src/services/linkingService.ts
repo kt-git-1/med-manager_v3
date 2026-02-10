@@ -1,6 +1,8 @@
 import { createHash, randomInt } from "crypto";
 import { AuthError } from "../middleware/auth";
 import { prisma } from "../repositories/prisma";
+import { FREE_PATIENT_LIMIT } from "./patientLimitConstants";
+import { PatientLimitError } from "../errors/patientLimitError";
 import { listPatientRecordsByCaregiver, getPatientRecordForCaregiver } from "../repositories/patientRepo";
 import { createLinkingCodeRecord, invalidateActiveLinkingCodes } from "../repositories/linkingCodeRepo";
 import {
@@ -41,6 +43,21 @@ export async function createPatientForCaregiver(
   displayName: string
 ): Promise<PatientSummary> {
   const patient = await prisma.$transaction(async (tx) => {
+    // Count ACTIVE links inside the transaction for atomicity (race-condition safe)
+    const activeCount = await tx.caregiverPatientLink.count({
+      where: { caregiverId: caregiverUserId, status: "ACTIVE" }
+    });
+
+    // If at or over the free limit, check entitlement before proceeding
+    if (activeCount >= FREE_PATIENT_LIMIT) {
+      const entitlement = await tx.caregiverEntitlement.findFirst({
+        where: { caregiverId: caregiverUserId, status: "ACTIVE" }
+      });
+      if (!entitlement) {
+        throw new PatientLimitError(FREE_PATIENT_LIMIT, activeCount);
+      }
+    }
+
     const created = await tx.patient.create({
       data: { caregiverId: caregiverUserId, displayName }
     });

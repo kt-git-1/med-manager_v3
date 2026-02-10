@@ -1,0 +1,176 @@
+openapi: 3.0.3
+info:
+  title: Free Limit Gates API (009)
+  version: 0.1.0
+  description: |
+    Extends the existing POST /api/patients endpoint with patient-limit enforcement.
+    Free caregivers are limited to 1 patient; premium caregivers have no limit.
+    No new endpoints are introduced.
+servers:
+  - url: /api
+paths:
+  /patients:
+    post:
+      summary: Create patient (caregiver, with free limit gate)
+      description: |
+        Creates a new patient record linked to the authenticated caregiver.
+        If the caregiver is on the free plan and already has 1 or more active
+        linked patients, the request is rejected with PATIENT_LIMIT_EXCEEDED.
+        Premium caregivers can create unlimited patients.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePatientRequest"
+      responses:
+        "201":
+          description: Patient created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatePatientResponse"
+        "401":
+          description: Unauthorized — missing or invalid caregiver token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: |
+            Patient limit exceeded — free caregiver has reached the maximum
+            number of linked patients. Upgrade to premium to add more.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatientLimitExceededResponse"
+        "422":
+          description: Validation error — missing or invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+    get:
+      summary: List patients (caregiver)
+      description: |
+        Returns all patients linked to the authenticated caregiver.
+        No limit gate applies to listing — free caregivers with more than
+        1 patient (grandfather) can see all of them.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Patient list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPatientsResponse"
+        "401":
+          description: Unauthorized — missing or invalid caregiver token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Caregiver Bearer token (Supabase JWT with caregiver- prefix)
+  schemas:
+    CreatePatientRequest:
+      type: object
+      required:
+        - displayName
+      properties:
+        displayName:
+          type: string
+          description: Patient display name (1-50 characters, no whitespace-only)
+          example: "太郎"
+    CreatePatientResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - displayName
+          properties:
+            id:
+              type: string
+              format: uuid
+            displayName:
+              type: string
+    ListPatientsResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - displayName
+            properties:
+              id:
+                type: string
+                format: uuid
+              displayName:
+                type: string
+    PatientLimitExceededResponse:
+      type: object
+      required:
+        - code
+        - message
+        - limit
+        - current
+      properties:
+        code:
+          type: string
+          enum:
+            - PATIENT_LIMIT_EXCEEDED
+          description: Stable machine-readable error identifier
+        message:
+          type: string
+          description: Human-readable message (informational, do not parse)
+          example: "Patient limit reached. Upgrade to premium for unlimited patients."
+        limit:
+          type: integer
+          description: Maximum patients allowed on the current plan
+          example: 1
+        current:
+          type: integer
+          description: Current number of active linked patients
+          example: 1
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code (e.g., unauthorized, not_found)
+        message:
+          type: string
+          description: Human-readable error description
+    ValidationErrorResponse:
+      type: object
+      required:
+        - error
+        - messages
+      properties:
+        error:
+          type: string
+          example: validation
+        messages:
+          type: array
+          items:
+            type: string
+          description: List of validation error messages

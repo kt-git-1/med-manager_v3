@@ -6,6 +6,7 @@ final class PatientManagementViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var issuedCode: LinkingCodeDTO?
+    @Published var isPatientLimitExceeded = false
 
     private let apiClient: APIClient
     private let sessionStore: SessionStore
@@ -58,10 +59,18 @@ final class PatientManagementViewModel: ObservableObject {
     }
 
     func createPatient(displayName: String) async -> Bool {
+        isPatientLimitExceeded = false
         do {
             let created = try await apiClient.createPatient(displayName: displayName)
             patients.insert(created, at: 0)
             return true
+        } catch let error as APIError {
+            if case .patientLimitExceeded = error {
+                isPatientLimitExceeded = true
+                return false
+            }
+            errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
+            return false
         } catch {
             errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
             return false
@@ -142,8 +151,9 @@ struct PatientManagementView: View {
                 )
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button(NSLocalizedString("caregiver.patients.add", comment: "Add patient")) {
-                        showingCreate = true
+                        Task { await handleAddPatientTapped() }
                     }
+                    .accessibilityIdentifier("caregiver.patients.add")
                 }
             }
             .sheet(isPresented: $showingCreate) {
@@ -275,6 +285,27 @@ struct PatientManagementView: View {
         .overlay {
             if viewModel.isLoading || isSavingDetail {
                 SchedulingRefreshOverlay()
+            }
+        }
+        .overlay {
+            if entitlementStore?.isRefreshing == true {
+                SchedulingRefreshOverlay()
+                    .accessibilityIdentifier("SchedulingRefreshOverlay")
+            }
+        }
+        .sheet(isPresented: $showingPaywall) {
+            if let entitlementStore {
+                PaywallView(entitlementStore: entitlementStore)
+            }
+        }
+        .onChange(of: viewModel.isPatientLimitExceeded) { _, exceeded in
+            if exceeded {
+                showingCreate = false
+                Task {
+                    try? await Task.sleep(for: .milliseconds(300))
+                    showingPaywall = true
+                    viewModel.isPatientLimitExceeded = false
+                }
             }
         }
         .accessibilityIdentifier("PatientManagementView")
@@ -520,9 +551,6 @@ struct PatientManagementView: View {
                 .accessibilityIdentifier("billing.premium.restore")
             }
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-            .sheet(isPresented: $showingPaywall) {
-                PaywallView(entitlementStore: entitlementStore)
-            }
         }
     }
 
@@ -920,6 +948,33 @@ struct PatientManagementView: View {
             return ScheduleTimeSlot.evening.timeValue
         case .bedtime:
             return ScheduleTimeSlot.bedtime.timeValue
+        }
+    }
+
+    // MARK: - Patient Limit Gate (009-free-limit-gates)
+
+    /// Pre-flight gate for the "add patient" button.
+    /// Checks entitlement state and patient count before allowing creation.
+    private func handleAddPatientTapped() async {
+        guard let entitlementStore else {
+            // No entitlement store provided — allow creation (should not happen for caregivers)
+            showingCreate = true
+            return
+        }
+
+        // If entitlement state is unknown, refresh first (overlay shown via isRefreshing)
+        if entitlementStore.state == .unknown {
+            await entitlementStore.refresh()
+        }
+
+        // Check the gate
+        if FeatureGate.canAddPatient(
+            entitlementState: entitlementStore.state,
+            currentPatientCount: viewModel.patients.count
+        ) {
+            showingCreate = true
+        } else {
+            showingPaywall = true
         }
     }
 

@@ -2,6 +2,7 @@ import { errorResponse } from "../../../src/middleware/error";
 import { AuthError, getBearerToken, isCaregiverToken, requireCaregiver } from "../../../src/middleware/auth";
 import { validatePatientCreate } from "../../../src/validators/patient";
 import { createPatientForCaregiver, listPatientsForCaregiver } from "../../../src/services/linkingService";
+import { PatientLimitError } from "../../../src/errors/patientLimitError";
 
 export const runtime = "nodejs";
 
@@ -44,6 +45,20 @@ export async function POST(request: Request) {
       headers: { "content-type": "application/json" }
     });
   } catch (error) {
+    if (error instanceof PatientLimitError) {
+      return new Response(
+        JSON.stringify({
+          code: "PATIENT_LIMIT_EXCEEDED",
+          message: error.message,
+          limit: error.limit,
+          current: error.current
+        }),
+        {
+          status: 403,
+          headers: { "content-type": "application/json" }
+        }
+      );
+    }
     return errorResponse(error);
   }
 }

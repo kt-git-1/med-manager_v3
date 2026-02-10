@@ -40,4 +40,30 @@ enum FeatureGate: CaseIterable, Sendable {
             return gate.requiredTier <= .premium
         }
     }
+
+    // MARK: - Patient Limit Gate (009-free-limit-gates)
+
+    /// Maximum number of patients a free caregiver can register.
+    static let freePatientLimit = 1
+
+    /// Returns `true` when the caregiver is allowed to add a new patient.
+    ///
+    /// - Premium caregivers: always allowed (unlimited).
+    /// - Free caregivers: allowed only when `currentPatientCount < freePatientLimit`.
+    /// - Unknown state: blocked as a safety measure (must refresh entitlement first).
+    ///
+    /// - Parameters:
+    ///   - entitlementState: The current entitlement state from `EntitlementStore`.
+    ///   - currentPatientCount: Number of ACTIVE linked patients.
+    /// - Returns: `true` if patient creation should proceed; `false` if paywall should show.
+    static func canAddPatient(entitlementState: EntitlementState, currentPatientCount: Int) -> Bool {
+        switch entitlementState {
+        case .premium:
+            return true
+        case .free:
+            return currentPatientCount < freePatientLimit
+        case .unknown:
+            return false
+        }
+    }
 }
