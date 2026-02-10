@@ -6,6 +6,7 @@ struct RootView: View {
     @EnvironmentObject private var globalBannerPresenter: GlobalBannerPresenter
     @EnvironmentObject private var caregiverSessionController: CaregiverSessionController
     @Environment(\.scenePhase) private var scenePhase
+    var entitlementStore: EntitlementStore?
 
     var body: some View {
         Group {
@@ -16,7 +17,7 @@ struct RootView: View {
                 if sessionStore.caregiverToken == nil {
                     CaregiverAuthChoiceView()
                 } else {
-                    CaregiverHomeView()
+                    CaregiverHomeView(entitlementStore: entitlementStore)
                 }
             case .some(.patient):
                 if sessionStore.patientToken == nil {
@@ -38,17 +39,28 @@ struct RootView: View {
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: globalBannerPresenter.banner)
+        .task {
+            if sessionStore.mode == .caregiver {
+                await entitlementStore?.refresh()
+            }
+        }
         .onAppear {
             caregiverSessionController.updateScenePhase(scenePhase)
         }
         .onChange(of: scenePhase) { _, phase in
             caregiverSessionController.updateScenePhase(phase)
+            if phase == .active && sessionStore.mode == .caregiver {
+                Task { await entitlementStore?.refresh() }
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .authFailure)) { _ in
             globalBannerPresenter.show(
                 message: NSLocalizedString("common.error.unexpected", comment: "Unexpected error"),
                 duration: 6
             )
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .caregiverDidLogin)) { _ in
+            Task { await entitlementStore?.refresh() }
         }
     }
 

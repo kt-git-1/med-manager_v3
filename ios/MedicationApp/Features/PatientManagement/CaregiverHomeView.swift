@@ -12,6 +12,7 @@ struct CaregiverHomeView: View {
     @State private var selectedTab: CaregiverTab = .medications
     @State private var currentPatientName: String?
     @State private var hasLowStock = false
+    var entitlementStore: EntitlementStore?
 
     var body: some View {
         ZStack {
@@ -44,7 +45,7 @@ struct CaregiverHomeView: View {
                     )
                 }
             case .patients:
-                PatientManagementView(sessionStore: sessionStore)
+                PatientManagementView(sessionStore: sessionStore, entitlementStore: entitlementStore)
             }
         }
         .safeAreaInset(edge: .bottom) {
