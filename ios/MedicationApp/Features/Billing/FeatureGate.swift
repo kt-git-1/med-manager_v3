@@ -41,6 +41,32 @@ enum FeatureGate: CaseIterable, Sendable {
         }
     }
 
+    // MARK: - History Retention Gate (010-history-retention)
+
+    /// Number of days of history available to free users.
+    static let retentionDaysFree = 30
+
+    /// Returns the cutoff date (inclusive) for free-tier history access,
+    /// calculated as todayTokyo - 29 days in Asia/Tokyo timezone.
+    /// Format: "YYYY-MM-DD"
+    static func historyCutoffDate() -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = AppConstants.defaultTimeZone
+        let now = Date()
+        let todayTokyo = calendar.startOfDay(for: now)
+        guard let cutoff = calendar.date(byAdding: .day, value: -(retentionDaysFree - 1), to: todayTokyo) else {
+            // Fallback: return today (safest default)
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.timeZone = AppConstants.defaultTimeZone
+            return formatter.string(from: now)
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = AppConstants.defaultTimeZone
+        return formatter.string(from: cutoff)
+    }
+
     // MARK: - Patient Limit Gate (009-free-limit-gates)
 
     /// Maximum number of patients a free caregiver can register.

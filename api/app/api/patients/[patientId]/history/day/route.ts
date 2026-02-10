@@ -17,6 +17,8 @@ import {
 } from "../../../../../../src/services/scheduleResponse";
 import { listPrnHistoryItemsByRange } from "../../../../../../src/services/prnDoseRecordService";
 import { validateDateString } from "../../../../../../src/validators/schedule";
+import { checkRetentionForDay } from "../../../../../../src/services/historyRetentionService";
+import { HistoryRetentionError } from "../../../../../../src/errors/historyRetentionError";
 
 export const runtime = "nodejs";
 
@@ -68,6 +70,7 @@ export async function GET(
     const session = await requireCaregiver(authHeader);
     const { patientId } = await params;
     await assertCaregiverPatientScope(session.caregiverUserId, patientId);
+    await checkRetentionForDay(dateParam, "caregiver", session.caregiverUserId);
 
     const range = getDayRange(parsedDate, historyTimeZone);
     const doses = await getScheduleWithStatus(patientId, range.from, range.to, historyTimeZone);
@@ -114,6 +117,20 @@ export async function GET(
       }
     );
   } catch (error) {
+    if (error instanceof HistoryRetentionError) {
+      return new Response(
+        JSON.stringify({
+          code: "HISTORY_RETENTION_LIMIT",
+          message: error.message,
+          cutoffDate: error.cutoffDate,
+          retentionDays: error.retentionDays
+        }),
+        {
+          status: 403,
+          headers: { "content-type": "application/json" }
+        }
+      );
+    }
     return errorResponse(error);
   }
 }

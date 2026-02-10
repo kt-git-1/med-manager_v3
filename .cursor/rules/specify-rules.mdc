@@ -33,9 +33,9 @@ npm test && npm run lint
 TypeScript (Node.js 20+), Swift 5.9+: Follow standard conventions
 
 ## Recent Changes
+- 010-history-retention: Added TypeScript (Node.js >=20, Next.js 16, Prisma 7.3), Swift 6.2 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Auth (JWT); SwiftUI, StoreKit2, XCTes
 - 009-free-limit-gates: Added TypeScript (Node.js >=20, Next.js 16, Prisma 7.3), Swift 6.2 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Auth (JWT); SwiftUI, StoreKit2, XCTes
 - 008-billing-foundation: Added TypeScript (Node.js >=20, Next.js 16, Prisma 7.3), Swift 6.2 (SwiftUI, iOS 26 SDK, StoreKit2) + Next.js App Router, Prisma, Supabase Auth (JWT); SwiftUI, StoreKit2, XCTes
-- 007-prn-medications: Added TypeScript (Node.js >=20), Swift 6.2.1 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Realtime; SwiftUI, XCTes
 
 
 <!-- MANUAL ADDITIONS START -->

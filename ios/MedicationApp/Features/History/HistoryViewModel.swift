@@ -9,6 +9,9 @@ final class HistoryViewModel: ObservableObject {
     @Published var isUpdating = false
     @Published var monthErrorMessage: String?
     @Published var dayErrorMessage: String?
+    @Published var retentionLocked = false
+    @Published var retentionCutoffDate: String?
+    @Published var retentionDays: Int?
 
     private let apiClient: APIClient
     private let sessionStore: SessionStore
@@ -45,6 +48,20 @@ final class HistoryViewModel: ObservableObject {
                 case .none:
                     self.month = nil
                 }
+                self.retentionLocked = false
+                self.retentionCutoffDate = nil
+                self.retentionDays = nil
+            } catch let error as APIError {
+                if case .historyRetentionLimit(let cutoffDate, let retentionDays) = error {
+                    self.retentionLocked = true
+                    self.retentionCutoffDate = cutoffDate
+                    self.retentionDays = retentionDays
+                } else {
+                    self.monthErrorMessage = NSLocalizedString(
+                        "history.error.retry",
+                        comment: "History load failed with retry"
+                    )
+                }
             } catch {
                 self.monthErrorMessage = NSLocalizedString(
                     "history.error.retry",
@@ -73,6 +90,20 @@ final class HistoryViewModel: ObservableObject {
                     self.day = try await apiClient.fetchCaregiverHistoryDay(date: date, slotTimeItems: slotItems)
                 case .none:
                     self.day = nil
+                }
+                self.retentionLocked = false
+                self.retentionCutoffDate = nil
+                self.retentionDays = nil
+            } catch let error as APIError {
+                if case .historyRetentionLimit(let cutoffDate, let retentionDays) = error {
+                    self.retentionLocked = true
+                    self.retentionCutoffDate = cutoffDate
+                    self.retentionDays = retentionDays
+                } else {
+                    self.dayErrorMessage = NSLocalizedString(
+                        "history.error.retry",
+                        comment: "History load failed with retry"
+                    )
                 }
             } catch {
                 self.dayErrorMessage = NSLocalizedString(
