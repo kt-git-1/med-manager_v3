@@ -11,6 +11,7 @@ struct MedicationApp: App {
     @StateObject private var globalBannerPresenter: GlobalBannerPresenter
     @StateObject private var caregiverSessionController: CaregiverSessionController
     private let notificationCoordinator: NotificationCoordinator
+    @State private var entitlementStore = EntitlementStore()
     @State private var showSplash = true
 
     init() {
@@ -58,7 +59,7 @@ struct MedicationApp: App {
                         }
                     }
                 } else {
-                    RootView()
+                    RootView(entitlementStore: entitlementStore)
                         .dynamicTypeSize(.xLarge)
                 }
             }
@@ -70,6 +71,9 @@ struct MedicationApp: App {
             .onAppear {
                 // Wire AppDelegate → DeviceTokenManager for APNs callbacks
                 appDelegate.deviceTokenManager = caregiverSessionController.tokenManager
+                // Configure EntitlementStore with APIClient for server claims
+                let apiClient = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: sessionStore)
+                entitlementStore.configure(apiClient: apiClient)
             }
         }
     }

@@ -385,3 +385,18 @@
 "notification.slot.noon.body" = "昼のお薬の時間です！";
 "notification.slot.evening.body" = "夜のお薬の時間です！";
 "notification.slot.bedtime.body" = "眠前のお薬の時間です！";
+
+/* Billing / Premium */
+"billing.premium.upgrade" = "プレミアムにアップグレード";
+"billing.premium.restore" = "購入を復元";
+"billing.premium.status.active" = "Premium: 有効";
+"billing.premium.status.inactive" = "Premium: 無効";
+"billing.premium.section.header" = "プレミアム";
+"billing.paywall.title" = "プレミアムプラン";
+"billing.paywall.purchase" = "購入する";
+"billing.paywall.restore" = "購入を復元";
+"billing.paywall.close" = "閉じる";
+"billing.paywall.error" = "読み込みに失敗しました";
+"billing.paywall.retry" = "再試行";
+"billing.paywall.description" = "プレミアムにアップグレードすると、複数患者の登録・長期履歴・PDFエクスポート・見守りアラート強化が利用できます。";
+"billing.paywall.offline" = "ネットワーク接続を確認してください";

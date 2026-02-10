@@ -40,3 +40,30 @@ export async function createCaregiverPatientLinkFixture(input: {
     }
   });
 }
+
+export async function createEntitlementFixture(input: {
+  caregiverId: string;
+  productId: string;
+  originalTransactionId: string;
+  transactionId?: string;
+  environment?: string;
+}) {
+  return prisma.caregiverEntitlement.upsert({
+    where: { originalTransactionId: input.originalTransactionId },
+    create: {
+      caregiverId: input.caregiverId,
+      productId: input.productId,
+      status: "ACTIVE",
+      originalTransactionId: input.originalTransactionId,
+      transactionId: input.transactionId ?? input.originalTransactionId,
+      purchasedAt: new Date(),
+      environment: input.environment ?? "Sandbox"
+    },
+    update: {
+      caregiverId: input.caregiverId,
+      productId: input.productId,
+      status: "ACTIVE",
+      transactionId: input.transactionId ?? input.originalTransactionId
+    }
+  });
+}

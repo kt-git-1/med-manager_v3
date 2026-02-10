@@ -109,6 +109,7 @@ struct PatientManagementView: View {
     @State private var revokeTarget: PatientDTO?
     @State private var deleteTarget: PatientDTO?
     @State private var showingLogoutConfirm = false
+    @State private var showingPaywall = false
     @State private var toastMessage: String?
     @State private var draftTimes: [NotificationSlot: Date] = [:]
     @State private var isSavingDetail = false
@@ -119,11 +120,13 @@ struct PatientManagementView: View {
     private let timeZone = AppConstants.defaultTimeZone
     private let apiClient: APIClient
     private static let thresholdKeyPrefix = "inventory.threshold."
+    var entitlementStore: EntitlementStore?
 
-    init(sessionStore: SessionStore? = nil) {
+    init(sessionStore: SessionStore? = nil, entitlementStore: EntitlementStore? = nil) {
         let store = sessionStore ?? SessionStore()
         _viewModel = StateObject(wrappedValue: PatientManagementViewModel(sessionStore: store))
         self.apiClient = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: store)
+        self.entitlementStore = entitlementStore
     }
 
     var body: some View {
@@ -305,6 +308,7 @@ struct PatientManagementView: View {
                     selectionCard
                     selectedPatientSection
                     detailSettingsSection
+                    premiumSection
                     logoutSection
                 }
                 .padding(.horizontal, 16)
@@ -460,6 +464,66 @@ struct PatientManagementView: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
+    }
+
+    @ViewBuilder
+    private var premiumSection: some View {
+        if let entitlementStore {
+            Text(NSLocalizedString("billing.premium.section.header", comment: "Premium header"))
+                .font(.headline)
+                .foregroundStyle(.secondary)
+                .padding(.top, 16)
+
+            VStack(alignment: .leading, spacing: 12) {
+                // Status label
+                Text(entitlementStore.isPremium
+                    ? NSLocalizedString("billing.premium.status.active", comment: "Premium active")
+                    : NSLocalizedString("billing.premium.status.inactive", comment: "Premium inactive")
+                )
+                .font(.subheadline)
+                .foregroundStyle(entitlementStore.isPremium ? .green : .secondary)
+
+                // Upgrade button (hidden when already premium)
+                if !entitlementStore.isPremium {
+                    Button {
+                        showingPaywall = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "crown.fill")
+                                .foregroundStyle(.yellow)
+                                .frame(width: 20)
+                            Text(NSLocalizedString("billing.premium.upgrade", comment: "Upgrade"))
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 16)
+                    }
+                    .accessibilityIdentifier("billing.premium.upgrade")
+                }
+
+                // Restore button (always visible)
+                Button {
+                    Task { await entitlementStore.restore() }
+                } label: {
+                    HStack {
+                        Image(systemName: "arrow.clockwise")
+                            .foregroundStyle(.tint)
+                            .frame(width: 20)
+                        Text(NSLocalizedString("billing.premium.restore", comment: "Restore"))
+                        Spacer()
+                    }
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 16)
+                }
+                .accessibilityIdentifier("billing.premium.restore")
+            }
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView(entitlementStore: entitlementStore)
+            }
+        }
     }
 
     private var logoutSection: some View {

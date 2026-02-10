@@ -622,6 +622,37 @@ final class APIClient {
         return url
     }
 
+    // MARK: - Entitlements (Billing)
+
+    func claimEntitlement(_ request: ClaimRequest) async throws -> ClaimResponse {
+        let url = baseURL.appendingPathComponent("api/iap/claim")
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = tokenForCurrentMode() {
+            urlRequest.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let encoder = JSONEncoder()
+        urlRequest.httpBody = try encoder.encode(request)
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        return try decoder.decode(ClaimResponse.self, from: data)
+    }
+
+    func getEntitlements() async throws -> EntitlementsResponse {
+        let url = baseURL.appendingPathComponent("api/me/entitlements")
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+        if let token = tokenForCurrentMode() {
+            urlRequest.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        return try decoder.decode(EntitlementsResponse.self, from: data)
+    }
+
     // MARK: - Device Tokens (Push Notifications)
 
     func registerDeviceToken(token: String, platform: String = "ios") async throws {

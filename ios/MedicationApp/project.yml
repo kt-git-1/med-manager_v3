@@ -18,6 +18,12 @@ targets:
     resources: []
     info:
       path: App/Info.plist
+      properties:
+        API_BASE_URL: "https://med-manager-v3.vercel.app/"
+        SUPABASE_URL: "https://kairaeahklftpjfcaddh.supabase.co"
+        SUPABASE_ANON_KEY: "sb_publishable_nVf6RMV1tUkg8ew7BJLVnw_YDnUMRra"
+        CFBundleDisplayName: "お薬管理アプリ"
+        UILaunchStoryboardName: "LaunchScreen"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.medicationapp

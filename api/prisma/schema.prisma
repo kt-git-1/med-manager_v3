@@ -51,6 +51,11 @@ enum InventoryAdjustmentActorType {
   SYSTEM
 }
 
+enum EntitlementStatus {
+  ACTIVE
+  REVOKED
+}
+
 model Medication {
   id                  String   @id @default(uuid())
   patientId           String
@@ -274,5 +279,20 @@ model DeviceToken {
   updatedAt    DateTime @updatedAt
 
   @@unique([caregiverId, token])
+  @@index([caregiverId])
+}
+
+model CaregiverEntitlement {
+  id                    String            @id @default(uuid())
+  caregiverId           String
+  productId             String
+  status                EntitlementStatus @default(ACTIVE)
+  originalTransactionId String            @unique
+  transactionId         String
+  purchasedAt           DateTime
+  environment           String            @default("Production")
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
   @@index([caregiverId])
 }

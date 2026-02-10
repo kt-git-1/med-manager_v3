@@ -78,6 +78,7 @@ final class SessionStore: ObservableObject {
             caregiverToken = "\(AppConstants.caregiverTokenPrefix)\(token)"
         }
         userDefaults.set(caregiverToken, forKey: SessionStore.caregiverTokenStorageKey)
+        NotificationCenter.default.post(name: .caregiverDidLogin, object: nil)
     }
 
     func savePatientToken(_ token: String) {
