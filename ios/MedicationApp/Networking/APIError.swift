@@ -7,6 +7,7 @@ enum APIError: Error {
     case conflict
     case validation(String)
     case network(String)
+    case patientLimitExceeded(limit: Int, current: Int)
     case unknown
 }
 
@@ -25,6 +26,11 @@ extension APIError: LocalizedError {
             return message
         case .network(let message):
             return message
+        case .patientLimitExceeded:
+            return NSLocalizedString(
+                "billing.gate.patientLimit.body",
+                comment: "Patient limit exceeded"
+            )
         case .unknown:
             return "Unexpected error"
         }

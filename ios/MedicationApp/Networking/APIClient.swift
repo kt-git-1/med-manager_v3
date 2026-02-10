@@ -407,6 +407,12 @@ final class APIClient {
             sessionStore.handleAuthFailure(for: sessionStore.mode)
             throw APIError.unauthorized
         case 403:
+            // Check for PATIENT_LIMIT_EXCEEDED before generic 403 handling.
+            // The generic handler calls handleAuthFailure which clears the session —
+            // incorrect for limit errors.
+            if let limitError = parsePatientLimitExceeded(from: data) {
+                throw limitError
+            }
             sessionStore.handleAuthFailure(for: sessionStore.mode)
             throw APIError.forbidden
         case 404:
@@ -436,6 +442,22 @@ final class APIClient {
             return text
         }
         return nil
+    }
+
+    /// Parses the PATIENT_LIMIT_EXCEEDED error response from a 403 body.
+    /// Returns `APIError.patientLimitExceeded` if the response matches the contract,
+    /// or `nil` if it's a generic 403 (auth failure).
+    private func parsePatientLimitExceeded(from data: Data) -> APIError? {
+        struct LimitPayload: Decodable {
+            let code: String
+            let limit: Int
+            let current: Int
+        }
+        guard let payload = try? JSONDecoder().decode(LimitPayload.self, from: data),
+              payload.code == "PATIENT_LIMIT_EXCEEDED" else {
+            return nil
+        }
+        return .patientLimitExceeded(limit: payload.limit, current: payload.current)
     }
 
     @MainActor

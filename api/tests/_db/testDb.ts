@@ -41,6 +41,54 @@ export async function createCaregiverPatientLinkFixture(input: {
   });
 }
 
+export async function createMultiPatientFixture(
+  caregiverId: string,
+  count: number
+): Promise<void> {
+  for (let i = 0; i < count; i++) {
+    const patientId = `patient-fixture-${caregiverId}-${i}`;
+    await createCaregiverPatientLinkFixture({
+      caregiverId,
+      patientId,
+      displayName: `Fixture Patient ${i + 1}`
+    });
+  }
+}
+
+export async function createRevokedPatientFixture(input: {
+  caregiverId: string;
+  patientId: string;
+  displayName: string;
+}) {
+  await prisma.patient.upsert({
+    where: { id: input.patientId },
+    create: {
+      id: input.patientId,
+      caregiverId: input.caregiverId,
+      displayName: input.displayName
+    },
+    update: {
+      caregiverId: input.caregiverId,
+      displayName: input.displayName
+    }
+  });
+
+  await prisma.caregiverPatientLink.upsert({
+    where: { patientId: input.patientId },
+    create: {
+      patientId: input.patientId,
+      caregiverId: input.caregiverId,
+      status: "REVOKED",
+      revokedAt: new Date()
+    },
+    update: {
+      caregiverId: input.caregiverId,
+      status: "REVOKED",
+      revokedAt: new Date()
+    }
+  });
+}
+
 export async function createEntitlementFixture(input: {
   caregiverId: string;
   productId: string;

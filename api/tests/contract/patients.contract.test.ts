@@ -97,3 +97,55 @@ describe("patients contract", () => {
     expect(payload.error).toBe("not_found");
   });
 });
+
+// ---------------------------------------------------------------------------
+// PATIENT_LIMIT_EXCEEDED error contract (009-free-limit-gates)
+// ---------------------------------------------------------------------------
+
+describe("PATIENT_LIMIT_EXCEEDED contract", () => {
+  function patientLimitExceededResponse(limit: number, current: number) {
+    return jsonResponse(
+      {
+        code: "PATIENT_LIMIT_EXCEEDED",
+        message: "Patient limit reached. Upgrade to premium for unlimited patients.",
+        limit,
+        current
+      },
+      403
+    );
+  }
+
+  it("returns HTTP 403 status", async () => {
+    const response = patientLimitExceededResponse(1, 1);
+    expect(response.status).toBe(403);
+  });
+
+  it("response body contains code: PATIENT_LIMIT_EXCEEDED", async () => {
+    const response = patientLimitExceededResponse(1, 1);
+    const payload = await response.json();
+    expect(payload.code).toBe("PATIENT_LIMIT_EXCEEDED");
+  });
+
+  it("response body contains limit as integer", async () => {
+    const response = patientLimitExceededResponse(1, 2);
+    const payload = await response.json();
+    expect(payload.limit).toBe(1);
+    expect(typeof payload.limit).toBe("number");
+    expect(Number.isInteger(payload.limit)).toBe(true);
+  });
+
+  it("response body contains current as integer", async () => {
+    const response = patientLimitExceededResponse(1, 3);
+    const payload = await response.json();
+    expect(payload.current).toBe(3);
+    expect(typeof payload.current).toBe("number");
+    expect(Number.isInteger(payload.current)).toBe(true);
+  });
+
+  it("response body contains message as string", async () => {
+    const response = patientLimitExceededResponse(1, 1);
+    const payload = await response.json();
+    expect(typeof payload.message).toBe("string");
+    expect(payload.message.length).toBeGreaterThan(0);
+  });
+});
