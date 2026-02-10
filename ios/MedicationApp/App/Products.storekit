@@ -1,0 +1,38 @@
+{
+  "identifier" : "F8A1B2C3",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "480",
+      "familyShareable" : false,
+      "internalID" : "A1B2C3D4",
+      "localizations" : [
+        {
+          "description" : "Unlock all premium features for your family medication management.",
+          "displayName" : "Premium Unlock",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "家族のお薬管理をもっと便利に。すべてのプレミアム機能をアンロックします。",
+          "displayName" : "プレミアムアンロック",
+          "locale" : "ja"
+        }
+      ],
+      "productID" : "com.yourcompany.medicationapp.premium_unlock",
+      "referenceName" : "Premium Unlock",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 2,
+    "minor" : 0
+  }
+}

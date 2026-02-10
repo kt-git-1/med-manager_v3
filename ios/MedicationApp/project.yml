@@ -15,7 +15,8 @@ targets:
       - path: Shared
       - path: Networking
       - path: Services
-    resources: []
+      - path: Assets.xcassets
+      - path: Resources
     info:
       path: App/Info.plist
       properties:
@@ -30,6 +31,7 @@ targets:
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 0.1.0
     scheme:
+      storeKitConfiguration: App/Products.storekit
       testTargets:
         - MedicationAppTests
   MedicationAppTests:
