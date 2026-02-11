@@ -85,17 +85,16 @@ private struct PatientTodayRootView: View {
         )
         .alert(
             bulkConfirmTitle,
-            isPresented: $showingBulkConfirm,
-            presenting: viewModel.confirmSlot
-        ) { _ in
+            isPresented: $showingBulkConfirm
+        ) {
             Button(NSLocalizedString("patient.today.slot.bulk.confirm.record", comment: "Record")) {
                 viewModel.executeBulkRecord()
             }
             Button(NSLocalizedString("patient.today.slot.bulk.confirm.cancel", comment: "Cancel"), role: .cancel) {
                 viewModel.confirmSlot = nil
             }
-        } message: { slot in
-            Text(bulkConfirmMessage(for: slot))
+        } message: {
+            Text(bulkConfirmMessage)
         }
         .onChange(of: viewModel.confirmSlot) { _, newValue in
             showingBulkConfirm = newValue != nil
@@ -151,8 +150,13 @@ private struct PatientTodayRootView: View {
 
     private var slotSections: [SlotSection] {
         let orderedSlots: [NotificationSlot] = [.morning, .noon, .evening, .bedtime]
+        let summaries = viewModel.slotSummaries
         var sections: [SlotSection] = []
         for slotValue in orderedSlots {
+            // Hide fully-taken slots so the next actionable slot appears at the top
+            if let summary = summaries[slotValue], summary.aggregateStatus == .taken {
+                continue
+            }
             let items = viewModel.items.filter { slot(for: $0) == slotValue }
             if !items.isEmpty {
                 sections.append(SlotSection(id: slotValue.rawValue, slot: slotValue, items: items))
@@ -223,7 +227,8 @@ private struct PatientTodayRootView: View {
         )
     }
 
-    private func bulkConfirmMessage(for slot: NotificationSlot) -> String {
+    private var bulkConfirmMessage: String {
+        guard let slot = viewModel.confirmSlot else { return "" }
         let summary = viewModel.slotSummaries[slot]
         return String(
             format: NSLocalizedString("patient.today.slot.bulk.confirm.message", comment: "Bulk confirm message"),
@@ -691,7 +696,7 @@ private struct SlotCardView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .disabled(summary.remainingCount == 0 || isUpdating)
+            .disabled(summary.remainingCount == 0 || isUpdating || !summary.isWithinRecordingWindow)
             .accessibilityIdentifier("SlotBulkRecordButton")
             .accessibilityLabel(NSLocalizedString("patient.today.slot.bulk.button", comment: "Bulk record"))
         }
@@ -707,27 +712,25 @@ private struct SlotCardView: View {
         .accessibilityLabel("\(slotTitle) \(summary.medCount)種類")
     }
 
-    @ViewBuilder
     private var statusBadge: some View {
-        let text: String
-        let bgColor: Color
-        switch summary.aggregateStatus {
-        case .taken:
-            text = NSLocalizedString("patient.today.status.taken", comment: "Taken")
-            bgColor = Color.green.opacity(0.15)
-        case .missed:
-            text = NSLocalizedString("patient.today.status.missed", comment: "Missed")
-            bgColor = Color.red.opacity(0.15)
-        case .pending:
-            text = NSLocalizedString("patient.today.status.pending", comment: "Pending")
-            bgColor = Color.primary.opacity(0.06)
-        }
-        Text(text)
+        let (text, bgColor) = statusBadgeValues
+        return Text(text)
             .font(.caption.weight(.semibold))
             .padding(.vertical, 4)
             .padding(.horizontal, 8)
             .background(bgColor)
             .clipShape(Capsule())
+    }
+
+    private var statusBadgeValues: (String, Color) {
+        switch summary.aggregateStatus {
+        case .taken:
+            return (NSLocalizedString("patient.today.status.taken", comment: "Taken"), Color.green.opacity(0.15))
+        case .missed:
+            return (NSLocalizedString("patient.today.status.missed", comment: "Missed"), Color.red.opacity(0.15))
+        case .pending:
+            return (NSLocalizedString("patient.today.status.pending", comment: "Pending"), Color.primary.opacity(0.06))
+        }
     }
 }
 

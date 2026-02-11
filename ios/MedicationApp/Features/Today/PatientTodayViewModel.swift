@@ -203,12 +203,17 @@ final class PatientTodayViewModel: ObservableObject {
 
     // MARK: - Slot Bulk Recording
 
+    /// Recording window: slot time −30 min to +60 min
+    private static let recordingWindowBeforeSeconds: TimeInterval = 30 * 60
+    private static let recordingWindowAfterSeconds: TimeInterval = 60 * 60
+
     struct SlotSummary {
         let totalPills: Double
         let medCount: Int
         let remainingCount: Int
         let slotTime: String
         let aggregateStatus: DoseStatusDTO
+        let isWithinRecordingWindow: Bool
     }
 
     var slotSummaries: [NotificationSlot: SlotSummary] {
@@ -242,12 +247,24 @@ final class PatientTodayViewModel: ObservableObject {
                 aggregate = .taken
             }
 
+            // Recording window: scheduledAt −30 min … scheduledAt +60 min
+            let now = Date()
+            let withinWindow: Bool
+            if let firstScheduled = doses.first?.scheduledAt {
+                let windowOpen = firstScheduled.addingTimeInterval(-Self.recordingWindowBeforeSeconds)
+                let windowClose = firstScheduled.addingTimeInterval(Self.recordingWindowAfterSeconds)
+                withinWindow = now >= windowOpen && now <= windowClose
+            } else {
+                withinWindow = false
+            }
+
             result[slot] = SlotSummary(
                 totalPills: totalPills,
                 medCount: medCount,
                 remainingCount: remaining,
                 slotTime: slotTime,
-                aggregateStatus: aggregate
+                aggregateStatus: aggregate,
+                isWithinRecordingWindow: withinWindow
             )
         }
         return result

@@ -21,6 +21,10 @@ import { applyInventoryDeltaForDoseRecord } from "./medicationService";
 import { DEFAULT_TIMEZONE, DOSE_MISSED_WINDOW_MS, INTL_PARSE_LOCALE } from "../constants";
 import { randomUUID } from "crypto";
 
+/** Patient can record from 30 min before slot time to 60 min after. */
+const RECORDING_WINDOW_BEFORE_MS = 30 * 60 * 1000;
+const RECORDING_WINDOW_AFTER_MS = 60 * 60 * 1000;
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -98,6 +102,27 @@ export async function bulkRecordSlot(
   const slotTime = slotDoses.length > 0
     ? getLocalTimeString(slotDoses[0].scheduledAt, tz)
     : "00:00";
+
+  // 5b. Check recording window: slotTime −30 min … slotTime +60 min
+  if (slotDoses.length > 0) {
+    const firstScheduledAt = new Date(slotDoses[0].scheduledAt).getTime();
+    const windowOpen = firstScheduledAt - RECORDING_WINDOW_BEFORE_MS;
+    const windowClose = firstScheduledAt + RECORDING_WINDOW_AFTER_MS;
+    if (now.getTime() < windowOpen || now.getTime() > windowClose) {
+      const slotSummary = buildSlotSummary(allDoses, tz, input.customSlotTimes);
+      return {
+        updatedCount: 0,
+        remainingCount: slotDoses.filter(
+          (d) => d.effectiveStatus === "pending" || d.effectiveStatus === "missed"
+        ).length,
+        totalPills,
+        medCount,
+        slotTime,
+        slotSummary,
+        recordingGroupId: null
+      };
+    }
+  }
 
   // 6. Partition into recordable (pending or missed) and already-taken
   const recordable = slotDoses.filter(

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterAll } from "vitest";
 
 // ---------------------------------------------------------------------------
 // T001 – T003: Backend integration tests for POST /api/patient/dose-records/slot
@@ -401,10 +401,18 @@ vi.mock("../../src/repositories/prisma", () => ({
 // T001: PENDING bulk -> TAKEN (core happy path)
 // ---------------------------------------------------------------------------
 
+// Fix "now" to be within the recording window of the morning slot (07:30 JST = 22:30 UTC)
+vi.useFakeTimers();
+vi.setSystemTime(new Date("2026-02-10T22:30:00.000Z"));
+
 describe("slot bulk record integration", () => {
   beforeEach(() => {
     store.clear();
     mockScheduleDoses = [];
+  });
+
+  afterAll(() => {
+    vi.useRealTimers();
   });
 
   describe("T001: PENDING bulk -> TAKEN", () => {
