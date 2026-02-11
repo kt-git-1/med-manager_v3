@@ -18,7 +18,6 @@ final class PatientTodayViewModel: ObservableObject {
     @Published var confirmSlot: NotificationSlot?
 
     private let apiClient: APIClient
-    private let reminderService: ReminderService
     let preferencesStore: NotificationPreferencesStore
     private let dateFormatter: DateFormatter
     private let timeFormatter: DateFormatter
@@ -29,11 +28,9 @@ final class PatientTodayViewModel: ObservableObject {
 
     init(
         apiClient: APIClient,
-        reminderService: ReminderService = ReminderService(),
         preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore()
     ) {
         self.apiClient = apiClient
-        self.reminderService = reminderService
         self.preferencesStore = preferencesStore
         self.dateFormatter = DateFormatter()
         self.dateFormatter.locale = AppConstants.japaneseLocale
@@ -306,7 +303,6 @@ final class PatientTodayViewModel: ObservableObject {
         for medication in medications {
             medicationCache[medication.id] = medication
         }
-        await reminderService.scheduleReminders(for: items)
     }
 
     private func showToast(_ message: String) {

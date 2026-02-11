@@ -4,8 +4,10 @@ struct PatientReadOnlyView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var notificationRouter: NotificationDeepLinkRouter
     @EnvironmentObject private var reminderBannerPresenter: ReminderBannerPresenter
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab: PatientTab = .today
     @StateObject private var schedulingCoordinator = SchedulingRefreshCoordinator()
+    @StateObject private var preferencesStore = NotificationPreferencesStore()
     @State private var deepLinkTarget: NotificationDeepLinkTarget?
 
     var body: some View {
@@ -27,6 +29,7 @@ struct PatientReadOnlyView: View {
                     PatientSettingsView(
                         sessionStore: sessionStore,
                         schedulingCoordinator: schedulingCoordinator,
+                        preferencesStore: preferencesStore,
                         onLogout: { sessionStore.clearPatientToken() }
                     )
                     }
@@ -65,7 +68,31 @@ struct PatientReadOnlyView: View {
                 )
             }
         }
+        .task {
+            await refreshNotificationSchedule(trigger: .appLaunch)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { await refreshNotificationSchedule(trigger: .appForeground) }
+            }
+        }
         .accessibilityIdentifier("PatientReadOnlyView")
+    }
+
+    private func refreshNotificationSchedule(trigger: SchedulingRefreshCoordinator.RefreshTrigger) async {
+        guard preferencesStore.masterEnabled else { return }
+        let apiClient = APIClient(
+            baseURL: SessionStore.resolveBaseURL(),
+            sessionStore: sessionStore
+        )
+        await schedulingCoordinator.refresh(
+            apiClient: apiClient,
+            includeSecondary: preferencesStore.rereminderEnabled,
+            enabledSlots: preferencesStore.enabledSlots(),
+            slotTimes: preferencesStore.slotTimesMap(),
+            caregiverPatientId: nil,
+            trigger: trigger
+        )
     }
 
     private var navigationTitle: String {
@@ -97,13 +124,14 @@ struct PatientSettingsView: View {
     private let apiClient: APIClient
     @ObservedObject private var schedulingCoordinator: SchedulingRefreshCoordinator
     @StateObject private var permissionManager = NotificationPermissionManager()
-    @StateObject private var preferencesStore = NotificationPreferencesStore()
+    @ObservedObject private var preferencesStore: NotificationPreferencesStore
     @State private var showingLogoutConfirm = false
     let onLogout: () -> Void
 
     init(
         sessionStore: SessionStore,
         schedulingCoordinator: SchedulingRefreshCoordinator,
+        preferencesStore: NotificationPreferencesStore,
         onLogout: @escaping () -> Void
     ) {
         self.sessionStore = sessionStore
@@ -112,6 +140,7 @@ struct PatientSettingsView: View {
             sessionStore: sessionStore
         )
         self.schedulingCoordinator = schedulingCoordinator
+        self.preferencesStore = preferencesStore
         self.onLogout = onLogout
     }
 
