@@ -6,6 +6,8 @@ final class NotificationScheduler {
     private let notificationCenter: UNUserNotificationCenter
     private let calendar: Calendar
     private let identifierPrefix = AppConstants.notificationIdentifierPrefix
+    /// Legacy prefix used by the now-removed ReminderService; kept for cleanup.
+    private let legacyReminderPrefix = "dose-reminder-"
 
     init(
         notificationCenter: UNUserNotificationCenter = .current(),
@@ -58,7 +60,7 @@ final class NotificationScheduler {
             notificationCenter.getPendingNotificationRequests { requests in
                 let identifiers = requests
                     .map(\.identifier)
-                    .filter { $0.hasPrefix(self.identifierPrefix) }
+                    .filter { $0.hasPrefix(self.identifierPrefix) || $0.hasPrefix(self.legacyReminderPrefix) }
                 continuation.resume(returning: identifiers)
             }
         }
