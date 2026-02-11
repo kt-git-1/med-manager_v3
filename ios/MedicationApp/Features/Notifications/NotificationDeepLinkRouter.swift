@@ -97,22 +97,17 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         let identifier = notification.request.identifier
         let bannerPresenter = self.bannerPresenter
 
-        // Parse remote push target on the current thread to avoid Sendable issues
-        let remotePushTarget = NotificationDeepLinkParser.parseRemotePush(userInfo: userInfo)
         let isRemotePush = userInfo["type"] != nil
 
-        DispatchQueue.main.async {
-            if isRemotePush, let target = remotePushTarget {
-                bannerPresenter.showBanner(slot: target.slot, dateKey: target.dateKey)
-            } else if !isRemotePush {
-                bannerPresenter.handleNotificationIdentifier(identifier)
-            }
-        }
-
-        // For remote push, show system banner + sound
         if isRemotePush {
+            // Remote push (FCM): let the system banner display the correct
+            // notification text from the server. No custom in-app banner needed.
             completionHandler([.banner, .sound])
         } else {
+            // Local notification: show custom in-app banner, suppress system UI
+            DispatchQueue.main.async {
+                bannerPresenter.handleNotificationIdentifier(identifier)
+            }
             completionHandler([])
         }
     }
