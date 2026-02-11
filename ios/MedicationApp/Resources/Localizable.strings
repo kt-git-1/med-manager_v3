@@ -186,7 +186,8 @@
 "patient.logout.toast" = "ログアウトしました";
 
 /* Caregiver tabs */
-"caregiver.tabs.medications" = "薬・予定";
+"caregiver.tabs.medications" = "薬一覧";
+"caregiver.tabs.today" = "今日の予定";
 "caregiver.tabs.history" = "履歴";
 "caregiver.tabs.inventory" = "在庫管理";
 "caregiver.tabs.patients" = "連携・設定";
@@ -260,6 +261,9 @@
 "caregiver.today.empty.title" = "予定がありません";
 "caregiver.today.empty.message" = "今日の服用予定はありません";
 "caregiver.today.record.button" = "代理で記録する";
+"caregiver.today.confirm.title" = "服用記録の確認";
+"caregiver.today.confirm.message" = "%@の服用を代理で記録しますか？";
+"caregiver.today.confirm.record" = "記録する";
 "caregiver.today.delete.button" = "取り消す";
 "caregiver.today.recorded" = "記録しました";
 "caregiver.today.deleted" = "記録を取り消しました";

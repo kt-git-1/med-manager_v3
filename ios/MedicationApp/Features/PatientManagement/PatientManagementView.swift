@@ -486,6 +486,7 @@ struct PatientManagementView: View {
     private var settingsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Button {
+                draftTimes = buildDraftTimes()
                 showingTimePresetSheet = true
             } label: {
                 HStack(spacing: 12) {

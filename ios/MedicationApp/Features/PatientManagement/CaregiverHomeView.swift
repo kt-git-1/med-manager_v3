@@ -2,6 +2,7 @@ import SwiftUI
 
 enum CaregiverTab: Hashable {
     case medications
+    case today
     case history
     case inventory
     case patients
@@ -21,6 +22,11 @@ struct CaregiverHomeView: View {
             switch selectedTab {
             case .medications:
                 CaregiverMedicationView(
+                    sessionStore: sessionStore,
+                    onOpenPatients: { selectedTab = .patients }
+                )
+            case .today:
+                CaregiverTodayTabView(
                     sessionStore: sessionStore,
                     onOpenPatients: { selectedTab = .patients }
                 )
@@ -73,7 +79,7 @@ struct CaregiverHomeView: View {
             checkLowStock()
         }
         .onChange(of: selectedTab) { _, newTab in
-            if newTab == .inventory || newTab == .medications {
+            if newTab == .inventory || newTab == .medications || newTab == .today {
                 checkLowStock()
             }
         }
@@ -179,6 +185,13 @@ private struct CaregiverBottomTabBar: View {
                 selectedTab = .medications
             }
             tabButton(
+                title: NSLocalizedString("caregiver.tabs.today", comment: "Today tab"),
+                systemImage: "calendar",
+                isSelected: selectedTab == .today
+            ) {
+                selectedTab = .today
+            }
+            tabButton(
                 title: NSLocalizedString("caregiver.tabs.history", comment: "History tab"),
                 systemImage: "clock",
                 isSelected: selectedTab == .history
@@ -270,7 +283,6 @@ struct CaregiverMedicationView: View {
     private let sessionStore: SessionStore
     private let onOpenPatients: () -> Void
     @StateObject private var viewModel: CaregiverMedicationViewModel
-    @State private var selectedSection: MedicationScheduleSection = .medications
 
     init(sessionStore: SessionStore, onOpenPatients: @escaping () -> Void) {
         self.sessionStore = sessionStore
@@ -346,20 +358,10 @@ struct CaregiverMedicationView: View {
                         Spacer(minLength: 0)
                     }
                 } else {
-                    switch selectedSection {
-                    case .medications:
-                        MedicationListView(
-                            sessionStore: sessionStore,
-                            onOpenPatients: onOpenPatients,
-                            headerView: AnyView(headerView)
-                        )
-                    case .today:
-                        CaregiverTodayView(
-                            sessionStore: sessionStore,
-                            onOpenPatients: onOpenPatients,
-                            headerView: AnyView(headerView)
-                        )
-                    }
+                    MedicationListView(
+                        sessionStore: sessionStore,
+                        onOpenPatients: onOpenPatients
+                    )
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -378,22 +380,107 @@ struct CaregiverMedicationView: View {
         }
         .accessibilityIdentifier("CaregiverMedicationView")
     }
-
-    private var headerView: some View {
-        Picker("", selection: $selectedSection) {
-            Text(NSLocalizedString("caregiver.medications.segment.medications", comment: "Medications list segment"))
-                .tag(MedicationScheduleSection.medications)
-            Text(NSLocalizedString("caregiver.medications.segment.today", comment: "Today schedule segment"))
-                .tag(MedicationScheduleSection.today)
-        }
-        .pickerStyle(.segmented)
-        .padding(.horizontal, 16)
-        .padding(.top, 4)
-        .padding(.bottom, 4)
-    }
 }
 
-private enum MedicationScheduleSection: Hashable {
-    case medications
-    case today
+// MARK: - Today Tab View (standalone tab for today's schedule)
+
+struct CaregiverTodayTabView: View {
+    private let sessionStore: SessionStore
+    private let onOpenPatients: () -> Void
+    @StateObject private var viewModel: CaregiverMedicationViewModel
+
+    init(sessionStore: SessionStore, onOpenPatients: @escaping () -> Void) {
+        self.sessionStore = sessionStore
+        self.onOpenPatients = onOpenPatients
+        let baseURL = SessionStore.resolveBaseURL()
+        _viewModel = StateObject(
+            wrappedValue: CaregiverMedicationViewModel(
+                apiClient: APIClient(baseURL: baseURL, sessionStore: sessionStore)
+            )
+        )
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if viewModel.isLoading {
+                    LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+                } else if viewModel.patients.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "person.crop.circle.badge.plus")
+                            .font(.system(size: 44))
+                            .foregroundStyle(.secondary)
+                        EmptyStateView(
+                            title: NSLocalizedString("caregiver.medications.noPatients.title", comment: "No patients title"),
+                            message: NSLocalizedString("caregiver.medications.noPatients.message", comment: "No patients message")
+                        )
+                        Button {
+                            onOpenPatients()
+                        } label: {
+                            Text(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab"))
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
+                        }
+                    }
+                    .padding(24)
+                    .frame(maxWidth: .infinity)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 20))
+                    .padding(.horizontal, 24)
+                } else if sessionStore.currentPatientId == nil {
+                    VStack(spacing: 12) {
+                        Spacer(minLength: 0)
+                        VStack(spacing: 16) {
+                            Image(systemName: "person.crop.circle.badge.questionmark")
+                                .font(.system(size: 44))
+                                .foregroundStyle(.secondary)
+                            Text(NSLocalizedString("caregiver.medications.noSelection.title", comment: "No selection title"))
+                                .font(.title3.weight(.semibold))
+                                .multilineTextAlignment(.center)
+                            Text(NSLocalizedString("caregiver.medications.noSelection.message", comment: "No selection message"))
+                                .font(.body)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                            Button {
+                                onOpenPatients()
+                            } label: {
+                                Text(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab"))
+                                    .font(.headline)
+                                    .foregroundStyle(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 50)
+                                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
+                            }
+                        }
+                        .padding(24)
+                        .frame(maxWidth: .infinity)
+                        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+                        .padding(.horizontal, 24)
+                        Spacer(minLength: 0)
+                    }
+                } else {
+                    CaregiverTodayView(
+                        sessionStore: sessionStore,
+                        onOpenPatients: onOpenPatients
+                    )
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                NavigationHeaderView(
+                    icon: "calendar.circle.fill",
+                    title: NSLocalizedString("caregiver.tabs.today", comment: "Today tab")
+                )
+            }
+        }
+        .onAppear {
+            viewModel.loadPatients()
+        }
+        .accessibilityIdentifier("CaregiverTodayTabView")
+    }
 }
