@@ -26,6 +26,7 @@ struct HistoryMonthView: View {
 
     private let sessionStore: SessionStore
     private let entitlementStore: EntitlementStore?
+    private let apiClient: APIClient
     @StateObject private var viewModel: HistoryViewModel
     @State private var displayedMonth: Date
     @State private var selectedDate: Date?
@@ -36,9 +37,11 @@ struct HistoryMonthView: View {
         self.sessionStore = store
         self.entitlementStore = entitlementStore
         let baseURL = SessionStore.resolveBaseURL()
+        let client = APIClient(baseURL: baseURL, sessionStore: store)
+        self.apiClient = client
         _viewModel = StateObject(
             wrappedValue: HistoryViewModel(
-                apiClient: APIClient(baseURL: baseURL, sessionStore: store),
+                apiClient: client,
                 sessionStore: store
             )
         )
@@ -120,6 +123,16 @@ struct HistoryMonthView: View {
             }
         }
         .accessibilityIdentifier("HistoryMonthView")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                PDFExportButton(
+                    entitlementStore: entitlementStore ?? EntitlementStore(),
+                    sessionStore: sessionStore,
+                    patientId: sessionStore.currentPatientId ?? "",
+                    apiClient: apiClient
+                )
+            }
+        }
     }
 
     private var header: some View {
@@ -155,18 +168,7 @@ struct HistoryMonthView: View {
 
     private var retentionBanner: some View {
         Group {
-            if let entitlementStore, entitlementStore.isPremium {
-                Text(NSLocalizedString(
-                    "history.retention.banner.premium",
-                    comment: "Premium retention banner"
-                ))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.vertical, 6)
-                .background(Color.green.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-                .accessibilityIdentifier("HistoryRetentionBannerPremium")
-            } else {
+            if let entitlementStore, !entitlementStore.isPremium {
                 Text(String(
                     format: NSLocalizedString(
                         "history.retention.banner.free",

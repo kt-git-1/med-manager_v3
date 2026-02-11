@@ -334,6 +334,29 @@ final class APIClient {
         return try decoder.decode(HistoryDayResponseDTO.self, from: data)
     }
 
+    // MARK: - History Report (011-pdf-export)
+
+    func fetchCaregiverHistoryReport(
+        patientId: String? = nil,
+        from: String,
+        to: String
+    ) async throws -> HistoryReportResponseDTO {
+        let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
+        let queryItems = [
+            URLQueryItem(name: "from", value: from),
+            URLQueryItem(name: "to", value: to),
+        ]
+        let request = try makeHistoryRequest(
+            path: "api/patients/\(resolvedPatientId)/history/report",
+            queryItems: queryItems
+        )
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(HistoryReportResponseDTO.self, from: data)
+    }
+
     func createCaregiverDoseRecord(
         patientId: String? = nil,
         input: DoseRecordCreateRequestDTO
@@ -420,6 +443,8 @@ final class APIClient {
             }
             sessionStore.handleAuthFailure(for: sessionStore.mode)
             throw APIError.forbidden
+        case 400:
+            throw APIError.validation(message ?? "Bad request")
         case 404:
             throw APIError.notFound
         case 409:
