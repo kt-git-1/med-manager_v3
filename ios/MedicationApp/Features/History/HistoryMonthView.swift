@@ -168,18 +168,7 @@ struct HistoryMonthView: View {
 
     private var retentionBanner: some View {
         Group {
-            if let entitlementStore, entitlementStore.isPremium {
-                Text(NSLocalizedString(
-                    "history.retention.banner.premium",
-                    comment: "Premium retention banner"
-                ))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.vertical, 6)
-                .background(Color.green.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-                .accessibilityIdentifier("HistoryRetentionBannerPremium")
-            } else {
+            if let entitlementStore, !entitlementStore.isPremium {
                 Text(String(
                     format: NSLocalizedString(
                         "history.retention.banner.free",
