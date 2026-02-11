@@ -39,8 +39,9 @@ export FCM_PROJECT_ID="your-firebase-project-id"
 
 ```env
 FCM_SERVICE_ACCOUNT_JSON=<base64-encoded-service-account-json>
-FCM_PROJECT_ID=<your-firebase-project-id>
 ```
+
+Note: The `project_id` is extracted from the service account JSON automatically — no separate `FCM_PROJECT_ID` env var is needed.
 
 ### 1c. iOS Firebase Configuration
 
@@ -51,10 +52,16 @@ FCM_PROJECT_ID=<your-firebase-project-id>
 
 ### 1d. Add Firebase SDK via SPM
 
-1. In Xcode → File → Add Package Dependencies
-2. URL: `https://github.com/firebase/firebase-ios-sdk`
-3. Select `FirebaseMessaging` product
-4. Add to `MedicationApp` target
+Firebase SDK is configured in `ios/MedicationApp/project.yml` (xcodegen):
+
+```yaml
+packages:
+  firebase-ios-sdk:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: "11.0.0"
+```
+
+The `FirebaseMessaging` product is added as a dependency of the `MedicationApp` target. Run `xcodegen generate` from `ios/MedicationApp/` to regenerate the Xcode project if needed.
 
 ---
 
@@ -202,8 +209,7 @@ curl -X POST http://localhost:3000/api/push/unregister \
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `FCM_SERVICE_ACCOUNT_JSON` | Yes (for push send) | Base64-encoded Firebase service account JSON |
-| `FCM_PROJECT_ID` | Yes (for push send) | Firebase project ID |
+| `FCM_SERVICE_ACCOUNT_JSON` | Yes (for push send) | Base64-encoded Firebase service account JSON (contains `project_id`, `client_email`, `private_key`) |
 | Existing `APNS_*` vars | No change | Still used for inventory alert push (feature 006) |
 
 ---

@@ -1,5 +1,7 @@
 import XCTest
+@testable import MedicationApp
 
+@MainActor
 final class NotificationDeepLinkTests: XCTestCase {
     func testRoutesToTodayTabAndScrollTarget() throws {
         let target = NotificationDeepLinkParser.parse(identifier: "notif:2026-02-05:morning:1")

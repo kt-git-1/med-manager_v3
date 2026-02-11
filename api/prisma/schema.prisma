@@ -283,6 +283,36 @@ model DeviceToken {
   @@index([caregiverId])
 }
 
+model PushDevice {
+  id           String   @id @default(uuid())
+  ownerType    String
+  ownerId      String
+  token        String
+  platform     String   @default("ios")
+  environment  String
+  isEnabled    Boolean  @default(true)
+  lastSeenAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  deliveries PushDelivery[]
+
+  @@unique([ownerType, ownerId, token])
+  @@index([ownerId])
+}
+
+model PushDelivery {
+  id           String     @id @default(uuid())
+  eventKey     String
+  pushDeviceId String
+  createdAt    DateTime   @default(now())
+
+  pushDevice PushDevice @relation(fields: [pushDeviceId], references: [id])
+
+  @@unique([eventKey, pushDeviceId])
+  @@index([pushDeviceId])
+}
+
 model CaregiverEntitlement {
   id                    String            @id @default(uuid())
   caregiverId           String

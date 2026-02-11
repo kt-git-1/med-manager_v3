@@ -3,11 +3,18 @@ import SwiftUI
 struct CaregiverHistoryView: View {
     private let sessionStore: SessionStore
     private let entitlementStore: EntitlementStore?
+    @Binding var deepLinkTarget: NotificationDeepLinkTarget?
     private let onOpenPatients: () -> Void
 
-    init(sessionStore: SessionStore, entitlementStore: EntitlementStore? = nil, onOpenPatients: @escaping () -> Void) {
+    init(
+        sessionStore: SessionStore,
+        entitlementStore: EntitlementStore? = nil,
+        deepLinkTarget: Binding<NotificationDeepLinkTarget?> = .constant(nil),
+        onOpenPatients: @escaping () -> Void
+    ) {
         self.sessionStore = sessionStore
         self.entitlementStore = entitlementStore
+        self._deepLinkTarget = deepLinkTarget
         self.onOpenPatients = onOpenPatients
     }
 
@@ -46,7 +53,11 @@ struct CaregiverHistoryView: View {
                     Spacer(minLength: 0)
                 }
             } else {
-                HistoryMonthView(sessionStore: sessionStore, entitlementStore: entitlementStore)
+                HistoryMonthView(
+                    sessionStore: sessionStore,
+                    entitlementStore: entitlementStore,
+                    deepLinkTarget: $deepLinkTarget
+                )
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

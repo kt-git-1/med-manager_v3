@@ -5,13 +5,16 @@ enum CaregiverTab: Hashable {
     case history
     case inventory
     case patients
+    case settings
 }
 
 struct CaregiverHomeView: View {
     @EnvironmentObject private var sessionStore: SessionStore
+    @EnvironmentObject private var notificationRouter: NotificationDeepLinkRouter
     @State private var selectedTab: CaregiverTab = .medications
     @State private var currentPatientName: String?
     @State private var hasLowStock = false
+    @State private var deepLinkTarget: NotificationDeepLinkTarget?
     var entitlementStore: EntitlementStore?
 
     var body: some View {
@@ -27,6 +30,7 @@ struct CaregiverHomeView: View {
                     CaregiverHistoryView(
                         sessionStore: sessionStore,
                         entitlementStore: entitlementStore,
+                        deepLinkTarget: $deepLinkTarget,
                         onOpenPatients: { selectedTab = .patients }
                     )
                     .navigationTitle("")
@@ -47,6 +51,18 @@ struct CaregiverHomeView: View {
                 }
             case .patients:
                 PatientManagementView(sessionStore: sessionStore, entitlementStore: entitlementStore)
+            case .settings:
+                NavigationStack {
+                    CaregiverSettingsView(sessionStore: sessionStore)
+                        .navigationTitle("")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            NavigationHeaderView(
+                                icon: "gearshape.fill",
+                                title: NSLocalizedString("caregiver.tabs.settings", comment: "Settings tab")
+                            )
+                        }
+                }
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -81,6 +97,13 @@ struct CaregiverHomeView: View {
             guard shouldRedirect else { return }
             selectedTab = .medications
             sessionStore.shouldRedirectCaregiverToMedicationTab = false
+        }
+        .onReceive(notificationRouter.$target) { newTarget in
+            guard let target = newTarget,
+                  sessionStore.mode == .caregiver else { return }
+            selectedTab = .history
+            deepLinkTarget = target
+            notificationRouter.clear()
         }
     }
 
@@ -189,6 +212,13 @@ private struct CaregiverBottomTabBar: View {
                 isSelected: selectedTab == .patients
             ) {
                 selectedTab = .patients
+            }
+            tabButton(
+                title: NSLocalizedString("caregiver.tabs.settings", comment: "Settings tab"),
+                systemImage: "gearshape.fill",
+                isSelected: selectedTab == .settings
+            ) {
+                selectedTab = .settings
             }
         }
         .padding(.horizontal, 10)

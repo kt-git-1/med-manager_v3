@@ -1,6 +1,7 @@
 import XCTest
 @testable import MedicationApp
 
+@MainActor
 final class APIClientTests: XCTestCase {
     func testCreateRegimenRequestEncodesScheduleFields() throws {
         let userDefaults = UserDefaults(suiteName: "APIClientTests")!

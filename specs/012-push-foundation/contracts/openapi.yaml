@@ -59,7 +59,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ValidationErrorResponse"
               example:
-                error: "validation"
+                error: "validation_error"
                 messages:
                   - "token is required"
 
@@ -109,7 +109,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ValidationErrorResponse"
               example:
-                error: "validation"
+                error: "validation_error"
                 messages:
                   - "token is required"
 
@@ -183,7 +183,7 @@ components:
         error:
           type: string
           enum:
-            - validation
+            - validation_error
         messages:
           type: array
           items:

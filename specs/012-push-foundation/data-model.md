@@ -68,9 +68,8 @@ Deduplication record. Each row represents one push notification sent for a speci
 - `@@index([pushDeviceId])` — Fast lookup by device
 
 **eventKey format**:
-- Slot bulk TAKEN: `doseTaken:{recordingGroupId}` (e.g., `doseTaken:a1b2c3d4-e5f6-7890-abcd-ef1234567890`)
-- Single dose TAKEN: `doseTaken:{doseRecordEventId}` (e.g., `doseTaken:event-abc123`)
-- PRN dose TAKEN: `doseTaken:prn:{prnDoseRecordId}` (e.g., `doseTaken:prn:prn-xyz789`)
+- Slot bulk TAKEN (has `recordingGroupId`): `doseTaken:{recordingGroupId}` (e.g., `doseTaken:a1b2c3d4-e5f6-7890-abcd-ef1234567890`)
+- Single dose TAKEN / PRN TAKEN (no `recordingGroupId`): `doseTaken:{patientId}:{date}:{slot}:{tokyoMinute}` (e.g., `doseTaken:patient-123:2026-02-11:morning:09:30`)
 
 **Prisma schema**:
 ```prisma
