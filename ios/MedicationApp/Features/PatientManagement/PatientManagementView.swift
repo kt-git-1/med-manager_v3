@@ -126,6 +126,7 @@ struct PatientManagementView: View {
     @State private var inventoryItems: [InventoryItemDTO] = []
     @State private var showingTimePresetSheet = false
     @State private var showingInventoryThresholdSheet = false
+    @StateObject private var pushSettingsViewModel: CaregiverPushSettingsViewModel
     private let timeZone = AppConstants.defaultTimeZone
     private let apiClient: APIClient
     private static let thresholdKeyPrefix = "inventory.threshold."
@@ -134,7 +135,13 @@ struct PatientManagementView: View {
     init(sessionStore: SessionStore? = nil, entitlementStore: EntitlementStore? = nil) {
         let store = sessionStore ?? SessionStore()
         _viewModel = StateObject(wrappedValue: PatientManagementViewModel(sessionStore: store))
-        self.apiClient = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: store)
+        let client = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: store)
+        self.apiClient = client
+        _pushSettingsViewModel = StateObject(wrappedValue: CaregiverPushSettingsViewModel(
+            apiClientFactory: {
+                APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: store)
+            }
+        ))
         self.entitlementStore = entitlementStore
     }
 
@@ -146,7 +153,7 @@ struct PatientManagementView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 NavigationHeaderView(
-                    icon: "person.2.circle.fill",
+                    icon: "person.2.badge.gearshape.fill",
                     title: NSLocalizedString("caregiver.patients.title", comment: "Patients title")
                 )
                 ToolbarItemGroup(placement: .topBarTrailing) {
@@ -283,7 +290,7 @@ struct PatientManagementView: View {
             }
         }
         .overlay {
-            if viewModel.isLoading || isSavingDetail {
+            if viewModel.isLoading || isSavingDetail || pushSettingsViewModel.isUpdating {
                 SchedulingRefreshOverlay()
             }
         }
@@ -339,6 +346,7 @@ struct PatientManagementView: View {
                     selectionCard
                     selectedPatientSection
                     detailSettingsSection
+                    pushSettingsSection
                     premiumSection
                     logoutSection
                 }
@@ -582,6 +590,64 @@ struct PatientManagementView: View {
         } message: {
             Text(NSLocalizedString("caregiver.logout.confirm.message", comment: "Logout confirm message"))
         }
+    }
+
+    // MARK: - Push Notification Settings (012-push-foundation)
+
+    private var pushSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(NSLocalizedString("caregiver.settings.push.section.title", comment: "Push section title"))
+                .font(.headline)
+                .foregroundStyle(.secondary)
+                .padding(.top, 16)
+                .padding(.bottom, 8)
+
+            VStack(alignment: .leading, spacing: 12) {
+                Toggle(
+                    NSLocalizedString("caregiver.settings.push.toggle", comment: "Push toggle"),
+                    isOn: Binding(
+                        get: { pushSettingsViewModel.isPushEnabled },
+                        set: { newValue in
+                            Task {
+                                await pushSettingsViewModel.togglePush(enabled: newValue)
+                            }
+                        }
+                    )
+                )
+                .accessibilityIdentifier("PushNotificationToggle")
+                .disabled(pushSettingsViewModel.isUpdating)
+
+                if pushSettingsViewModel.isPushEnabled {
+                    Text(NSLocalizedString("caregiver.settings.push.enabled", comment: "Push enabled"))
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                } else {
+                    Text(NSLocalizedString("caregiver.settings.push.disabled", comment: "Push disabled"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        }
+        .alert(
+            NSLocalizedString("caregiver.settings.push.error", comment: "Error alert title"),
+            isPresented: Binding(
+                get: { pushSettingsViewModel.errorMessage != nil },
+                set: { if !$0 { pushSettingsViewModel.errorMessage = nil } }
+            ),
+            actions: {
+                Button(NSLocalizedString("common.ok", comment: "OK"), role: .cancel) {
+                    pushSettingsViewModel.errorMessage = nil
+                }
+            },
+            message: {
+                if let message = pushSettingsViewModel.errorMessage {
+                    Text(message)
+                }
+            }
+        )
     }
 
     private var inventorySettingsSection: some View {

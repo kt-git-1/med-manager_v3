@@ -5,7 +5,6 @@ enum CaregiverTab: Hashable {
     case history
     case inventory
     case patients
-    case settings
 }
 
 struct CaregiverHomeView: View {
@@ -51,18 +50,6 @@ struct CaregiverHomeView: View {
                 }
             case .patients:
                 PatientManagementView(sessionStore: sessionStore, entitlementStore: entitlementStore)
-            case .settings:
-                NavigationStack {
-                    CaregiverSettingsView(sessionStore: sessionStore)
-                        .navigationTitle("")
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            NavigationHeaderView(
-                                icon: "gearshape.fill",
-                                title: NSLocalizedString("caregiver.tabs.settings", comment: "Settings tab")
-                            )
-                        }
-                }
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -208,17 +195,10 @@ private struct CaregiverBottomTabBar: View {
             }
             tabButton(
                 title: NSLocalizedString("caregiver.tabs.patients", comment: "Patients tab"),
-                systemImage: "person.2",
+                systemImage: "person.2.badge.gearshape",
                 isSelected: selectedTab == .patients
             ) {
                 selectedTab = .patients
-            }
-            tabButton(
-                title: NSLocalizedString("caregiver.tabs.settings", comment: "Settings tab"),
-                systemImage: "gearshape.fill",
-                isSelected: selectedTab == .settings
-            ) {
-                selectedTab = .settings
             }
         }
         .padding(.horizontal, 10)
