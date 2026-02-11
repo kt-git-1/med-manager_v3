@@ -452,3 +452,14 @@
 "pdfexport.pdf.status.pending" = "未記録";
 "pdfexport.pdf.recorder.patient" = "患者";
 "pdfexport.pdf.recorder.caregiver" = "家族";
+
+/* Slot Bulk Recording (0115) */
+"patient.today.slot.bulk.button" = "この時間のお薬を飲んだ";
+"patient.today.slot.bulk.confirm.title" = "%@のお薬を記録";
+"patient.today.slot.bulk.confirm.message" = "%@（%@）のお薬（%@種類 / 合計%@錠）を記録しますか？";
+"patient.today.slot.bulk.confirm.record" = "記録する";
+"patient.today.slot.bulk.confirm.cancel" = "キャンセル";
+"patient.today.slot.bulk.summary" = "合計%@錠（%@種類）";
+"patient.today.slot.bulk.perDose" = "1回%@錠";
+"patient.today.slot.bulk.success" = "記録しました";
+"patient.today.slot.bulk.remaining" = "残り%d件";

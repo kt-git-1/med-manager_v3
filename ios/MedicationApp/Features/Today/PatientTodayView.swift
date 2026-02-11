@@ -38,6 +38,7 @@ private struct PatientTodayRootView: View {
     @Binding var deepLinkTarget: NotificationDeepLinkTarget?
     @State private var showingConfirm = false
     @State private var showingPrnConfirm = false
+    @State private var showingBulkConfirm = false
     @State private var pendingScrollTarget: String?
     @State private var selectedDose: ScheduleDoseDTO?
     @State private var detailMedication: MedicationDTO?
@@ -53,7 +54,9 @@ private struct PatientTodayRootView: View {
             slotSections: slotSections,
             missedItems: missedItems,
             takenItems: takenItems,
+            slotSummaries: viewModel.slotSummaries,
             onConfirmDose: { viewModel.confirmRecord(for: $0) },
+            onBulkRecord: { viewModel.confirmBulkRecord(for: $0) },
             onPresentDetail: presentDetail,
             onConfirmPrn: { viewModel.confirmPrnRecord(for: $0) },
             timeText: { viewModel.timeText(for: $0) },
@@ -80,6 +83,23 @@ private struct PatientTodayRootView: View {
                 onConfirmPrn: { viewModel.recordConfirmedPrnDose() }
             )
         )
+        .alert(
+            bulkConfirmTitle,
+            isPresented: $showingBulkConfirm,
+            presenting: viewModel.confirmSlot
+        ) { _ in
+            Button(NSLocalizedString("patient.today.slot.bulk.confirm.record", comment: "Record")) {
+                viewModel.executeBulkRecord()
+            }
+            Button(NSLocalizedString("patient.today.slot.bulk.confirm.cancel", comment: "Cancel"), role: .cancel) {
+                viewModel.confirmSlot = nil
+            }
+        } message: { slot in
+            Text(bulkConfirmMessage(for: slot))
+        }
+        .onChange(of: viewModel.confirmSlot) { _, newValue in
+            showingBulkConfirm = newValue != nil
+        }
         .modifier(
             PatientTodayChangeModifier(
                 showingConfirm: $showingConfirm,
@@ -133,33 +153,21 @@ private struct PatientTodayRootView: View {
         let orderedSlots: [NotificationSlot] = [.morning, .noon, .evening, .bedtime]
         var sections: [SlotSection] = []
         for slotValue in orderedSlots {
-            let items = plannedItems.filter { slot(for: $0) == slotValue }
+            let items = viewModel.items.filter { slot(for: $0) == slotValue }
             if !items.isEmpty {
                 sections.append(SlotSection(id: slotValue.rawValue, slot: slotValue, items: items))
             }
         }
-        let otherItems = plannedItems.filter { slot(for: $0) == nil }
+        let otherItems = viewModel.items.filter { slot(for: $0) == nil }
         if !otherItems.isEmpty {
             sections.append(SlotSection(id: "other", slot: nil, items: otherItems))
         }
         return sections
     }
 
-    private var plannedItems: [ScheduleDoseDTO] {
-        viewModel.items.filter { dose in
-            switch dose.effectiveStatus {
-            case .taken:
-                return false
-            case .missed:
-                return false
-            case .pending, .none:
-                return true
-            }
-        }
-    }
-
     private var missedItems: [ScheduleDoseDTO] {
-        viewModel.items.filter { $0.effectiveStatus == .missed }
+        // Missed items are now shown within slot cards; this remains for backward compat
+        []
     }
 
     private var takenItems: [ScheduleDoseDTO] {
@@ -202,6 +210,27 @@ private struct PatientTodayRootView: View {
         String(
             format: NSLocalizedString("patient.today.prn.confirm.message", comment: "PRN confirm message"),
             medication.name
+        )
+    }
+
+    private var bulkConfirmTitle: String {
+        guard let slot = viewModel.confirmSlot else {
+            return NSLocalizedString("patient.today.slot.bulk.confirm.record", comment: "Record")
+        }
+        return String(
+            format: NSLocalizedString("patient.today.slot.bulk.confirm.title", comment: "Bulk confirm title"),
+            slotTitle(for: slot)
+        )
+    }
+
+    private func bulkConfirmMessage(for slot: NotificationSlot) -> String {
+        let summary = viewModel.slotSummaries[slot]
+        return String(
+            format: NSLocalizedString("patient.today.slot.bulk.confirm.message", comment: "Bulk confirm message"),
+            slotTitle(for: slot),
+            summary?.slotTime ?? "",
+            "\(summary?.medCount ?? 0)",
+            AppConstants.formatDecimal(summary?.totalPills ?? 0)
         )
     }
 
@@ -259,7 +288,9 @@ private struct PatientTodayBaseView: View {
     let slotSections: [SlotSection]
     let missedItems: [ScheduleDoseDTO]
     let takenItems: [ScheduleDoseDTO]
+    let slotSummaries: [NotificationSlot: PatientTodayViewModel.SlotSummary]
     let onConfirmDose: (ScheduleDoseDTO) -> Void
+    let onBulkRecord: (NotificationSlot) -> Void
     let onPresentDetail: (ScheduleDoseDTO) -> Void
     let onConfirmPrn: (MedicationDTO) -> Void
     let timeText: (Date) -> String
@@ -319,7 +350,9 @@ private struct PatientTodayBaseView: View {
                         slotSections: slotSections,
                         missedItems: missedItems,
                         takenItems: takenItems,
+                        slotSummaries: slotSummaries,
                         onConfirmDose: onConfirmDose,
+                        onBulkRecord: onBulkRecord,
                         onPresentDetail: onPresentDetail,
                         onConfirmPrn: onConfirmPrn,
                         timeText: timeText,
@@ -438,7 +471,9 @@ private struct PatientTodayListView: View {
     let slotSections: [SlotSection]
     let missedItems: [ScheduleDoseDTO]
     let takenItems: [ScheduleDoseDTO]
+    let slotSummaries: [NotificationSlot: PatientTodayViewModel.SlotSummary]
     let onConfirmDose: (ScheduleDoseDTO) -> Void
+    let onBulkRecord: (NotificationSlot) -> Void
     let onPresentDetail: (ScheduleDoseDTO) -> Void
     let onConfirmPrn: (MedicationDTO) -> Void
     let timeText: (Date) -> String
@@ -451,20 +486,13 @@ private struct PatientTodayListView: View {
         List {
             PlannedSectionsView(
                 slotSections: slotSections,
+                slotSummaries: slotSummaries,
                 timeText: timeText,
                 shouldHighlight: shouldHighlight,
                 slotColor: slotColor,
                 slotTitle: slotTitle,
                 onConfirmDose: onConfirmDose,
-                onPresentDetail: onPresentDetail,
-                isOutOfStock: isOutOfStock
-            )
-            DoseStatusSectionView(
-                titleKey: "patient.today.section.missed",
-                items: missedItems,
-                timeText: timeText,
-                shouldHighlight: shouldHighlight,
-                onConfirmDose: onConfirmDose,
+                onBulkRecord: onBulkRecord,
                 onPresentDetail: onPresentDetail,
                 isOutOfStock: isOutOfStock
             )
@@ -547,31 +575,50 @@ private struct PrnMedicationListView: View {
 
 private struct PlannedSectionsView: View {
     let slotSections: [SlotSection]
+    let slotSummaries: [NotificationSlot: PatientTodayViewModel.SlotSummary]
     let timeText: (Date) -> String
     let shouldHighlight: (ScheduleDoseDTO) -> Bool
     let slotColor: (NotificationSlot?) -> Color
     let slotTitle: (NotificationSlot?) -> String
     let onConfirmDose: (ScheduleDoseDTO) -> Void
+    let onBulkRecord: (NotificationSlot) -> Void
     let onPresentDetail: (ScheduleDoseDTO) -> Void
     let isOutOfStock: (String) -> Bool
 
     var body: some View {
         ForEach(slotSections) { section in
             Section {
-                ForEach(section.items) { dose in
-                    PatientTodayRow(
-                        dose: dose,
-                        timeText: timeText(dose.scheduledAt),
-                        onRecord: { onConfirmDose(dose) },
-                        isHighlighted: shouldHighlight(dose),
-                        slotColor: slotColor(section.slot),
-                        isOutOfStock: isOutOfStock(dose.medicationId)
+                if let slot = section.slot, let summary = slotSummaries[slot] {
+                    SlotCardView(
+                        slot: slot,
+                        doses: section.items,
+                        summary: summary,
+                        slotColor: slotColor(slot),
+                        slotTitle: slotTitle(slot),
+                        isUpdating: false,
+                        onRecord: { onBulkRecord(slot) },
+                        onPresentDetail: onPresentDetail
                     )
-                    .id(dose.key)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                    .onTapGesture { onPresentDetail(dose) }
+                } else {
+                    // Fallback for "other" slot — keep per-dose rows
+                    ForEach(section.items) { dose in
+                        PatientTodayRow(
+                            dose: dose,
+                            timeText: timeText(dose.scheduledAt),
+                            onRecord: { onConfirmDose(dose) },
+                            isHighlighted: shouldHighlight(dose),
+                            slotColor: slotColor(section.slot),
+                            isOutOfStock: isOutOfStock(dose.medicationId)
+                        )
+                        .id(dose.key)
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        .onTapGesture { onPresentDetail(dose) }
+                    }
                 }
             } header: {
                 SlotHeaderView(
@@ -580,6 +627,154 @@ private struct PlannedSectionsView: View {
                     slotTitle: slotTitle
                 )
             }
+        }
+    }
+}
+
+// MARK: - Slot Card View (Bulk Recording)
+
+private struct SlotCardView: View {
+    let slot: NotificationSlot
+    let doses: [ScheduleDoseDTO]
+    let summary: PatientTodayViewModel.SlotSummary
+    let slotColor: Color
+    let slotTitle: String
+    let isUpdating: Bool
+    let onRecord: () -> Void
+    let onPresentDetail: (ScheduleDoseDTO) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Header: slot time + status badge + remaining
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(slotColor)
+                    .frame(width: 14, height: 14)
+                Text(slotTitle)
+                    .font(.title3.weight(.semibold))
+                Text(summary.slotTime)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                statusBadge
+                if summary.remainingCount > 0 {
+                    Text(String(format: NSLocalizedString("patient.today.slot.bulk.remaining", comment: "Remaining"), summary.remainingCount))
+                        .font(.caption.weight(.semibold))
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 8)
+                        .background(Color.orange.opacity(0.15))
+                        .clipShape(Capsule())
+                }
+            }
+
+            // Medication rows
+            ForEach(doses) { dose in
+                SlotMedicationRow(dose: dose)
+                    .onTapGesture { onPresentDetail(dose) }
+            }
+
+            // Summary line
+            Text(String(
+                format: NSLocalizedString("patient.today.slot.bulk.summary", comment: "Summary"),
+                AppConstants.formatDecimal(summary.totalPills),
+                "\(summary.medCount)"
+            ))
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.secondary)
+
+            // Bulk record button
+            Button(action: onRecord) {
+                Text(NSLocalizedString("patient.today.slot.bulk.button", comment: "Bulk record"))
+                    .font(.title2.weight(.bold))
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 56)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .disabled(summary.remainingCount == 0 || isUpdating)
+            .accessibilityIdentifier("SlotBulkRecordButton")
+            .accessibilityLabel(NSLocalizedString("patient.today.slot.bulk.button", comment: "Bulk record"))
+        }
+        .padding(20)
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        .overlay(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(slotColor)
+                .frame(width: 6)
+                .padding(.vertical, 12)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(slotTitle) \(summary.medCount)種類")
+    }
+
+    @ViewBuilder
+    private var statusBadge: some View {
+        let text: String
+        let bgColor: Color
+        switch summary.aggregateStatus {
+        case .taken:
+            text = NSLocalizedString("patient.today.status.taken", comment: "Taken")
+            bgColor = Color.green.opacity(0.15)
+        case .missed:
+            text = NSLocalizedString("patient.today.status.missed", comment: "Missed")
+            bgColor = Color.red.opacity(0.15)
+        case .pending:
+            text = NSLocalizedString("patient.today.status.pending", comment: "Pending")
+            bgColor = Color.primary.opacity(0.06)
+        }
+        Text(text)
+            .font(.caption.weight(.semibold))
+            .padding(.vertical, 4)
+            .padding(.horizontal, 8)
+            .background(bgColor)
+            .clipShape(Capsule())
+    }
+}
+
+private struct SlotMedicationRow: View {
+    let dose: ScheduleDoseDTO
+
+    var body: some View {
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(medicationDisplayName)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(dose.effectiveStatus == .missed ? Color.red : Color.primary)
+                Text(String(
+                    format: NSLocalizedString("patient.today.slot.bulk.perDose", comment: "Per dose"),
+                    AppConstants.formatDecimal(dose.medicationSnapshot.doseCountPerIntake)
+                ))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            }
+            Spacer()
+            if let status = dose.effectiveStatus {
+                doseStatusIndicator(status)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var medicationDisplayName: String {
+        let trimmed = dose.medicationSnapshot.dosageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == "不明" {
+            return dose.medicationSnapshot.name
+        }
+        return "\(dose.medicationSnapshot.name) \(trimmed)"
+    }
+
+    @ViewBuilder
+    private func doseStatusIndicator(_ status: DoseStatusDTO) -> some View {
+        switch status {
+        case .taken:
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+        case .missed:
+            Image(systemName: "exclamationmark.circle.fill")
+                .foregroundStyle(.red)
+        case .pending:
+            Image(systemName: "circle")
+                .foregroundStyle(.secondary)
         }
     }
 }

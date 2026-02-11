@@ -178,9 +178,10 @@ model DoseRecord {
   medicationId   String
   scheduledAt    DateTime
   takenAt        DateTime       @default(now())
-  recordedByType RecordedByType
-  recordedById   String?
-  createdAt      DateTime       @default(now())
+  recordedByType    RecordedByType
+  recordedById      String?
+  recordingGroupId  String?
+  createdAt         DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
   patient    Patient    @relation(fields: [patientId], references: [id])
