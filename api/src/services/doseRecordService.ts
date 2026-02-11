@@ -11,8 +11,10 @@ import { getMedicationRecordForPatient } from "../repositories/medicationRepo";
 import { getPatientRecordById } from "../repositories/patientRepo";
 import { assertCaregiverPatientScope } from "../middleware/auth";
 import { applyInventoryDeltaForDoseRecord } from "./medicationService";
-import { notifyCaregiversOfDoseRecord } from "./pushNotificationService";
-import { DOSE_MISSED_WINDOW_MS } from "../constants";
+import { notifyCaregiversOfDoseTaken } from "./pushNotificationService";
+import { resolveSlot } from "./scheduleResponse";
+import { getLocalDateKey } from "./scheduleService";
+import { DEFAULT_TIMEZONE, DOSE_MISSED_WINDOW_MS } from "../constants";
 
 export type DoseRecordCreateInput = DoseRecordKey & {
   recordedByType: RecordedByType;
@@ -41,7 +43,7 @@ export async function createDoseRecordIdempotent(
     record.takenAt.getTime() <= record.scheduledAt.getTime() + DOSE_MISSED_WINDOW_MS;
 
   const medication = await getMedicationRecordForPatient(record.patientId, record.medicationId);
-  await createDoseRecordEvent({
+  const doseEvent = await createDoseRecordEvent({
     patientId: record.patientId,
     scheduledAt: record.scheduledAt,
     takenAt: record.takenAt,
@@ -51,13 +53,17 @@ export async function createDoseRecordIdempotent(
     isPrn: medication?.isPrn ?? false
   });
 
-  // Fire-and-forget: send push notifications to linked caregivers
-  void notifyCaregiversOfDoseRecord({
+  // Fire-and-forget: send FCM push notifications to linked caregivers
+  const dateKey = getLocalDateKey(record.scheduledAt, DEFAULT_TIMEZONE);
+  const slot = resolveSlot(record.scheduledAt.toISOString(), DEFAULT_TIMEZONE);
+  void notifyCaregiversOfDoseTaken({
     patientId: record.patientId,
     displayName: patient.displayName,
-    medicationName: medication?.name,
-    isPrn: medication?.isPrn ?? false,
-    takenAt: record.takenAt,
+    date: dateKey,
+    slot: slot ?? "morning",
+    doseEventId: doseEvent.id,
+    withinTime,
+    isPrn: medication?.isPrn ?? false
   });
 
   if (medication) {

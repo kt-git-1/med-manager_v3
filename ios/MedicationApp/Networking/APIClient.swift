@@ -770,6 +770,44 @@ final class APIClient {
         try mapErrorIfNeeded(response: response, data: data)
     }
 
+    // MARK: - Push Device Registration (FCM, 012-push-foundation)
+
+    /// Register an FCM push device token with the backend.
+    /// POST /api/push/register { token, platform, environment }
+    func registerPushDevice(token: String, platform: String = "ios", environment: String) async throws {
+        let url = baseURL.appendingPathComponent("api/push/register")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let authToken = tokenForCurrentMode() {
+            request.addValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        }
+        let payload: [String: String] = [
+            "token": token,
+            "platform": platform,
+            "environment": environment
+        ]
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+    }
+
+    /// Unregister an FCM push device token from the backend.
+    /// POST /api/push/unregister { token }
+    func unregisterPushDevice(token: String) async throws {
+        let url = baseURL.appendingPathComponent("api/push/unregister")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let authToken = tokenForCurrentMode() {
+            request.addValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        }
+        let payload: [String: String] = ["token": token]
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+    }
+
     // MARK: - Private Helpers
 
     private func medicationEncoder() -> JSONEncoder {

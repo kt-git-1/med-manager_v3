@@ -224,7 +224,8 @@ vi.mock("../../src/repositories/doseRecordEventRepo", () => ({
 }));
 
 vi.mock("../../src/services/pushNotificationService", () => ({
-  notifyCaregiversOfDoseRecord: vi.fn(async () => {})
+  notifyCaregiversOfDoseRecord: vi.fn(async () => {}),
+  notifyCaregiversOfDoseTaken: vi.fn(async () => {})
 }));
 
 vi.mock("../../src/services/medicationService", () => ({

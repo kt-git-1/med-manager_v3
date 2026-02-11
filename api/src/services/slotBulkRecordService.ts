@@ -16,7 +16,7 @@ import {
 import { createDoseRecordEvent } from "../repositories/doseRecordEventRepo";
 import { getPatientRecordById } from "../repositories/patientRepo";
 import { getMedicationRecordForPatient } from "../repositories/medicationRepo";
-import { notifyCaregiversOfDoseRecord } from "./pushNotificationService";
+import { notifyCaregiversOfDoseTaken } from "./pushNotificationService";
 import { applyInventoryDeltaForDoseRecord } from "./medicationService";
 import { DEFAULT_TIMEZONE, DOSE_MISSED_WINDOW_MS, INTL_PARSE_LOCALE } from "../constants";
 import { randomUUID } from "crypto";
@@ -174,10 +174,13 @@ export async function bulkRecordSlot(
 
   // 10. Side effects (outside the transaction)
   const patient = await getPatientRecordById(input.patientId);
+  let anyWithinTime = false;
   if (patient) {
     for (const record of records) {
       const withinTime =
         record.takenAt.getTime() <= record.scheduledAt.getTime() + DOSE_MISSED_WINDOW_MS;
+
+      if (withinTime) anyWithinTime = true;
 
       const medication = await getMedicationRecordForPatient(
         record.patientId,
@@ -194,15 +197,6 @@ export async function bulkRecordSlot(
         isPrn: false
       });
 
-      // Fire-and-forget push notification
-      void notifyCaregiversOfDoseRecord({
-        patientId: record.patientId,
-        displayName: patient.displayName,
-        medicationName: medication?.name,
-        isPrn: false,
-        takenAt: record.takenAt
-      });
-
       // Inventory delta
       if (medication) {
         await applyInventoryDeltaForDoseRecord({
@@ -213,6 +207,17 @@ export async function bulkRecordSlot(
         });
       }
     }
+
+    // Fire-and-forget: single push notification per bulk recording
+    void notifyCaregiversOfDoseTaken({
+      patientId: input.patientId,
+      displayName: patient.displayName,
+      date: input.date,
+      slot: input.slot,
+      recordingGroupId,
+      withinTime: anyWithinTime,
+      isPrn: false
+    });
   }
 
   // 11. Compute remaining count: total recordable minus what we just recorded

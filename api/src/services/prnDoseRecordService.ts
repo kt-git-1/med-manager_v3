@@ -9,8 +9,10 @@ import { createDoseRecordEvent } from "../repositories/doseRecordEventRepo";
 import { getMedicationRecordForPatient } from "../repositories/medicationRepo";
 import { getPatientRecordById } from "../repositories/patientRepo";
 import { applyInventoryDeltaForDoseRecord } from "./medicationService";
-import { notifyCaregiversOfDoseRecord } from "./pushNotificationService";
+import { notifyCaregiversOfDoseTaken } from "./pushNotificationService";
+import { resolveSlot } from "./scheduleResponse";
 import { getLocalDateKey } from "./scheduleService";
+import { DEFAULT_TIMEZONE } from "../constants";
 
 export type PrnDoseRecordCreateInput = {
   patientId: string;
@@ -57,13 +59,17 @@ export async function createPrnRecord(
       isPrn: true
     });
 
-    // Fire-and-forget: send push notifications to linked caregivers
-    void notifyCaregiversOfDoseRecord({
+    // Fire-and-forget: send FCM push notifications to linked caregivers
+    const dateKey = getLocalDateKey(record.takenAt, DEFAULT_TIMEZONE);
+    const slot = resolveSlot(record.takenAt.toISOString(), DEFAULT_TIMEZONE);
+    void notifyCaregiversOfDoseTaken({
       patientId: record.patientId,
       displayName: patient.displayName,
-      medicationName: medication.name,
-      isPrn: true,
-      takenAt: record.takenAt,
+      date: dateKey,
+      slot: slot ?? "morning",
+      prnDoseRecordId: record.id,
+      withinTime: true,
+      isPrn: true
     });
   }
 

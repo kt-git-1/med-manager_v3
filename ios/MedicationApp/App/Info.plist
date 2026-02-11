@@ -26,6 +26,10 @@
 	<string>sb_publishable_nVf6RMV1tUkg8ew7BJLVnw_YDnUMRra</string>
 	<key>SUPABASE_URL</key>
 	<string>https://kairaeahklftpjfcaddh.supabase.co</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 </dict>

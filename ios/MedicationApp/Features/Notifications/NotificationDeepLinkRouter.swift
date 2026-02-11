@@ -1,7 +1,7 @@
 import Foundation
 import UserNotifications
 
-struct NotificationDeepLinkTarget: Equatable {
+struct NotificationDeepLinkTarget: Equatable, Sendable {
     let dateKey: String
     let slot: NotificationSlot
 }
@@ -13,6 +13,16 @@ enum NotificationDeepLinkParser {
         let dateKey = components[1]
         let slotRawValue = components[2]
         guard let slot = NotificationSlot(rawValue: slotRawValue) else { return nil }
+        return NotificationDeepLinkTarget(dateKey: dateKey, slot: slot)
+    }
+
+    /// Parse a remote push notification userInfo dict into a deep link target.
+    /// Expects keys: "type" (must be "DOSE_TAKEN"), "date" (YYYY-MM-DD), "slot" (morning|noon|evening|bedtime).
+    static func parseRemotePush(userInfo: [AnyHashable: Any]) -> NotificationDeepLinkTarget? {
+        guard let type = userInfo["type"] as? String, type == "DOSE_TAKEN" else { return nil }
+        guard let dateKey = userInfo["date"] as? String else { return nil }
+        guard let slotString = userInfo["slot"] as? String,
+              let slot = NotificationSlot(rawValue: slotString) else { return nil }
         return NotificationDeepLinkTarget(dateKey: dateKey, slot: slot)
     }
 }
@@ -27,6 +37,17 @@ final class NotificationDeepLinkRouter: ObservableObject {
 
     func route(identifier: String) {
         target = NotificationDeepLinkParser.parse(identifier: identifier)
+    }
+
+    /// Route from a remote push notification payload (012-push-foundation).
+    func routeFromRemotePush(userInfo: [AnyHashable: Any]) {
+        target = NotificationDeepLinkParser.parseRemotePush(userInfo: userInfo)
+    }
+
+    /// Route from an already-parsed deep link target. Used when parsing happens
+    /// off the main actor to avoid Sendable issues with userInfo dictionaries.
+    func routeFromTarget(_ parsedTarget: NotificationDeepLinkTarget) {
+        target = parsedTarget
     }
 
     func clear() {
@@ -49,10 +70,20 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
+        let userInfo = response.notification.request.content.userInfo
         let identifier = response.notification.request.identifier
         let router = self.router
+
+        // Parse remote push target on the current thread to avoid Sendable issues
+        let remotePushTarget = NotificationDeepLinkParser.parseRemotePush(userInfo: userInfo)
+        let isRemotePush = userInfo["type"] != nil
+
         DispatchQueue.main.async {
-            router.route(identifier: identifier)
+            if isRemotePush, let target = remotePushTarget {
+                router.routeFromTarget(target)
+            } else if !isRemotePush {
+                router.route(identifier: identifier)
+            }
         }
         completionHandler()
     }
@@ -62,11 +93,22 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        let userInfo = notification.request.content.userInfo
         let identifier = notification.request.identifier
         let bannerPresenter = self.bannerPresenter
-        DispatchQueue.main.async {
-            bannerPresenter.handleNotificationIdentifier(identifier)
+
+        let isRemotePush = userInfo["type"] != nil
+
+        if isRemotePush {
+            // Remote push (FCM): let the system banner display the correct
+            // notification text from the server. No custom in-app banner needed.
+            completionHandler([.banner, .sound])
+        } else {
+            // Local notification: show custom in-app banner, suppress system UI
+            DispatchQueue.main.async {
+                bannerPresenter.handleNotificationIdentifier(identifier)
+            }
+            completionHandler([])
         }
-        completionHandler([])
     }
 }

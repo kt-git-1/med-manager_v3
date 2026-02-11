@@ -31,11 +31,14 @@ struct HistoryMonthView: View {
     @State private var displayedMonth: Date
     @State private var selectedDate: Date?
     @State private var showRetentionLock = false
+    @Binding var deepLinkTarget: NotificationDeepLinkTarget?
+    @State private var highlightedSlot: NotificationSlot?
 
-    init(sessionStore: SessionStore? = nil, entitlementStore: EntitlementStore? = nil) {
+    init(sessionStore: SessionStore? = nil, entitlementStore: EntitlementStore? = nil, deepLinkTarget: Binding<NotificationDeepLinkTarget?> = .constant(nil)) {
         let store = sessionStore ?? SessionStore()
         self.sessionStore = store
         self.entitlementStore = entitlementStore
+        self._deepLinkTarget = deepLinkTarget
         let baseURL = SessionStore.resolveBaseURL()
         let client = APIClient(baseURL: baseURL, sessionStore: store)
         self.apiClient = client
@@ -63,7 +66,7 @@ struct HistoryMonthView: View {
                         } else {
                             calendarGrid
                             legend
-                            HistoryDayDetailView(viewModel: viewModel, selectedDate: selectedDate)
+                            HistoryDayDetailView(viewModel: viewModel, selectedDate: selectedDate, highlightedSlot: highlightedSlot)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -123,6 +126,15 @@ struct HistoryMonthView: View {
             }
         }
         .accessibilityIdentifier("HistoryMonthView")
+        .onChange(of: deepLinkTarget) { _, newTarget in
+            handleDeepLink(newTarget)
+        }
+        .onAppear {
+            // Handle deep link that was set before view appeared (cold start)
+            if let target = deepLinkTarget {
+                handleDeepLink(target)
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 PDFExportButton(
@@ -447,5 +459,40 @@ struct HistoryMonthView: View {
             format: NSLocalizedString("history.month.prn.count", comment: "PRN count label"),
             count
         )
+    }
+
+    // MARK: - Deep Link Handling (012-push-foundation)
+
+    private func handleDeepLink(_ target: NotificationDeepLinkTarget?) {
+        guard let target else { return }
+
+        // Parse the dateKey to a Date
+        guard let date = HistoryMonthView.dateKeyFormatter.date(from: target.dateKey) else {
+            deepLinkTarget = nil
+            return
+        }
+
+        // Navigate to the month containing the target date
+        let targetMonth = HistoryMonthView.startOfMonth(for: date)
+        if targetMonth != displayedMonth {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                displayedMonth = targetMonth
+            }
+        }
+
+        // Select the date to trigger day detail load
+        selectedDate = date
+
+        // Highlight the target slot with a brief animation
+        highlightedSlot = target.slot
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(3))
+            withAnimation(.easeOut(duration: 0.5)) {
+                highlightedSlot = nil
+            }
+        }
+
+        // Clear the deep link target
+        deepLinkTarget = nil
     }
 }

@@ -25,6 +25,7 @@ struct HistoryDayDetailView: View {
 
     @ObservedObject var viewModel: HistoryViewModel
     let selectedDate: Date?
+    var highlightedSlot: NotificationSlot?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -57,7 +58,8 @@ struct HistoryDayDetailView: View {
                                 timeText: HistoryDayDetailView.timeFormatter.string(from: dose.scheduledAt),
                                 name: dose.medicationName,
                                 dosage: dose.dosageText,
-                                status: dose.effectiveStatus
+                                status: dose.effectiveStatus,
+                                isHighlighted: isSlotHighlighted(dose.slot)
                             )
                         case .prn(let record):
                             HistoryDayPrnRow(
@@ -106,6 +108,12 @@ struct HistoryDayDetailView: View {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: date)
     }
+
+    /// Maps a `HistorySlotDTO` to `NotificationSlot` to compare with the deep link highlight target.
+    private func isSlotHighlighted(_ slot: HistorySlotDTO) -> Bool {
+        guard let highlightedSlot else { return false }
+        return slot.rawValue == highlightedSlot.rawValue
+    }
 }
 
 private struct HistoryDayRow: View {
@@ -113,6 +121,7 @@ private struct HistoryDayRow: View {
     let name: String
     let dosage: String
     let status: HistoryDoseStatusDTO
+    var isHighlighted: Bool = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -133,6 +142,7 @@ private struct HistoryDayRow: View {
         }
         .padding(14)
         .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        .todaySlotHighlight(isHighlighted)
     }
 
     private var medicationDisplayName: String {

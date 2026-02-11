@@ -6,6 +6,7 @@ struct CaregiverTodayView: View {
     private let headerView: AnyView?
     @StateObject private var viewModel: CaregiverTodayViewModel
     private let preferencesStore = NotificationPreferencesStore()
+    @State private var doseToConfirm: ScheduleDoseDTO?
 
     init(
         sessionStore: SessionStore? = nil,
@@ -55,6 +56,27 @@ struct CaregiverTodayView: View {
             }
         }
             .accessibilityIdentifier("CaregiverTodayView")
+            .alert(
+                NSLocalizedString("caregiver.today.confirm.title", comment: "Confirm record title"),
+                isPresented: Binding(
+                    get: { doseToConfirm != nil },
+                    set: { if !$0 { doseToConfirm = nil } }
+                )
+            ) {
+                Button(NSLocalizedString("caregiver.today.confirm.record", comment: "Confirm record")) {
+                    if let dose = doseToConfirm {
+                        viewModel.recordDose(dose)
+                        doseToConfirm = nil
+                    }
+                }
+                Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {
+                    doseToConfirm = nil
+                }
+            } message: {
+                if let dose = doseToConfirm {
+                    Text(String(format: NSLocalizedString("caregiver.today.confirm.message", comment: "Confirm record message"), dose.medicationSnapshot.name))
+                }
+            }
             .environmentObject(sessionStore)
     }
 
@@ -118,7 +140,7 @@ struct CaregiverTodayView: View {
                                     recordedByText: nil,
                                     isDestructive: false,
                                     slotColor: slotColor(for: section.slot),
-                                    onAction: { viewModel.recordDose(dose) },
+                                    onAction: { doseToConfirm = dose },
                                     isOutOfStock: viewModel.isMedicationOutOfStock(dose.medicationId)
                                 )
                                 .listRowSeparator(.hidden)
@@ -140,7 +162,7 @@ struct CaregiverTodayView: View {
                                     recordedByText: nil,
                                     isDestructive: false,
                                     slotColor: nil,
-                                    onAction: { viewModel.recordDose(dose) },
+                                    onAction: { doseToConfirm = dose },
                                     isOutOfStock: viewModel.isMedicationOutOfStock(dose.medicationId)
                                 )
                                 .listRowSeparator(.hidden)

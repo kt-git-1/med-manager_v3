@@ -1,12 +1,26 @@
 // ---------------------------------------------------------------------------
 // Push notification orchestration service
 //
-// Determines WHO should receive push notifications and sends them via APNs.
+// Determines WHO should receive push notifications and sends them.
+// - Legacy APNs path: notifyCaregiversOfDoseRecord, notifyCaregiversOfInventoryAlert
+// - New FCM path (012): notifyCaregiversOfDoseTaken (with dedup via PushDelivery)
 // Called after DoseRecordEvent / InventoryAlertEvent creation.
 // ---------------------------------------------------------------------------
 
 import { listDeviceTokensForCaregivers } from "../repositories/deviceTokenRepo";
 import { sendPushNotifications, type ApnsPayload } from "./apnsService";
+import {
+  listEnabledPushDevicesForCaregivers,
+  disablePushDeviceById
+} from "../repositories/pushDeviceRepo";
+import { tryInsertDelivery } from "../repositories/pushDeliveryRepo";
+import {
+  sendFcmMessage,
+  isFcmConfigured,
+  type FcmNotification,
+  type FcmDataPayload,
+  type FcmApnsOverride
+} from "./fcmService";
 import { prisma } from "../repositories/prisma";
 import { log } from "../logging/logger";
 
@@ -160,3 +174,103 @@ function buildInventoryAlertPayload(input: InventoryAlertNotificationInput): Apn
     patientId: input.patientId,
   };
 }
+
+// ---------------------------------------------------------------------------
+// FCM-based dose TAKEN notification (012-push-foundation)
+// ---------------------------------------------------------------------------
+
+export interface DoseTakenNotificationInput {
+  patientId: string;
+  displayName: string;
+  date: string;               // YYYY-MM-DD in Asia/Tokyo
+  slot: string;               // morning | noon | evening | bedtime
+  recordingGroupId?: string;  // present for bulk recordings
+  doseEventId?: string;       // DoseRecordEvent.id for single-dose dedup
+  prnDoseRecordId?: string;   // PrnDoseRecord.id for PRN dedup
+  withinTime: boolean;
+  isPrn: boolean;
+}
+
+/**
+ * Send FCM push notifications to all caregivers linked to the patient
+ * when a dose is taken (single, bulk, or PRN).
+ *
+ * - Deduplicates via PushDelivery table (exactly-once per device per event)
+ * - Disables devices on FCM UNREGISTERED response
+ * - Fire-and-forget: errors are logged but never thrown
+ */
+export async function notifyCaregiversOfDoseTaken(
+  input: DoseTakenNotificationInput
+): Promise<void> {
+  try {
+    if (!isFcmConfigured()) return;
+
+    const caregiverIds = await getLinkedCaregiverIds(input.patientId);
+    if (caregiverIds.length === 0) return;
+
+    const devices = await listEnabledPushDevicesForCaregivers(caregiverIds);
+    if (devices.length === 0) return;
+
+    // Build eventKey for dedup (see research.md Decision 4)
+    const eventKey = input.recordingGroupId
+      ? `doseTaken:${input.recordingGroupId}`
+      : input.prnDoseRecordId
+        ? `doseTaken:prn:${input.prnDoseRecordId}`
+        : `doseTaken:${input.doseEventId}`;
+
+    // Build FCM payload
+    const notification: FcmNotification = {
+      title: "服薬記録",
+      body: `${input.displayName}さんが薬を服用しました`
+    };
+
+    const data: FcmDataPayload = {
+      type: "DOSE_TAKEN",
+      patientId: input.patientId,
+      date: input.date,
+      slot: input.slot,
+      recordingGroupId: input.recordingGroupId ?? ""
+    };
+
+    const apns: FcmApnsOverride = {
+      payload: {
+        aps: {
+          sound: "default",
+          "thread-id": `patient-${input.patientId}`
+        }
+      }
+    };
+
+    // Send to each device with dedup
+    for (const device of devices) {
+      const inserted = await tryInsertDelivery({
+        eventKey,
+        pushDeviceId: device.id
+      });
+
+      if (!inserted) {
+        // Duplicate — already sent for this event+device
+        continue;
+      }
+
+      const result = await sendFcmMessage(device.token, notification, data, apns);
+
+      if (!result.success && result.errorCode === "UNREGISTERED") {
+        try {
+          await disablePushDeviceById(device.id);
+        } catch (disableError) {
+          log(
+            "warn",
+            `Failed to disable push device ${device.id}: ${disableError instanceof Error ? disableError.message : String(disableError)}`
+          );
+        }
+      }
+    }
+  } catch (error) {
+    log(
+      "error",
+      `Push notification (FCM dose taken) error: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
