@@ -1,0 +1,215 @@
+openapi: 3.0.3
+info:
+  title: Slot Bulk Dose Recording API (0115)
+  version: 0.1.0
+  description: >
+    Bulk dose recording endpoint for patient slot-level recording.
+    Records all PENDING and MISSED doses in a given slot as TAKEN in a single
+    atomic operation. Existing TAKEN doses are skipped (idempotent).
+servers:
+  - url: /api
+paths:
+  /patient/dose-records/slot:
+    post:
+      summary: Bulk-record all doses in a slot as TAKEN (patient)
+      description: >
+        Records all PENDING and MISSED scheduled doses for the given date and
+        slot as TAKEN. Already-TAKEN doses are skipped. The operation is atomic
+        (all-or-nothing) and idempotent (repeated calls return updatedCount=0).
+        Requires patient session authentication. Custom slot times can be passed
+        as query parameters to control slot assignment.
+      parameters:
+        - name: morningTime
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: "^([01]\\d|2[0-3]):[0-5]\\d$"
+            example: "07:30"
+          description: Custom morning slot time (HH:MM, Asia/Tokyo)
+        - name: noonTime
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: "^([01]\\d|2[0-3]):[0-5]\\d$"
+            example: "12:00"
+          description: Custom noon slot time (HH:MM, Asia/Tokyo)
+        - name: eveningTime
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: "^([01]\\d|2[0-3]):[0-5]\\d$"
+            example: "19:00"
+          description: Custom evening slot time (HH:MM, Asia/Tokyo)
+        - name: bedtimeTime
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: "^([01]\\d|2[0-3]):[0-5]\\d$"
+            example: "22:00"
+          description: Custom bedtime slot time (HH:MM, Asia/Tokyo)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SlotBulkRecordRequest"
+      responses:
+        "200":
+          description: >
+            Bulk record completed successfully. updatedCount indicates how many
+            records were newly created (0 if all were already TAKEN).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SlotBulkRecordResponse"
+        "401":
+          description: Unauthorized — missing or invalid patient session token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden — caregiver token used on patient-only endpoint
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation error — invalid date format, slot value, or slot time params
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+      security:
+        - patientSession: []
+
+components:
+  securitySchemes:
+    patientSession:
+      type: http
+      scheme: bearer
+      description: Patient session token (non-caregiver prefixed)
+
+  schemas:
+    SlotName:
+      type: string
+      enum:
+        - morning
+        - noon
+        - evening
+        - bedtime
+
+    SlotSummaryStatus:
+      type: string
+      enum:
+        - pending
+        - taken
+        - missed
+        - none
+
+    SlotBulkRecordRequest:
+      type: object
+      required:
+        - date
+        - slot
+      properties:
+        date:
+          type: string
+          format: date
+          description: Target date in YYYY-MM-DD format (Asia/Tokyo)
+          example: "2026-02-11"
+        slot:
+          $ref: "#/components/schemas/SlotName"
+
+    SlotBulkRecordResponse:
+      type: object
+      required:
+        - updatedCount
+        - remainingCount
+        - totalPills
+        - medCount
+        - slotTime
+        - slotSummary
+      properties:
+        updatedCount:
+          type: integer
+          minimum: 0
+          description: Number of dose records newly created in this operation
+          example: 3
+        remainingCount:
+          type: integer
+          minimum: 0
+          description: Number of PENDING+MISSED doses remaining in the slot after the operation
+          example: 0
+        totalPills:
+          type: number
+          description: >
+            Sum of doseCountPerIntake across all medications in the slot (Y in
+            "合計Y錠（N種類）"). Includes all doses regardless of status.
+          example: 5
+        medCount:
+          type: integer
+          minimum: 0
+          description: >
+            Count of distinct medications in the slot (N in "合計Y錠（N種類）").
+            Includes all medications regardless of status.
+          example: 3
+        slotTime:
+          type: string
+          pattern: "^([01]\\d|2[0-3]):[0-5]\\d$"
+          description: >
+            Resolved slot time (HH:MM) for the target slot, derived from the
+            first dose's scheduledAt or the custom slot time parameter. Used to
+            ensure UI display consistency.
+          example: "07:30"
+        slotSummary:
+          type: object
+          description: >
+            Full-day slot summary with aggregated status per slot. Allows the
+            client to update all slot badges without a separate refresh call.
+          required:
+            - morning
+            - noon
+            - evening
+            - bedtime
+          properties:
+            morning:
+              $ref: "#/components/schemas/SlotSummaryStatus"
+            noon:
+              $ref: "#/components/schemas/SlotSummaryStatus"
+            evening:
+              $ref: "#/components/schemas/SlotSummaryStatus"
+            bedtime:
+              $ref: "#/components/schemas/SlotSummaryStatus"
+        recordingGroupId:
+          type: string
+          format: uuid
+          nullable: true
+          description: UUID identifying this bulk operation group. Null if no records were updated.
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Unauthorized"
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          enum:
+            - validation
+        messages:
+          type: array
+          items:
+            type: string
+          example:
+            - "date is required"
+            - "slot must be one of: morning, noon, evening, bedtime"

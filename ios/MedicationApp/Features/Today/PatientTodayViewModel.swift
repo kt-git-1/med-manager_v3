@@ -15,10 +15,11 @@ final class PatientTodayViewModel: ObservableObject {
     @Published var isPrnSubmitting = false
     @Published var highlightedSlot: NotificationSlot?
     @Published var outOfStockMedicationIds: Set<String> = []
+    @Published var confirmSlot: NotificationSlot?
 
     private let apiClient: APIClient
     private let reminderService: ReminderService
-    private let preferencesStore: NotificationPreferencesStore
+    let preferencesStore: NotificationPreferencesStore
     private let dateFormatter: DateFormatter
     private let timeFormatter: DateFormatter
     private let dateKeyFormatter: DateFormatter
@@ -198,6 +199,101 @@ final class PatientTodayViewModel: ObservableObject {
 
     func isMedicationOutOfStock(_ medicationId: String) -> Bool {
         outOfStockMedicationIds.contains(medicationId)
+    }
+
+    // MARK: - Slot Bulk Recording
+
+    /// Recording window: slot time −30 min to +60 min
+    private static let recordingWindowBeforeSeconds: TimeInterval = 30 * 60
+    private static let recordingWindowAfterSeconds: TimeInterval = 60 * 60
+
+    struct SlotSummary {
+        let totalPills: Double
+        let medCount: Int
+        let remainingCount: Int
+        let slotTime: String
+        let aggregateStatus: DoseStatusDTO
+        let isWithinRecordingWindow: Bool
+    }
+
+    var slotSummaries: [NotificationSlot: SlotSummary] {
+        let slotTimesMap = preferencesStore.slotTimesMap()
+        var grouped: [NotificationSlot: [ScheduleDoseDTO]] = [:]
+        for dose in items {
+            guard let slot = NotificationSlot.from(date: dose.scheduledAt, slotTimes: slotTimesMap) else {
+                continue
+            }
+            grouped[slot, default: []].append(dose)
+        }
+
+        let timeFormat = DateFormatter()
+        timeFormat.timeZone = AppConstants.defaultTimeZone
+        timeFormat.dateFormat = "HH:mm"
+
+        var result: [NotificationSlot: SlotSummary] = [:]
+        for (slot, doses) in grouped {
+            let totalPills = doses.reduce(0.0) { $0 + $1.medicationSnapshot.doseCountPerIntake }
+            let medCount = doses.count
+            let remaining = doses.filter { $0.effectiveStatus == .pending || $0.effectiveStatus == .missed }.count
+            let slotTime = doses.first.map { timeFormat.string(from: $0.scheduledAt) } ?? "00:00"
+
+            // Worst-case aggregate: missed > pending > taken
+            let aggregate: DoseStatusDTO
+            if doses.contains(where: { $0.effectiveStatus == .missed }) {
+                aggregate = .missed
+            } else if doses.contains(where: { $0.effectiveStatus == .pending || $0.effectiveStatus == nil }) {
+                aggregate = .pending
+            } else {
+                aggregate = .taken
+            }
+
+            // Recording window: scheduledAt −30 min … scheduledAt +60 min
+            let now = Date()
+            let withinWindow: Bool
+            if let firstScheduled = doses.first?.scheduledAt {
+                let windowOpen = firstScheduled.addingTimeInterval(-Self.recordingWindowBeforeSeconds)
+                let windowClose = firstScheduled.addingTimeInterval(Self.recordingWindowAfterSeconds)
+                withinWindow = now >= windowOpen && now <= windowClose
+            } else {
+                withinWindow = false
+            }
+
+            result[slot] = SlotSummary(
+                totalPills: totalPills,
+                medCount: medCount,
+                remainingCount: remaining,
+                slotTime: slotTime,
+                aggregateStatus: aggregate,
+                isWithinRecordingWindow: withinWindow
+            )
+        }
+        return result
+    }
+
+    func confirmBulkRecord(for slot: NotificationSlot) {
+        confirmSlot = slot
+    }
+
+    func executeBulkRecord() {
+        guard let slot = confirmSlot else { return }
+        confirmSlot = nil
+        isUpdating = true
+        Task { @MainActor in
+            defer { isUpdating = false }
+            do {
+                let dateString = dateKeyFormatter.string(from: Date())
+                let slotTimes = preferencesStore.slotTimeQueryItems()
+                _ = try await apiClient.bulkRecordSlot(
+                    date: dateString,
+                    slot: slot.rawValue,
+                    slotTimes: slotTimes
+                )
+                showToast(NSLocalizedString("patient.today.slot.bulk.success", comment: "Bulk recorded"))
+                load(showLoading: false)
+            } catch {
+                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+            }
+        }
     }
 
     private func refreshTodayData() async throws {

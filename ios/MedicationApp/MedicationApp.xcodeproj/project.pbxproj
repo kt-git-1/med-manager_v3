@@ -39,6 +39,9 @@
 		291B6376A250F33FB5566E26 /* EmptyDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = F416FC7961AEE499FB0C7826 /* EmptyDTO.swift */; };
 		292DEDE97BAB04DA0FD71665 /* CaregiverHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E622F067BAC7E3083CFB39A /* CaregiverHistoryView.swift */; };
 		33BD2CB7F75CD2EBC7AEDFA6 /* PrnDoseRecordDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23B9650C57D5CF2A1CC524ED /* PrnDoseRecordDTO.swift */; };
+		0115B0000001000000000001 /* SlotBulkRecordDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0115A0000001000000000001 /* SlotBulkRecordDTO.swift */; };
+		0115B0000002000000000002 /* SlotCardRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0115A0000002000000000002 /* SlotCardRenderingTests.swift */; };
+		0115B0000003000000000003 /* SlotBulkRecordUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0115A0000003000000000003 /* SlotBulkRecordUITests.swift */; };
 		384FCBE5554E1F466CF09010 /* CaregiverHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4699C39F07E258727176FCAE /* CaregiverHomeView.swift */; };
 		3CBD461BAAD1813E71A0BE0F /* FullScreenContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F15D54BA84F66FF4EAD48C3 /* FullScreenContainer.swift */; };
 		3F51C80C88632AC450E9771A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 80D730F32C311FB27644CE69 /* Assets.xcassets */; };
@@ -169,6 +172,9 @@
 		1F15D54BA84F66FF4EAD48C3 /* FullScreenContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullScreenContainer.swift; sourceTree = "<group>"; };
 		21EE1CB0A785976B0BFACF55 /* PatientLinkCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientLinkCodeView.swift; sourceTree = "<group>"; };
 		23B9650C57D5CF2A1CC524ED /* PrnDoseRecordDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrnDoseRecordDTO.swift; sourceTree = "<group>"; };
+		0115A0000001000000000001 /* SlotBulkRecordDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotBulkRecordDTO.swift; sourceTree = "<group>"; };
+		0115A0000002000000000002 /* SlotCardRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotCardRenderingTests.swift; sourceTree = "<group>"; };
+		0115A0000003000000000003 /* SlotBulkRecordUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotBulkRecordUITests.swift; sourceTree = "<group>"; };
 		2780958AD32B86D5FD3254D8 /* PatientRevokeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientRevokeView.swift; sourceTree = "<group>"; };
 		2C9D32B07C15C8E395FD13EC /* InventoryBannerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryBannerUITests.swift; sourceTree = "<group>"; };
 		2E02C37A6DD54B4D396E3BF1 /* CaregiverBannerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverBannerUITests.swift; sourceTree = "<group>"; };
@@ -349,6 +355,15 @@
 			path = PDFExport;
 			sourceTree = "<group>";
 		};
+		0115C0000001000000000001 /* SlotBulkRecord */ = {
+			isa = PBXGroup;
+			children = (
+				0115A0000002000000000002 /* SlotCardRenderingTests.swift */,
+				0115A0000003000000000003 /* SlotBulkRecordUITests.swift */,
+			);
+			path = SlotBulkRecord;
+			sourceTree = "<group>";
+		};
 		388F121B3382F1004EC82EBE /* DTOs */ = {
 			isa = PBXGroup;
 			children = (
@@ -361,6 +376,7 @@
 				EEE1F1D310B1C0AFFB60363E /* MedicationDTO.swift */,
 				B32079D60F0180FF98DC28FD /* PatientDTO.swift */,
 				23B9650C57D5CF2A1CC524ED /* PrnDoseRecordDTO.swift */,
+				0115A0000001000000000001 /* SlotBulkRecordDTO.swift */,
 			);
 			path = DTOs;
 			sourceTree = "<group>";
@@ -564,6 +580,7 @@
 				2E52607928949AA90078E476 /* Medication */,
 				91FC2026FF89482059F71C38 /* Notifications */,
 				011A30000002000000000002 /* PDFExport */,
+				0115C0000001000000000001 /* SlotBulkRecord */,
 				5393589EAEDD966C27A36820 /* Today */,
 			);
 			path = Tests;
@@ -790,6 +807,7 @@
 				011A10000004000000000004 /* PeriodPickerSheet.swift in Sources */,
 				A368DDDB83925DDFFFE53CC9 /* PaywallViewModel.swift in Sources */,
 				33BD2CB7F75CD2EBC7AEDFA6 /* PrnDoseRecordDTO.swift in Sources */,
+				0115B0000001000000000001 /* SlotBulkRecordDTO.swift in Sources */,
 				EBC82CA27064EED79BAFD52A /* ReminderBannerPresenter.swift in Sources */,
 				A9E01ADD70C1C0763905008D /* ReminderService.swift in Sources */,
 				C531B4EE2AF37C0A10FE41B1 /* RootView.swift in Sources */,
@@ -842,6 +860,8 @@
 				9294808D59A7EBB3A7260373 /* SessionStoreTests.swift in Sources */,
 				9315A5D0E9689A9AD2EED834 /* TodayCaregiverFlowTests.swift in Sources */,
 				A91CE62CDD4B5ABC87590915 /* TodayPatientFlowTests.swift in Sources */,
+				0115B0000002000000000002 /* SlotCardRenderingTests.swift in Sources */,
+				0115B0000003000000000003 /* SlotBulkRecordUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
