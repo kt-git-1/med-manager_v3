@@ -138,14 +138,14 @@ export function parseSlotTimesFromParams(searchParams: URLSearchParams): SlotTim
   };
 }
 
-export function groupDosesByLocalDate(doses: { scheduledAt: string }[], tz: string) {
+export function groupDosesByLocalDate<T extends { scheduledAt: string }>(doses: T[], tz: string) {
   const formatter = new Intl.DateTimeFormat(INTL_PARSE_LOCALE, {
     timeZone: tz,
     year: "numeric",
     month: "2-digit",
     day: "2-digit"
   });
-  const map = new Map<string, typeof doses>();
+  const map = new Map<string, T[]>();
   for (const dose of doses) {
     const parts = formatter.formatToParts(new Date(dose.scheduledAt));
     const values: Record<string, string> = {};
