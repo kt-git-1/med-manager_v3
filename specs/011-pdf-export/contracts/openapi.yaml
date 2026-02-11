@@ -1,0 +1,325 @@
+openapi: 3.0.3
+info:
+  title: PDF Export History Report API (011)
+  version: 0.1.0
+  description: |
+    New endpoint for retrieving aggregated medication history data for PDF export.
+    Returns scheduled dose records (grouped by slot) and PRN records for a date
+    range of up to 90 days. Caregiver session required; patient sessions are rejected.
+    All dates are in Asia/Tokyo timezone.
+servers:
+  - url: /api
+paths:
+  /patients/{patientId}/history/report:
+    get:
+      summary: Get history report for date range (caregiver only)
+      description: |
+        Returns aggregated medication history (scheduled slots + PRN) for the
+        specified patient and date range. Designed for on-device PDF generation.
+        Requires caregiver session authentication. Patient sessions are rejected.
+
+        Date validation:
+        - from and to are required (YYYY-MM-DD format)
+        - to <= todayTokyo (current date in Asia/Tokyo)
+        - from <= to
+        - (to - from + 1) <= 90 days (inclusive)
+
+        Optional retention gate (alignment with 010):
+        - If the requesting caregiver is on the free plan and from < retention
+          cutoffDate, returns HISTORY_RETENTION_LIMIT (403).
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The patient ID (must be linked to the authenticated caregiver)
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Start date (inclusive, YYYY-MM-DD, Asia/Tokyo)
+          example: "2026-01-01"
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: End date (inclusive, YYYY-MM-DD, Asia/Tokyo)
+          example: "2026-01-30"
+      responses:
+        "200":
+          description: History report data for the requested range
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryReportResponse"
+        "400":
+          description: Invalid date range
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvalidRangeError"
+        "401":
+          description: Unauthorized (no valid session)
+        "403":
+          description: |
+            Forbidden. Either:
+            - Patient session attempted to access this endpoint (NOT_AUTHORIZED)
+            - Caregiver attempted to access a patient not linked to them (NOT_AUTHORIZED)
+            - Free caregiver's from date is before retention cutoff (HISTORY_RETENTION_LIMIT)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NotAuthorizedError"
+                  - $ref: "#/components/schemas/HistoryRetentionLimitError"
+        "404":
+          description: Patient not found (concealment — caregiver not linked to patient)
+
+components:
+  schemas:
+    HistoryReportResponse:
+      type: object
+      required:
+        - patient
+        - range
+        - days
+      properties:
+        patient:
+          $ref: "#/components/schemas/ReportPatient"
+        range:
+          $ref: "#/components/schemas/ReportRange"
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportDay"
+
+    ReportPatient:
+      type: object
+      required:
+        - id
+        - displayName
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Patient ID
+        displayName:
+          type: string
+          description: Patient display name
+          example: "太郎"
+
+    ReportRange:
+      type: object
+      required:
+        - from
+        - to
+        - timezone
+        - days
+      properties:
+        from:
+          type: string
+          format: date
+          description: Start date (YYYY-MM-DD)
+          example: "2026-01-01"
+        to:
+          type: string
+          format: date
+          description: End date (YYYY-MM-DD)
+          example: "2026-01-30"
+        timezone:
+          type: string
+          description: Timezone used for all dates
+          example: "Asia/Tokyo"
+          enum:
+            - Asia/Tokyo
+        days:
+          type: integer
+          description: Number of days in range (inclusive)
+          minimum: 1
+          maximum: 90
+          example: 30
+
+    ReportDay:
+      type: object
+      required:
+        - date
+        - slots
+        - prn
+      properties:
+        date:
+          type: string
+          format: date
+          description: Date (YYYY-MM-DD)
+          example: "2026-01-01"
+        slots:
+          $ref: "#/components/schemas/ReportSlots"
+        prn:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportPrnItem"
+
+    ReportSlots:
+      type: object
+      required:
+        - morning
+        - noon
+        - evening
+        - bedtime
+      properties:
+        morning:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportSlotItem"
+        noon:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportSlotItem"
+        evening:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportSlotItem"
+        bedtime:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportSlotItem"
+
+    ReportSlotItem:
+      type: object
+      required:
+        - medicationId
+        - name
+        - dosageText
+        - doseCount
+        - status
+      properties:
+        medicationId:
+          type: string
+          format: uuid
+          description: Medication ID
+        name:
+          type: string
+          description: Medication name
+          example: "アムロジピン"
+        dosageText:
+          type: string
+          description: Dosage description
+          example: "5mg"
+        doseCount:
+          type: number
+          description: Number of doses per intake
+          example: 1
+        status:
+          type: string
+          description: Dose status
+          enum:
+            - TAKEN
+            - MISSED
+            - PENDING
+        recordedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the dose was recorded (ISO 8601 with Asia/Tokyo offset). Null if not yet taken.
+          example: "2026-01-01T08:15:00+09:00"
+
+    ReportPrnItem:
+      type: object
+      required:
+        - medicationId
+        - name
+        - dosageText
+        - quantity
+        - recordedAt
+        - recordedBy
+      properties:
+        medicationId:
+          type: string
+          format: uuid
+          description: Medication ID
+        name:
+          type: string
+          description: Medication name
+          example: "ロキソプロフェン"
+        dosageText:
+          type: string
+          description: Dosage description
+          example: "60mg"
+        quantity:
+          type: number
+          description: Number of doses taken
+          example: 1
+        recordedAt:
+          type: string
+          format: date-time
+          description: When the dose was recorded (ISO 8601 with Asia/Tokyo offset)
+          example: "2026-01-01T14:30:00+09:00"
+        recordedBy:
+          type: string
+          description: Who recorded the dose
+          enum:
+            - PATIENT
+            - CAREGIVER
+
+    InvalidRangeError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Stable error code
+          enum:
+            - INVALID_RANGE
+        message:
+          type: string
+          description: Human-readable error message (informational, do not parse)
+          example: "指定された期間が不正です。"
+
+    NotAuthorizedError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Stable error code
+          enum:
+            - NOT_AUTHORIZED
+        message:
+          type: string
+          description: Human-readable error message
+
+    HistoryRetentionLimitError:
+      type: object
+      required:
+        - code
+        - message
+        - cutoffDate
+        - retentionDays
+      properties:
+        code:
+          type: string
+          description: Stable error code (same as used by history month/day endpoints)
+          enum:
+            - HISTORY_RETENTION_LIMIT
+        message:
+          type: string
+          description: Human-readable error message
+          example: "履歴の閲覧は直近30日間に制限されています。"
+        cutoffDate:
+          type: string
+          format: date
+          description: Earliest viewable date (YYYY-MM-DD, Asia/Tokyo)
+          example: "2026-01-12"
+        retentionDays:
+          type: integer
+          description: Days of history available on free plan
+          example: 30

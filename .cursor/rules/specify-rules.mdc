@@ -14,6 +14,7 @@ Auto-generated from all feature plans. Last updated: 2026-01-31
 - PostgreSQL via Prisma (`api/prisma/schema.prisma`) (008-billing-foundation)
 - TypeScript (Node.js >=20, Next.js 16, Prisma 7.3), Swift 6.2 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Auth (JWT); SwiftUI, StoreKit2, XCTes (009-free-limit-gates)
 - PostgreSQL via Prisma (`api/prisma/schema.prisma`) — no new tables (009-free-limit-gates)
+- TypeScript (Node.js >=20, Next.js 16, Prisma 7.3), Swift 6.2 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Auth (JWT); SwiftUI, StoreKit2, XCTest, UIGraphicsPDFRenderer (011-pdf-export)
 
 - TypeScript (Node.js 20+), Swift 5.9+ + Next.js Route Handlers, Supabase Auth, Prisma ORM 7.3, SwiftUI (001-medication-regimen)
 
@@ -33,9 +34,9 @@ npm test && npm run lint
 TypeScript (Node.js 20+), Swift 5.9+: Follow standard conventions
 
 ## Recent Changes
+- 011-pdf-export: Added TypeScript (Node.js >=20, Next.js 16, Prisma 7.3), Swift 6.2 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Auth (JWT); SwiftUI, StoreKit2, XCTest, UIGraphicsPDFRenderer
 - 010-history-retention: Added TypeScript (Node.js >=20, Next.js 16, Prisma 7.3), Swift 6.2 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Auth (JWT); SwiftUI, StoreKit2, XCTes
 - 009-free-limit-gates: Added TypeScript (Node.js >=20, Next.js 16, Prisma 7.3), Swift 6.2 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Auth (JWT); SwiftUI, StoreKit2, XCTes
-- 008-billing-foundation: Added TypeScript (Node.js >=20, Next.js 16, Prisma 7.3), Swift 6.2 (SwiftUI, iOS 26 SDK, StoreKit2) + Next.js App Router, Prisma, Supabase Auth (JWT); SwiftUI, StoreKit2, XCTes
 
 
 <!-- MANUAL ADDITIONS START -->
