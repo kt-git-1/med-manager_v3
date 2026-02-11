@@ -17,6 +17,8 @@ Auto-generated from all feature plans. Last updated: 2026-01-31
 - TypeScript (Node.js >=20, Next.js 16, Prisma 7.3), Swift 6.2 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Auth (JWT); SwiftUI, StoreKit2, XCTest, UIGraphicsPDFRenderer (011-pdf-export)
 - TypeScript 5.9 (Node >=20) for API; Swift 6.2 for iOS + Next.js 16 App Router, Prisma 7.3, Vitest; SwiftUI, XCTes (0115-slot-bulk-dose-recording)
 - PostgreSQL via Prisma (DoseRecord table, new nullable `recordingGroupId` column) (0115-slot-bulk-dose-recording)
+- TypeScript 5.9 (Node >=20) for API; Swift 6.2 for iOS + Next.js 16 App Router, Prisma 7.3, Vitest; SwiftUI, FirebaseMessaging, XCTes (012-push-foundation)
+- PostgreSQL via Prisma (new PushDevice + PushDelivery tables) (012-push-foundation)
 
 - TypeScript (Node.js 20+), Swift 5.9+ + Next.js Route Handlers, Supabase Auth, Prisma ORM 7.3, SwiftUI (001-medication-regimen)
 
@@ -36,9 +38,9 @@ npm test && npm run lint
 TypeScript (Node.js 20+), Swift 5.9+: Follow standard conventions
 
 ## Recent Changes
+- 012-push-foundation: Added TypeScript 5.9 (Node >=20) for API; Swift 6.2 for iOS + Next.js 16 App Router, Prisma 7.3, Vitest; SwiftUI, FirebaseMessaging, XCTes
 - 0115-slot-bulk-dose-recording: Added TypeScript 5.9 (Node >=20) for API; Swift 6.2 for iOS + Next.js 16 App Router, Prisma 7.3, Vitest; SwiftUI, XCTes
 - 011-pdf-export: Added TypeScript (Node.js >=20, Next.js 16, Prisma 7.3), Swift 6.2 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Auth (JWT); SwiftUI, StoreKit2, XCTest, UIGraphicsPDFRenderer
-- 010-history-retention: Added TypeScript (Node.js >=20, Next.js 16, Prisma 7.3), Swift 6.2 (SwiftUI, iOS 26 SDK) + Next.js App Router, Prisma, Supabase Auth (JWT); SwiftUI, StoreKit2, XCTes
 
 
 <!-- MANUAL ADDITIONS START -->

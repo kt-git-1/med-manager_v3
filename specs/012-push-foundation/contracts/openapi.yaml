@@ -1,0 +1,251 @@
+openapi: 3.1.0
+info:
+  title: Med Manager v3 — Push Foundation (012)
+  version: 0.1.0
+  description: |
+    Push notification device registration and unregistration endpoints for caregiver mode.
+    Part of feature 012-push-foundation.
+
+servers:
+  - url: /api
+    description: Next.js API routes
+
+paths:
+  /push/register:
+    post:
+      operationId: pushRegister
+      summary: Register a push device for the authenticated caregiver
+      description: |
+        Upserts a PushDevice record for the authenticated caregiver. If the device
+        (identified by ownerType + ownerId + token) already exists, updates lastSeenAt
+        and sets isEnabled=true. Otherwise creates a new record.
+
+        Called by the iOS app when the caregiver enables push notifications in Settings.
+      tags:
+        - Push
+      security:
+        - caregiverBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushRegisterRequest"
+            example:
+              token: "dGhpcyBpcyBhIGZha2UgRkNNIHRva2Vu..."
+              platform: "ios"
+              environment: "DEV"
+      responses:
+        "200":
+          description: Device registered (or re-enabled) successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushOkResponse"
+              example:
+                ok: true
+        "401":
+          description: Missing or invalid caregiver authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Unauthorized"
+        "422":
+          description: Validation error (missing or invalid fields)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+              example:
+                error: "validation"
+                messages:
+                  - "token is required"
+
+  /push/unregister:
+    post:
+      operationId: pushUnregister
+      summary: Disable a push device for the authenticated caregiver
+      description: |
+        Sets isEnabled=false on the PushDevice record matching the authenticated
+        caregiver and the provided token. Does not hard-delete the record.
+
+        Called by the iOS app when the caregiver disables push notifications in Settings.
+        If the token is not found, returns 200 (idempotent).
+      tags:
+        - Push
+      security:
+        - caregiverBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushUnregisterRequest"
+            example:
+              token: "dGhpcyBpcyBhIGZha2UgRkNNIHRva2Vu..."
+      responses:
+        "200":
+          description: Device disabled (or already disabled/not found) successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushOkResponse"
+              example:
+                ok: true
+        "401":
+          description: Missing or invalid caregiver authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Unauthorized"
+        "422":
+          description: Validation error (missing token)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+              example:
+                error: "validation"
+                messages:
+                  - "token is required"
+
+components:
+  securitySchemes:
+    caregiverBearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Caregiver session token. Format: `Bearer caregiver-{supabase-jwt}`.
+        Verified via `requireCaregiver` middleware.
+
+  schemas:
+    PushRegisterRequest:
+      type: object
+      required:
+        - token
+        - platform
+        - environment
+      properties:
+        token:
+          type: string
+          description: FCM registration token obtained from the Firebase SDK
+          minLength: 1
+        platform:
+          type: string
+          enum:
+            - ios
+          description: Device platform. MVP supports iOS only.
+        environment:
+          type: string
+          enum:
+            - DEV
+            - PROD
+          description: Push environment. DEV for debug builds, PROD for release builds.
+
+    PushUnregisterRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: FCM registration token to disable
+          minLength: 1
+
+    PushOkResponse:
+      type: object
+      required:
+        - ok
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+
+    ValidationErrorResponse:
+      type: object
+      required:
+        - error
+        - messages
+      properties:
+        error:
+          type: string
+          enum:
+            - validation
+        messages:
+          type: array
+          items:
+            type: string
+
+    # Internal: Push payload sent to FCM HTTP v1 (not a public API)
+    FcmDoseTakenPayload:
+      type: object
+      description: |
+        Internal FCM HTTP v1 message payload for DOSE_TAKEN push notifications.
+        Not exposed as a public API endpoint. Documented for reference.
+      properties:
+        message:
+          type: object
+          properties:
+            token:
+              type: string
+              description: FCM device token
+            notification:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: "服薬記録"
+                body:
+                  type: string
+                  example: "太郎さんが薬を服用しました"
+            data:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - DOSE_TAKEN
+                patientId:
+                  type: string
+                date:
+                  type: string
+                  format: date
+                  description: "YYYY-MM-DD in Asia/Tokyo timezone"
+                slot:
+                  type: string
+                  enum:
+                    - morning
+                    - noon
+                    - evening
+                    - bedtime
+                recordingGroupId:
+                  type: string
+                  description: "UUID from slot bulk recording, empty string if not applicable"
+            apns:
+              type: object
+              properties:
+                payload:
+                  type: object
+                  properties:
+                    aps:
+                      type: object
+                      properties:
+                        sound:
+                          type: string
+                          example: "default"
+                        thread-id:
+                          type: string
+                          example: "patient-patient-123"
