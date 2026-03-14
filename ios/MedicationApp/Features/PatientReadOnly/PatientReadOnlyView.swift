@@ -91,6 +91,7 @@ struct PatientReadOnlyView: View {
             enabledSlots: preferencesStore.enabledSlots(),
             slotTimes: preferencesStore.slotTimesMap(),
             caregiverPatientId: nil,
+            preferencesStore: preferencesStore,
             trigger: trigger
         )
     }
@@ -258,6 +259,7 @@ struct PatientSettingsView: View {
             enabledSlots: preferencesStore.enabledSlots(),
             slotTimes: preferencesStore.slotTimesMap(),
             caregiverPatientId: nil,
+            preferencesStore: preferencesStore,
             trigger: .settingsChange
         )
     }

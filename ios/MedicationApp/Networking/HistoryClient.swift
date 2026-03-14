@@ -26,7 +26,8 @@ final class HistoryClient {
     func fetchMonthSummaries(
         windowStart: Date,
         days: Int,
-        caregiverPatientId: String? = nil
+        caregiverPatientId: String? = nil,
+        slotTimeItems: [URLQueryItem] = []
     ) async throws -> [HistoryMonthResponseDTO] {
         let start = calendar.startOfDay(for: windowStart)
         let end = calendar.date(byAdding: .day, value: max(days - 1, 0), to: start) ?? start
@@ -46,7 +47,8 @@ final class HistoryClient {
                 let month = try await apiClient.fetchCaregiverHistoryMonth(
                     patientId: caregiverPatientId,
                     year: startYear,
-                    month: startMonth
+                    month: startMonth,
+                    slotTimeItems: slotTimeItems
                 )
                 return [month]
             }
@@ -54,23 +56,25 @@ final class HistoryClient {
             let currentMonth = try await apiClient.fetchCaregiverHistoryMonth(
                 patientId: caregiverPatientId,
                 year: startYear,
-                month: startMonth
+                month: startMonth,
+                slotTimeItems: slotTimeItems
             )
             let nextMonth = try await apiClient.fetchCaregiverHistoryMonth(
                 patientId: caregiverPatientId,
                 year: endYear,
-                month: endMonth
+                month: endMonth,
+                slotTimeItems: slotTimeItems
             )
             return [currentMonth, nextMonth]
         }
 
         if startYear == endYear && startMonth == endMonth {
-            let month = try await apiClient.fetchPatientHistoryMonth(year: startYear, month: startMonth)
+            let month = try await apiClient.fetchPatientHistoryMonth(year: startYear, month: startMonth, slotTimeItems: slotTimeItems)
             return [month]
         }
 
-        let currentMonth = try await apiClient.fetchPatientHistoryMonth(year: startYear, month: startMonth)
-        let nextMonth = try await apiClient.fetchPatientHistoryMonth(year: endYear, month: endMonth)
+        let currentMonth = try await apiClient.fetchPatientHistoryMonth(year: startYear, month: startMonth, slotTimeItems: slotTimeItems)
+        let nextMonth = try await apiClient.fetchPatientHistoryMonth(year: endYear, month: endMonth, slotTimeItems: slotTimeItems)
         return [currentMonth, nextMonth]
     }
 
