@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -12,6 +12,7 @@
 		07A122CD68554DEF139F0929 /* MedicationFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0822331373D994BC40BCB45F /* MedicationFormView.swift */; };
 		08F2E2D7265212F0DAEC48C8 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B421542D92993BB7B79D9D3 /* APIError.swift */; };
 		0BE25CB60B085ADA81C99A63 /* Products.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 9B64AF7EE295BBF73C74DC54 /* Products.storekit */; };
+		0BEE3094B08648A295008EC4 /* SessionKeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E051C14827C2DAF7D4738AA0 /* SessionKeychainStore.swift */; };
 		0C743631749D3703ECF117C7 /* PrnOverlayUiTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59803E8F1DB8D7C07E6285E5 /* PrnOverlayUiTests.swift */; };
 		0D5ECB5EDCE89C6243561201 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C14C533AD6E811851375D3BA /* LaunchScreen.storyboard */; };
 		0E7183A7256CA67A2F98F040 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D944249F964B12755FD2DF /* APIClient.swift */; };
@@ -21,6 +22,7 @@
 		173F340EC95041C491379106 /* InventoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 071D9CAF62C18AC6DDC887BD /* InventoryDetailView.swift */; };
 		19BD9678882E1E87704A8A4C /* PDFExportButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB4A7982EF513DD066ACCFD /* PDFExportButton.swift */; };
 		1B0FA4537B34C4ACA955D160 /* NotificationPlanBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F3910BD2D33F5348FBDDEEC /* NotificationPlanBuilderTests.swift */; };
+		1CE852A24B52CF698060C41C /* AuthServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C0A8C5F4DC619A7E070636 /* AuthServiceTests.swift */; };
 		1D9B75FDE4F5917C04821393 /* NotificationPlanBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0553302E054BBF130267A11 /* NotificationPlanBuilder.swift */; };
 		1E22E1419C6A3C99AD170461 /* CaregiverSignupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DB89D6E699DF066387CC24 /* CaregiverSignupView.swift */; };
 		2154EC8A48517F04C81C994E /* NotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9175FA959FB3561933F5F2EC /* NotificationScheduler.swift */; };
@@ -179,7 +181,7 @@
 		2E622F067BAC7E3083CFB39A /* CaregiverHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverHistoryView.swift; sourceTree = "<group>"; };
 		2F14389A25B5B1AFDD3C4518 /* PrnConfirmTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrnConfirmTests.swift; sourceTree = "<group>"; };
 		2F3B3EC234D1D71D44BC2C6E /* LinkingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkingService.swift; sourceTree = "<group>"; };
-		30F0665AE9C17BFB7BD43D41 /* MedicationApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MedicationApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		30F0665AE9C17BFB7BD43D41 /* MedicationApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MedicationApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		330755D41A1951F0E8613782 /* InventoryListDetailUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryListDetailUITests.swift; sourceTree = "<group>"; };
 		3335A90BDEB52C323A153517 /* SchedulingRefreshOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulingRefreshOverlay.swift; sourceTree = "<group>"; };
 		342C88D125EBB6991FA73A6C /* HistoryRetentionUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryRetentionUITests.swift; sourceTree = "<group>"; };
@@ -225,7 +227,7 @@
 		94643C1CA7FC56CD9674234A /* HistoryDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryDTO.swift; sourceTree = "<group>"; };
 		96625C38F8A39E22EE9BDE70 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9A52478DEFCCAE46F0F50136 /* HistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewModel.swift; sourceTree = "<group>"; };
-		9B64AF7EE295BBF73C74DC54 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
+		9B64AF7EE295BBF73C74DC54 /* Products.storekit */ = {isa = PBXFileReference; path = Products.storekit; sourceTree = "<group>"; };
 		A0553302E054BBF130267A11 /* NotificationPlanBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPlanBuilder.swift; sourceTree = "<group>"; };
 		ABBF5EB307A2B918E9712162 /* NotificationDeepLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationDeepLinkTests.swift; sourceTree = "<group>"; };
 		ABD7675083AAF91936829813 /* PeriodPickerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodPickerViewModel.swift; sourceTree = "<group>"; };
@@ -240,6 +242,7 @@
 		BCC18253215BD74074A8CB36 /* PaywallUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallUITests.swift; sourceTree = "<group>"; };
 		BE09CCA2A275B0AA41324F09 /* NotificationSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsTests.swift; sourceTree = "<group>"; };
 		C084FA5333D8A7F1BF0CC274 /* CaregiverSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverSettingsView.swift; sourceTree = "<group>"; };
+		C0C0A8C5F4DC619A7E070636 /* AuthServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthServiceTests.swift; sourceTree = "<group>"; };
 		C14C533AD6E811851375D3BA /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		C478A1F0A87BA5A6933C496E /* SessionStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStoreTests.swift; sourceTree = "<group>"; };
 		C864E2CD124754159C571F26 /* APIClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClientTests.swift; sourceTree = "<group>"; };
@@ -254,6 +257,7 @@
 		DB301A66DEAEF3BCF639C5DD /* AppConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>"; };
 		DC586CEBAE4FA70F0688F003 /* HistoryReportDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryReportDTO.swift; sourceTree = "<group>"; };
 		DE96F6150C049AA64E9847D1 /* SlotCardRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotCardRenderingTests.swift; sourceTree = "<group>"; };
+		E051C14827C2DAF7D4738AA0 /* SessionKeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionKeychainStore.swift; sourceTree = "<group>"; };
 		E9E12BCBB71264FF90ADD7F7 /* PatientManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientManagementView.swift; sourceTree = "<group>"; };
 		EB55437B073B6E2D5D88F3AE /* MedicationListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationListViewModelTests.swift; sourceTree = "<group>"; };
 		EC08C3E7B359DD5774B5DAAA /* MedicationListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationListView.swift; sourceTree = "<group>"; };
@@ -598,6 +602,7 @@
 			isa = PBXGroup;
 			children = (
 				C864E2CD124754159C571F26 /* APIClientTests.swift */,
+				C0C0A8C5F4DC619A7E070636 /* AuthServiceTests.swift */,
 				50CC3E300E058B7C790B9BD6 /* HistoryOverlayTests.swift */,
 				08D4DBCBF2CE5522633BB90C /* Info.plist */,
 				1936DBB41CFB0907EE79DBF6 /* MedicationFormValidationTests.swift */,
@@ -668,6 +673,7 @@
 			isa = PBXGroup;
 			children = (
 				DB301A66DEAEF3BCF639C5DD /* AppConstants.swift */,
+				E051C14827C2DAF7D4738AA0 /* SessionKeychainStore.swift */,
 				55D848B099AC94BF91C18A12 /* SessionStore.swift */,
 				0833835FF692FBCE583CA869 /* Banner */,
 				C0C28F2D96EFE3027D8148A4 /* Views */,
@@ -766,6 +772,7 @@
 			packageReferences = (
 				5C9FFD96061CF9A120447533 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -866,6 +873,7 @@
 				C531B4EE2AF37C0A10FE41B1 /* RootView.swift in Sources */,
 				4C61DCB405E3ED7065950C8C /* SchedulingRefreshCoordinator.swift in Sources */,
 				9BDBE28767029C5017FDA414 /* SchedulingRefreshOverlay.swift in Sources */,
+				0BEE3094B08648A295008EC4 /* SessionKeychainStore.swift in Sources */,
 				C6F26CAD5BC8841754DDEDEE /* SessionStore.swift in Sources */,
 				B0BD67450DF6D9F01C710F5C /* SlotBulkRecordDTO.swift in Sources */,
 				0F4FB82A94528ACED5A8531C /* SplashView.swift in Sources */,
@@ -879,6 +887,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				ED619E29E74E4546A2591DF6 /* APIClientTests.swift in Sources */,
+				1CE852A24B52CF698060C41C /* AuthServiceTests.swift in Sources */,
 				997DD9BA465D9BF5854F43E5 /* CaregiverBannerUITests.swift in Sources */,
 				34D5BC6EC9144D274A5234CB /* CaregiverPushSettingsTests.swift in Sources */,
 				95FD7BBD4A4B4283D865AC33 /* CaregiverPushUITests.swift in Sources */,
@@ -995,7 +1004,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = QSZR732YXD;
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1111,7 +1119,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = QSZR732YXD;
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

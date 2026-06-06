@@ -92,11 +92,11 @@ struct CaregiverSignupView: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            let token = try await authService.signup(email: email, password: password)
-            if token.isEmpty {
+            let session = try await authService.signup(email: email, password: password)
+            if !session.hasAccessToken {
                 errorMessage = NSLocalizedString("caregiver.signup.confirm.email", comment: "Email confirmation required")
             } else {
-                sessionStore.saveCaregiverToken(token)
+                sessionStore.saveCaregiverSession(session)
             }
         } catch {
             if let apiError = error as? LocalizedError, let message = apiError.errorDescription {

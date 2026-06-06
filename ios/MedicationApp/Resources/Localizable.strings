@@ -11,18 +11,19 @@
 "common.select" = "単位";
 "common.ok" = "OK";
 "common.logout" = "ログアウト";
+"settings.changeMode" = "利用方法を変更";
 "common.toast.updated" = "更新しました";
 "caregiver.timePreset.toast.updated" = "時間を更新しました";
 "caregiver.inventory.toast.saved" = "在庫情報を保存しました";
 "caregiver.inventory.toast.refilled" = "薬を補充しました";
 
 /* Mode select */
-"mode.select.title" = "モードを選択";
-"mode.select.subtitle" = "あなたの立場を選んでください";
-"mode.select.caregiver" = "家族モード";
-"mode.select.caregiver.subtitle" = "薬の管理・患者の見守り";
-"mode.select.patient" = "患者モード";
-"mode.select.patient.subtitle" = "服用記録・リマインダー";
+"mode.select.title" = "利用方法を選ぶ";
+"mode.select.subtitle" = "この端末で使う方法を選んでください";
+"mode.select.caregiver" = "家族として手伝う";
+"mode.select.caregiver.subtitle" = "薬と在庫を管理します";
+"mode.select.patient" = "本人として使う";
+"mode.select.patient.subtitle" = "今日のお薬を確認します";
 
 /* Caregiver login */
 "caregiver.login.title" = "家族ログイン";
@@ -105,7 +106,7 @@
 "medication.form.inventory.count" = "在庫数（錠）";
 "medication.form.inventory.unit" = "在庫単位";
 "medication.form.notes" = "メモ";
-"medication.form.patient.readonly" = "患者モードでは編集できません";
+"medication.form.patient.readonly" = "本人として使う画面では編集できません";
 "medication.form.patient.required" = "対象患者を選択してください";
 "medication.form.delete" = "薬を削除する";
 "medication.form.delete.confirm.title" = "薬を削除しますか？";
@@ -115,7 +116,7 @@
 
 /* Patient view */
 "patient.readonly.title" = "薬一覧";
-"patient.readonly.today.title" = "今日";
+"patient.readonly.today.title" = "今日のお薬";
 "patient.readonly.today.tab" = "今日";
 "patient.readonly.history.tab" = "履歴";
 "patient.readonly.history.title" = "履歴";
@@ -131,7 +132,7 @@
 "patient.settings.notifications.slot.bedtime" = "眠前";
 "patient.settings.notifications.detail.title" = "詳細設定";
 "patient.settings.notifications.detail.item" = "時間プリセット設定";
-"patient.settings.notifications.detail.note" = "時間帯は患者の服用時間に反映されます";
+"patient.settings.notifications.detail.note" = "時間帯は本人の服用時間に反映されます";
 "patient.settings.notifications.permission.denied" = "通知が許可されていません。設定アプリで通知を許可してください。";
 "history.month.previous" = "前の月";
 "history.month.next" = "次の月";
@@ -157,7 +158,7 @@
 "patient.today.empty.message" = "今日の服用予定はありません";
 "patient.today.taken.button" = "飲んだ";
 "patient.today.confirm.title" = "飲みましたか？";
-"patient.today.confirm.message" = "%@（%@）\n患者モードでは取り消しできません";
+"patient.today.confirm.message" = "%@（%@）\n本人画面では取り消しできません";
 "patient.today.confirm.action" = "記録する";
 "patient.today.prn.section.title" = "頓服";
 "patient.today.prn.confirm.title" = "飲みましたか？";
@@ -181,7 +182,7 @@
 "patient.today.reminder.title" = "服用リマインダー";
 "patient.today.reminder.body" = "%@を飲む時間です（%@）";
 "patient.logout.confirm.title" = "ログアウトしますか？";
-"patient.logout.confirm.message" = "患者モードからログアウトします。";
+"patient.logout.confirm.message" = "本人として使う画面からログアウトします。";
 "patient.logout.confirm.action" = "ログアウト";
 "patient.logout.toast" = "ログアウトしました";
 

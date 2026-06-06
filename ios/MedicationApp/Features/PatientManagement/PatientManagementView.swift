@@ -564,33 +564,50 @@ struct PatientManagementView: View {
     }
 
     private var logoutSection: some View {
-        Button {
-            showingLogoutConfirm = true
-        } label: {
-            Text(NSLocalizedString("common.logout", comment: "Logout"))
+        VStack(spacing: 12) {
+            Button {
+                sessionStore.resetMode()
+            } label: {
+                Label(
+                    NSLocalizedString("settings.changeMode", comment: "Change app mode"),
+                    systemImage: "arrow.left.arrow.right.circle"
+                )
                 .font(.headline)
-                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(Color.red, in: RoundedRectangle(cornerRadius: 14))
+                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("caregiver.settings.changeMode")
+
+            Button {
+                showingLogoutConfirm = true
+            } label: {
+                Text(NSLocalizedString("common.logout", comment: "Logout"))
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.red, in: RoundedRectangle(cornerRadius: 14))
+            }
+            .alert(
+                NSLocalizedString("caregiver.logout.confirm.title", comment: "Logout confirm title"),
+                isPresented: $showingLogoutConfirm
+            ) {
+                Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
+                Button(NSLocalizedString("caregiver.logout.confirm.action", comment: "Logout confirm action"), role: .destructive) {
+                    sessionStore.clearCaregiverToken()
+                    globalBannerPresenter.show(
+                        message: NSLocalizedString("caregiver.logout.toast", comment: "Logout toast"),
+                        duration: 2
+                    )
+                }
+            } message: {
+                Text(NSLocalizedString("caregiver.logout.confirm.message", comment: "Logout confirm message"))
+            }
         }
         .padding(.top, 48)
         .padding(.bottom, 48)
-        .alert(
-            NSLocalizedString("caregiver.logout.confirm.title", comment: "Logout confirm title"),
-            isPresented: $showingLogoutConfirm
-        ) {
-            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
-            Button(NSLocalizedString("caregiver.logout.confirm.action", comment: "Logout confirm action"), role: .destructive) {
-                sessionStore.clearCaregiverToken()
-                globalBannerPresenter.show(
-                    message: NSLocalizedString("caregiver.logout.toast", comment: "Logout toast"),
-                    duration: 2
-                )
-            }
-        } message: {
-            Text(NSLocalizedString("caregiver.logout.confirm.message", comment: "Logout confirm message"))
-        }
     }
 
     // MARK: - Push Notification Settings (012-push-foundation)

@@ -41,7 +41,10 @@ struct RootView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: globalBannerPresenter.banner)
         .task {
             if sessionStore.mode == .caregiver {
-                await entitlementStore?.refresh()
+                await sessionStore.refreshCaregiverTokenIfNeeded()
+                if sessionStore.caregiverToken != nil {
+                    await entitlementStore?.refresh()
+                }
             }
         }
         .onAppear {
@@ -50,7 +53,12 @@ struct RootView: View {
         .onChange(of: scenePhase) { _, phase in
             caregiverSessionController.updateScenePhase(phase)
             if phase == .active && sessionStore.mode == .caregiver {
-                Task { await entitlementStore?.refresh() }
+                Task {
+                    await sessionStore.refreshCaregiverTokenIfNeeded()
+                    if sessionStore.caregiverToken != nil {
+                        await entitlementStore?.refresh()
+                    }
+                }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .authFailure)) { _ in

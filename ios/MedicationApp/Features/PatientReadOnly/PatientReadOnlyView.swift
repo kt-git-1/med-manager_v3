@@ -191,6 +191,18 @@ struct PatientSettingsView: View {
 
             Section {
                 Button {
+                    sessionStore.resetMode()
+                } label: {
+                    Label(
+                        NSLocalizedString("settings.changeMode", comment: "Change app mode"),
+                        systemImage: "arrow.left.arrow.right.circle"
+                    )
+                }
+                .accessibilityIdentifier("patient.settings.changeMode")
+            }
+
+            Section {
+                Button {
                     showingLogoutConfirm = true
                 } label: {
                     Text(NSLocalizedString("common.logout", comment: "Logout"))

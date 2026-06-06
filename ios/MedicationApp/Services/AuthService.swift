@@ -1,5 +1,15 @@
 import Foundation
 
+struct SupabaseSession: Sendable {
+    let accessToken: String?
+    let refreshToken: String?
+    let expiresIn: Int?
+
+    var hasAccessToken: Bool {
+        accessToken?.isEmpty == false
+    }
+}
+
 final class AuthService: Sendable {
     private let supabaseURL: URL
     private let supabaseAnonKey: String
@@ -23,7 +33,7 @@ final class AuthService: Sendable {
         self.supabaseAnonKey = key
     }
 
-    func login(email: String, password: String) async throws -> String {
+    func login(email: String, password: String) async throws -> SupabaseSession {
         return try await authenticate(
             path: "auth/v1/token",
             queryItems: [URLQueryItem(name: "grant_type", value: "password")],
@@ -33,7 +43,7 @@ final class AuthService: Sendable {
         )
     }
 
-    func signup(email: String, password: String) async throws -> String {
+    func signup(email: String, password: String) async throws -> SupabaseSession {
         return try await authenticate(
             path: "auth/v1/signup",
             email: email,
@@ -42,13 +52,40 @@ final class AuthService: Sendable {
         )
     }
 
+    func refreshSession(refreshToken: String) async throws -> SupabaseSession {
+        guard !refreshToken.isEmpty else {
+            throw APIError.validation("refresh token required")
+        }
+        guard !supabaseAnonKey.isEmpty else {
+            throw APIError.validation("missing supabase config")
+        }
+        let request = try makeRefreshRequest(refreshToken: refreshToken)
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw APIError.network("Network error: \(error.localizedDescription)")
+        }
+        guard let http = response as? HTTPURLResponse else {
+            throw APIError.unknown
+        }
+        if (200...299).contains(http.statusCode) {
+            let session = try Self.decodeSession(from: data)
+            guard session.hasAccessToken else {
+                throw APIError.validation("missing access token")
+            }
+            return session
+        }
+        throw mapSupabaseError(statusCode: http.statusCode, data: data)
+    }
+
     private func authenticate(
         path: String,
         queryItems: [URLQueryItem] = [],
         email: String,
         password: String,
         allowMissingAccessToken: Bool
-    ) async throws -> String {
+    ) async throws -> SupabaseSession {
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedEmail.isEmpty, !password.isEmpty else {
             throw APIError.validation("email/password required")
@@ -83,43 +120,79 @@ final class AuthService: Sendable {
             throw APIError.unknown
         }
         if (200...299).contains(http.statusCode) {
-            let decoder = JSONDecoder()
-            let authResponse = try decoder.decode(SupabaseAuthResponse.self, from: data)
-            guard let token = authResponse.accessToken else {
+            let session = try Self.decodeSession(from: data)
+            guard session.hasAccessToken else {
                 if allowMissingAccessToken {
-                    return ""
+                    return session
                 }
                 throw APIError.validation("missing access token")
             }
-            return token
+            return session
         }
+        throw mapSupabaseError(statusCode: http.statusCode, data: data)
+    }
+
+    func makeRefreshRequest(refreshToken: String) throws -> URLRequest {
+        let baseURL = supabaseURL.appendingPathComponent("auth/v1/token")
+        var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)
+        components?.queryItems = [URLQueryItem(name: "grant_type", value: "refresh_token")]
+        guard let url = components?.url else {
+            throw APIError.validation("invalid supabase url")
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue(supabaseAnonKey, forHTTPHeaderField: "apikey")
+        request.addValue("Bearer \(supabaseAnonKey)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONSerialization.data(
+            withJSONObject: ["refresh_token": refreshToken],
+            options: []
+        )
+        return request
+    }
+
+    static func decodeSession(from data: Data) throws -> SupabaseSession {
+        let decoder = JSONDecoder()
+        let authResponse = try decoder.decode(SupabaseAuthResponse.self, from: data)
+        return SupabaseSession(
+            accessToken: authResponse.accessToken,
+            refreshToken: authResponse.refreshToken,
+            expiresIn: authResponse.expiresIn
+        )
+    }
+
+    private func mapSupabaseError(statusCode: Int, data: Data) -> APIError {
         let parsedMessage = parseSupabaseErrorMessage(from: data)
         let serverMessage = (parsedMessage?.isEmpty == false)
             ? parsedMessage!
-            : "Request failed (status: \(http.statusCode))"
-        print("AuthService: login failed \(http.statusCode) \(serverMessage)")
-        switch http.statusCode {
+            : "Request failed (status: \(statusCode))"
+        print("AuthService: request failed \(statusCode) \(serverMessage)")
+        switch statusCode {
         case 400, 422:
-            throw APIError.validation(serverMessage)
+            return APIError.validation(serverMessage)
         case 401:
-            throw APIError.unauthorized
+            return APIError.unauthorized
         case 403:
-            throw APIError.forbidden
+            return APIError.forbidden
         case 404:
-            throw APIError.notFound
+            return APIError.notFound
         case 409:
-            throw APIError.conflict
+            return APIError.conflict
         default:
-            throw APIError.network("\(serverMessage) (status: \(http.statusCode))")
+            return APIError.network("\(serverMessage) (status: \(statusCode))")
         }
     }
 }
 
 private struct SupabaseAuthResponse: Decodable {
     let accessToken: String?
+    let refreshToken: String?
+    let expiresIn: Int?
 
     private enum CodingKeys: String, CodingKey {
         case accessToken = "access_token"
+        case refreshToken = "refresh_token"
+        case expiresIn = "expires_in"
     }
 }
 

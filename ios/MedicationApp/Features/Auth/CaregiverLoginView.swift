@@ -92,8 +92,8 @@ struct CaregiverLoginView: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            let token = try await authService.login(email: email, password: password)
-            sessionStore.saveCaregiverToken(token)
+            let session = try await authService.login(email: email, password: password)
+            sessionStore.saveCaregiverSession(session)
         } catch {
             if let apiError = error as? LocalizedError, let message = apiError.errorDescription {
                 errorMessage = message
