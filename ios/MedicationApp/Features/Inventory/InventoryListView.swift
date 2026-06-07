@@ -136,7 +136,7 @@ struct InventoryListView: View {
                 .toolbar {
                     NavigationHeaderView(
                         icon: "archivebox.circle.fill",
-                        title: NSLocalizedString("caregiver.tabs.inventory", comment: "Inventory tab")
+                        title: NSLocalizedString("caregiver.inventory.title", comment: "Inventory title")
                     )
                 }
             },
@@ -258,7 +258,7 @@ struct InventoryListView: View {
 
     private func inventoryRowCell(_ item: InventoryItemDTO) -> some View {
         inventoryRow(for: item)
-            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
     }
@@ -346,43 +346,59 @@ struct InventoryListView: View {
     }
 
     private func inventoryRow(for item: InventoryItemDTO) -> some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .center, spacing: 8) {
+        let accent = inventoryAccentColor(for: item)
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .center, spacing: 14) {
+                InventoryIllustrationView(tint: accent)
+                    .frame(width: 62, height: 62)
+
+                VStack(alignment: .leading, spacing: 6) {
                     Text(item.name)
-                        .font(.title3.weight(.semibold))
+                        .font(.title2.weight(.bold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
                     inlineStatusBadge(for: item)
                 }
-                Text(daysRemainingText(for: item))
-                    .font(.subheadline)
-                    .foregroundStyle(daysRemainingColor(for: item))
-                if shouldShowLowDaysWarning(for: item) {
-                    Text(refillDueText(for: item))
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.red)
-                }
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 8) {
+                Spacer()
                 if item.inventoryEnabled {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(NSLocalizedString("caregiver.inventory.remaining.label", comment: "Remaining label"))
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.primary)
                         Text(AppConstants.formatDecimal(item.inventoryQuantity))
-                            .font(.title2.weight(.bold))
+                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                            .foregroundStyle(accent)
                         Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.body.weight(.bold))
+                            .foregroundStyle(accent)
                     }
                 }
+                Image(systemName: "chevron.right")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.secondary)
             }
-            Image(systemName: "chevron.right")
-                .foregroundStyle(.secondary)
+
+            HStack(spacing: 10) {
+                Text(daysRemainingText(for: item))
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(daysRemainingColor(for: item))
+                Spacer()
+                if shouldShowLowDaysWarning(for: item) {
+                    Text(refillDueText(for: item))
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .padding(.vertical, 7)
+                        .padding(.horizontal, 12)
+                        .background(Color.orange, in: Capsule())
+                }
+            }
         }
-        .padding(16)
+        .padding(18)
         .frame(maxWidth: .infinity)
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(shouldShowLowDaysWarning(for: item) ? Color.red.opacity(0.6) : Color.clear, lineWidth: 2)
+                .stroke(shouldShowLowDaysWarning(for: item) ? Color.orange.opacity(0.75) : Color.black.opacity(0.10), lineWidth: shouldShowLowDaysWarning(for: item) ? 1.5 : 1)
         )
         .contentShape(Rectangle())
         .onTapGesture {
@@ -455,6 +471,13 @@ struct InventoryListView: View {
         return label
     }
 
+    private func inventoryAccentColor(for item: InventoryItemDTO) -> Color {
+        if item.out || shouldShowLowDaysWarning(for: item) {
+            return .orange
+        }
+        return Color(red: 0.12, green: 0.48, blue: 0.82)
+    }
+
     private func showToast(_ message: String) {
         withAnimation {
             toastMessage = message
@@ -485,6 +508,35 @@ private enum InventoryFilter: String, CaseIterable, Identifiable {
             return NSLocalizedString("caregiver.inventory.filter.low", comment: "Low inventory filter")
         case .outOnly:
             return NSLocalizedString("caregiver.inventory.filter.out", comment: "Out of stock filter")
+        }
+    }
+}
+
+private struct InventoryIllustrationView: View {
+    let tint: Color
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(tint.opacity(0.14))
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .fill(Color.white)
+                .frame(width: 40, height: 34)
+                .offset(y: 4)
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .stroke(tint, lineWidth: 2.4)
+                .frame(width: 40, height: 34)
+                .offset(y: 4)
+            Path { path in
+                path.move(to: CGPoint(x: 22, y: 25))
+                path.addLine(to: CGPoint(x: 31, y: 18))
+                path.addLine(to: CGPoint(x: 40, y: 25))
+            }
+            .stroke(tint, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+            Capsule()
+                .fill(tint.opacity(0.86))
+                .frame(width: 22, height: 9)
+                .offset(y: -18)
         }
     }
 }

@@ -18,9 +18,9 @@
 "caregiver.inventory.toast.refilled" = "薬を補充しました";
 
 /* Mode select */
-"mode.select.title" = "利用方法を選ぶ";
-"mode.select.subtitle" = "この端末で使う方法を選んでください";
-"mode.select.caregiver" = "家族として手伝う";
+"mode.select.title" = "どちらで\n使いますか？";
+"mode.select.subtitle" = "";
+"mode.select.caregiver" = "家族として使う";
 "mode.select.caregiver.subtitle" = "薬と在庫を管理します";
 "mode.select.patient" = "本人として使う";
 "mode.select.patient.subtitle" = "今日のお薬を確認します";
@@ -187,11 +187,13 @@
 "patient.logout.toast" = "ログアウトしました";
 
 /* Caregiver tabs */
-"caregiver.tabs.medications" = "薬一覧";
-"caregiver.tabs.today" = "今日の予定";
+"caregiver.tabs.medications" = "薬";
+"caregiver.tabs.today" = "ホーム";
 "caregiver.tabs.history" = "履歴";
-"caregiver.tabs.inventory" = "在庫管理";
-"caregiver.tabs.patients" = "連携・設定";
+"caregiver.tabs.inventory" = "在庫";
+"caregiver.tabs.patients" = "設定";
+"caregiver.medications.title" = "薬を管理";
+"caregiver.inventory.title" = "在庫を確認";
 "caregiver.patients.open" = "連携・設定を開く";
 "caregiver.history.empty.title" = "患者を選択してください";
 "caregiver.history.empty.message" = "連携・設定タブから対象を選んでください";

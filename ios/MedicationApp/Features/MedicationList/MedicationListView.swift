@@ -402,56 +402,69 @@ struct MedicationListView: View {
 
     @ViewBuilder
     private func medicationRow(_ item: MedicationListItem) -> some View {
-        let rowContent = HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
+        let rowContent = HStack(alignment: .center, spacing: 14) {
+            MedicationIllustrationView(tint: medicationAccentColor(for: item))
+                .frame(width: 62, height: 62)
+
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(item.name)
-                        .font(.title3.weight(.semibold))
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
                         .accessibilityLabel("薬名 \(item.name)")
                     if sessionStore.mode == .caregiver {
                         medicationTypeBadge(isPrn: item.medication.isPrn)
                     }
                 }
-                HStack(spacing: 6) {
+                Text(item.doseText)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .accessibilityLabel(item.doseText)
+                HStack(spacing: 4) {
                     if let schedule = item.scheduleText {
                         Text(schedule)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(.body)
+                            .foregroundStyle(.primary)
                             .accessibilityLabel(NSLocalizedString("a11y.medication.schedule", comment: "Schedule") + " " + schedule)
-                        Text("·")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
                     }
-                    Text(item.doseText)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel(item.doseText)
                 }
             }
             Spacer()
             if sessionStore.mode == .caregiver {
-                Image(systemName: "chevron.right")
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 2)
+                Image(systemName: "pencil")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(Color(red: 0.0, green: 0.48, blue: 0.44))
+                    .frame(width: 42, height: 42)
+                    .background(Color(red: 0.0, green: 0.55, blue: 0.50).opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
         if sessionStore.mode == .caregiver {
             Button(action: { selectedMedication = item.medication }) {
                 rowContent
-                    .padding(16)
+                    .padding(18)
                     .frame(maxWidth: .infinity)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 16))
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.black.opacity(0.10), lineWidth: 1)
+                    )
             }
             .buttonStyle(.plain)
-            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
         } else {
             rowContent
-                .padding(16)
+                .padding(18)
                 .frame(maxWidth: .infinity)
-                .glassEffect(.regular, in: .rect(cornerRadius: 16))
-                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.black.opacity(0.10), lineWidth: 1)
+                )
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
         }
@@ -461,7 +474,7 @@ struct MedicationListView: View {
         let text = isPrn
             ? NSLocalizedString("medication.list.badge.prn", comment: "PRN badge")
             : NSLocalizedString("medication.list.badge.scheduled", comment: "Scheduled badge")
-        let color: Color = isPrn ? .purple : .blue
+        let color: Color = isPrn ? .orange : Color(red: 0.0, green: 0.55, blue: 0.50)
         return Text(text)
             .font(.caption.weight(.bold))
             .foregroundStyle(color)
@@ -469,5 +482,36 @@ struct MedicationListView: View {
             .padding(.vertical, 4)
             .background(color.opacity(0.15), in: Capsule())
             .accessibilityLabel(text)
+    }
+
+    private func medicationAccentColor(for item: MedicationListItem) -> Color {
+        item.medication.isPrn ? .orange : Color(red: 0.0, green: 0.55, blue: 0.50)
+    }
+}
+
+private struct MedicationIllustrationView: View {
+    let tint: Color
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(tint.opacity(0.14))
+            Capsule()
+                .fill(Color.white)
+                .frame(width: 22, height: 42)
+                .rotationEffect(.degrees(42))
+            Capsule()
+                .stroke(tint, lineWidth: 2.6)
+                .frame(width: 22, height: 42)
+                .rotationEffect(.degrees(42))
+            Rectangle()
+                .fill(tint.opacity(0.68))
+                .frame(width: 20, height: 2.4)
+                .rotationEffect(.degrees(42))
+            Circle()
+                .fill(tint)
+                .frame(width: 8, height: 8)
+                .offset(x: 15, y: -17)
+        }
     }
 }

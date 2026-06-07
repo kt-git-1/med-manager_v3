@@ -310,10 +310,11 @@ private struct PatientBottomTabBar: View {
                 selectedTab = .settings
             }
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .glassEffect(.regular, in: .capsule)
-        .padding(.bottom, 6)
+        .padding(.horizontal, 10)
+        .padding(.bottom, 8)
     }
 
     private func tabButton(
@@ -323,21 +324,24 @@ private struct PatientBottomTabBar: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 8) {
+            VStack(spacing: 6) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(.system(size: 24, weight: .bold))
                 Text(title)
-                    .font(.subheadline.weight(.bold))
+                    .font(.body.weight(.bold))
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.82)
             }
             .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
+            .frame(minHeight: 72)
+            .padding(.horizontal, 10)
             .contentShape(Capsule())
-            .background(isSelected ? AnyShapeStyle(Color.accentColor.opacity(0.12)) : AnyShapeStyle(Color.clear), in: Capsule())
+            .background(isSelected ? AnyShapeStyle(Color.accentColor.opacity(0.16)) : AnyShapeStyle(Color.clear), in: Capsule())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

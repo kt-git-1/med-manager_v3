@@ -63,8 +63,8 @@ struct CaregiverHomeView: View {
                 patientIndicator
                 CaregiverBottomTabBar(selectedTab: $selectedTab, hasLowStock: hasLowStock)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 6)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 4)
         }
         .onAppear {
             loadCurrentPatientName()
@@ -179,7 +179,7 @@ private struct CaregiverBottomTabBar: View {
         HStack(spacing: 12) {
             tabButton(
                 title: NSLocalizedString("caregiver.tabs.medications", comment: "Medications tab"),
-                systemImage: "pills",
+                systemImage: "pills.fill",
                 isSelected: selectedTab == .medications
             ) {
                 selectedTab = .medications
@@ -200,7 +200,7 @@ private struct CaregiverBottomTabBar: View {
             }
             tabButton(
                 title: NSLocalizedString("caregiver.tabs.inventory", comment: "Inventory tab"),
-                systemImage: "archivebox",
+                systemImage: "shippingbox.fill",
                 isSelected: selectedTab == .inventory,
                 showBadge: hasLowStock
             ) {
@@ -208,15 +208,21 @@ private struct CaregiverBottomTabBar: View {
             }
             tabButton(
                 title: NSLocalizedString("caregiver.tabs.patients", comment: "Patients tab"),
-                systemImage: "person.2.badge.gearshape",
+                systemImage: "gearshape.fill",
                 isSelected: selectedTab == .patients
             ) {
                 selectedTab = .patients
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 10)
-        .glassEffect(.regular, in: .rect(cornerRadius: 22))
+        .padding(.horizontal, 8)
+        .padding(.top, 8)
+        .padding(.bottom, 6)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.black.opacity(0.08), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.08), radius: 14, y: 4)
     }
 
     private func tabButton(
@@ -229,7 +235,7 @@ private struct CaregiverBottomTabBar: View {
         Button(action: action) {
             VStack(spacing: 5) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(.system(size: 24, weight: .semibold))
                     .overlay(alignment: .topTrailing) {
                         if showBadge {
                             Circle()
@@ -239,13 +245,13 @@ private struct CaregiverBottomTabBar: View {
                         }
                     }
                 Text(title)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 11, weight: .bold))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+                    .minimumScaleFactor(0.70)
             }
-            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+            .foregroundStyle(isSelected ? Color(red: 0.0, green: 0.55, blue: 0.50) : Color.secondary)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -371,7 +377,7 @@ struct CaregiverMedicationView: View {
             .toolbar {
                 NavigationHeaderView(
                     icon: "pills.circle.fill",
-                    title: NSLocalizedString("caregiver.tabs.medications", comment: "Medications tab")
+                    title: NSLocalizedString("caregiver.medications.title", comment: "Medications title")
                 )
             }
         }

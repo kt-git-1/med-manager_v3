@@ -4,9 +4,15 @@ struct LoadingStateView: View {
     let message: String
 
     var body: some View {
-        ProgressView(message)
-            .font(.body)
-            .foregroundStyle(.secondary)
+        VStack(spacing: 14) {
+            ProgressView()
+                .controlSize(.large)
+            Text(message)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(24)
         .accessibilityLabel(message)
     }
 }
@@ -18,10 +24,11 @@ struct EmptyStateView: View {
     var body: some View {
         ContentUnavailableView {
             Text(title)
-                .font(.title3.weight(.semibold))
+                .font(.title2.weight(.bold))
         } description: {
             Text(message)
-                .font(.body)
+                .font(.title3)
+                .lineSpacing(4)
         }
         .multilineTextAlignment(.center)
         .padding(.horizontal, 24)
@@ -33,9 +40,20 @@ struct ErrorStateView: View {
     let message: String
 
     var body: some View {
-        Label(message, systemImage: "exclamationmark.triangle.fill")
-            .font(.subheadline)
-            .foregroundStyle(.red)
-            .accessibilityLabel(message)
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 36, weight: .semibold))
+                .foregroundStyle(.red)
+            Text(message)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.red)
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(24)
+        .glassEffect(.regular, in: .rect(cornerRadius: 18))
+        .padding(.horizontal, 20)
+        .accessibilityLabel(message)
     }
 }
