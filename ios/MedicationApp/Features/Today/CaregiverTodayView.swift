@@ -455,10 +455,28 @@ struct CaregiverTodayView: View {
         }
     }
 
-    private var totalCount: Int { viewModel.items.count }
-    private var takenCount: Int { viewModel.items.filter { $0.effectiveStatus == .taken }.count }
-    private var missedCount: Int { viewModel.items.filter { $0.effectiveStatus == .missed }.count }
-    private var pendingCount: Int { max(0, totalCount - takenCount - missedCount) }
+    private var scheduledTimelineRows: [TimelineRow] {
+        timelineRows.filter { !$0.doses.isEmpty }
+    }
+
+    private var totalCount: Int { scheduledTimelineRows.count }
+    private var takenCount: Int {
+        scheduledTimelineRows.filter { row in
+            row.doses.allSatisfy { $0.effectiveStatus == .taken }
+        }.count
+    }
+    private var missedCount: Int {
+        scheduledTimelineRows.filter { row in
+            let hasPendingDose = row.doses.contains { $0.effectiveStatus == .pending || $0.effectiveStatus == nil }
+            let hasMissedDose = row.doses.contains { $0.effectiveStatus == .missed }
+            return !hasPendingDose && hasMissedDose
+        }.count
+    }
+    private var pendingCount: Int {
+        scheduledTimelineRows.filter { row in
+            row.doses.contains { $0.effectiveStatus == .pending || $0.effectiveStatus == nil }
+        }.count
+    }
     private var progressFraction: Double {
         guard totalCount > 0 else { return 0 }
         return Double(takenCount) / Double(totalCount)

@@ -277,10 +277,10 @@
 "caregiver.medications.title" = "薬を管理";
 "caregiver.history.title" = "服薬履歴";
 "caregiver.history.subtitle" = "毎日の記録を確認します";
-"caregiver.history.summary.format" = "%d/%d回 記録済み";
-"caregiver.history.summary.taken" = "記録済み %d";
-"caregiver.history.summary.pending" = "未記録 %d";
-"caregiver.history.summary.missed" = "飲み忘れ %d";
+"caregiver.history.summary.format" = "%d/%d回分 記録済み";
+"caregiver.history.summary.taken" = "記録済み %d回分";
+"caregiver.history.summary.pending" = "未記録 %d回分";
+"caregiver.history.summary.missed" = "飲み忘れ %d回分";
 "caregiver.history.summary.noSelection" = "日付を選択";
 "caregiver.inventory.title" = "在庫を確認";
 "caregiver.inventory.subtitle" = "少ない薬から確認し、補充したら在庫数を更新します";
@@ -376,7 +376,7 @@
 "caregiver.today.empty.title" = "予定がありません";
 "caregiver.today.empty.message" = "今日の服用予定はありません";
 "caregiver.today.title" = "今日の服薬";
-"caregiver.today.progress.format" = "%d/%d回 記録済み";
+"caregiver.today.progress.format" = "%d/%d回分 完了";
 "caregiver.today.pending.count" = "未記録 %d";
 "caregiver.today.missed.count" = "飲み忘れ %d";
 "caregiver.today.next.format" = "次は %@ %@";
@@ -396,7 +396,7 @@
 "caregiver.today.progress.title" = "今日の進み具合";
 "caregiver.today.progress.empty" = "今日の服薬予定はありません";
 "caregiver.today.progress.nextSummary" = "%@が次に記録する服薬です";
-"caregiver.today.progress.missedSummary" = "飲み忘れが%d件あります";
+"caregiver.today.progress.missedSummary" = "飲み忘れが%d回分あります";
 "caregiver.today.progress.doneSummary" = "今日の服薬はすべて記録済みです";
 "caregiver.today.timeline.title" = "今日の予定";
 "caregiver.today.timeline.noDose" = "予定なし";
