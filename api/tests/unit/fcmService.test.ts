@@ -103,6 +103,15 @@ describe("sendFcmMessage", () => {
             headers: { "www-authenticate": "Bearer realm=\"https://accounts.google.com/\"" }
           }
         )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            scope: "https://www.googleapis.com/auth/firebase.messaging",
+            expires_in: 3599
+          }),
+          { status: 200 }
+        )
       );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -126,6 +135,10 @@ describe("sendFcmMessage", () => {
     expect(logMock).toHaveBeenCalledWith(
       "warn",
       expect.stringContaining("accessTokenLength=13")
+    );
+    expect(logMock).toHaveBeenCalledWith(
+      "warn",
+      expect.stringContaining("tokenInfoHasFcmScope=true")
     );
     expect(logMock).not.toHaveBeenCalledWith(
       "warn",

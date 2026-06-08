@@ -89,6 +89,34 @@ function tokenDebugInfo(accessToken: string) {
   };
 }
 
+async function getTokenInfoDebug(accessToken: string): Promise<string> {
+  try {
+    const params = new URLSearchParams({ access_token: accessToken });
+    const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?${params.toString()}`);
+    const body = (await res.json().catch(() => null)) as {
+      scope?: unknown;
+      expires_in?: unknown;
+      error?: unknown;
+      error_description?: unknown;
+    } | null;
+    const scope = typeof body?.scope === "string" ? body.scope : "";
+    const hasFcmScope = scope.split(/\s+/).includes(FCM_SCOPE);
+    const expiresIn = typeof body?.expires_in === "number" || typeof body?.expires_in === "string"
+      ? body.expires_in
+      : "unknown";
+    const error = typeof body?.error === "string" ? body.error : undefined;
+
+    return [
+      `tokenInfoStatus=${res.status}`,
+      `tokenInfoHasFcmScope=${hasFcmScope}`,
+      `tokenInfoExpiresIn=${expiresIn}`,
+      error ? `tokenInfoError=${error}` : null
+    ].filter(Boolean).join(" ");
+  } catch (error) {
+    return `tokenInfoError=${error instanceof Error ? error.message : String(error)}`;
+  }
+}
+
 async function getAccessToken(config: FcmConfig): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
 
@@ -208,6 +236,7 @@ export async function sendFcmMessage(
 
     const authDebug = tokenDebugInfo(accessToken);
     const wwwAuthenticate = res.headers.get("www-authenticate");
+    const tokenInfoDebug = res.status === 401 ? await getTokenInfoDebug(accessToken) : null;
     log(
       "warn",
       [
@@ -216,6 +245,7 @@ export async function sendFcmMessage(
         `authHeader=${authorizationHeader.length > "Bearer ".length}`,
         `accessTokenLength=${authDebug.accessTokenLength}`,
         `accessTokenSha256=${authDebug.accessTokenSha256}`,
+        tokenInfoDebug,
         wwwAuthenticate ? `wwwAuthenticate=${wwwAuthenticate.slice(0, 200)}` : null,
         `body=${errorBody.slice(0, 200)}`
       ].filter(Boolean).join(" ")
