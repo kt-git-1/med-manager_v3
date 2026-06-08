@@ -55,10 +55,15 @@ private struct PatientTodayRootView: View {
             missedItems: missedItems,
             takenItems: takenItems,
             slotSummaries: viewModel.slotSummaries,
+            prnMedications: viewModel.prnMedications,
+            isPrnDisabled: viewModel.isUpdating || viewModel.isPrnSubmitting,
             onConfirmDose: { viewModel.confirmRecord(for: $0) },
             onBulkRecord: { viewModel.confirmBulkRecord(for: $0) },
             onPresentDetail: presentDetail,
             onConfirmPrn: { viewModel.confirmPrnRecord(for: $0) },
+            onRecordPrnDose: { medication, onSuccess in
+                viewModel.recordPrnDose(for: medication, onSuccess: onSuccess)
+            },
             timeText: { viewModel.timeText(for: $0) },
             shouldHighlight: shouldHighlight,
             slotColor: slotColor,
@@ -120,27 +125,6 @@ private struct PatientTodayRootView: View {
             )
             .task(id: dose.id) {
                 await loadDetail(for: dose)
-            }
-        }
-        .toolbar {
-            if !viewModel.prnMedications.isEmpty {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink(
-                        destination: PrnMedicationListView(
-                            medications: viewModel.prnMedications,
-                            isDisabled: viewModel.isUpdating || viewModel.isPrnSubmitting,
-                            onRecordConfirmed: { medication, onSuccess in
-                                viewModel.recordPrnDose(for: medication, onSuccess: onSuccess)
-                            }
-                        )
-                    ) {
-                        Text(NSLocalizedString("patient.today.prn.section.title", comment: "PRN section"))
-                            .font(.title3.weight(.semibold))
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 14)
-                    }
-                    .accessibilityIdentifier("PatientTodayPrnListButton")
-                }
             }
         }
         .sensoryFeedback(.success, trigger: viewModel.toastMessage)
@@ -294,10 +278,13 @@ private struct PatientTodayBaseView: View {
     let missedItems: [ScheduleDoseDTO]
     let takenItems: [ScheduleDoseDTO]
     let slotSummaries: [NotificationSlot: PatientTodayViewModel.SlotSummary]
+    let prnMedications: [MedicationDTO]
+    let isPrnDisabled: Bool
     let onConfirmDose: (ScheduleDoseDTO) -> Void
     let onBulkRecord: (NotificationSlot) -> Void
     let onPresentDetail: (ScheduleDoseDTO) -> Void
     let onConfirmPrn: (MedicationDTO) -> Void
+    let onRecordPrnDose: (MedicationDTO, @escaping () -> Void) -> Void
     let timeText: (Date) -> String
     let shouldHighlight: (ScheduleDoseDTO) -> Bool
     let slotColor: (NotificationSlot?) -> Color
@@ -356,10 +343,13 @@ private struct PatientTodayBaseView: View {
                         missedItems: missedItems,
                         takenItems: takenItems,
                         slotSummaries: slotSummaries,
+                        prnMedications: prnMedications,
+                        isPrnDisabled: isPrnDisabled,
                         onConfirmDose: onConfirmDose,
                         onBulkRecord: onBulkRecord,
                         onPresentDetail: onPresentDetail,
                         onConfirmPrn: onConfirmPrn,
+                        onRecordPrnDose: onRecordPrnDose,
                         timeText: timeText,
                         shouldHighlight: shouldHighlight,
                         slotColor: slotColor,
@@ -472,15 +462,27 @@ private struct SlotSection: Identifiable {
 }
 
 private struct PatientTodayListView: View {
+    private static let weekdayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = AppConstants.japaneseLocale
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = AppConstants.defaultTimeZone
+        formatter.dateFormat = "M月d日（E）"
+        return formatter
+    }()
+
     let viewModel: PatientTodayViewModel
     let slotSections: [SlotSection]
     let missedItems: [ScheduleDoseDTO]
     let takenItems: [ScheduleDoseDTO]
     let slotSummaries: [NotificationSlot: PatientTodayViewModel.SlotSummary]
+    let prnMedications: [MedicationDTO]
+    let isPrnDisabled: Bool
     let onConfirmDose: (ScheduleDoseDTO) -> Void
     let onBulkRecord: (NotificationSlot) -> Void
     let onPresentDetail: (ScheduleDoseDTO) -> Void
     let onConfirmPrn: (MedicationDTO) -> Void
+    let onRecordPrnDose: (MedicationDTO, @escaping () -> Void) -> Void
     let timeText: (Date) -> String
     let shouldHighlight: (ScheduleDoseDTO) -> Bool
     let slotColor: (NotificationSlot?) -> Color
@@ -488,36 +490,217 @@ private struct PatientTodayListView: View {
     let isOutOfStock: (String) -> Bool
 
     var body: some View {
-        List {
-            PlannedSectionsView(
-                slotSections: slotSections,
-                slotSummaries: slotSummaries,
-                timeText: timeText,
-                shouldHighlight: shouldHighlight,
-                slotColor: slotColor,
-                slotTitle: slotTitle,
-                onConfirmDose: onConfirmDose,
-                onBulkRecord: onBulkRecord,
-                onPresentDetail: onPresentDetail,
-                isOutOfStock: isOutOfStock
-            )
-            DoseStatusSectionView(
-                titleKey: "patient.today.section.taken",
-                items: takenItems,
-                timeText: timeText,
-                shouldHighlight: shouldHighlight,
-                onConfirmDose: onConfirmDose,
-                onPresentDetail: onPresentDetail,
-                isOutOfStock: isOutOfStock
-            )
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 16) {
+                PatientHeader(
+                    title: NSLocalizedString("patient.readonly.today.title", comment: "Today title"),
+                    subtitle: Self.weekdayFormatter.string(from: Date()),
+                    systemImage: "pills.fill"
+                )
+
+                nextDoseHeroCard
+
+                if !prnMedications.isEmpty {
+                    prnEntryCard
+                }
+
+                HStack {
+                    Text(NSLocalizedString("patient.today.section.planned", comment: "Planned section"))
+                        .font(.title2.weight(.bold))
+                    Spacer()
+                    PatientStatusPill(
+                        text: progressText,
+                        color: nextSlotSection == nil ? PatientUI.teal : PatientUI.blue,
+                        systemImage: nextSlotSection == nil ? "checkmark" : nil
+                    )
+                }
+
+                ForEach(slotSections) { section in
+                    if let slot = section.slot, let summary = slotSummaries[slot] {
+                        SlotCardView(
+                            slot: slot,
+                            doses: section.items,
+                            summary: summary,
+                            slotColor: slotColor(slot),
+                            slotTitle: slotTitle(slot),
+                            isUpdating: viewModel.isUpdating,
+                            onRecord: { onBulkRecord(slot) },
+                            onPresentDetail: onPresentDetail
+                        )
+                        .id(section.id)
+                    } else {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(slotTitle(section.slot))
+                                .font(.title2.weight(.bold))
+                            ForEach(section.items) { dose in
+                                PatientTodayRow(
+                                    dose: dose,
+                                    timeText: timeText(dose.scheduledAt),
+                                    onRecord: { onConfirmDose(dose) },
+                                    isHighlighted: shouldHighlight(dose),
+                                    slotColor: slotColor(section.slot),
+                                    isOutOfStock: isOutOfStock(dose.medicationId)
+                                )
+                                .id(dose.key)
+                                .onTapGesture { onPresentDetail(dose) }
+                            }
+                        }
+                    }
+                }
+
+                if !takenItems.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(NSLocalizedString("patient.today.section.taken", comment: "Taken section"))
+                            .font(.title2.weight(.bold))
+                        ForEach(takenItems) { dose in
+                            PatientTodayRow(
+                                dose: dose,
+                                timeText: timeText(dose.scheduledAt),
+                                onRecord: { onConfirmDose(dose) },
+                                isHighlighted: shouldHighlight(dose),
+                                slotColor: nil,
+                                isOutOfStock: isOutOfStock(dose.medicationId)
+                            )
+                            .id(dose.key)
+                            .onTapGesture { onPresentDetail(dose) }
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 132)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
         .refreshable {
             viewModel.load(showLoading: false)
         }
-        .safeAreaPadding(.top, 8)
-        .safeAreaPadding(.bottom, 132)
+    }
+
+    @ViewBuilder
+    private var nextDoseHeroCard: some View {
+        if let nextSlotSection, let slot = nextSlotSection.slot, let summary = slotSummaries[slot] {
+            PatientCard(accent: slotColor(slot)) {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(NSLocalizedString("patient.today.next.title", comment: "Next dose title"))
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.primary)
+
+                    HStack(alignment: .center, spacing: 16) {
+                        Image(systemName: "clock.fill")
+                            .font(.system(size: 34, weight: .bold))
+                            .foregroundStyle(PatientUI.tealDark)
+                            .frame(width: 66, height: 66)
+                            .background(PatientUI.teal.opacity(0.12), in: Circle())
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("\(slotTitle(slot))のお薬")
+                                .font(.system(size: 32, weight: .bold, design: .rounded))
+                                .foregroundStyle(PatientUI.tealDark)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.72)
+                            Text(summary.slotTime)
+                                .font(.title2.weight(.bold))
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+
+                    Text(String(
+                        format: NSLocalizedString("patient.today.slot.bulk.summary", comment: "Summary"),
+                        AppConstants.formatDecimal(summary.totalPills),
+                        "\(summary.medCount)"
+                    ))
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                    VStack(spacing: 10) {
+                        ForEach(nextSlotSection.items) { dose in
+                            SlotMedicationRow(dose: dose)
+                                .onTapGesture { onPresentDetail(dose) }
+                        }
+                    }
+
+                    Button {
+                        onBulkRecord(slot)
+                    } label: {
+                        Label(NSLocalizedString("patient.today.slot.bulk.button", comment: "Bulk record"), systemImage: "checkmark.circle.fill")
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: 72)
+                            .background(PatientUI.teal, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(summary.remainingCount == 0 || viewModel.isUpdating || !summary.isWithinRecordingWindow)
+                    .opacity(summary.remainingCount == 0 || viewModel.isUpdating || !summary.isWithinRecordingWindow ? 0.55 : 1)
+                    .accessibilityIdentifier("PatientTodayPrimaryBulkRecordButton")
+                }
+            }
+        } else {
+            PatientCard(accent: PatientUI.teal) {
+                HStack(spacing: 16) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 42, weight: .bold))
+                        .foregroundStyle(PatientUI.teal)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(NSLocalizedString("patient.today.next.done.title", comment: "All done title"))
+                            .font(.title2.weight(.bold))
+                        Text(NSLocalizedString("patient.today.next.done.message", comment: "All done message"))
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+
+    private var nextSlotSection: SlotSection? {
+        slotSections.first { section in
+            guard let slot = section.slot, let summary = slotSummaries[slot] else { return false }
+            return summary.remainingCount > 0
+        }
+    }
+
+    private var progressText: String {
+        let total = viewModel.items.count
+        let taken = viewModel.items.filter { $0.effectiveStatus == .taken }.count
+        return "\(taken)/\(total)"
+    }
+
+    private var prnEntryCard: some View {
+        NavigationLink {
+            PrnMedicationListView(
+                medications: prnMedications,
+                isDisabled: isPrnDisabled,
+                onRecordConfirmed: onRecordPrnDose
+            )
+        } label: {
+            PatientCard(accent: PatientUI.orange) {
+                HStack(alignment: .center, spacing: 16) {
+                    Image(systemName: "cross.case.fill")
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundStyle(PatientUI.orange)
+                        .frame(width: 64, height: 64)
+                        .background(PatientUI.orange.opacity(0.12), in: Circle())
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text(NSLocalizedString("patient.today.prn.entry.title", comment: "PRN entry title"))
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.82)
+                        Text(String(format: NSLocalizedString("patient.today.prn.entry.message", comment: "PRN entry message"), prnMedications.count))
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("PatientTodayPrnEntryCard")
     }
 }
 
@@ -530,24 +713,56 @@ private struct PrnMedicationListView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        List {
-            ForEach(medications) { medication in
-                PrnMedicationCard(
-                    medication: medication,
-                    isDisabled: isDisabled,
-                    onRecord: {
-                        selectedMedication = medication
-                        showingConfirm = true
+        ZStack {
+            PatientScreenBackground()
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 16) {
+                    PatientHeader(
+                        title: NSLocalizedString("patient.today.prn.screen.title", comment: "PRN screen title"),
+                        subtitle: NSLocalizedString("patient.today.prn.screen.subtitle", comment: "PRN screen subtitle"),
+                        systemImage: "cross.case.fill"
+                    )
+
+                    PatientCard(accent: PatientUI.orange) {
+                        HStack(alignment: .top, spacing: 14) {
+                            Image(systemName: "hand.tap.fill")
+                                .font(.title2.weight(.bold))
+                                .foregroundStyle(PatientUI.orange)
+                                .frame(width: 48, height: 48)
+                                .background(PatientUI.orange.opacity(0.12), in: Circle())
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(NSLocalizedString("patient.today.prn.help.title", comment: "PRN help title"))
+                                    .font(.title3.weight(.bold))
+                                    .foregroundStyle(.primary)
+                                Text(NSLocalizedString("patient.today.prn.help.message", comment: "PRN help message"))
+                                    .font(.body.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
                     }
-                )
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+
+                    Text(NSLocalizedString("patient.today.prn.list.title", comment: "PRN list title"))
+                        .font(.title2.weight(.bold))
+                        .padding(.top, 2)
+
+                    ForEach(medications) { medication in
+                        PrnMedicationCard(
+                            medication: medication,
+                            isDisabled: isDisabled,
+                            onRecord: {
+                                selectedMedication = medication
+                                showingConfirm = true
+                            }
+                        )
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                .padding(.bottom, 40)
             }
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .navigationTitle(NSLocalizedString("patient.today.prn.section.title", comment: "PRN section"))
+        .navigationTitle(NSLocalizedString("patient.today.prn.screen.title", comment: "PRN screen title"))
         .navigationBarTitleDisplayMode(.inline)
         .overlay {
             if isDisabled {
@@ -691,25 +906,33 @@ private struct SlotCardView: View {
             .foregroundStyle(.secondary)
 
             Button(action: onRecord) {
-                Text(NSLocalizedString("patient.today.slot.bulk.button", comment: "Bulk record"))
+                Label(NSLocalizedString("patient.today.slot.bulk.button", comment: "Bulk record"), systemImage: "checkmark.circle.fill")
                     .font(.title2.weight(.bold))
+                    .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(minHeight: 64)
+                    .frame(minHeight: 70)
+                    .background(PatientUI.teal, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .buttonStyle(.plain)
             .disabled(summary.remainingCount == 0 || isUpdating || !summary.isWithinRecordingWindow)
+            .opacity(summary.remainingCount == 0 || isUpdating || !summary.isWithinRecordingWindow ? 0.55 : 1)
             .accessibilityIdentifier("SlotBulkRecordButton")
             .accessibilityLabel(NSLocalizedString("patient.today.slot.bulk.button", comment: "Bulk record"))
         }
-        .padding(22)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(alignment: .leading) {
             RoundedRectangle(cornerRadius: 3)
                 .fill(slotColor)
                 .frame(width: 6)
                 .padding(.vertical, 14)
         }
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(slotColor.opacity(0.45), lineWidth: 1.5)
+        }
+        .shadow(color: PatientUI.cardShadow, radius: 12, y: 5)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(slotTitle) \(summary.medCount)種類")
     }
@@ -727,9 +950,9 @@ private struct SlotCardView: View {
     private var statusBadgeValues: (String, Color) {
         switch summary.aggregateStatus {
         case .taken:
-            return (NSLocalizedString("patient.today.status.taken", comment: "Taken"), Color.green.opacity(0.15))
+            return (NSLocalizedString("patient.today.status.taken", comment: "Taken"), PatientUI.teal.opacity(0.15))
         case .missed:
-            return (NSLocalizedString("patient.today.status.missed", comment: "Missed"), Color.red.opacity(0.15))
+            return (NSLocalizedString("patient.today.status.missed", comment: "Missed"), PatientUI.red.opacity(0.15))
         case .pending:
             return (NSLocalizedString("patient.today.status.pending", comment: "Pending"), Color.primary.opacity(0.06))
         }
@@ -1054,19 +1277,21 @@ private struct PatientTodayRow: View {
 
             if shouldShowRecordButton(for: dose.effectiveStatus) {
                 Button(action: onRecord) {
-                    Text(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
+                    Label(NSLocalizedString("patient.today.taken.button", comment: "Taken"), systemImage: "checkmark.circle.fill")
                         .font(.title2.weight(.bold))
+                        .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(minHeight: 64)
+                        .frame(minHeight: 66)
+                        .background(PatientUI.teal, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .buttonStyle(.plain)
                 .disabled(isOutOfStock)
+                .opacity(isOutOfStock ? 0.55 : 1)
                 .accessibilityLabel(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
             }
         }
-        .padding(22)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .padding(18)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(alignment: .leading) {
             if let slotColor {
                 RoundedRectangle(cornerRadius: 3)
@@ -1076,9 +1301,10 @@ private struct PatientTodayRow: View {
             }
         }
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(isMissed ? Color.red.opacity(0.35) : Color.clear, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(isMissed ? PatientUI.red.opacity(0.35) : PatientUI.cardStroke, lineWidth: 1)
         )
+        .shadow(color: PatientUI.cardShadow, radius: 10, y: 4)
         .todaySlotHighlight(isHighlighted)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilitySummary)
@@ -1179,46 +1405,63 @@ private struct PrnMedicationCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(prnMedicationDisplayName)
-                    .font(.title.weight(.bold))
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.82)
-                Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(medication.doseCountPerIntake)))
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                if let noteText, !noteText.isEmpty {
-                    Text(noteText)
-                        .font(.body)
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: "pills.fill")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(PatientUI.orange)
+                    .frame(width: 50, height: 50)
+                    .background(PatientUI.orange.opacity(0.12), in: Circle())
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(prnMedicationDisplayName)
+                        .font(.title.weight(.bold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.82)
+                    Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(medication.doseCountPerIntake)))
+                        .font(.title3.weight(.semibold))
                         .foregroundStyle(.secondary)
-                }
-                if isOutOfStock {
-                    Text(NSLocalizedString("patient.today.outOfStock", comment: "Out of stock"))
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(.white)
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 10)
-                        .background(Color.red)
-                        .clipShape(Capsule())
+                    if let noteText, !noteText.isEmpty {
+                        Text(noteText)
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if isOutOfStock {
+                        Text(NSLocalizedString("patient.today.outOfStock", comment: "Out of stock"))
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(.white)
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 10)
+                            .background(PatientUI.red)
+                            .clipShape(Capsule())
+                    }
                 }
             }
 
             Button(action: handleRecord) {
-                Text(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
+                Label(NSLocalizedString("patient.today.prn.record.button", comment: "PRN record button"), systemImage: "checkmark.circle.fill")
                     .font(.title2.weight(.bold))
+                    .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(minHeight: 64)
+                    .frame(minHeight: 72)
+                    .background(PatientUI.teal, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .buttonStyle(.plain)
             .disabled(isDisabled || isOutOfStock)
-            .accessibilityLabel(NSLocalizedString("patient.today.taken.button", comment: "Taken"))
+            .opacity(isDisabled || isOutOfStock ? 0.55 : 1)
+            .accessibilityLabel(NSLocalizedString("patient.today.prn.record.button", comment: "PRN record button"))
             .scaleEffect(isPressed ? 0.96 : 1.0)
             .animation(.easeInOut(duration: 0.18), value: isPressed)
             .sensoryFeedback(.success, trigger: recordTrigger)
         }
-        .padding(22)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(PatientUI.orange.opacity(0.32), lineWidth: 1.2)
+        }
+        .shadow(color: PatientUI.cardShadow, radius: 12, y: 5)
     }
 
     private var prnMedicationDisplayName: String {

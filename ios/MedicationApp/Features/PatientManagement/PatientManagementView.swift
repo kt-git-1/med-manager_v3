@@ -52,6 +52,9 @@ final class PatientManagementViewModel: ObservableObject {
             defer { isLoading = false }
             do {
                 patients = try await apiClient.listPatients()
+                if patients.count == 1, selectedPatientId == nil {
+                    setSelectedPatientId(patients[0].id)
+                }
             } catch {
                 errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
             }
@@ -63,6 +66,7 @@ final class PatientManagementViewModel: ObservableObject {
         do {
             let created = try await apiClient.createPatient(displayName: displayName)
             patients.insert(created, at: 0)
+            setSelectedPatientId(created.id)
             return true
         } catch let error as APIError {
             if case .patientLimitExceeded = error {
@@ -118,7 +122,6 @@ struct PatientManagementView: View {
     @State private var revokeTarget: PatientDTO?
     @State private var deleteTarget: PatientDTO?
     @State private var showingLogoutConfirm = false
-    @State private var showingPaywall = false
     @State private var toastMessage: String?
     @State private var draftTimes: [NotificationSlot: Date] = [:]
     @State private var isSavingDetail = false
@@ -151,14 +154,6 @@ struct PatientManagementView: View {
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    Button(NSLocalizedString("caregiver.patients.add", comment: "Add patient")) {
-                        Task { await handleAddPatientTapped() }
-                    }
-                    .accessibilityIdentifier("caregiver.patients.add")
-                }
-            }
             .sheet(isPresented: $showingCreate) {
                 PatientCreateView(
                     onSave: { displayName in
@@ -286,23 +281,15 @@ struct PatientManagementView: View {
             }
         }
         .overlay {
-            if viewModel.isLoading || isSavingDetail || pushSettingsViewModel.isUpdating || entitlementStore?.isRefreshing == true {
+            if viewModel.isLoading || isSavingDetail || pushSettingsViewModel.isUpdating {
                 SchedulingRefreshOverlay()
-            }
-        }
-        .sheet(isPresented: $showingPaywall) {
-            if let entitlementStore {
-                PaywallView(entitlementStore: entitlementStore)
             }
         }
         .onChange(of: viewModel.isPatientLimitExceeded) { _, exceeded in
             if exceeded {
                 showingCreate = false
-                Task {
-                    try? await Task.sleep(for: .milliseconds(300))
-                    showingPaywall = true
-                    viewModel.isPatientLimitExceeded = false
-                }
+                showToast(NSLocalizedString("caregiver.patients.limit.initialRelease", comment: "Initial release patient limit"))
+                viewModel.isPatientLimitExceeded = false
             }
         }
         .accessibilityIdentifier("PatientManagementView")
@@ -324,6 +311,13 @@ struct PatientManagementView: View {
                     title: NSLocalizedString("caregiver.patients.empty.title", comment: "Empty patients title"),
                     message: NSLocalizedString("caregiver.patients.empty.message", comment: "Empty patients message")
                 )
+                CaregiverPrimaryButton(
+                    title: NSLocalizedString("caregiver.patients.register", comment: "Register first patient"),
+                    systemImage: "person.crop.circle.badge.plus"
+                ) {
+                    showingCreate = true
+                }
+                .accessibilityIdentifier("caregiver.patients.register")
             }
             .padding(24)
             .frame(maxWidth: .infinity)
@@ -364,32 +358,49 @@ struct PatientManagementView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(NSLocalizedString("caregiver.settings.patient.title", comment: "Settings patient title"))
                             .font(.headline.weight(.bold))
-                        Text(NSLocalizedString("caregiver.patients.select.help", comment: "Select help text"))
+                        Text(viewModel.patients.count > 1
+                            ? NSLocalizedString("caregiver.patients.select.help", comment: "Select help text")
+                            : NSLocalizedString("caregiver.patients.single.help", comment: "Single patient help text"))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
                 }
-            Picker(
-                NSLocalizedString("caregiver.patients.select.label", comment: "Select label"),
-                selection: Binding(
-                    get: { viewModel.selectedPatientId ?? "" },
-                    set: { newValue in
-                        viewModel.setSelectedPatientId(newValue.isEmpty ? nil : newValue)
+            if viewModel.patients.count > 1 {
+                Picker(
+                    NSLocalizedString("caregiver.patients.select.label", comment: "Select label"),
+                    selection: Binding(
+                        get: { viewModel.selectedPatientId ?? "" },
+                        set: { newValue in
+                            viewModel.setSelectedPatientId(newValue.isEmpty ? nil : newValue)
+                        }
+                    )
+                ) {
+                    Text(NSLocalizedString("caregiver.patients.select.placeholder", comment: "Select placeholder"))
+                        .tag("")
+                    ForEach(viewModel.patients) { patient in
+                        Text(patient.displayName).tag(patient.id)
                     }
-                )
-            ) {
-                Text(NSLocalizedString("caregiver.patients.select.placeholder", comment: "Select placeholder"))
-                    .tag("")
-                ForEach(viewModel.patients) { patient in
-                    Text(patient.displayName).tag(patient.id)
                 }
+                .pickerStyle(.menu)
+                .tint(CaregiverUI.tealDark)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .frame(height: 44)
+                .background(CaregiverUI.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            } else if let patient = viewModel.patients.first {
+                HStack {
+                    Text(patient.displayName)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(CaregiverUI.tealDark)
+                    Spacer(minLength: 0)
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(CaregiverUI.teal)
+                }
+                .padding(.horizontal, 12)
+                .frame(height: 44)
+                .background(CaregiverUI.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
-            .pickerStyle(.menu)
-            .tint(CaregiverUI.tealDark)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12)
-            .frame(height: 44)
-            .background(CaregiverUI.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         }
     }
@@ -407,7 +418,9 @@ struct PatientManagementView: View {
                             .font(.title3.weight(.semibold))
                     }
                     Spacer()
-                    Text(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))
+                    Text(viewModel.patients.count > 1
+                        ? NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label")
+                        : NSLocalizedString("caregiver.patients.single.status", comment: "Single patient status"))
                         .font(.subheadline.weight(.semibold))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
@@ -458,7 +471,7 @@ struct PatientManagementView: View {
             .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(CaregiverUI.teal.opacity(0.24), lineWidth: 1))
             .shadow(color: CaregiverUI.cardShadow, radius: 10, y: 4)
-            .accessibilityLabel("\(selectedPatient.displayName) \(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))")
+            .accessibilityLabel("\(selectedPatient.displayName) \(selectedPatientStatusText)")
         } else {
             EmptyStateView(
                 title: NSLocalizedString("caregiver.patients.select.empty.title", comment: "No selection title"),
@@ -506,6 +519,12 @@ struct PatientManagementView: View {
 
     private var selectedPatient: PatientDTO? {
         viewModel.patients.first { $0.id == viewModel.selectedPatientId }
+    }
+
+    private var selectedPatientStatusText: String {
+        viewModel.patients.count > 1
+            ? NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label")
+            : NSLocalizedString("caregiver.patients.single.status", comment: "Single patient status")
     }
 
     private func settingsGroupHeader(title: String, message: String, systemImage: String) -> some View {
@@ -1000,28 +1019,6 @@ struct PatientManagementView: View {
             return ScheduleTimeSlot.evening.timeValue
         case .bedtime:
             return ScheduleTimeSlot.bedtime.timeValue
-        }
-    }
-
-    // MARK: - Patient Limit Gate
-
-    private func handleAddPatientTapped() async {
-        guard let entitlementStore else {
-            showingCreate = true
-            return
-        }
-
-        if entitlementStore.state == .unknown {
-            await entitlementStore.refresh()
-        }
-
-        if FeatureGate.canAddPatient(
-            entitlementState: entitlementStore.state,
-            currentPatientCount: viewModel.patients.count
-        ) {
-            showingCreate = true
-        } else {
-            showingPaywall = true
         }
     }
 

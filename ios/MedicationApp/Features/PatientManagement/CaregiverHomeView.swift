@@ -437,7 +437,7 @@ struct CaregiverMedicationView: View {
                         Button {
                             onOpenPatients()
                         } label: {
-                            Text(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab"))
+                            Text(NSLocalizedString("caregiver.medications.noPatients.action", comment: "Register patient"))
                                 .font(.headline)
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
@@ -544,7 +544,7 @@ struct CaregiverTodayTabView: View {
                         Button {
                             onOpenPatients()
                         } label: {
-                            Text(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab"))
+                            Text(NSLocalizedString("caregiver.medications.noPatients.action", comment: "Register patient"))
                                 .font(.headline)
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)

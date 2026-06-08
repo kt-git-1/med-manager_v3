@@ -26,11 +26,12 @@ struct HistoryDayDetailView: View {
     @ObservedObject var viewModel: HistoryViewModel
     let selectedDate: Date?
     var highlightedSlot: NotificationSlot?
+    var style: HistoryDayDetailStyle = .caregiver
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(dayTitle)
-                .font(.headline)
+                .font(style == .patient ? .title2.weight(.bold) : .headline)
 
             if viewModel.isLoadingDay && viewModel.day == nil {
                 LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
@@ -59,13 +60,15 @@ struct HistoryDayDetailView: View {
                                 name: dose.medicationName,
                                 dosage: dose.dosageText,
                                 status: dose.effectiveStatus,
-                                isHighlighted: isSlotHighlighted(dose.slot)
+                                isHighlighted: isSlotHighlighted(dose.slot),
+                                style: style
                             )
                         case .prn(let record):
                             HistoryDayPrnRow(
                                 timeText: HistoryDayDetailView.timeFormatter.string(from: record.takenAt),
                                 name: record.medicationName,
-                                quantity: record.quantityTaken
+                                quantity: record.quantityTaken,
+                                style: style
                             )
                         }
                     }
@@ -116,20 +119,26 @@ struct HistoryDayDetailView: View {
     }
 }
 
+enum HistoryDayDetailStyle {
+    case caregiver
+    case patient
+}
+
 private struct HistoryDayRow: View {
     let timeText: String
     let name: String
     let dosage: String
     let status: HistoryDoseStatusDTO
     var isHighlighted: Bool = false
+    var style: HistoryDayDetailStyle = .caregiver
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(timeText)
-                    .font(.headline)
+                    .font(style == .patient ? .title3.weight(.bold) : .headline)
                 Text(medicationDisplayName)
-                    .font(.title3.weight(.semibold))
+                    .font(style == .patient ? .title3.weight(.bold) : .title3.weight(.semibold))
             }
             Spacer()
             Text(statusText)
@@ -140,8 +149,15 @@ private struct HistoryDayRow: View {
                 .foregroundStyle(statusForeground)
                 .clipShape(Capsule())
         }
-        .padding(14)
-        .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        .padding(style == .patient ? 16 : 14)
+        .background(rowBackground)
+        .overlay {
+            if style == .patient {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(rowStroke, lineWidth: 1)
+            }
+        }
+        .shadow(color: style == .patient ? PatientUI.cardShadow : Color.clear, radius: 10, y: 4)
         .todaySlotHighlight(isHighlighted)
     }
 
@@ -167,9 +183,9 @@ private struct HistoryDayRow: View {
     private var statusForeground: Color {
         switch status {
         case .missed:
-            return Color.red
+            return style == .patient ? PatientUI.red : Color.red
         case .taken:
-            return Color.green
+            return style == .patient ? PatientUI.teal : Color.green
         case .pending:
             return Color.primary
         }
@@ -178,12 +194,23 @@ private struct HistoryDayRow: View {
     private var statusBackground: Color {
         switch status {
         case .missed:
-            return Color.red.opacity(0.15)
+            return (style == .patient ? PatientUI.red : Color.red).opacity(0.15)
         case .taken:
-            return Color.green.opacity(0.15)
+            return (style == .patient ? PatientUI.teal : Color.green).opacity(0.15)
         case .pending:
             return Color.primary.opacity(0.06)
         }
+    }
+
+    private var rowBackground: some ShapeStyle {
+        if style == .patient {
+            return AnyShapeStyle(Color.white)
+        }
+        return AnyShapeStyle(.regularMaterial)
+    }
+
+    private var rowStroke: Color {
+        status == .missed ? PatientUI.red.opacity(0.30) : PatientUI.cardStroke
     }
 }
 
@@ -223,6 +250,7 @@ private struct HistoryDayPrnRow: View {
     let timeText: String
     let name: String
     let quantity: Double
+    var style: HistoryDayDetailStyle = .caregiver
 
     private var prnPrefix: String {
         NSLocalizedString("medication.list.badge.prn", comment: "PRN badge")
@@ -232,20 +260,38 @@ private struct HistoryDayPrnRow: View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(timeText)
-                    .font(.headline)
+                    .font(style == .patient ? .title3.weight(.bold) : .headline)
                 Text("\(prnPrefix): \(name)")
-                    .font(.title3.weight(.semibold))
+                    .font(style == .patient ? .title3.weight(.bold) : .title3.weight(.semibold))
             }
             Spacer()
             Text(prnPrefix)
                 .font(.caption.weight(.semibold))
                 .padding(.vertical, 4)
                 .padding(.horizontal, 8)
-                .background(Color.purple.opacity(0.18))
-                .foregroundStyle(Color.purple)
+                .background(prnColor.opacity(0.18))
+                .foregroundStyle(prnColor)
                 .clipShape(Capsule())
         }
-        .padding(14)
-        .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        .padding(style == .patient ? 16 : 14)
+        .background(rowBackground)
+        .overlay {
+            if style == .patient {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(PatientUI.indigo.opacity(0.26), lineWidth: 1)
+            }
+        }
+        .shadow(color: style == .patient ? PatientUI.cardShadow : Color.clear, radius: 10, y: 4)
+    }
+
+    private var prnColor: Color {
+        style == .patient ? PatientUI.indigo : Color.purple
+    }
+
+    private var rowBackground: some ShapeStyle {
+        if style == .patient {
+            return AnyShapeStyle(Color.white)
+        }
+        return AnyShapeStyle(.regularMaterial)
     }
 }

@@ -22,7 +22,7 @@ struct CaregiverHistoryView: View {
     }
 
     var body: some View {
-        Group {
+        CaregiverScreenBackground {
             if sessionStore.currentPatientId == nil {
                 VStack(spacing: 12) {
                     Spacer(minLength: 0)

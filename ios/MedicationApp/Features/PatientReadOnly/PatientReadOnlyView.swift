@@ -14,8 +14,7 @@ struct PatientReadOnlyView: View {
         FullScreenContainer(content: {
             NavigationStack {
                 ZStack {
-                    Color(.systemGroupedBackground)
-                        .ignoresSafeArea()
+                    PatientScreenBackground()
 
                     switch selectedTab {
                     case .today:
@@ -36,12 +35,6 @@ struct PatientReadOnlyView: View {
                 }
                 .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    NavigationHeaderView(
-                        icon: navigationIconName,
-                        title: navigationTitle
-                    )
-                }
             }
             .id(selectedTab)
             .safeAreaInset(edge: .bottom) {
@@ -96,27 +89,6 @@ struct PatientReadOnlyView: View {
         )
     }
 
-    private var navigationTitle: String {
-        switch selectedTab {
-        case .today:
-            return NSLocalizedString("patient.readonly.today.title", comment: "Today title")
-        case .history:
-            return NSLocalizedString("patient.readonly.history.title", comment: "History title")
-        case .settings:
-            return NSLocalizedString("patient.readonly.settings.title", comment: "Settings title")
-        }
-    }
-
-    private var navigationIconName: String {
-        switch selectedTab {
-        case .today:
-            return "calendar.circle.fill"
-        case .history:
-            return "clock.circle.fill"
-        case .settings:
-            return "gearshape.circle.fill"
-        }
-    }
 }
 
 struct PatientSettingsView: View {
@@ -147,96 +119,137 @@ struct PatientSettingsView: View {
 
     var body: some View {
         let notificationsDisabled = permissionManager.status == .denied
-        Form {
-            Section {
-                Toggle(
-                    NSLocalizedString("patient.settings.notifications.master", comment: "Enable notifications"),
-                    isOn: $preferencesStore.masterEnabled
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                PatientHeader(
+                    title: NSLocalizedString("patient.readonly.settings.title", comment: "Settings title"),
+                    subtitle: NSLocalizedString("patient.settings.subtitle", comment: "Settings subtitle"),
+                    systemImage: "gearshape.fill"
                 )
-                    .onChange(of: preferencesStore.masterEnabled) { _, enabled in
-                        Task { await handleMasterToggle(enabled) }
-                    }
 
-                Toggle(
-                    NSLocalizedString("patient.settings.notifications.rereminder", comment: "Rereminder"),
-                    isOn: $preferencesStore.rereminderEnabled
-                )
-                    .disabled(!preferencesStore.masterEnabled)
-                    .onChange(of: preferencesStore.rereminderEnabled) { _, _ in
-                        Task { await rescheduleIfNeeded() }
-                    }
-            }
-            .disabled(notificationsDisabled)
-
-            Section(header: Text(NSLocalizedString("patient.settings.notifications.slots.title", comment: "Slots title"))) {
-                toggleRow(title: NSLocalizedString("patient.settings.notifications.slot.morning", comment: "Morning"), slot: .morning)
-                toggleRow(title: NSLocalizedString("patient.settings.notifications.slot.noon", comment: "Noon"), slot: .noon)
-                toggleRow(title: NSLocalizedString("patient.settings.notifications.slot.evening", comment: "Evening"), slot: .evening)
-                toggleRow(title: NSLocalizedString("patient.settings.notifications.slot.bedtime", comment: "Bedtime"), slot: .bedtime)
-            }
-            .disabled(!preferencesStore.masterEnabled || notificationsDisabled)
-
-            if notificationsDisabled {
-                Section {
-                    Text(
-                        NSLocalizedString(
-                            "patient.settings.notifications.permission.denied",
-                            comment: "Permission denied guidance"
+                PatientCard {
+                    VStack(alignment: .leading, spacing: 18) {
+                        settingsSectionTitle(
+                            NSLocalizedString("patient.settings.notifications.card.title", comment: "Notification card title"),
+                            systemImage: "bell.badge.fill",
+                            color: PatientUI.teal
                         )
-                    )
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
 
-            Section {
-                Button {
-                    sessionStore.resetMode()
-                } label: {
-                    Label(
-                        NSLocalizedString("settings.changeMode", comment: "Change app mode"),
-                        systemImage: "arrow.left.arrow.right.circle"
-                    )
-                }
-                .accessibilityIdentifier("patient.settings.changeMode")
-            }
+                        largeToggle(
+                            title: NSLocalizedString("patient.settings.notifications.master", comment: "Enable notifications"),
+                            subtitle: NSLocalizedString("patient.settings.notifications.master.note", comment: "Master note"),
+                            systemImage: "bell.fill",
+                            isOn: $preferencesStore.masterEnabled
+                        )
+                        .onChange(of: preferencesStore.masterEnabled) { _, enabled in
+                            Task { await handleMasterToggle(enabled) }
+                        }
 
-            Section {
+                        largeToggle(
+                            title: NSLocalizedString("patient.settings.notifications.rereminder", comment: "Rereminder"),
+                            subtitle: NSLocalizedString("patient.settings.notifications.rereminder.note", comment: "Rereminder note"),
+                            systemImage: "alarm.fill",
+                            isOn: $preferencesStore.rereminderEnabled
+                        )
+                        .disabled(!preferencesStore.masterEnabled)
+                        .opacity(preferencesStore.masterEnabled ? 1 : 0.55)
+                        .onChange(of: preferencesStore.rereminderEnabled) { _, _ in
+                            Task { await rescheduleIfNeeded() }
+                        }
+                    }
+                }
+                .disabled(notificationsDisabled)
+
+                PatientCard {
+                    VStack(alignment: .leading, spacing: 14) {
+                        settingsSectionTitle(
+                            NSLocalizedString("patient.settings.notifications.slots.title", comment: "Slots title"),
+                            systemImage: "clock.fill",
+                            color: PatientUI.blue
+                        )
+                        slotToggleGrid
+                    }
+                }
+                .disabled(!preferencesStore.masterEnabled || notificationsDisabled)
+                .opacity(preferencesStore.masterEnabled && !notificationsDisabled ? 1 : 0.55)
+
+                if notificationsDisabled {
+                    PatientCard(accent: PatientUI.red) {
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.title2.weight(.bold))
+                                .foregroundStyle(PatientUI.red)
+                            Text(NSLocalizedString("patient.settings.notifications.permission.denied", comment: "Permission denied guidance"))
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                PatientCard {
+                    VStack(spacing: 0) {
+                        Button {
+                            sessionStore.resetMode()
+                        } label: {
+                            settingsNavigationRow(
+                                title: NSLocalizedString("settings.changeMode", comment: "Change app mode"),
+                                subtitle: NSLocalizedString("patient.settings.mode.note", comment: "Mode note"),
+                                systemImage: "arrow.left.arrow.right.circle.fill",
+                                color: PatientUI.teal
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("patient.settings.changeMode")
+                    }
+                }
+
                 Button {
                     showingLogoutConfirm = true
                 } label: {
-                    Text(NSLocalizedString("common.logout", comment: "Logout"))
-                        .font(.headline)
+                    Label(NSLocalizedString("common.logout", comment: "Logout"), systemImage: "rectangle.portrait.and.arrow.right")
+                        .font(.title3.weight(.bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(Color.red, in: RoundedRectangle(cornerRadius: 14))
+                        .frame(minHeight: 58)
+                        .background(PatientUI.red, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
                 .buttonStyle(.plain)
-                .listRowInsets(EdgeInsets(top: 48, leading: 16, bottom: 48, trailing: 16))
-                .listRowBackground(Color(uiColor: .systemGroupedBackground))
-                .listRowSeparator(.hidden)
-                .alert(
-                    NSLocalizedString("patient.logout.confirm.title", comment: "Logout confirm title"),
-                    isPresented: $showingLogoutConfirm
-                ) {
-                    Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
-                    Button(NSLocalizedString("patient.logout.confirm.action", comment: "Logout confirm action"), role: .destructive) {
-                        onLogout()
-                        globalBannerPresenter.show(
-                            message: NSLocalizedString("patient.logout.toast", comment: "Logout toast"),
-                            duration: 2
-                        )
-                    }
-                } message: {
-                    Text(NSLocalizedString("patient.logout.confirm.message", comment: "Logout confirm message"))
-                }
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 130)
+        }
+        .refreshable {
+            await permissionManager.refreshStatus()
+        }
+        .alert(
+            NSLocalizedString("patient.logout.confirm.title", comment: "Logout confirm title"),
+            isPresented: $showingLogoutConfirm
+        ) {
+            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
+            Button(NSLocalizedString("patient.logout.confirm.action", comment: "Logout confirm action"), role: .destructive) {
+                onLogout()
+                globalBannerPresenter.show(
+                    message: NSLocalizedString("patient.logout.toast", comment: "Logout toast"),
+                    duration: 2
+                )
+            }
+        } message: {
+            Text(NSLocalizedString("patient.logout.confirm.message", comment: "Logout confirm message"))
         }
         .onAppear {
             Task { await permissionManager.refreshStatus() }
         }
         .accessibilityIdentifier("PatientSettingsView")
+    }
+
+    private var slotToggleGrid: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+            largeSlotToggle(title: NSLocalizedString("patient.settings.notifications.slot.morning", comment: "Morning"), slot: .morning, systemImage: "sunrise.fill", color: PatientUI.orange)
+            largeSlotToggle(title: NSLocalizedString("patient.settings.notifications.slot.noon", comment: "Noon"), slot: .noon, systemImage: "sun.max.fill", color: PatientUI.blue)
+            largeSlotToggle(title: NSLocalizedString("patient.settings.notifications.slot.evening", comment: "Evening"), slot: .evening, systemImage: "moon.fill", color: PatientUI.teal)
+            largeSlotToggle(title: NSLocalizedString("patient.settings.notifications.slot.bedtime", comment: "Bedtime"), slot: .bedtime, systemImage: "bed.double.fill", color: PatientUI.indigo)
+        }
     }
 
     private func toggleRow(title: String, slot: NotificationSlot) -> some View {
@@ -247,6 +260,91 @@ struct PatientSettingsView: View {
                 Task { await rescheduleIfNeeded() }
             }
         ))
+    }
+
+    private func largeSlotToggle(title: String, slot: NotificationSlot, systemImage: String, color: Color) -> some View {
+        Toggle(isOn: Binding(
+            get: { preferencesStore.isSlotEnabled(slot) },
+            set: { newValue in
+                preferencesStore.setSlotEnabled(slot, enabled: newValue)
+                Task { await rescheduleIfNeeded() }
+            }
+        )) {
+            VStack(alignment: .leading, spacing: 10) {
+                Image(systemName: systemImage)
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(color)
+                Text(title)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.primary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(minHeight: 74)
+        }
+        .toggleStyle(.switch)
+        .padding(14)
+        .background(color.opacity(0.09), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func largeToggle(
+        title: String,
+        subtitle: String,
+        systemImage: String,
+        isOn: Binding<Bool>
+    ) -> some View {
+        Toggle(isOn: isOn) {
+            HStack(spacing: 14) {
+                Image(systemName: systemImage)
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(PatientUI.teal)
+                    .frame(width: 44, height: 44)
+                    .background(PatientUI.teal.opacity(0.12), in: Circle())
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(.primary)
+                    Text(subtitle)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .toggleStyle(.switch)
+    }
+
+    private func settingsSectionTitle(_ title: String, systemImage: String, color: Color) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.headline.weight(.bold))
+                .foregroundStyle(color)
+            Text(title)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(.primary)
+        }
+    }
+
+    private func settingsNavigationRow(title: String, subtitle: String, systemImage: String, color: Color) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: systemImage)
+                .font(.title2.weight(.bold))
+                .foregroundStyle(color)
+                .frame(width: 48, height: 48)
+                .background(color.opacity(0.12), in: Circle())
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.primary)
+                Text(subtitle)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.headline.weight(.bold))
+                .foregroundStyle(.secondary)
+        }
+        .contentShape(Rectangle())
     }
 
     private func handleMasterToggle(_ enabled: Bool) async {
@@ -283,6 +381,108 @@ enum PatientTab: Hashable {
     case settings
 }
 
+enum PatientUI {
+    static let teal = Color(red: 0.0, green: 0.55, blue: 0.50)
+    static let tealDark = Color(red: 0.0, green: 0.43, blue: 0.40)
+    static let blue = Color(red: 0.10, green: 0.45, blue: 0.82)
+    static let orange = Color(red: 0.94, green: 0.42, blue: 0.0)
+    static let indigo = Color(red: 0.34, green: 0.32, blue: 0.78)
+    static let red = Color(red: 0.86, green: 0.18, blue: 0.20)
+    static let backgroundTop = Color(red: 0.93, green: 0.98, blue: 1.0)
+    static let backgroundBottom = Color(.systemGroupedBackground)
+    static let cardStroke = Color.black.opacity(0.10)
+    static let cardShadow = Color.black.opacity(0.07)
+}
+
+struct PatientScreenBackground: View {
+    var body: some View {
+        LinearGradient(
+            colors: [PatientUI.backgroundTop, PatientUI.backgroundBottom],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .ignoresSafeArea()
+    }
+}
+
+struct PatientHeader: View {
+    let title: String
+    let subtitle: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: systemImage)
+                .font(.system(size: 30, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 62, height: 62)
+                .background(PatientUI.teal, in: Circle())
+                .overlay {
+                    Circle().stroke(Color.white, lineWidth: 5)
+                }
+                .shadow(color: PatientUI.cardShadow, radius: 8, y: 3)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.largeTitle.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                Text(subtitle)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.82)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+struct PatientCard<Content: View>: View {
+    var accent: Color?
+    let content: Content
+
+    init(accent: Color? = nil, @ViewBuilder content: () -> Content) {
+        self.accent = accent
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .padding(18)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke((accent ?? PatientUI.cardStroke).opacity(accent == nil ? 1 : 0.55), lineWidth: accent == nil ? 1 : 1.5)
+            }
+            .shadow(color: PatientUI.cardShadow, radius: 12, y: 5)
+    }
+}
+
+struct PatientStatusPill: View {
+    let text: String
+    let color: Color
+    var systemImage: String?
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .font(.caption.weight(.bold))
+            }
+            Text(text)
+                .font(.caption.weight(.bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.74)
+        }
+        .foregroundStyle(color)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(color.opacity(0.13), in: Capsule())
+    }
+}
+
 private struct PatientBottomTabBar: View {
     @Binding var selectedTab: PatientTab
 
@@ -310,10 +510,15 @@ private struct PatientBottomTabBar: View {
                 selectedTab = .settings
             }
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(PatientUI.cardStroke, lineWidth: 1)
+        }
+        .shadow(color: PatientUI.cardShadow, radius: 14, y: 5)
         .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .glassEffect(.regular, in: .capsule)
-        .padding(.horizontal, 10)
         .padding(.bottom, 8)
     }
 
@@ -326,19 +531,19 @@ private struct PatientBottomTabBar: View {
         Button(action: action) {
             VStack(spacing: 6) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 28, weight: .bold))
                 Text(title)
-                    .font(.body.weight(.bold))
+                    .font(.headline.weight(.bold))
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
                     .minimumScaleFactor(0.82)
             }
-            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+            .foregroundStyle(isSelected ? PatientUI.teal : Color.secondary)
             .frame(maxWidth: .infinity)
-            .frame(minHeight: 72)
+            .frame(minHeight: 74)
             .padding(.horizontal, 10)
-            .contentShape(Capsule())
-            .background(isSelected ? AnyShapeStyle(Color.accentColor.opacity(0.16)) : AnyShapeStyle(Color.clear), in: Capsule())
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(isSelected ? AnyShapeStyle(PatientUI.teal.opacity(0.13)) : AnyShapeStyle(Color.clear), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
