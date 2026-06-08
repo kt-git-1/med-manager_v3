@@ -82,6 +82,13 @@ const TOKEN_TTL_SECONDS = 50 * 60;
 const FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 
+function tokenDebugInfo(accessToken: string) {
+  return {
+    accessTokenLength: accessToken.length,
+    accessTokenSha256: crypto.createHash("sha256").update(accessToken).digest("hex").slice(0, 12)
+  };
+}
+
 async function getAccessToken(config: FcmConfig): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
 
@@ -172,10 +179,11 @@ export async function sendFcmMessage(
       message.apns = apnsOverride;
     }
 
+    const authorizationHeader = `Bearer ${accessToken}`;
     const res = await fetch(url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: authorizationHeader,
         "content-type": "application/json"
       },
       body: JSON.stringify({ message })
@@ -198,7 +206,20 @@ export async function sendFcmMessage(
       return { success: false, errorCode: "UNREGISTERED" };
     }
 
-    log("warn", `FCM send error: status=${res.status} body=${errorBody.slice(0, 200)}`);
+    const authDebug = tokenDebugInfo(accessToken);
+    const wwwAuthenticate = res.headers.get("www-authenticate");
+    log(
+      "warn",
+      [
+        `FCM send error: status=${res.status}`,
+        `projectId=${config.projectId}`,
+        `authHeader=${authorizationHeader.length > "Bearer ".length}`,
+        `accessTokenLength=${authDebug.accessTokenLength}`,
+        `accessTokenSha256=${authDebug.accessTokenSha256}`,
+        wwwAuthenticate ? `wwwAuthenticate=${wwwAuthenticate.slice(0, 200)}` : null,
+        `body=${errorBody.slice(0, 200)}`
+      ].filter(Boolean).join(" ")
+    );
     return { success: false, errorCode: "UNKNOWN" };
   } catch (error) {
     log(

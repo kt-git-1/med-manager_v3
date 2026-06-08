@@ -328,6 +328,7 @@
 "caregiver.inventory.list.empty.title" = "在庫がありません";
 "caregiver.inventory.list.empty.message" = "薬の在庫を設定してください";
 "caregiver.inventory.remaining.label" = "残り";
+"caregiver.inventory.remaining.count" = "残り%@錠";
 "caregiver.inventory.unit" = "錠";
 "caregiver.inventory.status.available" = "在庫あり";
 "caregiver.inventory.status.low" = "少";

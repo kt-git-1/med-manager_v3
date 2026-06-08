@@ -83,4 +83,53 @@ describe("sendFcmMessage", () => {
       "content-type": "application/json"
     });
   });
+
+  it("logs non-secret auth diagnostics when FCM rejects the send request", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ access_token: "oauth-token-1" }), { status: 200 })
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              code: 401,
+              message: "Request is missing required authentication credential."
+            }
+          }),
+          {
+            status: 401,
+            headers: { "www-authenticate": "Bearer realm=\"https://accounts.google.com/\"" }
+          }
+        )
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { sendFcmMessage } = await import("../../src/services/fcmService");
+
+    const result = await sendFcmMessage(
+      "device-token-1",
+      { title: "服薬記録", body: "服用しました" },
+      { type: "DOSE_TAKEN" }
+    );
+
+    expect(result).toEqual({ success: false, errorCode: "UNKNOWN" });
+    expect(logMock).toHaveBeenCalledWith(
+      "warn",
+      expect.stringContaining("FCM send error: status=401")
+    );
+    expect(logMock).toHaveBeenCalledWith(
+      "warn",
+      expect.stringContaining("authHeader=true")
+    );
+    expect(logMock).toHaveBeenCalledWith(
+      "warn",
+      expect.stringContaining("accessTokenLength=13")
+    );
+    expect(logMock).not.toHaveBeenCalledWith(
+      "warn",
+      expect.stringContaining("oauth-token-1")
+    );
+  });
 });

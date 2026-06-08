@@ -438,7 +438,7 @@ struct InventoryListView: View {
             case .all:
                 return true
             case .lowOnly:
-                return shouldShowLowDaysWarning(for: item)
+                return shouldShowLowInventory(for: item)
             case .outOnly:
                 return item.inventoryEnabled && item.out
             }
@@ -450,6 +450,12 @@ struct InventoryListView: View {
         items.sorted { lhs, rhs in
             if lhs.periodEnded != rhs.periodEnded {
                 return !lhs.periodEnded
+            }
+            if lhs.out != rhs.out {
+                return lhs.out
+            }
+            if lhs.low != rhs.low {
+                return lhs.low
             }
             let lhsDays = lhs.daysRemaining ?? Int.max
             let rhsDays = rhs.daysRemaining ?? Int.max
@@ -478,7 +484,7 @@ struct InventoryListView: View {
     private var needsActionItems: [InventoryItemDTO] {
         sortedItems(
             viewModel.items.filter { item in
-                item.inventoryEnabled && !item.periodEnded && (item.out || shouldShowLowDaysWarning(for: item))
+                item.inventoryEnabled && !item.periodEnded && (item.out || shouldShowLowInventory(for: item))
             }
         )
     }
@@ -521,7 +527,7 @@ struct InventoryListView: View {
                         .font(.title2.weight(.bold))
                         .lineLimit(1)
                         .minimumScaleFactor(0.78)
-                    inlineStatusBadge(for: item)
+                    inlineStatusBadges(for: item)
                 }
                 Spacer(minLength: 0)
                 if item.inventoryEnabled {
@@ -555,7 +561,7 @@ struct InventoryListView: View {
                 .padding(6)
                 .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
-                if shouldShowLowDaysWarning(for: item) || item.out {
+                if shouldShowLowInventory(for: item) || item.out {
                     Button {
                         Task { await adjustListInventory(item, delta: weeklyRefillAmount(for: item)) }
                     } label: {
@@ -599,7 +605,7 @@ struct InventoryListView: View {
         .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(shouldShowLowDaysWarning(for: item) ? CaregiverUI.orange.opacity(0.75) : CaregiverUI.cardStroke, lineWidth: shouldShowLowDaysWarning(for: item) ? 1.5 : 1)
+                .stroke(shouldShowAttention(for: item) ? CaregiverUI.orange.opacity(0.75) : CaregiverUI.cardStroke, lineWidth: shouldShowAttention(for: item) ? 1.5 : 1)
         )
         .shadow(color: CaregiverUI.cardShadow, radius: 10, y: 4)
         .contentShape(Rectangle())
@@ -685,24 +691,30 @@ struct InventoryListView: View {
     }
 
     @ViewBuilder
-    private func inlineStatusBadge(for item: InventoryItemDTO) -> some View {
-        if item.out {
-            badge(
-                text: NSLocalizedString("caregiver.inventory.status.out", comment: "Out badge"),
-                color: .red
-            )
-        } else if shouldShowLowDaysWarning(for: item) {
-            badge(
-                text: NSLocalizedString("caregiver.inventory.status.low", comment: "Low badge"),
-                color: .orange
-            )
-        } else if !item.inventoryEnabled {
-            badge(
-                text: NSLocalizedString("caregiver.inventory.status.unconfigured", comment: "Unconfigured badge"),
-                color: .gray
-            )
-        } else {
-            EmptyView()
+    private func inlineStatusBadges(for item: InventoryItemDTO) -> some View {
+        HStack(spacing: 6) {
+            if item.isPrn {
+                badge(
+                    text: NSLocalizedString("medication.list.badge.prn", comment: "PRN badge"),
+                    color: CaregiverUI.orange
+                )
+            }
+            if item.out {
+                badge(
+                    text: NSLocalizedString("caregiver.inventory.status.out", comment: "Out badge"),
+                    color: .red
+                )
+            } else if shouldShowLowInventory(for: item) {
+                badge(
+                    text: NSLocalizedString("caregiver.inventory.status.low", comment: "Low badge"),
+                    color: .orange
+                )
+            } else if !item.inventoryEnabled {
+                badge(
+                    text: NSLocalizedString("caregiver.inventory.status.unconfigured", comment: "Unconfigured badge"),
+                    color: .gray
+                )
+            }
         }
     }
 
@@ -732,8 +744,11 @@ struct InventoryListView: View {
         if item.out {
             return NSLocalizedString("caregiver.inventory.help.out", comment: "Out help")
         }
-        if shouldShowLowDaysWarning(for: item) {
-            return refillDueText(for: item)
+        if shouldShowLowInventory(for: item) {
+            if item.daysRemaining != nil {
+                return refillDueText(for: item)
+            }
+            return NSLocalizedString("caregiver.inventory.help.low", comment: "Low help")
         }
         if item.isPrn {
             return NSLocalizedString("caregiver.inventory.help.prn", comment: "PRN help")
@@ -741,17 +756,16 @@ struct InventoryListView: View {
         return NSLocalizedString("caregiver.inventory.help.available", comment: "Available help")
     }
 
-    private func shouldShowLowDaysWarning(for item: InventoryItemDTO) -> Bool {
-        guard item.inventoryEnabled, !item.periodEnded, let daysRemaining = item.daysRemaining else {
-            return false
-        }
-        let threshold = max(0, item.inventoryLowThreshold)
-        guard threshold > 0 else { return false }
-        return daysRemaining <= threshold
+    private func shouldShowLowInventory(for item: InventoryItemDTO) -> Bool {
+        item.inventoryEnabled && !item.periodEnded && item.low
+    }
+
+    private func shouldShowAttention(for item: InventoryItemDTO) -> Bool {
+        item.inventoryEnabled && !item.periodEnded && (item.out || shouldShowLowInventory(for: item))
     }
 
     private func daysRemainingColor(for item: InventoryItemDTO) -> Color {
-        if shouldShowLowDaysWarning(for: item) {
+        if shouldShowLowInventory(for: item) {
             return .red
         }
         return .secondary
@@ -778,12 +792,22 @@ struct InventoryListView: View {
         return String(
             format: NSLocalizedString("caregiver.inventory.guide.low.message", comment: "Inventory guide low message"),
             item.name,
-            daysRemainingText(for: item)
+            lowInventoryStatusText(for: item)
+        )
+    }
+
+    private func lowInventoryStatusText(for item: InventoryItemDTO) -> String {
+        if item.daysRemaining != nil {
+            return daysRemainingText(for: item)
+        }
+        return String(
+            format: NSLocalizedString("caregiver.inventory.remaining.count", comment: "Remaining count"),
+            AppConstants.formatDecimal(item.inventoryQuantity)
         )
     }
 
     private func inventoryAccentColor(for item: InventoryItemDTO) -> Color {
-        if item.out || shouldShowLowDaysWarning(for: item) {
+        if shouldShowAttention(for: item) {
             return CaregiverUI.orange
         }
         return CaregiverUI.blue

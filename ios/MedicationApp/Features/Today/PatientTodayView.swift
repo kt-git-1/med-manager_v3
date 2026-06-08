@@ -732,34 +732,9 @@ private struct PrnMedicationListView: View {
             PatientScreenBackground()
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
-                    PatientHeader(
-                        title: NSLocalizedString("patient.today.prn.screen.title", comment: "PRN screen title"),
-                        subtitle: NSLocalizedString("patient.today.prn.screen.subtitle", comment: "PRN screen subtitle"),
-                        systemImage: "cross.case.fill"
-                    )
-
-                    PatientCard(accent: PatientUI.orange) {
-                        HStack(alignment: .top, spacing: 14) {
-                            Image(systemName: "hand.tap.fill")
-                                .font(.title2.weight(.bold))
-                                .foregroundStyle(PatientUI.orange)
-                                .frame(width: 48, height: 48)
-                                .background(PatientUI.orange.opacity(0.12), in: Circle())
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(NSLocalizedString("patient.today.prn.help.title", comment: "PRN help title"))
-                                    .font(.title3.weight(.bold))
-                                    .foregroundStyle(.primary)
-                                Text(NSLocalizedString("patient.today.prn.help.message", comment: "PRN help message"))
-                                    .font(.body.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                        }
-                    }
-
                     Text(NSLocalizedString("patient.today.prn.list.title", comment: "PRN list title"))
                         .font(.title2.weight(.bold))
-                        .padding(.top, 2)
+                        .padding(.top, 4)
 
                     ForEach(medications) { medication in
                         PrnMedicationCard(
@@ -773,7 +748,7 @@ private struct PrnMedicationListView: View {
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 16)
+                .padding(.top, 8)
                 .padding(.bottom, 40)
             }
         }
