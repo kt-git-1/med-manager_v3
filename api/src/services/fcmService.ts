@@ -7,6 +7,7 @@
 // ---------------------------------------------------------------------------
 
 import crypto from "node:crypto";
+import https from "node:https";
 import { log } from "../logging/logger";
 
 // ---------------------------------------------------------------------------
@@ -87,6 +88,43 @@ function tokenDebugInfo(accessToken: string) {
     accessTokenLength: accessToken.length,
     accessTokenSha256: crypto.createHash("sha256").update(accessToken).digest("hex").slice(0, 12)
   };
+}
+
+function httpsPostJson(
+  url: string,
+  headers: Record<string, string>,
+  body: unknown
+): Promise<{ status: number; headers: Record<string, string | string[] | undefined>; body: string }> {
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify(body);
+    const request = https.request(
+      new URL(url),
+      {
+        method: "POST",
+        headers: {
+          ...headers,
+          "content-length": Buffer.byteLength(payload).toString()
+        }
+      },
+      (response) => {
+        const chunks: Buffer[] = [];
+        response.on("data", (chunk) => {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        });
+        response.on("end", () => {
+          resolve({
+            status: response.statusCode ?? 0,
+            headers: response.headers,
+            body: Buffer.concat(chunks).toString("utf-8")
+          });
+        });
+      }
+    );
+
+    request.on("error", reject);
+    request.write(payload);
+    request.end();
+  });
 }
 
 async function getTokenInfoDebug(accessToken: string): Promise<string> {
@@ -208,22 +246,21 @@ export async function sendFcmMessage(
     }
 
     const authorizationHeader = `Bearer ${accessToken}`;
-    const res = await fetch(url, {
-      method: "POST",
-      redirect: "manual",
-      headers: {
+    const res = await httpsPostJson(
+      url,
+      {
         Authorization: authorizationHeader,
         "content-type": "application/json"
       },
-      body: JSON.stringify({ message })
-    });
+      { message }
+    );
 
-    if (res.ok) {
+    if (res.status >= 200 && res.status < 300) {
       return { success: true };
     }
 
     // Parse error response
-    const errorBody = await res.text();
+    const errorBody = res.body;
     const isUnregistered =
       res.status === 404 ||
       errorBody.includes("UNREGISTERED") ||
@@ -236,9 +273,15 @@ export async function sendFcmMessage(
     }
 
     const authDebug = tokenDebugInfo(accessToken);
-    const wwwAuthenticate = res.headers.get("www-authenticate");
-    const redirectLocation = res.headers.get("location");
+    const wwwAuthenticate = res.headers["www-authenticate"];
+    const redirectLocation = res.headers.location;
     const tokenInfoDebug = res.status === 401 ? await getTokenInfoDebug(accessToken) : null;
+    const wwwAuthenticateText = Array.isArray(wwwAuthenticate)
+      ? wwwAuthenticate.join(", ")
+      : wwwAuthenticate;
+    const redirectLocationText = Array.isArray(redirectLocation)
+      ? redirectLocation.join(", ")
+      : redirectLocation;
     log(
       "warn",
       [
@@ -248,9 +291,8 @@ export async function sendFcmMessage(
         `accessTokenLength=${authDebug.accessTokenLength}`,
         `accessTokenSha256=${authDebug.accessTokenSha256}`,
         tokenInfoDebug,
-        typeof res.redirected === "boolean" ? `redirected=${res.redirected}` : null,
-        redirectLocation ? `redirectLocation=${redirectLocation.slice(0, 200)}` : null,
-        wwwAuthenticate ? `wwwAuthenticate=${wwwAuthenticate.slice(0, 200)}` : null,
+        redirectLocationText ? `redirectLocation=${redirectLocationText.slice(0, 200)}` : null,
+        wwwAuthenticateText ? `wwwAuthenticate=${wwwAuthenticateText.slice(0, 200)}` : null,
         `body=${errorBody.slice(0, 200)}`
       ].filter(Boolean).join(" ")
     );
