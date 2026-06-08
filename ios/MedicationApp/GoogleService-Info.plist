@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.med-manager-app</string>
+	<string>com.afterlifearchive.medmanager</string>
 	<key>PROJECT_ID</key>
 	<string>med-manager-app-7afa5</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:54672603713:ios:77a9d8f7211f66540264c0</string>
+	<string>1:54672603713:ios:3f233028cf4be0410264c0</string>
 </dict>
 </plist>

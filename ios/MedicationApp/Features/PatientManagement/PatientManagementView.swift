@@ -281,7 +281,7 @@ struct PatientManagementView: View {
             }
         }
         .overlay {
-            if viewModel.isLoading || isSavingDetail || pushSettingsViewModel.isUpdating {
+            if isSavingDetail || pushSettingsViewModel.isUpdating {
                 SchedulingRefreshOverlay()
             }
         }
@@ -298,7 +298,7 @@ struct PatientManagementView: View {
     @ViewBuilder
     private var contentView: some View {
         if viewModel.isLoading {
-            Color.clear
+            LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let errorMessage = viewModel.errorMessage {
             ErrorStateView(message: errorMessage)

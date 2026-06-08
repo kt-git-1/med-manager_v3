@@ -654,10 +654,25 @@ private struct PatientTodayListView: View {
     }
 
     private var nextSlotSection: SlotSection? {
-        slotSections.first { section in
-            guard let slot = section.slot, let summary = slotSummaries[slot] else { return false }
-            return summary.remainingCount > 0
+        let candidates = slotSections.compactMap { section -> PatientTodayNextSlotSelector.Candidate? in
+            guard
+                let slot = section.slot,
+                let scheduledAt = section.items.map(\.scheduledAt).min(),
+                let summary = slotSummaries[slot]
+            else {
+                return nil
+            }
+            return PatientTodayNextSlotSelector.Candidate(
+                slot: slot,
+                scheduledAt: scheduledAt,
+                remainingCount: summary.remainingCount,
+                isWithinRecordingWindow: summary.isWithinRecordingWindow
+            )
         }
+        guard let nextSlot = PatientTodayNextSlotSelector.selectSlot(from: candidates) else {
+            return nil
+        }
+        return slotSections.first { $0.slot == nextSlot }
     }
 
     private var progressText: String {

@@ -1,6 +1,6 @@
 name: MedicationApp
 options:
-  bundleIdPrefix: com.example
+  bundleIdPrefix: com.afterlifearchive
 settings:
   base:
     SWIFT_VERSION: 6.2
@@ -35,9 +35,13 @@ targets:
         UILaunchStoryboardName: "LaunchScreen"
         UIBackgroundModes:
           - remote-notification
+    entitlements:
+      path: App/MedicationApp.entitlements
+      properties:
+        aps-environment: development
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.med-manager-app
+        PRODUCT_BUNDLE_IDENTIFIER: com.afterlifearchive.medmanager
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 0.1.0
     scheme:

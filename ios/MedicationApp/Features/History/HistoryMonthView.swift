@@ -125,7 +125,8 @@ struct HistoryMonthView: View {
                                     viewModel: viewModel,
                                     selectedDate: selectedDate,
                                     highlightedSlot: highlightedSlot,
-                                    style: isPatientMode ? .patient : .caregiver
+                                    style: isPatientMode ? .patient : .caregiver,
+                                    onRecordMissedDose: recordMissedDose
                                 )
                             }
                         }
@@ -146,6 +147,18 @@ struct HistoryMonthView: View {
             },
             overlay: viewModel.isUpdating ? AnyView(updatingOverlay) : nil
         )
+        .overlay(alignment: .top) {
+            if let toastMessage = viewModel.toastMessage {
+                Text(toastMessage)
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .glassEffect(.regular, in: .capsule)
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .accessibilityLabel(toastMessage)
+            }
+        }
         .onAppear {
             loadMonth()
         }
@@ -892,6 +905,13 @@ struct HistoryMonthView: View {
         let components = Self.calendar.dateComponents([.year, .month], from: displayedMonth)
         guard let year = components.year, let month = components.month else { return }
         viewModel.loadMonth(year: year, month: month)
+    }
+
+    private func recordMissedDose(_ dose: HistoryDayItemDTO) {
+        let date = HistoryMonthView.dateKeyFormatter.string(from: dose.scheduledAt)
+        let components = Self.calendar.dateComponents([.year, .month], from: dose.scheduledAt)
+        guard let year = components.year, let month = components.month else { return }
+        viewModel.recordMissedCaregiverDose(dose, date: date, year: year, month: month)
     }
 
     private func updateSelectionForDisplayedMonth() {

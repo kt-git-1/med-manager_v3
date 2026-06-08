@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -75,6 +75,7 @@
 		8961919C4BD866DB7FF627B8 /* NotificationSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E594C35EA698D01A962CE27 /* NotificationSchedulerTests.swift */; };
 		8BBD6605998DF41AC1BD1B51 /* CaregiverTodayViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B95C565516F1191D20C297 /* CaregiverTodayViewModel.swift */; };
 		9240F934ABC46934E2A976A4 /* PatientTodayViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC838D43F2A137E7A3B47E88 /* PatientTodayViewModel.swift */; };
+		945B53372B8423B78F9FBA3C /* PatientTodayNextSlotSelectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60F6482B5444E9782F60630 /* PatientTodayNextSlotSelectorTests.swift */; };
 		9294808D59A7EBB3A7260373 /* SessionStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C478A1F0A87BA5A6933C496E /* SessionStoreTests.swift */; };
 		9315A5D0E9689A9AD2EED834 /* TodayCaregiverFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CEC8F0CD10FAA9C276E6B82 /* TodayCaregiverFlowTests.swift */; };
 		95FD7BBD4A4B4283D865AC33 /* CaregiverPushUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AF6AFD1B47BE0E49B16EFD8 /* CaregiverPushUITests.swift */; };
@@ -89,6 +90,7 @@
 		9E32A2665B38F39DF6691477 /* CaregiverLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EFC3080A97C8534B55D4B19 /* CaregiverLoginView.swift */; };
 		A368DDDB83925DDFFFE53CC9 /* PaywallViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18318D43942E0706C087F30D /* PaywallViewModel.swift */; };
 		A428B5E925F219C96731E370 /* PatientTodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BFCE7D6BD887889F4A80FEA /* PatientTodayView.swift */; };
+		A813F48B61CC49148F70D81F /* PatientTodayNextSlotSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6D649570D09B4BB9E585777 /* PatientTodayNextSlotSelector.swift */; };
 		A6F87610742EC8B5B96B4478 /* HistoryOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50CC3E300E058B7C790B9BD6 /* HistoryOverlayTests.swift */; };
 		A91CE62CDD4B5ABC87590915 /* TodayPatientFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 013B6B790A720A87F5E3035D /* TodayPatientFlowTests.swift */; };
 		A9208875EAD49376C78455B5 /* HistoryClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1C86D4E584FBC8DFCE97D4 /* HistoryClient.swift */; };
@@ -181,7 +183,7 @@
 		2E622F067BAC7E3083CFB39A /* CaregiverHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverHistoryView.swift; sourceTree = "<group>"; };
 		2F14389A25B5B1AFDD3C4518 /* PrnConfirmTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrnConfirmTests.swift; sourceTree = "<group>"; };
 		2F3B3EC234D1D71D44BC2C6E /* LinkingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkingService.swift; sourceTree = "<group>"; };
-		30F0665AE9C17BFB7BD43D41 /* MedicationApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MedicationApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		30F0665AE9C17BFB7BD43D41 /* MedicationApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MedicationApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		330755D41A1951F0E8613782 /* InventoryListDetailUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryListDetailUITests.swift; sourceTree = "<group>"; };
 		3335A90BDEB52C323A153517 /* SchedulingRefreshOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulingRefreshOverlay.swift; sourceTree = "<group>"; };
 		342C88D125EBB6991FA73A6C /* HistoryRetentionUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryRetentionUITests.swift; sourceTree = "<group>"; };
@@ -224,10 +226,11 @@
 		8FFB09A2847D3F7FDCFFCEC8 /* PrnTodayUiTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrnTodayUiTests.swift; sourceTree = "<group>"; };
 		9175FA959FB3561933F5F2EC /* NotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationScheduler.swift; sourceTree = "<group>"; };
 		927B3F96F63C7CE6B21DF755 /* RangeValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RangeValidationTests.swift; sourceTree = "<group>"; };
+		A60F6482B5444E9782F60630 /* PatientTodayNextSlotSelectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientTodayNextSlotSelectorTests.swift; sourceTree = "<group>"; };
 		94643C1CA7FC56CD9674234A /* HistoryDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryDTO.swift; sourceTree = "<group>"; };
 		96625C38F8A39E22EE9BDE70 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9A52478DEFCCAE46F0F50136 /* HistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewModel.swift; sourceTree = "<group>"; };
-		9B64AF7EE295BBF73C74DC54 /* Products.storekit */ = {isa = PBXFileReference; path = Products.storekit; sourceTree = "<group>"; };
+		9B64AF7EE295BBF73C74DC54 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
 		A0553302E054BBF130267A11 /* NotificationPlanBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPlanBuilder.swift; sourceTree = "<group>"; };
 		ABBF5EB307A2B918E9712162 /* NotificationDeepLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationDeepLinkTests.swift; sourceTree = "<group>"; };
 		ABD7675083AAF91936829813 /* PeriodPickerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodPickerViewModel.swift; sourceTree = "<group>"; };
@@ -268,6 +271,7 @@
 		F1515EED52C2E904E5C2F3B8 /* NavigationHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationHeaderView.swift; sourceTree = "<group>"; };
 		F18E87A431F363088829F603 /* PushDeepLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushDeepLinkTests.swift; sourceTree = "<group>"; };
 		F40BEBB24DA70264EB106FD4 /* PatientNoBillingUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientNoBillingUITests.swift; sourceTree = "<group>"; };
+		F6D649570D09B4BB9E585777 /* PatientTodayNextSlotSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientTodayNextSlotSelector.swift; sourceTree = "<group>"; };
 		F416FC7961AEE499FB0C7826 /* EmptyDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyDTO.swift; sourceTree = "<group>"; };
 		F65CEF9BC60A7F91DB1ACCE1 /* PatientReadOnlyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientReadOnlyView.swift; sourceTree = "<group>"; };
 		F6808926C907021D832EC1D0 /* CaregiverPushSettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverPushSettingsViewModel.swift; sourceTree = "<group>"; };
@@ -373,6 +377,7 @@
 			children = (
 				4F1B1CE3A0835AA4C3DF9464 /* CaregiverTodayView.swift */,
 				C9B95C565516F1191D20C297 /* CaregiverTodayViewModel.swift */,
+				F6D649570D09B4BB9E585777 /* PatientTodayNextSlotSelector.swift */,
 				4BFCE7D6BD887889F4A80FEA /* PatientTodayView.swift */,
 				BC838D43F2A137E7A3B47E88 /* PatientTodayViewModel.swift */,
 				7BDEB4E8F09261CF7B8B25FC /* TodaySlotHighlight.swift */,
@@ -468,6 +473,7 @@
 				59803E8F1DB8D7C07E6285E5 /* PrnOverlayUiTests.swift */,
 				127ECD7701D8FD4F35F99077 /* PrnSectionViewModelTests.swift */,
 				8FFB09A2847D3F7FDCFFCEC8 /* PrnTodayUiTests.swift */,
+				A60F6482B5444E9782F60630 /* PatientTodayNextSlotSelectorTests.swift */,
 			);
 			path = Today;
 			sourceTree = "<group>";
@@ -772,7 +778,6 @@
 			packageReferences = (
 				5C9FFD96061CF9A120447533 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -862,6 +867,7 @@
 				75E9F2A01627779530212DA5 /* PatientReadOnlyView.swift in Sources */,
 				75545D2CC4BE7F58C85D198D /* PatientRevokeView.swift in Sources */,
 				A428B5E925F219C96731E370 /* PatientTodayView.swift in Sources */,
+				A813F48B61CC49148F70D81F /* PatientTodayNextSlotSelector.swift in Sources */,
 				9240F934ABC46934E2A976A4 /* PatientTodayViewModel.swift in Sources */,
 				6FA4E4F3D21715CF71391418 /* PaywallView.swift in Sources */,
 				A368DDDB83925DDFFFE53CC9 /* PaywallViewModel.swift in Sources */,
@@ -920,6 +926,7 @@
 				0C743631749D3703ECF117C7 /* PrnOverlayUiTests.swift in Sources */,
 				D8ECB33F09117F9E93897261 /* PrnSectionViewModelTests.swift in Sources */,
 				ECE09FE0AC719A77B2491C8C /* PrnTodayUiTests.swift in Sources */,
+				945B53372B8423B78F9FBA3C /* PatientTodayNextSlotSelectorTests.swift in Sources */,
 				DDE2DB568009CE9C1CD4B7CB /* PushDeepLinkTests.swift in Sources */,
 				79086DA5E28FA9AC4F1444B5 /* RangeValidationTests.swift in Sources */,
 				F6C825BED0D7EEB2CE3CCF28 /* ReminderSchedulingTests.swift in Sources */,
@@ -1002,15 +1009,17 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QSZR732YXD;
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.example.med-manager-app";
+				PRODUCT_BUNDLE_IDENTIFIER = com.afterlifearchive.medmanager;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -1117,15 +1126,17 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QSZR732YXD;
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.example.med-manager-app";
+				PRODUCT_BUNDLE_IDENTIFIER = com.afterlifearchive.medmanager;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

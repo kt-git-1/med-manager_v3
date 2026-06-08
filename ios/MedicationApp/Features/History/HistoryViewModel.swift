@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 @MainActor
 final class HistoryViewModel: ObservableObject {
@@ -9,6 +10,7 @@ final class HistoryViewModel: ObservableObject {
     @Published var isUpdating = false
     @Published var monthErrorMessage: String?
     @Published var dayErrorMessage: String?
+    @Published var toastMessage: String?
     @Published var retentionLocked = false
     @Published var retentionCutoffDate: String?
     @Published var retentionDays: Int?
@@ -31,11 +33,16 @@ final class HistoryViewModel: ObservableObject {
     func loadMonth(year: Int, month: Int) {
         guard !isLoadingMonth else { return }
         monthErrorMessage = nil
-        startRequest()
+        let shouldShowUpdatingOverlay = self.month != nil
+        if shouldShowUpdatingOverlay {
+            startRequest()
+        }
         isLoadingMonth = true
         Task {
             defer {
-                endRequest()
+                if shouldShowUpdatingOverlay {
+                    endRequest()
+                }
                 isLoadingMonth = false
             }
             do {
@@ -74,11 +81,16 @@ final class HistoryViewModel: ObservableObject {
     func loadDay(date: String) {
         guard !isLoadingDay else { return }
         dayErrorMessage = nil
-        startRequest()
+        let shouldShowUpdatingOverlay = self.day != nil
+        if shouldShowUpdatingOverlay {
+            startRequest()
+        }
         isLoadingDay = true
         Task {
             defer {
-                endRequest()
+                if shouldShowUpdatingOverlay {
+                    endRequest()
+                }
                 isLoadingDay = false
             }
             do {
@@ -114,6 +126,34 @@ final class HistoryViewModel: ObservableObject {
         }
     }
 
+    func recordMissedCaregiverDose(
+        _ dose: HistoryDayItemDTO,
+        date: String,
+        year: Int,
+        month: Int
+    ) {
+        guard sessionStore.mode == .caregiver, dose.effectiveStatus == .missed else { return }
+        startRequest()
+        Task {
+            defer {
+                endRequest()
+            }
+            do {
+                _ = try await apiClient.createCaregiverDoseRecord(
+                    input: DoseRecordCreateRequestDTO(
+                        medicationId: dose.medicationId,
+                        scheduledAt: dose.scheduledAt
+                    )
+                )
+                showToast(NSLocalizedString("history.day.backfill.recorded", comment: "Backfill recorded"))
+                loadMonth(year: year, month: month)
+                loadDay(date: date)
+            } catch {
+                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+            }
+        }
+    }
+
     private func startRequest() {
         activeRequests += 1
         isUpdating = activeRequests > 0
@@ -122,5 +162,17 @@ final class HistoryViewModel: ObservableObject {
     private func endRequest() {
         activeRequests = max(0, activeRequests - 1)
         isUpdating = activeRequests > 0
+    }
+
+    private func showToast(_ message: String) {
+        withAnimation {
+            toastMessage = message
+        }
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            await MainActor.run {
+                self?.toastMessage = nil
+            }
+        }
     }
 }

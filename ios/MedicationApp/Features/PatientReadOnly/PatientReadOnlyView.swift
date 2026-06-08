@@ -144,34 +144,18 @@ struct PatientSettingsView: View {
                         .onChange(of: preferencesStore.masterEnabled) { _, enabled in
                             Task { await handleMasterToggle(enabled) }
                         }
-
-                        largeToggle(
-                            title: NSLocalizedString("patient.settings.notifications.rereminder", comment: "Rereminder"),
-                            subtitle: NSLocalizedString("patient.settings.notifications.rereminder.note", comment: "Rereminder note"),
-                            systemImage: "alarm.fill",
-                            isOn: $preferencesStore.rereminderEnabled
-                        )
-                        .disabled(!preferencesStore.masterEnabled)
-                        .opacity(preferencesStore.masterEnabled ? 1 : 0.55)
-                        .onChange(of: preferencesStore.rereminderEnabled) { _, _ in
-                            Task { await rescheduleIfNeeded() }
-                        }
                     }
                 }
                 .disabled(notificationsDisabled)
 
                 PatientCard {
-                    VStack(alignment: .leading, spacing: 14) {
-                        settingsSectionTitle(
-                            NSLocalizedString("patient.settings.notifications.slots.title", comment: "Slots title"),
-                            systemImage: "clock.fill",
-                            color: PatientUI.blue
-                        )
-                        slotToggleGrid
-                    }
+                    settingsInfoRow(
+                        title: NSLocalizedString("patient.settings.linked.title", comment: "Linked title"),
+                        subtitle: NSLocalizedString("patient.settings.linked.note", comment: "Linked note"),
+                        systemImage: "person.2.fill",
+                        color: PatientUI.teal
+                    )
                 }
-                .disabled(!preferencesStore.masterEnabled || notificationsDisabled)
-                .opacity(preferencesStore.masterEnabled && !notificationsDisabled ? 1 : 0.55)
 
                 if notificationsDisabled {
                     PatientCard(accent: PatientUI.red) {
@@ -243,49 +227,6 @@ struct PatientSettingsView: View {
         .accessibilityIdentifier("PatientSettingsView")
     }
 
-    private var slotToggleGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-            largeSlotToggle(title: NSLocalizedString("patient.settings.notifications.slot.morning", comment: "Morning"), slot: .morning, systemImage: "sunrise.fill", color: PatientUI.orange)
-            largeSlotToggle(title: NSLocalizedString("patient.settings.notifications.slot.noon", comment: "Noon"), slot: .noon, systemImage: "sun.max.fill", color: PatientUI.blue)
-            largeSlotToggle(title: NSLocalizedString("patient.settings.notifications.slot.evening", comment: "Evening"), slot: .evening, systemImage: "moon.fill", color: PatientUI.teal)
-            largeSlotToggle(title: NSLocalizedString("patient.settings.notifications.slot.bedtime", comment: "Bedtime"), slot: .bedtime, systemImage: "bed.double.fill", color: PatientUI.indigo)
-        }
-    }
-
-    private func toggleRow(title: String, slot: NotificationSlot) -> some View {
-        Toggle(title, isOn: Binding(
-            get: { preferencesStore.isSlotEnabled(slot) },
-            set: { newValue in
-                preferencesStore.setSlotEnabled(slot, enabled: newValue)
-                Task { await rescheduleIfNeeded() }
-            }
-        ))
-    }
-
-    private func largeSlotToggle(title: String, slot: NotificationSlot, systemImage: String, color: Color) -> some View {
-        Toggle(isOn: Binding(
-            get: { preferencesStore.isSlotEnabled(slot) },
-            set: { newValue in
-                preferencesStore.setSlotEnabled(slot, enabled: newValue)
-                Task { await rescheduleIfNeeded() }
-            }
-        )) {
-            VStack(alignment: .leading, spacing: 10) {
-                Image(systemName: systemImage)
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(color)
-                Text(title)
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(.primary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(minHeight: 74)
-        }
-        .toggleStyle(.switch)
-        .padding(14)
-        .background(color.opacity(0.09), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
-
     private func largeToggle(
         title: String,
         subtitle: String,
@@ -321,6 +262,30 @@ struct PatientSettingsView: View {
             Text(title)
                 .font(.title3.weight(.bold))
                 .foregroundStyle(.primary)
+        }
+    }
+
+    private func settingsInfoRow(title: String, subtitle: String, systemImage: String, color: Color) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: systemImage)
+                .font(.title2.weight(.bold))
+                .foregroundStyle(color)
+                .frame(width: 48, height: 48)
+                .background(color.opacity(0.12), in: Circle())
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.primary)
+                Text(subtitle)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "checkmark.circle.fill")
+                .font(.title2.weight(.bold))
+                .foregroundStyle(PatientUI.teal)
+                .accessibilityHidden(true)
         }
     }
 

@@ -96,8 +96,7 @@ struct CaregiverHomeView: View {
     // MARK: - Data Loading
 
     private func loadCurrentPatientName() {
-        guard sessionStore.mode == .caregiver,
-              let patientId = sessionStore.currentPatientId else {
+        guard sessionStore.mode == .caregiver else {
             currentPatientName = nil
             return
         }
@@ -105,7 +104,15 @@ struct CaregiverHomeView: View {
             do {
                 let apiClient = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: sessionStore)
                 let patients = try await apiClient.listPatients()
-                currentPatientName = patients.first { $0.id == patientId }?.displayName
+                let selectedPatient = patients.first { $0.id == sessionStore.currentPatientId }
+                if let selectedPatient {
+                    currentPatientName = selectedPatient.displayName
+                } else if patients.count == 1, let onlyPatient = patients.first {
+                    sessionStore.setCurrentPatientId(onlyPatient.id)
+                    currentPatientName = onlyPatient.displayName
+                } else {
+                    currentPatientName = nil
+                }
             } catch {
                 currentPatientName = nil
             }
@@ -382,9 +389,11 @@ final class CaregiverMedicationViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let apiClient: APIClient
+    private let sessionStore: SessionStore
 
-    init(apiClient: APIClient) {
+    init(apiClient: APIClient, sessionStore: SessionStore) {
         self.apiClient = apiClient
+        self.sessionStore = sessionStore
     }
 
     func loadPatients() {
@@ -395,6 +404,9 @@ final class CaregiverMedicationViewModel: ObservableObject {
             defer { isLoading = false }
             do {
                 patients = try await apiClient.listPatients()
+                if sessionStore.currentPatientId == nil, patients.count == 1, let onlyPatient = patients.first {
+                    sessionStore.setCurrentPatientId(onlyPatient.id)
+                }
             } catch {
                 errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
             }
@@ -413,7 +425,8 @@ struct CaregiverMedicationView: View {
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
             wrappedValue: CaregiverMedicationViewModel(
-                apiClient: APIClient(baseURL: baseURL, sessionStore: sessionStore)
+                apiClient: APIClient(baseURL: baseURL, sessionStore: sessionStore),
+                sessionStore: sessionStore
             )
         )
     }
@@ -423,6 +436,7 @@ struct CaregiverMedicationView: View {
             Group {
                 if viewModel.isLoading {
                     LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 } else if let errorMessage = viewModel.errorMessage {
                     ErrorStateView(message: errorMessage)
                 } else if viewModel.patients.isEmpty {
@@ -488,7 +502,7 @@ struct CaregiverMedicationView: View {
                     )
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: viewModel.isLoading ? .center : .top)
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
@@ -522,7 +536,8 @@ struct CaregiverTodayTabView: View {
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
             wrappedValue: CaregiverMedicationViewModel(
-                apiClient: APIClient(baseURL: baseURL, sessionStore: sessionStore)
+                apiClient: APIClient(baseURL: baseURL, sessionStore: sessionStore),
+                sessionStore: sessionStore
             )
         )
     }
@@ -532,6 +547,7 @@ struct CaregiverTodayTabView: View {
             Group {
                 if viewModel.isLoading {
                     LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 } else if viewModel.patients.isEmpty {
                     VStack(spacing: 16) {
                         Image(systemName: "person.crop.circle.badge.plus")
@@ -596,7 +612,7 @@ struct CaregiverTodayTabView: View {
                     )
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: viewModel.isLoading ? .center : .top)
             .background(CaregiverUI.background.ignoresSafeArea())
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)

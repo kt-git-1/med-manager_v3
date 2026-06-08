@@ -68,7 +68,7 @@ final class PatientTodayViewModel: ObservableObject {
     func load(showLoading: Bool) {
         guard !isLoading else { return }
         isLoading = showLoading
-        isUpdating = true
+        isUpdating = !showLoading
         errorMessage = nil
         Task { @MainActor in
             defer {

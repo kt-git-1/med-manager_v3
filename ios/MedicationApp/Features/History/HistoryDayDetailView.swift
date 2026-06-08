@@ -27,6 +27,9 @@ struct HistoryDayDetailView: View {
     let selectedDate: Date?
     var highlightedSlot: NotificationSlot?
     var style: HistoryDayDetailStyle = .caregiver
+    var onRecordMissedDose: (HistoryDayItemDTO) -> Void = { _ in }
+    @State private var doseToBackfill: HistoryDayItemDTO?
+    @State private var showingBackfillConfirmation = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -57,11 +60,18 @@ struct HistoryDayDetailView: View {
                         case .scheduled(let dose):
                             HistoryDayRow(
                                 timeText: HistoryDayDetailView.timeFormatter.string(from: dose.scheduledAt),
+                                slotText: slotTitle(for: dose.slot),
+                                slotColor: slotColor(for: dose.slot),
                                 name: dose.medicationName,
                                 dosage: dose.dosageText,
                                 status: dose.effectiveStatus,
                                 isHighlighted: isSlotHighlighted(dose.slot),
-                                style: style
+                                style: style,
+                                canBackfill: style == .caregiver && dose.effectiveStatus == .missed,
+                                onBackfill: {
+                                    doseToBackfill = dose
+                                    showingBackfillConfirmation = true
+                                }
                             )
                         case .prn(let record):
                             HistoryDayPrnRow(
@@ -76,6 +86,26 @@ struct HistoryDayDetailView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .alert(
+            NSLocalizedString("history.day.backfill.confirm.title", comment: "Backfill confirm title"),
+            isPresented: $showingBackfillConfirmation,
+            presenting: doseToBackfill
+        ) { dose in
+            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {
+                doseToBackfill = nil
+            }
+            Button(NSLocalizedString("history.day.backfill.confirm.action", comment: "Backfill confirm action")) {
+                onRecordMissedDose(dose)
+                doseToBackfill = nil
+            }
+        } message: { dose in
+            Text(
+                String(
+                    format: NSLocalizedString("history.day.backfill.confirm.message", comment: "Backfill confirm message"),
+                    dose.medicationName
+                )
+            )
+        }
         .accessibilityIdentifier("HistoryDayDetailView")
     }
 
@@ -117,6 +147,32 @@ struct HistoryDayDetailView: View {
         guard let highlightedSlot else { return false }
         return slot.rawValue == highlightedSlot.rawValue
     }
+
+    private func slotTitle(for slot: HistorySlotDTO) -> String {
+        switch slot {
+        case .morning:
+            return NSLocalizedString("history.slot.morning", comment: "Morning slot")
+        case .noon:
+            return NSLocalizedString("history.slot.noon", comment: "Noon slot")
+        case .evening:
+            return NSLocalizedString("history.slot.evening", comment: "Evening slot")
+        case .bedtime:
+            return NSLocalizedString("history.slot.bedtime", comment: "Bedtime slot")
+        }
+    }
+
+    private func slotColor(for slot: HistorySlotDTO) -> Color {
+        switch slot {
+        case .morning:
+            return AppConstants.slotColor(for: .morning)
+        case .noon:
+            return AppConstants.slotColor(for: .noon)
+        case .evening:
+            return AppConstants.slotColor(for: .evening)
+        case .bedtime:
+            return AppConstants.slotColor(for: .bedtime)
+        }
+    }
 }
 
 enum HistoryDayDetailStyle {
@@ -126,28 +182,56 @@ enum HistoryDayDetailStyle {
 
 private struct HistoryDayRow: View {
     let timeText: String
+    let slotText: String
+    let slotColor: Color
     let name: String
     let dosage: String
     let status: HistoryDoseStatusDTO
     var isHighlighted: Bool = false
     var style: HistoryDayDetailStyle = .caregiver
+    var canBackfill = false
+    var onBackfill: () -> Void = {}
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(timeText)
-                    .font(style == .patient ? .title3.weight(.bold) : .headline)
-                Text(medicationDisplayName)
-                    .font(style == .patient ? .title3.weight(.bold) : .title3.weight(.semibold))
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Text(timeText)
+                            .font(style == .patient ? .title3.weight(.bold) : .headline)
+                        Text(slotText)
+                            .font(.caption.weight(.bold))
+                            .padding(.vertical, 3)
+                            .padding(.horizontal, 8)
+                            .background(slotColor.opacity(0.16))
+                            .foregroundStyle(slotColor)
+                            .clipShape(Capsule())
+                    }
+                    Text(medicationDisplayName)
+                        .font(style == .patient ? .title3.weight(.bold) : .title3.weight(.semibold))
+                }
+                Spacer()
+                Text(statusText)
+                    .font(.caption.weight(.semibold))
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .background(statusBackground)
+                    .foregroundStyle(statusForeground)
+                    .clipShape(Capsule())
             }
-            Spacer()
-            Text(statusText)
-                .font(.caption.weight(.semibold))
-                .padding(.vertical, 4)
-                .padding(.horizontal, 8)
-                .background(statusBackground)
-                .foregroundStyle(statusForeground)
-                .clipShape(Capsule())
+
+            if canBackfill {
+                Button(action: onBackfill) {
+                    Label(NSLocalizedString("history.day.backfill.button", comment: "Backfill button"), systemImage: "checkmark.circle.fill")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 46)
+                        .background(CaregiverUI.teal, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(NSLocalizedString("history.day.backfill.button", comment: "Backfill button"))
+            }
         }
         .padding(style == .patient ? 16 : 14)
         .background(rowBackground)

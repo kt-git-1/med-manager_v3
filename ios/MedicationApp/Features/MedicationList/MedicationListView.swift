@@ -53,6 +53,7 @@ private enum MedicationListFilter: String, CaseIterable, Identifiable {
 final class MedicationListViewModel: ObservableObject {
     @Published var items: [MedicationListItem] = []
     @Published var isLoading = false
+    @Published var isUpdating = false
     @Published var errorMessage: String?
 
     private let apiClient: APIClient
@@ -76,12 +77,16 @@ final class MedicationListViewModel: ObservableObject {
         )
     }
 
-    func load() {
-        guard !isLoading else { return }
-        isLoading = true
+    func load(showLoading: Bool = true) {
+        guard !isLoading, !isUpdating else { return }
+        isLoading = showLoading
+        isUpdating = !showLoading
         errorMessage = nil
         Task {
-            defer { isLoading = false }
+            defer {
+                isLoading = false
+                isUpdating = false
+            }
             do {
                 let patientId: String?
                 if sessionStore.mode == .caregiver {
@@ -221,8 +226,7 @@ struct MedicationListView: View {
         ZStack {
             Group {
                 if viewModel.isLoading {
-                    Color.clear
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    centeredLoadingState
                 } else if let errorMessage = viewModel.errorMessage {
                     ErrorStateView(message: errorMessage)
                 } else if viewModel.items.isEmpty {
@@ -349,7 +353,7 @@ struct MedicationListView: View {
                     .background(CaregiverUI.background)
                     .safeAreaPadding(.bottom, 120)
                     .refreshable {
-                        viewModel.load()
+                        viewModel.load(showLoading: false)
                     }
                     let listWithInsets = headerView == nil ? AnyView(baseList.safeAreaPadding(.top)) : AnyView(baseList)
                     listWithInsets
@@ -368,15 +372,15 @@ struct MedicationListView: View {
                 }
             }
 
-            if viewModel.isLoading {
+            if viewModel.isUpdating {
                 SchedulingRefreshOverlay()
             }
         }
         .onAppear {
-            viewModel.load()
+            viewModel.load(showLoading: viewModel.items.isEmpty)
         }
         .onReceive(NotificationCenter.default.publisher(for: .presetTimesUpdated)) { _ in
-            viewModel.load()
+            viewModel.load(showLoading: viewModel.items.isEmpty)
         }
         .sheet(isPresented: $showingCreate) {
             MedicationFormView(sessionStore: sessionStore, onSuccess: showToast)
@@ -388,16 +392,24 @@ struct MedicationListView: View {
         }
         .onChange(of: showingCreate) { _, isPresented in
             if !isPresented {
-                viewModel.load()
+                viewModel.load(showLoading: viewModel.items.isEmpty)
             }
         }
         .onChange(of: selectedMedication?.id) { _, medicationId in
             if medicationId == nil {
-                viewModel.load()
+                viewModel.load(showLoading: viewModel.items.isEmpty)
             }
         }
         .sensoryFeedback(.success, trigger: toastMessage)
         .accessibilityIdentifier("MedicationListView")
+    }
+
+    private var centeredLoadingState: some View {
+        GeometryReader { proxy in
+            LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+                .frame(width: proxy.size.width, height: proxy.size.height, alignment: .center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func showToast(_ message: String) {

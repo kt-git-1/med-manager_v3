@@ -3,6 +3,7 @@ import SwiftUI
 @MainActor
 final class InventoryViewModel: ObservableObject {
     @Published var items: [InventoryItemDTO] = []
+    @Published var isLoading = false
     @Published var isUpdating = false
     @Published var errorMessage: String?
 
@@ -14,17 +15,21 @@ final class InventoryViewModel: ObservableObject {
         self.sessionStore = sessionStore
     }
 
-    func load() {
-        guard !isUpdating else { return }
+    func load(showLoading: Bool = true) {
+        guard !isLoading, !isUpdating else { return }
         guard sessionStore.currentPatientId != nil else {
             items = []
             errorMessage = nil
             return
         }
-        isUpdating = true
+        isLoading = showLoading
+        isUpdating = !showLoading
         errorMessage = nil
         Task {
-            defer { isUpdating = false }
+            defer {
+                isLoading = false
+                isUpdating = false
+            }
             do {
                 items = try await apiClient.fetchInventory()
             } catch {
@@ -121,6 +126,9 @@ struct InventoryListView: View {
                 Group {
                     if sessionStore.currentPatientId == nil {
                         InventoryEmptyStateView(onOpenPatients: onOpenPatients)
+                    } else if viewModel.isLoading {
+                        LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else if let errorMessage = viewModel.errorMessage {
                         errorSection(message: errorMessage)
                     } else if viewModel.items.isEmpty {
@@ -139,16 +147,16 @@ struct InventoryListView: View {
             overlay: viewModel.isUpdating ? AnyView(updatingOverlay) : nil
         )
         .onAppear {
-            viewModel.load()
+            viewModel.load(showLoading: viewModel.items.isEmpty)
         }
         .onChange(of: sessionStore.currentPatientId) { _, _ in
             viewModel.load()
         }
         .onReceive(NotificationCenter.default.publisher(for: .medicationUpdated)) { _ in
-            viewModel.load()
+            viewModel.load(showLoading: viewModel.items.isEmpty)
         }
         .sheet(item: $selectedItem, onDismiss: {
-            viewModel.load()
+            viewModel.load(showLoading: false)
         }) { item in
             InventoryDetailView(
                 item: item,

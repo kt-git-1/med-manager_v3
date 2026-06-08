@@ -142,7 +142,7 @@ struct CaregiverTodayView: View {
                     Spacer(minLength: 0)
                 }
             } else if viewModel.isLoading {
-                LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+                centeredLoadingState
             } else if let errorMessage = viewModel.errorMessage {
                 ErrorStateView(message: errorMessage)
             } else if viewModel.items.isEmpty {
@@ -191,6 +191,14 @@ struct CaregiverTodayView: View {
                 }
             }
         }
+    }
+
+    private var centeredLoadingState: some View {
+        GeometryReader { proxy in
+            LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+                .frame(width: proxy.size.width, height: proxy.size.height, alignment: .center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var todayHeader: some View {

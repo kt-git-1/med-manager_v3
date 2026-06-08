@@ -5,106 +5,100 @@ struct CaregiverAuthChoiceView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                Spacer()
-
-                // Header
-                VStack(spacing: 16) {
-                    Image(systemName: "person.badge.shield.checkmark.fill")
-                        .font(.system(size: 56))
-                        .foregroundStyle(.tint)
-                        .symbolRenderingMode(.hierarchical)
-
-                    VStack(spacing: 8) {
-                        Text(NSLocalizedString("caregiver.auth.title", comment: "Caregiver auth title"))
-                            .font(.largeTitle.weight(.bold))
-                        Text(NSLocalizedString("caregiver.auth.subtitle", comment: "Auth subtitle"))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                }
-
-                Spacer()
-                    .frame(maxHeight: 48)
-
-                // Auth options
-                VStack(spacing: 14) {
-                    NavigationLink {
-                        CaregiverLoginView()
-                    } label: {
-                        authCard(
-                            icon: "arrow.right.circle.fill",
-                            title: NSLocalizedString("caregiver.auth.login", comment: "Login choice"),
-                            subtitle: NSLocalizedString("caregiver.auth.login.subtitle", comment: "Login subtitle"),
-                            filled: true
+            CaregiverScreenBackground {
+                ScrollView {
+                    VStack(spacing: 22) {
+                        CaregiverPatientHeader(
+                            title: NSLocalizedString("caregiver.auth.title", comment: "Caregiver auth title"),
+                            patientName: nil,
+                            systemImage: "person.badge.shield.checkmark.fill",
+                            subtitle: NSLocalizedString("caregiver.auth.subtitle", comment: "Auth subtitle")
                         )
-                    }
-                    .buttonStyle(.plain)
+                        .padding(.top, 48)
 
-                    NavigationLink {
-                        CaregiverSignupView()
-                    } label: {
-                        authCard(
-                            icon: "person.badge.plus.fill",
-                            title: NSLocalizedString("caregiver.auth.signup", comment: "Signup choice"),
-                            subtitle: NSLocalizedString("caregiver.auth.signup.subtitle", comment: "Signup subtitle"),
-                            filled: false
-                        )
+                        VStack(spacing: 14) {
+                            NavigationLink {
+                                CaregiverLoginView()
+                            } label: {
+                                authCard(
+                                    icon: "arrow.right.circle.fill",
+                                    title: NSLocalizedString("caregiver.auth.login", comment: "Login choice"),
+                                    subtitle: NSLocalizedString("caregiver.auth.login.subtitle", comment: "Login subtitle"),
+                                    tint: CaregiverUI.teal
+                                )
+                            }
+                            .buttonStyle(.plain)
+
+                            NavigationLink {
+                                CaregiverSignupView()
+                            } label: {
+                                authCard(
+                                    icon: "person.badge.plus.fill",
+                                    title: NSLocalizedString("caregiver.auth.signup", comment: "Signup choice"),
+                                    subtitle: NSLocalizedString("caregiver.auth.signup.subtitle", comment: "Signup subtitle"),
+                                    tint: CaregiverUI.orange
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        Button {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                sessionStore.resetMode()
+                            }
+                        } label: {
+                            Label(NSLocalizedString("caregiver.auth.back", comment: "Back to mode select"), systemImage: "chevron.left")
+                                .font(.headline.weight(.semibold))
+                                .foregroundStyle(CaregiverUI.teal)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .background(Color.white.opacity(0.75), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .stroke(CaregiverUI.teal.opacity(0.18), lineWidth: 1)
+                                }
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 32)
                 }
-                .padding(.horizontal, 24)
-
-                Spacer()
-
-                // Back to mode select
-                Button {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        sessionStore.resetMode()
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "chevron.left")
-                            .font(.subheadline.weight(.medium))
-                        Text(NSLocalizedString("caregiver.auth.back", comment: "Back to mode select"))
-                            .font(.subheadline)
-                    }
-                    .foregroundStyle(.secondary)
-                }
-                .padding(.bottom, 24)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .accessibilityIdentifier("CaregiverAuthChoiceView")
         }
     }
 
-    private func authCard(icon: String, title: String, subtitle: String, filled: Bool) -> some View {
-        HStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundStyle(filled ? Color.white : Color.accentColor)
-                .frame(width: 48, height: 48)
-                .background(filled ? Color.accentColor : Color.accentColor.opacity(0.12))
-                .clipShape(Circle())
+    private func authCard(icon: String, title: String, subtitle: String, tint: Color) -> some View {
+        CaregiverCard(accent: tint) {
+            HStack(spacing: 16) {
+                Image(systemName: icon)
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(tint)
+                    .frame(width: 54, height: 54)
+                    .background(tint.opacity(0.12), in: Circle())
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                Text(subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.82)
+                    Text(subtitle)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.78)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(tint)
+                    .frame(width: 34, height: 34)
+                    .background(tint.opacity(0.10), in: Circle())
             }
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.tertiary)
         }
-        .padding(24)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
     }
 }

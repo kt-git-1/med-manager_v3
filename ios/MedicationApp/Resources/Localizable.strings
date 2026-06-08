@@ -180,6 +180,8 @@
 "patient.settings.notifications.slot.noon" = "昼";
 "patient.settings.notifications.slot.evening" = "夜";
 "patient.settings.notifications.slot.bedtime" = "眠前";
+"patient.settings.linked.title" = "連携中";
+"patient.settings.linked.note" = "家族と服薬記録を共有しています";
 "patient.settings.mode.note" = "本人・家族の利用モードを選び直します";
 "patient.settings.notifications.detail.title" = "詳細設定";
 "patient.settings.notifications.detail.item" = "時間プリセット設定";
@@ -213,6 +215,11 @@
 "history.status.pending" = "未記録";
 "history.status.taken" = "記録済み";
 "history.status.missed" = "飲み忘れ";
+"history.day.backfill.button" = "服用済みにする";
+"history.day.backfill.confirm.title" = "後から記録しますか？";
+"history.day.backfill.confirm.message" = "%@を服用済みとして記録します。";
+"history.day.backfill.confirm.action" = "記録する";
+"history.day.backfill.recorded" = "服用済みとして記録しました";
 "history.month.prn.count" = "頓服 %d回";
 "patient.today.empty.title" = "予定がありません";
 "patient.today.empty.message" = "今日の服用予定はありません";

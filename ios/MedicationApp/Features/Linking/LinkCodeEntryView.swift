@@ -14,95 +14,108 @@ struct LinkCodeEntryView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
+        ZStack {
+            PatientScreenBackground()
 
-            // Header
-            VStack(spacing: 16) {
-                Image(systemName: "link.circle.fill")
-                    .font(.system(size: 56))
-                    .foregroundStyle(.tint)
-                    .symbolRenderingMode(.hierarchical)
+            ScrollView {
+                VStack(spacing: 22) {
+                    PatientHeader(
+                        title: NSLocalizedString("link.code.title", comment: "Link code title"),
+                        subtitle: NSLocalizedString("link.code.subtitle", comment: "Link code subtitle"),
+                        systemImage: "link"
+                    )
+                    .padding(.top, 48)
 
-                VStack(spacing: 8) {
-                    Text(NSLocalizedString("link.code.title", comment: "Link code title"))
-                        .font(.largeTitle.weight(.bold))
-                    Text(NSLocalizedString("link.code.subtitle", comment: "Link code subtitle"))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-            }
+                    PatientCard(accent: PatientUI.teal) {
+                        VStack(alignment: .leading, spacing: 18) {
+                            Text(NSLocalizedString("link.code.placeholder", comment: "Link code placeholder"))
+                                .font(.headline.weight(.bold))
+                                .foregroundStyle(.primary)
 
-            Spacer()
-                .frame(maxHeight: 40)
+                            HStack(spacing: 12) {
+                                Image(systemName: "number")
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundStyle(PatientUI.teal)
+                                    .frame(width: 24)
+                                TextField(NSLocalizedString("link.code.placeholder", comment: "Link code placeholder"), text: $code)
+                                    .keyboardType(.numberPad)
+                                    .font(.title2.monospacedDigit().weight(.semibold))
+                                    .foregroundStyle(.primary)
+                                    .accessibilityLabel(NSLocalizedString("a11y.linkCode", comment: "Link code"))
+                            }
+                            .padding(16)
+                            .background(PatientUI.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(PatientUI.teal.opacity(0.18), lineWidth: 1)
+                            }
 
-            // Code input card
-            VStack(spacing: 20) {
-                HStack(spacing: 12) {
-                    Image(systemName: "number")
-                        .foregroundStyle(.secondary)
-                        .frame(width: 20)
-                    TextField(NSLocalizedString("link.code.placeholder", comment: "Link code placeholder"), text: $code)
-                        .keyboardType(.numberPad)
-                        .font(.title3.monospacedDigit())
-                        .accessibilityLabel(NSLocalizedString("a11y.linkCode", comment: "Link code"))
-                }
-                .padding(14)
-                .background(.fill.quaternary)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            if let errorMessage {
+                                inlineError(message: errorMessage)
+                            }
 
-                if let errorMessage {
-                    ErrorStateView(message: errorMessage)
-                }
-
-                // Submit button
-                Button {
-                    Task { await link() }
-                } label: {
-                    Group {
-                        if isLoading {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Text(NSLocalizedString("link.code.button", comment: "Send link code"))
+                            Button {
+                                Task { await link() }
+                            } label: {
+                                Group {
+                                    if isLoading {
+                                        ProgressView()
+                                            .tint(.white)
+                                    } else {
+                                        Label(NSLocalizedString("link.code.button", comment: "Send link code"), systemImage: "checkmark.circle.fill")
+                                    }
+                                }
+                                .font(.title3.weight(.bold))
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 58)
+                                .background(PatientUI.teal, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(isLoading || code.isEmpty)
+                            .opacity(code.isEmpty ? 0.55 : 1)
+                            .accessibilityLabel(NSLocalizedString("a11y.linkCode.submit", comment: "Submit link code"))
                         }
                     }
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
-                }
-                .disabled(isLoading || code.isEmpty)
-                .opacity(code.isEmpty ? 0.5 : 1)
-                .accessibilityLabel(NSLocalizedString("a11y.linkCode.submit", comment: "Submit link code"))
-            }
-            .padding(28)
-            .frame(maxWidth: .infinity)
-            .glassEffect(.regular, in: .rect(cornerRadius: 24))
-            .padding(.horizontal, 24)
 
-            Spacer()
-
-            // Back to mode select
-            Button {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                    sessionStore.resetMode()
+                    Button {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            sessionStore.resetMode()
+                        }
+                    } label: {
+                        Label(NSLocalizedString("link.code.back", comment: "Back to mode select"), systemImage: "chevron.left")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(PatientUI.teal)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(Color.white.opacity(0.75), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(PatientUI.teal.opacity(0.18), lineWidth: 1)
+                            }
+                    }
+                    .buttonStyle(.plain)
                 }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.left")
-                        .font(.subheadline.weight(.medium))
-                    Text(NSLocalizedString("link.code.back", comment: "Back to mode select"))
-                        .font(.subheadline)
-                }
-                .foregroundStyle(.secondary)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 32)
             }
-            .padding(.bottom, 24)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier("LinkCodeEntryView")
+    }
+
+    private func inlineError(message: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.headline)
+            Text(message)
+                .font(.subheadline.weight(.semibold))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .foregroundStyle(PatientUI.red)
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(PatientUI.red.opacity(0.10), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     @MainActor
