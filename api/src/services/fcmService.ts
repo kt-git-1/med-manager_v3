@@ -210,6 +210,7 @@ export async function sendFcmMessage(
     const authorizationHeader = `Bearer ${accessToken}`;
     const res = await fetch(url, {
       method: "POST",
+      redirect: "manual",
       headers: {
         Authorization: authorizationHeader,
         "content-type": "application/json"
@@ -236,6 +237,7 @@ export async function sendFcmMessage(
 
     const authDebug = tokenDebugInfo(accessToken);
     const wwwAuthenticate = res.headers.get("www-authenticate");
+    const redirectLocation = res.headers.get("location");
     const tokenInfoDebug = res.status === 401 ? await getTokenInfoDebug(accessToken) : null;
     log(
       "warn",
@@ -246,6 +248,8 @@ export async function sendFcmMessage(
         `accessTokenLength=${authDebug.accessTokenLength}`,
         `accessTokenSha256=${authDebug.accessTokenSha256}`,
         tokenInfoDebug,
+        typeof res.redirected === "boolean" ? `redirected=${res.redirected}` : null,
+        redirectLocation ? `redirectLocation=${redirectLocation.slice(0, 200)}` : null,
         wwwAuthenticate ? `wwwAuthenticate=${wwwAuthenticate.slice(0, 200)}` : null,
         `body=${errorBody.slice(0, 200)}`
       ].filter(Boolean).join(" ")

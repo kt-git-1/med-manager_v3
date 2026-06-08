@@ -82,6 +82,7 @@ describe("sendFcmMessage", () => {
       Authorization: "Bearer oauth-token-1",
       "content-type": "application/json"
     });
+    expect(init.redirect).toBe("manual");
   });
 
   it("logs non-secret auth diagnostics when FCM rejects the send request", async () => {
