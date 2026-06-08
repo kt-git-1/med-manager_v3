@@ -114,7 +114,10 @@ async function getAccessToken(config: FcmConfig): Promise<string> {
   const res = await fetch(TOKEN_URL, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${assertion}`
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion
+    })
   });
 
   if (!res.ok) {
@@ -123,7 +126,12 @@ async function getAccessToken(config: FcmConfig): Promise<string> {
     throw new Error(`FCM OAuth2 token error: ${res.status}`);
   }
 
-  const data = (await res.json()) as { access_token: string };
+  const data = (await res.json()) as { access_token?: unknown };
+  if (typeof data.access_token !== "string" || data.access_token.length === 0) {
+    log("error", "FCM OAuth2 token response missing access_token");
+    throw new Error("FCM OAuth2 token response missing access_token");
+  }
+
   cachedAccessToken = { token: data.access_token, issuedAt: now };
   return data.access_token;
 }
@@ -167,7 +175,7 @@ export async function sendFcmMessage(
     const res = await fetch(url, {
       method: "POST",
       headers: {
-        authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
         "content-type": "application/json"
       },
       body: JSON.stringify({ message })
