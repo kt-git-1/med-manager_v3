@@ -33,29 +33,14 @@ struct MedicationFormView: View {
 
     var body: some View {
         let isCaregiverMissingPatient = sessionStore.mode == .caregiver && sessionStore.currentPatientId == nil
+        let activeAccent = viewModel.isPrn ? CaregiverUI.orange : CaregiverUI.teal
         let weekdayColumns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 7)
         let timeColumns = [
             GridItem(.flexible(), spacing: 12),
             GridItem(.flexible(), spacing: 12)
         ]
         Form {
-            // Header
-            Section {
-                VStack(spacing: 10) {
-                    Image(systemName: viewModel.isEditing ? "pencil.circle.fill" : "pills.circle.fill")
-                        .font(.system(size: 44))
-                        .foregroundStyle(.tint)
-                        .symbolRenderingMode(.hierarchical)
-                    Text(viewModel.isEditing
-                        ? viewModel.name.isEmpty ? NSLocalizedString("medication.form.title.edit", comment: "Edit medication") : viewModel.name
-                        : NSLocalizedString("medication.form.title.add", comment: "Add medication")
-                    )
-                        .font(.title3.weight(.bold))
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .listRowBackground(Color.clear)
-            }
+            formHeroSection(accent: activeAccent)
 
             // Basic info
             Section {
@@ -108,29 +93,11 @@ struct MedicationFormView: View {
                 .accessibilityLabel(NSLocalizedString("a11y.medication.doseCount", comment: "Dose count"))
             } header: {
                 sectionHeader(NSLocalizedString("medication.form.section.basic", comment: "Basic info"), icon: "pill.fill")
+            } footer: {
+                Text(NSLocalizedString("medication.form.help.basic", comment: "Basic section help"))
             }
 
-            // PRN
-            if !viewModel.isEditing {
-                Section {
-                    Toggle(
-                        NSLocalizedString("medication.form.prn.toggle", comment: "PRN toggle"),
-                        isOn: $viewModel.isPrn
-                    )
-                    .accessibilityLabel(NSLocalizedString("a11y.medication.prn", comment: "PRN toggle"))
-                    if viewModel.isPrn {
-                        formRow(icon: "text.alignleft", iconColor: .gray) {
-                            TextField(
-                                NSLocalizedString("medication.form.prn.instructions", comment: "PRN instructions"),
-                                text: $viewModel.prnInstructions
-                            )
-                            .accessibilityLabel(NSLocalizedString("a11y.medication.prnInstructions", comment: "PRN instructions"))
-                        }
-                    }
-                } header: {
-                    sectionHeader(NSLocalizedString("medication.form.section.prn", comment: "PRN section"), icon: "cross.case.fill")
-                }
-            }
+            medicationTypeSection
 
             // Period
             Section {
@@ -156,6 +123,8 @@ struct MedicationFormView: View {
             // Schedule
             if !viewModel.isPrn {
                 Section {
+                    scheduleGuideCard
+
                     Picker(
                         NSLocalizedString("medication.form.schedule.frequency", comment: "Schedule frequency"),
                         selection: $viewModel.scheduleFrequency
@@ -251,6 +220,8 @@ struct MedicationFormView: View {
                     }
                 } header: {
                     sectionHeader(NSLocalizedString("medication.form.section.schedule", comment: "Schedule"), icon: "clock.fill")
+                } footer: {
+                    Text(NSLocalizedString("medication.form.help.schedule", comment: "Schedule help"))
                 }
             }
 
@@ -320,7 +291,7 @@ struct MedicationFormView: View {
             }
         }
         .scrollContentBackground(.hidden)
-        .background(Color(.systemGroupedBackground))
+        .background(CaregiverUI.background)
         .disabled(sessionStore.mode == .patient)
         .accessibilityIdentifier("MedicationFormView")
         .safeAreaInset(edge: .bottom) {
@@ -380,6 +351,204 @@ struct MedicationFormView: View {
                 updatingOverlay
             }
         }
+    }
+
+    // MARK: - Hero
+
+    private func formHeroSection(accent: Color) -> some View {
+        Section {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(alignment: .center, spacing: 14) {
+                    Image(systemName: viewModel.isEditing ? "pencil.circle.fill" : "pills.circle.fill")
+                        .font(.system(size: 42))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(accent)
+                        .frame(width: 54, height: 54)
+                        .background(accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(viewModel.isEditing
+                            ? viewModel.name.isEmpty ? NSLocalizedString("medication.form.title.edit", comment: "Edit medication") : viewModel.name
+                            : NSLocalizedString("medication.form.title.add", comment: "Add medication")
+                        )
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.82)
+                        Text(viewModel.isPrn
+                             ? NSLocalizedString("medication.form.hero.prn", comment: "PRN hero subtitle")
+                             : NSLocalizedString("medication.form.hero.scheduled", comment: "Scheduled hero subtitle"))
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 0)
+                }
+
+                HStack(spacing: 8) {
+                    guidePill(
+                        text: NSLocalizedString("medication.form.progress.name", comment: "Name progress"),
+                        isComplete: !viewModel.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                        color: CaregiverUI.teal
+                    )
+                    guidePill(
+                        text: NSLocalizedString("medication.form.progress.dose", comment: "Dose progress"),
+                        isComplete: !viewModel.dosageStrengthUnit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                        color: CaregiverUI.blue
+                    )
+                    guidePill(
+                        text: NSLocalizedString("medication.form.progress.schedule", comment: "Schedule progress"),
+                        isComplete: viewModel.isPrn || !viewModel.selectedTimeSlots.isEmpty,
+                        color: activeScheduleColor
+                    )
+                }
+            }
+            .padding(18)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(accent.opacity(0.24), lineWidth: 1.2)
+            }
+            .shadow(color: CaregiverUI.cardShadow, radius: 12, y: 5)
+        }
+        .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 8, trailing: 16))
+        .listRowBackground(Color.clear)
+    }
+
+    // MARK: - Medication Type
+
+    private var medicationTypeSection: some View {
+        Section {
+            VStack(spacing: 12) {
+                typeChoiceButton(
+                    title: NSLocalizedString("medication.form.type.scheduled.title", comment: "Scheduled type title"),
+                    subtitle: NSLocalizedString("medication.form.type.scheduled.subtitle", comment: "Scheduled type subtitle"),
+                    systemImage: "clock.fill",
+                    color: CaregiverUI.teal,
+                    isSelected: !viewModel.isPrn
+                ) {
+                    viewModel.isPrn = false
+                }
+
+                typeChoiceButton(
+                    title: NSLocalizedString("medication.form.type.prn.title", comment: "PRN type title"),
+                    subtitle: NSLocalizedString("medication.form.type.prn.subtitle", comment: "PRN type subtitle"),
+                    systemImage: "cross.case.fill",
+                    color: CaregiverUI.orange,
+                    isSelected: viewModel.isPrn
+                ) {
+                    viewModel.isPrn = true
+                }
+
+                if viewModel.isPrn {
+                    formRow(icon: "text.alignleft", iconColor: .gray) {
+                        TextField(
+                            NSLocalizedString("medication.form.prn.instructions", comment: "PRN instructions"),
+                            text: $viewModel.prnInstructions,
+                            axis: .vertical
+                        )
+                        .lineLimit(2...4)
+                        .accessibilityLabel(NSLocalizedString("a11y.medication.prnInstructions", comment: "PRN instructions"))
+                    }
+                    .padding(12)
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(CaregiverUI.cardStroke, lineWidth: 1)
+                    }
+                }
+            }
+        } header: {
+            sectionHeader(NSLocalizedString("medication.form.section.type", comment: "Medication type section"), icon: "slider.horizontal.3")
+        } footer: {
+            Text(viewModel.isPrn
+                 ? NSLocalizedString("medication.form.help.prn", comment: "PRN help")
+                 : NSLocalizedString("medication.form.help.scheduled", comment: "Scheduled help"))
+        }
+        .listRowBackground(Color.clear)
+    }
+
+    private func typeChoiceButton(
+        title: String,
+        subtitle: String,
+        systemImage: String,
+        color: Color,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: systemImage)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(isSelected ? .white : color)
+                    .frame(width: 42, height: 42)
+                    .background(isSelected ? color : color.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.primary)
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(isSelected ? color : .secondary)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(isSelected ? color.opacity(0.45) : CaregiverUI.cardStroke, lineWidth: isSelected ? 1.5 : 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityValue(isSelected ? NSLocalizedString("a11y.selected", comment: "Selected") : NSLocalizedString("a11y.notSelected", comment: "Not selected"))
+    }
+
+    private func guidePill(text: String, isComplete: Bool, color: Color) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: isComplete ? "checkmark.circle.fill" : "circle")
+                .font(.caption.weight(.bold))
+            Text(text)
+                .font(.caption.weight(.bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.76)
+        }
+        .foregroundStyle(isComplete ? color : .secondary)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 6)
+        .background((isComplete ? color : Color.secondary).opacity(0.12), in: Capsule())
+    }
+
+    private var scheduleGuideCard: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "bell.badge.fill")
+                .font(.headline.weight(.bold))
+                .foregroundStyle(CaregiverUI.teal)
+                .frame(width: 34, height: 34)
+                .background(CaregiverUI.teal.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            VStack(alignment: .leading, spacing: 4) {
+                Text(NSLocalizedString("medication.form.schedule.guide.title", comment: "Schedule guide title"))
+                    .font(.headline.weight(.bold))
+                Text(NSLocalizedString("medication.form.schedule.guide.message", comment: "Schedule guide message"))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(14)
+        .background(CaregiverUI.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var activeScheduleColor: Color {
+        viewModel.isPrn ? CaregiverUI.orange : CaregiverUI.teal
     }
 
     // MARK: - Section Header

@@ -89,6 +89,30 @@ final class CaregiverTodayViewModel: ObservableObject {
         }
     }
 
+    func recordDoses(_ doses: [ScheduleDoseDTO]) {
+        let recordableDoses = doses.filter { $0.effectiveStatus != .taken && $0.effectiveStatus != .missed }
+        guard !recordableDoses.isEmpty else { return }
+        isUpdating = true
+        Task {
+            defer { isUpdating = false }
+            do {
+                for dose in recordableDoses {
+                    _ = try await apiClient.createCaregiverDoseRecord(
+                        input: DoseRecordCreateRequestDTO(
+                            medicationId: dose.medicationId,
+                            scheduledAt: dose.scheduledAt
+                        )
+                    )
+                }
+                let format = NSLocalizedString("caregiver.today.recorded.bulk", comment: "Bulk recorded")
+                showToast(String(format: format, recordableDoses.count))
+                load(showLoading: false)
+            } catch {
+                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+            }
+        }
+    }
+
     func deleteDose(_ dose: ScheduleDoseDTO) {
         guard dose.effectiveStatus == .taken else { return }
         isUpdating = true

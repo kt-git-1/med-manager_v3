@@ -9,6 +9,46 @@ struct MedicationListItem: Identifiable {
     var id: String { medication.id }
 }
 
+private enum MedicationListFilter: String, CaseIterable, Identifiable {
+    case all
+    case scheduled
+    case prn
+    case attention
+    case ended
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all:
+            return NSLocalizedString("medication.list.filter.all", comment: "All medications filter")
+        case .scheduled:
+            return NSLocalizedString("medication.list.filter.scheduled", comment: "Scheduled medications filter")
+        case .prn:
+            return NSLocalizedString("medication.list.filter.prn", comment: "PRN medications filter")
+        case .attention:
+            return NSLocalizedString("medication.list.filter.attention", comment: "Needs attention filter")
+        case .ended:
+            return NSLocalizedString("medication.list.filter.ended", comment: "Ended medications filter")
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .all:
+            return "list.bullet"
+        case .scheduled:
+            return "clock.fill"
+        case .prn:
+            return "cross.case.fill"
+        case .attention:
+            return "exclamationmark.triangle.fill"
+        case .ended:
+            return "calendar.badge.clock"
+        }
+    }
+}
+
 @MainActor
 final class MedicationListViewModel: ObservableObject {
     @Published var items: [MedicationListItem] = []
@@ -145,20 +185,24 @@ struct MedicationListView: View {
     private let sessionStore: SessionStore
     private let onOpenPatients: (() -> Void)?
     private let headerView: AnyView?
+    private let patientName: String?
     @StateObject private var viewModel: MedicationListViewModel
     @State private var showingCreate = false
     @State private var selectedMedication: MedicationDTO?
     @State private var toastMessage: String?
+    @State private var selectedFilter: MedicationListFilter = .all
 
     init(
         sessionStore: SessionStore? = nil,
         onOpenPatients: (() -> Void)? = nil,
-        headerView: AnyView? = nil
+        headerView: AnyView? = nil,
+        patientName: String? = nil
     ) {
         let store = sessionStore ?? SessionStore()
         self.sessionStore = store
         self.onOpenPatients = onOpenPatients
         self.headerView = headerView
+        self.patientName = patientName
         let baseURL = SessionStore.resolveBaseURL()
         let prefs = NotificationPreferencesStore()
         if store.mode == .caregiver, let patientId = store.currentPatientId {
@@ -225,58 +269,64 @@ struct MedicationListView: View {
                                 .listRowBackground(Color.clear)
                         }
                         if sessionStore.mode == .caregiver {
-                            if !activeScheduledItems.isEmpty {
+                            medicationHeaderRow
+                            medicationOverviewRow
+                            medicationFilterRow
+                        }
+                        if sessionStore.mode == .caregiver {
+                            if selectedFilter == .all {
+                                if !attentionItems.isEmpty {
+                                    Section {
+                                        ForEach(attentionItems) { item in
+                                            medicationRow(item, forceAttention: true)
+                                        }
+                                    } header: {
+                                        sectionHeader("medication.list.section.attention")
+                                    }
+                                    .listRowSeparator(.hidden)
+                                }
+                            }
+
+                            if !displayScheduledItems.isEmpty {
                                 Section {
-                                    ForEach(activeScheduledItems) { item in
+                                    ForEach(displayScheduledItems) { item in
                                         medicationRow(item)
                                     }
                                 } header: {
-                                    Text(NSLocalizedString("medication.list.section.scheduled", comment: "Scheduled section"))
-                                        .font(.headline)
-                                        .foregroundStyle(.secondary)
-                                        .textCase(nil)
+                                    sectionHeader("medication.list.section.scheduled")
                                 }
                                 .listRowSeparator(.hidden)
                             }
 
-                            if !activePrnItems.isEmpty {
+                            if !displayPrnItems.isEmpty {
                                 Section {
-                                    ForEach(activePrnItems) { item in
+                                    ForEach(displayPrnItems) { item in
                                         medicationRow(item)
                                     }
                                 } header: {
-                                    Text(NSLocalizedString("medication.list.section.prn", comment: "PRN section"))
-                                        .font(.headline)
-                                        .foregroundStyle(.secondary)
-                                        .textCase(nil)
+                                    sectionHeader("medication.list.section.prn")
                                 }
                                 .listRowSeparator(.hidden)
                             }
 
-                            if !expiredScheduledItems.isEmpty {
+                            if !displayExpiredScheduledItems.isEmpty {
                                 Section {
-                                    ForEach(expiredScheduledItems) { item in
+                                    ForEach(displayExpiredScheduledItems) { item in
                                         medicationRow(item)
                                     }
                                 } header: {
-                                    Text(NSLocalizedString("medication.list.section.expired.scheduled", comment: "Expired scheduled section"))
-                                        .font(.headline)
-                                        .foregroundStyle(.secondary)
-                                        .textCase(nil)
+                                    sectionHeader("medication.list.section.expired.scheduled")
                                 }
                                 .listRowSeparator(.hidden)
                             }
 
-                            if !expiredPrnItems.isEmpty {
+                            if !displayExpiredPrnItems.isEmpty {
                                 Section {
-                                    ForEach(expiredPrnItems) { item in
+                                    ForEach(displayExpiredPrnItems) { item in
                                         medicationRow(item)
                                     }
                                 } header: {
-                                    Text(NSLocalizedString("medication.list.section.expired.prn", comment: "Expired PRN section"))
-                                        .font(.headline)
-                                        .foregroundStyle(.secondary)
-                                        .textCase(nil)
+                                    sectionHeader("medication.list.section.expired.prn")
                                 }
                                 .listRowSeparator(.hidden)
                             }
@@ -296,6 +346,7 @@ struct MedicationListView: View {
                     }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+                    .background(CaregiverUI.background)
                     .safeAreaPadding(.bottom, 120)
                     .refreshable {
                         viewModel.load()
@@ -326,13 +377,6 @@ struct MedicationListView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .presetTimesUpdated)) { _ in
             viewModel.load()
-        }
-        .toolbar {
-            if sessionStore.mode == .caregiver {
-                Button(NSLocalizedString("medication.list.add", comment: "Add medication")) {
-                    showingCreate = true
-                }
-            }
         }
         .sheet(isPresented: $showingCreate) {
             MedicationFormView(sessionStore: sessionStore, onSuccess: showToast)
@@ -370,6 +414,109 @@ struct MedicationListView: View {
         }
     }
 
+    private var medicationHeaderRow: some View {
+        HStack(alignment: .center, spacing: 14) {
+            CaregiverAvatar(name: patientName, systemImage: "pills.fill")
+            VStack(alignment: .leading, spacing: 4) {
+                Text(NSLocalizedString("caregiver.medications.title", comment: "Medications title"))
+                    .font(.largeTitle.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                Text(patientNameLine)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+            }
+            Spacer(minLength: 0)
+            Button {
+                showingCreate = true
+            } label: {
+                Label(NSLocalizedString("medication.list.add", comment: "Add medication"), systemImage: "plus")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 14)
+                    .frame(height: 44)
+                    .background(CaregiverUI.teal, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(NSLocalizedString("medication.list.add", comment: "Add medication"))
+        }
+        .padding(.top, 12)
+        .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 4, trailing: 20))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
+    }
+
+    private var medicationOverviewRow: some View {
+        let metricColumns = [
+            GridItem(.flexible(), spacing: 10),
+            GridItem(.flexible(), spacing: 10)
+        ]
+        return VStack(alignment: .leading, spacing: 10) {
+            LazyVGrid(columns: metricColumns, spacing: 10) {
+                MedicationMetricTile(
+                    title: NSLocalizedString("medication.list.metric.total", comment: "Total medications"),
+                    value: "\(activeItems.count)",
+                    tint: CaregiverUI.teal,
+                    systemImage: "pills.fill"
+                )
+                MedicationMetricTile(
+                    title: NSLocalizedString("medication.list.metric.today", comment: "Scheduled medications"),
+                    value: "\(activeScheduledItems.count)",
+                    tint: CaregiverUI.blue,
+                    systemImage: "clock.fill"
+                )
+                MedicationMetricTile(
+                    title: NSLocalizedString("medication.list.metric.prn", comment: "PRN medications"),
+                    value: "\(activePrnItems.count)",
+                    tint: CaregiverUI.orange,
+                    systemImage: "cross.case.fill"
+                )
+                MedicationMetricTile(
+                    title: NSLocalizedString("medication.list.metric.attention", comment: "Needs attention"),
+                    value: "\(attentionItems.count)",
+                    tint: attentionItems.isEmpty ? .gray : CaregiverUI.red,
+                    systemImage: "exclamationmark.triangle.fill"
+                )
+            }
+        }
+        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
+    }
+
+    private var medicationFilterRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(MedicationListFilter.allCases) { filter in
+                    Button {
+                        withAnimation(.snappy) {
+                            selectedFilter = filter
+                        }
+                    } label: {
+                        Label(filter.title, systemImage: filter.systemImage)
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(selectedFilter == filter ? .white : filterTint(filter))
+                            .padding(.horizontal, 12)
+                            .frame(height: 38)
+                            .background(selectedFilter == filter ? filterTint(filter) : Color.white, in: Capsule())
+                            .overlay {
+                                Capsule()
+                                    .stroke(filterTint(filter).opacity(0.22), lineWidth: 1)
+                            }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
+    }
+
     private var activeItems: [MedicationListItem] {
         viewModel.items.filter { !isExpired($0) }
     }
@@ -394,19 +541,111 @@ struct MedicationListView: View {
         expiredItems.filter { $0.medication.isPrn }
     }
 
+    private var attentionItems: [MedicationListItem] {
+        activeItems.filter(needsAttention)
+    }
+
+    private var displayScheduledItems: [MedicationListItem] {
+        switch selectedFilter {
+        case .all:
+            let attentionIds = Set(attentionItems.map(\.id))
+            return activeScheduledItems.filter { !attentionIds.contains($0.id) }
+        case .scheduled:
+            return activeScheduledItems
+        case .attention:
+            return attentionItems.filter { !$0.medication.isPrn }
+        default:
+            return []
+        }
+    }
+
+    private var displayPrnItems: [MedicationListItem] {
+        switch selectedFilter {
+        case .all:
+            let attentionIds = Set(attentionItems.map(\.id))
+            return activePrnItems.filter { !attentionIds.contains($0.id) }
+        case .prn:
+            return activePrnItems
+        case .attention:
+            return attentionItems.filter { $0.medication.isPrn }
+        default:
+            return []
+        }
+    }
+
+    private var displayExpiredScheduledItems: [MedicationListItem] {
+        selectedFilter == .all || selectedFilter == .ended ? expiredScheduledItems : []
+    }
+
+    private var displayExpiredPrnItems: [MedicationListItem] {
+        selectedFilter == .all || selectedFilter == .ended ? expiredPrnItems : []
+    }
+
+    private var patientNameLine: String {
+        guard let patientName, !patientName.isEmpty else {
+            return NSLocalizedString("caregiver.common.patient.none", comment: "No patient selected")
+        }
+        return String(format: NSLocalizedString("caregiver.common.patient.format", comment: "Patient name format"), patientName)
+    }
+
     private func isExpired(_ item: MedicationListItem) -> Bool {
         guard let endDate = item.medication.endDate else { return false }
         let todayStart = Self.listCalendar.startOfDay(for: Date())
         return endDate < todayStart
     }
 
+    private func needsAttention(_ item: MedicationListItem) -> Bool {
+        guard item.medication.inventoryEnabled else { return false }
+        if item.medication.inventoryOut { return true }
+        let minimumUsefulQuantity = max(item.medication.doseCountPerIntake * 3, 3)
+        return item.medication.inventoryQuantity <= minimumUsefulQuantity
+    }
+
+    private func inventoryStatusText(for item: MedicationListItem) -> String? {
+        guard item.medication.inventoryEnabled else {
+            return NSLocalizedString("medication.list.inventory.unset", comment: "Inventory unset")
+        }
+        let quantity = AppConstants.formatDecimal(item.medication.inventoryQuantity)
+        let unit = item.medication.inventoryUnit ?? NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit")
+        if item.medication.inventoryOut {
+            return NSLocalizedString("medication.list.inventory.out", comment: "Out of stock")
+        }
+        if needsAttention(item) {
+            return String(format: NSLocalizedString("medication.list.inventory.low.format", comment: "Low inventory format"), quantity, unit)
+        }
+        return String(format: NSLocalizedString("medication.list.inventory.remaining.format", comment: "Remaining inventory format"), quantity, unit)
+    }
+
+    private func sectionHeader(_ key: String) -> some View {
+        Text(NSLocalizedString(key, comment: "Medication section"))
+            .font(.headline)
+            .foregroundStyle(.secondary)
+            .textCase(nil)
+    }
+
+    private func filterTint(_ filter: MedicationListFilter) -> Color {
+        switch filter {
+        case .all:
+            return CaregiverUI.teal
+        case .scheduled:
+            return CaregiverUI.blue
+        case .prn:
+            return CaregiverUI.orange
+        case .attention:
+            return CaregiverUI.red
+        case .ended:
+            return .gray
+        }
+    }
+
     @ViewBuilder
-    private func medicationRow(_ item: MedicationListItem) -> some View {
-        let rowContent = HStack(alignment: .center, spacing: 14) {
+    private func medicationRow(_ item: MedicationListItem, forceAttention: Bool = false) -> some View {
+        let isAttention = forceAttention || needsAttention(item)
+        let rowContent = HStack(alignment: .top, spacing: 14) {
             MedicationIllustrationView(tint: medicationAccentColor(for: item))
                 .frame(width: 62, height: 62)
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 9) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(item.name)
                         .font(.title2.weight(.bold))
@@ -418,16 +657,26 @@ struct MedicationListView: View {
                         medicationTypeBadge(isPrn: item.medication.isPrn)
                     }
                 }
-                Text(item.doseText)
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .accessibilityLabel(item.doseText)
-                HStack(spacing: 4) {
+                HStack(spacing: 8) {
+                    Label(item.doseText, systemImage: "pills.fill")
                     if let schedule = item.scheduleText {
-                        Text(schedule)
-                            .font(.body)
-                            .foregroundStyle(.primary)
-                            .accessibilityLabel(NSLocalizedString("a11y.medication.schedule", comment: "Schedule") + " " + schedule)
+                        Label(schedule, systemImage: "clock")
+                    } else if item.medication.isPrn {
+                        Label(NSLocalizedString("medication.list.prn.whenNeeded", comment: "PRN when needed"), systemImage: "cross.case")
+                    }
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.82)
+
+                HStack(spacing: 8) {
+                    if let inventoryText = inventoryStatusText(for: item) {
+                        CaregiverStatusPill(
+                            text: inventoryText,
+                            color: isAttention ? CaregiverUI.red : Color.secondary,
+                            systemImage: isAttention ? "exclamationmark.triangle.fill" : "shippingbox.fill"
+                        )
                     }
                 }
             }
@@ -435,9 +684,9 @@ struct MedicationListView: View {
             if sessionStore.mode == .caregiver {
                 Image(systemName: "pencil")
                     .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(Color(red: 0.0, green: 0.48, blue: 0.44))
+                    .foregroundStyle(CaregiverUI.tealDark)
                     .frame(width: 42, height: 42)
-                    .background(Color(red: 0.0, green: 0.55, blue: 0.50).opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .background(CaregiverUI.teal.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
         if sessionStore.mode == .caregiver {
@@ -445,11 +694,12 @@ struct MedicationListView: View {
                 rowContent
                     .padding(18)
                     .frame(maxWidth: .infinity)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(Color.black.opacity(0.10), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(medicationAccentColor(for: item).opacity(0.20), lineWidth: 1.2)
                     )
+                    .shadow(color: CaregiverUI.cardShadow, radius: 10, y: 4)
             }
             .buttonStyle(.plain)
             .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
@@ -459,9 +709,9 @@ struct MedicationListView: View {
             rowContent
                 .padding(18)
                 .frame(maxWidth: .infinity)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .stroke(Color.black.opacity(0.10), lineWidth: 1)
                 )
                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
@@ -474,7 +724,7 @@ struct MedicationListView: View {
         let text = isPrn
             ? NSLocalizedString("medication.list.badge.prn", comment: "PRN badge")
             : NSLocalizedString("medication.list.badge.scheduled", comment: "Scheduled badge")
-        let color: Color = isPrn ? .orange : Color(red: 0.0, green: 0.55, blue: 0.50)
+        let color: Color = isPrn ? CaregiverUI.orange : CaregiverUI.teal
         return Text(text)
             .font(.caption.weight(.bold))
             .foregroundStyle(color)
@@ -485,7 +735,7 @@ struct MedicationListView: View {
     }
 
     private func medicationAccentColor(for item: MedicationListItem) -> Color {
-        item.medication.isPrn ? .orange : Color(red: 0.0, green: 0.55, blue: 0.50)
+        item.medication.isPrn ? CaregiverUI.orange : CaregiverUI.teal
     }
 }
 
@@ -513,5 +763,40 @@ private struct MedicationIllustrationView: View {
                 .frame(width: 8, height: 8)
                 .offset(x: 15, y: -17)
         }
+    }
+}
+
+private struct MedicationMetricTile: View {
+    let title: String
+    let value: String
+    let tint: Color
+    let systemImage: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: systemImage)
+                .font(.headline.weight(.bold))
+                .foregroundStyle(tint)
+                .frame(width: 30, height: 30)
+                .background(tint.opacity(0.13), in: Circle())
+            Text(value)
+                .font(.title.weight(.bold))
+                .foregroundStyle(.primary)
+                .monospacedDigit()
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(minHeight: 124)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(tint.opacity(0.18), lineWidth: 1)
+        }
+        .shadow(color: CaregiverUI.cardShadow, radius: 10, y: 4)
     }
 }

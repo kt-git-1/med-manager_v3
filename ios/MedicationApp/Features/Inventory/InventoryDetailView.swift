@@ -47,99 +47,18 @@ struct InventoryDetailView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                VStack(spacing: 16) {
-                    inventoryHeader
-                        .padding(.horizontal, 16)
-
-                    Form {
-                        Section(
-                            header: Text(NSLocalizedString("caregiver.inventory.detail.section.settings", comment: "Settings section"))
-                        ) {
-                            Toggle(NSLocalizedString("caregiver.inventory.detail.enabled", comment: "Inventory enabled"), isOn: $inventoryEnabled)
+                CaregiverScreenBackground {
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 18) {
+                            inventoryHeader
+                            settingsCard
+                            refillCard
+                            correctionCard
+                            errorCard
                         }
-
-                        Section(header: Text(NSLocalizedString("caregiver.inventory.detail.section.adjust", comment: "Adjust section"))) {
-                            HStack(spacing: 10) {
-                                refillPresetButton(title: "+7", amount: 7)
-                                refillPresetButton(title: "+14", amount: 14)
-                                refillPresetButton(title: "+21", amount: 21)
-                                Button(NSLocalizedString("caregiver.inventory.actions.refill.sheet.custom", comment: "Custom input")) {
-                                    refillAmount = max(0, refillAmount)
-                                    focusedField = .refillAmount
-                                }
-                                .buttonStyle(.bordered)
-                                .controlSize(.small)
-                            }
-                            HStack {
-                                Text(NSLocalizedString("caregiver.inventory.detail.refill", comment: "Refill label"))
-                                Spacer()
-                                TextField("0", value: $refillAmount, formatter: numberFormatter)
-                                    .multilineTextAlignment(.trailing)
-                                    .keyboardType(.numberPad)
-                                    .focused($focusedField, equals: .refillAmount)
-                            }
-                            Button {
-                                let amount = max(0, refillAmount)
-                                guard amount > 0 else { return }
-                                pendingRefillAmount = amount
-                                showRefillConfirm = true
-                            } label: {
-                                Label(
-                                    NSLocalizedString("caregiver.inventory.actions.refill.sheet.confirm", comment: "Confirm refill"),
-                                    systemImage: "plus.circle.fill"
-                                )
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 12))
-                            }
-                            .disabled(!inventoryEnabled)
-                            .opacity(inventoryEnabled ? 1 : 0.5)
-                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                        }
-
-                        Section(header: Text(NSLocalizedString("caregiver.inventory.actions.correction", comment: "Correction section"))) {
-                            HStack {
-                                Text(NSLocalizedString("caregiver.inventory.detail.set", comment: "Correction quantity label"))
-                                Spacer()
-                                TextField("0", value: $correctionQuantity, formatter: numberFormatter)
-                                    .multilineTextAlignment(.trailing)
-                                    .keyboardType(.decimalPad)
-                                    .focused($focusedField, equals: .correctionQuantity)
-                                    .frame(width: 80)
-                                Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
-                                    .foregroundStyle(.secondary)
-                            }
-                            Button {
-                                showCorrectionConfirm = true
-                            } label: {
-                                Label(
-                                    NSLocalizedString("caregiver.inventory.actions.correction.button", comment: "Correction button"),
-                                    systemImage: "pencil.circle.fill"
-                                )
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(Color.orange, in: RoundedRectangle(cornerRadius: 12))
-                            }
-                            .disabled(!inventoryEnabled)
-                            .opacity(inventoryEnabled ? 1 : 0.5)
-                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                        }
-
-                        if let errorMessage {
-                            Section {
-                                ErrorStateView(message: errorMessage)
-                                if lastFailedAction != nil {
-                                    Button(NSLocalizedString("common.retry", comment: "Retry")) {
-                                        Task { await retryLastAction() }
-                                    }
-                                    .buttonStyle(.bordered)
-                                }
-                            }
-                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                        .padding(.bottom, 32)
                     }
                 }
 
@@ -203,20 +122,24 @@ struct InventoryDetailView: View {
     }
 
     private var inventoryHeader: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        CaregiverCard(accent: shouldHighlightLowStock ? CaregiverUI.red : CaregiverUI.teal) {
+            VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 12) {
-                Image(systemName: "archivebox.circle.fill")
-                    .font(.system(size: 36))
-                    .foregroundStyle(.tint)
-                    .symbolRenderingMode(.hierarchical)
+                Image(systemName: "shippingbox.fill")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 56, height: 56)
+                    .background(inventoryStatus.color, in: Circle())
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.name)
-                        .font(.title3.weight(.bold))
+                        .font(.title.weight(.bold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                     Text(dailyIntakeSummaryText)
-                        .font(.subheadline)
+                        .font(.headline.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
-                Spacer()
+                Spacer(minLength: 0)
                 statusBadge
             }
 
@@ -228,24 +151,152 @@ struct InventoryDetailView: View {
                     .foregroundStyle(.secondary)
                 Spacer()
                 Text(inventoryEnabled ? AppConstants.formatDecimal(quantity) : "—")
-                    .font(.largeTitle.weight(.bold))
-                    .foregroundStyle(inventoryEnabled ? Color.primary : Color.secondary)
+                    .font(.system(size: 52, weight: .bold, design: .rounded))
+                    .foregroundStyle(inventoryEnabled ? inventoryStatus.color : Color.secondary)
                 Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
-                    .font(.headline)
-                    .foregroundStyle(.secondary)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(inventoryStatus.color)
             }
 
             refillPlanSummary
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
-        .overlay {
-            if shouldHighlightLowStock {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.red.opacity(0.7), lineWidth: 2)
+        }
+    }
+
+    private var settingsCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionTitle(NSLocalizedString("caregiver.inventory.detail.section.settings", comment: "Settings section"))
+            CaregiverCard {
+                Toggle(NSLocalizedString("caregiver.inventory.detail.enabled", comment: "Inventory enabled"), isOn: $inventoryEnabled)
+                    .font(.title3.weight(.semibold))
+                    .tint(CaregiverUI.teal)
+                    .padding(.vertical, 4)
             }
         }
+    }
+
+    private var refillCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionTitle(NSLocalizedString("caregiver.inventory.detail.section.adjust", comment: "Adjust section"))
+            CaregiverCard {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(spacing: 10) {
+                        refillPresetButton(title: "+7", amount: 7)
+                        refillPresetButton(title: "+14", amount: 14)
+                        refillPresetButton(title: "+21", amount: 21)
+                        Button(NSLocalizedString("caregiver.inventory.actions.refill.sheet.custom", comment: "Custom input")) {
+                            refillAmount = max(0, refillAmount)
+                            focusedField = .refillAmount
+                        }
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(CaregiverUI.blue)
+                        .padding(.horizontal, 14)
+                        .frame(height: 38)
+                        .background(Color(.secondarySystemGroupedBackground), in: Capsule())
+                        .buttonStyle(.plain)
+                    }
+
+                    Divider()
+
+                    quantityInputRow(
+                        title: NSLocalizedString("caregiver.inventory.detail.refill", comment: "Refill label"),
+                        value: $refillAmount,
+                        field: .refillAmount,
+                        showUnit: false
+                    )
+
+                    CaregiverPrimaryButton(
+                        title: NSLocalizedString("caregiver.inventory.actions.refill.sheet.confirm", comment: "Confirm refill"),
+                        systemImage: "plus.circle.fill",
+                        color: inventoryEnabled ? CaregiverUI.teal : .gray
+                    ) {
+                        let amount = max(0, refillAmount)
+                        guard amount > 0 else { return }
+                        pendingRefillAmount = amount
+                        showRefillConfirm = true
+                    }
+                    .disabled(!inventoryEnabled)
+                    .opacity(inventoryEnabled ? 1 : 0.55)
+                }
+            }
+        }
+    }
+
+    private var correctionCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionTitle(NSLocalizedString("caregiver.inventory.actions.correction", comment: "Correction section"))
+            CaregiverCard {
+                VStack(alignment: .leading, spacing: 16) {
+                    quantityInputRow(
+                        title: NSLocalizedString("caregiver.inventory.detail.set", comment: "Correction quantity label"),
+                        value: $correctionQuantity,
+                        field: .correctionQuantity,
+                        showUnit: true
+                    )
+
+                    Divider()
+
+                    CaregiverPrimaryButton(
+                        title: NSLocalizedString("caregiver.inventory.actions.correction.button", comment: "Correction button"),
+                        systemImage: "pencil.circle.fill",
+                        color: inventoryEnabled ? CaregiverUI.orange : .gray
+                    ) {
+                        showCorrectionConfirm = true
+                    }
+                    .disabled(!inventoryEnabled)
+                    .opacity(inventoryEnabled ? 1 : 0.55)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var errorCard: some View {
+        if let errorMessage {
+            CaregiverCard(accent: CaregiverUI.red) {
+                VStack(spacing: 12) {
+                    ErrorStateView(message: errorMessage)
+                    if lastFailedAction != nil {
+                        Button(NSLocalizedString("common.retry", comment: "Retry")) {
+                            Task { await retryLastAction() }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
+            }
+        }
+    }
+
+    private func sectionTitle(_ title: String) -> some View {
+        Text(title)
+            .font(.title3.weight(.bold))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 2)
+    }
+
+    private func quantityInputRow(
+        title: String,
+        value: Binding<Double>,
+        field: InventoryField,
+        showUnit: Bool
+    ) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(title)
+                .font(.title3.weight(.semibold))
+            Spacer(minLength: 10)
+            TextField("0", value: value, formatter: numberFormatter)
+                .font(.title2.weight(.bold))
+                .multilineTextAlignment(.trailing)
+                .keyboardType(.decimalPad)
+                .focused($focusedField, equals: field)
+                .frame(width: 92)
+            if showUnit {
+                Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
     }
 
     private var refillPlanSummary: some View {
@@ -274,12 +325,12 @@ struct InventoryDetailView: View {
     }
 
     private var statusBadge: some View {
-        Text(inventoryStatus.title)
-            .font(.caption.weight(.bold))
-            .foregroundStyle(inventoryStatus.color)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(inventoryStatus.color.opacity(0.15), in: Capsule())
+            Text(inventoryStatus.title)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(inventoryStatus.color, in: Capsule())
     }
 
     private var inventoryStatus: InventoryStatus {
@@ -418,13 +469,13 @@ struct InventoryDetailView: View {
         } label: {
             Text(title)
                 .font(.subheadline.weight(.bold))
-                .foregroundStyle(refillAmount == amount ? Color.white : Color.accentColor)
+                .foregroundStyle(refillAmount == amount ? Color.white : CaregiverUI.blue)
                 .padding(.horizontal, 14)
-                .padding(.vertical, 8)
+                .frame(height: 38)
                 .background(
                     refillAmount == amount
-                        ? Color.accentColor
-                        : Color.accentColor.opacity(0.12),
+                        ? CaregiverUI.blue
+                        : CaregiverUI.blue.opacity(0.12),
                     in: Capsule()
                 )
         }

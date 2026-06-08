@@ -26,6 +26,7 @@ struct HistoryMonthView: View {
 
     private let sessionStore: SessionStore
     private let entitlementStore: EntitlementStore?
+    private let patientName: String?
     private let apiClient: APIClient
     @StateObject private var viewModel: HistoryViewModel
     @State private var displayedMonth: Date
@@ -34,10 +35,16 @@ struct HistoryMonthView: View {
     @Binding var deepLinkTarget: NotificationDeepLinkTarget?
     @State private var highlightedSlot: NotificationSlot?
 
-    init(sessionStore: SessionStore? = nil, entitlementStore: EntitlementStore? = nil, deepLinkTarget: Binding<NotificationDeepLinkTarget?> = .constant(nil)) {
+    init(
+        sessionStore: SessionStore? = nil,
+        entitlementStore: EntitlementStore? = nil,
+        patientName: String? = nil,
+        deepLinkTarget: Binding<NotificationDeepLinkTarget?> = .constant(nil)
+    ) {
         let store = sessionStore ?? SessionStore()
         self.sessionStore = store
         self.entitlementStore = entitlementStore
+        self.patientName = patientName
         self._deepLinkTarget = deepLinkTarget
         let baseURL = SessionStore.resolveBaseURL()
         let client = APIClient(baseURL: baseURL, sessionStore: store)
@@ -57,15 +64,14 @@ struct HistoryMonthView: View {
                 ScrollView {
                     LazyVStack(spacing: 16) {
                         header
-                        retentionBanner
 
                         if viewModel.isLoadingMonth && viewModel.month == nil {
                             LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
                         } else if let errorMessage = viewModel.monthErrorMessage {
                             errorSection(message: errorMessage, retry: loadMonth)
                         } else {
-                            calendarGrid
-                            legend
+                            calendarSection
+                            selectedDaySummaryCard
                             HistoryDayDetailView(viewModel: viewModel, selectedDate: selectedDate, highlightedSlot: highlightedSlot)
                         }
                     }
@@ -148,58 +154,130 @@ struct HistoryMonthView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 12) {
-            Button(action: showPreviousMonth) {
-                Image(systemName: "chevron.left")
-                    .font(.headline)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .center, spacing: 14) {
+                CaregiverAvatar(name: patientName, systemImage: "calendar")
+                    .frame(width: 58, height: 58)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(NSLocalizedString("caregiver.history.title", comment: "Caregiver history title"))
+                        .font(.largeTitle.weight(.bold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                    Text(patientNameLine)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+                }
+                Spacer(minLength: 0)
             }
-            .buttonStyle(.plain)
-            .disabled(!canGoToPreviousMonth)
-            .accessibilityLabel(NSLocalizedString("history.month.previous", comment: "Previous month"))
+            HStack(spacing: 12) {
+                Button(action: showPreviousMonth) {
+                    Image(systemName: "chevron.left")
+                        .font(.headline)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(!canGoToPreviousMonth)
+                .accessibilityLabel(NSLocalizedString("history.month.previous", comment: "Previous month"))
 
-            Spacer()
+                Spacer()
 
-            Text(HistoryMonthView.monthFormatter.string(from: displayedMonth))
-                .font(.title3.weight(.semibold))
+                Text(HistoryMonthView.monthFormatter.string(from: displayedMonth))
+                    .font(.title3.weight(.bold))
 
-            Spacer()
+                Spacer()
 
-            Button(action: showNextMonth) {
-                Image(systemName: "chevron.right")
-                    .font(.headline)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
+                Button(action: showNextMonth) {
+                    Image(systemName: "chevron.right")
+                        .font(.headline)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(!canGoToNextMonth)
+                .accessibilityLabel(NSLocalizedString("history.month.next", comment: "Next month"))
             }
-            .buttonStyle(.plain)
-            .disabled(!canGoToNextMonth)
-            .accessibilityLabel(NSLocalizedString("history.month.next", comment: "Next month"))
         }
     }
 
-    private var retentionBanner: some View {
-        Group {
-            if let entitlementStore, !entitlementStore.isPremium {
-                Text(String(
-                    format: NSLocalizedString(
-                        "history.retention.banner.free",
-                        comment: "Free retention banner"
-                    ),
-                    FeatureGate.historyCutoffDate()
-                ))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.vertical, 6)
-                .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-                .accessibilityIdentifier("HistoryRetentionBannerFree")
+    private var calendarSection: some View {
+        CaregiverCard {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(NSLocalizedString("history.calendar.title", comment: "History calendar title"))
+                            .font(.headline.weight(.bold))
+                        Text(NSLocalizedString("history.calendar.message", comment: "History calendar message"))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                calendarGrid
+                legend
             }
         }
+        .accessibilityIdentifier("HistoryCalendarSection")
+    }
+
+    private var selectedDaySummaryCard: some View {
+        CaregiverCard {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(NSLocalizedString("history.selected.title", comment: "Selected day section title"))
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.secondary)
+                        Text(selectedDateTitle)
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(.primary)
+                    }
+                    Spacer()
+                    if selectedPrnCount > 0 {
+                        CaregiverStatusPill(
+                            text: prnCountLabel(count: selectedPrnCount),
+                            color: Color.purple,
+                            systemImage: "cross.case.fill"
+                        )
+                    }
+                }
+                Text(selectedSummaryText)
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.primary)
+                Text(selectedSummaryHelpText)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if selectedTotalCount > 0 {
+                    HStack(spacing: 8) {
+                        CaregiverStatusPill(
+                            text: String(format: NSLocalizedString("caregiver.history.summary.taken", comment: "Taken count"), selectedTakenCount),
+                            color: CaregiverUI.teal,
+                            systemImage: "checkmark.circle.fill"
+                        )
+                        CaregiverStatusPill(
+                            text: String(format: NSLocalizedString("caregiver.history.summary.pending", comment: "Pending count"), selectedPendingCount),
+                            color: selectedPendingCount > 0 ? CaregiverUI.orange : .gray,
+                            systemImage: "clock.fill"
+                        )
+                        if selectedMissedCount > 0 {
+                            CaregiverStatusPill(
+                                text: String(format: NSLocalizedString("caregiver.history.summary.missed", comment: "Missed count"), selectedMissedCount),
+                                color: CaregiverUI.red,
+                                systemImage: "exclamationmark.triangle.fill"
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        .accessibilityIdentifier("HistorySelectedDaySummary")
     }
 
     private var calendarGrid: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
             HStack(spacing: 0) {
                 ForEach(weekdaySymbols, id: \.self) { symbol in
                     Text(symbol)
@@ -209,13 +287,13 @@ struct HistoryMonthView: View {
                 }
             }
 
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 7), spacing: 8) {
                 ForEach(dayCells.indices, id: \.self) { index in
                     if let date = dayCells[index] {
                         dayCell(for: date)
                     } else {
                         Color.clear
-                            .frame(height: 44)
+                            .frame(height: 54)
                     }
                 }
             }
@@ -228,12 +306,13 @@ struct HistoryMonthView: View {
         let prnCount = prnCountByDate[dateKey]
         let dayNumber = Self.calendar.component(.day, from: date)
         let isSelected = selectedDate.map { Self.calendar.isDate($0, inSameDayAs: date) } ?? false
+        let hasAnyHistory = summary != nil || (prnCount ?? 0) > 0
 
         return Button(action: { selectedDate = date }) {
             VStack(spacing: 6) {
                 Text("\(dayNumber)")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(isSelected ? Color.white : Color.primary)
+                    .foregroundStyle(isSelected ? Color.white : (hasAnyHistory ? Color.primary : Color.secondary))
                     .frame(maxWidth: .infinity)
                 HStack(spacing: 4) {
                     slotDot(summary?.morning ?? .none, slotKey: "morning")
@@ -244,15 +323,21 @@ struct HistoryMonthView: View {
                         prnDot(count: prnCount)
                     }
                 }
+                .frame(height: 8)
             }
             .padding(.vertical, 6)
-            .frame(maxWidth: .infinity, minHeight: 44)
+            .frame(maxWidth: .infinity, minHeight: 54)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(isSelected ? Color.accentColor : Color.primary.opacity(0.05))
+                    .fill(isSelected ? CaregiverUI.teal : (hasAnyHistory ? Color.primary.opacity(0.05) : Color.clear))
             )
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(isSelected ? CaregiverUI.tealDark.opacity(0.40) : Color.primary.opacity(hasAnyHistory ? 0.08 : 0.04), lineWidth: 1)
+            }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(dayCellAccessibilityLabel(day: dayNumber, summary: summary, prnCount: prnCount))
     }
 
     @ViewBuilder
@@ -293,14 +378,17 @@ struct HistoryMonthView: View {
     }
 
     private var legend: some View {
-        HStack(spacing: 16) {
-            legendItem(color: Color.green, title: NSLocalizedString("history.legend.taken", comment: "Legend taken"))
-            legendItem(color: Color.red, title: NSLocalizedString("history.legend.missed", comment: "Legend missed"))
-            legendItem(color: Color.gray, title: NSLocalizedString("history.legend.pending", comment: "Legend pending"))
-            legendItem(color: Color.purple, title: NSLocalizedString("history.legend.prn", comment: "Legend PRN"))
+        VStack(alignment: .leading, spacing: 10) {
+            Text(NSLocalizedString("history.legend.help", comment: "Legend help"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 8)], alignment: .leading, spacing: 8) {
+                legendItem(color: Color.green, title: NSLocalizedString("history.legend.taken", comment: "Legend taken"))
+                legendItem(color: Color.red, title: NSLocalizedString("history.legend.missed", comment: "Legend missed"))
+                legendItem(color: Color.gray, title: NSLocalizedString("history.legend.pending", comment: "Legend pending"))
+                legendItem(color: Color.purple, title: NSLocalizedString("history.legend.prn", comment: "Legend PRN"))
+            }
         }
-        .font(.caption)
-        .foregroundStyle(.secondary)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityIdentifier("HistoryLegend")
     }
@@ -311,6 +399,10 @@ struct HistoryMonthView: View {
                 .fill(color)
                 .frame(width: 8, height: 8)
             Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
         }
         .accessibilityLabel(title)
     }
@@ -342,8 +434,75 @@ struct HistoryMonthView: View {
         return Dictionary(uniqueKeysWithValues: month.days.map { ($0.date, $0.slotSummary) })
     }
 
+    private var selectedDateKey: String? {
+        selectedDate.map { HistoryMonthView.dateKeyFormatter.string(from: $0) }
+    }
+
+    private var selectedSummary: HistorySlotSummaryDTO? {
+        guard let selectedDateKey else { return nil }
+        return summariesByDate[selectedDateKey]
+    }
+
+    private var selectedStatuses: [HistorySlotSummaryStatusDTO] {
+        guard let selectedSummary else { return [] }
+        return [selectedSummary.morning, selectedSummary.noon, selectedSummary.evening, selectedSummary.bedtime]
+            .filter { $0 != .none }
+    }
+
+    private var selectedTotalCount: Int { selectedStatuses.count }
+    private var selectedTakenCount: Int { selectedStatuses.filter { $0 == .taken }.count }
+    private var selectedPendingCount: Int { selectedStatuses.filter { $0 == .pending }.count }
+    private var selectedMissedCount: Int { selectedStatuses.filter { $0 == .missed }.count }
+    private var selectedPrnCount: Int {
+        guard let selectedDateKey else { return 0 }
+        return prnCountByDate[selectedDateKey] ?? 0
+    }
+
+    private var selectedSummaryText: String {
+        if selectedTotalCount == 0 {
+            return NSLocalizedString("history.selected.noSchedule", comment: "No selected schedule")
+        }
+        return String(
+            format: NSLocalizedString("caregiver.history.summary.format", comment: "History summary"),
+            selectedTakenCount,
+            selectedTotalCount
+        )
+    }
+
+    private var selectedSummaryHelpText: String {
+        if selectedTotalCount == 0 && selectedPrnCount == 0 {
+            return NSLocalizedString("history.selected.noScheduleHelp", comment: "No selected schedule help")
+        }
+        if selectedMissedCount > 0 {
+            return NSLocalizedString("history.selected.missedHelp", comment: "Missed help")
+        }
+        if selectedPendingCount > 0 {
+            return NSLocalizedString("history.selected.pendingHelp", comment: "Pending help")
+        }
+        return NSLocalizedString("history.selected.completeHelp", comment: "Complete help")
+    }
+
+    private var selectedDateTitle: String {
+        guard let selectedDate else {
+            return NSLocalizedString("caregiver.history.summary.noSelection", comment: "No date selected")
+        }
+        let formatter = DateFormatter()
+        formatter.locale = AppConstants.japaneseLocale
+        formatter.calendar = Self.calendar
+        formatter.timeZone = Self.historyTimeZone
+        formatter.dateFormat = "M月d日（E）"
+        return formatter.string(from: selectedDate)
+    }
+
     private var prnCountByDate: [String: Int] {
         viewModel.month?.prnCountByDay ?? [:]
+    }
+
+    private var patientNameLine: String {
+        guard let patientName, !patientName.isEmpty else {
+            return NSLocalizedString("caregiver.common.patient.none", comment: "No patient selected")
+        }
+        return String(format: NSLocalizedString("caregiver.common.patient.format", comment: "Patient name format"), patientName)
     }
 
     private var currentMonthStart: Date {
@@ -459,6 +618,28 @@ struct HistoryMonthView: View {
             format: NSLocalizedString("history.month.prn.count", comment: "PRN count label"),
             count
         )
+    }
+
+    private func dayCellAccessibilityLabel(day: Int, summary: HistorySlotSummaryDTO?, prnCount: Int?) -> String {
+        var parts = ["\(day)日"]
+        if let summary {
+            let slots: [(String, HistorySlotSummaryStatusDTO)] = [
+                (slotLabel(for: "morning"), summary.morning),
+                (slotLabel(for: "noon"), summary.noon),
+                (slotLabel(for: "evening"), summary.evening),
+                (slotLabel(for: "bedtime"), summary.bedtime)
+            ]
+            parts.append(contentsOf: slots.compactMap { slot, status in
+                status == .none ? nil : "\(slot) \(statusLabel(for: status))"
+            })
+        }
+        if let prnCount, prnCount > 0 {
+            parts.append(prnCountLabel(count: prnCount))
+        }
+        if parts.count == 1 {
+            parts.append(NSLocalizedString("history.selected.noSchedule", comment: "No selected schedule"))
+        }
+        return parts.joined(separator: "、")
     }
 
     // MARK: - Deep Link Handling (012-push-foundation)

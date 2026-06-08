@@ -11,7 +11,7 @@ enum CaregiverTab: Hashable {
 struct CaregiverHomeView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var notificationRouter: NotificationDeepLinkRouter
-    @State private var selectedTab: CaregiverTab = .medications
+    @State private var selectedTab: CaregiverTab = .today
     @State private var currentPatientName: String?
     @State private var hasLowStock = false
     @State private var deepLinkTarget: NotificationDeepLinkTarget?
@@ -20,13 +20,15 @@ struct CaregiverHomeView: View {
     var body: some View {
         ZStack {
             switch selectedTab {
-            case .medications:
-                CaregiverMedicationView(
-                    sessionStore: sessionStore,
-                    onOpenPatients: { selectedTab = .patients }
-                )
             case .today:
                 CaregiverTodayTabView(
+                    sessionStore: sessionStore,
+                    patientName: currentPatientName,
+                    onOpenPatients: { selectedTab = .patients },
+                    onOpenNotifications: { selectedTab = .patients }
+                )
+            case .medications:
+                CaregiverMedicationView(
                     sessionStore: sessionStore,
                     onOpenPatients: { selectedTab = .patients }
                 )
@@ -35,23 +37,17 @@ struct CaregiverHomeView: View {
                     CaregiverHistoryView(
                         sessionStore: sessionStore,
                         entitlementStore: entitlementStore,
+                        patientName: currentPatientName,
                         deepLinkTarget: $deepLinkTarget,
                         onOpenPatients: { selectedTab = .patients }
                     )
-                    .navigationTitle("")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        NavigationHeaderView(
-                            icon: "clock.circle.fill",
-                            title: NSLocalizedString("caregiver.tabs.history", comment: "History tab")
-                        )
-                    }
                 }
             case .inventory:
                 NavigationStack {
                     InventoryListView(
                         sessionStore: sessionStore,
-                        onOpenPatients: { selectedTab = .patients }
+                        onOpenPatients: { selectedTab = .patients },
+                        patientName: currentPatientName
                     )
                 }
             case .patients:
@@ -59,10 +55,7 @@ struct CaregiverHomeView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 6) {
-                patientIndicator
-                CaregiverBottomTabBar(selectedTab: $selectedTab, hasLowStock: hasLowStock)
-            }
+            CaregiverBottomTabBar(selectedTab: $selectedTab, hasLowStock: hasLowStock)
             .padding(.horizontal, 12)
             .padding(.bottom, 4)
         }
@@ -97,40 +90,6 @@ struct CaregiverHomeView: View {
             selectedTab = .history
             deepLinkTarget = target
             notificationRouter.clear()
-        }
-    }
-
-    // MARK: - Patient Indicator
-
-    @ViewBuilder
-    private var patientIndicator: some View {
-        if let name = currentPatientName {
-            HStack(spacing: 8) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.accentColor, Color.accentColor.opacity(0.7)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 24, height: 24)
-                    Text(String(name.prefix(1)))
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                }
-                Text(name)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-            }
-            .padding(.leading, 10)
-            .padding(.trailing, 14)
-            .padding(.vertical, 6)
-            .background(.thinMaterial, in: Capsule())
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .transition(.opacity.combined(with: .move(edge: .bottom)))
         }
     }
 
@@ -178,25 +137,18 @@ private struct CaregiverBottomTabBar: View {
     var body: some View {
         HStack(spacing: 12) {
             tabButton(
-                title: NSLocalizedString("caregiver.tabs.medications", comment: "Medications tab"),
-                systemImage: "pills.fill",
-                isSelected: selectedTab == .medications
-            ) {
-                selectedTab = .medications
-            }
-            tabButton(
                 title: NSLocalizedString("caregiver.tabs.today", comment: "Today tab"),
-                systemImage: "calendar",
+                systemImage: "house.fill",
                 isSelected: selectedTab == .today
             ) {
                 selectedTab = .today
             }
             tabButton(
-                title: NSLocalizedString("caregiver.tabs.history", comment: "History tab"),
-                systemImage: "clock",
-                isSelected: selectedTab == .history
+                title: NSLocalizedString("caregiver.tabs.medications", comment: "Medications tab"),
+                systemImage: "pills.fill",
+                isSelected: selectedTab == .medications
             ) {
-                selectedTab = .history
+                selectedTab = .medications
             }
             tabButton(
                 title: NSLocalizedString("caregiver.tabs.inventory", comment: "Inventory tab"),
@@ -205,6 +157,13 @@ private struct CaregiverBottomTabBar: View {
                 showBadge: hasLowStock
             ) {
                 selectedTab = .inventory
+            }
+            tabButton(
+                title: NSLocalizedString("caregiver.tabs.history", comment: "History tab"),
+                systemImage: "clock",
+                isSelected: selectedTab == .history
+            ) {
+                selectedTab = .history
             }
             tabButton(
                 title: NSLocalizedString("caregiver.tabs.patients", comment: "Patients tab"),
@@ -253,6 +212,164 @@ private struct CaregiverBottomTabBar: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
             .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+enum CaregiverUI {
+    static let teal = Color(red: 0.0, green: 0.55, blue: 0.50)
+    static let tealDark = Color(red: 0.0, green: 0.43, blue: 0.40)
+    static let blue = Color(red: 0.12, green: 0.48, blue: 0.82)
+    static let orange = Color(red: 0.94, green: 0.42, blue: 0.0)
+    static let red = Color(red: 0.82, green: 0.16, blue: 0.16)
+    static let background = Color(red: 0.95, green: 0.98, blue: 0.99)
+    static let cardStroke = Color.black.opacity(0.10)
+    static let cardShadow = Color.black.opacity(0.06)
+}
+
+struct CaregiverScreenBackground<Content: View>: View {
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color(red: 0.93, green: 0.98, blue: 1.0), Color(.systemGroupedBackground)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            content
+        }
+    }
+}
+
+struct CaregiverPatientHeader: View {
+    let title: String
+    let patientName: String?
+    let systemImage: String
+    var subtitle: String? = nil
+    var trailing: AnyView?
+
+    var body: some View {
+        HStack(spacing: 14) {
+            CaregiverAvatar(name: patientName, systemImage: systemImage)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.largeTitle.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                Text(subtitle ?? patientNameText)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+            }
+            Spacer(minLength: 0)
+            if let trailing {
+                trailing
+            }
+        }
+    }
+
+    private var patientNameText: String {
+        guard let patientName, !patientName.isEmpty else {
+            return NSLocalizedString("caregiver.common.patient.none", comment: "No patient selected")
+        }
+        return String(format: NSLocalizedString("caregiver.common.patient.format", comment: "Patient name format"), patientName)
+    }
+}
+
+struct CaregiverAvatar: View {
+    let name: String?
+    var systemImage: String = "person.crop.circle.fill"
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.white)
+                .frame(width: 62, height: 62)
+                .shadow(color: CaregiverUI.cardShadow, radius: 8, y: 3)
+            if let initial = name?.prefix(1), !initial.isEmpty {
+                Text(String(initial))
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .frame(width: 50, height: 50)
+                    .background(CaregiverUI.teal, in: Circle())
+            } else {
+                Image(systemName: systemImage)
+                    .font(.system(size: 42))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(CaregiverUI.teal)
+            }
+        }
+    }
+}
+
+struct CaregiverCard<Content: View>: View {
+    var accent: Color?
+    let content: Content
+
+    init(accent: Color? = nil, @ViewBuilder content: () -> Content) {
+        self.accent = accent
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .padding(18)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke((accent ?? CaregiverUI.cardStroke).opacity(accent == nil ? 1 : 0.55), lineWidth: accent == nil ? 1 : 1.5)
+            }
+            .shadow(color: CaregiverUI.cardShadow, radius: 12, y: 5)
+    }
+}
+
+struct CaregiverStatusPill: View {
+    let text: String
+    let color: Color
+    var systemImage: String?
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .font(.caption.weight(.bold))
+            }
+            Text(text)
+                .font(.caption.weight(.bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.74)
+        }
+        .foregroundStyle(color)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(color.opacity(0.13), in: Capsule())
+    }
+}
+
+struct CaregiverPrimaryButton: View {
+    let title: String
+    let systemImage: String
+    var color: Color = CaregiverUI.teal
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 58)
+                .background(color, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -366,7 +483,8 @@ struct CaregiverMedicationView: View {
                 } else {
                     MedicationListView(
                         sessionStore: sessionStore,
-                        onOpenPatients: onOpenPatients
+                        onOpenPatients: onOpenPatients,
+                        patientName: viewModel.patients.first { $0.id == sessionStore.currentPatientId }?.displayName
                     )
                 }
             }
@@ -374,12 +492,6 @@ struct CaregiverMedicationView: View {
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                NavigationHeaderView(
-                    icon: "pills.circle.fill",
-                    title: NSLocalizedString("caregiver.medications.title", comment: "Medications title")
-                )
-            }
         }
         .onAppear {
             viewModel.loadPatients()
@@ -392,12 +504,21 @@ struct CaregiverMedicationView: View {
 
 struct CaregiverTodayTabView: View {
     private let sessionStore: SessionStore
+    private let patientName: String?
     private let onOpenPatients: () -> Void
+    private let onOpenNotifications: () -> Void
     @StateObject private var viewModel: CaregiverMedicationViewModel
 
-    init(sessionStore: SessionStore, onOpenPatients: @escaping () -> Void) {
+    init(
+        sessionStore: SessionStore,
+        patientName: String?,
+        onOpenPatients: @escaping () -> Void,
+        onOpenNotifications: @escaping () -> Void
+    ) {
         self.sessionStore = sessionStore
+        self.patientName = patientName
         self.onOpenPatients = onOpenPatients
+        self.onOpenNotifications = onOpenNotifications
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
             wrappedValue: CaregiverMedicationViewModel(
@@ -469,20 +590,16 @@ struct CaregiverTodayTabView: View {
                 } else {
                     CaregiverTodayView(
                         sessionStore: sessionStore,
-                        onOpenPatients: onOpenPatients
+                        onOpenPatients: onOpenPatients,
+                        onOpenNotifications: onOpenNotifications,
+                        patientName: patientName
                     )
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .background(CaregiverUI.background.ignoresSafeArea())
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                NavigationHeaderView(
-                    icon: "calendar.circle.fill",
-                    title: NSLocalizedString("caregiver.tabs.today", comment: "Today tab")
-                )
-            }
         }
         .onAppear {
             viewModel.loadPatients()

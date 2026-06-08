@@ -96,14 +96,16 @@ final class InventoryViewModel: ObservableObject {
 struct InventoryListView: View {
     private let sessionStore: SessionStore
     private let onOpenPatients: () -> Void
+    private let patientName: String?
     @StateObject private var viewModel: InventoryViewModel
     @State private var selectedItem: InventoryItemDTO?
     @State private var filter: InventoryFilter = .all
     @State private var toastMessage: String?
 
-    init(sessionStore: SessionStore, onOpenPatients: @escaping () -> Void) {
+    init(sessionStore: SessionStore, onOpenPatients: @escaping () -> Void, patientName: String? = nil) {
         self.sessionStore = sessionStore
         self.onOpenPatients = onOpenPatients
+        self.patientName = patientName
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
             wrappedValue: InventoryViewModel(
@@ -133,12 +135,6 @@ struct InventoryListView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    NavigationHeaderView(
-                        icon: "archivebox.circle.fill",
-                        title: NSLocalizedString("caregiver.inventory.title", comment: "Inventory title")
-                    )
-                }
             },
             overlay: viewModel.isUpdating ? AnyView(updatingOverlay) : nil
         )
@@ -171,6 +167,8 @@ struct InventoryListView: View {
 
     private var inventoryList: some View {
         List {
+            inventoryHeaderRow
+            inventoryGuideRow
             filterPickerRow
             ForEach(sectionData) { section in
                 if !section.items.isEmpty {
@@ -190,6 +188,7 @@ struct InventoryListView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+        .background(CaregiverUI.background)
         .safeAreaPadding(.bottom, 120)
         .refreshable {
             viewModel.load()
@@ -208,17 +207,136 @@ struct InventoryListView: View {
         }
     }
 
-    private var filterPickerRow: some View {
-        Picker(
-            NSLocalizedString("caregiver.inventory.filter.all", comment: "All filter"),
-            selection: $filter
-        ) {
-            ForEach(InventoryFilter.allCases) { filter in
-                Text(filter.title).tag(filter)
+    private var inventoryHeaderRow: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .center, spacing: 14) {
+                CaregiverAvatar(name: patientName, systemImage: "shippingbox.fill")
+                    .frame(width: 58, height: 58)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(NSLocalizedString("caregiver.inventory.title", comment: "Inventory title"))
+                        .font(.largeTitle.weight(.bold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                    Text(patientNameLine)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+                }
+                Spacer(minLength: 0)
+            }
+
+            LazyVGrid(columns: metricColumns, spacing: 10) {
+                inventorySummaryTile(
+                    title: NSLocalizedString("caregiver.inventory.summary.needsAction", comment: "Needs action summary"),
+                    value: "\(needsActionItems.count)",
+                    tint: needsActionItems.isEmpty ? CaregiverUI.teal : CaregiverUI.red,
+                    systemImage: needsActionItems.isEmpty ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
+                )
+                inventorySummaryTile(
+                    title: NSLocalizedString("caregiver.inventory.summary.managed", comment: "Managed summary"),
+                    value: "\(summaryConfiguredActiveItems.count)",
+                    tint: CaregiverUI.blue,
+                    systemImage: "archivebox.fill"
+                )
+                inventorySummaryTile(
+                    title: NSLocalizedString("caregiver.inventory.summary.notStarted", comment: "Not started summary"),
+                    value: "\(summaryUnconfiguredItems.count)",
+                    tint: .gray,
+                    systemImage: "questionmark.circle.fill"
+                )
+                inventorySummaryTile(
+                    title: NSLocalizedString("caregiver.inventory.summary.ended", comment: "Ended summary"),
+                    value: "\(summaryPeriodEndedItems.count)",
+                    tint: CaregiverUI.orange,
+                    systemImage: "calendar.badge.clock"
+                )
             }
         }
-        .pickerStyle(.segmented)
-        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+        .padding(.top, 12)
+        .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 8, trailing: 20))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
+    }
+
+    private var inventoryGuideRow: some View {
+        let primary = needsActionItems.first
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: primary == nil ? "checkmark.seal.fill" : "bell.badge.fill")
+                    .font(.title2)
+                    .foregroundStyle(primary == nil ? .green : CaregiverUI.orange)
+                    .frame(width: 34, height: 34)
+                    .background((primary == nil ? Color.green : CaregiverUI.orange).opacity(0.12), in: Circle())
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(primary == nil
+                         ? NSLocalizedString("caregiver.inventory.guide.ok.title", comment: "Inventory guide ok title")
+                         : NSLocalizedString("caregiver.inventory.guide.action.title", comment: "Inventory guide action title"))
+                        .font(.headline.weight(.bold))
+                    Text(guideMessage(for: primary))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            if let primary {
+                Button {
+                    selectedItem = primary
+                } label: {
+                    Label(
+                        NSLocalizedString("caregiver.inventory.guide.action.button", comment: "Open action item"),
+                        systemImage: "arrow.right.circle.fill"
+                    )
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 46)
+                    .background(CaregiverUI.orange, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(16)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(CaregiverUI.cardStroke, lineWidth: 1)
+        )
+        .shadow(color: CaregiverUI.cardShadow, radius: 8, y: 3)
+        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
+    }
+
+    private var filterPickerRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(InventoryFilter.allCases) { filter in
+                    Button {
+                        withAnimation(.snappy) {
+                            self.filter = filter
+                        }
+                    } label: {
+                        Label(filter.title, systemImage: filter.systemImage)
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(self.filter == filter ? .white : filterTint(filter))
+                            .padding(.horizontal, 12)
+                            .frame(height: 38)
+                            .background(self.filter == filter ? filterTint(filter) : Color.white, in: Capsule())
+                            .overlay {
+                                Capsule()
+                                    .stroke(filterTint(filter).opacity(0.22), lineWidth: 1)
+                            }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
     }
@@ -317,7 +435,11 @@ struct InventoryListView: View {
                 return item.inventoryEnabled && item.out
             }
         }
-        return baseItems.sorted { lhs, rhs in
+        return sortedItems(baseItems)
+    }
+
+    private func sortedItems(_ items: [InventoryItemDTO]) -> [InventoryItemDTO] {
+        items.sorted { lhs, rhs in
             if lhs.periodEnded != rhs.periodEnded {
                 return !lhs.periodEnded
             }
@@ -345,6 +467,40 @@ struct InventoryListView: View {
         filteredItems.filter { !$0.inventoryEnabled }
     }
 
+    private var needsActionItems: [InventoryItemDTO] {
+        sortedItems(
+            viewModel.items.filter { item in
+                item.inventoryEnabled && !item.periodEnded && (item.out || shouldShowLowDaysWarning(for: item))
+            }
+        )
+    }
+
+    private var summaryConfiguredActiveItems: [InventoryItemDTO] {
+        viewModel.items.filter { $0.inventoryEnabled && !$0.periodEnded }
+    }
+
+    private var summaryUnconfiguredItems: [InventoryItemDTO] {
+        viewModel.items.filter { !$0.inventoryEnabled }
+    }
+
+    private var summaryPeriodEndedItems: [InventoryItemDTO] {
+        viewModel.items.filter(\.periodEnded)
+    }
+
+    private var metricColumns: [GridItem] {
+        [
+            GridItem(.flexible(), spacing: 10),
+            GridItem(.flexible(), spacing: 10)
+        ]
+    }
+
+    private var patientNameLine: String {
+        guard let patientName, !patientName.isEmpty else {
+            return NSLocalizedString("caregiver.inventory.subtitle", comment: "Inventory subtitle")
+        }
+        return String(format: NSLocalizedString("caregiver.common.patient.format", comment: "Patient name format"), patientName)
+    }
+
     private func inventoryRow(for item: InventoryItemDTO) -> some View {
         let accent = inventoryAccentColor(for: item)
         return VStack(alignment: .leading, spacing: 14) {
@@ -359,51 +515,165 @@ struct InventoryListView: View {
                         .minimumScaleFactor(0.78)
                     inlineStatusBadge(for: item)
                 }
-                Spacer()
+                Spacer(minLength: 0)
                 if item.inventoryEnabled {
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(NSLocalizedString("caregiver.inventory.remaining.label", comment: "Remaining label"))
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(.primary)
-                        Text(AppConstants.formatDecimal(item.inventoryQuantity))
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
-                            .foregroundStyle(accent)
-                        Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
-                            .font(.body.weight(.bold))
-                            .foregroundStyle(accent)
-                    }
+                    remainingCountView(item, accent: accent)
                 }
-                Image(systemName: "chevron.right")
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(.secondary)
             }
 
-            HStack(spacing: 10) {
-                Text(daysRemainingText(for: item))
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(daysRemainingColor(for: item))
-                Spacer()
-                if shouldShowLowDaysWarning(for: item) {
-                    Text(refillDueText(for: item))
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(.white)
-                        .padding(.vertical, 7)
-                        .padding(.horizontal, 12)
-                        .background(Color.orange, in: Capsule())
+            if item.inventoryEnabled {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(daysRemainingText(for: item))
+                        .font(.body.weight(.bold))
+                        .foregroundStyle(daysRemainingColor(for: item))
+                    Text(inventoryHelpText(for: item))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+
+                HStack(spacing: 12) {
+                    inventoryStepperButton(systemImage: "minus", tint: accent) {
+                        Task { await adjustListInventory(item, delta: -1) }
+                    }
+                    Text(AppConstants.formatDecimal(item.inventoryQuantity))
+                        .font(.system(size: 30, weight: .bold, design: .rounded))
+                        .foregroundStyle(accent)
+                        .frame(maxWidth: .infinity)
+                    inventoryStepperButton(systemImage: "plus", tint: accent) {
+                        Task { await adjustListInventory(item, delta: 1) }
+                    }
+                }
+                .padding(6)
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                if shouldShowLowDaysWarning(for: item) || item.out {
+                    Button {
+                        Task { await adjustListInventory(item, delta: weeklyRefillAmount(for: item)) }
+                    } label: {
+                        Label(NSLocalizedString("caregiver.inventory.list.weeklyRefill.button", comment: "Weekly refill button"), systemImage: "shippingbox.fill")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(CaregiverUI.orange, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            } else {
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "hand.tap.fill")
+                        .foregroundStyle(.gray)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(NSLocalizedString("caregiver.inventory.unconfigured.title", comment: "Unconfigured card title"))
+                            .font(.body.weight(.bold))
+                        Text(NSLocalizedString("caregiver.inventory.unconfigured.message", comment: "Unconfigured card message"))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(12)
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
+
+            HStack(spacing: 6) {
+                Text(NSLocalizedString("caregiver.inventory.card.openDetail", comment: "Open detail hint"))
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.bold))
+                    .foregroundStyle(.tertiary)
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(18)
         .frame(maxWidth: .infinity)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(shouldShowLowDaysWarning(for: item) ? Color.orange.opacity(0.75) : Color.black.opacity(0.10), lineWidth: shouldShowLowDaysWarning(for: item) ? 1.5 : 1)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(shouldShowLowDaysWarning(for: item) ? CaregiverUI.orange.opacity(0.75) : CaregiverUI.cardStroke, lineWidth: shouldShowLowDaysWarning(for: item) ? 1.5 : 1)
         )
+        .shadow(color: CaregiverUI.cardShadow, radius: 10, y: 4)
         .contentShape(Rectangle())
         .onTapGesture {
             selectedItem = item
         }
+    }
+
+    private func inventorySummaryTile(title: String, value: String, tint: Color, systemImage: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .font(.caption.weight(.bold))
+                Text(title)
+                    .font(.caption.weight(.bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+            .foregroundStyle(tint)
+
+            Text(value)
+                .font(.title2.weight(.bold))
+                .foregroundStyle(.primary)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(tint.opacity(0.22), lineWidth: 1)
+        }
+        .shadow(color: CaregiverUI.cardShadow, radius: 8, y: 3)
+    }
+
+    private func remainingCountView(_ item: InventoryItemDTO, accent: Color) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(NSLocalizedString("caregiver.inventory.remaining.label", comment: "Remaining label"))
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.primary)
+            Text(AppConstants.formatDecimal(item.inventoryQuantity))
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .foregroundStyle(accent)
+            Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
+                .font(.body.weight(.bold))
+                .foregroundStyle(accent)
+        }
+    }
+
+    private func inventoryStepperButton(systemImage: String, tint: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(tint)
+                .frame(width: 46, height: 42)
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(CaregiverUI.cardStroke, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func adjustListInventory(_ item: InventoryItemDTO, delta: Double) async {
+        guard item.inventoryEnabled else { return }
+        let effectiveDelta = delta < 0 ? max(delta, -item.inventoryQuantity) : delta
+        guard effectiveDelta != 0 else { return }
+        let updated = await viewModel.adjustInventory(
+            item: item,
+            reason: delta > 0 ? "REFILL" : "CORRECTION",
+            delta: effectiveDelta,
+            absoluteQuantity: nil
+        )
+        if updated != nil {
+            showToast(delta > 0
+                ? NSLocalizedString("caregiver.inventory.toast.refilled", comment: "Inventory refilled toast")
+                : NSLocalizedString("caregiver.inventory.toast.saved", comment: "Inventory saved toast"))
+        }
+    }
+
+    private func weeklyRefillAmount(for item: InventoryItemDTO) -> Double {
+        if let dailyPlannedUnits = item.dailyPlannedUnits, dailyPlannedUnits > 0 {
+            return dailyPlannedUnits * 7
+        }
+        return max(item.doseCountPerIntake, 1) * 7
     }
 
     @ViewBuilder
@@ -447,6 +717,22 @@ struct InventoryListView: View {
         )
     }
 
+    private func inventoryHelpText(for item: InventoryItemDTO) -> String {
+        if item.periodEnded {
+            return NSLocalizedString("caregiver.inventory.help.periodEnded", comment: "Period ended help")
+        }
+        if item.out {
+            return NSLocalizedString("caregiver.inventory.help.out", comment: "Out help")
+        }
+        if shouldShowLowDaysWarning(for: item) {
+            return refillDueText(for: item)
+        }
+        if item.isPrn {
+            return NSLocalizedString("caregiver.inventory.help.prn", comment: "PRN help")
+        }
+        return NSLocalizedString("caregiver.inventory.help.available", comment: "Available help")
+    }
+
     private func shouldShowLowDaysWarning(for item: InventoryItemDTO) -> Bool {
         guard item.inventoryEnabled, !item.periodEnded, let daysRemaining = item.daysRemaining else {
             return false
@@ -471,11 +757,39 @@ struct InventoryListView: View {
         return label
     }
 
+    private func guideMessage(for item: InventoryItemDTO?) -> String {
+        guard let item else {
+            return NSLocalizedString("caregiver.inventory.guide.ok.message", comment: "Inventory guide ok message")
+        }
+        if item.out {
+            return String(
+                format: NSLocalizedString("caregiver.inventory.guide.out.message", comment: "Inventory guide out message"),
+                item.name
+            )
+        }
+        return String(
+            format: NSLocalizedString("caregiver.inventory.guide.low.message", comment: "Inventory guide low message"),
+            item.name,
+            daysRemainingText(for: item)
+        )
+    }
+
     private func inventoryAccentColor(for item: InventoryItemDTO) -> Color {
         if item.out || shouldShowLowDaysWarning(for: item) {
-            return .orange
+            return CaregiverUI.orange
         }
-        return Color(red: 0.12, green: 0.48, blue: 0.82)
+        return CaregiverUI.blue
+    }
+
+    private func filterTint(_ filter: InventoryFilter) -> Color {
+        switch filter {
+        case .all:
+            return CaregiverUI.teal
+        case .lowOnly:
+            return CaregiverUI.orange
+        case .outOnly:
+            return CaregiverUI.red
+        }
     }
 
     private func showToast(_ message: String) {
@@ -508,6 +822,17 @@ private enum InventoryFilter: String, CaseIterable, Identifiable {
             return NSLocalizedString("caregiver.inventory.filter.low", comment: "Low inventory filter")
         case .outOnly:
             return NSLocalizedString("caregiver.inventory.filter.out", comment: "Out of stock filter")
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .all:
+            return "list.bullet"
+        case .lowOnly:
+            return "exclamationmark.triangle.fill"
+        case .outOnly:
+            return "xmark.octagon.fill"
         }
     }
 }

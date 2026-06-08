@@ -152,10 +152,6 @@ struct PatientManagementView: View {
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                NavigationHeaderView(
-                    icon: "person.2.badge.gearshape.fill",
-                    title: NSLocalizedString("caregiver.patients.title", comment: "Patients title")
-                )
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button(NSLocalizedString("caregiver.patients.add", comment: "Add patient")) {
                         Task { await handleAddPatientTapped() }
@@ -290,14 +286,8 @@ struct PatientManagementView: View {
             }
         }
         .overlay {
-            if viewModel.isLoading || isSavingDetail || pushSettingsViewModel.isUpdating {
+            if viewModel.isLoading || isSavingDetail || pushSettingsViewModel.isUpdating || entitlementStore?.isRefreshing == true {
                 SchedulingRefreshOverlay()
-            }
-        }
-        .overlay {
-            if entitlementStore?.isRefreshing == true {
-                SchedulingRefreshOverlay()
-                    .accessibilityIdentifier("SchedulingRefreshOverlay")
             }
         }
         .sheet(isPresented: $showingPaywall) {
@@ -342,32 +332,43 @@ struct PatientManagementView: View {
         } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    linkHeader
+                    CaregiverPatientHeader(
+                        title: NSLocalizedString("caregiver.settings.title", comment: "Caregiver settings title"),
+                        patientName: selectedPatient?.displayName,
+                        systemImage: "person.2.badge.gearshape.fill",
+                        subtitle: selectedPatient == nil ? NSLocalizedString("caregiver.common.patient.none", comment: "No patient") : nil
+                    )
                     selectionCard
                     selectedPatientSection
                     detailSettingsSection
                     pushSettingsSection
-                    premiumSection
                     logoutSection
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 16)
                 .padding(.bottom, 64)
             }
+            .background(CaregiverUI.background)
         }
     }
 
-    private var linkHeader: some View {
-        Text(NSLocalizedString("caregiver.settings.section.link", comment: "Linking header"))
-            .font(.headline)
-            .foregroundStyle(.secondary)
-    }
-
     private var selectionCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(NSLocalizedString("caregiver.patients.select.label", comment: "Select label"))
-                .font(.headline)
-                .foregroundStyle(.secondary)
+        CaregiverCard {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 12) {
+                    Image(systemName: "person.crop.circle.badge.checkmark")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(CaregiverUI.teal)
+                        .frame(width: 34, height: 34)
+                        .background(CaregiverUI.teal.opacity(0.12), in: Circle())
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(NSLocalizedString("caregiver.settings.patient.title", comment: "Settings patient title"))
+                            .font(.headline.weight(.bold))
+                        Text(NSLocalizedString("caregiver.patients.select.help", comment: "Select help text"))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             Picker(
                 NSLocalizedString("caregiver.patients.select.label", comment: "Select label"),
                 selection: Binding(
@@ -384,13 +385,13 @@ struct PatientManagementView: View {
                 }
             }
             .pickerStyle(.menu)
-            Text(NSLocalizedString("caregiver.patients.select.help", comment: "Select help text"))
-                .font(.body)
-                .foregroundStyle(.secondary)
+            .tint(CaregiverUI.tealDark)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .frame(height: 44)
+            .background(CaregiverUI.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        }
     }
 
     @ViewBuilder
@@ -453,8 +454,10 @@ struct PatientManagementView: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(16)
-            .glassEffect(.regular, in: .rect(cornerRadius: 16))
+            .padding(18)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(CaregiverUI.teal.opacity(0.24), lineWidth: 1))
+            .shadow(color: CaregiverUI.cardShadow, radius: 10, y: 4)
             .accessibilityLabel("\(selectedPatient.displayName) \(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))")
         } else {
             EmptyStateView(
@@ -463,19 +466,41 @@ struct PatientManagementView: View {
             )
             .padding(16)
             .frame(maxWidth: .infinity)
-            .glassEffect(.regular, in: .rect(cornerRadius: 16))
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(CaregiverUI.cardStroke, lineWidth: 1))
         }
     }
 
     @ViewBuilder
     private var detailSettingsSection: some View {
         if viewModel.selectedPatientId != nil {
-            Text(NSLocalizedString("caregiver.settings.section.detail", comment: "Detail settings header"))
-                .font(.headline)
-                .foregroundStyle(.secondary)
-                .padding(.top, 16)
-            settingsSection
-            inventorySettingsSection
+            CaregiverCard {
+                VStack(alignment: .leading, spacing: 14) {
+                    settingsGroupHeader(
+                        title: NSLocalizedString("caregiver.settings.section.detail", comment: "Detail settings header"),
+                        message: NSLocalizedString("caregiver.settings.detail.message", comment: "Detail settings message"),
+                        systemImage: "slider.horizontal.3"
+                    )
+                    settingsActionRow(
+                        title: NSLocalizedString("patient.settings.notifications.detail.item", comment: "Detail settings item"),
+                        message: NSLocalizedString("patient.settings.notifications.detail.note", comment: "Detail settings note"),
+                        systemImage: "clock.fill",
+                        tint: CaregiverUI.blue
+                    ) {
+                        draftTimes = buildDraftTimes()
+                        showingTimePresetSheet = true
+                    }
+                    Divider()
+                    settingsActionRow(
+                        title: NSLocalizedString("caregiver.inventory.settings.item.threshold", comment: "Inventory threshold item"),
+                        message: NSLocalizedString("caregiver.inventory.settings.note", comment: "Inventory settings note"),
+                        systemImage: "archivebox.fill",
+                        tint: CaregiverUI.orange
+                    ) {
+                        showingInventoryThresholdSheet = true
+                    }
+                }
+            }
         }
     }
 
@@ -483,88 +508,66 @@ struct PatientManagementView: View {
         viewModel.patients.first { $0.id == viewModel.selectedPatientId }
     }
 
-    private var settingsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Button {
-                draftTimes = buildDraftTimes()
-                showingTimePresetSheet = true
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "clock.fill")
-                        .foregroundStyle(.tint)
-                        .frame(width: 20)
-                    Text(NSLocalizedString("patient.settings.notifications.detail.item", comment: "Detail settings item"))
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .foregroundStyle(.secondary)
-                }
+    private func settingsGroupHeader(title: String, message: String, systemImage: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.headline.weight(.bold))
+                .foregroundStyle(CaregiverUI.teal)
+                .frame(width: 34, height: 34)
+                .background(CaregiverUI.teal.opacity(0.12), in: Circle())
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.primary)
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .buttonStyle(.plain)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 
-    @ViewBuilder
-    private var premiumSection: some View {
-        if let entitlementStore {
-            Text(NSLocalizedString("billing.premium.section.header", comment: "Premium header"))
-                .font(.headline)
-                .foregroundStyle(.secondary)
-                .padding(.top, 16)
-
-            VStack(alignment: .leading, spacing: 12) {
-                // Status label
-                Text(entitlementStore.isPremium
-                    ? NSLocalizedString("billing.premium.status.active", comment: "Premium active")
-                    : NSLocalizedString("billing.premium.status.inactive", comment: "Premium inactive")
-                )
-                .font(.subheadline)
-                .foregroundStyle(entitlementStore.isPremium ? .green : .secondary)
-
-                // Upgrade button (hidden when already premium)
-                if !entitlementStore.isPremium {
-                    Button {
-                        showingPaywall = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "crown.fill")
-                                .foregroundStyle(.yellow)
-                                .frame(width: 20)
-                            Text(NSLocalizedString("billing.premium.upgrade", comment: "Upgrade"))
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 16)
-                    }
-                    .accessibilityIdentifier("billing.premium.upgrade")
+    private func settingsActionRow(
+        title: String,
+        message: String,
+        systemImage: String,
+        tint: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: systemImage)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(tint)
+                    .frame(width: 32, height: 32)
+                    .background(tint.opacity(0.12), in: Circle())
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.primary)
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-
-                // Restore button (always visible)
-                Button {
-                    Task { await entitlementStore.restore() }
-                } label: {
-                    HStack {
-                        Image(systemName: "arrow.clockwise")
-                            .foregroundStyle(.tint)
-                            .frame(width: 20)
-                        Text(NSLocalizedString("billing.premium.restore", comment: "Restore"))
-                        Spacer()
-                    }
-                    .padding(.vertical, 12)
-                    .padding(.horizontal, 16)
-                }
-                .accessibilityIdentifier("billing.premium.restore")
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.secondary)
             }
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
     }
 
     private var logoutSection: some View {
-        VStack(spacing: 12) {
+        CaregiverCard {
+            VStack(alignment: .leading, spacing: 14) {
+                settingsGroupHeader(
+                    title: NSLocalizedString("caregiver.settings.account.title", comment: "Account settings title"),
+                    message: NSLocalizedString("caregiver.settings.account.message", comment: "Account settings message"),
+                    systemImage: "person.crop.circle.fill"
+                )
             Button {
                 sessionStore.resetMode()
             } label: {
@@ -605,22 +608,22 @@ struct PatientManagementView: View {
             } message: {
                 Text(NSLocalizedString("caregiver.logout.confirm.message", comment: "Logout confirm message"))
             }
+            }
         }
-        .padding(.top, 48)
-        .padding(.bottom, 48)
     }
 
     // MARK: - Push Notification Settings (012-push-foundation)
 
     private var pushSettingsSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(NSLocalizedString("caregiver.settings.push.section.title", comment: "Push section title"))
-                .font(.headline)
-                .foregroundStyle(.secondary)
-                .padding(.top, 16)
-                .padding(.bottom, 8)
-
+        CaregiverCard {
             VStack(alignment: .leading, spacing: 12) {
+                settingsGroupHeader(
+                    title: NSLocalizedString("caregiver.settings.push.section.title", comment: "Push section title"),
+                    message: pushSettingsViewModel.isPushEnabled
+                        ? NSLocalizedString("caregiver.settings.push.enabled", comment: "Push enabled")
+                        : NSLocalizedString("caregiver.settings.push.disabled", comment: "Push disabled"),
+                    systemImage: "bell.fill"
+                )
                 Toggle(
                     NSLocalizedString("caregiver.settings.push.toggle", comment: "Push toggle"),
                     isOn: Binding(
@@ -634,20 +637,7 @@ struct PatientManagementView: View {
                 )
                 .accessibilityIdentifier("PushNotificationToggle")
                 .disabled(pushSettingsViewModel.isUpdating)
-
-                if pushSettingsViewModel.isPushEnabled {
-                    Text(NSLocalizedString("caregiver.settings.push.enabled", comment: "Push enabled"))
-                        .font(.caption)
-                        .foregroundStyle(.green)
-                } else {
-                    Text(NSLocalizedString("caregiver.settings.push.disabled", comment: "Push disabled"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
             }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .glassEffect(.regular, in: .rect(cornerRadius: 16))
         }
         .alert(
             NSLocalizedString("caregiver.settings.push.error", comment: "Error alert title"),
@@ -666,28 +656,6 @@ struct PatientManagementView: View {
                 }
             }
         )
-    }
-
-    private var inventorySettingsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Button {
-                showingInventoryThresholdSheet = true
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "archivebox.fill")
-                        .foregroundStyle(.tint)
-                        .frame(width: 20)
-                    Text(NSLocalizedString("caregiver.inventory.settings.item.threshold", comment: "Inventory threshold item"))
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 
     private var timePresetDetailSheet: some View {
@@ -1035,23 +1003,18 @@ struct PatientManagementView: View {
         }
     }
 
-    // MARK: - Patient Limit Gate (009-free-limit-gates)
+    // MARK: - Patient Limit Gate
 
-    /// Pre-flight gate for the "add patient" button.
-    /// Checks entitlement state and patient count before allowing creation.
     private func handleAddPatientTapped() async {
         guard let entitlementStore else {
-            // No entitlement store provided — allow creation (should not happen for caregivers)
             showingCreate = true
             return
         }
 
-        // If entitlement state is unknown, refresh first (overlay shown via isRefreshing)
         if entitlementStore.state == .unknown {
             await entitlementStore.refresh()
         }
 
-        // Check the gate
         if FeatureGate.canAddPatient(
             entitlementState: entitlementStore.state,
             currentPatientCount: viewModel.patients.count
