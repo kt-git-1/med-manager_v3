@@ -49,9 +49,11 @@ export type ScheduleDoseWithStatus = ScheduleDose & {
   takenAt?: string;
 };
 
-import { DEFAULT_TIMEZONE, INTL_PARSE_LOCALE, DOSE_MISSED_WINDOW_MS } from "../constants";
+import { DEFAULT_TIMEZONE, INTL_PARSE_LOCALE, DOSE_MISSED_WINDOW_MS, DEFAULT_SLOT_TIMES } from "../constants";
 
 const DEFAULT_REGIMEN_TZ = DEFAULT_TIMEZONE;
+type RegimenSlot = keyof typeof DEFAULT_SLOT_TIMES;
+type SlotTimeOverrides = Partial<Record<RegimenSlot, string>>;
 
 function normalizeRegimenTimeZone(timezone: string | null | undefined) {
   if (!timezone) {
@@ -149,8 +151,20 @@ function getWeekday(date: Date, tz: string) {
   return weekdayMap[label];
 }
 
-function parseTime(time: string) {
-  const [hour, minute] = time.split(":").map(Number);
+function isRegimenSlot(value: string): value is RegimenSlot {
+  return Object.prototype.hasOwnProperty.call(DEFAULT_SLOT_TIMES, value);
+}
+
+function resolveRegimenTime(time: string, slotTimes?: SlotTimeOverrides) {
+  if (isRegimenSlot(time)) {
+    return slotTimes?.[time] ?? DEFAULT_SLOT_TIMES[time];
+  }
+  return time;
+}
+
+function parseTime(time: string, slotTimes?: SlotTimeOverrides) {
+  const resolved = resolveRegimenTime(time, slotTimes);
+  const [hour, minute] = resolved.split(":").map(Number);
   return { hour, minute };
 }
 
@@ -183,12 +197,14 @@ export function generateSchedule({
   medications,
   regimens,
   from,
-  to
+  to,
+  slotTimes
 }: {
   medications: MedicationRecord[];
   regimens: RegimenRecord[];
   from: Date;
   to: Date;
+  slotTimes?: SlotTimeOverrides;
 }): ScheduleDose[] {
   const doses: ScheduleDose[] = [];
   const medicationMap = new Map(medications.map((medication) => [medication.id, medication]));
@@ -210,7 +226,9 @@ export function generateSchedule({
     }
 
     const daysOfWeek = regimen.daysOfWeek ?? [];
-    const times = [...regimen.times].sort();
+    const times = [...regimen.times].sort((left, right) =>
+      resolveRegimenTime(left, slotTimes).localeCompare(resolveRegimenTime(right, slotTimes))
+    );
     let cursor = startOfLocalDay(window.start, tz);
 
     while (cursor < window.end) {
@@ -218,7 +236,7 @@ export function generateSchedule({
       const matchesDay = daysOfWeek.length === 0 || daysOfWeek.includes(weekday);
       if (matchesDay) {
         for (const time of times) {
-          const { hour, minute } = parseTime(time);
+          const { hour, minute } = parseTime(time, slotTimes);
           const cursorParts = getZonedParts(cursor, tz);
           const scheduledAtDate = makeUtcFromZonedParts(
             {
@@ -252,18 +270,20 @@ export function generateSchedule({
 export async function generateScheduleForPatient({
   patientId,
   from,
-  to
+  to,
+  slotTimes
 }: {
   patientId: string;
   from: Date;
   to: Date;
+  slotTimes?: SlotTimeOverrides;
 }) {
   const { prisma } = await import("../repositories/prisma");
   const [medications, regimens] = await Promise.all([
     prisma.medication.findMany({ where: { patientId, isPrn: false } }),
     prisma.regimen.findMany({ where: { patientId } })
   ]);
-  return generateSchedule({ medications, regimens, from, to });
+  return generateSchedule({ medications, regimens, from, to, slotTimes });
 }
 
 function doseKey(input: { patientId: string; medicationId: string; scheduledAt: string }) {
@@ -319,16 +339,18 @@ export async function generateScheduleForPatientWithStatus({
   patientId,
   from,
   to,
-  now = new Date()
+  now = new Date(),
+  slotTimes
 }: {
   patientId: string;
   from: Date;
   to: Date;
   now?: Date;
+  slotTimes?: SlotTimeOverrides;
 }) {
   const { listDoseRecordsByPatientRange } = await import("../repositories/doseRecordRepo");
   const [doses, records] = await Promise.all([
-    generateScheduleForPatient({ patientId, from, to }),
+    generateScheduleForPatient({ patientId, from, to, slotTimes }),
     listDoseRecordsByPatientRange({ patientId, from, to })
   ]);
   return applyDoseStatuses(doses, records, now);
@@ -369,13 +391,15 @@ export async function getScheduleWithStatus(
   from: Date,
   to: Date,
   tz: string,
-  now: Date = new Date()
+  now: Date = new Date(),
+  slotTimes?: SlotTimeOverrides
 ) {
   const normalized = normalizeRangeToTimeZone(from, to, tz);
   return generateScheduleForPatientWithStatus({
     patientId,
     from: normalized.from,
     to: normalized.to,
-    now
+    now,
+    slotTimes
   });
 }

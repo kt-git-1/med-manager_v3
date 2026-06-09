@@ -4,7 +4,10 @@ import {
   generateScheduleForPatientWithStatus,
   getDayRange
 } from "../../../../src/services/scheduleService";
-import { buildScheduleResponse } from "../../../../src/services/scheduleResponse";
+import {
+  buildScheduleResponse,
+  parseSlotTimesFromParams
+} from "../../../../src/services/scheduleResponse";
 
 export const runtime = "nodejs";
 
@@ -16,12 +19,21 @@ export async function GET(request: Request) {
     const session = await requirePatient(authHeader);
     const now = new Date();
     const { from, to } = getDayRange(now, PATIENT_TZ);
+    const url = new URL(request.url);
+    const slotTimeParse = parseSlotTimesFromParams(url.searchParams);
+    if (slotTimeParse.errors.length > 0) {
+      return new Response(JSON.stringify({ errors: slotTimeParse.errors }), {
+        status: 422,
+        headers: { "content-type": "application/json" }
+      });
+    }
 
     const doses = await generateScheduleForPatientWithStatus({
       patientId: session.patientId,
       from,
       to,
-      now
+      now,
+      slotTimes: slotTimeParse.slotTimes
     });
     const payload = buildScheduleResponse(doses);
     return new Response(JSON.stringify(payload), {

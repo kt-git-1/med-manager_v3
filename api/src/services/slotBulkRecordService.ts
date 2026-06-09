@@ -83,7 +83,7 @@ export async function bulkRecordSlot(
   const { from, to } = getDayRange(dateObj, tz);
 
   // 2. Fetch today's schedule with statuses
-  const allDoses = await getScheduleWithStatus(input.patientId, from, to, tz, now);
+  const allDoses = await getScheduleWithStatus(input.patientId, from, to, tz, now, input.customSlotTimes);
 
   // 3. Filter to target slot
   const slotDoses = allDoses.filter((dose) => {

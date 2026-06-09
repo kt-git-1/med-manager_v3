@@ -36,6 +36,58 @@ struct EmptyStateView: View {
     }
 }
 
+struct CompactEmptyStateView: View {
+    let title: String
+    let message: String
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Text(title)
+                .font(.title2.weight(.bold))
+                .multilineTextAlignment(.center)
+            Text(message)
+                .font(.title3)
+                .foregroundStyle(.secondary)
+                .lineSpacing(4)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.horizontal, 24)
+        .accessibilityLabel("\(title) \(message)")
+    }
+}
+
+struct CaregiverNoPatientEmptyStateView: View {
+    let onCreatePatient: () -> Void
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Spacer(minLength: 0)
+            VStack(spacing: 16) {
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .font(.system(size: 44))
+                    .foregroundStyle(.secondary)
+                CompactEmptyStateView(
+                    title: NSLocalizedString("caregiver.patients.empty.title", comment: "Empty patients title"),
+                    message: NSLocalizedString("caregiver.patients.empty.message", comment: "Empty patients message")
+                )
+                CaregiverPrimaryButton(
+                    title: NSLocalizedString("caregiver.patients.register", comment: "Register first patient"),
+                    systemImage: "person.crop.circle.badge.plus"
+                ) {
+                    onCreatePatient()
+                }
+                .accessibilityIdentifier("caregiver.patients.register")
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity)
+            .glassEffect(.regular, in: .rect(cornerRadius: 20))
+            .padding(.horizontal, 24)
+            Spacer(minLength: 0)
+        }
+        .accessibilityIdentifier("CaregiverNoPatientEmptyStateView")
+    }
+}
+
 struct ErrorStateView: View {
     let message: String
 

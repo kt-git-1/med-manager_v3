@@ -4,26 +4,34 @@ struct CaregiverHistoryView: View {
     private let sessionStore: SessionStore
     private let entitlementStore: EntitlementStore?
     private let patientName: String?
+    private let hasAnyPatient: Bool?
     @Binding var deepLinkTarget: NotificationDeepLinkTarget?
     private let onOpenPatients: () -> Void
+    private let onCreatePatient: () -> Void
 
     init(
         sessionStore: SessionStore,
         entitlementStore: EntitlementStore? = nil,
         patientName: String? = nil,
+        hasAnyPatient: Bool? = nil,
         deepLinkTarget: Binding<NotificationDeepLinkTarget?> = .constant(nil),
-        onOpenPatients: @escaping () -> Void
+        onOpenPatients: @escaping () -> Void,
+        onCreatePatient: @escaping () -> Void
     ) {
         self.sessionStore = sessionStore
         self.entitlementStore = entitlementStore
         self.patientName = patientName
+        self.hasAnyPatient = hasAnyPatient
         self._deepLinkTarget = deepLinkTarget
         self.onOpenPatients = onOpenPatients
+        self.onCreatePatient = onCreatePatient
     }
 
     var body: some View {
         CaregiverScreenBackground {
-            if sessionStore.currentPatientId == nil {
+            if sessionStore.currentPatientId == nil, hasAnyPatient == false {
+                CaregiverNoPatientEmptyStateView(onCreatePatient: onCreatePatient)
+            } else if sessionStore.currentPatientId == nil {
                 VStack(spacing: 12) {
                     Spacer(minLength: 0)
                     VStack(spacing: 16) {

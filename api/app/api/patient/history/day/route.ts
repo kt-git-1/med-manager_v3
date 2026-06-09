@@ -61,7 +61,9 @@ export async function GET(request: Request) {
       session.patientId,
       range.from,
       range.to,
-      historyTimeZone
+      historyTimeZone,
+      new Date(),
+      customSlotTimes
     );
     const prn = await listPrnHistoryItemsByRange({
       patientId: session.patientId,

@@ -8,7 +8,7 @@ struct CaregiverTodayView: View {
     private let headerView: AnyView?
     @StateObject private var viewModel: CaregiverTodayViewModel
     @EnvironmentObject private var toastPresenter: ToastPresenter
-    private let preferencesStore = NotificationPreferencesStore()
+    private let preferencesStore: NotificationPreferencesStore
     @State private var doseToConfirm: ScheduleDoseDTO?
     @State private var slotToConfirm: SlotRecordConfirmation?
 
@@ -26,8 +26,13 @@ struct CaregiverTodayView: View {
         self.patientName = patientName
         self.headerView = headerView
         let baseURL = SessionStore.resolveBaseURL()
+        let preferencesStore = NotificationPreferencesStore()
+        self.preferencesStore = preferencesStore
         _viewModel = StateObject(
-            wrappedValue: CaregiverTodayViewModel(apiClient: APIClient(baseURL: baseURL, sessionStore: store))
+            wrappedValue: CaregiverTodayViewModel(
+                apiClient: APIClient(baseURL: baseURL, sessionStore: store),
+                preferencesStore: preferencesStore
+            )
         )
     }
 
@@ -41,11 +46,13 @@ struct CaregiverTodayView: View {
             }
             .onAppear {
                 viewModel.toastPresenter = toastPresenter
+                preferencesStore.switchPatient(sessionStore.currentPatientId)
                 if sessionStore.currentPatientId != nil {
                     viewModel.load(showLoading: true)
                 }
             }
             .onChange(of: sessionStore.currentPatientId) { _, newValue in
+                preferencesStore.switchPatient(newValue)
                 if newValue != nil {
                     viewModel.load(showLoading: true)
                 } else {

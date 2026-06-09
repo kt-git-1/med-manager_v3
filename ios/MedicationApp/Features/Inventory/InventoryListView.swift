@@ -101,15 +101,25 @@ final class InventoryViewModel: ObservableObject {
 struct InventoryListView: View {
     private let sessionStore: SessionStore
     private let onOpenPatients: () -> Void
+    private let onCreatePatient: () -> Void
+    private let hasAnyPatient: Bool?
     private let patientName: String?
     @StateObject private var viewModel: InventoryViewModel
     @EnvironmentObject private var toastPresenter: ToastPresenter
     @State private var selectedItem: InventoryItemDTO?
     @State private var filter: InventoryFilter = .all
 
-    init(sessionStore: SessionStore, onOpenPatients: @escaping () -> Void, patientName: String? = nil) {
+    init(
+        sessionStore: SessionStore,
+        onOpenPatients: @escaping () -> Void,
+        onCreatePatient: @escaping () -> Void = {},
+        hasAnyPatient: Bool? = nil,
+        patientName: String? = nil
+    ) {
         self.sessionStore = sessionStore
         self.onOpenPatients = onOpenPatients
+        self.onCreatePatient = onCreatePatient
+        self.hasAnyPatient = hasAnyPatient
         self.patientName = patientName
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
@@ -124,7 +134,9 @@ struct InventoryListView: View {
         FullScreenContainer(
             content: {
                 Group {
-                    if sessionStore.currentPatientId == nil {
+                    if sessionStore.currentPatientId == nil, hasAnyPatient == false {
+                        CaregiverNoPatientEmptyStateView(onCreatePatient: onCreatePatient)
+                    } else if sessionStore.currentPatientId == nil {
                         InventoryEmptyStateView(onOpenPatients: onOpenPatients)
                     } else if viewModel.isLoading {
                         LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))

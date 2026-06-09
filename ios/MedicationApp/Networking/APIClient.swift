@@ -186,8 +186,13 @@ final class APIClient {
         return result.data.patientSessionToken
     }
 
-    func fetchPatientToday() async throws -> [ScheduleDoseDTO] {
-        let url = baseURL.appendingPathComponent("api/patient/today")
+    func fetchPatientToday(slotTimeItems: [URLQueryItem] = []) async throws -> [ScheduleDoseDTO] {
+        var url = baseURL.appendingPathComponent("api/patient/today")
+        if !slotTimeItems.isEmpty {
+            var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            components?.queryItems = slotTimeItems
+            url = components?.url ?? url
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         if let token = tokenForCurrentMode() {
@@ -296,9 +301,17 @@ final class APIClient {
         return try decoder.decode(PrnDoseRecordCreateResponseDTO.self, from: data).record
     }
 
-    func fetchCaregiverToday(patientId: String? = nil) async throws -> [ScheduleDoseDTO] {
+    func fetchCaregiverToday(
+        patientId: String? = nil,
+        slotTimeItems: [URLQueryItem] = []
+    ) async throws -> [ScheduleDoseDTO] {
         let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
-        let url = baseURL.appendingPathComponent("api/patients/\(resolvedPatientId)/today")
+        var url = baseURL.appendingPathComponent("api/patients/\(resolvedPatientId)/today")
+        if !slotTimeItems.isEmpty {
+            var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            components?.queryItems = slotTimeItems
+            url = components?.url ?? url
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         if let token = tokenForCurrentMode() {

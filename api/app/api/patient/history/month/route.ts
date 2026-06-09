@@ -49,7 +49,9 @@ export async function GET(request: Request) {
       session.patientId,
       range.from,
       range.to,
-      historyTimeZone
+      historyTimeZone,
+      new Date(),
+      customSlotTimes
     );
     const grouped = groupDosesByLocalDate(doses, historyTimeZone);
     const prn = await listPrnHistoryItemsByRange({

@@ -134,8 +134,13 @@ struct PatientManagementView: View {
     private let apiClient: APIClient
     private static let thresholdKeyPrefix = "inventory.threshold."
     var entitlementStore: EntitlementStore?
+    private var shouldOpenCreate: Binding<Bool>
 
-    init(sessionStore: SessionStore? = nil, entitlementStore: EntitlementStore? = nil) {
+    init(
+        sessionStore: SessionStore? = nil,
+        entitlementStore: EntitlementStore? = nil,
+        shouldOpenCreate: Binding<Bool> = .constant(false)
+    ) {
         let store = sessionStore ?? SessionStore()
         _viewModel = StateObject(wrappedValue: PatientManagementViewModel(sessionStore: store))
         let client = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: store)
@@ -146,6 +151,7 @@ struct PatientManagementView: View {
             }
         ))
         self.entitlementStore = entitlementStore
+        self.shouldOpenCreate = shouldOpenCreate
     }
 
     var body: some View {
@@ -263,6 +269,10 @@ struct PatientManagementView: View {
             preferencesStore.switchPatient(viewModel.selectedPatientId)
             draftTimes = buildDraftTimes()
             Task { await loadInventoryThreshold() }
+            openCreateIfRequested()
+        }
+        .onChange(of: shouldOpenCreate.wrappedValue) { _, _ in
+            openCreateIfRequested()
         }
         .onChange(of: viewModel.selectedPatientId) { _, newPatientId in
             preferencesStore.switchPatient(newPatientId)
@@ -297,26 +307,9 @@ struct PatientManagementView: View {
         } else if let errorMessage = viewModel.errorMessage {
             ErrorStateView(message: errorMessage)
         } else if viewModel.patients.isEmpty {
-            VStack(spacing: 16) {
-                Image(systemName: "person.crop.circle.badge.plus")
-                    .font(.system(size: 44))
-                    .foregroundStyle(.secondary)
-                EmptyStateView(
-                    title: NSLocalizedString("caregiver.patients.empty.title", comment: "Empty patients title"),
-                    message: NSLocalizedString("caregiver.patients.empty.message", comment: "Empty patients message")
-                )
-                CaregiverPrimaryButton(
-                    title: NSLocalizedString("caregiver.patients.register", comment: "Register first patient"),
-                    systemImage: "person.crop.circle.badge.plus"
-                ) {
-                    showingCreate = true
-                }
-                .accessibilityIdentifier("caregiver.patients.register")
+            CaregiverNoPatientEmptyStateView {
+                showingCreate = true
             }
-            .padding(24)
-            .frame(maxWidth: .infinity)
-            .glassEffect(.regular, in: .rect(cornerRadius: 20))
-            .padding(.horizontal, 24)
         } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
@@ -338,6 +331,12 @@ struct PatientManagementView: View {
             }
             .background(CaregiverUI.background)
         }
+    }
+
+    private func openCreateIfRequested() {
+        guard shouldOpenCreate.wrappedValue else { return }
+        shouldOpenCreate.wrappedValue = false
+        showingCreate = true
     }
 
     private var selectionCard: some View {
@@ -842,11 +841,7 @@ struct PatientManagementView: View {
             }
         }
         do {
-            let newSlotTimes = preferencesStore.slotTimesMap()
-            try await updateRegimensForPresetChange(
-                oldSlotTimes: oldSlotTimes,
-                newSlotTimes: newSlotTimes
-            )
+            try await migrateRegimensToPresetSlots(oldSlotTimes: oldSlotTimes)
             await rescheduleIfNeeded()
             NotificationCenter.default.post(name: .presetTimesUpdated, object: nil)
             return true
@@ -870,16 +865,12 @@ struct PatientManagementView: View {
         )
     }
 
-    private func updateRegimensForPresetChange(
-        oldSlotTimes: [NotificationSlot: (hour: Int, minute: Int)],
-        newSlotTimes: [NotificationSlot: (hour: Int, minute: Int)]
-    ) async throws {
+    private func migrateRegimensToPresetSlots(oldSlotTimes: [NotificationSlot: (hour: Int, minute: Int)]) async throws {
         guard sessionStore.mode == .caregiver, let patientId = sessionStore.currentPatientId else {
             return
         }
         let medications = try await apiClient.fetchMedications(patientId: patientId)
-        let mapping = buildPresetMapping(oldSlotTimes: oldSlotTimes, newSlotTimes: newSlotTimes)
-        guard !mapping.isEmpty else { return }
+        let mapping = buildLegacyTimeSlotMapping(oldSlotTimes: oldSlotTimes)
         for medication in medications {
             let regimens = try await apiClient.fetchRegimens(medicationId: medication.id)
             for regimen in regimens {
@@ -901,32 +892,21 @@ struct PatientManagementView: View {
         }
     }
 
-    private func buildPresetMapping(
-        oldSlotTimes: [NotificationSlot: (hour: Int, minute: Int)],
-        newSlotTimes: [NotificationSlot: (hour: Int, minute: Int)]
-    ) -> [String: String] {
+    private func buildLegacyTimeSlotMapping(oldSlotTimes: [NotificationSlot: (hour: Int, minute: Int)]) -> [String: String] {
         var mapping: [String: String] = [:]
         for slot in NotificationSlot.allCases {
-            guard
-                let oldTime = oldSlotTimes[slot],
-                let newTime = newSlotTimes[slot]
-            else {
-                continue
-            }
-            let oldString = String(format: "%02d:%02d", oldTime.hour, oldTime.minute)
-            let newString = String(format: "%02d:%02d", newTime.hour, newTime.minute)
-            if oldString != newString {
-                mapping[oldString] = newString
+            if let oldTime = oldSlotTimes[slot] {
+                let oldString = String(format: "%02d:%02d", oldTime.hour, oldTime.minute)
+                mapping[oldString] = slot.rawValue
             }
             let defaultTime = slot.hourMinute
             let defaultString = String(format: "%02d:%02d", defaultTime.hour, defaultTime.minute)
-            if defaultString != newString {
-                mapping[defaultString] = newString
-            }
+            mapping[defaultString] = slot.rawValue
             let scheduleDefault = defaultScheduleTimeString(for: slot)
-            if scheduleDefault != newString {
-                mapping[scheduleDefault] = newString
-            }
+            mapping[scheduleDefault] = slot.rawValue
+            let configured = preferencesStore.slotTime(for: slot)
+            let configuredString = String(format: "%02d:%02d", configured.hour, configured.minute)
+            mapping[configuredString] = slot.rawValue
         }
         return mapping
     }

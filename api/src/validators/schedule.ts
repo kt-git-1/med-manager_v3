@@ -1,4 +1,5 @@
 const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
+const slotKeys = new Set(["morning", "noon", "evening", "bedtime"]);
 
 export function validateTimes(times: string[]) {
   const errors: string[] = [];
@@ -8,7 +9,7 @@ export function validateTimes(times: string[]) {
   }
   const seen = new Set<string>();
   for (const time of times) {
-    if (!timeRegex.test(time)) {
+    if (!timeRegex.test(time) && !slotKeys.has(time)) {
       errors.push(`invalid time format: ${time}`);
     }
     if (seen.has(time)) {

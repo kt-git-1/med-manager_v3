@@ -153,6 +153,9 @@ final class MedicationListViewModel: ObservableObject {
 
     private func slotLabel(for timeString: String) -> String? {
         let normalized = timeString.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let slot = ScheduleTimeSlot(rawValue: normalized) {
+            return slot.label
+        }
         for slot in ScheduleTimeSlot.allCases {
             let time = preferencesStore.slotTime(for: slot.notificationSlot)
             let configured = String(format: "%02d:%02d", time.hour, time.minute)

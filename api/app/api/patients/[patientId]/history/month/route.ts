@@ -61,7 +61,14 @@ export async function GET(
     await checkRetentionForMonth(year, month, "caregiver", session.caregiverUserId);
 
     const range = getMonthRange(year, month, historyTimeZone);
-    const doses = await getScheduleWithStatus(patientId, range.from, range.to, historyTimeZone);
+    const doses = await getScheduleWithStatus(
+      patientId,
+      range.from,
+      range.to,
+      historyTimeZone,
+      new Date(),
+      customSlotTimes
+    );
     const grouped = groupDosesByLocalDate(doses, historyTimeZone);
     const prn = await listPrnHistoryItemsByRange({
       patientId,

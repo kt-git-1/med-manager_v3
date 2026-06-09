@@ -128,7 +128,7 @@ final class MedicationFormViewModelTests: XCTestCase {
         viewModel.selectedDays = [.fri, .mon, .wed]
         viewModel.scheduleFrequency = .weekly
 
-        XCTAssertEqual(viewModel.scheduleTimes(), ["08:00", "18:00", "21:00"])
+        XCTAssertEqual(viewModel.scheduleTimes(), ["morning", "evening", "bedtime"])
         XCTAssertEqual(viewModel.scheduleDays(), ["MON", "WED", "FRI"])
     }
 
@@ -141,7 +141,7 @@ final class MedicationFormViewModelTests: XCTestCase {
             timezone: "UTC",
             startDate: Date(timeIntervalSince1970: 0),
             endDate: nil,
-            times: ["12:00", "18:00"],
+            times: ["noon", "evening"],
             daysOfWeek: [],
             enabled: true
         )

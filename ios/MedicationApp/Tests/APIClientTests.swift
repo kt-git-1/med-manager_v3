@@ -14,7 +14,7 @@ final class APIClientTests: XCTestCase {
             timezone: "UTC",
             startDate: Date(timeIntervalSince1970: 0),
             endDate: nil,
-            times: ["08:00", "18:00"],
+            times: ["morning", "evening"],
             daysOfWeek: ["MON", "FRI"]
         )
 
@@ -23,7 +23,7 @@ final class APIClientTests: XCTestCase {
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
 
         XCTAssertEqual(json["timezone"] as? String, "UTC")
-        XCTAssertEqual(json["times"] as? [String], ["08:00", "18:00"])
+        XCTAssertEqual(json["times"] as? [String], ["morning", "evening"])
         XCTAssertEqual(json["daysOfWeek"] as? [String], ["MON", "FRI"])
     }
 
@@ -38,7 +38,7 @@ final class APIClientTests: XCTestCase {
             timezone: "Asia/Tokyo",
             startDate: Date(timeIntervalSince1970: 0),
             endDate: nil,
-            times: ["12:00"],
+            times: ["noon"],
             daysOfWeek: [],
             enabled: true
         )
@@ -48,7 +48,7 @@ final class APIClientTests: XCTestCase {
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
 
         XCTAssertEqual(json["timezone"] as? String, "Asia/Tokyo")
-        XCTAssertEqual(json["times"] as? [String], ["12:00"])
+        XCTAssertEqual(json["times"] as? [String], ["noon"])
         XCTAssertEqual(json["daysOfWeek"] as? [String], [])
     }
 }

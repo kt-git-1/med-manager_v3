@@ -169,7 +169,7 @@ final class MedicationFormViewModel: ObservableObject {
     func scheduleTimes() -> [String] {
         ScheduleTimeSlot.allCases
             .filter { selectedTimeSlots.contains($0) }
-            .map { timeValue(for: $0) }
+            .map(\.rawValue)
     }
 
     func scheduleDays() -> [String] {
@@ -331,6 +331,9 @@ final class MedicationFormViewModel: ObservableObject {
 
     private func slotForTimeValue(_ timeString: String) -> ScheduleTimeSlot? {
         let normalized = timeString.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let slot = ScheduleTimeSlot(rawValue: normalized) {
+            return slot
+        }
         return ScheduleTimeSlot.allCases.first { slot in
             self.timeValue(for: slot) == normalized
         }

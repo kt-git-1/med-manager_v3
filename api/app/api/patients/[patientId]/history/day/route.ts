@@ -73,7 +73,14 @@ export async function GET(
     await checkRetentionForDay(dateParam, "caregiver", session.caregiverUserId);
 
     const range = getDayRange(parsedDate, historyTimeZone);
-    const doses = await getScheduleWithStatus(patientId, range.from, range.to, historyTimeZone);
+    const doses = await getScheduleWithStatus(
+      patientId,
+      range.from,
+      range.to,
+      historyTimeZone,
+      new Date(),
+      customSlotTimes
+    );
     const prn = await listPrnHistoryItemsByRange({
       patientId,
       from: range.from,

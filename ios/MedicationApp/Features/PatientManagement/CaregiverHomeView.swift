@@ -13,8 +13,10 @@ struct CaregiverHomeView: View {
     @EnvironmentObject private var notificationRouter: NotificationDeepLinkRouter
     @State private var selectedTab: CaregiverTab = .today
     @State private var currentPatientName: String?
+    @State private var hasAnyPatient: Bool?
     @State private var hasLowStock = false
     @State private var deepLinkTarget: NotificationDeepLinkTarget?
+    @State private var shouldOpenCreatePatient = false
     var entitlementStore: EntitlementStore?
 
     var body: some View {
@@ -24,13 +26,15 @@ struct CaregiverHomeView: View {
                 CaregiverTodayTabView(
                     sessionStore: sessionStore,
                     patientName: currentPatientName,
-                    onOpenPatients: { selectedTab = .patients },
+                    onOpenPatients: { openPatientSettings() },
+                    onCreatePatient: { openPatientCreate() },
                     onOpenNotifications: { selectedTab = .patients }
                 )
             case .medications:
                 CaregiverMedicationView(
                     sessionStore: sessionStore,
-                    onOpenPatients: { selectedTab = .patients }
+                    onOpenPatients: { openPatientSettings() },
+                    onCreatePatient: { openPatientCreate() }
                 )
             case .history:
                 NavigationStack {
@@ -38,20 +42,28 @@ struct CaregiverHomeView: View {
                         sessionStore: sessionStore,
                         entitlementStore: entitlementStore,
                         patientName: currentPatientName,
+                        hasAnyPatient: hasAnyPatient,
                         deepLinkTarget: $deepLinkTarget,
-                        onOpenPatients: { selectedTab = .patients }
+                        onOpenPatients: { openPatientSettings() },
+                        onCreatePatient: { openPatientCreate() }
                     )
                 }
             case .inventory:
                 NavigationStack {
                     InventoryListView(
                         sessionStore: sessionStore,
-                        onOpenPatients: { selectedTab = .patients },
+                        onOpenPatients: { openPatientSettings() },
+                        onCreatePatient: { openPatientCreate() },
+                        hasAnyPatient: hasAnyPatient,
                         patientName: currentPatientName
                     )
                 }
             case .patients:
-                PatientManagementView(sessionStore: sessionStore, entitlementStore: entitlementStore)
+                PatientManagementView(
+                    sessionStore: sessionStore,
+                    entitlementStore: entitlementStore,
+                    shouldOpenCreate: $shouldOpenCreatePatient
+                )
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -104,6 +116,7 @@ struct CaregiverHomeView: View {
             do {
                 let apiClient = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: sessionStore)
                 let patients = try await apiClient.listPatients()
+                hasAnyPatient = !patients.isEmpty
                 let selectedPatient = patients.first { $0.id == sessionStore.currentPatientId }
                 if let selectedPatient {
                     currentPatientName = selectedPatient.displayName
@@ -115,6 +128,7 @@ struct CaregiverHomeView: View {
                 }
             } catch {
                 currentPatientName = nil
+                hasAnyPatient = nil
             }
         }
     }
@@ -134,6 +148,15 @@ struct CaregiverHomeView: View {
                 // Keep the current value on error
             }
         }
+    }
+
+    private func openPatientSettings() {
+        selectedTab = .patients
+    }
+
+    private func openPatientCreate() {
+        shouldOpenCreatePatient = true
+        selectedTab = .patients
     }
 }
 
@@ -417,11 +440,17 @@ final class CaregiverMedicationViewModel: ObservableObject {
 struct CaregiverMedicationView: View {
     private let sessionStore: SessionStore
     private let onOpenPatients: () -> Void
+    private let onCreatePatient: () -> Void
     @StateObject private var viewModel: CaregiverMedicationViewModel
 
-    init(sessionStore: SessionStore, onOpenPatients: @escaping () -> Void) {
+    init(
+        sessionStore: SessionStore,
+        onOpenPatients: @escaping () -> Void,
+        onCreatePatient: @escaping () -> Void
+    ) {
         self.sessionStore = sessionStore
         self.onOpenPatients = onOpenPatients
+        self.onCreatePatient = onCreatePatient
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
             wrappedValue: CaregiverMedicationViewModel(
@@ -440,29 +469,7 @@ struct CaregiverMedicationView: View {
                 } else if let errorMessage = viewModel.errorMessage {
                     ErrorStateView(message: errorMessage)
                 } else if viewModel.patients.isEmpty {
-                    VStack(spacing: 16) {
-                        Image(systemName: "person.crop.circle.badge.plus")
-                            .font(.system(size: 44))
-                            .foregroundStyle(.secondary)
-                        EmptyStateView(
-                            title: NSLocalizedString("caregiver.medications.noPatients.title", comment: "No patients title"),
-                            message: NSLocalizedString("caregiver.medications.noPatients.message", comment: "No patients message")
-                        )
-                        Button {
-                            onOpenPatients()
-                        } label: {
-                            Text(NSLocalizedString("caregiver.medications.noPatients.action", comment: "Register patient"))
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 50)
-                                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
-                        }
-                    }
-                    .padding(24)
-                    .frame(maxWidth: .infinity)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 20))
-                    .padding(.horizontal, 24)
+                    CaregiverNoPatientEmptyStateView(onCreatePatient: onCreatePatient)
                 } else if sessionStore.currentPatientId == nil {
                     VStack(spacing: 12) {
                         Spacer(minLength: 0)
@@ -520,6 +527,7 @@ struct CaregiverTodayTabView: View {
     private let sessionStore: SessionStore
     private let patientName: String?
     private let onOpenPatients: () -> Void
+    private let onCreatePatient: () -> Void
     private let onOpenNotifications: () -> Void
     @StateObject private var viewModel: CaregiverMedicationViewModel
 
@@ -527,11 +535,13 @@ struct CaregiverTodayTabView: View {
         sessionStore: SessionStore,
         patientName: String?,
         onOpenPatients: @escaping () -> Void,
+        onCreatePatient: @escaping () -> Void,
         onOpenNotifications: @escaping () -> Void
     ) {
         self.sessionStore = sessionStore
         self.patientName = patientName
         self.onOpenPatients = onOpenPatients
+        self.onCreatePatient = onCreatePatient
         self.onOpenNotifications = onOpenNotifications
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
@@ -549,29 +559,7 @@ struct CaregiverTodayTabView: View {
                     LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 } else if viewModel.patients.isEmpty {
-                    VStack(spacing: 16) {
-                        Image(systemName: "person.crop.circle.badge.plus")
-                            .font(.system(size: 44))
-                            .foregroundStyle(.secondary)
-                        EmptyStateView(
-                            title: NSLocalizedString("caregiver.medications.noPatients.title", comment: "No patients title"),
-                            message: NSLocalizedString("caregiver.medications.noPatients.message", comment: "No patients message")
-                        )
-                        Button {
-                            onOpenPatients()
-                        } label: {
-                            Text(NSLocalizedString("caregiver.medications.noPatients.action", comment: "Register patient"))
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 50)
-                                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
-                        }
-                    }
-                    .padding(24)
-                    .frame(maxWidth: .infinity)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 20))
-                    .padding(.horizontal, 24)
+                    CaregiverNoPatientEmptyStateView(onCreatePatient: onCreatePatient)
                 } else if sessionStore.currentPatientId == nil {
                     VStack(spacing: 12) {
                         Spacer(minLength: 0)
