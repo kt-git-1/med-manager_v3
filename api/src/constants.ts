@@ -41,7 +41,7 @@ export const CAREGIVER_PLACEHOLDER_TOKEN = "caregiver-placeholder";
 
 export const DEFAULT_SLOT_TIMES = {
   morning: "08:00",
-  noon: "12:00",
+  noon: "13:00",
   evening: "19:00",
   bedtime: "22:00",
 } as const;

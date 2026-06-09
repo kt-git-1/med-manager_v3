@@ -51,7 +51,7 @@ enum ScheduleTimeSlot: String, CaseIterable, Identifiable {
     var timeValue: String {
         switch self {
         case .morning: return "08:00"
-        case .noon: return "12:00"
+        case .noon: return "13:00"
         case .evening: return "18:00"
         case .bedtime: return "21:00"
         }

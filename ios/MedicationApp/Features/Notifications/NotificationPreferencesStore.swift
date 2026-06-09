@@ -31,6 +31,7 @@ final class NotificationPreferencesStore: ObservableObject {
     private let rereminderKey = "notif.rereminderEnabled"
     private let slotKeyPrefix = "notif.slot."
     private let slotTimeKeyPrefix = "notif.slotTime."
+    private static let legacyNoonMigrationKeyPrefix = "notif.slotTime.legacyNoonMigrated."
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -47,6 +48,7 @@ final class NotificationPreferencesStore: ObservableObject {
         var times: [NotificationSlot: DateComponents] = [:]
         for slot in NotificationSlot.allCases {
             let key = slotTimeKeyPrefix + slot.rawValue
+            Self.migrateLegacyNoonDefaultIfNeeded(defaults: defaults, slot: slot, key: key)
             let value = defaults.string(forKey: key)
             if let parsed = Self.parseTimeString(value) {
                 times[slot] = parsed
@@ -124,11 +126,13 @@ final class NotificationPreferencesStore: ObservableObject {
         var times: [NotificationSlot: DateComponents] = [:]
         for slot in NotificationSlot.allCases {
             let patientKey = slotTimeKey(for: slot)
+            Self.migrateLegacyNoonDefaultIfNeeded(defaults: defaults, slot: slot, key: patientKey)
             let patientValue = defaults.string(forKey: patientKey)
             if let parsed = Self.parseTimeString(patientValue) {
                 times[slot] = parsed
             } else {
                 // Fall back to global setting
+                Self.migrateLegacyNoonDefaultIfNeeded(defaults: defaults, slot: slot, key: slotTimeKeyPrefix + slot.rawValue)
                 let globalValue = defaults.string(forKey: slotTimeKeyPrefix + slot.rawValue)
                 if let parsed = Self.parseTimeString(globalValue) {
                     times[slot] = parsed
@@ -141,6 +145,16 @@ final class NotificationPreferencesStore: ObservableObject {
             }
         }
         slotTimes = times
+    }
+
+    private static func migrateLegacyNoonDefaultIfNeeded(defaults: UserDefaults, slot: NotificationSlot, key: String) {
+        guard slot == .noon else { return }
+        let migrationKey = legacyNoonMigrationKeyPrefix + key
+        guard !defaults.bool(forKey: migrationKey) else { return }
+        if defaults.string(forKey: key) == "12:00" {
+            defaults.set("13:00", forKey: key)
+        }
+        defaults.set(true, forKey: migrationKey)
     }
 
     func slotTimeQueryItems() -> [URLQueryItem] {

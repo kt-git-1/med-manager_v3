@@ -39,7 +39,7 @@ enum NotificationSlot: String, CaseIterable {
         case .morning:
             return (8, 0)
         case .noon:
-            return (12, 0)
+            return (13, 0)
         case .evening:
             return (19, 0)
         case .bedtime:

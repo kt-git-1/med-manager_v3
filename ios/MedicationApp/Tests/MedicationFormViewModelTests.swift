@@ -8,7 +8,7 @@ final class MedicationFormViewModelTests: XCTestCase {
         defaults.removePersistentDomain(forName: "MedicationFormViewModelTests.defaults")
         let preferencesStore = NotificationPreferencesStore(defaults: defaults)
         preferencesStore.setSlotTime(.morning, hour: 8, minute: 0)
-        preferencesStore.setSlotTime(.noon, hour: 12, minute: 0)
+        preferencesStore.setSlotTime(.noon, hour: 13, minute: 0)
         preferencesStore.setSlotTime(.evening, hour: 18, minute: 0)
         preferencesStore.setSlotTime(.bedtime, hour: 21, minute: 0)
 

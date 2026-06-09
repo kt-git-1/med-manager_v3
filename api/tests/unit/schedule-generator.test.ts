@@ -179,4 +179,25 @@ describe("schedule generator", () => {
 
     expect(doses.map((dose) => dose.scheduledAt)).toEqual(["2026-01-31T22:30:00.000Z"]);
   });
+
+  it("resolves noon slot key to one pm by default", () => {
+    const from = new Date("2026-02-01T00:00:00+09:00");
+    const to = new Date("2026-02-02T00:00:00+09:00");
+
+    const doses = generateSchedule({
+      medications: [baseMedication],
+      regimens: [
+        {
+          ...baseRegimen,
+          timezone: "Asia/Tokyo",
+          daysOfWeek: [],
+          times: ["noon"]
+        }
+      ],
+      from,
+      to
+    });
+
+    expect(doses.map((dose) => dose.scheduledAt)).toEqual(["2026-02-01T04:00:00.000Z"]);
+  });
 });

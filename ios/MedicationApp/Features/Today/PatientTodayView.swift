@@ -737,7 +737,7 @@ private struct PrnMedicationListView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
-                .padding(.bottom, 40)
+                .padding(.bottom, 132)
             }
         }
         .navigationTitle(NSLocalizedString("patient.today.prn.screen.title", comment: "PRN screen title"))
