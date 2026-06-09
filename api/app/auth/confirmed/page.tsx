@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "メール確認完了 | お薬管理アプリ"
+  title: "メール確認完了 | お薬見守りアプリ"
 };
 
 export default function AuthConfirmedPage() {
@@ -55,7 +55,7 @@ export default function AuthConfirmedPage() {
             lineHeight: 1.7
           }}
         >
-          お薬管理アプリに戻り、家族アカウントでログインしてください。
+          お薬見守りアプリに戻り、家族アカウントでログインしてください。
         </p>
       </section>
     </main>

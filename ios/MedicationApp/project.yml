@@ -31,7 +31,7 @@ targets:
         API_BASE_URL: "https://med-manager-v3.vercel.app/"
         SUPABASE_URL: "https://kairaeahklftpjfcaddh.supabase.co"
         SUPABASE_ANON_KEY: "sb_publishable_nVf6RMV1tUkg8ew7BJLVnw_YDnUMRra"
-        CFBundleDisplayName: "お薬管理アプリ"
+        CFBundleDisplayName: "お薬見守り"
         UILaunchStoryboardName: "LaunchScreen"
         UIBackgroundModes:
           - remote-notification
