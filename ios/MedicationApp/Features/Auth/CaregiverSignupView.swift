@@ -19,110 +19,113 @@ struct CaregiverSignupView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
+        ScrollView {
+            VStack(spacing: 0) {
+                Spacer(minLength: 52)
 
-            VStack(spacing: 28) {
-                // Header
-                VStack(spacing: 12) {
-                    Image(systemName: "person.badge.plus.fill")
-                        .font(.system(size: 52))
-                        .foregroundStyle(.tint)
-                        .symbolRenderingMode(.hierarchical)
-                    Text(NSLocalizedString("caregiver.signup.title", comment: "Caregiver signup title"))
-                        .font(.title.weight(.bold))
-                        .multilineTextAlignment(.center)
-                    Text(NSLocalizedString("caregiver.signup.subtitle", comment: "Caregiver signup subtitle"))
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-
-                // Form fields
-                VStack(spacing: 12) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "envelope.fill")
+                VStack(spacing: 28) {
+                    // Header
+                    VStack(spacing: 12) {
+                        Image(systemName: "person.badge.plus.fill")
+                            .font(.system(size: 52))
+                            .foregroundStyle(.tint)
+                            .symbolRenderingMode(.hierarchical)
+                        Text(NSLocalizedString("caregiver.signup.title", comment: "Caregiver signup title"))
+                            .font(.title.weight(.bold))
+                            .multilineTextAlignment(.center)
+                        Text(NSLocalizedString("caregiver.signup.subtitle", comment: "Caregiver signup subtitle"))
+                            .font(.headline.weight(.semibold))
                             .foregroundStyle(.secondary)
-                            .frame(width: 20)
-                        TextField(NSLocalizedString("caregiver.signup.email", comment: "Email label"), text: $email)
-                            .textInputAutocapitalization(.never)
-                            .keyboardType(.emailAddress)
-                            .accessibilityLabel(NSLocalizedString("a11y.email", comment: "Email"))
+                            .multilineTextAlignment(.center)
                     }
-                    .padding(14)
-                    .background(.fill.quaternary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                    HStack(spacing: 12) {
-                        Image(systemName: "lock.fill")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20)
-                        SecureField(NSLocalizedString("caregiver.signup.password", comment: "Password label"), text: $password)
-                            .accessibilityLabel(NSLocalizedString("a11y.password", comment: "Password"))
+                    // Form fields
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "envelope.fill")
+                                .foregroundStyle(.secondary)
+                                .frame(width: 20)
+                            TextField(NSLocalizedString("caregiver.signup.email", comment: "Email label"), text: $email)
+                                .textInputAutocapitalization(.never)
+                                .keyboardType(.emailAddress)
+                                .accessibilityLabel(NSLocalizedString("a11y.email", comment: "Email"))
+                        }
+                        .padding(14)
+                        .background(.fill.quaternary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                        HStack(spacing: 12) {
+                            Image(systemName: "lock.fill")
+                                .foregroundStyle(.secondary)
+                                .frame(width: 20)
+                            SecureField(NSLocalizedString("caregiver.signup.password", comment: "Password label"), text: $password)
+                                .accessibilityLabel(NSLocalizedString("a11y.password", comment: "Password"))
+                        }
+                        .padding(14)
+                        .background(.fill.quaternary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
-                    .padding(14)
-                    .background(.fill.quaternary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
 
-                if let errorMessage {
-                    ErrorStateView(message: errorMessage)
-                }
+                    if let errorMessage {
+                        ErrorStateView(message: errorMessage)
+                    }
 
-                if let infoMessage {
-                    SignupInfoView(message: infoMessage)
+                    if let infoMessage {
+                        SignupInfoView(message: infoMessage)
+                        Button {
+                            Task { await resendConfirmationEmail() }
+                        } label: {
+                            Group {
+                                if isResending {
+                                    ProgressView()
+                                } else {
+                                    Label(
+                                        NSLocalizedString("caregiver.signup.resend.button", comment: "Resend confirmation email"),
+                                        systemImage: "envelope.arrow.triangle.branch"
+                                    )
+                                }
+                            }
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(Color.accentColor)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 14))
+                        }
+                        .disabled(isLoading || isResending)
+                        .accessibilityLabel(NSLocalizedString("a11y.signup.resend", comment: "Resend confirmation email"))
+                    }
+
+                    // Signup button
                     Button {
-                        Task { await resendConfirmationEmail() }
+                        Task { await signup() }
                     } label: {
                         Group {
-                            if isResending {
+                            if isLoading {
                                 ProgressView()
+                                    .tint(.white)
                             } else {
-                                Label(
-                                    NSLocalizedString("caregiver.signup.resend.button", comment: "Resend confirmation email"),
-                                    systemImage: "envelope.arrow.triangle.branch"
-                                )
+                                Text(NSLocalizedString("caregiver.signup.button", comment: "Signup button"))
                             }
                         }
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(Color.accentColor)
+                        .font(.headline)
+                        .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 14))
+                        .frame(height: 50)
+                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
                     }
-                    .disabled(isLoading || isResending)
-                    .accessibilityLabel(NSLocalizedString("a11y.signup.resend", comment: "Resend confirmation email"))
+                    .disabled(isLoading || !isFormReady)
+                    .opacity(isFormReady ? 1 : 0.5)
+                    .accessibilityLabel(NSLocalizedString("a11y.signup", comment: "Signup"))
                 }
+                .padding(28)
+                .frame(maxWidth: .infinity)
+                .glassEffect(.regular, in: .rect(cornerRadius: 24))
+                .padding(.horizontal, 24)
 
-                // Signup button
-                Button {
-                    Task { await signup() }
-                } label: {
-                    Group {
-                        if isLoading {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Text(NSLocalizedString("caregiver.signup.button", comment: "Signup button"))
-                        }
-                    }
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
-                }
-                .disabled(isLoading || !isFormReady)
-                .opacity(isFormReady ? 1 : 0.5)
-                .accessibilityLabel(NSLocalizedString("a11y.signup", comment: "Signup"))
+                Spacer(minLength: 52)
             }
-            .padding(28)
-            .frame(maxWidth: .infinity)
-            .glassEffect(.regular, in: .rect(cornerRadius: 24))
-            .padding(.horizontal, 24)
-
-            Spacer()
         }
+        .scrollIndicators(.hidden)
         .accessibilityIdentifier("CaregiverSignupView")
     }
 

@@ -15,7 +15,7 @@
 "auth.error.network" = "通信に失敗しました。インターネット接続を確認して、もう一度お試しください。";
 "auth.error.forbidden" = "このアカウントではログインできません。";
 "auth.error.notFound" = "ログイン機能に接続できません。しばらくしてからもう一度お試しください。";
-"auth.error.tooManyRequests" = "ログイン試行が続いたため、一時的に制限されています。少し時間をおいてからもう一度お試しください。";
+"auth.error.tooManyRequests" = "ログイン試行が続いたため、少し時間をおいてからもう一度お試しください。";
 "auth.error.unavailable" = "ログイン機能が一時的に利用できません。しばらくしてからもう一度お試しください。";
 "common.save" = "保存";
 "common.cancel" = "キャンセル";

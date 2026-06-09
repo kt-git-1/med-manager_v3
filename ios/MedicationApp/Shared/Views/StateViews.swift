@@ -97,15 +97,17 @@ struct ErrorStateView: View {
                 .font(.system(size: 36, weight: .semibold))
                 .foregroundStyle(.red)
             Text(message)
-                .font(.title3.weight(.semibold))
+                .font(.headline.weight(.semibold))
                 .foregroundStyle(.red)
                 .multilineTextAlignment(.center)
                 .lineSpacing(4)
+                .lineLimit(nil)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity)
-        .padding(24)
+        .padding(22)
         .glassEffect(.regular, in: .rect(cornerRadius: 18))
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 16)
         .accessibilityLabel(message)
     }
 }

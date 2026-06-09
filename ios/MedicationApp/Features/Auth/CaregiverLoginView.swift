@@ -10,80 +10,83 @@ struct CaregiverLoginView: View {
     private let authService = AuthService()
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
+        ScrollView {
+            VStack(spacing: 0) {
+                Spacer(minLength: 72)
 
-            VStack(spacing: 28) {
-                // Header
-                VStack(spacing: 12) {
-                    Image(systemName: "person.circle.fill")
-                        .font(.system(size: 52))
-                        .foregroundStyle(.tint)
-                        .symbolRenderingMode(.hierarchical)
-                    Text(NSLocalizedString("caregiver.login.title", comment: "Caregiver login title"))
-                        .font(.title.weight(.bold))
-                }
-
-                // Form fields
-                VStack(spacing: 12) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "envelope.fill")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20)
-                        TextField(NSLocalizedString("caregiver.login.email", comment: "Email label"), text: $email)
-                            .textInputAutocapitalization(.never)
-                            .keyboardType(.emailAddress)
-                            .accessibilityLabel(NSLocalizedString("a11y.email", comment: "Email"))
+                VStack(spacing: 28) {
+                    // Header
+                    VStack(spacing: 12) {
+                        Image(systemName: "person.circle.fill")
+                            .font(.system(size: 52))
+                            .foregroundStyle(.tint)
+                            .symbolRenderingMode(.hierarchical)
+                        Text(NSLocalizedString("caregiver.login.title", comment: "Caregiver login title"))
+                            .font(.title.weight(.bold))
                     }
-                    .padding(14)
-                    .background(.fill.quaternary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                    HStack(spacing: 12) {
-                        Image(systemName: "lock.fill")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20)
-                        SecureField(NSLocalizedString("caregiver.login.password", comment: "Password label"), text: $password)
-                            .accessibilityLabel(NSLocalizedString("a11y.password", comment: "Password"))
-                    }
-                    .padding(14)
-                    .background(.fill.quaternary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-
-                if let errorMessage {
-                    ErrorStateView(message: errorMessage)
-                }
-
-                // Login button
-                Button {
-                    Task { await login() }
-                } label: {
-                    Group {
-                        if isLoading {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Text(NSLocalizedString("caregiver.login.button", comment: "Login button"))
+                    // Form fields
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "envelope.fill")
+                                .foregroundStyle(.secondary)
+                                .frame(width: 20)
+                            TextField(NSLocalizedString("caregiver.login.email", comment: "Email label"), text: $email)
+                                .textInputAutocapitalization(.never)
+                                .keyboardType(.emailAddress)
+                                .accessibilityLabel(NSLocalizedString("a11y.email", comment: "Email"))
                         }
-                    }
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
-                }
-                .disabled(isLoading || email.isEmpty || password.isEmpty)
-                .opacity(email.isEmpty || password.isEmpty ? 0.5 : 1)
-                .accessibilityLabel(NSLocalizedString("a11y.login", comment: "Login"))
-            }
-            .padding(28)
-            .frame(maxWidth: .infinity)
-            .glassEffect(.regular, in: .rect(cornerRadius: 24))
-            .padding(.horizontal, 24)
+                        .padding(14)
+                        .background(.fill.quaternary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
 
-            Spacer()
+                        HStack(spacing: 12) {
+                            Image(systemName: "lock.fill")
+                                .foregroundStyle(.secondary)
+                                .frame(width: 20)
+                            SecureField(NSLocalizedString("caregiver.login.password", comment: "Password label"), text: $password)
+                                .accessibilityLabel(NSLocalizedString("a11y.password", comment: "Password"))
+                        }
+                        .padding(14)
+                        .background(.fill.quaternary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+
+                    if let errorMessage {
+                        ErrorStateView(message: errorMessage)
+                    }
+
+                    // Login button
+                    Button {
+                        Task { await login() }
+                    } label: {
+                        Group {
+                            if isLoading {
+                                ProgressView()
+                                    .tint(.white)
+                            } else {
+                                Text(NSLocalizedString("caregiver.login.button", comment: "Login button"))
+                            }
+                        }
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
+                    }
+                    .disabled(isLoading || email.isEmpty || password.isEmpty)
+                    .opacity(email.isEmpty || password.isEmpty ? 0.5 : 1)
+                    .accessibilityLabel(NSLocalizedString("a11y.login", comment: "Login"))
+                }
+                .padding(28)
+                .frame(maxWidth: .infinity)
+                .glassEffect(.regular, in: .rect(cornerRadius: 24))
+                .padding(.horizontal, 24)
+
+                Spacer(minLength: 72)
+            }
         }
+        .scrollIndicators(.hidden)
         .accessibilityIdentifier("CaregiverLoginView")
     }
 
