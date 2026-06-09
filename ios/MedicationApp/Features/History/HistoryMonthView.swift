@@ -49,6 +49,24 @@ enum PatientHistoryEncouragement {
     }
 }
 
+enum PatientHistoryTodayEncouragement {
+    static func localizedKey(totalCount: Int, takenCount: Int, pendingCount: Int, missedCount: Int) -> String {
+        if totalCount == 0 {
+            return "patient.history.today.encouragement.noSchedule"
+        }
+        if missedCount > 0 {
+            return "patient.history.today.encouragement.missed"
+        }
+        if takenCount == totalCount && pendingCount == 0 {
+            return "patient.history.today.encouragement.complete"
+        }
+        if takenCount > 0 {
+            return "patient.history.today.encouragement.partial"
+        }
+        return "patient.history.today.encouragement.start"
+    }
+}
+
 struct HistoryMonthView: View {
     private static let historyTimeZone = AppConstants.defaultTimeZone
     private static let calendar: Calendar = {
@@ -322,6 +340,8 @@ struct HistoryMonthView: View {
 
     private var patientSimpleHistory: some View {
         VStack(alignment: .leading, spacing: 16) {
+            todayProgressCard
+
             PatientCard(accent: PatientUI.teal) {
                 VStack(alignment: .center, spacing: 18) {
                     Text(NSLocalizedString("patient.history.week.title", comment: "Patient week title"))
@@ -394,6 +414,90 @@ struct HistoryMonthView: View {
         }
     }
 
+    private var todayProgressCard: some View {
+        PatientCard(accent: todayProgressAccent) {
+            HStack(alignment: .center, spacing: 16) {
+                todayProgressRing
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(NSLocalizedString("patient.history.today.progress.title", comment: "Today progress title"))
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
+
+                    Text(todayProgressTitle)
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text(NSLocalizedString(todayEncouragementKey, comment: "Today encouragement"))
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if todayTotalCount > 0 {
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 8) {
+                                todayProgressPills
+                            }
+                            VStack(alignment: .leading, spacing: 8) {
+                                todayProgressPills
+                            }
+                        }
+                    }
+                }
+
+                Spacer(minLength: 0)
+            }
+        }
+        .accessibilityIdentifier("PatientHistoryTodayProgressCard")
+    }
+
+    @ViewBuilder
+    private var todayProgressPills: some View {
+        PatientStatusPill(
+            text: String(format: NSLocalizedString("caregiver.history.summary.taken", comment: "Taken count"), todayTakenCount),
+            color: PatientUI.teal,
+            systemImage: "checkmark.circle.fill"
+        )
+        if todayRemainingCount > 0 {
+            PatientStatusPill(
+                text: String(format: NSLocalizedString("patient.history.today.progress.remaining", comment: "Today remaining count"), todayRemainingCount),
+                color: PatientUI.orange,
+                systemImage: "clock.fill"
+            )
+        }
+        if todayMissedCount > 0 {
+            PatientStatusPill(
+                text: String(format: NSLocalizedString("patient.history.today.progress.missed", comment: "Today missed count"), todayMissedCount),
+                color: PatientUI.red,
+                systemImage: "exclamationmark.triangle.fill"
+            )
+        }
+    }
+
+    private var todayProgressRing: some View {
+        ZStack {
+            Circle()
+                .stroke(todayProgressAccent.opacity(0.16), lineWidth: 10)
+            Circle()
+                .trim(from: 0, to: todayProgressFraction)
+                .stroke(todayProgressAccent, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            VStack(spacing: 0) {
+                Text(todayProgressRatioText)
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundStyle(todayProgressAccent)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.64)
+                Text(NSLocalizedString("patient.history.today.progress.unit", comment: "Dose slot unit"))
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(width: 86, height: 86)
+        .accessibilityHidden(true)
+    }
+
     private func patientWeekDayView(for date: Date) -> some View {
         let status = patientHistoryStatus(for: date)
         let isUpcoming = isFutureDate(date) && status == .pending
@@ -430,6 +534,63 @@ struct HistoryMonthView: View {
 
     private var weeklyRecordedCount: Int {
         currentWeekDates.filter { patientHistoryStatus(for: $0) == .taken }.count
+    }
+
+    private var todayKey: String {
+        HistoryMonthView.dateKeyFormatter.string(from: Date())
+    }
+
+    private var todaySummary: HistorySlotSummaryDTO? {
+        summariesByDate[todayKey]
+    }
+
+    private var todayStatuses: [HistorySlotSummaryStatusDTO] {
+        guard let todaySummary else { return [] }
+        return [todaySummary.morning, todaySummary.noon, todaySummary.evening, todaySummary.bedtime]
+            .filter { $0 != .none }
+    }
+
+    private var todayTotalCount: Int { todayStatuses.count }
+    private var todayTakenCount: Int { todayStatuses.filter { $0 == .taken }.count }
+    private var todayPendingCount: Int { todayStatuses.filter { $0 == .pending }.count }
+    private var todayMissedCount: Int { todayStatuses.filter { $0 == .missed }.count }
+    private var todayRemainingCount: Int { todayPendingCount + todayMissedCount }
+
+    private var todayProgressFraction: Double {
+        guard todayTotalCount > 0 else { return 0 }
+        return Double(todayTakenCount) / Double(todayTotalCount)
+    }
+
+    private var todayProgressRatioText: String {
+        guard todayTotalCount > 0 else { return "--" }
+        return "\(todayTakenCount)/\(todayTotalCount)"
+    }
+
+    private var todayProgressTitle: String {
+        if todayTotalCount == 0 {
+            return NSLocalizedString("patient.history.today.progress.noSchedule", comment: "Today no schedule")
+        }
+        return String(
+            format: NSLocalizedString("patient.history.today.progress.format", comment: "Today progress format"),
+            todayTakenCount,
+            todayTotalCount
+        )
+    }
+
+    private var todayEncouragementKey: String {
+        PatientHistoryTodayEncouragement.localizedKey(
+            totalCount: todayTotalCount,
+            takenCount: todayTakenCount,
+            pendingCount: todayPendingCount,
+            missedCount: todayMissedCount
+        )
+    }
+
+    private var todayProgressAccent: Color {
+        if todayMissedCount > 0 { return PatientUI.red }
+        if todayTotalCount > 0, todayTakenCount == todayTotalCount { return PatientUI.teal }
+        if todayTakenCount > 0 { return PatientUI.orange }
+        return PatientUI.blue
     }
 
     private var patientWeekEncouragementKey: String {

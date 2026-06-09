@@ -159,6 +159,17 @@
 "patient.history.week.encouragement.streak" = "連続で記録できています。とても良いペースです。";
 "patient.history.week.encouragement.streakStrong" = "記録が続いています。すばらしいです。この調子で体調の変化を見守っていきましょう。";
 "patient.history.recent.title" = "最近の記録";
+"patient.history.today.progress.title" = "今日の進捗";
+"patient.history.today.progress.format" = "%d/%d回分 記録済み";
+"patient.history.today.progress.noSchedule" = "今日は予定がありません";
+"patient.history.today.progress.unit" = "回分";
+"patient.history.today.progress.remaining" = "残り %d回分";
+"patient.history.today.progress.missed" = "飲み忘れ %d回分";
+"patient.history.today.encouragement.complete" = "今日の分、しっかり記録できています。すばらしいです。";
+"patient.history.today.encouragement.partial" = "ここまで順調です。残りも飲めたら記録しましょう。";
+"patient.history.today.encouragement.start" = "今日の予定を確認して、飲めたら記録しましょう。";
+"patient.history.today.encouragement.missed" = "飲み忘れがあります。気づいた時点で確認しましょう。";
+"patient.history.today.encouragement.noSchedule" = "今日は定時薬の予定がありません。必要な時のお薬だけ記録できます。";
 "patient.history.today.format" = "今日 %@";
 "patient.history.yesterday.format" = "昨日 %@";
 "patient.history.subtitle.slots" = "%@のお薬";

@@ -189,4 +189,27 @@ final class HistoryRetentionTests: XCTestCase {
             "patient.history.week.encouragement.streakStrong"
         )
     }
+
+    func testPatientHistoryTodayEncouragementKeysReflectProgress() throws {
+        XCTAssertEqual(
+            PatientHistoryTodayEncouragement.localizedKey(totalCount: 0, takenCount: 0, pendingCount: 0, missedCount: 0),
+            "patient.history.today.encouragement.noSchedule"
+        )
+        XCTAssertEqual(
+            PatientHistoryTodayEncouragement.localizedKey(totalCount: 4, takenCount: 4, pendingCount: 0, missedCount: 0),
+            "patient.history.today.encouragement.complete"
+        )
+        XCTAssertEqual(
+            PatientHistoryTodayEncouragement.localizedKey(totalCount: 4, takenCount: 2, pendingCount: 2, missedCount: 0),
+            "patient.history.today.encouragement.partial"
+        )
+        XCTAssertEqual(
+            PatientHistoryTodayEncouragement.localizedKey(totalCount: 4, takenCount: 0, pendingCount: 4, missedCount: 0),
+            "patient.history.today.encouragement.start"
+        )
+        XCTAssertEqual(
+            PatientHistoryTodayEncouragement.localizedKey(totalCount: 4, takenCount: 3, pendingCount: 0, missedCount: 1),
+            "patient.history.today.encouragement.missed"
+        )
+    }
 }
