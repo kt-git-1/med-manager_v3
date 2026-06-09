@@ -3,7 +3,6 @@ import SwiftUI
 struct CaregiverTodayView: View {
     private let sessionStore: SessionStore
     private let onOpenPatients: () -> Void
-    private let onOpenNotifications: () -> Void
     private let patientName: String?
     private let headerView: AnyView?
     @StateObject private var viewModel: CaregiverTodayViewModel
@@ -15,14 +14,12 @@ struct CaregiverTodayView: View {
     init(
         sessionStore: SessionStore? = nil,
         onOpenPatients: @escaping () -> Void = {},
-        onOpenNotifications: @escaping () -> Void = {},
         patientName: String? = nil,
         headerView: AnyView? = nil
     ) {
         let store = sessionStore ?? SessionStore()
         self.sessionStore = store
         self.onOpenPatients = onOpenPatients
-        self.onOpenNotifications = onOpenNotifications
         self.patientName = patientName
         self.headerView = headerView
         let baseURL = SessionStore.resolveBaseURL()
@@ -215,15 +212,6 @@ struct CaregiverTodayView: View {
                     .foregroundStyle(.primary)
             }
             Spacer()
-            Button(action: onOpenNotifications) {
-                Image(systemName: "bell")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(CaregiverUI.tealDark)
-                    .frame(width: 42, height: 42)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(NSLocalizedString("caregiver.dashboard.notifications", comment: "Notifications"))
-            .accessibilityIdentifier("CaregiverTodayNotificationsButton")
         }
     }
 
@@ -935,11 +923,7 @@ private struct CaregiverTodayDoseLine: View {
 
             Spacer(minLength: 0)
 
-            CaregiverStatusPill(
-                text: isOutOfStock ? NSLocalizedString("patient.today.outOfStock", comment: "Out of stock") : statusText,
-                color: isOutOfStock ? CaregiverUI.red : statusColor,
-                systemImage: statusIcon
-            )
+            statusIndicator
 
             if dose.effectiveStatus == .taken {
                 Button(action: onDelete) {
@@ -981,6 +965,24 @@ private struct CaregiverTodayDoseLine: View {
             return NSLocalizedString("caregiver.today.timeline.missed", comment: "Missed")
         case .pending, .none:
             return NSLocalizedString("caregiver.today.timeline.pending", comment: "Pending")
+        }
+    }
+
+    @ViewBuilder
+    private var statusIndicator: some View {
+        if dose.effectiveStatus == .taken && !isOutOfStock {
+            Image(systemName: "checkmark")
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(statusColor)
+                .frame(width: 42, height: 34)
+                .background(statusColor.opacity(0.13), in: Capsule())
+                .accessibilityLabel(statusText)
+        } else {
+            CaregiverStatusPill(
+                text: isOutOfStock ? NSLocalizedString("patient.today.outOfStock", comment: "Out of stock") : statusText,
+                color: isOutOfStock ? CaregiverUI.red : statusColor,
+                systemImage: statusIcon
+            )
         }
     }
 

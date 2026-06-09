@@ -27,8 +27,7 @@ struct CaregiverHomeView: View {
                     sessionStore: sessionStore,
                     patientName: currentPatientName,
                     onOpenPatients: { openPatientSettings() },
-                    onCreatePatient: { openPatientCreate() },
-                    onOpenNotifications: { selectedTab = .patients }
+                    onCreatePatient: { openPatientCreate() }
                 )
             case .medications:
                 CaregiverMedicationView(
@@ -528,21 +527,18 @@ struct CaregiverTodayTabView: View {
     private let patientName: String?
     private let onOpenPatients: () -> Void
     private let onCreatePatient: () -> Void
-    private let onOpenNotifications: () -> Void
     @StateObject private var viewModel: CaregiverMedicationViewModel
 
     init(
         sessionStore: SessionStore,
         patientName: String?,
         onOpenPatients: @escaping () -> Void,
-        onCreatePatient: @escaping () -> Void,
-        onOpenNotifications: @escaping () -> Void
+        onCreatePatient: @escaping () -> Void
     ) {
         self.sessionStore = sessionStore
         self.patientName = patientName
         self.onOpenPatients = onOpenPatients
         self.onCreatePatient = onCreatePatient
-        self.onOpenNotifications = onOpenNotifications
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
             wrappedValue: CaregiverMedicationViewModel(
@@ -595,7 +591,6 @@ struct CaregiverTodayTabView: View {
                     CaregiverTodayView(
                         sessionStore: sessionStore,
                         onOpenPatients: onOpenPatients,
-                        onOpenNotifications: onOpenNotifications,
                         patientName: patientName
                     )
                 }
