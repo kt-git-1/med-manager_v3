@@ -4,6 +4,10 @@ export type PatientRecord = {
   id: string;
   caregiverId: string;
   displayName: string;
+  morningTime: string;
+  noonTime: string;
+  eveningTime: string;
+  bedtimeTime: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -34,5 +38,23 @@ export async function getPatientRecordForCaregiver(
 ): Promise<PatientRecord | null> {
   return prisma.patient.findFirst({
     where: { id: patientId, caregiverId }
+  });
+}
+
+export async function updatePatientSlotTimes(input: {
+  patientId: string;
+  morningTime: string;
+  noonTime: string;
+  eveningTime: string;
+  bedtimeTime: string;
+}): Promise<PatientRecord> {
+  return prisma.patient.update({
+    where: { id: input.patientId },
+    data: {
+      morningTime: input.morningTime,
+      noonTime: input.noonTime,
+      eveningTime: input.eveningTime,
+      bedtimeTime: input.bedtimeTime
+    }
   });
 }

@@ -51,6 +51,20 @@ final class APIClient {
         return try decoder.decode(CreatePatientResponseDTO.self, from: data).data
     }
 
+    func updatePatientSlotTimes(patientId: String, slotTimes: PatientSlotTimesDTO) async throws -> PatientSlotTimesDTO {
+        let url = baseURL.appendingPathComponent("api/patients/\(patientId)")
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        request.httpBody = try JSONEncoder().encode(PatientSlotTimesUpdateRequestDTO(slotTimes: slotTimes))
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try mapErrorIfNeeded(response: response, data: data)
+        return try JSONDecoder().decode(PatientSlotTimesResponseDTO.self, from: data).data.slotTimes
+    }
+
     func issueLinkingCode(patientId: String) async throws -> LinkingCodeDTO {
         let url = baseURL.appendingPathComponent("api/patients/\(patientId)/linking-codes")
         var request = URLRequest(url: url)

@@ -279,11 +279,10 @@ final class PatientTodayViewModel: ObservableObject {
             defer { isUpdating = false }
             do {
                 let dateString = dateKeyFormatter.string(from: Date())
-                let slotTimes = preferencesStore.slotTimeQueryItems()
                 _ = try await apiClient.bulkRecordSlot(
                     date: dateString,
                     slot: slot.rawValue,
-                    slotTimes: slotTimes
+                    slotTimes: []
                 )
                 showToast(NSLocalizedString("patient.today.slot.bulk.success", comment: "Bulk recorded"))
                 load(showLoading: false)
@@ -294,8 +293,7 @@ final class PatientTodayViewModel: ObservableObject {
     }
 
     private func refreshTodayData() async throws {
-        let slotTimeItems = preferencesStore.slotTimeQueryItems()
-        async let dosesTask = apiClient.fetchPatientToday(slotTimeItems: slotTimeItems)
+        async let dosesTask = apiClient.fetchPatientToday(slotTimeItems: [])
         async let medicationsTask = apiClient.fetchMedications(patientId: nil)
         let (doses, medications) = try await (dosesTask, medicationsTask)
         items = doses.sorted(by: sortDose)

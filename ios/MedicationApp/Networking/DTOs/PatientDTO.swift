@@ -3,6 +3,14 @@ import Foundation
 struct PatientDTO: Decodable, Identifiable {
     let id: String
     let displayName: String
+    let slotTimes: PatientSlotTimesDTO?
+}
+
+struct PatientSlotTimesDTO: Codable, Equatable {
+    let morning: String
+    let noon: String
+    let evening: String
+    let bedtime: String
 }
 
 struct PatientListResponseDTO: Decodable {
@@ -37,6 +45,18 @@ struct DeletePatientResponseDTO: Decodable {
 
 struct DeletePatientResultDTO: Decodable {
     let deleted: Bool
+}
+
+struct PatientSlotTimesUpdateRequestDTO: Encodable {
+    let slotTimes: PatientSlotTimesDTO
+}
+
+struct PatientSlotTimesResponseDTO: Decodable {
+    let data: PatientSlotTimesDataDTO
+}
+
+struct PatientSlotTimesDataDTO: Decodable {
+    let slotTimes: PatientSlotTimesDTO
 }
 
 struct PatientSessionResponseDTO: Decodable {

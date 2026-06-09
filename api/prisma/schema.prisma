@@ -114,6 +114,10 @@ model Patient {
   id          String   @id @default(uuid())
   caregiverId String
   displayName String
+  morningTime String   @default("08:00")
+  noonTime    String   @default("13:00")
+  eveningTime String   @default("19:00")
+  bedtimeTime String   @default("22:00")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

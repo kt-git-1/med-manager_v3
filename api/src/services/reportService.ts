@@ -9,6 +9,7 @@
 
 import { getScheduleWithStatus, getLocalDateKey } from "./scheduleService";
 import { groupDosesByLocalDate, resolveSlot } from "./scheduleResponse";
+import { resolvePatientSlotTimes } from "./patientSlotTimeService";
 import { prisma } from "../repositories/prisma";
 
 const HISTORY_TZ = "Asia/Tokyo";
@@ -95,11 +96,14 @@ export async function generateReport(
     Math.round((rangeTo.getTime() - rangeFrom.getTime()) / (1000 * 60 * 60 * 24));
 
   // ----- 1. Scheduled doses -----
+  const slotTimes = await resolvePatientSlotTimes(patientId);
   const doses = await getScheduleWithStatus(
     patientId,
     rangeFrom,
     rangeTo,
-    HISTORY_TZ
+    HISTORY_TZ,
+    new Date(),
+    slotTimes
   );
   const grouped = groupDosesByLocalDate(doses, HISTORY_TZ);
 
@@ -141,7 +145,7 @@ export async function generateReport(
     };
 
     for (const dose of dayDoses) {
-      const slot = resolveSlot(dose.scheduledAt, HISTORY_TZ);
+      const slot = resolveSlot(dose.scheduledAt, HISTORY_TZ, slotTimes);
       if (!slot) continue;
 
       slots[slot].push({

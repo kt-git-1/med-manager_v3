@@ -110,6 +110,13 @@ final class PatientManagementViewModel: ObservableObject {
             return false
         }
     }
+
+    func updateSlotTimes(patientId: String, slotTimes: PatientSlotTimesDTO) {
+        patients = patients.map { patient in
+            guard patient.id == patientId else { return patient }
+            return PatientDTO(id: patient.id, displayName: patient.displayName, slotTimes: slotTimes)
+        }
+    }
 }
 
 struct PatientManagementView: View {
@@ -267,15 +274,21 @@ struct PatientManagementView: View {
         .onAppear {
             viewModel.load()
             preferencesStore.switchPatient(viewModel.selectedPatientId)
+            applySelectedPatientSlotTimes()
             draftTimes = buildDraftTimes()
             Task { await loadInventoryThreshold() }
             openCreateIfRequested()
+        }
+        .onReceive(viewModel.$patients) { _ in
+            applySelectedPatientSlotTimes()
+            draftTimes = buildDraftTimes()
         }
         .onChange(of: shouldOpenCreate.wrappedValue) { _, _ in
             openCreateIfRequested()
         }
         .onChange(of: viewModel.selectedPatientId) { _, newPatientId in
             preferencesStore.switchPatient(newPatientId)
+            applySelectedPatientSlotTimes()
             draftTimes = buildDraftTimes()
             if let patientId = newPatientId, let saved = Self.loadSavedThreshold(for: patientId) {
                 inventoryThresholdText = String(saved)
@@ -823,8 +836,45 @@ struct PatientManagementView: View {
         return calendar.date(from: components) ?? Date()
     }
 
+    private func applySelectedPatientSlotTimes() {
+        guard let slotTimes = selectedPatient?.slotTimes else { return }
+        applySlotTime(slotTimes.morning, to: .morning)
+        applySlotTime(slotTimes.noon, to: .noon)
+        applySlotTime(slotTimes.evening, to: .evening)
+        applySlotTime(slotTimes.bedtime, to: .bedtime)
+    }
+
+    private func applySlotTime(_ value: String, to slot: NotificationSlot) {
+        guard let parsed = parseTime(value) else { return }
+        preferencesStore.setSlotTime(slot, hour: parsed.hour, minute: parsed.minute)
+    }
+
+    private func parseTime(_ value: String) -> (hour: Int, minute: Int)? {
+        let parts = value.split(separator: ":").compactMap { Int($0) }
+        guard parts.count == 2,
+              (0...23).contains(parts[0]),
+              (0...59).contains(parts[1]) else {
+            return nil
+        }
+        return (parts[0], parts[1])
+    }
+
+    private func currentSlotTimesDTO() -> PatientSlotTimesDTO {
+        let morning = preferencesStore.slotTime(for: .morning)
+        let noon = preferencesStore.slotTime(for: .noon)
+        let evening = preferencesStore.slotTime(for: .evening)
+        let bedtime = preferencesStore.slotTime(for: .bedtime)
+        return PatientSlotTimesDTO(
+            morning: String(format: "%02d:%02d", morning.hour, morning.minute),
+            noon: String(format: "%02d:%02d", noon.hour, noon.minute),
+            evening: String(format: "%02d:%02d", evening.hour, evening.minute),
+            bedtime: String(format: "%02d:%02d", bedtime.hour, bedtime.minute)
+        )
+    }
+
     private func saveDetailSettings() async -> Bool {
         guard !isSavingDetail else { return false }
+        guard let patientId = viewModel.selectedPatientId else { return false }
         isSavingDetail = true
         defer { isSavingDetail = false }
         var calendar = Calendar(identifier: .gregorian)
@@ -841,6 +891,11 @@ struct PatientManagementView: View {
             }
         }
         do {
+            let savedSlotTimes = try await apiClient.updatePatientSlotTimes(
+                patientId: patientId,
+                slotTimes: currentSlotTimesDTO()
+            )
+            viewModel.updateSlotTimes(patientId: patientId, slotTimes: savedSlotTimes)
             try await migrateRegimensToPresetSlots(oldSlotTimes: oldSlotTimes)
             await rescheduleIfNeeded()
             NotificationCenter.default.post(name: .presetTimesUpdated, object: nil)
@@ -895,18 +950,18 @@ struct PatientManagementView: View {
     private func buildLegacyTimeSlotMapping(oldSlotTimes: [NotificationSlot: (hour: Int, minute: Int)]) -> [String: String] {
         var mapping: [String: String] = [:]
         for slot in NotificationSlot.allCases {
-            let configured = preferencesStore.slotTime(for: slot)
-            let configuredString = String(format: "%02d:%02d", configured.hour, configured.minute)
             if let oldTime = oldSlotTimes[slot] {
                 let oldString = String(format: "%02d:%02d", oldTime.hour, oldTime.minute)
-                mapping[oldString] = configuredString
+                mapping[oldString] = slot.rawValue
             }
             let defaultTime = slot.hourMinute
             let defaultString = String(format: "%02d:%02d", defaultTime.hour, defaultTime.minute)
-            mapping[defaultString] = configuredString
+            mapping[defaultString] = slot.rawValue
             let scheduleDefault = defaultScheduleTimeString(for: slot)
-            mapping[scheduleDefault] = configuredString
-            mapping[slot.rawValue] = configuredString
+            mapping[scheduleDefault] = slot.rawValue
+            let configured = preferencesStore.slotTime(for: slot)
+            let configuredString = String(format: "%02d:%02d", configured.hour, configured.minute)
+            mapping[configuredString] = slot.rawValue
         }
         return mapping
     }

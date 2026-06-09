@@ -46,11 +46,11 @@ final class HistoryViewModel: ObservableObject {
                 isLoadingMonth = false
             }
             do {
-                let slotItems = preferencesStore.slotTimeQueryItems()
                 switch sessionStore.mode {
                 case .patient:
-                    self.month = try await apiClient.fetchPatientHistoryMonth(year: year, month: month, slotTimeItems: slotItems)
+                    self.month = try await apiClient.fetchPatientHistoryMonth(year: year, month: month, slotTimeItems: [])
                 case .caregiver:
+                    let slotItems = preferencesStore.slotTimeQueryItems()
                     self.month = try await apiClient.fetchCaregiverHistoryMonth(year: year, month: month, slotTimeItems: slotItems)
                 case .none:
                     self.month = nil
@@ -94,11 +94,11 @@ final class HistoryViewModel: ObservableObject {
                 isLoadingDay = false
             }
             do {
-                let slotItems = preferencesStore.slotTimeQueryItems()
                 switch sessionStore.mode {
                 case .patient:
-                    self.day = try await apiClient.fetchPatientHistoryDay(date: date, slotTimeItems: slotItems)
+                    self.day = try await apiClient.fetchPatientHistoryDay(date: date, slotTimeItems: [])
                 case .caregiver:
+                    let slotItems = preferencesStore.slotTimeQueryItems()
                     self.day = try await apiClient.fetchCaregiverHistoryDay(date: date, slotTimeItems: slotItems)
                 case .none:
                     self.day = nil

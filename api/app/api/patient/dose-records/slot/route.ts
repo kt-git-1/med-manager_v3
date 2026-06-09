@@ -4,6 +4,7 @@ import { requirePatient } from "../../../../../src/middleware/auth";
 import { validateSlotBulkRecordRequest } from "../../../../../src/validators/slotBulkRecord";
 import { parseSlotTimesFromParams } from "../../../../../src/services/scheduleResponse";
 import { bulkRecordSlot } from "../../../../../src/services/slotBulkRecordService";
+import { resolvePatientSlotTimes } from "../../../../../src/services/patientSlotTimeService";
 
 export const runtime = "nodejs";
 
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
       patientId: session.patientId,
       date: validation.date!,
       slot: validation.slot!,
-      customSlotTimes: slotTimeParse.slotTimes
+      customSlotTimes: await resolvePatientSlotTimes(session.patientId, slotTimeParse.slotTimes)
     });
 
     logDoseRecordOperation("create", "patient");

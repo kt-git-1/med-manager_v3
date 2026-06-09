@@ -8,6 +8,7 @@ import {
   buildScheduleResponse,
   parseSlotTimesFromParams
 } from "../../../../src/services/scheduleResponse";
+import { resolvePatientSlotTimes } from "../../../../src/services/patientSlotTimeService";
 
 export const runtime = "nodejs";
 
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
       from,
       to,
       now,
-      slotTimes: slotTimeParse.slotTimes
+      slotTimes: await resolvePatientSlotTimes(session.patientId, slotTimeParse.slotTimes)
     });
     const payload = buildScheduleResponse(doses);
     return new Response(JSON.stringify(payload), {

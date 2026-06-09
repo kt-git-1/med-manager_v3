@@ -6,6 +6,7 @@ import {
 } from "../../../src/middleware/auth";
 import { generateScheduleForPatient } from "../../../src/services/scheduleService";
 import { buildScheduleResponse } from "../../../src/services/scheduleResponse";
+import { resolvePatientSlotTimes } from "../../../src/services/patientSlotTimeService";
 
 export const runtime = "nodejs";
 
@@ -45,7 +46,12 @@ export async function GET(request: Request) {
       patientId = session.patientId;
     }
 
-    const doses = await generateScheduleForPatient({ patientId, from, to });
+    const doses = await generateScheduleForPatient({
+      patientId,
+      from,
+      to,
+      slotTimes: await resolvePatientSlotTimes(patientId)
+    });
     const payload = buildScheduleResponse(doses);
     return new Response(JSON.stringify(payload), {
       headers: { "content-type": "application/json" }

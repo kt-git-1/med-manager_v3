@@ -17,10 +17,12 @@ import {
   upsertLinkingAttempt
 } from "../repositories/linkingAttemptRepo";
 import { revokePatientSessionsByPatientId } from "../repositories/patientSessionRepo";
+import { patientSlotTimesFromRecord, type PatientSlotTimes } from "./patientSlotTimeService";
 
 export type PatientSummary = {
   id: string;
   displayName: string;
+  slotTimes: PatientSlotTimes;
 };
 
 export type LinkingCodeIssued = {
@@ -66,14 +68,22 @@ export async function createPatientForCaregiver(
     });
     return created;
   });
-  return { id: patient.id, displayName: patient.displayName };
+  return {
+    id: patient.id,
+    displayName: patient.displayName,
+    slotTimes: patientSlotTimesFromRecord(patient)
+  };
 }
 
 export async function listPatientsForCaregiver(
   caregiverUserId: string
 ): Promise<PatientSummary[]> {
   const records = await listPatientRecordsByCaregiver(caregiverUserId);
-  return records.map((record) => ({ id: record.id, displayName: record.displayName }));
+  return records.map((record) => ({
+    id: record.id,
+    displayName: record.displayName,
+    slotTimes: patientSlotTimesFromRecord(record)
+  }));
 }
 
 export async function issueLinkingCodeForPatient(

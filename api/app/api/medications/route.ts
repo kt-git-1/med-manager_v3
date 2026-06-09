@@ -12,6 +12,7 @@ import { validateMedication } from "../../../src/validators/medication";
 import { createMedication, listMedications, listMedicationInventory, listActiveRegimens } from "../../../src/services/medicationService";
 import { generateScheduleForPatient } from "../../../src/services/scheduleService";
 import { SCHEDULE_LOOKAHEAD_DAYS } from "../../../src/constants";
+import { resolvePatientSlotTimes } from "../../../src/services/patientSlotTimeService";
 
 export const runtime = "nodejs";
 
@@ -49,13 +50,15 @@ export async function GET(request: Request) {
     }
 
     const medications = await listMedications(resolvedPatientId);
+    const slotTimes = await resolvePatientSlotTimes(resolvedPatientId);
     const rangeStart = new Date();
     const rangeEnd = new Date(rangeStart.getTime() + SCHEDULE_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000);
     const [doses, inventoryItems, regimens] = await Promise.all([
       generateScheduleForPatient({
         patientId: resolvedPatientId,
         from: rangeStart,
-        to: rangeEnd
+        to: rangeEnd,
+        slotTimes
       }),
       listMedicationInventory(resolvedPatientId),
       listActiveRegimens(resolvedPatientId)

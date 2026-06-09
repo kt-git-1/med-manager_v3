@@ -15,6 +15,7 @@ import {
   resolveSlot,
   parseSlotTimesFromParams
 } from "../../../../../../src/services/scheduleResponse";
+import { resolvePatientSlotTimes } from "../../../../../../src/services/patientSlotTimeService";
 import { listPrnHistoryItemsByRange } from "../../../../../../src/services/prnDoseRecordService";
 import { validateDateString } from "../../../../../../src/validators/schedule";
 import { checkRetentionForDay } from "../../../../../../src/services/historyRetentionService";
@@ -70,6 +71,7 @@ export async function GET(
     const session = await requireCaregiver(authHeader);
     const { patientId } = await params;
     await assertCaregiverPatientScope(session.caregiverUserId, patientId);
+    const effectiveSlotTimes = await resolvePatientSlotTimes(patientId, customSlotTimes);
     await checkRetentionForDay(dateParam, "caregiver", session.caregiverUserId);
 
     const range = getDayRange(parsedDate, historyTimeZone);
@@ -79,7 +81,7 @@ export async function GET(
       range.to,
       historyTimeZone,
       new Date(),
-      customSlotTimes
+      effectiveSlotTimes
     );
     const prn = await listPrnHistoryItemsByRange({
       patientId,
@@ -90,7 +92,7 @@ export async function GET(
 
     const items = doses
       .map((dose) => {
-        const slot = resolveSlot(dose.scheduledAt, historyTimeZone, customSlotTimes);
+        const slot = resolveSlot(dose.scheduledAt, historyTimeZone, effectiveSlotTimes);
         if (!slot) {
           return null;
         }

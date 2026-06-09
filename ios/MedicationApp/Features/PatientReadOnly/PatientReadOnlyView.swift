@@ -77,7 +77,7 @@ struct PatientReadOnlyView: View {
             apiClient: apiClient,
             includeSecondary: preferencesStore.rereminderEnabled,
             enabledSlots: preferencesStore.enabledSlots(),
-            slotTimes: preferencesStore.slotTimesMap(),
+            slotTimes: [:],
             caregiverPatientId: nil,
             preferencesStore: preferencesStore,
             trigger: trigger
@@ -327,7 +327,7 @@ struct PatientSettingsView: View {
             apiClient: apiClient,
             includeSecondary: preferencesStore.rereminderEnabled,
             enabledSlots: preferencesStore.enabledSlots(),
-            slotTimes: preferencesStore.slotTimesMap(),
+            slotTimes: [:],
             caregiverPatientId: nil,
             preferencesStore: preferencesStore,
             trigger: .settingsChange
