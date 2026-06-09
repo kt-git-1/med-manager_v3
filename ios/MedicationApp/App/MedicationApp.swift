@@ -7,6 +7,7 @@ struct MedicationApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var sessionStore: SessionStore
     @StateObject private var notificationRouter: NotificationDeepLinkRouter
+    @StateObject private var toastPresenter: ToastPresenter
     @StateObject private var reminderBannerPresenter: ReminderBannerPresenter
     @StateObject private var globalBannerPresenter: GlobalBannerPresenter
     @StateObject private var caregiverSessionController: CaregiverSessionController
@@ -17,8 +18,9 @@ struct MedicationApp: App {
     init() {
         let sessionStore = SessionStore()
         let notificationRouter = NotificationDeepLinkRouter()
-        let reminderBannerPresenter = ReminderBannerPresenter()
-        let globalBannerPresenter = GlobalBannerPresenter()
+        let toastPresenter = ToastPresenter()
+        let reminderBannerPresenter = ReminderBannerPresenter(toastPresenter: toastPresenter)
+        let globalBannerPresenter = GlobalBannerPresenter(toastPresenter: toastPresenter)
         let deviceTokenManager = DeviceTokenManager()
         let caregiverSessionController = CaregiverSessionController(
             sessionStore: sessionStore,
@@ -26,6 +28,7 @@ struct MedicationApp: App {
         )
         _sessionStore = StateObject(wrappedValue: sessionStore)
         _notificationRouter = StateObject(wrappedValue: notificationRouter)
+        _toastPresenter = StateObject(wrappedValue: toastPresenter)
         _reminderBannerPresenter = StateObject(wrappedValue: reminderBannerPresenter)
         _globalBannerPresenter = StateObject(wrappedValue: globalBannerPresenter)
         _caregiverSessionController = StateObject(wrappedValue: caregiverSessionController)
@@ -65,6 +68,7 @@ struct MedicationApp: App {
             }
             .environmentObject(sessionStore)
             .environmentObject(notificationRouter)
+            .environmentObject(toastPresenter)
             .environmentObject(reminderBannerPresenter)
             .environmentObject(globalBannerPresenter)
             .environmentObject(caregiverSessionController)

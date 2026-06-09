@@ -4,6 +4,7 @@ import UIKit
 struct RootView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var globalBannerPresenter: GlobalBannerPresenter
+    @EnvironmentObject private var toastPresenter: ToastPresenter
     @EnvironmentObject private var caregiverSessionController: CaregiverSessionController
     @Environment(\.scenePhase) private var scenePhase
     var entitlementStore: EntitlementStore?
@@ -34,11 +35,12 @@ struct RootView: View {
             }
         )
         .overlay(alignment: .top) {
-            if let banner = globalBannerPresenter.banner {
-                GlobalBannerView(banner: banner)
+            if let toast = toastPresenter.toast {
+                ToastOverlayView(toast: toast)
             }
         }
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: globalBannerPresenter.banner)
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: toastPresenter.toast)
+        .sensoryFeedback(.success, trigger: toastPresenter.successFeedbackTrigger)
         .task {
             if sessionStore.mode == .caregiver {
                 await sessionStore.refreshCaregiverTokenIfNeeded()

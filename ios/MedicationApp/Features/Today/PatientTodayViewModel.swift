@@ -8,7 +8,6 @@ final class PatientTodayViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isUpdating = false
     @Published var errorMessage: String?
-    @Published var toastMessage: String?
     @Published var confirmDose: ScheduleDoseDTO?
     @Published var prnMedications: [MedicationDTO] = []
     @Published var confirmPrnMedication: MedicationDTO?
@@ -25,6 +24,7 @@ final class PatientTodayViewModel: ObservableObject {
     private let calendar: Calendar
     private var foregroundTask: Task<Void, Never>?
     private var medicationCache: [String: MedicationDTO] = [:]
+    var toastPresenter: ToastPresenter?
 
     init(
         apiClient: APIClient,
@@ -87,7 +87,7 @@ final class PatientTodayViewModel: ObservableObject {
 
     func confirmRecord(for dose: ScheduleDoseDTO) {
         if dose.effectiveStatus == .taken {
-            showToast(NSLocalizedString("patient.today.alreadyRecorded", comment: "Already recorded"))
+            showToast(NSLocalizedString("patient.today.alreadyRecorded", comment: "Already recorded"), kind: .warning)
             return
         }
         confirmDose = dose
@@ -109,7 +109,7 @@ final class PatientTodayViewModel: ObservableObject {
                 showToast(NSLocalizedString("patient.today.recorded", comment: "Recorded"))
                 load(showLoading: false)
             } catch {
-                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
             }
         }
     }
@@ -146,7 +146,7 @@ final class PatientTodayViewModel: ObservableObject {
                 try await refreshTodayData()
                 onSuccess()
             } catch {
-                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
             }
         }
     }
@@ -166,12 +166,12 @@ final class PatientTodayViewModel: ObservableObject {
             }
             return slot == target.slot && dateKey(for: dose.scheduledAt) == target.dateKey
         }) else {
-            showToast(NSLocalizedString("patient.today.alreadyRecorded", comment: "Already recorded"))
+            showToast(NSLocalizedString("patient.today.alreadyRecorded", comment: "Already recorded"), kind: .warning)
             return nil
         }
 
         if dose.effectiveStatus != .pending {
-            showToast(NSLocalizedString("patient.today.alreadyRecorded", comment: "Already recorded"))
+            showToast(NSLocalizedString("patient.today.alreadyRecorded", comment: "Already recorded"), kind: .warning)
         } else {
             triggerHighlight(for: target.slot)
         }
@@ -288,7 +288,7 @@ final class PatientTodayViewModel: ObservableObject {
                 showToast(NSLocalizedString("patient.today.slot.bulk.success", comment: "Bulk recorded"))
                 load(showLoading: false)
             } catch {
-                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
             }
         }
     }
@@ -305,18 +305,8 @@ final class PatientTodayViewModel: ObservableObject {
         }
     }
 
-    private func showToast(_ message: String) {
-        withAnimation {
-            toastMessage = message
-        }
-        Task { [weak self] in
-            try? await Task.sleep(for: .seconds(AppConstants.toastDuration))
-            await MainActor.run {
-                withAnimation {
-                    self?.toastMessage = nil
-                }
-            }
-        }
+    private func showToast(_ message: String, kind: ToastKind = .success) {
+        toastPresenter?.show(message, kind: kind)
     }
 
     private func triggerHighlight(for slot: NotificationSlot) {

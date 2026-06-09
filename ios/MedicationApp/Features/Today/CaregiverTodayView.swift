@@ -7,6 +7,7 @@ struct CaregiverTodayView: View {
     private let patientName: String?
     private let headerView: AnyView?
     @StateObject private var viewModel: CaregiverTodayViewModel
+    @EnvironmentObject private var toastPresenter: ToastPresenter
     private let preferencesStore = NotificationPreferencesStore()
     @State private var doseToConfirm: ScheduleDoseDTO?
     @State private var slotToConfirm: SlotRecordConfirmation?
@@ -33,35 +34,24 @@ struct CaregiverTodayView: View {
     var body: some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .overlay(alignment: .top) {
-                if let toastMessage = viewModel.toastMessage {
-                    Text(toastMessage)
-                        .font(.subheadline.weight(.semibold))
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .glassEffect(.regular, in: .capsule)
-                        .padding(.top, 8)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                        .accessibilityLabel(toastMessage)
-                }
-            }
             .overlay {
                 if viewModel.isUpdating {
                     SchedulingRefreshOverlay()
                 }
             }
             .onAppear {
-            if sessionStore.currentPatientId != nil {
-                viewModel.load(showLoading: true)
+                viewModel.toastPresenter = toastPresenter
+                if sessionStore.currentPatientId != nil {
+                    viewModel.load(showLoading: true)
+                }
             }
-        }
-        .onChange(of: sessionStore.currentPatientId) { _, newValue in
-            if newValue != nil {
-                viewModel.load(showLoading: true)
-            } else {
-                viewModel.reset()
+            .onChange(of: sessionStore.currentPatientId) { _, newValue in
+                if newValue != nil {
+                    viewModel.load(showLoading: true)
+                } else {
+                    viewModel.reset()
+                }
             }
-        }
             .accessibilityIdentifier("CaregiverTodayView")
             .alert(
                 NSLocalizedString("caregiver.today.confirm.title", comment: "Confirm record title"),

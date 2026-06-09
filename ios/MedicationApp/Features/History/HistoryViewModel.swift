@@ -10,7 +10,6 @@ final class HistoryViewModel: ObservableObject {
     @Published var isUpdating = false
     @Published var monthErrorMessage: String?
     @Published var dayErrorMessage: String?
-    @Published var toastMessage: String?
     @Published var retentionLocked = false
     @Published var retentionCutoffDate: String?
     @Published var retentionDays: Int?
@@ -19,6 +18,7 @@ final class HistoryViewModel: ObservableObject {
     private let sessionStore: SessionStore
     private let preferencesStore: NotificationPreferencesStore
     private var activeRequests = 0
+    var toastPresenter: ToastPresenter?
 
     init(
         apiClient: APIClient,
@@ -149,7 +149,7 @@ final class HistoryViewModel: ObservableObject {
                 loadMonth(year: year, month: month)
                 loadDay(date: date)
             } catch {
-                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
             }
         }
     }
@@ -164,15 +164,7 @@ final class HistoryViewModel: ObservableObject {
         isUpdating = activeRequests > 0
     }
 
-    private func showToast(_ message: String) {
-        withAnimation {
-            toastMessage = message
-        }
-        Task { [weak self] in
-            try? await Task.sleep(nanoseconds: 2_000_000_000)
-            await MainActor.run {
-                self?.toastMessage = nil
-            }
-        }
+    private func showToast(_ message: String, kind: ToastKind = .success) {
+        toastPresenter?.show(message, kind: kind)
     }
 }

@@ -40,11 +40,6 @@ struct PatientReadOnlyView: View {
             .safeAreaInset(edge: .bottom) {
                 PatientBottomTabBar(selectedTab: $selectedTab)
             }
-            .overlay(alignment: .top) {
-                if let banner = reminderBannerPresenter.banner {
-                    ReminderBannerView(banner: banner)
-                }
-            }
         }, overlay: schedulingCoordinator.isRefreshing ? AnyView(SchedulingRefreshOverlay()) : nil)
         .onReceive(notificationRouter.$target) { target in
             guard let target else { return }

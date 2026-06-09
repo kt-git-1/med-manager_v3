@@ -7,13 +7,13 @@ final class CaregiverTodayViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isUpdating = false
     @Published var errorMessage: String?
-    @Published var toastMessage: String?
     @Published var outOfStockMedicationIds: Set<String> = []
 
     private let apiClient: APIClient
     private let dateFormatter: DateFormatter
     private let timeFormatter: DateFormatter
     private let calendar: Calendar
+    var toastPresenter: ToastPresenter?
 
     init(apiClient: APIClient) {
         self.apiClient = apiClient
@@ -66,7 +66,6 @@ final class CaregiverTodayViewModel: ObservableObject {
         isLoading = false
         isUpdating = false
         errorMessage = nil
-        toastMessage = nil
     }
 
     func recordDose(_ dose: ScheduleDoseDTO) {
@@ -84,7 +83,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                 showToast(NSLocalizedString("caregiver.today.recorded", comment: "Recorded"))
                 load(showLoading: false)
             } catch {
-                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
             }
         }
     }
@@ -108,7 +107,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                 showToast(String(format: format, recordableDoses.count))
                 load(showLoading: false)
             } catch {
-                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
             }
         }
     }
@@ -126,7 +125,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                 showToast(NSLocalizedString("caregiver.today.deleted", comment: "Deleted"))
                 load(showLoading: false)
             } catch {
-                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
             }
         }
     }
@@ -139,18 +138,8 @@ final class CaregiverTodayViewModel: ObservableObject {
         dateFormatter.string(from: date)
     }
 
-    private func showToast(_ message: String) {
-        withAnimation {
-            toastMessage = message
-        }
-        Task { [weak self] in
-            try? await Task.sleep(for: .seconds(AppConstants.toastDuration))
-            await MainActor.run {
-                withAnimation {
-                    self?.toastMessage = nil
-                }
-            }
-        }
+    private func showToast(_ message: String, kind: ToastKind = .success) {
+        toastPresenter?.show(message, kind: kind)
     }
 
     private func sortDose(_ lhs: ScheduleDoseDTO, _ rhs: ScheduleDoseDTO) -> Bool {

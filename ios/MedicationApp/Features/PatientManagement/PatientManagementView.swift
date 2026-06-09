@@ -115,6 +115,7 @@ final class PatientManagementViewModel: ObservableObject {
 struct PatientManagementView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var globalBannerPresenter: GlobalBannerPresenter
+    @EnvironmentObject private var toastPresenter: ToastPresenter
     @StateObject private var viewModel: PatientManagementViewModel
     @StateObject private var preferencesStore = NotificationPreferencesStore()
     @StateObject private var schedulingCoordinator = SchedulingRefreshCoordinator()
@@ -122,7 +123,6 @@ struct PatientManagementView: View {
     @State private var revokeTarget: PatientDTO?
     @State private var deleteTarget: PatientDTO?
     @State private var showingLogoutConfirm = false
-    @State private var toastMessage: String?
     @State private var draftTimes: [NotificationSlot: Date] = [:]
     @State private var isSavingDetail = false
     @State private var inventoryThresholdText = ""
@@ -159,7 +159,7 @@ struct PatientManagementView: View {
                     onSave: { displayName in
                         await viewModel.createPatient(displayName: displayName)
                     },
-                    onSuccess: showToast
+                    onSuccess: { showToast($0) }
                 )
             }
             .sheet(item: $viewModel.issuedCode) { code in
@@ -206,9 +206,12 @@ struct PatientManagementView: View {
                                 Task {
                                     let success = await saveDetailSettings()
                                     showingTimePresetSheet = false
-                                    showToast(success
-                                        ? NSLocalizedString("caregiver.timePreset.toast.updated", comment: "Time preset updated toast")
-                                        : NSLocalizedString("common.error.save", comment: "Save error"))
+                                    showToast(
+                                        success
+                                            ? NSLocalizedString("caregiver.timePreset.toast.updated", comment: "Time preset updated toast")
+                                            : NSLocalizedString("common.error.save", comment: "Save error"),
+                                        kind: success ? .success : .error
+                                    )
                                 }
                             }
                             .disabled(isSavingDetail)
@@ -235,9 +238,12 @@ struct PatientManagementView: View {
                                 Task {
                                     let success = await saveInventoryThreshold()
                                     showingInventoryThresholdSheet = false
-                                    showToast(success
-                                        ? NSLocalizedString("caregiver.inventory.toast.saved", comment: "Inventory saved")
-                                        : NSLocalizedString("common.error.save", comment: "Save error"))
+                                    showToast(
+                                        success
+                                            ? NSLocalizedString("caregiver.inventory.toast.saved", comment: "Inventory saved")
+                                            : NSLocalizedString("common.error.save", comment: "Save error"),
+                                        kind: success ? .success : .error
+                                    )
                                 }
                             }
                             .disabled(isSavingDetail)
@@ -268,18 +274,6 @@ struct PatientManagementView: View {
             }
             Task { await loadInventoryThreshold() }
         }
-        .overlay(alignment: .top) {
-            if let toastMessage {
-                Text(toastMessage)
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .glassEffect(.regular, in: .capsule)
-                    .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .accessibilityLabel(toastMessage)
-            }
-        }
         .overlay {
             if isSavingDetail || pushSettingsViewModel.isUpdating {
                 SchedulingRefreshOverlay()
@@ -288,7 +282,7 @@ struct PatientManagementView: View {
         .onChange(of: viewModel.isPatientLimitExceeded) { _, exceeded in
             if exceeded {
                 showingCreate = false
-                showToast(NSLocalizedString("caregiver.patients.limit.initialRelease", comment: "Initial release patient limit"))
+                showToast(NSLocalizedString("caregiver.patients.limit.initialRelease", comment: "Initial release patient limit"), kind: .warning)
                 viewModel.isPatientLimitExceeded = false
             }
         }
@@ -958,7 +952,7 @@ struct PatientManagementView: View {
             if let saved = Self.loadSavedThreshold(for: patientId) {
                 inventoryThresholdText = String(saved)
             }
-            showToast(NSLocalizedString("common.error.generic", comment: "Generic error"))
+            showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
         }
     }
 
@@ -1022,18 +1016,8 @@ struct PatientManagementView: View {
         }
     }
 
-    private func showToast(_ message: String) {
-        withAnimation {
-            toastMessage = message
-        }
-        Task {
-            try? await Task.sleep(for: .seconds(AppConstants.toastDuration))
-            await MainActor.run {
-                withAnimation {
-                    toastMessage = nil
-                }
-            }
-        }
+    private func showToast(_ message: String, kind: ToastKind = .success) {
+        toastPresenter.show(message, kind: kind)
     }
 
     // MARK: - Inventory Threshold Local Persistence

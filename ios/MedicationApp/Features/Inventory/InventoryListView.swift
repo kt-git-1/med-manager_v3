@@ -103,9 +103,9 @@ struct InventoryListView: View {
     private let onOpenPatients: () -> Void
     private let patientName: String?
     @StateObject private var viewModel: InventoryViewModel
+    @EnvironmentObject private var toastPresenter: ToastPresenter
     @State private var selectedItem: InventoryItemDTO?
     @State private var filter: InventoryFilter = .all
-    @State private var toastMessage: String?
 
     init(sessionStore: SessionStore, onOpenPatients: @escaping () -> Void, patientName: String? = nil) {
         self.sessionStore = sessionStore
@@ -169,7 +169,6 @@ struct InventoryListView: View {
                 }
             )
         }
-        .sensoryFeedback(.success, trigger: toastMessage)
         .accessibilityIdentifier("InventoryListView")
     }
 
@@ -200,18 +199,6 @@ struct InventoryListView: View {
         .safeAreaPadding(.bottom, 120)
         .refreshable {
             viewModel.load()
-        }
-        .overlay(alignment: .top) {
-            if let toastMessage {
-                Text(toastMessage)
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .glassEffect(.regular, in: .capsule)
-                    .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .accessibilityLabel(toastMessage)
-            }
         }
     }
 
@@ -825,17 +812,7 @@ struct InventoryListView: View {
     }
 
     private func showToast(_ message: String) {
-        withAnimation {
-            toastMessage = message
-        }
-        Task {
-            try? await Task.sleep(for: .seconds(AppConstants.toastDuration))
-            await MainActor.run {
-                withAnimation {
-                    toastMessage = nil
-                }
-            }
-        }
+        toastPresenter.show(message)
     }
 }
 

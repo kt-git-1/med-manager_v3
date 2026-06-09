@@ -10,7 +10,11 @@ struct ReminderBanner: Equatable {
 @MainActor
 final class ReminderBannerPresenter: ObservableObject {
     @Published private(set) var banner: ReminderBanner?
-    private var hideTask: Task<Void, Never>?
+    private let toastPresenter: ToastPresenter
+
+    init(toastPresenter: ToastPresenter) {
+        self.toastPresenter = toastPresenter
+    }
 
     func handleNotificationRequest(_ request: UNNotificationRequest) {
         handleNotificationIdentifier(request.identifier)
@@ -22,29 +26,7 @@ final class ReminderBannerPresenter: ObservableObject {
     }
 
     func showBanner(slot: NotificationSlot, dateKey: String) {
-        hideTask?.cancel()
         banner = ReminderBanner(slot: slot, dateKey: dateKey, message: slot.notificationBody)
-        hideTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(3))
-            await MainActor.run {
-                self?.banner = nil
-            }
-        }
-    }
-}
-
-struct ReminderBannerView: View {
-    let banner: ReminderBanner
-
-    var body: some View {
-        Text(banner.message)
-            .font(.subheadline.weight(.semibold))
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .glassEffect(.regular, in: .capsule)
-            .padding(.top, 10)
-            .padding(.horizontal, 16)
-            .transition(.move(edge: .top).combined(with: .opacity))
-            .accessibilityLabel(banner.message)
+        toastPresenter.show(slot.notificationBody, kind: .info, duration: 3)
     }
 }

@@ -60,6 +60,7 @@ struct HistoryMonthView: View {
     private let patientName: String?
     private let apiClient: APIClient
     @StateObject private var viewModel: HistoryViewModel
+    @EnvironmentObject private var toastPresenter: ToastPresenter
     @State private var displayedMonth: Date
     @State private var selectedDate: Date?
     @State private var showRetentionLock = false
@@ -147,19 +148,8 @@ struct HistoryMonthView: View {
             },
             overlay: viewModel.isUpdating ? AnyView(updatingOverlay) : nil
         )
-        .overlay(alignment: .top) {
-            if let toastMessage = viewModel.toastMessage {
-                Text(toastMessage)
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .glassEffect(.regular, in: .capsule)
-                    .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .accessibilityLabel(toastMessage)
-            }
-        }
         .onAppear {
+            viewModel.toastPresenter = toastPresenter
             loadMonth()
         }
         .onReceive(NotificationCenter.default.publisher(for: .presetTimesUpdated)) { _ in

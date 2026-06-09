@@ -35,6 +35,7 @@ private struct PatientTodayRootView: View {
     }()
     let sessionStore: SessionStore
     @ObservedObject var viewModel: PatientTodayViewModel
+    @EnvironmentObject private var toastPresenter: ToastPresenter
     @Binding var deepLinkTarget: NotificationDeepLinkTarget?
     @State private var showingConfirm = false
     @State private var showingPrnConfirm = false
@@ -127,7 +128,9 @@ private struct PatientTodayRootView: View {
                 await loadDetail(for: dose)
             }
         }
-        .sensoryFeedback(.success, trigger: viewModel.toastMessage)
+        .onAppear {
+            viewModel.toastPresenter = toastPresenter
+        }
         .accessibilityIdentifier("PatientTodayView")
         .environmentObject(sessionStore)
     }
@@ -298,22 +301,7 @@ private struct PatientTodayBaseView: View {
     private var baseView: some View {
         ZStack(alignment: .top) {
             content
-            toastView
             updatingOverlay
-        }
-    }
-
-    @ViewBuilder
-    private var toastView: some View {
-        if let toastMessage = viewModel.toastMessage {
-            Text(toastMessage)
-                .font(.subheadline.weight(.semibold))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .glassEffect(.regular, in: .capsule)
-                .padding(.top, 8)
-                .transition(.move(edge: .top).combined(with: .opacity))
-                .accessibilityLabel(toastMessage)
         }
     }
 

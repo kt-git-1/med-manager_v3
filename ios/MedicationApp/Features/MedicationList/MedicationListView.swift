@@ -192,9 +192,9 @@ struct MedicationListView: View {
     private let headerView: AnyView?
     private let patientName: String?
     @StateObject private var viewModel: MedicationListViewModel
+    @EnvironmentObject private var toastPresenter: ToastPresenter
     @State private var showingCreate = false
     @State private var selectedMedication: MedicationDTO?
-    @State private var toastMessage: String?
     @State private var selectedFilter: MedicationListFilter = .all
 
     init(
@@ -357,18 +357,6 @@ struct MedicationListView: View {
                     }
                     let listWithInsets = headerView == nil ? AnyView(baseList.safeAreaPadding(.top)) : AnyView(baseList)
                     listWithInsets
-                        .overlay(alignment: .top) {
-                            if let toastMessage {
-                                Text(toastMessage)
-                                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .glassEffect(.regular, in: .capsule)
-                                    .padding(.top, 8)
-                                    .transition(.move(edge: .top).combined(with: .opacity))
-                                    .accessibilityLabel(toastMessage)
-                            }
-                        }
                 }
             }
 
@@ -400,7 +388,6 @@ struct MedicationListView: View {
                 viewModel.load(showLoading: viewModel.items.isEmpty)
             }
         }
-        .sensoryFeedback(.success, trigger: toastMessage)
         .accessibilityIdentifier("MedicationListView")
     }
 
@@ -413,17 +400,7 @@ struct MedicationListView: View {
     }
 
     private func showToast(_ message: String) {
-        withAnimation {
-            toastMessage = message
-        }
-        Task {
-            try? await Task.sleep(for: .seconds(AppConstants.toastDuration))
-            await MainActor.run {
-                withAnimation {
-                    toastMessage = nil
-                }
-            }
-        }
+        toastPresenter.show(message)
     }
 
     private var medicationHeaderRow: some View {
