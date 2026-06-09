@@ -895,18 +895,18 @@ struct PatientManagementView: View {
     private func buildLegacyTimeSlotMapping(oldSlotTimes: [NotificationSlot: (hour: Int, minute: Int)]) -> [String: String] {
         var mapping: [String: String] = [:]
         for slot in NotificationSlot.allCases {
+            let configured = preferencesStore.slotTime(for: slot)
+            let configuredString = String(format: "%02d:%02d", configured.hour, configured.minute)
             if let oldTime = oldSlotTimes[slot] {
                 let oldString = String(format: "%02d:%02d", oldTime.hour, oldTime.minute)
-                mapping[oldString] = slot.rawValue
+                mapping[oldString] = configuredString
             }
             let defaultTime = slot.hourMinute
             let defaultString = String(format: "%02d:%02d", defaultTime.hour, defaultTime.minute)
-            mapping[defaultString] = slot.rawValue
+            mapping[defaultString] = configuredString
             let scheduleDefault = defaultScheduleTimeString(for: slot)
-            mapping[scheduleDefault] = slot.rawValue
-            let configured = preferencesStore.slotTime(for: slot)
-            let configuredString = String(format: "%02d:%02d", configured.hour, configured.minute)
-            mapping[configuredString] = slot.rawValue
+            mapping[scheduleDefault] = configuredString
+            mapping[slot.rawValue] = configuredString
         }
         return mapping
     }

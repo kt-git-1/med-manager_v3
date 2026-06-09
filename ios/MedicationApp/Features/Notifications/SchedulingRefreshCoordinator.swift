@@ -40,7 +40,7 @@ final class SchedulingRefreshCoordinator: ObservableObject {
         do {
             var effectiveSlotTimes = slotTimes
 
-            if caregiverPatientId == nil && effectiveSlotTimes.isEmpty {
+            if caregiverPatientId == nil {
                 let synced = await syncSlotTimesFromRegimens(
                     apiClient: apiClient,
                     preferencesStore: preferencesStore

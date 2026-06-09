@@ -169,7 +169,7 @@ final class MedicationFormViewModel: ObservableObject {
     func scheduleTimes() -> [String] {
         ScheduleTimeSlot.allCases
             .filter { selectedTimeSlots.contains($0) }
-            .map(\.rawValue)
+            .map { timeValue(for: $0) }
     }
 
     func scheduleDays() -> [String] {
