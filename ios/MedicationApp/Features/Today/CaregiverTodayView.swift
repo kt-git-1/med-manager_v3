@@ -78,7 +78,7 @@ struct CaregiverTodayView: View {
                 }
             } message: {
                 if let dose = doseToConfirm {
-                    Text(String(format: NSLocalizedString("caregiver.today.confirm.message", comment: "Confirm record message"), dose.medicationSnapshot.name))
+                    Text(confirmMessage(for: dose))
                 }
             }
             .alert(
@@ -99,7 +99,7 @@ struct CaregiverTodayView: View {
                 }
             } message: {
                 if let confirmation = slotToConfirm {
-                    Text(String(format: NSLocalizedString("caregiver.today.confirm.slot.message", comment: "Confirm slot record message"), confirmation.slotTitle, confirmation.doses.count))
+                    Text(confirmSlotMessage(for: confirmation))
                 }
             }
             .environmentObject(sessionStore)
@@ -173,6 +173,9 @@ struct CaregiverTodayView: View {
                                 headerView
                             }
                             todayHeader
+                            if hasMissedDoses {
+                                missedAlertCard
+                            }
                             nextDoseHeroCard
                             progressCard
                             todayScheduleTitle
@@ -238,7 +241,7 @@ struct CaregiverTodayView: View {
                         .frame(width: 66, height: 66)
                         .background((nextDose == nil ? CaregiverUI.teal : CaregiverUI.tealDark).opacity(0.10), in: Circle())
                     VStack(alignment: .leading, spacing: 7) {
-                        Text(nextDose == nil ? NSLocalizedString("caregiver.today.next.done", comment: "All done") : NSLocalizedString("caregiver.today.next.label", comment: "Next label"))
+                        Text(nextDose == nil ? nextDoneTitle : NSLocalizedString("caregiver.today.next.label", comment: "Next label"))
                             .font(.headline.weight(.bold))
                             .foregroundStyle(.primary)
                         if let nextDose {
@@ -248,7 +251,7 @@ struct CaregiverTodayView: View {
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.7)
                         } else {
-                            Text(NSLocalizedString("caregiver.today.next.done.message", comment: "All done message"))
+                            Text(nextDoneMessage)
                                 .font(.headline.weight(.semibold))
                                 .foregroundStyle(CaregiverUI.teal)
                         }
@@ -273,6 +276,30 @@ struct CaregiverTodayView: View {
                 primarySlotRecordButton
             }
         }
+    }
+
+    private var missedAlertCard: some View {
+        CaregiverCard(accent: CaregiverUI.red) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(CaregiverUI.red, in: Circle())
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(NSLocalizedString("caregiver.today.missedAlert.title", comment: "Missed alert title"))
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(CaregiverUI.red)
+                    Text(missedAlertMessage)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+        .accessibilityIdentifier("CaregiverTodayMissedAlertCard")
     }
 
     @ViewBuilder
@@ -434,7 +461,6 @@ struct CaregiverTodayView: View {
             let isNextAction = doses.contains { $0.id == nextDoseId }
             let recordableDoses = doses.filter {
                 $0.effectiveStatus != .taken
-                    && $0.effectiveStatus != .missed
                     && !viewModel.isMedicationOutOfStock($0.medicationId)
             }
             return TimelineRow(
@@ -463,11 +489,7 @@ struct CaregiverTodayView: View {
         }.count
     }
     private var missedCount: Int {
-        scheduledTimelineRows.filter { row in
-            let hasPendingDose = row.doses.contains { $0.effectiveStatus == .pending || $0.effectiveStatus == nil }
-            let hasMissedDose = row.doses.contains { $0.effectiveStatus == .missed }
-            return !hasPendingDose && hasMissedDose
-        }.count
+        missedTimelineRows.count
     }
     private var pendingCount: Int {
         scheduledTimelineRows.filter { row in
@@ -481,7 +503,7 @@ struct CaregiverTodayView: View {
 
     private var nextDose: ScheduleDoseDTO? {
         viewModel.items
-            .filter { $0.effectiveStatus != .taken && $0.effectiveStatus != .missed }
+            .filter { $0.effectiveStatus == .pending || $0.effectiveStatus == nil }
             .sorted { $0.scheduledAt < $1.scheduledAt }
             .first
     }
@@ -513,6 +535,9 @@ struct CaregiverTodayView: View {
         if viewModel.isMedicationOutOfStock(nextDose.medicationId) {
             return NSLocalizedString("patient.today.outOfStock", comment: "Out of stock")
         }
+        if nextDose.effectiveStatus == .missed {
+            return NSLocalizedString("patient.today.status.missed", comment: "Missed")
+        }
         return NSLocalizedString("patient.today.status.pending", comment: "Pending")
     }
 
@@ -524,6 +549,9 @@ struct CaregiverTodayView: View {
 
     private var nextDoseHelperText: String {
         if nextDose == nil {
+            if hasMissedDoses {
+                return NSLocalizedString("caregiver.today.nextAction.noPendingHelp", comment: "Next action no pending help")
+            }
             return NSLocalizedString("caregiver.today.nextAction.doneHelp", comment: "Next action done help")
         }
         if !canRecordNextSlot {
@@ -539,16 +567,52 @@ struct CaregiverTodayView: View {
         if totalCount == 0 {
             return NSLocalizedString("caregiver.today.progress.empty", comment: "Progress empty")
         }
+        if missedCount > 0 {
+            return String(format: NSLocalizedString("caregiver.today.progress.missedSummary", comment: "Progress missed summary"), missedCount)
+        }
         if pendingCount > 0, let nextDose {
             return String(
                 format: NSLocalizedString("caregiver.today.progress.nextSummary", comment: "Progress next summary"),
                 slotTitle(for: slot(for: nextDose))
             )
         }
-        if missedCount > 0 {
-            return String(format: NSLocalizedString("caregiver.today.progress.missedSummary", comment: "Progress missed summary"), missedCount)
-        }
         return NSLocalizedString("caregiver.today.progress.doneSummary", comment: "Progress done summary")
+    }
+
+    private var hasMissedDoses: Bool {
+        !missedTimelineRows.isEmpty
+    }
+
+    private var missedTimelineRows: [TimelineRow] {
+        scheduledTimelineRows.filter { row in
+            row.doses.contains { $0.effectiveStatus == .missed }
+        }
+    }
+
+    private var missedAlertMessage: String {
+        if missedTimelineRows.count == 1, let row = missedTimelineRows.first {
+            return String(
+                format: NSLocalizedString("caregiver.today.missedAlert.single", comment: "Single missed alert message"),
+                slotTitle(for: row.slot),
+                row.timeText
+            )
+        }
+        return String(
+            format: NSLocalizedString("caregiver.today.missedAlert.multiple", comment: "Multiple missed alert message"),
+            missedTimelineRows.count
+        )
+    }
+
+    private var nextDoneTitle: String {
+        hasMissedDoses
+            ? NSLocalizedString("caregiver.today.next.noPending", comment: "No pending title")
+            : NSLocalizedString("caregiver.today.next.done", comment: "All done")
+    }
+
+    private var nextDoneMessage: String {
+        hasMissedDoses
+            ? NSLocalizedString("caregiver.today.next.noPending.message", comment: "No pending message")
+            : NSLocalizedString("caregiver.today.next.done.message", comment: "All done message")
     }
 
     private func slotHeader(for slot: NotificationSlot?) -> some View {
@@ -644,6 +708,27 @@ struct CaregiverTodayView: View {
         case .none:
             return .gray
         }
+    }
+
+    private func confirmMessage(for dose: ScheduleDoseDTO) -> String {
+        let key = dose.effectiveStatus == .missed
+            ? "caregiver.today.confirm.missed.message"
+            : "caregiver.today.confirm.message"
+        return String(
+            format: NSLocalizedString(key, comment: "Confirm record message"),
+            dose.medicationSnapshot.name
+        )
+    }
+
+    private func confirmSlotMessage(for confirmation: SlotRecordConfirmation) -> String {
+        let key = confirmation.doses.contains { $0.effectiveStatus == .missed }
+            ? "caregiver.today.confirm.slot.missed.message"
+            : "caregiver.today.confirm.slot.message"
+        return String(
+            format: NSLocalizedString(key, comment: "Confirm slot record message"),
+            confirmation.slotTitle,
+            confirmation.doses.count
+        )
     }
 
     private var plannedItems: [ScheduleDoseDTO] {
@@ -838,7 +923,7 @@ private struct CaregiverTodayDoseLine: View {
                 .background(statusColor.opacity(0.12), in: Circle())
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(dose.medicationSnapshot.name)
+                Text(medicationDisplayName)
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(.primary)
                     .lineLimit(1)
@@ -866,7 +951,7 @@ private struct CaregiverTodayDoseLine: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(NSLocalizedString("caregiver.today.delete.button", comment: "Delete"))
-            } else if dose.effectiveStatus != .missed {
+            } else {
                 Button(action: onRecord) {
                     Image(systemName: "checkmark")
                         .font(.system(size: 12, weight: .bold))
@@ -876,7 +961,7 @@ private struct CaregiverTodayDoseLine: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(isOutOfStock)
-                .accessibilityLabel(NSLocalizedString("caregiver.today.record.button", comment: "Record"))
+                .accessibilityLabel(recordAccessibilityLabel)
             }
         }
         .padding(.horizontal, 10)
@@ -899,6 +984,14 @@ private struct CaregiverTodayDoseLine: View {
         }
     }
 
+    private var medicationDisplayName: String {
+        let trimmed = dose.medicationSnapshot.dosageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == "不明" {
+            return dose.medicationSnapshot.name
+        }
+        return "\(dose.medicationSnapshot.name) \(trimmed)"
+    }
+
     private var statusColor: Color {
         switch dose.effectiveStatus {
         case .taken:
@@ -914,6 +1007,12 @@ private struct CaregiverTodayDoseLine: View {
         if isOutOfStock { return "exclamationmark" }
         if dose.effectiveStatus == .taken { return "checkmark" }
         return nil
+    }
+
+    private var recordAccessibilityLabel: String {
+        dose.effectiveStatus == .missed
+            ? NSLocalizedString("caregiver.today.record.missed.button", comment: "Record missed")
+            : NSLocalizedString("caregiver.today.record.button", comment: "Record")
     }
 }
 

@@ -95,7 +95,7 @@ final class CaregiverTodayViewModel: ObservableObject {
     }
 
     func recordDoses(_ doses: [ScheduleDoseDTO]) {
-        let recordableDoses = doses.filter { $0.effectiveStatus != .taken && $0.effectiveStatus != .missed }
+        let recordableDoses = doses.filter { $0.effectiveStatus != .taken }
         guard !recordableDoses.isEmpty else { return }
         isUpdating = true
         Task {

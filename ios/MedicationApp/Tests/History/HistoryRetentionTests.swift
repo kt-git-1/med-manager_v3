@@ -124,4 +124,69 @@ final class HistoryRetentionTests: XCTestCase {
         let result = FeatureGate.isUnlocked(.extendedHistory, for: .premium)
         XCTAssertTrue(result, "extendedHistory should be unlocked for premium users")
     }
+
+    func testPatientHistoryWeekRangeUsesMondayThroughSunday() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo")!
+        calendar.locale = Locale(identifier: "ja_JP")
+        calendar.firstWeekday = 2
+
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.dateFormat = "yyyy-MM-dd"
+
+        let date = try XCTUnwrap(formatter.date(from: "2026-06-09"))
+        let weekDates = PatientHistoryWeekRange.dates(containing: date, calendar: calendar)
+        let dateKeys = weekDates.map { formatter.string(from: $0) }
+
+        XCTAssertEqual(
+            dateKeys,
+            [
+                "2026-06-08",
+                "2026-06-09",
+                "2026-06-10",
+                "2026-06-11",
+                "2026-06-12",
+                "2026-06-13",
+                "2026-06-14"
+            ]
+        )
+    }
+
+    func testPatientHistoryWeekdaySymbolsStartOnMonday() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = Locale(identifier: "ja_JP")
+        calendar.firstWeekday = 2
+
+        let symbols = PatientHistoryWeekRange.orderedWeekdaySymbols(
+            locale: Locale(identifier: "ja_JP"),
+            calendar: calendar
+        )
+
+        XCTAssertEqual(symbols, ["月", "火", "水", "木", "金", "土", "日"])
+    }
+
+    func testPatientHistoryEncouragementKeysReflectProgress() throws {
+        XCTAssertEqual(
+            PatientHistoryEncouragement.localizedKey(recordedCount: 0, consecutiveTakenDays: 0),
+            "patient.history.week.encouragement.start"
+        )
+        XCTAssertEqual(
+            PatientHistoryEncouragement.localizedKey(recordedCount: 1, consecutiveTakenDays: 0),
+            "patient.history.week.encouragement.some"
+        )
+        XCTAssertEqual(
+            PatientHistoryEncouragement.localizedKey(recordedCount: 5, consecutiveTakenDays: 0),
+            "patient.history.week.encouragement.many"
+        )
+        XCTAssertEqual(
+            PatientHistoryEncouragement.localizedKey(recordedCount: 2, consecutiveTakenDays: 2),
+            "patient.history.week.encouragement.streak"
+        )
+        XCTAssertEqual(
+            PatientHistoryEncouragement.localizedKey(recordedCount: 3, consecutiveTakenDays: 3),
+            "patient.history.week.encouragement.streakStrong"
+        )
+    }
 }

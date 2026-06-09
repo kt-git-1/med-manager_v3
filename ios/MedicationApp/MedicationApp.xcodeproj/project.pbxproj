@@ -39,6 +39,7 @@
 		3CBD461BAAD1813E71A0BE0F /* FullScreenContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F15D54BA84F66FF4EAD48C3 /* FullScreenContainer.swift */; };
 		3F51C80C88632AC450E9771A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 80D730F32C311FB27644CE69 /* Assets.xcassets */; };
 		403B60DF0710DEE297E332E7 /* MedicationListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB55437B073B6E2D5D88F3AE /* MedicationListViewModelTests.swift */; };
+		41E4C4F651B8446C8A8F0AA7 /* KeyboardDismissOnTapModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AEF1DAB7E1B40B1A3C1182E /* KeyboardDismissOnTapModifier.swift */; };
 		438A0C58BB3A66C97036BD1D /* GlobalBannerPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 606A82E13154E5DB1B47B981 /* GlobalBannerPresenter.swift */; };
 		449BC70138C5324A8A8DCA3A /* HistoryRetentionLockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01D43997A9913A554CA15C41 /* HistoryRetentionLockView.swift */; };
 		462DE5559B9EA777DC2697EC /* DoseRecordDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 678945D795A346CA7EB08C5F /* DoseRecordDTO.swift */; };
@@ -174,6 +175,7 @@
 		1C1282AECEDEEF05EC919DE4 /* NotificationSettingsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsUITests.swift; sourceTree = "<group>"; };
 		1C19CDEC56393186801A875F /* InventoryOverlayUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryOverlayUITests.swift; sourceTree = "<group>"; };
 		1F15D54BA84F66FF4EAD48C3 /* FullScreenContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullScreenContainer.swift; sourceTree = "<group>"; };
+		7AEF1DAB7E1B40B1A3C1182E /* KeyboardDismissOnTapModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardDismissOnTapModifier.swift; sourceTree = "<group>"; };
 		21EE1CB0A785976B0BFACF55 /* PatientLinkCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientLinkCodeView.swift; sourceTree = "<group>"; };
 		22E21419EE2C48C5FFC91DF0 /* SlotBulkRecordDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotBulkRecordDTO.swift; sourceTree = "<group>"; };
 		23B9650C57D5CF2A1CC524ED /* PrnDoseRecordDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrnDoseRecordDTO.swift; sourceTree = "<group>"; };
@@ -571,6 +573,7 @@
 			isa = PBXGroup;
 			children = (
 				1F15D54BA84F66FF4EAD48C3 /* FullScreenContainer.swift */,
+				7AEF1DAB7E1B40B1A3C1182E /* KeyboardDismissOnTapModifier.swift */,
 				F1515EED52C2E904E5C2F3B8 /* NavigationHeaderView.swift */,
 				3335A90BDEB52C323A153517 /* SchedulingRefreshOverlay.swift */,
 				53F3D10B0283F083999CFCEF /* StateViews.swift */,
@@ -845,6 +848,7 @@
 				173F340EC95041C491379106 /* InventoryDetailView.swift in Sources */,
 				6D4F50BB193E26F6AAE21092 /* InventoryEmptyStateView.swift in Sources */,
 				E95ABB18FB2ED1D681671070 /* InventoryListView.swift in Sources */,
+				41E4C4F651B8446C8A8F0AA7 /* KeyboardDismissOnTapModifier.swift in Sources */,
 				86383151B8A2885DF215EF2F /* LinkCodeEntryView.swift in Sources */,
 				60E08AF3CCF0AE7F4FB97E8B /* LinkingService.swift in Sources */,
 				9AC12771713EEFB88AB180B2 /* MedicationApp.swift in Sources */,

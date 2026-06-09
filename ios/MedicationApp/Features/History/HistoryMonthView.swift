@@ -7,13 +7,55 @@ private enum PatientHistorySimpleStatus {
     case none
 }
 
+enum PatientHistoryWeekRange {
+    static func dates(containing date: Date, calendar: Calendar) -> [Date] {
+        let startOfDay = calendar.startOfDay(for: date)
+        let weekday = calendar.component(.weekday, from: startOfDay)
+        let daysFromFirstWeekday = (weekday - calendar.firstWeekday + 7) % 7
+        guard let weekStart = calendar.date(byAdding: .day, value: -daysFromFirstWeekday, to: startOfDay) else {
+            return []
+        }
+        return (0..<7).compactMap { offset in
+            calendar.date(byAdding: .day, value: offset, to: weekStart)
+        }
+    }
+
+    static func orderedWeekdaySymbols(locale: Locale, calendar: Calendar) -> [String] {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.calendar = calendar
+        let symbols = formatter.shortWeekdaySymbols ?? []
+        guard !symbols.isEmpty else { return [] }
+        let startIndex = max(0, min(symbols.count - 1, calendar.firstWeekday - 1))
+        return Array(symbols[startIndex...]) + Array(symbols[..<startIndex])
+    }
+}
+
+enum PatientHistoryEncouragement {
+    static func localizedKey(recordedCount: Int, consecutiveTakenDays: Int) -> String {
+        if consecutiveTakenDays >= 3 {
+            return "patient.history.week.encouragement.streakStrong"
+        }
+        if consecutiveTakenDays >= 2 {
+            return "patient.history.week.encouragement.streak"
+        }
+        if recordedCount >= 5 {
+            return "patient.history.week.encouragement.many"
+        }
+        if recordedCount > 0 {
+            return "patient.history.week.encouragement.some"
+        }
+        return "patient.history.week.encouragement.start"
+    }
+}
+
 struct HistoryMonthView: View {
     private static let historyTimeZone = AppConstants.defaultTimeZone
     private static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = historyTimeZone
         calendar.locale = AppConstants.japaneseLocale
-        calendar.firstWeekday = 1
+        calendar.firstWeekday = 2
         return calendar
     }()
     private static let dateKeyFormatter: DateFormatter = {
@@ -59,6 +101,7 @@ struct HistoryMonthView: View {
     private let entitlementStore: EntitlementStore?
     private let patientName: String?
     private let apiClient: APIClient
+    private let preferencesStore: NotificationPreferencesStore
     @StateObject private var viewModel: HistoryViewModel
     @EnvironmentObject private var toastPresenter: ToastPresenter
     @State private var displayedMonth: Date
@@ -84,11 +127,14 @@ struct HistoryMonthView: View {
         self._deepLinkTarget = deepLinkTarget
         let baseURL = SessionStore.resolveBaseURL()
         let client = APIClient(baseURL: baseURL, sessionStore: store)
+        let preferencesStore = NotificationPreferencesStore()
         self.apiClient = client
+        self.preferencesStore = preferencesStore
         _viewModel = StateObject(
             wrappedValue: HistoryViewModel(
                 apiClient: client,
-                sessionStore: store
+                sessionStore: store,
+                preferencesStore: preferencesStore
             )
         )
         _displayedMonth = State(initialValue: HistoryMonthView.startOfMonth(for: Date()))
@@ -150,11 +196,20 @@ struct HistoryMonthView: View {
         )
         .onAppear {
             viewModel.toastPresenter = toastPresenter
+            syncPatientPreferences()
             loadMonth()
         }
         .onReceive(NotificationCenter.default.publisher(for: .presetTimesUpdated)) { _ in
+            syncPatientPreferences()
             loadMonth()
             updateSelectionForDisplayedMonth()
+            loadSelectedDay()
+        }
+        .onChange(of: sessionStore.currentPatientId) { _, _ in
+            syncPatientPreferences()
+            loadMonth()
+            updateSelectionForDisplayedMonth()
+            loadSelectedDay()
         }
         .onChange(of: displayedMonth) { _, _ in
             loadMonth()
@@ -285,11 +340,17 @@ struct HistoryMonthView: View {
                     }
 
                     HStack(spacing: 8) {
-                        ForEach(lastSevenDates, id: \.self) { date in
+                        ForEach(currentWeekDates, id: \.self) { date in
                             patientWeekDayView(for: date)
                         }
                     }
                     .frame(maxWidth: .infinity)
+
+                    Text(NSLocalizedString(patientWeekEncouragementKey, comment: "Patient week encouragement"))
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
@@ -334,17 +395,19 @@ struct HistoryMonthView: View {
     }
 
     private func patientWeekDayView(for date: Date) -> some View {
-        VStack(spacing: 6) {
+        let status = patientHistoryStatus(for: date)
+        let isUpcoming = isFutureDate(date) && status == .pending
+        return VStack(spacing: 6) {
             Text(Self.weekdayFormatter.string(from: date))
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.primary)
             ZStack {
                 Circle()
-                    .fill(patientHistoryStatusColor(for: date).opacity(patientHistoryStatus(for: date) == .none ? 0.12 : 1))
+                    .fill(patientHistoryStatusColor(for: date).opacity((status == .none || isUpcoming) ? 0.14 : 1))
                     .frame(width: 34, height: 34)
                 Image(systemName: patientHistoryWeekIcon(for: date))
                     .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(patientHistoryStatus(for: date) == .none ? Color.secondary : Color.white)
+                    .foregroundStyle((status == .none || isUpcoming) ? patientHistoryStatusColor(for: date) : Color.white)
             }
             Text(Self.shortDateFormatter.string(from: date))
                 .font(.caption2.weight(.semibold))
@@ -355,10 +418,8 @@ struct HistoryMonthView: View {
         .frame(maxWidth: .infinity)
     }
 
-    private var lastSevenDates: [Date] {
-        (-6...0).compactMap { offset in
-            Self.calendar.date(byAdding: .day, value: offset, to: Date())
-        }
+    private var currentWeekDates: [Date] {
+        PatientHistoryWeekRange.dates(containing: Date(), calendar: Self.calendar)
     }
 
     private var recentHistoryDates: [Date] {
@@ -368,7 +429,30 @@ struct HistoryMonthView: View {
     }
 
     private var weeklyRecordedCount: Int {
-        lastSevenDates.filter { patientHistoryStatus(for: $0) == .taken }.count
+        currentWeekDates.filter { patientHistoryStatus(for: $0) == .taken }.count
+    }
+
+    private var patientWeekEncouragementKey: String {
+        PatientHistoryEncouragement.localizedKey(
+            recordedCount: weeklyRecordedCount,
+            consecutiveTakenDays: currentWeekConsecutiveTakenDays
+        )
+    }
+
+    private var currentWeekConsecutiveTakenDays: Int {
+        let today = Self.calendar.startOfDay(for: Date())
+        let pastAndToday = currentWeekDates
+            .filter { Self.calendar.startOfDay(for: $0) <= today }
+            .reversed()
+        var streak = 0
+        for date in pastAndToday {
+            if patientHistoryStatus(for: date) == .taken {
+                streak += 1
+            } else {
+                break
+            }
+        }
+        return streak
     }
 
     private func patientHistoryStatus(for date: Date) -> PatientHistorySimpleStatus {
@@ -399,6 +483,9 @@ struct HistoryMonthView: View {
         case .taken:
             return NSLocalizedString("patient.history.status.done", comment: "Patient history done")
         case .pending:
+            if isFutureDate(date) {
+                return NSLocalizedString("patient.history.status.scheduled", comment: "Patient history scheduled")
+            }
             return NSLocalizedString("patient.history.status.pending", comment: "Patient history pending")
         case .missed:
             return NSLocalizedString("patient.history.status.missed", comment: "Patient history missed")
@@ -412,6 +499,9 @@ struct HistoryMonthView: View {
         case .taken:
             return PatientUI.teal
         case .pending:
+            if isFutureDate(date) {
+                return PatientUI.blue
+            }
             return PatientUI.red
         case .missed:
             return PatientUI.red
@@ -426,7 +516,9 @@ struct HistoryMonthView: View {
             return "checkmark"
         case .missed:
             return "exclamationmark"
-        case .pending, .none:
+        case .pending:
+            return isFutureDate(date) ? "clock" : nil
+        case .none:
             return nil
         }
     }
@@ -435,7 +527,9 @@ struct HistoryMonthView: View {
         switch patientHistoryStatus(for: date) {
         case .taken:
             return "checkmark"
-        case .pending, .missed:
+        case .pending:
+            return isFutureDate(date) ? "clock" : "exclamationmark"
+        case .missed:
             return "exclamationmark"
         case .none:
             return "minus"
@@ -447,6 +541,9 @@ struct HistoryMonthView: View {
         case .taken:
             return "checkmark.circle.fill"
         case .pending:
+            if isFutureDate(date) {
+                return "clock.fill"
+            }
             return "sun.max.fill"
         case .missed:
             return "exclamationmark.triangle.fill"
@@ -460,6 +557,9 @@ struct HistoryMonthView: View {
         case .taken:
             return PatientUI.teal
         case .pending:
+            if isFutureDate(date) {
+                return PatientUI.blue
+            }
             return PatientUI.orange
         case .missed:
             return PatientUI.red
@@ -756,10 +856,10 @@ struct HistoryMonthView: View {
     private var historySelectedDarkColor: Color { isPatientMode ? PatientUI.tealDark : CaregiverUI.tealDark }
 
     private var weekdaySymbols: [String] {
-        let formatter = DateFormatter()
-        formatter.locale = AppConstants.japaneseLocale
-        formatter.calendar = HistoryMonthView.calendar
-        return formatter.shortWeekdaySymbols
+        PatientHistoryWeekRange.orderedWeekdaySymbols(
+            locale: AppConstants.japaneseLocale,
+            calendar: HistoryMonthView.calendar
+        )
     }
 
     private var dayCells: [Date?] {
@@ -825,6 +925,9 @@ struct HistoryMonthView: View {
             return NSLocalizedString("history.selected.missedHelp", comment: "Missed help")
         }
         if selectedPendingCount > 0 {
+            if let selectedDate, isFutureDate(selectedDate) {
+                return NSLocalizedString("history.selected.upcomingHelp", comment: "Upcoming help")
+            }
             return NSLocalizedString("history.selected.pendingHelp", comment: "Pending help")
         }
         return NSLocalizedString("history.selected.completeHelp", comment: "Complete help")
@@ -897,6 +1000,15 @@ struct HistoryMonthView: View {
         viewModel.loadMonth(year: year, month: month)
     }
 
+    private func loadSelectedDay() {
+        guard let selectedDate else { return }
+        viewModel.loadDay(date: HistoryMonthView.dateKeyFormatter.string(from: selectedDate))
+    }
+
+    private func syncPatientPreferences() {
+        preferencesStore.switchPatient(sessionStore.currentPatientId)
+    }
+
     private func recordMissedDose(_ dose: HistoryDayItemDTO) {
         let date = HistoryMonthView.dateKeyFormatter.string(from: dose.scheduledAt)
         let components = Self.calendar.dateComponents([.year, .month], from: dose.scheduledAt)
@@ -966,6 +1078,12 @@ struct HistoryMonthView: View {
         case .none:
             return ""
         }
+    }
+
+    private func isFutureDate(_ date: Date) -> Bool {
+        let today = Self.calendar.startOfDay(for: Date())
+        let target = Self.calendar.startOfDay(for: date)
+        return target > today
     }
 
     private func prnCountLabel(count: Int) -> String {

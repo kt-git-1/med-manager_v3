@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 struct RootView: View {
     @EnvironmentObject private var sessionStore: SessionStore
@@ -28,12 +27,6 @@ struct RootView: View {
                 }
             }
         }
-        .contentShape(Rectangle())
-        .simultaneousGesture(
-            TapGesture().onEnded {
-                dismissKeyboard()
-            }
-        )
         .overlay(alignment: .top) {
             if let toast = toastPresenter.toast {
                 ToastOverlayView(toast: toast)
@@ -74,7 +67,4 @@ struct RootView: View {
         }
     }
 
-    private func dismissKeyboard() {
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    }
 }

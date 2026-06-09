@@ -72,6 +72,7 @@ struct MedicationApp: App {
             .environmentObject(reminderBannerPresenter)
             .environmentObject(globalBannerPresenter)
             .environmentObject(caregiverSessionController)
+            .dismissKeyboardOnTapOutside()
             .onAppear {
                 // Wire AppDelegate → DeviceTokenManager for APNs callbacks
                 appDelegate.deviceTokenManager = caregiverSessionController.tokenManager

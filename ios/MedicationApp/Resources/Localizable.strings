@@ -118,7 +118,7 @@
 "medication.form.help.basic" = "薬の袋や説明書に書かれている名前・用量をそのまま入力してください。";
 "medication.form.help.scheduled" = "定時薬は、本人画面の今日の予定に時間ごとに表示されます。";
 "medication.form.help.prn" = "頓服は決まった時間には出さず、本人画面の必要時の記録に表示されます。";
-"medication.form.help.schedule" = "ここで選んだ時間帯が、本人の今日の薬画面と通知の基準になります。";
+"medication.form.help.schedule" = "ここでは朝・昼・夜・眠前の時間帯を選びます。各時間帯の時刻は、連携・設定の「時間プリセット設定」で変更できます。";
 "medication.form.schedule.guide.title" = "本人画面に出す時間を選択";
 "medication.form.schedule.guide.message" = "曜日指定にすると、選んだ曜日だけ今日の予定に表示されます。";
 "medication.form.startDate" = "開始日";
@@ -128,7 +128,7 @@
 "medication.form.schedule.daily" = "毎日";
 "medication.form.schedule.weekly" = "曜日指定";
 "medication.form.schedule.weekdays" = "曜日";
-"medication.form.schedule.times" = "時刻";
+"medication.form.schedule.times" = "時間帯";
 "medication.form.schedule.unset" = "スケジュール未設定";
 "medication.form.inventory.count" = "在庫数（錠）";
 "medication.form.inventory.unit" = "在庫単位";
@@ -153,6 +153,11 @@
 "patient.history.week.title" = "今週";
 "patient.history.week.count" = "%d/7日";
 "patient.history.week.recorded" = "記録済み";
+"patient.history.week.encouragement.start" = "今日の分から無理なく始めましょう。記録は体調を見守る手がかりになります。";
+"patient.history.week.encouragement.some" = "記録できた日があります。この調子で、できる日に少しずつ続けましょう。";
+"patient.history.week.encouragement.many" = "今週はたくさん記録できています。毎日の積み重ねがしっかり残っています。";
+"patient.history.week.encouragement.streak" = "連続で記録できています。とても良いペースです。";
+"patient.history.week.encouragement.streakStrong" = "記録が続いています。すばらしいです。この調子で体調の変化を見守っていきましょう。";
 "patient.history.recent.title" = "最近の記録";
 "patient.history.today.format" = "今日 %@";
 "patient.history.yesterday.format" = "昨日 %@";
@@ -161,6 +166,7 @@
 "patient.history.subtitle.noSchedule" = "お薬の予定はありません";
 "patient.history.status.done" = "済み";
 "patient.history.status.pending" = "まだ";
+"patient.history.status.scheduled" = "予定";
 "patient.history.status.missed" = "忘れ";
 "patient.history.status.none" = "予定なし";
 "patient.readonly.settings.tab" = "設定";
@@ -197,6 +203,7 @@
 "history.selected.noScheduleHelp" = "この日は定時薬の予定も頓服の記録もありません。";
 "history.selected.missedHelp" = "飲み忘れがあります。下の詳細で薬名と時間を確認してください。";
 "history.selected.pendingHelp" = "まだ記録されていない服薬があります。未来の予定は未記録として表示されます。";
+"history.selected.upcomingHelp" = "これからの予定です。当日になったら無理なく記録しましょう。";
 "history.selected.completeHelp" = "この日の予定は記録済みです。下で薬ごとの詳細を確認できます。";
 "history.error.retry" = "読み込みに失敗しました。再試行してください。";
 "common.retry" = "再試行";
@@ -379,6 +386,8 @@
 "caregiver.today.next.label" = "次は";
 "caregiver.today.next.done" = "今日の予定は完了";
 "caregiver.today.next.done.message" = "すべて記録済みです";
+"caregiver.today.next.noPending" = "次の時間帯はありません";
+"caregiver.today.next.noPending.message" = "これからの未記録予定はありません";
 "caregiver.today.primaryRecord" = "服薬を記録";
 "caregiver.today.primaryRecord.next" = "この服薬を記録";
 "caregiver.today.primaryRecord.slot" = "この時間帯をまとめて記録";
@@ -388,7 +397,11 @@
 "caregiver.today.nextAction.slotHelp" = "この時間帯の未記録%d件をまとめて記録します";
 "caregiver.today.nextAction.medicinesTitle" = "この時間帯の薬";
 "caregiver.today.nextAction.doneHelp" = "今日は追加の操作はありません";
+"caregiver.today.nextAction.noPendingHelp" = "飲み忘れは上のアラートと下の予定で確認できます";
 "caregiver.today.nextAction.outOfStockHelp" = "在庫がないため記録できません";
+"caregiver.today.missedAlert.title" = "飲み忘れがあります";
+"caregiver.today.missedAlert.single" = "%@ %@の服薬が飲み忘れになっています。下の今日の予定で確認できます";
+"caregiver.today.missedAlert.multiple" = "%d回分の飲み忘れがあります。下の今日の予定で確認できます";
 "caregiver.today.progress.title" = "今日の進み具合";
 "caregiver.today.progress.empty" = "今日の服薬予定はありません";
 "caregiver.today.progress.nextSummary" = "%@が次に記録する服薬です";
@@ -405,11 +418,14 @@
 "caregiver.today.timeline.pending" = "まだです";
 "caregiver.today.timeline.missed" = "飲み忘れ";
 "caregiver.today.record.button" = "代理で記録する";
+"caregiver.today.record.missed.button" = "飲み忘れを服用済みにする";
 "caregiver.today.recorded.bulk" = "%d件を記録しました";
 "caregiver.today.confirm.title" = "服用記録の確認";
 "caregiver.today.confirm.message" = "%@の服用を代理で記録しますか？";
+"caregiver.today.confirm.missed.message" = "%@の飲み忘れを服用済みとして記録しますか？";
 "caregiver.today.confirm.slot.title" = "時間帯の服薬を記録";
 "caregiver.today.confirm.slot.message" = "%@の未記録%d件をまとめて記録しますか？";
+"caregiver.today.confirm.slot.missed.message" = "%@の未記録・飲み忘れ%d件をまとめて服用済みにしますか？";
 "caregiver.today.confirm.record" = "記録する";
 "caregiver.today.delete.button" = "取り消す";
 "caregiver.today.recorded" = "記録しました";
