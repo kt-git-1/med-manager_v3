@@ -5,9 +5,18 @@ struct CaregiverSignupView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var errorMessage: String?
+    @State private var infoMessage: String?
     @State private var isLoading = false
+    @State private var isResending = false
 
     private let authService = AuthService()
+    private var trimmedEmail: String {
+        email.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var isFormReady: Bool {
+        !trimmedEmail.isEmpty && !password.isEmpty
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -22,6 +31,11 @@ struct CaregiverSignupView: View {
                         .symbolRenderingMode(.hierarchical)
                     Text(NSLocalizedString("caregiver.signup.title", comment: "Caregiver signup title"))
                         .font(.title.weight(.bold))
+                        .multilineTextAlignment(.center)
+                    Text(NSLocalizedString("caregiver.signup.subtitle", comment: "Caregiver signup subtitle"))
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 }
 
                 // Form fields
@@ -55,6 +69,31 @@ struct CaregiverSignupView: View {
                     ErrorStateView(message: errorMessage)
                 }
 
+                if let infoMessage {
+                    SignupInfoView(message: infoMessage)
+                    Button {
+                        Task { await resendConfirmationEmail() }
+                    } label: {
+                        Group {
+                            if isResending {
+                                ProgressView()
+                            } else {
+                                Label(
+                                    NSLocalizedString("caregiver.signup.resend.button", comment: "Resend confirmation email"),
+                                    systemImage: "envelope.arrow.triangle.branch"
+                                )
+                            }
+                        }
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(Color.accentColor)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 14))
+                    }
+                    .disabled(isLoading || isResending)
+                    .accessibilityLabel(NSLocalizedString("a11y.signup.resend", comment: "Resend confirmation email"))
+                }
+
                 // Signup button
                 Button {
                     Task { await signup() }
@@ -73,8 +112,8 @@ struct CaregiverSignupView: View {
                     .frame(height: 50)
                     .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
                 }
-                .disabled(isLoading || email.isEmpty || password.isEmpty)
-                .opacity(email.isEmpty || password.isEmpty ? 0.5 : 1)
+                .disabled(isLoading || !isFormReady)
+                .opacity(isFormReady ? 1 : 0.5)
                 .accessibilityLabel(NSLocalizedString("a11y.signup", comment: "Signup"))
             }
             .padding(28)
@@ -89,12 +128,25 @@ struct CaregiverSignupView: View {
 
     @MainActor
     private func signup() async {
+        errorMessage = nil
+        infoMessage = nil
+
+        guard trimmedEmail.contains("@"), trimmedEmail.contains(".") else {
+            errorMessage = NSLocalizedString("auth.error.invalidEmail", comment: "Invalid email")
+            return
+        }
+
+        guard password.count >= 6 else {
+            errorMessage = NSLocalizedString("auth.error.weakPassword", comment: "Weak password")
+            return
+        }
+
         isLoading = true
         defer { isLoading = false }
         do {
-            let session = try await authService.signup(email: email, password: password)
+            let session = try await authService.signup(email: trimmedEmail, password: password)
             if !session.hasAccessToken {
-                errorMessage = NSLocalizedString("caregiver.signup.confirm.email", comment: "Email confirmation required")
+                infoMessage = NSLocalizedString("caregiver.signup.confirm.email", comment: "Email confirmation required")
             } else {
                 sessionStore.saveCaregiverSession(session)
             }
@@ -105,5 +157,50 @@ struct CaregiverSignupView: View {
                 errorMessage = NSLocalizedString("common.error.signup", comment: "Signup failed")
             }
         }
+    }
+
+    @MainActor
+    private func resendConfirmationEmail() async {
+        errorMessage = nil
+
+        guard trimmedEmail.contains("@"), trimmedEmail.contains(".") else {
+            errorMessage = NSLocalizedString("auth.error.invalidEmail", comment: "Invalid email")
+            return
+        }
+
+        isResending = true
+        defer { isResending = false }
+        do {
+            try await authService.resendSignupConfirmation(email: trimmedEmail)
+            infoMessage = NSLocalizedString("caregiver.signup.resend.sent", comment: "Confirmation email resent")
+        } catch {
+            if let apiError = error as? LocalizedError, let message = apiError.errorDescription {
+                errorMessage = message
+            } else {
+                errorMessage = NSLocalizedString("caregiver.signup.resend.error", comment: "Resend failed")
+            }
+        }
+    }
+}
+
+private struct SignupInfoView: View {
+    let message: String
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "envelope.badge.fill")
+                .font(.system(size: 34, weight: .semibold))
+                .foregroundStyle(.blue)
+            Text(message)
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(22)
+        .glassEffect(.regular, in: .rect(cornerRadius: 18))
+        .padding(.horizontal, 20)
+        .accessibilityLabel(message)
     }
 }

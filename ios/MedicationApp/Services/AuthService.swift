@@ -52,6 +52,26 @@ final class AuthService: Sendable {
         )
     }
 
+    func resendSignupConfirmation(email: String) async throws {
+        guard !supabaseAnonKey.isEmpty else {
+            throw APIError.validation("missing supabase config")
+        }
+        let request = try makeResendSignupConfirmationRequest(email: email)
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw APIError.network(NSLocalizedString("auth.error.network", comment: "Auth network error"))
+        }
+        guard let http = response as? HTTPURLResponse else {
+            throw APIError.unknown
+        }
+        if (200...299).contains(http.statusCode) {
+            return
+        }
+        throw mapSupabaseError(statusCode: http.statusCode, data: data)
+    }
+
     func refreshSession(refreshToken: String) async throws -> SupabaseSession {
         guard !refreshToken.isEmpty else {
             throw APIError.validation("refresh token required")
@@ -146,6 +166,27 @@ final class AuthService: Sendable {
         request.addValue("Bearer \(supabaseAnonKey)", forHTTPHeaderField: "Authorization")
         request.httpBody = try JSONSerialization.data(
             withJSONObject: ["refresh_token": refreshToken],
+            options: []
+        )
+        return request
+    }
+
+    func makeResendSignupConfirmationRequest(email: String) throws -> URLRequest {
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedEmail.isEmpty else {
+            throw APIError.validation("email required")
+        }
+        let url = supabaseURL.appendingPathComponent("auth/v1/resend")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue(supabaseAnonKey, forHTTPHeaderField: "apikey")
+        request.addValue("Bearer \(supabaseAnonKey)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONSerialization.data(
+            withJSONObject: [
+                "type": "signup",
+                "email": trimmedEmail
+            ],
             options: []
         )
         return request

@@ -49,6 +49,23 @@ final class AuthServiceTests: XCTestCase {
         XCTAssertEqual(payload?["refresh_token"], "refresh-token")
     }
 
+    func testResendSignupConfirmationRequestUsesSignupType() throws {
+        let service = AuthService(
+            supabaseURL: URL(string: "https://example.supabase.co")!,
+            supabaseAnonKey: "anon-key"
+        )
+
+        let request = try service.makeResendSignupConfirmationRequest(email: " user@example.com ")
+        let body = try XCTUnwrap(request.httpBody)
+        let payload = try JSONSerialization.jsonObject(with: body) as? [String: String]
+
+        XCTAssertEqual(request.httpMethod, "POST")
+        XCTAssertEqual(request.url?.path, "/auth/v1/resend")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-key")
+        XCTAssertEqual(payload?["type"], "signup")
+        XCTAssertEqual(payload?["email"], "user@example.com")
+    }
+
     func testUserFacingAuthErrorMapsInvalidCredentials() {
         let message = AuthService.userFacingAuthErrorMessage(
             statusCode: 400,

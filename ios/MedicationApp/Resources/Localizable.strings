@@ -45,20 +45,24 @@
 
 /* Caregiver auth choice */
 "caregiver.auth.title" = "家族アカウント";
-"caregiver.auth.subtitle" = "ログインまたは新規登録してください";
+"caregiver.auth.subtitle" = "アカウントをお持ちの方はログイン、はじめての方は新規登録してください";
 "caregiver.auth.login" = "ログイン";
 "caregiver.auth.login.subtitle" = "既にアカウントをお持ちの方";
-"caregiver.auth.signup" = "サインアップ";
-"caregiver.auth.signup.subtitle" = "はじめてご利用の方";
+"caregiver.auth.signup" = "新規登録";
+"caregiver.auth.signup.subtitle" = "家族アカウントを作成する";
 "caregiver.auth.back" = "モードを選び直す";
 
 /* Caregiver signup */
-"caregiver.signup.title" = "家族サインアップ";
-"caregiver.signup.email" = "Email";
-"caregiver.signup.password" = "Password";
-"caregiver.signup.button" = "サインアップ";
+"caregiver.signup.title" = "家族アカウント作成";
+"caregiver.signup.subtitle" = "服薬を見守る家族用のアカウントを作成します";
+"caregiver.signup.email" = "メールアドレス";
+"caregiver.signup.password" = "パスワード（6文字以上）";
+"caregiver.signup.button" = "新規登録";
 "caregiver.signup.button.loading" = "登録中...";
-"caregiver.signup.confirm.email" = "アカウントを確認するためにメールをご確認ください。";
+"caregiver.signup.confirm.email" = "確認メールを送信しました。メール内のリンクを開いて、登録を完了してください。";
+"caregiver.signup.resend.button" = "確認メールを再送";
+"caregiver.signup.resend.sent" = "確認メールを再送しました。迷惑メールフォルダも確認してください。";
+"caregiver.signup.resend.error" = "確認メールの再送に失敗しました。しばらくしてからもう一度お試しください。";
 
 /* Link code */
 "link.code.title" = "連携コード";
@@ -556,7 +560,8 @@
 "a11y.email" = "メールアドレス";
 "a11y.password" = "パスワード";
 "a11y.login" = "ログイン";
-"a11y.signup" = "サインアップ";
+"a11y.signup" = "新規登録";
+"a11y.signup.resend" = "確認メールを再送";
 "a11y.linkCode" = "連携コード";
 "a11y.linkCode.submit" = "連携コード送信";
 "a11y.medication.name" = "薬名";
