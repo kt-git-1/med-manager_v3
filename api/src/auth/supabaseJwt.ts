@@ -73,9 +73,9 @@ function getJwksUrls() {
   }
   const base = supabaseUrl.replace(/\/$/, "");
   return [
-    `${base}/auth/v1/keys`,
     `${base}/auth/v1/.well-known/jwks.json`,
-    `${base}/.well-known/jwks.json`
+    `${base}/.well-known/jwks.json`,
+    `${base}/auth/v1/keys`
   ];
 }
 

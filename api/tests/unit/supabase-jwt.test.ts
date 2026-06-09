@@ -1,4 +1,4 @@
-import { describe, expect, it, afterEach } from "vitest";
+import { describe, expect, it, afterEach, vi } from "vitest";
 import { createHmac, createSign, generateKeyPairSync } from "crypto";
 import { verifySupabaseJwt } from "../../src/auth/supabaseJwt";
 
@@ -18,6 +18,9 @@ function signToken(payload: Record<string, unknown>, secret: string) {
 
 const ORIGINAL_SECRET = process.env.SUPABASE_JWT_SECRET;
 const ORIGINAL_PUBLIC_KEY = process.env.SUPABASE_JWT_PUBLIC_KEY;
+const ORIGINAL_SUPABASE_URL = process.env.SUPABASE_URL;
+const ORIGINAL_SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const ORIGINAL_SUPABASE_JWT_JWKS_URL = process.env.SUPABASE_JWT_JWKS_URL;
 
 afterEach(() => {
   if (ORIGINAL_SECRET === undefined) {
@@ -30,6 +33,22 @@ afterEach(() => {
   } else {
     process.env.SUPABASE_JWT_PUBLIC_KEY = ORIGINAL_PUBLIC_KEY;
   }
+  if (ORIGINAL_SUPABASE_URL === undefined) {
+    delete process.env.SUPABASE_URL;
+  } else {
+    process.env.SUPABASE_URL = ORIGINAL_SUPABASE_URL;
+  }
+  if (ORIGINAL_SUPABASE_ANON_KEY === undefined) {
+    delete process.env.SUPABASE_ANON_KEY;
+  } else {
+    process.env.SUPABASE_ANON_KEY = ORIGINAL_SUPABASE_ANON_KEY;
+  }
+  if (ORIGINAL_SUPABASE_JWT_JWKS_URL === undefined) {
+    delete process.env.SUPABASE_JWT_JWKS_URL;
+  } else {
+    process.env.SUPABASE_JWT_JWKS_URL = ORIGINAL_SUPABASE_JWT_JWKS_URL;
+  }
+  vi.unstubAllGlobals();
 });
 
 describe("supabase jwt verification", () => {
@@ -83,6 +102,46 @@ describe("supabase jwt verification", () => {
     const token = `${data}.${base64UrlEncode(rawSignature)}`;
     const session = await verifySupabaseJwt(token);
     expect(session.caregiverUserId).toBe("caregiver-1");
+  });
+
+  it("fetches Supabase well-known JWKS before legacy keys endpoint", async () => {
+    vi.resetModules();
+    delete process.env.SUPABASE_JWT_SECRET;
+    delete process.env.SUPABASE_JWT_PUBLIC_KEY;
+    delete process.env.SUPABASE_JWT_JWKS_URL;
+    process.env.SUPABASE_URL = "https://example.supabase.co";
+    process.env.SUPABASE_ANON_KEY = "anon-key";
+
+    const { privateKey, publicKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
+    const jwk = publicKey.export({ format: "jwk" });
+    const header = { alg: "ES256", typ: "JWT", kid: "test-key-1" };
+    const payload = { sub: "caregiver-1", exp: Math.floor(Date.now() / 1000) + 60 };
+    const encodedHeader = base64UrlEncode(Buffer.from(JSON.stringify(header)));
+    const encodedPayload = base64UrlEncode(Buffer.from(JSON.stringify(payload)));
+    const data = `${encodedHeader}.${encodedPayload}`;
+    const derSignature = createSign("sha256").update(data).end().sign(privateKey);
+    const rawSignature = derSignatureToRaw(derSignature);
+    const token = `${data}.${base64UrlEncode(rawSignature)}`;
+    const fetchMock = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          keys: [{ ...jwk, kid: "test-key-1", alg: "ES256", use: "sig" }]
+        }),
+        { status: 200 }
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { verifySupabaseJwt: verifyWithFreshModule } = await import(
+      "../../src/auth/supabaseJwt"
+    );
+    const session = await verifyWithFreshModule(token);
+
+    expect(session.caregiverUserId).toBe("caregiver-1");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "https://example.supabase.co/auth/v1/.well-known/jwks.json"
+    );
   });
 });
 

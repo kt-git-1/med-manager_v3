@@ -13,7 +13,6 @@ private enum MedicationListFilter: String, CaseIterable, Identifiable {
     case all
     case scheduled
     case prn
-    case attention
     case ended
 
     var id: String { rawValue }
@@ -26,8 +25,6 @@ private enum MedicationListFilter: String, CaseIterable, Identifiable {
             return NSLocalizedString("medication.list.filter.scheduled", comment: "Scheduled medications filter")
         case .prn:
             return NSLocalizedString("medication.list.filter.prn", comment: "PRN medications filter")
-        case .attention:
-            return NSLocalizedString("medication.list.filter.attention", comment: "Needs attention filter")
         case .ended:
             return NSLocalizedString("medication.list.filter.ended", comment: "Ended medications filter")
         }
@@ -41,8 +38,6 @@ private enum MedicationListFilter: String, CaseIterable, Identifiable {
             return "clock.fill"
         case .prn:
             return "cross.case.fill"
-        case .attention:
-            return "exclamationmark.triangle.fill"
         case .ended:
             return "calendar.badge.clock"
         }
@@ -278,19 +273,6 @@ struct MedicationListView: View {
                             medicationFilterRow
                         }
                         if sessionStore.mode == .caregiver {
-                            if selectedFilter == .all {
-                                if !attentionItems.isEmpty {
-                                    Section {
-                                        ForEach(attentionItems) { item in
-                                            medicationRow(item, forceAttention: true)
-                                        }
-                                    } header: {
-                                        sectionHeader("medication.list.section.attention")
-                                    }
-                                    .listRowSeparator(.hidden)
-                                }
-                            }
-
                             if !displayScheduledItems.isEmpty {
                                 Section {
                                     ForEach(displayScheduledItems) { item in
@@ -464,10 +446,10 @@ struct MedicationListView: View {
                     systemImage: "cross.case.fill"
                 )
                 MedicationMetricTile(
-                    title: NSLocalizedString("medication.list.metric.attention", comment: "Needs attention"),
-                    value: "\(attentionItems.count)",
-                    tint: attentionItems.isEmpty ? .gray : CaregiverUI.red,
-                    systemImage: "exclamationmark.triangle.fill"
+                    title: NSLocalizedString("medication.list.metric.ended", comment: "Ended medications"),
+                    value: "\(expiredItems.count)",
+                    tint: .gray,
+                    systemImage: "calendar.badge.clock"
                 )
             }
         }
@@ -530,19 +512,12 @@ struct MedicationListView: View {
         expiredItems.filter { $0.medication.isPrn }
     }
 
-    private var attentionItems: [MedicationListItem] {
-        activeItems.filter(needsAttention)
-    }
-
     private var displayScheduledItems: [MedicationListItem] {
         switch selectedFilter {
         case .all:
-            let attentionIds = Set(attentionItems.map(\.id))
-            return activeScheduledItems.filter { !attentionIds.contains($0.id) }
+            return activeScheduledItems
         case .scheduled:
             return activeScheduledItems
-        case .attention:
-            return attentionItems.filter { !$0.medication.isPrn }
         default:
             return []
         }
@@ -551,12 +526,9 @@ struct MedicationListView: View {
     private var displayPrnItems: [MedicationListItem] {
         switch selectedFilter {
         case .all:
-            let attentionIds = Set(attentionItems.map(\.id))
-            return activePrnItems.filter { !attentionIds.contains($0.id) }
+            return activePrnItems
         case .prn:
             return activePrnItems
-        case .attention:
-            return attentionItems.filter { $0.medication.isPrn }
         default:
             return []
         }
@@ -583,24 +555,12 @@ struct MedicationListView: View {
         return endDate < todayStart
     }
 
-    private func needsAttention(_ item: MedicationListItem) -> Bool {
-        guard item.medication.inventoryEnabled else { return false }
-        if item.medication.inventoryOut { return true }
-        let minimumUsefulQuantity = max(item.medication.doseCountPerIntake * 3, 3)
-        return item.medication.inventoryQuantity <= minimumUsefulQuantity
-    }
-
     private func inventoryStatusText(for item: MedicationListItem) -> String? {
-        guard item.medication.inventoryEnabled else {
-            return NSLocalizedString("medication.list.inventory.unset", comment: "Inventory unset")
-        }
+        guard item.medication.inventoryEnabled else { return nil }
         let quantity = AppConstants.formatDecimal(item.medication.inventoryQuantity)
         let unit = item.medication.inventoryUnit ?? NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit")
         if item.medication.inventoryOut {
             return NSLocalizedString("medication.list.inventory.out", comment: "Out of stock")
-        }
-        if needsAttention(item) {
-            return String(format: NSLocalizedString("medication.list.inventory.low.format", comment: "Low inventory format"), quantity, unit)
         }
         return String(format: NSLocalizedString("medication.list.inventory.remaining.format", comment: "Remaining inventory format"), quantity, unit)
     }
@@ -620,16 +580,13 @@ struct MedicationListView: View {
             return CaregiverUI.blue
         case .prn:
             return CaregiverUI.orange
-        case .attention:
-            return CaregiverUI.red
         case .ended:
             return .gray
         }
     }
 
     @ViewBuilder
-    private func medicationRow(_ item: MedicationListItem, forceAttention: Bool = false) -> some View {
-        let isAttention = forceAttention || needsAttention(item)
+    private func medicationRow(_ item: MedicationListItem) -> some View {
         let rowContent = HStack(alignment: .top, spacing: 14) {
             MedicationIllustrationView(tint: medicationAccentColor(for: item))
                 .frame(width: 62, height: 62)
@@ -663,8 +620,8 @@ struct MedicationListView: View {
                     if let inventoryText = inventoryStatusText(for: item) {
                         CaregiverStatusPill(
                             text: inventoryText,
-                            color: isAttention ? CaregiverUI.red : Color.secondary,
-                            systemImage: isAttention ? "exclamationmark.triangle.fill" : "shippingbox.fill"
+                            color: Color.secondary,
+                            systemImage: "shippingbox.fill"
                         )
                     }
                 }
