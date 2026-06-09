@@ -48,4 +48,40 @@ final class AuthServiceTests: XCTestCase {
         XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-key")
         XCTAssertEqual(payload?["refresh_token"], "refresh-token")
     }
+
+    func testUserFacingAuthErrorMapsInvalidCredentials() {
+        let message = AuthService.userFacingAuthErrorMessage(
+            statusCode: 400,
+            serverMessage: "Invalid login credentials"
+        )
+
+        XCTAssertEqual(message, "メールアドレスまたはパスワードが正しくありません。")
+    }
+
+    func testUserFacingAuthErrorMapsStatusOnlyBadRequest() {
+        let message = AuthService.userFacingAuthErrorMessage(
+            statusCode: 400,
+            serverMessage: "Request failed (status: 400)"
+        )
+
+        XCTAssertEqual(message, "メールアドレスとパスワードを確認してください。")
+    }
+
+    func testUserFacingAuthErrorMapsSignupAlreadyRegistered() {
+        let message = AuthService.userFacingAuthErrorMessage(
+            statusCode: 409,
+            serverMessage: "User already registered"
+        )
+
+        XCTAssertEqual(message, "このメールアドレスはすでに登録されています。ログインしてください。")
+    }
+
+    func testUserFacingAuthErrorMapsNetworkUnavailable() {
+        let message = AuthService.userFacingAuthErrorMessage(
+            statusCode: 500,
+            serverMessage: "Internal server error"
+        )
+
+        XCTAssertEqual(message, "ログイン機能が一時的に利用できません。しばらくしてからもう一度お試しください。")
+    }
 }

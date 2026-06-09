@@ -64,7 +64,7 @@ final class AuthService: Sendable {
         do {
             (data, response) = try await URLSession.shared.data(for: request)
         } catch {
-            throw APIError.network("Network error: \(error.localizedDescription)")
+            throw APIError.network(NSLocalizedString("auth.error.network", comment: "Auth network error"))
         }
         guard let http = response as? HTTPURLResponse else {
             throw APIError.unknown
@@ -114,7 +114,7 @@ final class AuthService: Sendable {
         do {
             (data, response) = try await URLSession.shared.data(for: request)
         } catch {
-            throw APIError.network("Network error: \(error.localizedDescription)")
+            throw APIError.network(NSLocalizedString("auth.error.network", comment: "Auth network error"))
         }
         guard let http = response as? HTTPURLResponse else {
             throw APIError.unknown
@@ -167,19 +167,74 @@ final class AuthService: Sendable {
             ? parsedMessage!
             : "Request failed (status: \(statusCode))"
         print("AuthService: request failed \(statusCode) \(serverMessage)")
+        let userMessage = Self.userFacingAuthErrorMessage(
+            statusCode: statusCode,
+            serverMessage: serverMessage
+        )
         switch statusCode {
         case 400, 422:
-            return APIError.validation(serverMessage)
+            return APIError.validation(userMessage)
         case 401:
-            return APIError.unauthorized
+            return APIError.validation(userMessage)
         case 403:
-            return APIError.forbidden
+            return APIError.validation(userMessage)
         case 404:
-            return APIError.notFound
+            return APIError.validation(userMessage)
         case 409:
-            return APIError.conflict
+            return APIError.validation(userMessage)
         default:
-            return APIError.network("\(serverMessage) (status: \(statusCode))")
+            return APIError.network(userMessage)
+        }
+    }
+
+    static func userFacingAuthErrorMessage(statusCode: Int, serverMessage: String) -> String {
+        let normalized = serverMessage.lowercased()
+
+        if normalized.contains("invalid login credentials") ||
+            normalized.contains("invalid credentials") ||
+            normalized.contains("invalid_grant") {
+            return NSLocalizedString("auth.error.invalidCredentials", comment: "Invalid credentials")
+        }
+
+        if normalized.contains("email not confirmed") ||
+            normalized.contains("email_not_confirmed") ||
+            normalized.contains("confirm") {
+            return NSLocalizedString("auth.error.emailNotConfirmed", comment: "Email not confirmed")
+        }
+
+        if normalized.contains("already registered") ||
+            normalized.contains("already exists") ||
+            normalized.contains("user_already_exists") {
+            return NSLocalizedString("auth.error.emailAlreadyRegistered", comment: "Email already registered")
+        }
+
+        if normalized.contains("password") &&
+            (normalized.contains("at least") ||
+             normalized.contains("weak") ||
+             normalized.contains("length") ||
+             normalized.contains("short")) {
+            return NSLocalizedString("auth.error.weakPassword", comment: "Weak password")
+        }
+
+        if normalized.contains("email") &&
+            (normalized.contains("invalid") ||
+             normalized.contains("format")) {
+            return NSLocalizedString("auth.error.invalidEmail", comment: "Invalid email")
+        }
+
+        switch statusCode {
+        case 400, 401, 422:
+            return NSLocalizedString("auth.error.checkCredentials", comment: "Check credentials")
+        case 403:
+            return NSLocalizedString("auth.error.forbidden", comment: "Forbidden auth error")
+        case 404:
+            return NSLocalizedString("auth.error.notFound", comment: "Auth endpoint not found")
+        case 409:
+            return NSLocalizedString("auth.error.emailAlreadyRegistered", comment: "Email already registered")
+        case 429:
+            return NSLocalizedString("auth.error.tooManyRequests", comment: "Too many requests")
+        default:
+            return NSLocalizedString("auth.error.unavailable", comment: "Auth service unavailable")
         }
     }
 }
