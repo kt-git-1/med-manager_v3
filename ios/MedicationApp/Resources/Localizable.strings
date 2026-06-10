@@ -315,6 +315,10 @@
 "caregiver.inventory.title" = "在庫を確認";
 "caregiver.inventory.subtitle" = "少ない薬から確認し、補充したら在庫数を更新します";
 "caregiver.patients.open" = "連携・設定を開く";
+"caregiver.patientSelection.required.title" = "見守る方を選択してください";
+"caregiver.patientSelection.required.message" = "連携・設定タブで対象を選ぶと、今日の予定・薬・在庫・履歴を確認できます。";
+"caregiver.dataUnavailable.title" = "情報を取得できませんでした";
+"caregiver.dataUnavailable.message" = "通信状況を確認して、もう一度お試しください。ログイン直後の場合は少し時間をおいて再試行してください。";
 "caregiver.history.empty.title" = "患者を選択してください";
 "caregiver.history.empty.message" = "連携・設定タブから対象を選んでください";
 "caregiver.history.empty.action" = "連携・設定を開く";

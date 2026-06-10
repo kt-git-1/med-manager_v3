@@ -57,7 +57,7 @@ final class CaregiverTodayViewModel: ObservableObject {
             } catch {
                 items = []
                 outOfStockMedicationIds = []
-                errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
+                errorMessage = NSLocalizedString("caregiver.dataUnavailable.message", comment: "Caregiver data unavailable message")
             }
         }
     }

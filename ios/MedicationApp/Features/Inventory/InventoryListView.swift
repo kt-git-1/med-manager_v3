@@ -34,7 +34,7 @@ final class InventoryViewModel: ObservableObject {
                 items = try await apiClient.fetchInventory()
             } catch {
                 items = []
-                errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
+                errorMessage = NSLocalizedString("caregiver.dataUnavailable.message", comment: "Caregiver data unavailable message")
             }
         }
     }
@@ -420,15 +420,10 @@ struct InventoryListView: View {
     }
 
     private func errorSection(message: String) -> some View {
-        VStack(spacing: 12) {
-            ErrorStateView(message: message)
-            Button(NSLocalizedString("common.retry", comment: "Retry")) {
-                viewModel.load()
-            }
-            .buttonStyle(.borderedProminent)
-            .accessibilityIdentifier("InventoryRetryButton")
+        CaregiverDataUnavailableView(message: message) {
+            viewModel.load()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityIdentifier("InventoryRetryButton")
     }
 
     private var filteredItems: [InventoryItemDTO] {

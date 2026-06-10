@@ -105,7 +105,11 @@ final class MedicationListViewModel: ObservableObject {
                 }
             } catch {
                 items = []
-                errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
+                if sessionStore.mode == .caregiver {
+                    errorMessage = NSLocalizedString("caregiver.dataUnavailable.message", comment: "Caregiver data unavailable message")
+                } else {
+                    errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
+                }
             }
         }
     }
@@ -226,7 +230,13 @@ struct MedicationListView: View {
                 if viewModel.isLoading {
                     centeredLoadingState
                 } else if let errorMessage = viewModel.errorMessage {
-                    ErrorStateView(message: errorMessage)
+                    if sessionStore.mode == .caregiver {
+                        CaregiverDataUnavailableView(message: errorMessage) {
+                            viewModel.load()
+                        }
+                    } else {
+                        ErrorStateView(message: errorMessage)
+                    }
                 } else if viewModel.items.isEmpty {
                     ZStack {
                         Color.clear

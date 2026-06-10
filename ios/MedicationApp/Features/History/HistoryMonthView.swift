@@ -1202,13 +1202,21 @@ struct HistoryMonthView: View {
         SchedulingRefreshOverlay()
     }
 
+    @ViewBuilder
     private func errorSection(message: String, retry: @escaping () -> Void) -> some View {
-        VStack(spacing: 12) {
-            ErrorStateView(message: message)
-            Button(NSLocalizedString("common.retry", comment: "Retry")) {
+        if isPatientMode {
+            VStack(spacing: 12) {
+                ErrorStateView(message: message)
+                Button(NSLocalizedString("common.retry", comment: "Retry")) {
+                    retry()
+                }
+                .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("HistoryRetryButton")
+            }
+        } else {
+            CaregiverDataUnavailableView(message: message) {
                 retry()
             }
-            .buttonStyle(.borderedProminent)
             .accessibilityIdentifier("HistoryRetryButton")
         }
     }

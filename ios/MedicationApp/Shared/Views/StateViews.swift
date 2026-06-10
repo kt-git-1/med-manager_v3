@@ -88,6 +88,76 @@ struct CaregiverNoPatientEmptyStateView: View {
     }
 }
 
+struct CaregiverPatientSelectionRequiredView: View {
+    var systemImage = "person.crop.circle.badge.questionmark"
+    let onOpenPatients: () -> Void
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Spacer(minLength: 0)
+            VStack(spacing: 16) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 44))
+                    .foregroundStyle(.secondary)
+                Text(NSLocalizedString("caregiver.patientSelection.required.title", comment: "Patient selection required title"))
+                    .font(.title3.weight(.semibold))
+                    .multilineTextAlignment(.center)
+                Text(NSLocalizedString("caregiver.patientSelection.required.message", comment: "Patient selection required message"))
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                CaregiverPrimaryButton(
+                    title: NSLocalizedString("caregiver.patients.open", comment: "Open patients tab"),
+                    systemImage: "person.2"
+                ) {
+                    onOpenPatients()
+                }
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity)
+            .glassEffect(.regular, in: .rect(cornerRadius: 20))
+            .padding(.horizontal, 24)
+            Spacer(minLength: 0)
+        }
+        .accessibilityIdentifier("CaregiverPatientSelectionRequiredView")
+    }
+}
+
+struct CaregiverDataUnavailableView: View {
+    let message: String
+    let onRetry: () -> Void
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Spacer(minLength: 0)
+            VStack(spacing: 16) {
+                Image(systemName: "wifi.exclamationmark")
+                    .font(.system(size: 44, weight: .semibold))
+                    .foregroundStyle(CaregiverUI.red)
+                Text(NSLocalizedString("caregiver.dataUnavailable.title", comment: "Caregiver data unavailable title"))
+                    .font(.title3.weight(.semibold))
+                    .multilineTextAlignment(.center)
+                Text(message)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                CaregiverPrimaryButton(
+                    title: NSLocalizedString("common.retry", comment: "Retry"),
+                    systemImage: "arrow.clockwise"
+                ) {
+                    onRetry()
+                }
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity)
+            .glassEffect(.regular, in: .rect(cornerRadius: 20))
+            .padding(.horizontal, 24)
+            Spacer(minLength: 0)
+        }
+        .accessibilityIdentifier("CaregiverDataUnavailableView")
+    }
+}
+
 struct ErrorStateView: View {
     let message: String
 

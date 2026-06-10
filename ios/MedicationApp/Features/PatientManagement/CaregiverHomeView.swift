@@ -439,7 +439,7 @@ final class CaregiverMedicationViewModel: ObservableObject {
                     sessionStore.setCurrentPatientId(onlyPatient.id)
                 }
             } catch {
-                errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
+                errorMessage = NSLocalizedString("caregiver.dataUnavailable.message", comment: "Caregiver data unavailable message")
             }
         }
     }
@@ -475,40 +475,16 @@ struct CaregiverMedicationView: View {
                     LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 } else if let errorMessage = viewModel.errorMessage {
-                    ErrorStateView(message: errorMessage)
+                    CaregiverDataUnavailableView(message: errorMessage) {
+                        viewModel.loadPatients()
+                    }
                 } else if viewModel.patients.isEmpty {
                     CaregiverNoPatientEmptyStateView(onCreatePatient: onCreatePatient)
                 } else if sessionStore.currentPatientId == nil {
-                    VStack(spacing: 12) {
-                        Spacer(minLength: 0)
-                        VStack(spacing: 16) {
-                            Image(systemName: "person.crop.circle.badge.questionmark")
-                                .font(.system(size: 44))
-                                .foregroundStyle(.secondary)
-                            Text(NSLocalizedString("caregiver.medications.noSelection.title", comment: "No selection title"))
-                                .font(.title3.weight(.semibold))
-                                .multilineTextAlignment(.center)
-                            Text(NSLocalizedString("caregiver.medications.noSelection.message", comment: "No selection message"))
-                                .font(.body)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                            Button {
-                                onOpenPatients()
-                            } label: {
-                                Text(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab"))
-                                    .font(.headline)
-                                    .foregroundStyle(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 50)
-                                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
-                            }
-                        }
-                        .padding(24)
-                        .frame(maxWidth: .infinity)
-                        .glassEffect(.regular, in: .rect(cornerRadius: 20))
-                        .padding(.horizontal, 24)
-                        Spacer(minLength: 0)
-                    }
+                    CaregiverPatientSelectionRequiredView(
+                        systemImage: "pills",
+                        onOpenPatients: onOpenPatients
+                    )
                 } else {
                     MedicationListView(
                         sessionStore: sessionStore,
@@ -563,39 +539,17 @@ struct CaregiverTodayTabView: View {
                 if viewModel.isLoading {
                     LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                } else if let errorMessage = viewModel.errorMessage {
+                    CaregiverDataUnavailableView(message: errorMessage) {
+                        viewModel.loadPatients()
+                    }
                 } else if viewModel.patients.isEmpty {
                     CaregiverNoPatientEmptyStateView(onCreatePatient: onCreatePatient)
                 } else if sessionStore.currentPatientId == nil {
-                    VStack(spacing: 12) {
-                        Spacer(minLength: 0)
-                        VStack(spacing: 16) {
-                            Image(systemName: "person.crop.circle.badge.questionmark")
-                                .font(.system(size: 44))
-                                .foregroundStyle(.secondary)
-                            Text(NSLocalizedString("caregiver.medications.noSelection.title", comment: "No selection title"))
-                                .font(.title3.weight(.semibold))
-                                .multilineTextAlignment(.center)
-                            Text(NSLocalizedString("caregiver.medications.noSelection.message", comment: "No selection message"))
-                                .font(.body)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                            Button {
-                                onOpenPatients()
-                            } label: {
-                                Text(NSLocalizedString("caregiver.patients.open", comment: "Open patients tab"))
-                                    .font(.headline)
-                                    .foregroundStyle(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 50)
-                                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
-                            }
-                        }
-                        .padding(24)
-                        .frame(maxWidth: .infinity)
-                        .glassEffect(.regular, in: .rect(cornerRadius: 20))
-                        .padding(.horizontal, 24)
-                        Spacer(minLength: 0)
-                    }
+                    CaregiverPatientSelectionRequiredView(
+                        systemImage: "calendar.badge.questionmark",
+                        onOpenPatients: onOpenPatients
+                    )
                 } else {
                     CaregiverTodayView(
                         sessionStore: sessionStore,
