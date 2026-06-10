@@ -26,7 +26,10 @@ export function getBearerToken(authHeader?: string): string | null {
 }
 
 export function isCaregiverToken(token: string | null): boolean {
-  return !!token && token.startsWith(CAREGIVER_TOKEN_PREFIX) && token !== CAREGIVER_PLACEHOLDER_TOKEN;
+  if (!token || token === CAREGIVER_PLACEHOLDER_TOKEN) {
+    return false;
+  }
+  return token.startsWith(CAREGIVER_TOKEN_PREFIX) || isJwtLikeToken(token);
 }
 
 export async function requireCaregiver(authHeader?: string) {
@@ -34,10 +37,12 @@ export async function requireCaregiver(authHeader?: string) {
   if (!token) {
     throw new AuthError("Unauthorized", 401);
   }
-  if (!token.startsWith(CAREGIVER_TOKEN_PREFIX)) {
+  if (!isCaregiverToken(token)) {
     throw new AuthError("Unauthorized", 401);
   }
-  const rawToken = token.slice(CAREGIVER_TOKEN_PREFIX.length);
+  const rawToken = token.startsWith(CAREGIVER_TOKEN_PREFIX)
+    ? token.slice(CAREGIVER_TOKEN_PREFIX.length)
+    : token;
   try {
     const session = await verifySupabaseJwt(rawToken);
     return { role: "caregiver" as const, caregiverUserId: session.caregiverUserId };
@@ -60,6 +65,10 @@ export async function requirePatient(authHeader?: string) {
   } catch {
     throw new AuthError("Unauthorized", 401);
   }
+}
+
+function isJwtLikeToken(token: string) {
+  return token.split(".").length === 3;
 }
 
 export function assertPatientScope(requestedPatientId: string, sessionPatientId: string) {

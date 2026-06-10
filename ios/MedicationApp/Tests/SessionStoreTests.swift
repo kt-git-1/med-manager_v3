@@ -107,6 +107,22 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertNil(userDefaults.string(forKey: SessionStore.patientTokenStorageKey))
     }
 
+    func testRawCaregiverTokenInSecureStorageIsNormalizedOnRestore() {
+        secureStorage.setString("raw-jwt-token", forKey: SessionStore.caregiverTokenStorageKey)
+        secureStorage.setString(
+            String(clock.now.addingTimeInterval(29 * 24 * 60 * 60).timeIntervalSince1970),
+            forKey: SessionStore.caregiverExpiresAtStorageKey
+        )
+
+        let restored = makeStore()
+
+        XCTAssertEqual(restored.caregiverToken, "caregiver-raw-jwt-token")
+        XCTAssertEqual(
+            secureStorage.string(forKey: SessionStore.caregiverTokenStorageKey),
+            "caregiver-raw-jwt-token"
+        )
+    }
+
     func testExpiredTokenIsClearedButModeRemains() {
         let store = makeStore()
         store.setMode(.caregiver)
@@ -161,11 +177,11 @@ final class SessionStoreTests: XCTestCase {
 
         let restored = makeStore()
 
-        XCTAssertEqual(restored.caregiverToken, "legacy-caregiver-token")
+        XCTAssertEqual(restored.caregiverToken, "caregiver-legacy-caregiver-token")
         XCTAssertEqual(restored.patientToken, "legacy-patient-token")
         XCTAssertEqual(
             secureStorage.string(forKey: SessionStore.caregiverTokenStorageKey),
-            "legacy-caregiver-token"
+            "caregiver-legacy-caregiver-token"
         )
         XCTAssertEqual(
             secureStorage.string(forKey: SessionStore.patientTokenStorageKey),

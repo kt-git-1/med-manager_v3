@@ -477,8 +477,6 @@ final class APIClient {
             throw APIError.unauthorized
         case 403:
             // Check for PATIENT_LIMIT_EXCEEDED before generic 403 handling.
-            // The generic handler calls handleAuthFailure which clears the session —
-            // incorrect for limit errors.
             if let limitError = parsePatientLimitExceeded(from: data) {
                 throw limitError
             }
@@ -487,7 +485,6 @@ final class APIClient {
             if let retentionError = parseHistoryRetentionLimit(from: data) {
                 throw retentionError
             }
-            sessionStore.handleAuthFailure(for: sessionStore.mode)
             throw APIError.forbidden
         case 400:
             throw APIError.validation(message ?? "Bad request")

@@ -48,7 +48,7 @@ final class SessionStore: ObservableObject {
         self.baseURL = SessionStore.resolveBaseURL()
         self.currentPatientId = userDefaults.string(forKey: SessionStore.currentPatientIdStorageKey)
         migrateLegacyTokensIfNeeded()
-        self.caregiverToken = restoredToken(
+        self.caregiverToken = restoredCaregiverToken(
             tokenKey: SessionStore.caregiverTokenStorageKey,
             expiresAtKey: SessionStore.caregiverExpiresAtStorageKey,
             extraKeysToRemoveWhenExpired: [SessionStore.caregiverRefreshTokenStorageKey]
@@ -103,11 +103,7 @@ final class SessionStore: ObservableObject {
 
     func saveCaregiverSession(_ session: SupabaseSession) {
         guard let accessToken = session.accessToken, !accessToken.isEmpty else { return }
-        if accessToken.starts(with: AppConstants.caregiverTokenPrefix) {
-            caregiverToken = accessToken
-        } else {
-            caregiverToken = "\(AppConstants.caregiverTokenPrefix)\(accessToken)"
-        }
+        caregiverToken = normalizedCaregiverToken(accessToken)
         persistToken(caregiverToken, key: SessionStore.caregiverTokenStorageKey)
         if let refreshToken = session.refreshToken, !refreshToken.isEmpty {
             persistToken(refreshToken, key: SessionStore.caregiverRefreshTokenStorageKey)
@@ -267,6 +263,32 @@ final class SessionStore: ObservableObject {
         return secureStorage.string(forKey: tokenKey)
     }
 
+    private func restoredCaregiverToken(
+        tokenKey: String,
+        expiresAtKey: String,
+        extraKeysToRemoveWhenExpired: [String] = []
+    ) -> String? {
+        guard let token = restoredToken(
+            tokenKey: tokenKey,
+            expiresAtKey: expiresAtKey,
+            extraKeysToRemoveWhenExpired: extraKeysToRemoveWhenExpired
+        ) else {
+            return nil
+        }
+        let normalized = normalizedCaregiverToken(token)
+        if normalized != token {
+            secureStorage.setString(normalized, forKey: tokenKey)
+        }
+        return normalized
+    }
+
+    private func normalizedCaregiverToken(_ token: String) -> String {
+        if token.starts(with: AppConstants.caregiverTokenPrefix) {
+            return token
+        }
+        return "\(AppConstants.caregiverTokenPrefix)\(token)"
+    }
+
     private func persistToken(_ token: String?, key: String) {
         if let token, !token.isEmpty {
             secureStorage.setString(token, forKey: key)
@@ -302,7 +324,10 @@ final class SessionStore: ObservableObject {
     private func migrateLegacyTokensIfNeeded() {
         if secureStorage.string(forKey: SessionStore.caregiverTokenStorageKey) == nil,
            let legacyCaregiverToken = userDefaults.string(forKey: SessionStore.caregiverTokenStorageKey) {
-            secureStorage.setString(legacyCaregiverToken, forKey: SessionStore.caregiverTokenStorageKey)
+            secureStorage.setString(
+                normalizedCaregiverToken(legacyCaregiverToken),
+                forKey: SessionStore.caregiverTokenStorageKey
+            )
             persistExpiry(forKey: SessionStore.caregiverExpiresAtStorageKey)
         }
         if secureStorage.string(forKey: SessionStore.patientTokenStorageKey) == nil,

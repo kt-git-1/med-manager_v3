@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { requireCaregiver, requirePatient } from "../../src/middleware/auth";
+import { isCaregiverToken, requireCaregiver, requirePatient } from "../../src/middleware/auth";
 import { patientSessionVerifier } from "../../src/auth/patientSessionVerifier";
 import { verifySupabaseJwt } from "../../src/auth/supabaseJwt";
 
@@ -29,12 +29,34 @@ describe("auth middleware", () => {
     });
   });
 
+  it("accepts raw Supabase JWT-shaped caregiver token", async () => {
+    mockedJwt.mockResolvedValueOnce({ caregiverUserId: "caregiver-1" });
+    await expect(requireCaregiver("Bearer header.payload.signature")).resolves.toEqual({
+      role: "caregiver",
+      caregiverUserId: "caregiver-1"
+    });
+    expect(mockedJwt).toHaveBeenCalledWith("header.payload.signature");
+  });
+
+  it("classifies prefixed and raw JWT-shaped tokens as caregiver tokens", () => {
+    expect(isCaregiverToken("caregiver-valid")).toBe(true);
+    expect(isCaregiverToken("header.payload.signature")).toBe(true);
+    expect(isCaregiverToken("patient-session-token")).toBe(false);
+    expect(isCaregiverToken(null)).toBe(false);
+  });
+
   it("requires patient auth header", async () => {
     await expect(requirePatient()).rejects.toMatchObject({ statusCode: 401 });
   });
 
   it("rejects caregiver token for patient routes", async () => {
     await expect(requirePatient("Bearer caregiver-valid")).rejects.toMatchObject({
+      statusCode: 403
+    });
+  });
+
+  it("rejects raw Supabase JWT-shaped caregiver token for patient routes", async () => {
+    await expect(requirePatient("Bearer header.payload.signature")).rejects.toMatchObject({
       statusCode: 403
     });
   });
