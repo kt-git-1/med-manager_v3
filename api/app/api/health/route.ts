@@ -1,5 +1,8 @@
 export async function GET() {
   return new Response(JSON.stringify({ status: "ok" }), {
-    headers: { "content-type": "application/json" }
+    headers: {
+      "cache-control": "no-store",
+      "content-type": "application/json"
+    }
   });
 }
