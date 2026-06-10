@@ -51,8 +51,33 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertNil(restored.currentPatientId)
     }
 
+    func testReturnToCaregiverLoginClearsSessionButKeepsCaregiverMode() {
+        let store = makeStore()
+        store.setMode(.caregiver)
+        store.saveCaregiverSession(
+            SupabaseSession(
+                accessToken: "caregiver-token",
+                refreshToken: "refresh-token",
+                expiresIn: 3600
+            )
+        )
+        store.setCurrentPatientId("patient-previous")
+
+        store.returnToCaregiverLogin()
+
+        XCTAssertEqual(store.mode, .caregiver)
+        XCTAssertNil(store.caregiverToken)
+        XCTAssertNil(store.currentPatientId)
+
+        let restored = makeStore()
+        XCTAssertEqual(restored.mode, .caregiver)
+        XCTAssertNil(restored.caregiverToken)
+        XCTAssertNil(restored.currentPatientId)
+    }
+
     func testSaveCaregiverSessionClearsCurrentPatientIdByDefault() {
         let store = makeStore()
+        store.setMode(.patient)
         store.setCurrentPatientId("patient-previous")
 
         store.saveCaregiverSession(
@@ -63,8 +88,10 @@ final class SessionStoreTests: XCTestCase {
             )
         )
 
+        XCTAssertEqual(store.mode, .caregiver)
         XCTAssertNil(store.currentPatientId)
         let restored = makeStore()
+        XCTAssertEqual(restored.mode, .caregiver)
         XCTAssertNil(restored.currentPatientId)
     }
 

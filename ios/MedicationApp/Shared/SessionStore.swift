@@ -103,6 +103,7 @@ final class SessionStore: ObservableObject {
 
     func saveCaregiverSession(_ session: SupabaseSession, preserveCurrentPatientId: Bool = false) {
         guard let accessToken = session.accessToken, !accessToken.isEmpty else { return }
+        setMode(.caregiver)
         if !preserveCurrentPatientId {
             clearCurrentPatientId()
         }
@@ -130,6 +131,11 @@ final class SessionStore: ObservableObject {
             userDefaults.removeObject(forKey: SessionStore.lastModeStorageKey)
         }
         clearCurrentPatientId()
+    }
+
+    func returnToCaregiverLogin() {
+        clearCaregiverToken()
+        setMode(.caregiver)
     }
 
     func clearPatientToken() {

@@ -14,6 +14,7 @@ struct CaregiverHomeView: View {
     @State private var selectedTab: CaregiverTab = .today
     @State private var currentPatientName: String?
     @State private var hasAnyPatient: Bool?
+    @State private var patientListErrorMessage: String?
     @State private var hasLowStock = false
     @State private var deepLinkTarget: NotificationDeepLinkTarget?
     @State private var shouldOpenCreatePatient = false
@@ -42,7 +43,9 @@ struct CaregiverHomeView: View {
                         entitlementStore: entitlementStore,
                         patientName: currentPatientName,
                         hasAnyPatient: hasAnyPatient,
+                        patientListErrorMessage: patientListErrorMessage,
                         deepLinkTarget: $deepLinkTarget,
+                        onRetryPatients: { loadCurrentPatientName() },
                         onOpenPatients: { openPatientSettings() },
                         onCreatePatient: { openPatientCreate() }
                     )
@@ -54,6 +57,8 @@ struct CaregiverHomeView: View {
                         onOpenPatients: { openPatientSettings() },
                         onCreatePatient: { openPatientCreate() },
                         hasAnyPatient: hasAnyPatient,
+                        patientListErrorMessage: patientListErrorMessage,
+                        onRetryPatients: { loadCurrentPatientName() },
                         patientName: currentPatientName
                     )
                 }
@@ -109,12 +114,15 @@ struct CaregiverHomeView: View {
     private func loadCurrentPatientName() {
         guard sessionStore.mode == .caregiver else {
             currentPatientName = nil
+            hasAnyPatient = nil
+            patientListErrorMessage = nil
             return
         }
         Task { @MainActor in
             do {
                 let apiClient = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: sessionStore)
                 let patients = try await apiClient.listPatients()
+                patientListErrorMessage = nil
                 hasAnyPatient = !patients.isEmpty
                 let selectedPatient = patients.first { $0.id == sessionStore.currentPatientId }
                 if let selectedPatient {
@@ -133,6 +141,10 @@ struct CaregiverHomeView: View {
             } catch {
                 currentPatientName = nil
                 hasAnyPatient = nil
+                patientListErrorMessage = NSLocalizedString(
+                    "caregiver.dataUnavailable.message",
+                    comment: "Caregiver data unavailable message"
+                )
             }
         }
     }
@@ -475,9 +487,11 @@ struct CaregiverMedicationView: View {
                     LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 } else if let errorMessage = viewModel.errorMessage {
-                    CaregiverDataUnavailableView(message: errorMessage) {
-                        viewModel.loadPatients()
-                    }
+                    CaregiverDataUnavailableView(
+                        message: errorMessage,
+                        onRetry: { viewModel.loadPatients() },
+                        onReturnToLogin: { sessionStore.returnToCaregiverLogin() }
+                    )
                 } else if viewModel.patients.isEmpty {
                     CaregiverNoPatientEmptyStateView(onCreatePatient: onCreatePatient)
                 } else if sessionStore.currentPatientId == nil {
@@ -540,9 +554,11 @@ struct CaregiverTodayTabView: View {
                     LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 } else if let errorMessage = viewModel.errorMessage {
-                    CaregiverDataUnavailableView(message: errorMessage) {
-                        viewModel.loadPatients()
-                    }
+                    CaregiverDataUnavailableView(
+                        message: errorMessage,
+                        onRetry: { viewModel.loadPatients() },
+                        onReturnToLogin: { sessionStore.returnToCaregiverLogin() }
+                    )
                 } else if viewModel.patients.isEmpty {
                     CaregiverNoPatientEmptyStateView(onCreatePatient: onCreatePatient)
                 } else if sessionStore.currentPatientId == nil {

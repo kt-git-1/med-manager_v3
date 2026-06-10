@@ -231,9 +231,11 @@ struct MedicationListView: View {
                     centeredLoadingState
                 } else if let errorMessage = viewModel.errorMessage {
                     if sessionStore.mode == .caregiver {
-                        CaregiverDataUnavailableView(message: errorMessage) {
-                            viewModel.load()
-                        }
+                        CaregiverDataUnavailableView(
+                            message: errorMessage,
+                            onRetry: { viewModel.load() },
+                            onReturnToLogin: { sessionStore.returnToCaregiverLogin() }
+                        )
                     } else {
                         ErrorStateView(message: errorMessage)
                     }

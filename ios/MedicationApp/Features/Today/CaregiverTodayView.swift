@@ -112,9 +112,11 @@ struct CaregiverTodayView: View {
             } else if viewModel.isLoading {
                 centeredLoadingState
             } else if let errorMessage = viewModel.errorMessage {
-                CaregiverDataUnavailableView(message: errorMessage) {
-                    viewModel.load(showLoading: true)
-                }
+                CaregiverDataUnavailableView(
+                    message: errorMessage,
+                    onRetry: { viewModel.load(showLoading: true) },
+                    onReturnToLogin: { sessionStore.returnToCaregiverLogin() }
+                )
             } else if viewModel.items.isEmpty {
                 CaregiverScreenBackground {
                     ScrollView {

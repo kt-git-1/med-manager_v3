@@ -126,6 +126,7 @@ struct CaregiverPatientSelectionRequiredView: View {
 struct CaregiverDataUnavailableView: View {
     let message: String
     let onRetry: () -> Void
+    var onReturnToLogin: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 12) {
@@ -146,6 +147,23 @@ struct CaregiverDataUnavailableView: View {
                     systemImage: "arrow.clockwise"
                 ) {
                     onRetry()
+                }
+                if let onReturnToLogin {
+                    Button {
+                        onReturnToLogin()
+                    } label: {
+                        Label(
+                            NSLocalizedString("caregiver.dataUnavailable.login", comment: "Return to caregiver login"),
+                            systemImage: "person.crop.circle"
+                        )
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(CaregiverUI.tealDark)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(CaregiverUI.teal.opacity(0.10), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("CaregiverDataUnavailableLoginButton")
                 }
             }
             .padding(24)

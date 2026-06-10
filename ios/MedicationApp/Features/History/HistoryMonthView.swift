@@ -191,6 +191,7 @@ struct HistoryMonthView: View {
                                     selectedDate: selectedDate,
                                     highlightedSlot: highlightedSlot,
                                     style: isPatientMode ? .patient : .caregiver,
+                                    onReturnToLogin: { sessionStore.returnToCaregiverLogin() },
                                     onRecordMissedDose: recordMissedDose
                                 )
                             }
@@ -1214,9 +1215,11 @@ struct HistoryMonthView: View {
                 .accessibilityIdentifier("HistoryRetryButton")
             }
         } else {
-            CaregiverDataUnavailableView(message: message) {
-                retry()
-            }
+            CaregiverDataUnavailableView(
+                message: message,
+                onRetry: { retry() },
+                onReturnToLogin: { sessionStore.returnToCaregiverLogin() }
+            )
             .accessibilityIdentifier("HistoryRetryButton")
         }
     }

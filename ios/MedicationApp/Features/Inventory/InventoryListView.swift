@@ -103,6 +103,8 @@ struct InventoryListView: View {
     private let onOpenPatients: () -> Void
     private let onCreatePatient: () -> Void
     private let hasAnyPatient: Bool?
+    private let patientListErrorMessage: String?
+    private let onRetryPatients: () -> Void
     private let patientName: String?
     @StateObject private var viewModel: InventoryViewModel
     @EnvironmentObject private var toastPresenter: ToastPresenter
@@ -114,12 +116,16 @@ struct InventoryListView: View {
         onOpenPatients: @escaping () -> Void,
         onCreatePatient: @escaping () -> Void = {},
         hasAnyPatient: Bool? = nil,
+        patientListErrorMessage: String? = nil,
+        onRetryPatients: @escaping () -> Void = {},
         patientName: String? = nil
     ) {
         self.sessionStore = sessionStore
         self.onOpenPatients = onOpenPatients
         self.onCreatePatient = onCreatePatient
         self.hasAnyPatient = hasAnyPatient
+        self.patientListErrorMessage = patientListErrorMessage
+        self.onRetryPatients = onRetryPatients
         self.patientName = patientName
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
@@ -134,7 +140,13 @@ struct InventoryListView: View {
         FullScreenContainer(
             content: {
                 Group {
-                    if sessionStore.currentPatientId == nil, hasAnyPatient == false {
+                    if let patientListErrorMessage, sessionStore.currentPatientId == nil {
+                        CaregiverDataUnavailableView(
+                            message: patientListErrorMessage,
+                            onRetry: { onRetryPatients() },
+                            onReturnToLogin: { sessionStore.returnToCaregiverLogin() }
+                        )
+                    } else if sessionStore.currentPatientId == nil, hasAnyPatient == false {
                         CaregiverNoPatientEmptyStateView(onCreatePatient: onCreatePatient)
                     } else if sessionStore.currentPatientId == nil {
                         InventoryEmptyStateView(onOpenPatients: onOpenPatients)
@@ -420,9 +432,11 @@ struct InventoryListView: View {
     }
 
     private func errorSection(message: String) -> some View {
-        CaregiverDataUnavailableView(message: message) {
-            viewModel.load()
-        }
+        CaregiverDataUnavailableView(
+            message: message,
+            onRetry: { viewModel.load() },
+            onReturnToLogin: { sessionStore.returnToCaregiverLogin() }
+        )
         .accessibilityIdentifier("InventoryRetryButton")
     }
 

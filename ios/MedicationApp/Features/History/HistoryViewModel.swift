@@ -64,16 +64,10 @@ final class HistoryViewModel: ObservableObject {
                     self.retentionCutoffDate = cutoffDate
                     self.retentionDays = retentionDays
                 } else {
-                    self.monthErrorMessage = NSLocalizedString(
-                        "history.error.retry",
-                        comment: "History load failed with retry"
-                    )
+                    self.monthErrorMessage = dataUnavailableMessage()
                 }
             } catch {
-                self.monthErrorMessage = NSLocalizedString(
-                    "history.error.retry",
-                    comment: "History load failed with retry"
-                )
+                self.monthErrorMessage = dataUnavailableMessage()
             }
         }
     }
@@ -112,16 +106,10 @@ final class HistoryViewModel: ObservableObject {
                     self.retentionCutoffDate = cutoffDate
                     self.retentionDays = retentionDays
                 } else {
-                    self.dayErrorMessage = NSLocalizedString(
-                        "history.error.retry",
-                        comment: "History load failed with retry"
-                    )
+                    self.dayErrorMessage = dataUnavailableMessage()
                 }
             } catch {
-                self.dayErrorMessage = NSLocalizedString(
-                    "history.error.retry",
-                    comment: "History load failed with retry"
-                )
+                self.dayErrorMessage = dataUnavailableMessage()
             }
         }
     }
@@ -166,5 +154,18 @@ final class HistoryViewModel: ObservableObject {
 
     private func showToast(_ message: String, kind: ToastKind = .success) {
         toastPresenter?.show(message, kind: kind)
+    }
+
+    private func dataUnavailableMessage() -> String {
+        if sessionStore.mode == .caregiver {
+            return NSLocalizedString(
+                "caregiver.dataUnavailable.message",
+                comment: "Caregiver data unavailable message"
+            )
+        }
+        return NSLocalizedString(
+            "history.error.retry",
+            comment: "History load failed with retry"
+        )
     }
 }

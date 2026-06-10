@@ -56,7 +56,10 @@ final class PatientManagementViewModel: ObservableObject {
                     setSelectedPatientId(patients[0].id)
                 }
             } catch {
-                errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
+                errorMessage = NSLocalizedString(
+                    "caregiver.dataUnavailable.message",
+                    comment: "Caregiver data unavailable message"
+                )
             }
         }
     }
@@ -318,7 +321,11 @@ struct PatientManagementView: View {
             LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let errorMessage = viewModel.errorMessage {
-            ErrorStateView(message: errorMessage)
+            CaregiverDataUnavailableView(
+                message: errorMessage,
+                onRetry: { viewModel.load() },
+                onReturnToLogin: { sessionStore.returnToCaregiverLogin() }
+            )
         } else if viewModel.patients.isEmpty {
             CaregiverNoPatientEmptyStateView {
                 showingCreate = true

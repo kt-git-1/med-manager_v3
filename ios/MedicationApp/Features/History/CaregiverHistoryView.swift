@@ -5,7 +5,9 @@ struct CaregiverHistoryView: View {
     private let entitlementStore: EntitlementStore?
     private let patientName: String?
     private let hasAnyPatient: Bool?
+    private let patientListErrorMessage: String?
     @Binding var deepLinkTarget: NotificationDeepLinkTarget?
+    private let onRetryPatients: () -> Void
     private let onOpenPatients: () -> Void
     private let onCreatePatient: () -> Void
 
@@ -14,7 +16,9 @@ struct CaregiverHistoryView: View {
         entitlementStore: EntitlementStore? = nil,
         patientName: String? = nil,
         hasAnyPatient: Bool? = nil,
+        patientListErrorMessage: String? = nil,
         deepLinkTarget: Binding<NotificationDeepLinkTarget?> = .constant(nil),
+        onRetryPatients: @escaping () -> Void = {},
         onOpenPatients: @escaping () -> Void,
         onCreatePatient: @escaping () -> Void
     ) {
@@ -22,14 +26,22 @@ struct CaregiverHistoryView: View {
         self.entitlementStore = entitlementStore
         self.patientName = patientName
         self.hasAnyPatient = hasAnyPatient
+        self.patientListErrorMessage = patientListErrorMessage
         self._deepLinkTarget = deepLinkTarget
+        self.onRetryPatients = onRetryPatients
         self.onOpenPatients = onOpenPatients
         self.onCreatePatient = onCreatePatient
     }
 
     var body: some View {
         CaregiverScreenBackground {
-            if sessionStore.currentPatientId == nil, hasAnyPatient == false {
+            if let patientListErrorMessage, sessionStore.currentPatientId == nil {
+                CaregiverDataUnavailableView(
+                    message: patientListErrorMessage,
+                    onRetry: { onRetryPatients() },
+                    onReturnToLogin: { sessionStore.returnToCaregiverLogin() }
+                )
+            } else if sessionStore.currentPatientId == nil, hasAnyPatient == false {
                 CaregiverNoPatientEmptyStateView(onCreatePatient: onCreatePatient)
             } else if sessionStore.currentPatientId == nil {
                 CaregiverPatientSelectionRequiredView(

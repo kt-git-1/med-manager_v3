@@ -27,6 +27,7 @@ struct HistoryDayDetailView: View {
     let selectedDate: Date?
     var highlightedSlot: NotificationSlot?
     var style: HistoryDayDetailStyle = .caregiver
+    var onReturnToLogin: () -> Void = {}
     var onRecordMissedDose: (HistoryDayItemDTO) -> Void = { _ in }
     @State private var doseToBackfill: HistoryDayItemDTO?
     @State private var showingBackfillConfirmation = false
@@ -39,13 +40,22 @@ struct HistoryDayDetailView: View {
             if viewModel.isLoadingDay && viewModel.day == nil {
                 LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
             } else if let errorMessage = viewModel.dayErrorMessage {
-                VStack(spacing: 12) {
-                    ErrorStateView(message: errorMessage)
-                    Button(NSLocalizedString("common.retry", comment: "Retry")) {
-                        retryLoad()
-                    }
-                    .buttonStyle(.borderedProminent)
+                if style == .caregiver {
+                    CaregiverDataUnavailableView(
+                        message: errorMessage,
+                        onRetry: { retryLoad() },
+                        onReturnToLogin: { onReturnToLogin() }
+                    )
                     .accessibilityIdentifier("HistoryDayRetryButton")
+                } else {
+                    VStack(spacing: 12) {
+                        ErrorStateView(message: errorMessage)
+                        Button(NSLocalizedString("common.retry", comment: "Retry")) {
+                            retryLoad()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .accessibilityIdentifier("HistoryDayRetryButton")
+                    }
                 }
             } else if timelineItems.isEmpty {
                 EmptyStateView(
