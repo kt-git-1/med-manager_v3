@@ -663,7 +663,7 @@ struct HistoryMonthView: View {
             if isFutureDate(date) {
                 return PatientUI.blue
             }
-            return PatientUI.red
+            return PatientUI.orange
         case .missed:
             return PatientUI.red
         case .none:
@@ -689,7 +689,7 @@ struct HistoryMonthView: View {
         case .taken:
             return "checkmark"
         case .pending:
-            return isFutureDate(date) ? "clock" : "exclamationmark"
+            return "clock"
         case .missed:
             return "exclamationmark"
         case .none:
