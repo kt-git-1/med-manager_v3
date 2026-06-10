@@ -245,6 +245,12 @@ final class AuthService: Sendable {
             return explicitURL
         }
 
+        let redirectURLString = env["EMAIL_CONFIRMATION_REDIRECT_URL"]
+            ?? info?["EMAIL_CONFIRMATION_REDIRECT_URL"] as? String
+        if let redirectURLString, let redirectURL = URL(string: redirectURLString) {
+            return redirectURL
+        }
+
         let baseURLString = env["API_BASE_URL"] ?? info?["API_BASE_URL"] as? String
         let baseURL = baseURLString.flatMap(URL.init(string:)) ?? AppConstants.defaultAPIBaseURL
         return baseURL.appendingPathComponent("auth/confirmed")
