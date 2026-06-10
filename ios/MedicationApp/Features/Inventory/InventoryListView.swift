@@ -524,10 +524,12 @@ struct InventoryListView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(item.name)
                         .font(.title2.weight(.bold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.78)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
                     inlineStatusBadges(for: item)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(1)
                 Spacer(minLength: 0)
                 if item.inventoryEnabled {
                     remainingCountView(item, accent: accent)

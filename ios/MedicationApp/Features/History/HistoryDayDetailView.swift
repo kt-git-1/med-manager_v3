@@ -209,7 +209,11 @@ private struct HistoryDayRow: View {
                     }
                     Text(medicationDisplayName)
                         .font(style == .patient ? .title3.weight(.bold) : .title3.weight(.semibold))
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(1)
                 Spacer()
                 Text(statusText)
                     .font(.caption.weight(.semibold))

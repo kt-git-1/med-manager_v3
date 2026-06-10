@@ -595,17 +595,19 @@ struct MedicationListView: View {
                 .frame(width: 62, height: 62)
 
             VStack(alignment: .leading, spacing: 9) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(item.name)
                         .font(.title2.weight(.bold))
                         .foregroundStyle(.primary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.78)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
                         .accessibilityLabel("薬名 \(item.name)")
                     if sessionStore.mode == .caregiver {
                         medicationTypeBadge(isPrn: item.medication.isPrn)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
                 HStack(spacing: 8) {
                     Label(item.doseText, systemImage: "pills.fill")
                     if let schedule = item.scheduleText {
@@ -629,6 +631,7 @@ struct MedicationListView: View {
                     }
                 }
             }
+            .layoutPriority(1)
             Spacer()
             if sessionStore.mode == .caregiver {
                 Image(systemName: "pencil")

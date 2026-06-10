@@ -916,12 +916,14 @@ private struct CaregiverTodayDoseLine: View {
                 Text(medicationDisplayName)
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.78)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(dose.medicationSnapshot.doseCountPerIntake)))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .layoutPriority(1)
 
             Spacer(minLength: 0)
 
@@ -1038,6 +1040,8 @@ private struct CaregiverTodayRow: View {
                         .font(.headline)
                     Text(medicationDisplayName)
                         .font(.title3.weight(.semibold))
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(dose.medicationSnapshot.doseCountPerIntake)))
                         .font(.body)
                         .foregroundStyle(.secondary)
@@ -1056,6 +1060,8 @@ private struct CaregiverTodayRow: View {
                             .clipShape(Capsule())
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(1)
                 Spacer()
                 if let statusText = statusText(for: dose.effectiveStatus) {
                     Text(statusText)

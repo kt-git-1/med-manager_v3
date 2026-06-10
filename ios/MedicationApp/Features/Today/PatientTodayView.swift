@@ -956,7 +956,7 @@ private struct SlotMedicationRow: View {
                     .font(.title3.weight(.bold))
                     .foregroundStyle(dose.effectiveStatus == .missed ? Color.red : Color.primary)
                     .lineLimit(2)
-                    .minimumScaleFactor(0.86)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text(String(
                     format: NSLocalizedString("patient.today.slot.bulk.perDose", comment: "Per dose"),
                     AppConstants.formatDecimal(dose.medicationSnapshot.doseCountPerIntake)
@@ -964,6 +964,8 @@ private struct SlotMedicationRow: View {
                 .font(.body)
                 .foregroundStyle(.secondary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .layoutPriority(1)
             Spacer()
             if let status = dose.effectiveStatus {
                 doseStatusIndicator(status)
@@ -1118,6 +1120,8 @@ private struct PatientTodayDoseDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(dose.medicationSnapshot.name)
                 .font(.title.weight(.bold))
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
             Text(dose.medicationSnapshot.dosageText)
                 .font(.title3)
                 .foregroundStyle(.secondary)
@@ -1228,8 +1232,8 @@ private struct PatientTodayRow: View {
                     Text(medicationDisplayName)
                         .font(.title.weight(.bold))
                         .foregroundStyle(isMissed ? Color.red : Color.primary)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.82)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
                     if shouldShowDoseCount {
                         Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(dose.medicationSnapshot.doseCountPerIntake)))
                             .font(.title3)
@@ -1250,6 +1254,8 @@ private struct PatientTodayRow: View {
                             .clipShape(Capsule())
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(1)
                 Spacer()
                 if let statusText = statusText(for: dose.effectiveStatus) {
                     Text(statusText)

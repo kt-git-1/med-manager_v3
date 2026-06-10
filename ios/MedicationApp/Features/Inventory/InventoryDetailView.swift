@@ -133,12 +133,14 @@ struct InventoryDetailView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.name)
                         .font(.title.weight(.bold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(dailyIntakeSummaryText)
                         .font(.headline.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(1)
                 Spacer(minLength: 0)
                 statusBadge
             }
