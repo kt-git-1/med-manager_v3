@@ -1,10 +1,10 @@
 export const metadata = {
-  title: "Med Manager API"
+  title: "お薬見守り"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="ja">
       <body>{children}</body>
     </html>
   );
