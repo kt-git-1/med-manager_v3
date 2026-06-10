@@ -51,6 +51,41 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertNil(restored.currentPatientId)
     }
 
+    func testSaveCaregiverSessionClearsCurrentPatientIdByDefault() {
+        let store = makeStore()
+        store.setCurrentPatientId("patient-previous")
+
+        store.saveCaregiverSession(
+            SupabaseSession(
+                accessToken: "caregiver-token",
+                refreshToken: "refresh-token",
+                expiresIn: 3600
+            )
+        )
+
+        XCTAssertNil(store.currentPatientId)
+        let restored = makeStore()
+        XCTAssertNil(restored.currentPatientId)
+    }
+
+    func testSaveCaregiverSessionCanPreserveCurrentPatientIdForRefresh() {
+        let store = makeStore()
+        store.setCurrentPatientId("patient-current")
+
+        store.saveCaregiverSession(
+            SupabaseSession(
+                accessToken: "caregiver-token",
+                refreshToken: "refresh-token",
+                expiresIn: 3600
+            ),
+            preserveCurrentPatientId: true
+        )
+
+        XCTAssertEqual(store.currentPatientId, "patient-current")
+        let restored = makeStore()
+        XCTAssertEqual(restored.currentPatientId, "patient-current")
+    }
+
     func testClearCurrentPatientIfMatches() {
         let store = makeStore()
         store.setCurrentPatientId("patient-789")

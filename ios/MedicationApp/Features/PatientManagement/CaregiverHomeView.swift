@@ -119,11 +119,16 @@ struct CaregiverHomeView: View {
                 let selectedPatient = patients.first { $0.id == sessionStore.currentPatientId }
                 if let selectedPatient {
                     currentPatientName = selectedPatient.displayName
-                } else if patients.count == 1, let onlyPatient = patients.first {
-                    sessionStore.setCurrentPatientId(onlyPatient.id)
-                    currentPatientName = onlyPatient.displayName
                 } else {
-                    currentPatientName = nil
+                    if sessionStore.currentPatientId != nil {
+                        sessionStore.clearCurrentPatientId()
+                    }
+                    if patients.count == 1, let onlyPatient = patients.first {
+                        sessionStore.setCurrentPatientId(onlyPatient.id)
+                        currentPatientName = onlyPatient.displayName
+                    } else {
+                        currentPatientName = nil
+                    }
                 }
             } catch {
                 currentPatientName = nil
@@ -426,6 +431,10 @@ final class CaregiverMedicationViewModel: ObservableObject {
             defer { isLoading = false }
             do {
                 patients = try await apiClient.listPatients()
+                let selectedPatient = patients.first { $0.id == sessionStore.currentPatientId }
+                if selectedPatient == nil, sessionStore.currentPatientId != nil {
+                    sessionStore.clearCurrentPatientId()
+                }
                 if sessionStore.currentPatientId == nil, patients.count == 1, let onlyPatient = patients.first {
                     sessionStore.setCurrentPatientId(onlyPatient.id)
                 }

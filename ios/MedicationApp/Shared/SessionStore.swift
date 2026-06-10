@@ -101,8 +101,11 @@ final class SessionStore: ObservableObject {
         )
     }
 
-    func saveCaregiverSession(_ session: SupabaseSession) {
+    func saveCaregiverSession(_ session: SupabaseSession, preserveCurrentPatientId: Bool = false) {
         guard let accessToken = session.accessToken, !accessToken.isEmpty else { return }
+        if !preserveCurrentPatientId {
+            clearCurrentPatientId()
+        }
         caregiverToken = normalizedCaregiverToken(accessToken)
         persistToken(caregiverToken, key: SessionStore.caregiverTokenStorageKey)
         if let refreshToken = session.refreshToken, !refreshToken.isEmpty {
@@ -183,7 +186,7 @@ final class SessionStore: ObservableObject {
         defer { isRefreshingCaregiverToken = false }
         do {
             let refreshed = try await authService.refreshSession(refreshToken: refreshToken)
-            saveCaregiverSession(refreshed)
+            saveCaregiverSession(refreshed, preserveCurrentPatientId: true)
         } catch {
             invalidateCaregiverToken()
             NotificationCenter.default.post(name: .authFailure, object: nil)
