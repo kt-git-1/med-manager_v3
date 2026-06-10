@@ -13,8 +13,13 @@ struct SupabaseSession: Sendable {
 final class AuthService: Sendable {
     private let supabaseURL: URL
     private let supabaseAnonKey: String
+    private let emailConfirmationRedirectURL: URL
 
-    init(supabaseURL: URL? = nil, supabaseAnonKey: String? = nil) {
+    init(
+        supabaseURL: URL? = nil,
+        supabaseAnonKey: String? = nil,
+        emailConfirmationRedirectURL: URL? = nil
+    ) {
         let env = ProcessInfo.processInfo.environment
         let info = Bundle.main.infoDictionary
         let urlString = supabaseURL?.absoluteString
@@ -26,11 +31,21 @@ final class AuthService: Sendable {
         guard let urlString, let url = URL(string: urlString), let key else {
             self.supabaseURL = URL(string: "https://invalid.local")!
             self.supabaseAnonKey = ""
+            self.emailConfirmationRedirectURL = Self.resolveEmailConfirmationRedirectURL(
+                explicitURL: emailConfirmationRedirectURL,
+                env: env,
+                info: info
+            )
             print("AuthService: missing SUPABASE_URL or SUPABASE_ANON_KEY")
             return
         }
         self.supabaseURL = url
         self.supabaseAnonKey = key
+        self.emailConfirmationRedirectURL = Self.resolveEmailConfirmationRedirectURL(
+            explicitURL: emailConfirmationRedirectURL,
+            env: env,
+            info: info
+        )
     }
 
     func login(email: String, password: String) async throws -> SupabaseSession {
@@ -44,12 +59,8 @@ final class AuthService: Sendable {
     }
 
     func signup(email: String, password: String) async throws -> SupabaseSession {
-        return try await authenticate(
-            path: "auth/v1/signup",
-            email: email,
-            password: password,
-            allowMissingAccessToken: true
-        )
+        let request = try makeSignupRequest(email: email, password: password)
+        return try await sendAuthRequest(request, allowMissingAccessToken: true)
     }
 
     func resendSignupConfirmation(email: String) async throws {
@@ -106,6 +117,30 @@ final class AuthService: Sendable {
         password: String,
         allowMissingAccessToken: Bool
     ) async throws -> SupabaseSession {
+        let request = try makeAuthRequest(
+            path: path,
+            queryItems: queryItems,
+            email: email,
+            password: password
+        )
+        return try await sendAuthRequest(request, allowMissingAccessToken: allowMissingAccessToken)
+    }
+
+    func makeSignupRequest(email: String, password: String) throws -> URLRequest {
+        try makeAuthRequest(
+            path: "auth/v1/signup",
+            queryItems: [URLQueryItem(name: "redirect_to", value: emailConfirmationRedirectURL.absoluteString)],
+            email: email,
+            password: password
+        )
+    }
+
+    private func makeAuthRequest(
+        path: String,
+        queryItems: [URLQueryItem] = [],
+        email: String,
+        password: String
+    ) throws -> URLRequest {
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedEmail.isEmpty, !password.isEmpty else {
             throw APIError.validation("email/password required")
@@ -128,8 +163,14 @@ final class AuthService: Sendable {
         request.addValue("Bearer \(supabaseAnonKey)", forHTTPHeaderField: "Authorization")
         let payload = ["email": trimmedEmail, "password": password]
         request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+        return request
+    }
 
-        print("AuthService: login request to \(url.absoluteString)")
+    private func sendAuthRequest(
+        _ request: URLRequest,
+        allowMissingAccessToken: Bool
+    ) async throws -> SupabaseSession {
+        print("AuthService: auth request to \(request.url?.absoluteString ?? "unknown")")
         let (data, response): (Data, URLResponse)
         do {
             (data, response) = try await URLSession.shared.data(for: request)
@@ -185,11 +226,28 @@ final class AuthService: Sendable {
         request.httpBody = try JSONSerialization.data(
             withJSONObject: [
                 "type": "signup",
-                "email": trimmedEmail
+                "email": trimmedEmail,
+                "options": [
+                    "email_redirect_to": emailConfirmationRedirectURL.absoluteString
+                ]
             ],
             options: []
         )
         return request
+    }
+
+    private static func resolveEmailConfirmationRedirectURL(
+        explicitURL: URL?,
+        env: [String: String],
+        info: [String: Any]?
+    ) -> URL {
+        if let explicitURL {
+            return explicitURL
+        }
+
+        let baseURLString = env["API_BASE_URL"] ?? info?["API_BASE_URL"] as? String
+        let baseURL = baseURLString.flatMap(URL.init(string:)) ?? AppConstants.defaultAPIBaseURL
+        return baseURL.appendingPathComponent("auth/confirmed")
     }
 
     static func decodeSession(from data: Data) throws -> SupabaseSession {

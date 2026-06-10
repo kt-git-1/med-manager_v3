@@ -49,21 +49,46 @@ final class AuthServiceTests: XCTestCase {
         XCTAssertEqual(payload?["refresh_token"], "refresh-token")
     }
 
-    func testResendSignupConfirmationRequestUsesSignupType() throws {
+    func testSignupRequestUsesEmailConfirmationRedirectURL() throws {
         let service = AuthService(
             supabaseURL: URL(string: "https://example.supabase.co")!,
-            supabaseAnonKey: "anon-key"
+            supabaseAnonKey: "anon-key",
+            emailConfirmationRedirectURL: URL(string: "https://okusuri-mimamori.com/auth/confirmed")!
         )
 
-        let request = try service.makeResendSignupConfirmationRequest(email: " user@example.com ")
+        let request = try service.makeSignupRequest(email: " user@example.com ", password: "password")
+        let components = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)
         let body = try XCTUnwrap(request.httpBody)
         let payload = try JSONSerialization.jsonObject(with: body) as? [String: String]
 
         XCTAssertEqual(request.httpMethod, "POST")
+        XCTAssertEqual(components?.path, "/auth/v1/signup")
+        XCTAssertEqual(
+            components?.queryItems,
+            [URLQueryItem(name: "redirect_to", value: "https://okusuri-mimamori.com/auth/confirmed")]
+        )
+        XCTAssertEqual(payload?["email"], "user@example.com")
+        XCTAssertEqual(payload?["password"], "password")
+    }
+
+    func testResendSignupConfirmationRequestUsesSignupType() throws {
+        let service = AuthService(
+            supabaseURL: URL(string: "https://example.supabase.co")!,
+            supabaseAnonKey: "anon-key",
+            emailConfirmationRedirectURL: URL(string: "https://okusuri-mimamori.com/auth/confirmed")!
+        )
+
+        let request = try service.makeResendSignupConfirmationRequest(email: " user@example.com ")
+        let body = try XCTUnwrap(request.httpBody)
+        let payload = try JSONSerialization.jsonObject(with: body) as? [String: Any]
+        let options = payload?["options"] as? [String: String]
+
+        XCTAssertEqual(request.httpMethod, "POST")
         XCTAssertEqual(request.url?.path, "/auth/v1/resend")
         XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-key")
-        XCTAssertEqual(payload?["type"], "signup")
-        XCTAssertEqual(payload?["email"], "user@example.com")
+        XCTAssertEqual(payload?["type"] as? String, "signup")
+        XCTAssertEqual(payload?["email"] as? String, "user@example.com")
+        XCTAssertEqual(options?["email_redirect_to"], "https://okusuri-mimamori.com/auth/confirmed")
     }
 
     func testUserFacingAuthErrorMapsInvalidCredentials() {
