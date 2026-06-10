@@ -43,10 +43,11 @@
 
 ## Decision: Response shape
 
-- **Decision**: Return `{ updatedCount, remainingCount, totalPills, medCount, slotTime, slotSummary, recordingGroupId }`.
+- **Decision**: Return `{ updatedCount, remainingCount, insufficientCount, totalPills, medCount, slotTime, slotSummary, recordingGroupId }`.
 - **Rationale**:
   - `updatedCount`: tells the client how many records were newly created (0 for idempotent repeat calls).
   - `remainingCount`: PENDING+MISSED count after the update; used for button state on the client.
+  - `insufficientCount`: recordable doses skipped because inventory was below the per-dose amount.
   - `totalPills` (Y) and `medCount` (N): allow the client to display success feedback matching the slot card summary format ("合計Y錠（N種類）").
   - `slotTime` (HH:mm): the resolved slot time for the target slot, derived from the first dose's `scheduledAt` or the custom slot time parameter; ensures UI display consistency.
   - `slotSummary`: reuses the existing `buildSlotSummary` format for the full day, allowing the iOS client to update all slot badges without a separate refresh.

@@ -16,6 +16,10 @@ struct InventoryItemDTO: Decodable, Identifiable {
     let refillDueDate: String?
 
     var id: String { medicationId }
+
+    var isInsufficientForDose: Bool {
+        inventoryEnabled && inventoryQuantity < doseCountPerIntake
+    }
 }
 
 struct InventoryListDataDTO: Decodable {

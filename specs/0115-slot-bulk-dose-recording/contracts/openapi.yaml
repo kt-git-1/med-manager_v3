@@ -130,6 +130,7 @@ components:
       required:
         - updatedCount
         - remainingCount
+        - insufficientCount
         - totalPills
         - medCount
         - slotTime
@@ -145,6 +146,11 @@ components:
           minimum: 0
           description: Number of PENDING+MISSED doses remaining in the slot after the operation
           example: 0
+        insufficientCount:
+          type: integer
+          minimum: 0
+          description: Number of recordable doses skipped because inventory was below the per-dose amount
+          example: 1
         totalPills:
           type: number
           description: >

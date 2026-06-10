@@ -69,7 +69,7 @@ private struct PatientTodayRootView: View {
             shouldHighlight: shouldHighlight,
             slotColor: slotColor,
             slotTitle: slotTitle,
-            isOutOfStock: { viewModel.isMedicationOutOfStock($0) }
+            isOutOfStock: { viewModel.isMedicationInventoryInsufficient($0) }
         )
         .modifier(
             PatientTodayLifecycleModifier(
@@ -618,8 +618,8 @@ private struct PatientTodayListView: View {
                             .background(PatientUI.teal, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                     }
                     .buttonStyle(.plain)
-                    .disabled(summary.remainingCount == 0 || viewModel.isUpdating || !summary.isWithinRecordingWindow)
-                    .opacity(summary.remainingCount == 0 || viewModel.isUpdating || !summary.isWithinRecordingWindow ? 0.55 : 1)
+                    .disabled(summary.remainingCount == 0 || viewModel.isUpdating || !summary.isWithinRecordingWindow || !summary.hasRecordableInventory)
+                    .opacity(summary.remainingCount == 0 || viewModel.isUpdating || !summary.isWithinRecordingWindow || !summary.hasRecordableInventory ? 0.55 : 1)
                     .accessibilityIdentifier("PatientTodayPrimaryBulkRecordButton")
                 }
             }
@@ -859,6 +859,15 @@ private struct SlotCardView: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 8) {
                     statusBadge
+                    if summary.hasInsufficientInventory {
+                        Text(NSLocalizedString("patient.today.inventory.insufficient.badge", comment: "Insufficient inventory badge"))
+                            .font(.subheadline.weight(.bold))
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 10)
+                            .background(PatientUI.red.opacity(0.16))
+                            .foregroundStyle(PatientUI.red)
+                            .clipShape(Capsule())
+                    }
                     if summary.remainingCount > 0 {
                         Text(String(format: NSLocalizedString("patient.today.slot.bulk.remaining", comment: "Remaining"), summary.remainingCount))
                             .font(.subheadline.weight(.bold))
@@ -892,8 +901,8 @@ private struct SlotCardView: View {
                     .background(PatientUI.teal, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
             .buttonStyle(.plain)
-            .disabled(summary.remainingCount == 0 || isUpdating || !summary.isWithinRecordingWindow)
-            .opacity(summary.remainingCount == 0 || isUpdating || !summary.isWithinRecordingWindow ? 0.55 : 1)
+            .disabled(summary.remainingCount == 0 || isUpdating || !summary.isWithinRecordingWindow || !summary.hasRecordableInventory)
+            .opacity(summary.remainingCount == 0 || isUpdating || !summary.isWithinRecordingWindow || !summary.hasRecordableInventory ? 0.55 : 1)
             .accessibilityIdentifier("SlotBulkRecordButton")
             .accessibilityLabel(NSLocalizedString("patient.today.slot.bulk.button", comment: "Bulk record"))
         }
@@ -1377,8 +1386,8 @@ private struct PrnMedicationCard: View {
     @State private var recordTrigger = 0
     @State private var isPressed = false
 
-    private var isOutOfStock: Bool {
-        medication.isOutOfStock
+    private var isInventoryInsufficient: Bool {
+        medication.isInsufficientForDose
     }
 
     var body: some View {
@@ -1404,7 +1413,7 @@ private struct PrnMedicationCard: View {
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    if isOutOfStock {
+                    if isInventoryInsufficient {
                         Text(NSLocalizedString("patient.today.outOfStock", comment: "Out of stock"))
                             .font(.subheadline.weight(.bold))
                             .foregroundStyle(.white)
@@ -1425,8 +1434,8 @@ private struct PrnMedicationCard: View {
                     .background(PatientUI.teal, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
             .buttonStyle(.plain)
-            .disabled(isDisabled || isOutOfStock)
-            .opacity(isDisabled || isOutOfStock ? 0.55 : 1)
+            .disabled(isDisabled || isInventoryInsufficient)
+            .opacity(isDisabled || isInventoryInsufficient ? 0.55 : 1)
             .accessibilityLabel(NSLocalizedString("patient.today.prn.record.button", comment: "PRN record button"))
             .scaleEffect(isPressed ? 0.96 : 1.0)
             .animation(.easeInOut(duration: 0.18), value: isPressed)

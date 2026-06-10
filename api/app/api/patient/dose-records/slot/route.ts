@@ -50,6 +50,7 @@ export async function POST(request: Request) {
       JSON.stringify({
         updatedCount: result.updatedCount,
         remainingCount: result.remainingCount,
+        insufficientCount: result.insufficientCount,
         totalPills: result.totalPills,
         medCount: result.medCount,
         slotTime: result.slotTime,

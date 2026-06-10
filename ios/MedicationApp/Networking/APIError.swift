@@ -5,6 +5,7 @@ enum APIError: Error {
     case forbidden
     case notFound
     case conflict
+    case insufficientInventory
     case validation(String)
     case network(String)
     case patientLimitExceeded(limit: Int, current: Int)
@@ -23,6 +24,8 @@ extension APIError: LocalizedError {
             return "Not found"
         case .conflict:
             return "Conflict"
+        case .insufficientInventory:
+            return NSLocalizedString("patient.today.inventory.insufficient", comment: "Insufficient inventory")
         case .validation(let message):
             return message
         case .network(let message):

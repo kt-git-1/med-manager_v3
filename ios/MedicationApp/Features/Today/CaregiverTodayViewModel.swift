@@ -52,7 +52,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                 let (doses, inventory) = try await (dosesTask, inventoryTask)
                 items = doses.sorted(by: sortDose)
                 outOfStockMedicationIds = Set(
-                    inventory.filter { $0.inventoryEnabled && $0.out }.map { $0.medicationId }
+                    inventory.filter { $0.isInsufficientForDose }.map { $0.medicationId }
                 )
             } catch {
                 items = []
@@ -89,7 +89,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                 showToast(NSLocalizedString("caregiver.today.recorded", comment: "Recorded"))
                 load(showLoading: false)
             } catch {
-                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
+                showToastMessage(for: error)
             }
         }
     }
@@ -113,7 +113,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                 showToast(String(format: format, recordableDoses.count))
                 load(showLoading: false)
             } catch {
-                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
+                showToastMessage(for: error)
             }
         }
     }
@@ -146,6 +146,15 @@ final class CaregiverTodayViewModel: ObservableObject {
 
     private func showToast(_ message: String, kind: ToastKind = .success) {
         toastPresenter?.show(message, kind: kind)
+    }
+
+    private func showToastMessage(for error: Error) {
+        if let apiError = error as? APIError, case .insufficientInventory = apiError {
+            showToast(NSLocalizedString("patient.today.inventory.insufficient", comment: "Insufficient inventory"), kind: .warning)
+            load(showLoading: false)
+        } else {
+            showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
+        }
     }
 
     private func sortDose(_ lhs: ScheduleDoseDTO, _ rhs: ScheduleDoseDTO) -> Bool {

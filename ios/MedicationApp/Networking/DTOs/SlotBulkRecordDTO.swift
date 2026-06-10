@@ -8,6 +8,7 @@ struct SlotBulkRecordRequestDTO: Encodable {
 struct SlotBulkRecordResponseDTO: Decodable {
     let updatedCount: Int
     let remainingCount: Int
+    let insufficientCount: Int
     let totalPills: Double
     let medCount: Int
     let slotTime: String

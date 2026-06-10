@@ -36,7 +36,9 @@ Inventory automatically decreases when a dose is recorded as taken and is restor
 
 1. **Given** inventory is enabled for a medication, **When** a new taken record is created, **Then** the remaining quantity decreases by the configured per-dose amount and never drops below zero.
 2. **Given** a taken record is removed, **When** the deletion succeeds, **Then** the remaining quantity increases by the same per-dose amount.
-3. **Given** an idempotent create that does not produce a new taken record, **When** the request completes, **Then** inventory does not change.
+3. **Given** inventory is enabled for a medication and the remaining quantity is less than the per-dose amount, **When** a single taken record is requested, **Then** the record is rejected and inventory is unchanged.
+4. **Given** a slot bulk record request includes both sufficient and insufficient medications, **When** the request succeeds, **Then** sufficient medications are recorded as taken and insufficient medications remain unrecorded.
+5. **Given** an idempotent create that does not produce a new taken record, **When** the request completes, **Then** inventory does not change.
 
 ---
 

@@ -8,7 +8,10 @@ import {
 import { createDoseRecordEvent } from "../repositories/doseRecordEventRepo";
 import { getMedicationRecordForPatient } from "../repositories/medicationRepo";
 import { getPatientRecordById } from "../repositories/patientRepo";
-import { applyInventoryDeltaForDoseRecord } from "./medicationService";
+import {
+  applyInventoryDeltaForDoseRecord,
+  assertInventoryAvailableForMedication
+} from "./medicationService";
 import { notifyCaregiversOfDoseTaken } from "./pushNotificationService";
 import { resolveSlot } from "./scheduleResponse";
 import { getLocalDateKey } from "./scheduleService";
@@ -38,6 +41,7 @@ export async function createPrnRecord(
   }
 
   const quantityTaken = input.quantityTaken ?? medication.doseCountPerIntake;
+  assertInventoryAvailableForMedication(medication, quantityTaken);
 
   const record = await createPrnDoseRecord({
     patientId: input.patientId,

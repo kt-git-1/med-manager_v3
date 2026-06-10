@@ -494,6 +494,9 @@ final class APIClient {
         case 404:
             throw APIError.notFound
         case 409:
+            if parseErrorCode(from: data) == "insufficient_inventory" {
+                throw APIError.insufficientInventory
+            }
             throw APIError.conflict
         case 422:
             throw APIError.validation(message ?? "validation error")
@@ -518,6 +521,13 @@ final class APIClient {
             return text
         }
         return nil
+    }
+
+    private func parseErrorCode(from data: Data) -> String? {
+        struct ErrorPayload: Decodable {
+            let error: String?
+        }
+        return try? JSONDecoder().decode(ErrorPayload.self, from: data).error
     }
 
     /// Parses the PATIENT_LIMIT_EXCEEDED error response from a 403 body.

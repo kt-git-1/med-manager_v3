@@ -46,7 +46,21 @@ vi.mock("../../src/repositories/patientRepo", () => ({
 const applyInventoryDeltaMock = vi.fn();
 
 vi.mock("../../src/services/medicationService", () => ({
-  applyInventoryDeltaForDoseRecord: (...args: unknown[]) => applyInventoryDeltaMock(...args)
+  applyInventoryDeltaForDoseRecord: (...args: unknown[]) => applyInventoryDeltaMock(...args),
+  assertInventoryAvailableForMedication: (
+    medication: { inventoryEnabled: boolean; inventoryQuantity: number },
+    requiredQuantity: number
+  ) => {
+    if (medication.inventoryEnabled && medication.inventoryQuantity < requiredQuantity) {
+      const error = new Error("Insufficient inventory") as Error & {
+        statusCode: number;
+        code: string;
+      };
+      error.statusCode = 409;
+      error.code = "insufficient_inventory";
+      throw error;
+    }
+  }
 }));
 
 vi.mock("../../src/repositories/medicationRepo", () => ({
@@ -303,5 +317,45 @@ describe("prn dose records integration", () => {
     const payload = await response.json();
     expect(response.status).toBe(422);
     expect(payload.messages).toContain("medication must be PRN");
+  });
+
+  it("rejects create when inventory is below quantityTaken", async () => {
+    (getMedicationRecordForPatient as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      id: "med-1",
+      patientId: "patient-1",
+      name: "PRN Med",
+      dosageText: "1 tablet",
+      doseCountPerIntake: 2,
+      dosageStrengthValue: 10,
+      dosageStrengthUnit: "mg",
+      notes: null,
+      isPrn: true,
+      startDate: new Date("2026-02-01T00:00:00.000Z"),
+      endDate: null,
+      inventoryCount: null,
+      inventoryUnit: null,
+      inventoryEnabled: true,
+      inventoryQuantity: 1,
+      inventoryLowThreshold: 2,
+      inventoryUpdatedAt: null,
+      inventoryLastAlertState: null,
+      isActive: true,
+      isArchived: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    await expect(
+      createPrnRecord({
+        patientId: "patient-1",
+        medicationId: "med-1",
+        actorType: "PATIENT"
+      })
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      code: "insufficient_inventory"
+    });
+
+    expect(applyInventoryDeltaMock).not.toHaveBeenCalled();
   });
 });

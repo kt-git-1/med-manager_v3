@@ -14,6 +14,7 @@ final class PatientTodayViewModel: ObservableObject {
     @Published var isPrnSubmitting = false
     @Published var highlightedSlot: NotificationSlot?
     @Published var outOfStockMedicationIds: Set<String> = []
+    @Published var insufficientInventoryMedicationIds: Set<String> = []
     @Published var confirmSlot: NotificationSlot?
 
     private let apiClient: APIClient
@@ -80,6 +81,7 @@ final class PatientTodayViewModel: ObservableObject {
             } catch {
                 items = []
                 prnMedications = []
+                insufficientInventoryMedicationIds = []
                 errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
             }
         }
@@ -109,7 +111,7 @@ final class PatientTodayViewModel: ObservableObject {
                 showToast(NSLocalizedString("patient.today.recorded", comment: "Recorded"))
                 load(showLoading: false)
             } catch {
-                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
+                showToastMessage(for: error)
             }
         }
     }
@@ -146,7 +148,7 @@ final class PatientTodayViewModel: ObservableObject {
                 try await refreshTodayData()
                 onSuccess()
             } catch {
-                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
+                showToastMessage(for: error)
             }
         }
     }
@@ -198,6 +200,10 @@ final class PatientTodayViewModel: ObservableObject {
         outOfStockMedicationIds.contains(medicationId)
     }
 
+    func isMedicationInventoryInsufficient(_ medicationId: String) -> Bool {
+        insufficientInventoryMedicationIds.contains(medicationId)
+    }
+
     // MARK: - Slot Bulk Recording
 
     /// Recording window: slot time −30 min to +60 min
@@ -211,6 +217,8 @@ final class PatientTodayViewModel: ObservableObject {
         let slotTime: String
         let aggregateStatus: DoseStatusDTO
         let isWithinRecordingWindow: Bool
+        let hasInsufficientInventory: Bool
+        let hasRecordableInventory: Bool
     }
 
     var slotSummaries: [NotificationSlot: SlotSummary] {
@@ -233,6 +241,18 @@ final class PatientTodayViewModel: ObservableObject {
             let medCount = doses.count
             let remaining = doses.filter { $0.effectiveStatus == .pending || $0.effectiveStatus == .missed }.count
             let slotTime = doses.first.map { timeFormat.string(from: $0.scheduledAt) } ?? "00:00"
+            let hasInsufficientInventory = doses.contains { dose in
+                guard dose.effectiveStatus == .pending || dose.effectiveStatus == .missed else {
+                    return false
+                }
+                return medicationCache[dose.medicationId]?.isInsufficientForDose == true
+            }
+            let hasRecordableInventory = doses.contains { dose in
+                guard dose.effectiveStatus == .pending || dose.effectiveStatus == .missed else {
+                    return false
+                }
+                return medicationCache[dose.medicationId]?.isInsufficientForDose != true
+            }
 
             // Worst-case aggregate: missed > pending > taken
             let aggregate: DoseStatusDTO
@@ -261,7 +281,9 @@ final class PatientTodayViewModel: ObservableObject {
                 remainingCount: remaining,
                 slotTime: slotTime,
                 aggregateStatus: aggregate,
-                isWithinRecordingWindow: withinWindow
+                isWithinRecordingWindow: withinWindow,
+                hasInsufficientInventory: hasInsufficientInventory,
+                hasRecordableInventory: hasRecordableInventory
             )
         }
         return result
@@ -279,15 +301,21 @@ final class PatientTodayViewModel: ObservableObject {
             defer { isUpdating = false }
             do {
                 let dateString = dateKeyFormatter.string(from: Date())
-                _ = try await apiClient.bulkRecordSlot(
+                let result = try await apiClient.bulkRecordSlot(
                     date: dateString,
                     slot: slot.rawValue,
                     slotTimes: []
                 )
-                showToast(NSLocalizedString("patient.today.slot.bulk.success", comment: "Bulk recorded"))
+                if result.insufficientCount > 0 && result.updatedCount > 0 {
+                    showToast(NSLocalizedString("patient.today.slot.bulk.partialSuccess", comment: "Bulk partially recorded"), kind: .warning)
+                } else if result.insufficientCount > 0 {
+                    showToast(NSLocalizedString("patient.today.inventory.insufficient", comment: "Insufficient inventory"), kind: .warning)
+                } else {
+                    showToast(NSLocalizedString("patient.today.slot.bulk.success", comment: "Bulk recorded"))
+                }
                 load(showLoading: false)
             } catch {
-                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
+                showToastMessage(for: error)
             }
         }
     }
@@ -299,6 +327,9 @@ final class PatientTodayViewModel: ObservableObject {
         items = doses.sorted(by: sortDose)
         prnMedications = medications.filter { $0.isPrn }
         outOfStockMedicationIds = Set(medications.filter { $0.isOutOfStock }.map { $0.id })
+        insufficientInventoryMedicationIds = Set(
+            medications.filter { $0.isInsufficientForDose }.map { $0.id }
+        )
         for medication in medications {
             medicationCache[medication.id] = medication
         }
@@ -306,6 +337,15 @@ final class PatientTodayViewModel: ObservableObject {
 
     private func showToast(_ message: String, kind: ToastKind = .success) {
         toastPresenter?.show(message, kind: kind)
+    }
+
+    private func showToastMessage(for error: Error) {
+        if let apiError = error as? APIError, case .insufficientInventory = apiError {
+            showToast(NSLocalizedString("patient.today.inventory.insufficient", comment: "Insufficient inventory"), kind: .warning)
+            load(showLoading: false)
+        } else {
+            showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
+        }
     }
 
     private func triggerHighlight(for slot: NotificationSlot) {

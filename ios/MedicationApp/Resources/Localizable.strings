@@ -6,6 +6,8 @@
 "common.error.signup" = "サインアップに失敗しました";
 "common.error.linking" = "連携に失敗しました";
 "common.error.unexpected" = "予期せぬエラーが発生しました";
+"patient.today.inventory.insufficient" = "在庫が不足しているため記録できません";
+"patient.today.inventory.insufficient.badge" = "在庫不足";
 "auth.error.invalidCredentials" = "メールアドレスまたはパスワードが正しくありません。";
 "auth.error.checkCredentials" = "メールアドレスとパスワードを確認してください。";
 "auth.error.emailNotConfirmed" = "メール確認が完了していません。受信メールを確認してください。";
@@ -118,7 +120,7 @@
 "medication.form.name" = "薬名";
 "medication.form.dosage.value" = "用量";
 "medication.form.dosage.unit" = "単位";
-"medication.form.dose.count" = "服用数/回";
+"medication.form.dose.count" = "1回に飲む量";
 "medication.form.prn.toggle" = "頓服（必要時に服用）";
 "medication.form.prn.instructions" = "頓服の説明（任意）";
 "medication.form.type.scheduled.title" = "毎日・曜日で飲む薬";
@@ -273,7 +275,7 @@
 "patient.today.status.missed" = "飲み忘れ";
 "patient.today.alreadyRecorded" = "すでに記録済みです";
 "patient.today.recorded" = "記録しました";
-"patient.today.outOfStock" = "在庫切れ";
+"patient.today.outOfStock" = "在庫不足";
 "patient.today.section.planned" = "今日のお薬";
 "patient.today.section.taken" = "服用済み";
 "patient.today.section.missed" = "飲み忘れ";
@@ -423,7 +425,7 @@
 "caregiver.today.nextAction.medicinesTitle" = "この時間帯の薬";
 "caregiver.today.nextAction.doneHelp" = "今日は追加の操作はありません";
 "caregiver.today.nextAction.noPendingHelp" = "飲み忘れは上のアラートと下の予定で確認できます";
-"caregiver.today.nextAction.outOfStockHelp" = "在庫がないため記録できません";
+"caregiver.today.nextAction.outOfStockHelp" = "在庫が不足しているため記録できません";
 "caregiver.today.missedAlert.title" = "飲み忘れがあります";
 "caregiver.today.missedAlert.single" = "%@ %@の服薬が飲み忘れになっています。下の今日の予定で確認できます";
 "caregiver.today.missedAlert.multiple" = "%d回分の飲み忘れがあります。下の今日の予定で確認できます";
@@ -552,7 +554,7 @@
 "history.day.prn.doseCount" = "1回%@錠";
 
 /* Patient today */
-"patient.today.doseCount.label" = "服用数/回";
+"patient.today.doseCount.label" = "1回に飲む量";
 "patient.today.doseCount.format" = "1回%@錠";
 
 /* Accessibility labels */
@@ -568,7 +570,7 @@
 "a11y.medication.dosageUnit" = "用量単位";
 "a11y.medication.dosage" = "用量";
 "a11y.medication.schedule" = "スケジュール";
-"a11y.medication.doseCount" = "服用数";
+"a11y.medication.doseCount" = "1回に飲む量";
 "a11y.medication.prn" = "頓服設定";
 "a11y.medication.prnInstructions" = "頓服の説明";
 "a11y.medication.startDate" = "開始日";
@@ -663,6 +665,7 @@
 "patient.today.slot.bulk.summary" = "合計%@錠（%@種類）";
 "patient.today.slot.bulk.perDose" = "1回%@錠";
 "patient.today.slot.bulk.success" = "記録しました";
+"patient.today.slot.bulk.partialSuccess" = "記録できる薬だけ記録しました。在庫不足の薬があります";
 "patient.today.slot.bulk.remaining" = "残り%d件";
 
 /* Push Notification Settings (012) */

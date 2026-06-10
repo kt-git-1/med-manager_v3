@@ -80,13 +80,23 @@ vi.mock("../../src/repositories/doseRecordEventRepo", () => ({
 }));
 
 vi.mock("../../src/services/medicationService", () => ({
-  applyInventoryDeltaForDoseRecord: vi.fn(async () => {})
+  applyInventoryDeltaForDoseRecord: vi.fn(async () => {}),
+  assertInventoryAvailableForMedication: vi.fn(() => {})
 }));
 
 describe("dose record event emission", () => {
   it("creates an event when a TAKEN record is created", async () => {
     store.clear();
     createDoseRecordEventMock.mockReset();
+    createDoseRecordEventMock.mockResolvedValue({
+      id: "event-1",
+      patientId: "patient-1",
+      scheduledAt: new Date(),
+      takenAt: new Date(),
+      withinTime: true,
+      displayName: "Test Patient",
+      createdAt: new Date()
+    });
     const scheduledAt = new Date("2026-02-02T08:00:00.000Z");
 
     await createDoseRecordIdempotent({

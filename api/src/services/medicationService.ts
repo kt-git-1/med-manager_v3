@@ -19,6 +19,7 @@ import { getPatientRecordById } from "../repositories/patientRepo";
 import { computeRefillPlan } from "../lib/computeRefillPlan";
 import { notifyCaregiversOfInventoryAlert } from "./pushNotificationService";
 import { DEFAULT_TIMEZONE, INTL_PARSE_LOCALE } from "../constants";
+import { InsufficientInventoryError } from "../errors/insufficientInventoryError";
 
 export type MedicationCreateInput = {
   patientId: string;
@@ -423,4 +424,13 @@ export async function applyInventoryDeltaForDoseRecord(input: {
     actorType: "SYSTEM",
     actorId: null
   });
+}
+
+export function assertInventoryAvailableForMedication(
+  medication: Pick<Medication, "inventoryEnabled" | "inventoryQuantity">,
+  requiredQuantity: number
+): void {
+  if (medication.inventoryEnabled && medication.inventoryQuantity < requiredQuantity) {
+    throw new InsufficientInventoryError();
+  }
 }

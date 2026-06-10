@@ -9,9 +9,13 @@ import { log } from "../logging/logger";
 export function toHttpError(error: unknown): HttpError {
   if (error instanceof Error && "statusCode" in error) {
     const statusCode = (error as Error & { statusCode: number }).statusCode;
+    const code =
+      "code" in error && typeof (error as Error & { code?: unknown }).code === "string"
+        ? (error as Error & { code: string }).code
+        : mapStatusCode(statusCode);
     return {
       status: statusCode,
-      code: mapStatusCode(statusCode),
+      code,
       message: error.message
     };
   }

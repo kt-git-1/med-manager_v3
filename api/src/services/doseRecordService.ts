@@ -10,7 +10,10 @@ import { createDoseRecordEvent } from "../repositories/doseRecordEventRepo";
 import { getMedicationRecordForPatient } from "../repositories/medicationRepo";
 import { getPatientRecordById } from "../repositories/patientRepo";
 import { assertCaregiverPatientScope } from "../middleware/auth";
-import { applyInventoryDeltaForDoseRecord } from "./medicationService";
+import {
+  applyInventoryDeltaForDoseRecord,
+  assertInventoryAvailableForMedication
+} from "./medicationService";
 import { notifyCaregiversOfDoseTaken } from "./pushNotificationService";
 import { resolveSlot } from "./scheduleResponse";
 import { getLocalDateKey } from "./scheduleService";
@@ -33,6 +36,11 @@ export async function createDoseRecordIdempotent(
     return existing;
   }
 
+  const medication = await getMedicationRecordForPatient(input.patientId, input.medicationId);
+  if (medication) {
+    assertInventoryAvailableForMedication(medication, medication.doseCountPerIntake);
+  }
+
   const record = await upsertDoseRecord(input);
   const patient = await getPatientRecordById(record.patientId);
   if (!patient) {
@@ -42,7 +50,6 @@ export async function createDoseRecordIdempotent(
   const withinTime =
     record.takenAt.getTime() <= record.scheduledAt.getTime() + DOSE_MISSED_WINDOW_MS;
 
-  const medication = await getMedicationRecordForPatient(record.patientId, record.medicationId);
   const doseEvent = await createDoseRecordEvent({
     patientId: record.patientId,
     scheduledAt: record.scheduledAt,

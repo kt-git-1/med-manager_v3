@@ -39,6 +39,7 @@ export type SlotBulkRecordInput = {
 export type SlotBulkRecordResult = {
   updatedCount: number;
   remainingCount: number;
+  insufficientCount: number;
   totalPills: number;
   medCount: number;
   slotTime: string;
@@ -66,6 +67,10 @@ function getLocalTimeString(isoDate: string, tz: string): string {
     }
   }
   return `${values.hour}:${values.minute}`;
+}
+
+function scheduleDoseKey(dose: { patientId: string; medicationId: string; scheduledAt: string }) {
+  return `${dose.patientId}:${dose.medicationId}:${dose.scheduledAt}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -115,6 +120,7 @@ export async function bulkRecordSlot(
         remainingCount: slotDoses.filter(
           (d) => d.effectiveStatus === "pending" || d.effectiveStatus === "missed"
         ).length,
+        insufficientCount: 0,
         totalPills,
         medCount,
         slotTime,
@@ -135,6 +141,50 @@ export async function bulkRecordSlot(
     return {
       updatedCount: 0,
       remainingCount: 0,
+      insufficientCount: 0,
+      totalPills,
+      medCount,
+      slotTime,
+      slotSummary,
+      recordingGroupId: null
+    };
+  }
+
+  const medicationById = new Map<string, Awaited<ReturnType<typeof getMedicationRecordForPatient>>>();
+  const availableQuantityByMedicationId = new Map<string, number>();
+  const recordableWithInventory: typeof recordable = [];
+  const insufficientDoses: typeof recordable = [];
+  for (const dose of recordable) {
+    let medication = medicationById.get(dose.medicationId);
+    if (medication === undefined) {
+      medication = await getMedicationRecordForPatient(input.patientId, dose.medicationId);
+    }
+    medicationById.set(dose.medicationId, medication);
+    if (!medication || !medication.inventoryEnabled) {
+      recordableWithInventory.push(dose);
+      continue;
+    }
+
+    const available =
+      availableQuantityByMedicationId.get(dose.medicationId) ?? medication.inventoryQuantity;
+    if (available < medication.doseCountPerIntake) {
+      insufficientDoses.push(dose);
+      continue;
+    }
+
+    availableQuantityByMedicationId.set(
+      dose.medicationId,
+      available - medication.doseCountPerIntake
+    );
+    recordableWithInventory.push(dose);
+  }
+
+  if (recordableWithInventory.length === 0) {
+    const slotSummary = buildSlotSummary(allDoses, tz, input.customSlotTimes);
+    return {
+      updatedCount: 0,
+      remainingCount: insufficientDoses.length,
+      insufficientCount: insufficientDoses.length,
       totalPills,
       medCount,
       slotTime,
@@ -149,7 +199,7 @@ export async function bulkRecordSlot(
   // 9. Transactional bulk upsert
   const takenAt = now;
   const records = await prisma.$transaction(
-    recordable.map((dose) =>
+    recordableWithInventory.map((dose) =>
       prisma.doseRecord.upsert({
         where: {
           patientId_medicationId_scheduledAt: {
@@ -182,10 +232,9 @@ export async function bulkRecordSlot(
 
       if (withinTime) anyWithinTime = true;
 
-      const medication = await getMedicationRecordForPatient(
-        record.patientId,
-        record.medicationId
-      );
+      const medication =
+        medicationById.get(record.medicationId) ??
+        (await getMedicationRecordForPatient(record.patientId, record.medicationId));
 
       await createDoseRecordEvent({
         patientId: record.patientId,
@@ -208,26 +257,27 @@ export async function bulkRecordSlot(
       }
     }
 
-    // Fire-and-forget: single push notification per bulk recording
-    void notifyCaregiversOfDoseTaken({
-      patientId: input.patientId,
-      displayName: patient.displayName,
-      date: input.date,
-      slot: input.slot,
-      recordingGroupId,
-      withinTime: anyWithinTime,
-      isPrn: false
-    });
+    if (records.length > 0) {
+      // Fire-and-forget: single push notification per bulk recording
+      void notifyCaregiversOfDoseTaken({
+        patientId: input.patientId,
+        displayName: patient.displayName,
+        date: input.date,
+        slot: input.slot,
+        recordingGroupId,
+        withinTime: anyWithinTime,
+        isPrn: false
+      });
+    }
   }
 
-  // 11. Compute remaining count: total recordable minus what we just recorded
-  //     (We recorded all recordable doses, so remaining is always 0 after a successful bulk)
-  const remainingCount = 0;
+  // 11. Compute remaining count: insufficient doses stay pending/missed after partial bulk recording.
+  const remainingCount = insufficientDoses.length;
 
   // 12. Build updated slot summary — mark recorded doses as "taken"
-  const recordedMedIds = new Set(recordable.map((d) => d.medicationId));
+  const recordedKeys = new Set(recordableWithInventory.map(scheduleDoseKey));
   const updatedDoses = allDoses.map((dose) => {
-    if (recordedMedIds.has(dose.medicationId)) {
+    if (recordedKeys.has(scheduleDoseKey(dose))) {
       const doseSlot = resolveSlot(dose.scheduledAt, tz, input.customSlotTimes);
       if (doseSlot === input.slot && dose.effectiveStatus !== "taken") {
         return { ...dose, effectiveStatus: "taken" as const };
@@ -241,6 +291,7 @@ export async function bulkRecordSlot(
   return {
     updatedCount: records.length,
     remainingCount,
+    insufficientCount: insufficientDoses.length,
     totalPills,
     medCount,
     slotTime,

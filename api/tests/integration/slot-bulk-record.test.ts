@@ -229,7 +229,21 @@ vi.mock("../../src/services/pushNotificationService", () => ({
 }));
 
 vi.mock("../../src/services/medicationService", () => ({
-  applyInventoryDeltaForDoseRecord: vi.fn(async () => {})
+  applyInventoryDeltaForDoseRecord: vi.fn(async () => {}),
+  assertInventoryAvailableForMedication: vi.fn((
+    medication: { inventoryEnabled: boolean; inventoryQuantity: number },
+    requiredQuantity: number
+  ) => {
+    if (medication.inventoryEnabled && medication.inventoryQuantity < requiredQuantity) {
+      const error = new Error("Insufficient inventory") as Error & {
+        statusCode: number;
+        code: string;
+      };
+      error.statusCode = 409;
+      error.code = "insufficient_inventory";
+      throw error;
+    }
+  })
 }));
 
 // -- Helpers ----------------------------------------------------------------
@@ -410,6 +424,10 @@ describe("slot bulk record integration", () => {
   beforeEach(() => {
     store.clear();
     mockScheduleDoses = [];
+    for (const medication of Object.values(medications)) {
+      medication.inventoryEnabled = false;
+      medication.inventoryQuantity = 0;
+    }
   });
 
   afterAll(() => {
@@ -441,6 +459,45 @@ describe("slot bulk record integration", () => {
           recordingGroupId: body.recordingGroupId
         })
       );
+    });
+
+    it("records available medications and leaves insufficient medications unrecorded", async () => {
+      medications["med-1"].inventoryEnabled = true;
+      medications["med-1"].inventoryQuantity = 1;
+      mockScheduleDoses = makeMorningDoses("pending");
+
+      const request = makePostRequest({ date: "2026-02-11", slot: "morning" });
+      const response = await POST(request);
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.updatedCount).toBe(2);
+      expect(body.remainingCount).toBe(1);
+      expect(body.insufficientCount).toBe(1);
+      expect(store.size).toBe(2);
+      expect([...store.values()].map((record) => record.medicationId).sort()).toEqual([
+        "med-2",
+        "med-3"
+      ]);
+    });
+
+    it("records nothing when all recordable medications have insufficient inventory", async () => {
+      for (const medication of Object.values(medications)) {
+        medication.inventoryEnabled = true;
+        medication.inventoryQuantity = 0;
+      }
+      mockScheduleDoses = makeMorningDoses("pending");
+
+      const request = makePostRequest({ date: "2026-02-11", slot: "morning" });
+      const response = await POST(request);
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.updatedCount).toBe(0);
+      expect(body.remainingCount).toBe(3);
+      expect(body.insufficientCount).toBe(3);
+      expect(body.recordingGroupId).toBeNull();
+      expect(store.size).toBe(0);
     });
   });
 

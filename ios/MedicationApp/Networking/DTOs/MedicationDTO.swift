@@ -28,6 +28,10 @@ struct MedicationDTO: Decodable, Identifiable {
         inventoryEnabled && inventoryOut
     }
 
+    var isInsufficientForDose: Bool {
+        inventoryEnabled && inventoryQuantity < doseCountPerIntake
+    }
+
     private enum CodingKeys: String, CodingKey {
         case id
         case patientId

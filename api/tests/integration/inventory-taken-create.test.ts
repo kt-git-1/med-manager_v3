@@ -166,4 +166,28 @@ describe("inventory adjustments on TAKEN create", () => {
     expect(mockData.medication.inventoryQuantity).toBe(3);
     expect(mockData.adjustments).toHaveLength(1);
   });
+
+  it("rejects a new TAKEN record when inventory is below the per-dose quantity", async () => {
+    store.clear();
+    mockData.medication.inventoryQuantity = 1;
+    mockData.adjustments.length = 0;
+    const scheduledAt = new Date("2026-02-03T08:00:00.000Z");
+
+    await expect(
+      createDoseRecordIdempotent({
+        patientId: "patient-1",
+        medicationId: "med-1",
+        scheduledAt,
+        recordedByType: "CAREGIVER",
+        recordedById: "caregiver-1"
+      })
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      code: "insufficient_inventory"
+    });
+
+    expect(store.size).toBe(0);
+    expect(mockData.medication.inventoryQuantity).toBe(1);
+    expect(mockData.adjustments).toHaveLength(0);
+  });
 });
