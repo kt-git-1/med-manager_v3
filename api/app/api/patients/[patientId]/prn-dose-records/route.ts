@@ -22,11 +22,13 @@ export async function POST(
     const isCaregiver = isCaregiverToken(token);
     const { patientId } = await params;
     let actorType: "PATIENT" | "CAREGIVER";
+    let actorId: string | undefined;
 
     if (isCaregiver) {
       const session = await requireCaregiver(authHeader);
       await assertCaregiverPatientScope(session.caregiverUserId, patientId);
       actorType = "CAREGIVER";
+      actorId = session.caregiverUserId;
     } else {
       const session = await requirePatient(authHeader);
       assertPatientScope(patientId, session.patientId);
@@ -51,7 +53,8 @@ export async function POST(
       medicationId: body.medicationId,
       takenAt,
       quantityTaken: body.quantityTaken,
-      actorType
+      actorType,
+      actorId
     });
     if (!result) {
       return new Response(JSON.stringify({ error: "not_found" }), {

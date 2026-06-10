@@ -67,6 +67,9 @@ vi.mock("../../src/repositories/prisma", () => ({
         if (args.where.patientId === "patient-1") {
           return [{ caregiverId: "caregiver-1" }];
         }
+        if (args.where.patientId === "patient-3") {
+          return [{ caregiverId: "caregiver-1" }, { caregiverId: "caregiver-2" }];
+        }
         return [];
       })
     }
@@ -214,6 +217,39 @@ describe("notifyCaregiversOfDoseTaken — send trigger", () => {
 
     const notification = sendFcmMessageMock.mock.calls[0][1];
     expect(notification.body).toBe("花子さんの夕のお薬を記録しました");
+  });
+
+  it("does not send push to the caregiver who recorded on behalf of the patient", async () => {
+    seedDevices([
+      {
+        id: "device-3",
+        ownerType: "CAREGIVER",
+        ownerId: "caregiver-2",
+        token: "fcm-token-c",
+        platform: "ios",
+        environment: "DEV",
+        isEnabled: true
+      }
+    ]);
+
+    const { notifyCaregiversOfDoseTaken } = await import(
+      "../../src/services/pushNotificationService"
+    );
+
+    await notifyCaregiversOfDoseTaken({
+      patientId: "patient-3",
+      displayName: "太郎",
+      date: "2026-02-11",
+      slot: "morning",
+      doseEventId: "dose-event-uuid-1",
+      excludeCaregiverId: "caregiver-1",
+      withinTime: true,
+      isPrn: false
+    });
+
+    expect(listEnabledPushDevicesForCaregiversMock).toHaveBeenCalledWith(["caregiver-2"]);
+    expect(sendFcmMessageMock).toHaveBeenCalledTimes(1);
+    expect(sendFcmMessageMock.mock.calls[0][0]).toBe("fcm-token-c");
   });
 });
 

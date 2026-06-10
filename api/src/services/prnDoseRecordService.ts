@@ -23,6 +23,7 @@ export type PrnDoseRecordCreateInput = {
   takenAt?: Date;
   quantityTaken?: number;
   actorType: RecordedByType;
+  actorId?: string;
 };
 
 export type PrnDoseRecordCreateResult =
@@ -72,6 +73,7 @@ export async function createPrnRecord(
       date: dateKey,
       slot: slot ?? "morning",
       prnDoseRecordId: record.id,
+      excludeCaregiverId: input.actorType === "CAREGIVER" ? input.actorId : undefined,
       withinTime: true,
       isPrn: true
     });

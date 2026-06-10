@@ -187,6 +187,7 @@ export interface DoseTakenNotificationInput {
   recordingGroupId?: string;  // present for bulk recordings
   doseEventId?: string;       // DoseRecordEvent.id for single-dose dedup
   prnDoseRecordId?: string;   // PrnDoseRecord.id for PRN dedup
+  excludeCaregiverId?: string; // caregiver who recorded on behalf of the patient
   withinTime: boolean;
   isPrn: boolean;
 }
@@ -225,7 +226,9 @@ export async function notifyCaregiversOfDoseTaken(
   try {
     if (!isFcmConfigured()) return;
 
-    const caregiverIds = await getLinkedCaregiverIds(input.patientId);
+    const caregiverIds = (await getLinkedCaregiverIds(input.patientId)).filter(
+      (caregiverId) => caregiverId !== input.excludeCaregiverId
+    );
     if (caregiverIds.length === 0) return;
 
     const devices = await listEnabledPushDevicesForCaregivers(caregiverIds);

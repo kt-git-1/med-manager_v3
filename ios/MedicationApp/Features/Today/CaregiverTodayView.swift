@@ -952,20 +952,12 @@ private struct CaregiverTodayDoseLine: View {
 
     @ViewBuilder
     private var statusIndicator: some View {
-        if dose.effectiveStatus == .taken && !isOutOfStock {
-            Image(systemName: "checkmark")
-                .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(statusColor)
-                .frame(width: 42, height: 34)
-                .background(statusColor.opacity(0.13), in: Capsule())
-                .accessibilityLabel(statusText)
-        } else {
-            CaregiverStatusPill(
-                text: isOutOfStock ? NSLocalizedString("patient.today.outOfStock", comment: "Out of stock") : statusText,
-                color: isOutOfStock ? CaregiverUI.red : statusColor,
-                systemImage: statusIcon
-            )
-        }
+        Image(systemName: statusSymbolName)
+            .font(.system(size: 17, weight: .bold))
+            .foregroundStyle(indicatorColor)
+            .frame(width: 34, height: 34)
+            .background(indicatorColor.opacity(0.13), in: Circle())
+            .accessibilityLabel(indicatorAccessibilityLabel)
     }
 
     private var medicationDisplayName: String {
@@ -987,10 +979,24 @@ private struct CaregiverTodayDoseLine: View {
         }
     }
 
-    private var statusIcon: String? {
+    private var indicatorColor: Color {
+        isOutOfStock ? CaregiverUI.red : statusColor
+    }
+
+    private var statusSymbolName: String {
         if isOutOfStock { return "exclamationmark" }
-        if dose.effectiveStatus == .taken { return "checkmark" }
-        return nil
+        switch dose.effectiveStatus {
+        case .taken:
+            return "checkmark"
+        case .missed:
+            return "exclamationmark"
+        case .pending, .none:
+            return "clock"
+        }
+    }
+
+    private var indicatorAccessibilityLabel: String {
+        isOutOfStock ? NSLocalizedString("patient.today.outOfStock", comment: "Out of stock") : statusText
     }
 
     private var recordAccessibilityLabel: String {

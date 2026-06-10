@@ -1257,15 +1257,7 @@ private struct PatientTodayRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .layoutPriority(1)
                 Spacer()
-                if let statusText = statusText(for: dose.effectiveStatus) {
-                    Text(statusText)
-                        .font(.body.weight(.bold))
-                        .padding(.vertical, 7)
-                        .padding(.horizontal, 12)
-                        .background(statusBackground(for: dose.effectiveStatus))
-                        .foregroundStyle(statusForeground(for: dose.effectiveStatus))
-                        .clipShape(Capsule())
-                }
+                statusMarker(for: dose.effectiveStatus)
             }
 
             if shouldShowRecordButton(for: dose.effectiveStatus) {
@@ -1348,6 +1340,33 @@ private struct PatientTodayRow: View {
             return NSLocalizedString("patient.today.status.missed", comment: "Missed")
         case .none:
             return nil
+        }
+    }
+
+    @ViewBuilder
+    private func statusMarker(for status: DoseStatusDTO?) -> some View {
+        switch status {
+        case .taken:
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 32, weight: .bold))
+                .foregroundStyle(PatientUI.teal)
+                .frame(width: 44, height: 44)
+                .background(PatientUI.teal.opacity(0.12), in: Circle())
+                .accessibilityLabel(NSLocalizedString("patient.today.status.taken", comment: "Taken"))
+        case .pending, .missed:
+            if let statusText = statusText(for: status) {
+                Text(statusText)
+                    .font(.body.weight(.bold))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.vertical, 7)
+                    .padding(.horizontal, 12)
+                    .background(statusBackground(for: status))
+                    .foregroundStyle(statusForeground(for: status))
+                    .clipShape(Capsule())
+            }
+        case .none:
+            EmptyView()
         }
     }
 

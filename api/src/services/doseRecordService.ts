@@ -69,6 +69,8 @@ export async function createDoseRecordIdempotent(
     date: dateKey,
     slot: slot ?? "morning",
     doseEventId: doseEvent.id,
+    excludeCaregiverId:
+      input.recordedByType === "CAREGIVER" ? input.recordedById ?? undefined : undefined,
     withinTime,
     isPrn: medication?.isPrn ?? false
   });
