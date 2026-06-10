@@ -197,7 +197,7 @@
 "patient.history.status.none" = "予定なし";
 "patient.readonly.settings.tab" = "設定";
 "patient.readonly.settings.title" = "設定";
-"patient.settings.subtitle" = "通知と使い方を変更できます";
+"patient.settings.subtitle" = "通知設定を変更できます";
 "patient.settings.notifications.card.title" = "お薬の通知";
 "patient.settings.notifications.master" = "通知を有効にする";
 "patient.settings.notifications.master.note" = "飲む時間にこの端末へ通知します";
@@ -210,7 +210,6 @@
 "patient.settings.notifications.slot.bedtime" = "眠前";
 "patient.settings.linked.title" = "連携中";
 "patient.settings.linked.note" = "家族と服薬記録を共有しています";
-"patient.settings.mode.note" = "本人・家族の利用モードを選び直します";
 "patient.settings.notifications.detail.title" = "詳細設定";
 "patient.settings.notifications.detail.item" = "時間プリセット設定";
 "patient.settings.notifications.detail.note" = "時間帯は本人の服用時間に反映されます";

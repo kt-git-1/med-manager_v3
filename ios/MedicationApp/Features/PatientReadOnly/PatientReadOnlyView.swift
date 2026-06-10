@@ -165,23 +165,6 @@ struct PatientSettingsView: View {
                     }
                 }
 
-                PatientCard {
-                    VStack(spacing: 0) {
-                        Button {
-                            sessionStore.resetMode()
-                        } label: {
-                            settingsNavigationRow(
-                                title: NSLocalizedString("settings.changeMode", comment: "Change app mode"),
-                                subtitle: NSLocalizedString("patient.settings.mode.note", comment: "Mode note"),
-                                systemImage: "arrow.left.arrow.right.circle.fill",
-                                color: PatientUI.teal
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("patient.settings.changeMode")
-                    }
-                }
-
                 Button {
                     showingLogoutConfirm = true
                 } label: {
