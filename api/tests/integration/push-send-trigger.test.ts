@@ -189,7 +189,7 @@ describe("notifyCaregiversOfDoseTaken — send trigger", () => {
 
     expect(token).toBe("fcm-token-a");
     expect(notification.title).toBe("服薬記録");
-    expect(notification.body).toContain("太郎");
+    expect(notification.body).toBe("太郎さんの朝のお薬を記録しました");
     expect(data.type).toBe("DOSE_TAKEN");
     expect(data.patientId).toBe("patient-1");
     expect(data.date).toBe("2026-02-11");
@@ -213,7 +213,7 @@ describe("notifyCaregiversOfDoseTaken — send trigger", () => {
     });
 
     const notification = sendFcmMessageMock.mock.calls[0][1];
-    expect(notification.body).toContain("花子");
+    expect(notification.body).toBe("花子さんの夕のお薬を記録しました");
   });
 });
 

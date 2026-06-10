@@ -419,6 +419,10 @@ describe("slot bulk record integration", () => {
   describe("T001: PENDING bulk -> TAKEN", () => {
     it("records 3 PENDING morning doses as TAKEN in a single bulk operation", async () => {
       mockScheduleDoses = makeMorningDoses("pending");
+      const { notifyCaregiversOfDoseTaken } = await import(
+        "../../src/services/pushNotificationService"
+      );
+      const notifyMock = vi.mocked(notifyCaregiversOfDoseTaken);
 
       const request = makePostRequest({ date: "2026-02-11", slot: "morning" });
       const response = await POST(request);
@@ -429,6 +433,14 @@ describe("slot bulk record integration", () => {
       expect(body.remainingCount).toBe(0);
       expect(body.recordingGroupId).toBeDefined();
       expect(typeof body.recordingGroupId).toBe("string");
+      expect(notifyMock).toHaveBeenCalledTimes(1);
+      expect(notifyMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patientId: "patient-1",
+          slot: "morning",
+          recordingGroupId: body.recordingGroupId
+        })
+      );
     });
   });
 

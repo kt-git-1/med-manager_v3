@@ -191,6 +191,26 @@ export interface DoseTakenNotificationInput {
   isPrn: boolean;
 }
 
+const slotLabels: Record<string, string> = {
+  morning: "朝",
+  noon: "昼",
+  evening: "夕",
+  bedtime: "就寝前"
+};
+
+function buildDoseTakenBody(input: DoseTakenNotificationInput): string {
+  if (input.isPrn) {
+    return `${input.displayName}さんの頓服を記録しました`;
+  }
+
+  const slotLabel = slotLabels[input.slot];
+  if (input.recordingGroupId && slotLabel) {
+    return `${input.displayName}さんの${slotLabel}のお薬を記録しました`;
+  }
+
+  return `${input.displayName}さんのお薬を記録しました`;
+}
+
 /**
  * Send FCM push notifications to all caregivers linked to the patient
  * when a dose is taken (single, bulk, or PRN).
@@ -221,7 +241,7 @@ export async function notifyCaregiversOfDoseTaken(
     // Build FCM payload
     const notification: FcmNotification = {
       title: "服薬記録",
-      body: `${input.displayName}さんが薬を服用しました`
+      body: buildDoseTakenBody(input)
     };
 
     const data: FcmDataPayload = {
@@ -273,4 +293,3 @@ export async function notifyCaregiversOfDoseTaken(
     );
   }
 }
-

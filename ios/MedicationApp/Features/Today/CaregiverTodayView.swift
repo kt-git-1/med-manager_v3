@@ -159,8 +159,9 @@ struct CaregiverTodayView: View {
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 16)
-                        .padding(.bottom, 130)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .safeAreaPadding(.bottom, 120)
                 }
             } else {
                 CaregiverScreenBackground {
@@ -180,8 +181,9 @@ struct CaregiverTodayView: View {
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 16)
-                        .padding(.bottom, 130)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .safeAreaPadding(.bottom, 120)
                     .refreshable {
                         viewModel.load(showLoading: false)
                     }
