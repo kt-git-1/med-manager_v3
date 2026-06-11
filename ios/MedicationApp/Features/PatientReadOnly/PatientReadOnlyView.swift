@@ -212,90 +212,248 @@ private struct PatientTutorialSampleView: View {
     private var content: some View {
         switch tab {
         case .today:
-            PatientCard {
-                VStack(alignment: .leading, spacing: 14) {
+            sampleTodayView
+        case .history:
+            sampleHistoryView
+        case .settings:
+            sampleSettingsView
+        }
+    }
+
+    private var sampleTodayView: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            PatientCard(accent: PatientUI.teal) {
+                VStack(alignment: .leading, spacing: 16) {
                     Text(NSLocalizedString("patient.today.next.title", comment: "Next medication title"))
                         .font(.headline.weight(.bold))
                         .foregroundStyle(.primary)
 
                     HStack(alignment: .center, spacing: 16) {
-                        Image(systemName: "clock")
+                        Image(systemName: "clock.fill")
                             .font(.system(size: 34, weight: .bold))
-                            .foregroundStyle(PatientUI.blue)
+                            .foregroundStyle(PatientUI.tealDark)
                             .frame(width: 66, height: 66)
-                            .background(PatientUI.blue.opacity(0.10), in: Circle())
-                        VStack(alignment: .leading, spacing: 4) {
+                            .background(PatientUI.teal.opacity(0.12), in: Circle())
+                        VStack(alignment: .leading, spacing: 6) {
                             Text("昼のお薬")
-                                .font(.headline.weight(.bold))
-                            Text("12:30")
                                 .font(.system(size: 32, weight: .bold, design: .rounded))
                                 .foregroundStyle(PatientUI.tealDark)
                                 .lineLimit(1)
+                                .minimumScaleFactor(0.72)
+                            Text("12:30")
+                                .font(.title2.weight(.bold))
+                                .foregroundStyle(.secondary)
                         }
-                        Spacer()
+                        Spacer(minLength: 0)
                     }
-                    PatientStatusPill(text: "未記録", color: PatientUI.orange, systemImage: "circle")
 
-                    Text("この時間のお薬")
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(.secondary)
-                    sampleMedicineRow(name: "血圧の薬 5 mg", detail: "1回1錠", color: PatientUI.teal)
-                    sampleMedicineRow(name: "胃薬", detail: "1回1錠", color: PatientUI.blue)
+                    Text(String(
+                        format: NSLocalizedString("patient.today.slot.bulk.summary", comment: "Summary"),
+                        "2",
+                        "2"
+                    ))
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.secondary)
 
-                    Text(NSLocalizedString("patient.today.slot.bulk.button", comment: "Bulk record button"))
-                        .font(.headline.weight(.bold))
+                    VStack(spacing: 10) {
+                        sampleSlotMedicationRow(name: "血圧の薬 5 mg", pills: "1", status: .pending)
+                        sampleSlotMedicationRow(name: "胃薬", pills: "1", status: .pending)
+                    }
+
+                    Label(NSLocalizedString("patient.today.slot.bulk.button", comment: "Bulk record button"), systemImage: "checkmark.circle.fill")
+                        .font(.title2.weight(.bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(minHeight: 52)
-                        .background(PatientUI.teal, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .frame(minHeight: 72)
+                        .background(PatientUI.teal, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
             }
-        case .history:
-            PatientCard {
-                VStack(alignment: .leading, spacing: 14) {
-                    sampleSectionTitle(NSLocalizedString("patient.history.today.progress.title", comment: "Today progress"), systemImage: "chart.bar.fill")
-                    HStack(spacing: 12) {
-                        sampleMetric(value: "2/3", label: "回分 記録済み", color: PatientUI.teal)
-                        sampleMetric(value: "1", label: "未記録", color: PatientUI.orange)
+
+            PatientCard(accent: PatientUI.orange) {
+                HStack(alignment: .center, spacing: 16) {
+                    Image(systemName: "cross.case.fill")
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundStyle(PatientUI.orange)
+                        .frame(width: 64, height: 64)
+                        .background(PatientUI.orange.opacity(0.12), in: Circle())
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text(NSLocalizedString("patient.today.prn.entry.title", comment: "PRN entry title"))
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.82)
+                        Text(String(format: NSLocalizedString("patient.today.prn.entry.message", comment: "PRN entry message"), 1))
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    Text(NSLocalizedString("patient.history.recent.title", comment: "Recent records title"))
-                        .font(.headline.weight(.bold))
-                    sampleMedicineRow(name: "朝のお薬", detail: "08:00 ・ 記録済み", color: PatientUI.teal)
-                    sampleMedicineRow(name: "昼のお薬", detail: "12:30 ・ 未記録", color: PatientUI.orange)
-                    sampleMedicineRow(name: "夜のお薬", detail: "20:00 ・ 予定", color: PatientUI.blue)
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(.secondary)
                 }
             }
-        case .settings:
+
+            HStack {
+                Text(NSLocalizedString("patient.today.section.planned", comment: "Planned section"))
+                    .font(.title2.weight(.bold))
+                Spacer()
+                PatientStatusPill(text: "1/3", color: PatientUI.blue)
+            }
+
+            sampleSlotCard(
+                title: NSLocalizedString("patient.today.section.slot.morning", comment: "Morning slot"),
+                time: "08:00",
+                color: PatientUI.teal,
+                status: NSLocalizedString("patient.today.status.taken", comment: "Taken"),
+                statusColor: PatientUI.teal,
+                remainingCount: nil,
+                rows: [
+                    ("整腸剤 50 mg", "1", SampleDoseStatus.taken)
+                ],
+                buttonEnabled: false
+            )
+
+            sampleSlotCard(
+                title: NSLocalizedString("patient.today.section.slot.noon", comment: "Noon slot"),
+                time: "12:30",
+                color: PatientUI.blue,
+                status: NSLocalizedString("patient.today.status.pending", comment: "Pending"),
+                statusColor: .primary,
+                remainingCount: 2,
+                rows: [
+                    ("血圧の薬 5 mg", "1", SampleDoseStatus.pending),
+                    ("胃薬", "1", SampleDoseStatus.pending)
+                ],
+                buttonEnabled: true
+            )
+        }
+    }
+
+    private var sampleHistoryView: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            PatientCard(accent: PatientUI.orange) {
+                HStack(alignment: .center, spacing: 16) {
+                    sampleProgressRing(value: "1/3", color: PatientUI.orange)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(NSLocalizedString("patient.history.today.progress.title", comment: "Today progress"))
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.secondary)
+                        Text(String(format: NSLocalizedString("patient.history.today.progress.format", comment: "Today progress format"), 1, 3))
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(NSLocalizedString("patient.history.today.encouragement.partial", comment: "Today encouragement"))
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 8) {
+                                PatientStatusPill(text: String(format: NSLocalizedString("caregiver.history.summary.taken", comment: "Taken count"), 1), color: PatientUI.teal, systemImage: "checkmark.circle.fill")
+                                PatientStatusPill(text: String(format: NSLocalizedString("patient.history.today.progress.remaining", comment: "Remaining count"), 2), color: PatientUI.orange, systemImage: "clock.fill")
+                            }
+                            VStack(alignment: .leading, spacing: 8) {
+                                PatientStatusPill(text: String(format: NSLocalizedString("caregiver.history.summary.taken", comment: "Taken count"), 1), color: PatientUI.teal, systemImage: "checkmark.circle.fill")
+                                PatientStatusPill(text: String(format: NSLocalizedString("patient.history.today.progress.remaining", comment: "Remaining count"), 2), color: PatientUI.orange, systemImage: "clock.fill")
+                            }
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+
+            PatientCard(accent: PatientUI.teal) {
+                VStack(alignment: .center, spacing: 18) {
+                    Text(NSLocalizedString("patient.history.week.title", comment: "Patient week title"))
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(.primary)
+                    VStack(spacing: 2) {
+                        Text(String(format: NSLocalizedString("patient.history.week.count", comment: "Patient week count"), 3))
+                            .font(.system(size: 50, weight: .bold, design: .rounded))
+                            .foregroundStyle(PatientUI.teal)
+                            .minimumScaleFactor(0.72)
+                            .lineLimit(1)
+                        Text(NSLocalizedString("patient.history.week.recorded", comment: "Patient week recorded"))
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(PatientUI.teal)
+                    }
+                    HStack(spacing: 8) {
+                        sampleWeekDay("月", "6/8", color: PatientUI.teal, icon: "checkmark", filled: true)
+                        sampleWeekDay("火", "6/9", color: PatientUI.teal, icon: "checkmark", filled: true)
+                        sampleWeekDay("水", "6/10", color: PatientUI.orange, icon: "clock", filled: false)
+                        sampleWeekDay("木", "6/11", color: PatientUI.blue, icon: "clock", filled: false)
+                        sampleWeekDay("金", "6/12", color: Color.gray, icon: "minus", filled: false)
+                    }
+                    .frame(maxWidth: .infinity)
+                    Text(NSLocalizedString("patient.history.week.encouragement.some", comment: "Patient week encouragement"))
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text(NSLocalizedString("patient.history.recent.title", comment: "Recent records title"))
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.primary)
+                sampleRecentHistoryRow(title: "今日 6月11日（木）", subtitle: "朝・昼・夜のお薬", status: NSLocalizedString("patient.history.status.pending", comment: "Pending"), color: PatientUI.orange, icon: "sun.max.fill", statusIcon: nil)
+                sampleRecentHistoryRow(title: "昨日 6月10日（水）", subtitle: "朝・昼のお薬", status: NSLocalizedString("patient.history.status.done", comment: "Done"), color: PatientUI.teal, icon: "checkmark.circle.fill", statusIcon: "checkmark")
+            }
+        }
+    }
+
+    private var sampleSettingsView: some View {
+        VStack(alignment: .leading, spacing: 16) {
             PatientCard {
-                VStack(alignment: .leading, spacing: 16) {
-                    sampleSectionTitle("お薬の通知", systemImage: "bell.badge.fill")
-                    sampleSettingRow(title: "通知を有効にする", detail: "飲む時間にこの端末へ通知します", systemImage: "bell.fill")
-                    sampleSettingRow(title: "再通知（15分後）", detail: "飲み忘れ防止のためもう一度知らせます", systemImage: "bell.and.waves.left.and.right.fill")
-                    sampleSettingRow(title: "連携中", detail: "家族と服薬記録を共有しています", systemImage: "person.2.fill")
+                VStack(alignment: .leading, spacing: 18) {
+                    sampleSectionTitle(NSLocalizedString("patient.settings.notifications.card.title", comment: "Notification card title"), systemImage: "bell.badge.fill")
+                    sampleLargeToggle(
+                        title: NSLocalizedString("patient.settings.notifications.master", comment: "Enable notifications"),
+                        subtitle: NSLocalizedString("patient.settings.notifications.master.note", comment: "Master note"),
+                        systemImage: "bell.fill",
+                        isOn: true
+                    )
                 }
             }
+
+            PatientCard {
+                sampleInfoRow(
+                    title: NSLocalizedString("patient.settings.linked.title", comment: "Linked title"),
+                    subtitle: NSLocalizedString("patient.settings.linked.note", comment: "Linked note"),
+                    systemImage: "person.2.fill",
+                    color: PatientUI.teal
+                )
+            }
+
+            Label(NSLocalizedString("common.logout", comment: "Logout"), systemImage: "rectangle.portrait.and.arrow.right")
+                .font(.title3.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: 58)
+                .background(PatientUI.red, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
     }
 
     private var title: String {
         switch tab {
         case .today:
-            return "今日のお薬"
+            return NSLocalizedString("patient.readonly.today.title", comment: "Today title")
         case .history:
-            return "履歴"
+            return NSLocalizedString("patient.readonly.history.title", comment: "History title")
         case .settings:
-            return "設定"
+            return NSLocalizedString("patient.readonly.settings.title", comment: "Settings title")
         }
     }
 
     private var subtitle: String {
         switch tab {
         case .today:
-            return "飲む予定と記録ボタンが表示されます"
+            return sampleTodaySubtitle
         case .history:
-            return "飲んだ記録を確認できます"
+            return NSLocalizedString("patient.history.subtitle", comment: "Patient history subtitle")
         case .settings:
-            return "通知と連携状態を確認できます"
+            return NSLocalizedString("patient.settings.subtitle", comment: "Settings subtitle")
         }
     }
 
@@ -310,6 +468,21 @@ private struct PatientTutorialSampleView: View {
         }
     }
 
+    private var sampleTodaySubtitle: String {
+        let formatter = DateFormatter()
+        formatter.locale = AppConstants.japaneseLocale
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = AppConstants.defaultTimeZone
+        formatter.dateFormat = "M月d日（E）"
+        return formatter.string(from: Date())
+    }
+
+    private enum SampleDoseStatus {
+        case taken
+        case pending
+        case missed
+    }
+
     private func sampleSectionTitle(_ text: String, systemImage: String) -> some View {
         HStack(spacing: 10) {
             Image(systemName: systemImage)
@@ -319,57 +492,247 @@ private struct PatientTutorialSampleView: View {
         }
     }
 
-    private func sampleMedicineRow(name: String, detail: String, color: Color) -> some View {
-        HStack(spacing: 12) {
-            Circle()
-                .fill(color.opacity(0.16))
-                .frame(width: 42, height: 42)
-                .overlay {
-                    Image(systemName: "pills.fill")
-                        .foregroundStyle(color)
+    private func sampleSlotCard(
+        title: String,
+        time: String,
+        color: Color,
+        status: String,
+        statusColor: Color,
+        remainingCount: Int?,
+        rows: [(String, String, SampleDoseStatus)],
+        buttonEnabled: Bool
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 12) {
+                Circle()
+                    .fill(color)
+                    .frame(width: 16, height: 16)
+                    .padding(.top, 7)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.title2.weight(.bold))
+                    Text(time)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.secondary)
                 }
-            VStack(alignment: .leading, spacing: 4) {
-                Text(name)
-                    .font(.headline.weight(.bold))
-                Text(detail)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                Spacer()
+                VStack(alignment: .trailing, spacing: 8) {
+                    Text(status)
+                        .font(.subheadline.weight(.bold))
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 10)
+                        .background(statusColor.opacity(0.15))
+                        .clipShape(Capsule())
+                    if let remainingCount {
+                        Text(String(format: NSLocalizedString("patient.today.slot.bulk.remaining", comment: "Remaining"), remainingCount))
+                            .font(.subheadline.weight(.bold))
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 10)
+                            .background(Color.orange.opacity(0.16))
+                            .clipShape(Capsule())
+                    }
+                }
             }
-            Spacer(minLength: 0)
+
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                sampleSlotMedicationRow(name: row.0, pills: row.1, status: row.2)
+            }
+
+            Text(String(
+                format: NSLocalizedString("patient.today.slot.bulk.summary", comment: "Summary"),
+                rows.map { Double($0.1) ?? 0 }.reduce(0, +).formatted(.number.precision(.fractionLength(0...1))),
+                "\(rows.count)"
+            ))
+            .font(.body.weight(.semibold))
+            .foregroundStyle(.secondary)
+
+            Label(NSLocalizedString("patient.today.slot.bulk.button", comment: "Bulk record"), systemImage: "checkmark.circle.fill")
+                .font(.title2.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: 70)
+                .background(PatientUI.teal, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .opacity(buttonEnabled ? 1 : 0.55)
         }
-        .padding(12)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(color)
+                .frame(width: 6)
+                .padding(.vertical, 14)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(color.opacity(0.45), lineWidth: 1.5)
+        }
+        .shadow(color: PatientUI.cardShadow, radius: 12, y: 5)
     }
 
-    private func sampleMetric(value: String, label: String, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(value)
-                .font(.title.weight(.bold))
-                .foregroundStyle(color)
-            Text(label)
-                .font(.caption.weight(.bold))
+    private func sampleSlotMedicationRow(name: String, pills: String, status: SampleDoseStatus) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(name)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(status == .missed ? Color.red : Color.primary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(String(
+                    format: NSLocalizedString("patient.today.slot.bulk.perDose", comment: "Per dose"),
+                    pills
+                ))
+                .font(.body)
+                .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .layoutPriority(1)
+            Spacer()
+            sampleDoseStatusIndicator(status)
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    @ViewBuilder
+    private func sampleDoseStatusIndicator(_ status: SampleDoseStatus) -> some View {
+        switch status {
+        case .taken:
+            Image(systemName: "checkmark.circle.fill")
+                .font(.title2)
+                .foregroundStyle(.green)
+        case .missed:
+            Image(systemName: "exclamationmark.circle.fill")
+                .font(.title2)
+                .foregroundStyle(.red)
+        case .pending:
+            Image(systemName: "circle")
+                .font(.title2)
                 .foregroundStyle(.secondary)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
-    private func sampleSettingRow(title: String, detail: String, systemImage: String) -> some View {
+    private func sampleProgressRing(value: String, color: Color) -> some View {
+        ZStack {
+            Circle()
+                .stroke(color.opacity(0.16), lineWidth: 10)
+            Circle()
+                .trim(from: 0, to: 0.34)
+                .stroke(color, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            VStack(spacing: 0) {
+                Text(value)
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundStyle(color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.64)
+                Text(NSLocalizedString("patient.history.today.progress.unit", comment: "Dose slot unit"))
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(width: 86, height: 86)
+    }
+
+    private func sampleWeekDay(_ weekday: String, _ date: String, color: Color, icon: String, filled: Bool) -> some View {
+        VStack(spacing: 6) {
+            Text(weekday)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.primary)
+            ZStack {
+                Circle()
+                    .fill(color.opacity(filled ? 1 : 0.14))
+                    .frame(width: 34, height: 34)
+                Image(systemName: icon)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(filled ? Color.white : color)
+            }
+            Text(date)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func sampleRecentHistoryRow(title: String, subtitle: String, status: String, color: Color, icon: String, statusIcon: String?) -> some View {
+        PatientCard {
+            HStack(alignment: .center, spacing: 14) {
+                Image(systemName: icon)
+                    .font(.system(size: 26, weight: .bold))
+                    .foregroundStyle(color)
+                    .frame(width: 54, height: 54)
+                    .background(color.opacity(0.12), in: Circle())
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.76)
+                    Text(subtitle)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+                Spacer(minLength: 0)
+                PatientStatusPill(text: status, color: color, systemImage: statusIcon)
+            }
+        }
+    }
+
+    private func sampleLargeToggle(title: String, subtitle: String, systemImage: String, isOn: Bool) -> some View {
         HStack(spacing: 14) {
             Image(systemName: systemImage)
-                .font(.title3.weight(.bold))
+                .font(.title2.weight(.bold))
                 .foregroundStyle(PatientUI.teal)
                 .frame(width: 44, height: 44)
                 .background(PatientUI.teal.opacity(0.12), in: Circle())
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.headline.weight(.bold))
-                Text(detail)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.primary)
+                Text(subtitle)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
+            Capsule()
+                .fill(isOn ? PatientUI.teal : Color.secondary.opacity(0.24))
+                .frame(width: 52, height: 32)
+                .overlay(alignment: isOn ? .trailing : .leading) {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 28, height: 28)
+                        .padding(2)
+                        .shadow(color: Color.black.opacity(0.12), radius: 2, y: 1)
+                }
+        }
+    }
+
+    private func sampleInfoRow(title: String, subtitle: String, systemImage: String, color: Color) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: systemImage)
+                .font(.title2.weight(.bold))
+                .foregroundStyle(color)
+                .frame(width: 48, height: 48)
+                .background(color.opacity(0.12), in: Circle())
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.primary)
+                Text(subtitle)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "checkmark.circle.fill")
+                .font(.title2.weight(.bold))
+                .foregroundStyle(PatientUI.teal)
+                .accessibilityHidden(true)
         }
     }
 }
