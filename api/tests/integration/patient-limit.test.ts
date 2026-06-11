@@ -26,7 +26,7 @@ const patientFindUniqueMock = vi.fn();
 const txClient = {
   caregiverPatientLink: { count: countMock, create: linkCreateMock },
   caregiverEntitlement: { findFirst: findFirstMock },
-  patient: { create: patientCreateMock }
+  patient: { count: countMock, create: patientCreateMock }
 };
 
 vi.mock("../../src/repositories/prisma", () => ({
@@ -168,17 +168,19 @@ describe("POST /api/patients — patient limit enforcement", () => {
     expect(body.current).toBe(3);
   });
 
-  it("allows free caregiver with 1 REVOKED patient and 0 ACTIVE to create (201)", async () => {
-    // Free caregiver, 0 active patients (1 revoked, not counted)
-    countMock.mockResolvedValue(0); // only ACTIVE links counted
+  it("rejects free caregiver with 1 revoked-but-managed patient (403)", async () => {
+    // Revoke only invalidates patient-device sessions. The caregiver still manages
+    // the patient, so the patient continues to count toward the free limit.
+    countMock.mockResolvedValue(1);
     findFirstMock.mockResolvedValue(null); // no entitlement
 
     const { POST } = await import("../../app/api/patients/route");
     const res = await POST(createPatientRequest("After Revoke Patient"));
 
-    expect(res.status).toBe(201);
+    expect(res.status).toBe(403);
     const body = await res.json();
-    expect(body.data).toBeDefined();
+    expect(body.code).toBe("PATIENT_LIMIT_EXCEEDED");
+    expect(body.current).toBe(1);
   });
 
   it("returns 403 when authorization header is missing", async () => {

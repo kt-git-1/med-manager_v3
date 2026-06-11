@@ -45,12 +45,17 @@ targets:
         com.apple.developer.associated-domains:
           - applinks:okusuri-mimamori.com
           - applinks:www.okusuri-mimamori.com
-        aps-environment: development
+        aps-environment: $(APS_ENVIRONMENT)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.afterlifearchive.medmanager
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 0.1.0
+      configs:
+        Debug:
+          APS_ENVIRONMENT: development
+        Release:
+          APS_ENVIRONMENT: production
     scheme:
       storeKitConfiguration: App/Products.storekit
       testTargets:

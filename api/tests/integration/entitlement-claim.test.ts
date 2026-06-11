@@ -1,4 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { createSign, generateKeyPairSync, type KeyObject } from "crypto";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -52,20 +53,20 @@ function patientHeaders(): HeadersInit {
 }
 
 const VALID_PRODUCT_ID = "com.yourcompany.medicationapp.premium_unlock";
+const ORIGINAL_STOREKIT_PUBLIC_KEY = process.env.STOREKIT_JWS_PUBLIC_KEY_PEM;
+const storeKitKeys = generateKeyPairSync("ec", { namedCurve: "P-256" });
 
 function validClaimBody() {
-  // signedTransactionInfo is a JWS string; for tests we use a dummy three-part
-  // dot-separated value that the MVP decoder can parse the payload section from.
-  const payload = Buffer.from(
-    JSON.stringify({
+  const fakeJws = signStoreKitJws(
+    {
       originalTransactionId: "orig-txn-001",
       transactionId: "txn-001",
       purchaseDate: Date.now(),
       productId: VALID_PRODUCT_ID,
       environment: "Sandbox"
-    })
-  ).toString("base64url");
-  const fakeJws = `header.${payload}.signature`;
+    },
+    storeKitKeys.privateKey
+  );
 
   return {
     productId: VALID_PRODUCT_ID,
@@ -81,6 +82,9 @@ function validClaimBody() {
 describe("POST /api/iap/claim", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.STOREKIT_JWS_PUBLIC_KEY_PEM = storeKitKeys.publicKey
+      .export({ type: "spki", format: "pem" })
+      .toString();
     upsertEntitlementMock.mockResolvedValue({
       id: "ent-1",
       caregiverId: "caregiver-1",
@@ -165,6 +169,49 @@ describe("POST /api/iap/claim", () => {
     expect(res.status).toBe(422);
   });
 
+  it("returns 422 for forged signedTransactionInfo", async () => {
+    const { POST } = await import("../../app/api/iap/claim/route");
+    const req = new Request("http://localhost/api/iap/claim", {
+      method: "POST",
+      headers: caregiverHeaders(),
+      body: JSON.stringify({
+        productId: VALID_PRODUCT_ID,
+        signedTransactionInfo: "header.payload.signature",
+        environment: "Sandbox"
+      })
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(422);
+    expect(upsertEntitlementMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 422 when request product does not match signed transaction product", async () => {
+    const { POST } = await import("../../app/api/iap/claim/route");
+    const signedTransactionInfo = signStoreKitJws(
+      {
+        originalTransactionId: "orig-txn-002",
+        transactionId: "txn-002",
+        purchaseDate: Date.now(),
+        productId: "com.other.product"
+      },
+      storeKitKeys.privateKey
+    );
+    const req = new Request("http://localhost/api/iap/claim", {
+      method: "POST",
+      headers: caregiverHeaders(),
+      body: JSON.stringify({
+        productId: VALID_PRODUCT_ID,
+        signedTransactionInfo,
+        environment: "Sandbox"
+      })
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(422);
+    expect(upsertEntitlementMock).not.toHaveBeenCalled();
+  });
+
   it("returns 401 when authorization header is missing", async () => {
     const { POST } = await import("../../app/api/iap/claim/route");
     const req = new Request("http://localhost/api/iap/claim", {
@@ -189,6 +236,70 @@ describe("POST /api/iap/claim", () => {
     expect(res.status).toBe(401);
   });
 });
+
+afterEach(() => {
+  if (ORIGINAL_STOREKIT_PUBLIC_KEY === undefined) {
+    delete process.env.STOREKIT_JWS_PUBLIC_KEY_PEM;
+  } else {
+    process.env.STOREKIT_JWS_PUBLIC_KEY_PEM = ORIGINAL_STOREKIT_PUBLIC_KEY;
+  }
+});
+
+function base64UrlEncode(input: Buffer) {
+  return input.toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+
+function signStoreKitJws(payload: Record<string, unknown>, privateKey: KeyObject) {
+  const header = { alg: "ES256", typ: "JWT" };
+  const encodedHeader = base64UrlEncode(Buffer.from(JSON.stringify(header)));
+  const encodedPayload = base64UrlEncode(Buffer.from(JSON.stringify(payload)));
+  const data = `${encodedHeader}.${encodedPayload}`;
+  const derSignature = createSign("sha256").update(data).end().sign(privateKey);
+  return `${data}.${base64UrlEncode(derSignatureToRaw(derSignature))}`;
+}
+
+function derSignatureToRaw(signature: Buffer) {
+  let offset = 0;
+  if (signature[offset++] !== 0x30) {
+    throw new Error("Invalid DER signature");
+  }
+  const length = signature[offset++];
+  const end = offset + length;
+  if (signature[offset++] !== 0x02) {
+    throw new Error("Invalid DER signature");
+  }
+  const rLength = signature[offset++];
+  let r = signature.subarray(offset, offset + rLength);
+  offset += rLength;
+  if (signature[offset++] !== 0x02) {
+    throw new Error("Invalid DER signature");
+  }
+  const sLength = signature[offset++];
+  let s = signature.subarray(offset, offset + sLength);
+  offset += sLength;
+  if (offset !== end) {
+    throw new Error("Invalid DER signature");
+  }
+  r = trimDerInteger(r, 32);
+  s = trimDerInteger(s, 32);
+  return Buffer.concat([r, s]);
+}
+
+function trimDerInteger(value: Buffer, size: number) {
+  let normalized = value;
+  while (normalized.length > 0 && normalized[0] === 0) {
+    normalized = normalized.subarray(1);
+  }
+  if (normalized.length > size) {
+    throw new Error("Invalid DER signature");
+  }
+  if (normalized.length === size) {
+    return normalized;
+  }
+  const padded = Buffer.alloc(size);
+  normalized.copy(padded, size - normalized.length);
+  return padded;
+}
 
 // ---------------------------------------------------------------------------
 // GET /api/me/entitlements

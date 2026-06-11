@@ -58,8 +58,23 @@ vi.mock("../../src/repositories/prisma", () => {
         }
         return null;
       }),
+      updateMany: vi.fn(async (input: {
+        where: { id: string; patientId: string; inventoryQuantity?: { gte: number } };
+        data: Record<string, unknown>;
+      }) => {
+        if (
+          input.where.id !== mockData.medication.id ||
+          input.where.patientId !== mockData.medication.patientId ||
+          (input.where.inventoryQuantity?.gte !== undefined &&
+            mockData.medication.inventoryQuantity < input.where.inventoryQuantity.gte)
+        ) {
+          return { count: 0 };
+        }
+        applyMedicationUpdate(input.data);
+        return { count: 1 };
+      }),
       update: vi.fn(async (input: { data: Record<string, unknown> }) => {
-        mockData.medication = { ...mockData.medication, ...input.data };
+        applyMedicationUpdate(input.data);
         return mockData.medication;
       })
     },
@@ -81,6 +96,27 @@ vi.mock("../../src/repositories/prisma", () => {
   };
   return { prisma };
 });
+
+function applyMedicationUpdate(data: Record<string, unknown>) {
+  const next = { ...mockData.medication };
+  for (const [key, value] of Object.entries(data)) {
+    if (
+      key === "inventoryQuantity" &&
+      typeof value === "object" &&
+      value !== null
+    ) {
+      const operation = value as { increment?: number; decrement?: number };
+      if (typeof operation.increment === "number") {
+        next.inventoryQuantity += operation.increment;
+      } else if (typeof operation.decrement === "number") {
+        next.inventoryQuantity -= operation.decrement;
+      }
+      continue;
+    }
+    (next as Record<string, unknown>)[key] = value;
+  }
+  mockData.medication = next;
+}
 
 vi.mock("../../src/repositories/doseRecordRepo", () => ({
   upsertDoseRecord: async (input: {

@@ -45,18 +45,18 @@ export async function createPatientForCaregiver(
   displayName: string
 ): Promise<PatientSummary> {
   const patient = await prisma.$transaction(async (tx) => {
-    // Count ACTIVE links inside the transaction for atomicity (race-condition safe)
-    const activeCount = await tx.caregiverPatientLink.count({
-      where: { caregiverId: caregiverUserId, status: "ACTIVE" }
+    // Revoke invalidates patient-device sessions, but the caregiver still manages
+    // that patient and can relink later. Count managed patients, not only ACTIVE links.
+    const managedCount = await tx.patient.count({
+      where: { caregiverId: caregiverUserId }
     });
 
-    // If at or over the free limit, check entitlement before proceeding
-    if (activeCount >= FREE_PATIENT_LIMIT) {
+    if (managedCount >= FREE_PATIENT_LIMIT) {
       const entitlement = await tx.caregiverEntitlement.findFirst({
         where: { caregiverId: caregiverUserId, status: "ACTIVE" }
       });
       if (!entitlement) {
-        throw new PatientLimitError(FREE_PATIENT_LIMIT, activeCount);
+        throw new PatientLimitError(FREE_PATIENT_LIMIT, managedCount);
       }
     }
 

@@ -1016,6 +1016,7 @@
 		28580ACF55DCBABB8689762A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				APS_ENVIRONMENT = development;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -1133,6 +1134,7 @@
 		F90680DEE1E158905D7A4593 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				APS_ENVIRONMENT = production;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";

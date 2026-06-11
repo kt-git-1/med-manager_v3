@@ -315,34 +315,68 @@ export async function adjustMedicationInventory(
     input.absoluteQuantity !== undefined
       ? input.absoluteQuantity - baseQuantity
       : (input.delta ?? 0);
-  const nextQuantity = Math.max(0, baseQuantity + delta);
   const regimens = await prisma.regimen.findMany({ where: { medicationId: medication.id } });
-  const plan = computeRefillPlan({
-    inventoryEnabled: medication.inventoryEnabled,
-    inventoryQuantity: nextQuantity,
-    doseCountPerIntake: medication.doseCountPerIntake,
-    regimens: mapRegimensForPlan(regimens)
-  });
-  const nextState = medication.inventoryEnabled
-    ? computeInventoryState(
-        nextQuantity,
-        inventoryLowThresholdFor(medication.inventoryEnabled),
-        plan.daysRemaining
-      )
-    : "NONE";
-  const previousState = medication.inventoryLastAlertState ?? "NONE";
-  const shouldEmitAlert =
-    medication.inventoryEnabled && nextState !== previousState && nextState !== "NONE";
   const now = new Date();
 
   const patient = await getPatientRecordById(medication.patientId);
   const updated = await prisma.$transaction(async (tx) => {
+    let quantityUpdated;
+    if (delta < 0) {
+      quantityUpdated = await tx.medication.updateMany({
+        where: {
+          id: medication.id,
+          patientId: input.patientId,
+          inventoryQuantity: { gte: Math.abs(delta) }
+        },
+        data: {
+          inventoryQuantity: { decrement: Math.abs(delta) },
+          inventoryUpdatedAt: now
+        }
+      });
+      if (quantityUpdated.count === 0) {
+        throw new InsufficientInventoryError();
+      }
+    } else {
+      await tx.medication.update({
+        where: { id: medication.id },
+        data: {
+          inventoryQuantity:
+            input.absoluteQuantity !== undefined
+              ? Math.max(0, input.absoluteQuantity)
+              : { increment: delta },
+          inventoryUpdatedAt: now
+        }
+      });
+    }
+
+    const quantityMedication = await tx.medication.findFirst({
+      where: { id: medication.id, patientId: input.patientId }
+    });
+    if (!quantityMedication) {
+      throw new Error("Medication not found after inventory update");
+    }
+
+    const plan = computeRefillPlan({
+      inventoryEnabled: quantityMedication.inventoryEnabled,
+      inventoryQuantity: quantityMedication.inventoryQuantity,
+      doseCountPerIntake: quantityMedication.doseCountPerIntake,
+      regimens: mapRegimensForPlan(regimens)
+    });
+    const nextState = quantityMedication.inventoryEnabled
+      ? computeInventoryState(
+          quantityMedication.inventoryQuantity,
+          inventoryLowThresholdFor(quantityMedication.inventoryEnabled),
+          plan.daysRemaining
+        )
+      : "NONE";
+    const previousState = quantityMedication.inventoryLastAlertState ?? "NONE";
+    const shouldEmitAlert =
+      quantityMedication.inventoryEnabled && nextState !== previousState && nextState !== "NONE";
+
     const updatedMedication = await tx.medication.update({
       where: { id: medication.id },
       data: {
-        inventoryQuantity: nextQuantity,
-        inventoryLowThreshold: inventoryLowThresholdFor(medication.inventoryEnabled),
-        inventoryUpdatedAt: now,
+        inventoryLowThreshold: inventoryLowThresholdFor(quantityMedication.inventoryEnabled),
         inventoryLastAlertState: nextState
       }
     });
@@ -359,13 +393,13 @@ export async function adjustMedicationInventory(
     if (shouldEmitAlert) {
       await tx.inventoryAlertEvent.create({
         data: {
-          patientId: medication.patientId,
-          medicationId: medication.id,
+          patientId: quantityMedication.patientId,
+          medicationId: quantityMedication.id,
           type: nextState as InventoryAlertType,
-          remaining: nextQuantity,
-          threshold: inventoryLowThresholdFor(medication.inventoryEnabled),
+          remaining: quantityMedication.inventoryQuantity,
+          threshold: inventoryLowThresholdFor(quantityMedication.inventoryEnabled),
           patientDisplayName: patient?.displayName ?? null,
-          medicationName: medication.name
+          medicationName: quantityMedication.name
         }
       });
     }

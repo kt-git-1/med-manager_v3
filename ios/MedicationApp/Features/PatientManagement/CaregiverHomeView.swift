@@ -511,17 +511,8 @@ private struct CaregiverTutorialSampleView: View {
             sampleInventoryListRow(name: "血圧の薬 5 mg", quantity: "4", unit: "錠", days: "あと2日分", help: "残り日数が少ないため、早めの補充が必要です。", color: CaregiverUI.orange, attention: true)
             sampleInventoryListRow(name: "整腸剤 50 mg", quantity: "10", unit: "錠", days: "あと5日分", help: "服薬記録に合わせて自動で減ります。", color: CaregiverUI.teal, attention: false)
         case .history:
-            CaregiverCard {
-                VStack(alignment: .leading, spacing: 14) {
-                    sampleSectionTitle("今日の進捗", systemImage: "calendar.badge.clock")
-                    HStack(spacing: 12) {
-                        sampleMetric(value: "2/3", label: "回分 記録済み", color: CaregiverUI.teal)
-                        sampleMetric(value: "1", label: "未記録", color: CaregiverUI.orange)
-                    }
-                    sampleMedicineRow(name: "朝のお薬", detail: "08:00 ・ 記録済み", color: CaregiverUI.teal)
-                    sampleMedicineRow(name: "昼のお薬", detail: "12:30 ・ 未記録", color: CaregiverUI.orange)
-                }
-            }
+            sampleHistoryCalendarCard()
+            sampleHistorySelectedDayCard()
         case .patients:
             sampleSettingsSelectionCard()
             sampleSettingsPatientCard()
@@ -931,6 +922,165 @@ private struct CaregiverTutorialSampleView: View {
         }
         .padding(12)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func sampleHistoryCalendarCard() -> some View {
+        CaregiverCard {
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(NSLocalizedString("history.calendar.title", comment: "History calendar title"))
+                        .font(.headline.weight(.bold))
+                    Text(NSLocalizedString("history.calendar.message", comment: "History calendar message"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                sampleHistoryCalendarGrid()
+                sampleHistoryLegend()
+            }
+        }
+    }
+
+    private func sampleHistoryCalendarGrid() -> some View {
+        let weekdays = ["月", "火", "水", "木", "金", "土", "日"]
+        let days: [Int?] = Array(1...30).map(Optional.some)
+        return VStack(spacing: 10) {
+            HStack(spacing: 0) {
+                ForEach(weekdays, id: \.self) { symbol in
+                    Text(symbol)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 7), spacing: 8) {
+                ForEach(days.indices, id: \.self) { index in
+                    if let day = days[index] {
+                        sampleHistoryDayCell(day: day)
+                    } else {
+                        Color.clear.frame(height: 54)
+                    }
+                }
+            }
+        }
+    }
+
+    private func sampleHistoryDayCell(day: Int) -> some View {
+        let selected = day == 10
+        let statuses = sampleHistoryStatuses(for: day)
+        return VStack(spacing: 6) {
+            Text("\(day)")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(selected ? Color.white : (statuses.isEmpty ? Color.secondary : Color.primary))
+                .frame(maxWidth: .infinity)
+            HStack(spacing: 4) {
+                ForEach(statuses.indices, id: \.self) { index in
+                    Circle()
+                        .fill(statuses[index])
+                        .frame(width: 6, height: 6)
+                }
+            }
+            .frame(height: 8)
+        }
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, minHeight: 54)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(selected ? CaregiverUI.teal : (statuses.isEmpty ? Color.clear : Color.primary.opacity(0.05)))
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(selected ? CaregiverUI.tealDark.opacity(0.40) : Color.primary.opacity(statuses.isEmpty ? 0.04 : 0.08), lineWidth: 1)
+        }
+    }
+
+    private func sampleHistoryStatuses(for day: Int) -> [Color] {
+        switch day {
+        case 5:
+            return [CaregiverUI.teal, CaregiverUI.teal, CaregiverUI.teal]
+        case 6:
+            return [CaregiverUI.teal, Color.gray]
+        case 8:
+            return [CaregiverUI.teal, CaregiverUI.red]
+        case 9:
+            return [CaregiverUI.teal, CaregiverUI.teal, Color.purple]
+        case 10:
+            return [CaregiverUI.teal, Color.gray, CaregiverUI.red]
+        case 11:
+            return [Color.gray]
+        default:
+            return []
+        }
+    }
+
+    private func sampleHistoryLegend() -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(NSLocalizedString("history.legend.help", comment: "Legend help"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 8)], alignment: .leading, spacing: 8) {
+                sampleHistoryLegendItem(color: CaregiverUI.teal, title: NSLocalizedString("history.legend.taken", comment: "Legend taken"))
+                sampleHistoryLegendItem(color: CaregiverUI.red, title: NSLocalizedString("history.legend.missed", comment: "Legend missed"))
+                sampleHistoryLegendItem(color: Color.gray, title: NSLocalizedString("history.legend.pending", comment: "Legend pending"))
+                sampleHistoryLegendItem(color: Color.purple, title: NSLocalizedString("history.legend.prn", comment: "Legend PRN"))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func sampleHistoryLegendItem(color: Color, title: String) -> some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(color)
+                .frame(width: 8, height: 8)
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+        }
+    }
+
+    private func sampleHistorySelectedDayCard() -> some View {
+        CaregiverCard {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(NSLocalizedString("history.selected.title", comment: "Selected day section title"))
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.secondary)
+                        Text("6月10日（水）")
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(.primary)
+                    }
+                    Spacer()
+                }
+                Text(String(format: NSLocalizedString("caregiver.history.summary.format", comment: "History summary"), 1, 3))
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.primary)
+                Text(NSLocalizedString("history.selected.missedHelp", comment: "Missed help"))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 8) {
+                    CaregiverStatusPill(
+                        text: String(format: NSLocalizedString("caregiver.history.summary.taken", comment: "Taken count"), 1),
+                        color: CaregiverUI.teal,
+                        systemImage: "checkmark.circle.fill"
+                    )
+                    CaregiverStatusPill(
+                        text: String(format: NSLocalizedString("caregiver.history.summary.pending", comment: "Pending count"), 1),
+                        color: .gray,
+                        systemImage: "clock.fill"
+                    )
+                    CaregiverStatusPill(
+                        text: String(format: NSLocalizedString("caregiver.history.summary.missed", comment: "Missed count"), 1),
+                        color: CaregiverUI.red,
+                        systemImage: "exclamationmark.triangle.fill"
+                    )
+                }
+            }
+        }
     }
 
     private func sampleMetric(value: String, label: String, color: Color) -> some View {
