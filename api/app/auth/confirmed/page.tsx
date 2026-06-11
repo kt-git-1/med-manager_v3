@@ -25,7 +25,7 @@ const helpItems = [
   "リンクの有効期限が切れている場合は、アプリのログイン画面から確認メールを再送してください。"
 ];
 
-const appLoginUrl = "https://okusuri-mimamori.com/auth/login";
+const appLoginUrl = "okusurimimamori://auth/login";
 
 export default function AuthConfirmedPage() {
   return (

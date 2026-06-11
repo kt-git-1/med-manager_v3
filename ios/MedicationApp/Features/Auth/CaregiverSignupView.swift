@@ -2,10 +2,12 @@ import SwiftUI
 
 struct CaregiverSignupView: View {
     @EnvironmentObject private var sessionStore: SessionStore
+    @EnvironmentObject private var toastPresenter: ToastPresenter
     @State private var email = ""
     @State private var password = ""
     @State private var errorMessage: String?
     @State private var infoMessage: String?
+    @State private var canResendConfirmationEmail = false
     @State private var isLoading = false
     @State private var isResending = false
 
@@ -72,6 +74,9 @@ struct CaregiverSignupView: View {
 
                     if let infoMessage {
                         SignupInfoView(message: infoMessage)
+                    }
+
+                    if canResendConfirmationEmail {
                         Button {
                             Task { await resendConfirmationEmail() }
                         } label: {
@@ -133,6 +138,7 @@ struct CaregiverSignupView: View {
     private func signup() async {
         errorMessage = nil
         infoMessage = nil
+        canResendConfirmationEmail = false
 
         guard trimmedEmail.contains("@"), trimmedEmail.contains(".") else {
             errorMessage = NSLocalizedString("auth.error.invalidEmail", comment: "Invalid email")
@@ -150,6 +156,7 @@ struct CaregiverSignupView: View {
             let session = try await authService.signup(email: trimmedEmail, password: password)
             if !session.hasAccessToken {
                 infoMessage = NSLocalizedString("caregiver.signup.confirm.email", comment: "Email confirmation required")
+                canResendConfirmationEmail = true
             } else {
                 sessionStore.saveCaregiverSession(session)
             }
@@ -165,6 +172,7 @@ struct CaregiverSignupView: View {
     @MainActor
     private func resendConfirmationEmail() async {
         errorMessage = nil
+        infoMessage = nil
 
         guard trimmedEmail.contains("@"), trimmedEmail.contains(".") else {
             errorMessage = NSLocalizedString("auth.error.invalidEmail", comment: "Invalid email")
@@ -176,6 +184,10 @@ struct CaregiverSignupView: View {
         do {
             try await authService.resendSignupConfirmation(email: trimmedEmail)
             infoMessage = NSLocalizedString("caregiver.signup.resend.sent", comment: "Confirmation email resent")
+            toastPresenter.show(
+                NSLocalizedString("caregiver.signup.resend.toast", comment: "Confirmation email resend toast"),
+                kind: .success
+            )
         } catch {
             if let apiError = error as? LocalizedError, let message = apiError.errorDescription {
                 errorMessage = message

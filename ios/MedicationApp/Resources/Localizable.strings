@@ -89,9 +89,11 @@
 "caregiver.signup.password" = "パスワード（6文字以上）";
 "caregiver.signup.button" = "新規登録";
 "caregiver.signup.button.loading" = "登録中...";
-"caregiver.signup.confirm.email" = "確認メールを送信しました。メール内のリンクを開いて、登録を完了してください。";
+"caregiver.signup.confirm.email" = "確認メールを送信しました。メール内のリンクを開いて、登録を完了してください。見つからない場合は、迷惑メールフォルダも確認してください。";
 "caregiver.signup.resend.button" = "確認メールを再送";
 "caregiver.signup.resend.sent" = "確認メールを再送しました。迷惑メールフォルダも確認してください。";
+"caregiver.signup.resend.toast" = "確認メールを再送しました";
+"caregiver.signup.resend.tooManyRequests" = "確認メールの再送が続いたため、少し時間をおいてからもう一度お試しください。";
 "caregiver.signup.resend.error" = "確認メールの再送に失敗しました。しばらくしてからもう一度お試しください。";
 
 /* Link code */

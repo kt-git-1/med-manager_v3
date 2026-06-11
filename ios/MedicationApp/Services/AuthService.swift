@@ -80,6 +80,14 @@ final class AuthService: Sendable {
         if (200...299).contains(http.statusCode) {
             return
         }
+        if http.statusCode == 429 {
+            throw APIError.network(
+                NSLocalizedString(
+                    "caregiver.signup.resend.tooManyRequests",
+                    comment: "Too many confirmation email resend requests"
+                )
+            )
+        }
         throw mapSupabaseError(statusCode: http.statusCode, data: data)
     }
 
