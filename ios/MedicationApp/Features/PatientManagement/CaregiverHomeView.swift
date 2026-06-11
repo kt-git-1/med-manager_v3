@@ -1313,6 +1313,7 @@ struct CaregiverPatientHeader: View {
     let patientName: String?
     let systemImage: String
     var subtitle: String? = nil
+    var subtitleLineLimit: Int = 1
     var trailing: AnyView?
 
     var body: some View {
@@ -1327,7 +1328,7 @@ struct CaregiverPatientHeader: View {
                 Text(subtitle ?? patientNameText)
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(subtitleLineLimit)
                     .minimumScaleFactor(0.78)
             }
             Spacer(minLength: 0)

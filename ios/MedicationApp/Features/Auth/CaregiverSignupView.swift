@@ -5,19 +5,26 @@ struct CaregiverSignupView: View {
     @EnvironmentObject private var toastPresenter: ToastPresenter
     @State private var email = ""
     @State private var password = ""
+    @State private var passwordConfirmation = ""
     @State private var errorMessage: String?
     @State private var infoMessage: String?
     @State private var canResendConfirmationEmail = false
     @State private var isLoading = false
     @State private var isResending = false
+    @State private var resendCooldownRemainingSeconds = 0
 
     private let authService = AuthService()
+    private let resendCooldownSeconds = 60
     private var trimmedEmail: String {
         email.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private var isFormReady: Bool {
-        !trimmedEmail.isEmpty && !password.isEmpty
+        !trimmedEmail.isEmpty && !password.isEmpty && !passwordConfirmation.isEmpty
+    }
+
+    private var isResendCooldownActive: Bool {
+        resendCooldownRemainingSeconds > 0
     }
 
     var body: some View {
@@ -66,6 +73,20 @@ struct CaregiverSignupView: View {
                         .padding(14)
                         .background(.fill.quaternary)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                        HStack(spacing: 12) {
+                            Image(systemName: "lock.rotation")
+                                .foregroundStyle(.secondary)
+                                .frame(width: 20)
+                            SecureField(
+                                NSLocalizedString("caregiver.signup.passwordConfirmation", comment: "Password confirmation label"),
+                                text: $passwordConfirmation
+                            )
+                            .accessibilityLabel(NSLocalizedString("a11y.password.confirmation", comment: "Password confirmation"))
+                        }
+                        .padding(14)
+                        .background(.fill.quaternary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
 
                     if let errorMessage {
@@ -83,6 +104,17 @@ struct CaregiverSignupView: View {
                             Group {
                                 if isResending {
                                     ProgressView()
+                                } else if isResendCooldownActive {
+                                    Label(
+                                        String(
+                                            format: NSLocalizedString(
+                                                "caregiver.signup.resend.cooldown",
+                                                comment: "Confirmation email resend cooldown"
+                                            ),
+                                            resendCooldownRemainingSeconds
+                                        ),
+                                        systemImage: "clock.fill"
+                                    )
                                 } else {
                                     Label(
                                         NSLocalizedString("caregiver.signup.resend.button", comment: "Resend confirmation email"),
@@ -91,12 +123,12 @@ struct CaregiverSignupView: View {
                                 }
                             }
                             .font(.headline.weight(.semibold))
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(isResendCooldownActive ? .secondary : Color.accentColor)
                             .frame(maxWidth: .infinity)
                             .frame(height: 48)
                             .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 14))
                         }
-                        .disabled(isLoading || isResending)
+                        .disabled(isLoading || isResending || isResendCooldownActive)
                         .accessibilityLabel(NSLocalizedString("a11y.signup.resend", comment: "Resend confirmation email"))
                     }
 
@@ -131,6 +163,10 @@ struct CaregiverSignupView: View {
             }
         }
         .scrollIndicators(.hidden)
+        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
+            guard resendCooldownRemainingSeconds > 0 else { return }
+            resendCooldownRemainingSeconds -= 1
+        }
         .accessibilityIdentifier("CaregiverSignupView")
     }
 
@@ -139,6 +175,7 @@ struct CaregiverSignupView: View {
         errorMessage = nil
         infoMessage = nil
         canResendConfirmationEmail = false
+        resendCooldownRemainingSeconds = 0
 
         guard trimmedEmail.contains("@"), trimmedEmail.contains(".") else {
             errorMessage = NSLocalizedString("auth.error.invalidEmail", comment: "Invalid email")
@@ -150,6 +187,11 @@ struct CaregiverSignupView: View {
             return
         }
 
+        guard password == passwordConfirmation else {
+            errorMessage = NSLocalizedString("auth.error.passwordMismatch", comment: "Password mismatch")
+            return
+        }
+
         isLoading = true
         defer { isLoading = false }
         do {
@@ -157,6 +199,7 @@ struct CaregiverSignupView: View {
             if !session.hasAccessToken {
                 infoMessage = NSLocalizedString("caregiver.signup.confirm.email", comment: "Email confirmation required")
                 canResendConfirmationEmail = true
+                startResendCooldown()
             } else {
                 sessionStore.saveCaregiverSession(session)
             }
@@ -174,6 +217,8 @@ struct CaregiverSignupView: View {
         errorMessage = nil
         infoMessage = nil
 
+        guard !isResendCooldownActive else { return }
+
         guard trimmedEmail.contains("@"), trimmedEmail.contains(".") else {
             errorMessage = NSLocalizedString("auth.error.invalidEmail", comment: "Invalid email")
             return
@@ -184,6 +229,7 @@ struct CaregiverSignupView: View {
         do {
             try await authService.resendSignupConfirmation(email: trimmedEmail)
             infoMessage = NSLocalizedString("caregiver.signup.resend.sent", comment: "Confirmation email resent")
+            startResendCooldown()
             toastPresenter.show(
                 NSLocalizedString("caregiver.signup.resend.toast", comment: "Confirmation email resend toast"),
                 kind: .success
@@ -191,10 +237,20 @@ struct CaregiverSignupView: View {
         } catch {
             if let apiError = error as? LocalizedError, let message = apiError.errorDescription {
                 errorMessage = message
+                if message == NSLocalizedString(
+                    "caregiver.signup.resend.tooManyRequests",
+                    comment: "Too many confirmation email resend requests"
+                ) {
+                    startResendCooldown()
+                }
             } else {
                 errorMessage = NSLocalizedString("caregiver.signup.resend.error", comment: "Resend failed")
             }
         }
+    }
+
+    private func startResendCooldown() {
+        resendCooldownRemainingSeconds = resendCooldownSeconds
     }
 }
 

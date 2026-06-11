@@ -12,7 +12,8 @@ struct CaregiverAuthChoiceView: View {
                             title: NSLocalizedString("caregiver.auth.title", comment: "Caregiver auth title"),
                             patientName: nil,
                             systemImage: "person.badge.shield.checkmark.fill",
-                            subtitle: NSLocalizedString("caregiver.auth.subtitle", comment: "Auth subtitle")
+                            subtitle: NSLocalizedString("caregiver.auth.subtitle", comment: "Auth subtitle"),
+                            subtitleLineLimit: 2
                         )
                         .padding(.top, 48)
 

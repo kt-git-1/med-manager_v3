@@ -13,6 +13,7 @@
 "auth.error.emailNotConfirmed" = "メール確認が完了していません。受信メールを確認してください。";
 "auth.error.emailAlreadyRegistered" = "このメールアドレスはすでに登録されています。ログインしてください。";
 "auth.error.weakPassword" = "パスワードは6文字以上で入力してください。";
+"auth.error.passwordMismatch" = "確認用のパスワードが一致していません。";
 "auth.error.invalidEmail" = "メールアドレスの形式を確認してください。";
 "auth.error.network" = "通信に失敗しました。インターネット接続を確認して、もう一度お試しください。";
 "auth.error.forbidden" = "このアカウントではログインできません。";
@@ -87,13 +88,15 @@
 "caregiver.signup.subtitle" = "服薬を見守る家族用のアカウントを作成します";
 "caregiver.signup.email" = "メールアドレス";
 "caregiver.signup.password" = "パスワード（6文字以上）";
+"caregiver.signup.passwordConfirmation" = "パスワードをもう一度入力";
 "caregiver.signup.button" = "新規登録";
 "caregiver.signup.button.loading" = "登録中...";
 "caregiver.signup.confirm.email" = "確認メールを送信しました。メール内のリンクを開いて、登録を完了してください。見つからない場合は、迷惑メールフォルダも確認してください。";
 "caregiver.signup.resend.button" = "確認メールを再送";
+"caregiver.signup.resend.cooldown" = "あと%d秒で再送";
 "caregiver.signup.resend.sent" = "確認メールを再送しました。迷惑メールフォルダも確認してください。";
 "caregiver.signup.resend.toast" = "確認メールを再送しました";
-"caregiver.signup.resend.tooManyRequests" = "確認メールの再送が続いたため、少し時間をおいてからもう一度お試しください。";
+"caregiver.signup.resend.tooManyRequests" = "確認メールの送信上限に達しました。少し時間をおいてからもう一度お試しください。";
 "caregiver.signup.resend.error" = "確認メールの再送に失敗しました。しばらくしてからもう一度お試しください。";
 
 /* Link code */
