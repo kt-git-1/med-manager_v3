@@ -8,7 +8,6 @@ struct CaregiverTodayView: View {
     @StateObject private var viewModel: CaregiverTodayViewModel
     @EnvironmentObject private var toastPresenter: ToastPresenter
     private let preferencesStore: NotificationPreferencesStore
-    @State private var doseToConfirm: ScheduleDoseDTO?
     @State private var slotToConfirm: SlotRecordConfirmation?
 
     init(
@@ -57,27 +56,6 @@ struct CaregiverTodayView: View {
                 }
             }
             .accessibilityIdentifier("CaregiverTodayView")
-            .alert(
-                NSLocalizedString("caregiver.today.confirm.title", comment: "Confirm record title"),
-                isPresented: Binding(
-                    get: { doseToConfirm != nil },
-                    set: { if !$0 { doseToConfirm = nil } }
-                )
-            ) {
-                Button(NSLocalizedString("caregiver.today.confirm.record", comment: "Confirm record")) {
-                    if let dose = doseToConfirm {
-                        viewModel.recordDose(dose)
-                        doseToConfirm = nil
-                    }
-                }
-                Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {
-                    doseToConfirm = nil
-                }
-            } message: {
-                if let dose = doseToConfirm {
-                    Text(confirmMessage(for: dose))
-                }
-            }
             .alert(
                 NSLocalizedString("caregiver.today.confirm.slot.title", comment: "Confirm slot record title"),
                 isPresented: Binding(
@@ -281,7 +259,6 @@ struct CaregiverTodayView: View {
                     CaregiverTodayDoseLine(
                         dose: dose,
                         isOutOfStock: viewModel.isMedicationOutOfStock(dose.medicationId),
-                        onRecord: { doseToConfirm = dose },
                         onDelete: { viewModel.deleteDose(dose) }
                     )
                 }
@@ -364,9 +341,6 @@ struct CaregiverTodayView: View {
                             slotTitle: slotTitle(for: row.slot),
                             doses: row.recordableDoses
                         )
-                    },
-                    onRecordDose: { dose in
-                        doseToConfirm = dose
                     },
                     onDeleteDose: { dose in
                             viewModel.deleteDose(dose)
@@ -678,16 +652,6 @@ struct CaregiverTodayView: View {
         }
     }
 
-    private func confirmMessage(for dose: ScheduleDoseDTO) -> String {
-        let key = dose.effectiveStatus == .missed
-            ? "caregiver.today.confirm.missed.message"
-            : "caregiver.today.confirm.message"
-        return String(
-            format: NSLocalizedString(key, comment: "Confirm record message"),
-            dose.medicationSnapshot.name
-        )
-    }
-
     private func confirmSlotMessage(for confirmation: SlotRecordConfirmation) -> String {
         let key = confirmation.doses.contains { $0.effectiveStatus == .missed }
             ? "caregiver.today.confirm.slot.missed.message"
@@ -746,7 +710,6 @@ private struct CaregiverTodayTimelineRow: View {
     let row: CaregiverTodayView.TimelineRow
     let isOutOfStock: Bool
     let onRecordSlot: () -> Void
-    let onRecordDose: (ScheduleDoseDTO) -> Void
     let onDeleteDose: (ScheduleDoseDTO) -> Void
 
     var body: some View {
@@ -790,7 +753,6 @@ private struct CaregiverTodayTimelineRow: View {
                         CaregiverTodayDoseLine(
                             dose: dose,
                             isOutOfStock: isOutOfStockDose(dose),
-                            onRecord: { onRecordDose(dose) },
                             onDelete: { onDeleteDose(dose) }
                         )
                     }
@@ -879,7 +841,6 @@ private struct CaregiverTodayTimelineRow: View {
 private struct CaregiverTodayDoseLine: View {
     let dose: ScheduleDoseDTO
     let isOutOfStock: Bool
-    let onRecord: () -> Void
     let onDelete: () -> Void
 
     var body: some View {
@@ -917,17 +878,6 @@ private struct CaregiverTodayDoseLine: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(NSLocalizedString("caregiver.today.delete.button", comment: "Delete"))
-            } else {
-                Button(action: onRecord) {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 24, height: 24)
-                        .background(isOutOfStock ? Color.gray : CaregiverUI.teal, in: Circle())
-                }
-                .buttonStyle(.plain)
-                .disabled(isOutOfStock)
-                .accessibilityLabel(recordAccessibilityLabel)
             }
         }
         .padding(.horizontal, 10)
@@ -999,11 +949,6 @@ private struct CaregiverTodayDoseLine: View {
         isOutOfStock ? NSLocalizedString("patient.today.outOfStock", comment: "Out of stock") : statusText
     }
 
-    private var recordAccessibilityLabel: String {
-        dose.effectiveStatus == .missed
-            ? NSLocalizedString("caregiver.today.record.missed.button", comment: "Record missed")
-            : NSLocalizedString("caregiver.today.record.button", comment: "Record")
-    }
 }
 
 private struct CaregiverTodayRow: View {

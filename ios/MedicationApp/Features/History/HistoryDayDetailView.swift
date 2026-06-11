@@ -225,13 +225,7 @@ private struct HistoryDayRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .layoutPriority(1)
                 Spacer()
-                Text(statusText)
-                    .font(.caption.weight(.semibold))
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 8)
-                    .background(statusBackground)
-                    .foregroundStyle(statusForeground)
-                    .clipShape(Capsule())
+                statusMarker
             }
 
             if canBackfill {
@@ -275,6 +269,39 @@ private struct HistoryDayRow: View {
             return NSLocalizedString("history.status.taken", comment: "History taken")
         case .missed:
             return NSLocalizedString("history.status.missed", comment: "History missed")
+        }
+    }
+
+    @ViewBuilder
+    private var statusMarker: some View {
+        if style == .caregiver {
+            Image(systemName: statusSymbolName)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(statusForeground)
+                .frame(width: 36, height: 36)
+                .background(statusBackground, in: Circle())
+                .accessibilityLabel(statusText)
+        } else {
+            Text(statusText)
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .background(statusBackground)
+                .foregroundStyle(statusForeground)
+                .clipShape(Capsule())
+        }
+    }
+
+    private var statusSymbolName: String {
+        switch status {
+        case .pending:
+            return "clock"
+        case .taken:
+            return "checkmark"
+        case .missed:
+            return "exclamationmark"
         }
     }
 
