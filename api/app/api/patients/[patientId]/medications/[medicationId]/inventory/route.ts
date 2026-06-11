@@ -43,8 +43,7 @@ export async function PATCH(
       medicationId,
       update: {
         inventoryEnabled: validation.inventoryEnabled,
-        inventoryQuantity: validation.inventoryQuantity,
-        inventoryLowThreshold: validation.inventoryLowThreshold
+        inventoryQuantity: validation.inventoryQuantity
       }
     });
     if (!updated) {

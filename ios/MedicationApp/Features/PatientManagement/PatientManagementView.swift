@@ -135,15 +135,11 @@ struct PatientManagementView: View {
     @State private var showingLogoutConfirm = false
     @State private var draftTimes: [NotificationSlot: Date] = [:]
     @State private var isSavingDetail = false
-    @State private var inventoryThresholdText = ""
-    @State private var inventoryItems: [InventoryItemDTO] = []
     @State private var showingTimePresetSheet = false
-    @State private var showingInventoryThresholdSheet = false
     @State private var shouldShowPostCreateCodeGuide = false
     @StateObject private var pushSettingsViewModel: CaregiverPushSettingsViewModel
     private let timeZone = AppConstants.defaultTimeZone
     private let apiClient: APIClient
-    private static let thresholdKeyPrefix = "inventory.threshold."
     var entitlementStore: EntitlementStore?
     private var shouldOpenCreate: Binding<Bool>
 
@@ -245,45 +241,12 @@ struct PatientManagementView: View {
                     }
             }
         }
-        .sheet(isPresented: $showingInventoryThresholdSheet) {
-            NavigationStack {
-                inventoryThresholdDetailSheet
-                    .navigationTitle(
-                        NSLocalizedString("caregiver.inventory.settings.section.global", comment: "Inventory global settings title")
-                    )
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button(NSLocalizedString("common.save", comment: "Save")) {
-                                Task {
-                                    let success = await saveInventoryThreshold()
-                                    showingInventoryThresholdSheet = false
-                                    showToast(
-                                        success
-                                            ? NSLocalizedString("caregiver.inventory.toast.saved", comment: "Inventory saved")
-                                            : NSLocalizedString("common.error.save", comment: "Save error"),
-                                        kind: success ? .success : .error
-                                    )
-                                }
-                            }
-                            .disabled(isSavingDetail)
-                        }
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button(NSLocalizedString("common.close", comment: "Close")) {
-                                showingInventoryThresholdSheet = false
-                            }
-                            .disabled(isSavingDetail)
-                        }
-                    }
-            }
-        }
         }
         .onAppear {
             viewModel.load()
             preferencesStore.switchPatient(viewModel.selectedPatientId)
             applySelectedPatientSlotTimes()
             draftTimes = buildDraftTimes()
-            Task { await loadInventoryThreshold() }
             openCreateIfRequested()
         }
         .onReceive(viewModel.$patients) { _ in
@@ -297,12 +260,6 @@ struct PatientManagementView: View {
             preferencesStore.switchPatient(newPatientId)
             applySelectedPatientSlotTimes()
             draftTimes = buildDraftTimes()
-            if let patientId = newPatientId, let saved = Self.loadSavedThreshold(for: patientId) {
-                inventoryThresholdText = String(saved)
-            } else {
-                inventoryThresholdText = ""
-            }
-            Task { await loadInventoryThreshold() }
         }
         .overlay {
             if isSavingDetail || pushSettingsViewModel.isUpdating {
@@ -572,15 +529,6 @@ struct PatientManagementView: View {
                         draftTimes = buildDraftTimes()
                         showingTimePresetSheet = true
                     }
-                    Divider()
-                    settingsActionRow(
-                        title: NSLocalizedString("caregiver.inventory.settings.item.threshold", comment: "Inventory threshold item"),
-                        message: NSLocalizedString("caregiver.inventory.settings.note", comment: "Inventory settings note"),
-                        systemImage: "archivebox.fill",
-                        tint: CaregiverUI.orange
-                    ) {
-                        showingInventoryThresholdSheet = true
-                    }
                 }
             }
         }
@@ -656,21 +604,6 @@ struct PatientManagementView: View {
                     message: NSLocalizedString("caregiver.settings.account.message", comment: "Account settings message"),
                     systemImage: "person.crop.circle.fill"
                 )
-            Button {
-                sessionStore.resetMode()
-            } label: {
-                Label(
-                    NSLocalizedString("settings.changeMode", comment: "Change app mode"),
-                    systemImage: "arrow.left.arrow.right.circle"
-                )
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("caregiver.settings.changeMode")
-
             Button {
                 showingLogoutConfirm = true
             } label: {
@@ -792,51 +725,6 @@ struct PatientManagementView: View {
                         .font(.subheadline)
                         .foregroundStyle(.tint)
                     Text(NSLocalizedString("patient.settings.notifications.detail.note", comment: "Detail settings note"))
-                }
-                .font(.subheadline)
-                .textCase(nil)
-            }
-        }
-        .overlay { savingOverlay }
-    }
-
-    private var inventoryThresholdDetailSheet: some View {
-        Form {
-            Section {
-                VStack(spacing: 10) {
-                    Image(systemName: "archivebox.circle.fill")
-                        .font(.system(size: 40))
-                        .foregroundStyle(.tint)
-                        .symbolRenderingMode(.hierarchical)
-                    Text(NSLocalizedString("caregiver.inventory.settings.section.global", comment: "Inventory global settings title"))
-                        .font(.title3.weight(.bold))
-                }
-                .frame(maxWidth: .infinity)
-                .listRowBackground(Color.clear)
-            }
-
-            Section {
-                HStack(spacing: 12) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.subheadline)
-                        .foregroundStyle(.orange)
-                        .frame(width: 20)
-                    Text(NSLocalizedString("caregiver.inventory.detail.threshold", comment: "Inventory threshold"))
-                    Spacer()
-                    TextField("0", text: $inventoryThresholdText)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 80)
-                        .accessibilityIdentifier("InventoryGlobalThresholdField")
-                    Text(NSLocalizedString("common.days.unit", comment: "Days unit"))
-                        .foregroundStyle(.secondary)
-                }
-            } header: {
-                HStack(spacing: 6) {
-                    Image(systemName: "archivebox.fill")
-                        .font(.subheadline)
-                        .foregroundStyle(.tint)
-                    Text(NSLocalizedString("caregiver.inventory.settings.note", comment: "Inventory settings note"))
                 }
                 .font(.subheadline)
                 .textCase(nil)
@@ -1029,78 +917,6 @@ struct PatientManagementView: View {
         return mapping
     }
 
-    private func loadInventoryThreshold() async {
-        guard sessionStore.mode == .caregiver, let patientId = sessionStore.currentPatientId else {
-            inventoryItems = []
-            inventoryThresholdText = ""
-            return
-        }
-        do {
-            let items = try await apiClient.fetchInventory(patientId: patientId)
-            inventoryItems = items
-            if let first = items.first(where: { $0.inventoryEnabled }) {
-                inventoryThresholdText = String(first.inventoryLowThreshold)
-                Self.saveThresholdLocally(first.inventoryLowThreshold, for: patientId)
-            } else if let saved = Self.loadSavedThreshold(for: patientId) {
-                inventoryThresholdText = String(saved)
-            } else {
-                inventoryThresholdText = ""
-            }
-        } catch {
-            if let saved = Self.loadSavedThreshold(for: patientId) {
-                inventoryThresholdText = String(saved)
-            }
-            showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
-        }
-    }
-
-    private func saveInventoryThreshold() async -> Bool {
-        guard sessionStore.mode == .caregiver, let patientId = sessionStore.currentPatientId else {
-            return false
-        }
-        let trimmed = inventoryThresholdText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let threshold = Int(trimmed), threshold >= 0 else {
-            return false
-        }
-        isSavingDetail = true
-        defer { isSavingDetail = false }
-        do {
-            let items = inventoryItems.isEmpty ? try await apiClient.fetchInventory(patientId: patientId) : inventoryItems
-            for item in items {
-                _ = try await apiClient.updateInventory(
-                    patientId: patientId,
-                    medicationId: item.medicationId,
-                    input: InventoryUpdateRequestDTO(
-                        inventoryEnabled: nil,
-                        inventoryQuantity: nil,
-                        inventoryLowThreshold: threshold
-                    )
-                )
-            }
-            inventoryItems = items.map { item in
-                InventoryItemDTO(
-                    medicationId: item.medicationId,
-                    name: item.name,
-                    isPrn: item.isPrn,
-                    doseCountPerIntake: item.doseCountPerIntake,
-                    inventoryEnabled: item.inventoryEnabled,
-                    inventoryQuantity: item.inventoryQuantity,
-                    inventoryLowThreshold: threshold,
-                    periodEnded: item.periodEnded,
-                    low: item.low,
-                    out: item.out,
-                    dailyPlannedUnits: item.dailyPlannedUnits,
-                    daysRemaining: item.daysRemaining,
-                    refillDueDate: item.refillDueDate
-                )
-            }
-            Self.saveThresholdLocally(threshold, for: patientId)
-            return true
-        } catch {
-            return false
-        }
-    }
-
     private func defaultScheduleTimeString(for slot: NotificationSlot) -> String {
         switch slot {
         case .morning:
@@ -1118,14 +934,4 @@ struct PatientManagementView: View {
         toastPresenter.show(message, kind: kind)
     }
 
-    // MARK: - Inventory Threshold Local Persistence
-
-    private static func saveThresholdLocally(_ threshold: Int, for patientId: String) {
-        UserDefaults.standard.set(threshold, forKey: "\(thresholdKeyPrefix)\(patientId)")
-    }
-
-    private static func loadSavedThreshold(for patientId: String) -> Int? {
-        let value = UserDefaults.standard.object(forKey: "\(thresholdKeyPrefix)\(patientId)")
-        return value as? Int
-    }
 }

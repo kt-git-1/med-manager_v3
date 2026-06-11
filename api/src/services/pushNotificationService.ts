@@ -2,9 +2,9 @@
 // Push notification orchestration service
 //
 // Determines WHO should receive push notifications and sends them.
-// - Legacy APNs path: notifyCaregiversOfDoseRecord, notifyCaregiversOfInventoryAlert
+// - Legacy APNs path: notifyCaregiversOfDoseRecord
 // - New FCM path (012): notifyCaregiversOfDoseTaken (with dedup via PushDelivery)
-// Called after DoseRecordEvent / InventoryAlertEvent creation.
+// Called after DoseRecordEvent creation.
 // ---------------------------------------------------------------------------
 
 import { listDeviceTokensForCaregivers } from "../repositories/deviceTokenRepo";
@@ -75,46 +75,6 @@ export async function notifyCaregiversOfDoseRecord(
 }
 
 // ---------------------------------------------------------------------------
-// Inventory alert notification
-// ---------------------------------------------------------------------------
-
-export interface InventoryAlertNotificationInput {
-  patientId: string;
-  patientDisplayName?: string | null;
-  medicationName?: string | null;
-  alertType: "LOW" | "OUT";
-  remaining: number;
-}
-
-/**
- * Send push notifications to all caregivers linked to the patient
- * when an inventory alert is triggered.
- */
-export async function notifyCaregiversOfInventoryAlert(
-  input: InventoryAlertNotificationInput
-): Promise<void> {
-  try {
-    const caregiverIds = await getLinkedCaregiverIds(input.patientId);
-    if (caregiverIds.length === 0) return;
-
-    const deviceTokens = await listDeviceTokensForCaregivers(caregiverIds);
-    if (deviceTokens.length === 0) return;
-
-    const payload = buildInventoryAlertPayload(input);
-    const tokens = deviceTokens.map((dt) => dt.token);
-
-    await sendPushNotifications(tokens, payload, {
-      collapseId: `inventory-${input.patientId}`,
-    });
-  } catch (error) {
-    log(
-      "error",
-      `Push notification (inventory) error: ${error instanceof Error ? error.message : String(error)}`
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -148,29 +108,6 @@ function buildDoseRecordPayload(input: DoseRecordNotificationInput): ApnsPayload
       "thread-id": `patient-${input.patientId}`,
     },
     type: "dose_record",
-    patientId: input.patientId,
-  };
-}
-
-function buildInventoryAlertPayload(input: InventoryAlertNotificationInput): ApnsPayload {
-  const patientName = input.patientDisplayName ?? "患者";
-  const medicationName = input.medicationName ?? "お薬";
-
-  const body =
-    input.alertType === "OUT"
-      ? `${patientName}さんの${medicationName}の在庫がなくなりました`
-      : `${patientName}さんの${medicationName}の在庫が残り少なくなっています（残り${input.remaining}）`;
-
-  return {
-    aps: {
-      alert: {
-        title: "在庫アラート",
-        body,
-      },
-      sound: "default",
-      "thread-id": `patient-${input.patientId}`,
-    },
-    type: "inventory_alert",
     patientId: input.patientId,
   };
 }

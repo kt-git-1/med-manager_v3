@@ -42,8 +42,7 @@ final class InventoryViewModel: ObservableObject {
     func updateSettings(
         item: InventoryItemDTO,
         enabled: Bool,
-        quantity: Double?,
-        threshold: Int? = nil
+        quantity: Double?
     ) async -> InventoryItemDTO? {
         guard !isUpdating else { return nil }
         isUpdating = true
@@ -53,8 +52,7 @@ final class InventoryViewModel: ObservableObject {
                 medicationId: item.medicationId,
                 input: InventoryUpdateRequestDTO(
                     inventoryEnabled: enabled,
-                    inventoryQuantity: quantity,
-                    inventoryLowThreshold: threshold
+                    inventoryQuantity: quantity
                 )
             )
             replaceItem(updated)

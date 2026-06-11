@@ -20,6 +20,8 @@ function jsonResponse(payload: unknown, status = 200) {
   });
 }
 
+const DEFAULT_INVENTORY_LOW_THRESHOLD_DAYS = 3;
+
 function parseBearerToken(authHeader?: string | null) {
   if (!authHeader) return null;
   const [scheme, token] = authHeader.split(" ");
@@ -52,10 +54,15 @@ async function updateInventory(
     return jsonResponse({ error: "not_found" }, 404);
   }
   const body = await request.json();
+  if (body.inventoryLowThreshold !== undefined) {
+    return jsonResponse({
+      error: "validation",
+      message: "inventoryLowThreshold is fixed and cannot be updated"
+    }, 422);
+  }
   if (
     body.inventoryEnabled === undefined &&
-    body.inventoryQuantity === undefined &&
-    body.inventoryLowThreshold === undefined
+    body.inventoryQuantity === undefined
   ) {
     return jsonResponse({ error: "validation", message: "no fields provided" }, 422);
   }
@@ -69,7 +76,9 @@ async function updateInventory(
     ...existing,
     inventoryEnabled: body.inventoryEnabled ?? existing.inventoryEnabled,
     inventoryQuantity: body.inventoryQuantity ?? existing.inventoryQuantity,
-    inventoryLowThreshold: body.inventoryLowThreshold ?? existing.inventoryLowThreshold
+    inventoryLowThreshold: (body.inventoryEnabled ?? existing.inventoryEnabled)
+      ? DEFAULT_INVENTORY_LOW_THRESHOLD_DAYS
+      : 0
   };
   return jsonResponse({
     data: {
@@ -174,9 +183,37 @@ describe("inventory update contract", () => {
       isPrn: false,
       inventoryEnabled: true,
       inventoryQuantity: 12,
-      inventoryLowThreshold: 2,
+      inventoryLowThreshold: 3,
       low: false,
       out: false
     });
+  });
+
+  it("rejects inventoryLowThreshold updates", async () => {
+    const request = new Request(
+      "http://localhost/api/patients/patient-1/medications/med-1/inventory",
+      {
+        method: "PATCH",
+        headers: { authorization: "Bearer caregiver-1", "content-type": "application/json" },
+        body: JSON.stringify({ inventoryLowThreshold: 9 })
+      }
+    );
+    const response = await updateInventory(request, new Set(["patient-1"]), [
+      {
+        patientId: "patient-1",
+        medicationId: "med-1",
+        name: "Medication A",
+        isPrn: false,
+        inventoryEnabled: false,
+        inventoryQuantity: 5,
+        inventoryLowThreshold: 2,
+        low: false,
+        out: false
+      }
+    ]);
+    const payload = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(payload.message).toBe("inventoryLowThreshold is fixed and cannot be updated");
   });
 });

@@ -38,7 +38,6 @@ struct InventoryResponseDTO: Decodable {
 struct InventoryUpdateRequestDTO: Encodable {
     let inventoryEnabled: Bool?
     let inventoryQuantity: Double?
-    let inventoryLowThreshold: Int?
 }
 
 struct InventoryAdjustRequestDTO: Encodable {

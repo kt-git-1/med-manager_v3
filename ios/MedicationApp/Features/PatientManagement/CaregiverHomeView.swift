@@ -191,6 +191,16 @@ struct CaregiverHomeView: View {
             ),
             CaregiverTutorialStep(
                 tab: .patients,
+                sample: .timePreset,
+                step: GuidedTutorialStep(
+                    id: "caregiver-time-preset",
+                    icon: "clock.badge.checkmark.fill",
+                    title: NSLocalizedString("tutorial.caregiver.timePreset.title", comment: "Caregiver time preset tutorial title"),
+                    message: NSLocalizedString("tutorial.caregiver.timePreset.message", comment: "Caregiver time preset tutorial message")
+                )
+            ),
+            CaregiverTutorialStep(
+                tab: .patients,
                 sample: .registerPatient,
                 step: GuidedTutorialStep(
                     id: "caregiver-register-patient",
@@ -332,6 +342,7 @@ private struct CaregiverTutorialStep {
 
 private enum CaregiverTutorialSample {
     case tab(CaregiverTab)
+    case timePreset
     case registerPatient
     case issueCode
     case shareCode
@@ -340,7 +351,7 @@ private enum CaregiverTutorialSample {
         switch self {
         case .tab(let tab):
             return tab
-        case .registerPatient, .issueCode, .shareCode:
+        case .timePreset, .registerPatient, .issueCode, .shareCode:
             return .patients
         }
     }
@@ -387,6 +398,9 @@ private struct CaregiverTutorialSampleView: View {
     @ViewBuilder
     private var content: some View {
         switch sample {
+        case .timePreset:
+            sampleSettingsSelectionCard()
+            sampleSettingsDetailCard()
         case .registerPatient:
             samplePatientRegistrationCard()
         case .issueCode:
@@ -538,6 +552,8 @@ private struct CaregiverTutorialSampleView: View {
             return "連携コードを発行"
         case .shareCode:
             return "本人へコードを共有"
+        case .timePreset:
+            return "服用時間を調整"
         case .tab:
             break
         }
@@ -563,6 +579,8 @@ private struct CaregiverTutorialSampleView: View {
             return "登録後に本人用のコードを作ります"
         case .shareCode:
             return "コピーまたは共有で本人へ渡します"
+        case .timePreset:
+            return "朝・昼・夜・眠前の時刻を変更できます"
         case .tab:
             break
         }
@@ -588,6 +606,8 @@ private struct CaregiverTutorialSampleView: View {
             return "link.badge.plus"
         case .shareCode:
             return "square.and.arrow.up"
+        case .timePreset:
+            return "clock.badge.checkmark.fill"
         case .tab:
             break
         }
@@ -789,13 +809,6 @@ private struct CaregiverTutorialSampleView: View {
                     message: NSLocalizedString("patient.settings.notifications.detail.note", comment: "Detail settings note"),
                     systemImage: "clock.fill",
                     tint: CaregiverUI.blue
-                )
-                Divider()
-                sampleSettingsActionRow(
-                    title: NSLocalizedString("caregiver.inventory.settings.item.threshold", comment: "Inventory threshold item"),
-                    message: NSLocalizedString("caregiver.inventory.settings.note", comment: "Inventory settings note"),
-                    systemImage: "archivebox.fill",
-                    tint: CaregiverUI.orange
                 )
             }
         }

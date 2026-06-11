@@ -17,9 +17,10 @@ import type {
 import { prisma } from "../repositories/prisma";
 import { getPatientRecordById } from "../repositories/patientRepo";
 import { computeRefillPlan } from "../lib/computeRefillPlan";
-import { notifyCaregiversOfInventoryAlert } from "./pushNotificationService";
 import { DEFAULT_TIMEZONE, INTL_PARSE_LOCALE } from "../constants";
 import { InsufficientInventoryError } from "../errors/insufficientInventoryError";
+
+const DEFAULT_INVENTORY_LOW_THRESHOLD_DAYS = 3;
 
 export type MedicationCreateInput = {
   patientId: string;
@@ -49,11 +50,7 @@ export async function createMedication(input: MedicationCreateInput) {
   if (!base) {
     return createMedicationRecord(input);
   }
-  const threshold = await resolvePatientInventoryThreshold(input.patientId);
-  const inventoryOverrides = threshold > 0
-    ? { ...base, inventoryLowThreshold: threshold }
-    : base;
-  return createMedicationRecord({ ...input, ...inventoryOverrides });
+  return createMedicationRecord({ ...input, ...base });
 }
 
 export async function listMedications(patientId: string): Promise<Medication[]> {
@@ -80,11 +77,7 @@ export async function updateMedication(id: string, input: MedicationUpdateInput)
   if (!base) {
     return updateMedicationRecord(id, input);
   }
-  const threshold = await resolvePatientInventoryThreshold(existing.patientId);
-  const inventoryOverrides = threshold > 0
-    ? { ...base, inventoryLowThreshold: threshold }
-    : base;
-  return updateMedicationRecord(id, { ...input, ...inventoryOverrides });
+  return updateMedicationRecord(id, { ...input, ...base });
 }
 
 export async function archiveMedication(id: string) {
@@ -110,7 +103,6 @@ export type InventoryItem = {
 export type InventoryUpdateInput = {
   inventoryEnabled?: boolean;
   inventoryQuantity?: number;
-  inventoryLowThreshold?: number;
 };
 
 export type InventoryAdjustInput = {
@@ -179,7 +171,7 @@ function buildInventoryItem(
 ): InventoryItem {
   const enabled = medication.inventoryEnabled;
   const quantity = medication.inventoryQuantity;
-  const threshold = medication.inventoryLowThreshold;
+  const threshold = inventoryLowThresholdFor(enabled);
   const state = enabled ? computeInventoryState(quantity, threshold, plan?.daysRemaining ?? null) : "NONE";
   return {
     medicationId: medication.id,
@@ -218,16 +210,6 @@ function buildInventoryItemWithPlan(medication: Medication, regimens: Regimen[])
   return buildInventoryItem(medication, plan);
 }
 
-async function resolvePatientInventoryThreshold(patientId: string): Promise<number> {
-  const existing = await listMedicationRecords(patientId);
-  for (const medication of existing) {
-    if (medication.inventoryEnabled && medication.inventoryLowThreshold > 0) {
-      return medication.inventoryLowThreshold;
-    }
-  }
-  return 0;
-}
-
 function buildInventoryOverrides(inventoryCount?: number | null) {
   if (inventoryCount === undefined || inventoryCount === null) {
     return null;
@@ -236,8 +218,13 @@ function buildInventoryOverrides(inventoryCount?: number | null) {
   return {
     inventoryEnabled: true,
     inventoryQuantity: clamped,
+    inventoryLowThreshold: DEFAULT_INVENTORY_LOW_THRESHOLD_DAYS,
     inventoryUpdatedAt: new Date()
   };
+}
+
+function inventoryLowThresholdFor(enabled: boolean): number {
+  return enabled ? DEFAULT_INVENTORY_LOW_THRESHOLD_DAYS : 0;
 }
 
 export async function listMedicationInventory(patientId: string): Promise<InventoryItem[]> {
@@ -270,10 +257,7 @@ export async function updateMedicationInventorySettings(input: {
     0,
     input.update.inventoryQuantity ?? medication.inventoryQuantity
   );
-  const nextThreshold = Math.max(
-    0,
-    input.update.inventoryLowThreshold ?? medication.inventoryLowThreshold
-  );
+  const nextThreshold = inventoryLowThresholdFor(nextEnabled);
   const regimens = await prisma.regimen.findMany({ where: { medicationId: medication.id } });
   const plan = computeRefillPlan({
     inventoryEnabled: nextEnabled,
@@ -316,16 +300,6 @@ export async function updateMedicationInventorySettings(input: {
     return updatedMedication;
   });
 
-  if (shouldEmitAlert) {
-    void notifyCaregiversOfInventoryAlert({
-      patientId: medication.patientId,
-      patientDisplayName: patient?.displayName,
-      medicationName: medication.name,
-      alertType: nextState as "LOW" | "OUT",
-      remaining: nextQuantity,
-    });
-  }
-
   return buildInventoryItemWithPlan(updated, regimens);
 }
 
@@ -350,7 +324,11 @@ export async function adjustMedicationInventory(
     regimens: mapRegimensForPlan(regimens)
   });
   const nextState = medication.inventoryEnabled
-    ? computeInventoryState(nextQuantity, medication.inventoryLowThreshold, plan.daysRemaining)
+    ? computeInventoryState(
+        nextQuantity,
+        inventoryLowThresholdFor(medication.inventoryEnabled),
+        plan.daysRemaining
+      )
     : "NONE";
   const previousState = medication.inventoryLastAlertState ?? "NONE";
   const shouldEmitAlert =
@@ -363,6 +341,7 @@ export async function adjustMedicationInventory(
       where: { id: medication.id },
       data: {
         inventoryQuantity: nextQuantity,
+        inventoryLowThreshold: inventoryLowThresholdFor(medication.inventoryEnabled),
         inventoryUpdatedAt: now,
         inventoryLastAlertState: nextState
       }
@@ -384,7 +363,7 @@ export async function adjustMedicationInventory(
           medicationId: medication.id,
           type: nextState as InventoryAlertType,
           remaining: nextQuantity,
-          threshold: medication.inventoryLowThreshold,
+          threshold: inventoryLowThresholdFor(medication.inventoryEnabled),
           patientDisplayName: patient?.displayName ?? null,
           medicationName: medication.name
         }
@@ -392,16 +371,6 @@ export async function adjustMedicationInventory(
     }
     return updatedMedication;
   });
-
-  if (shouldEmitAlert) {
-    void notifyCaregiversOfInventoryAlert({
-      patientId: medication.patientId,
-      patientDisplayName: patient?.displayName,
-      medicationName: medication.name,
-      alertType: nextState as "LOW" | "OUT",
-      remaining: nextQuantity,
-    });
-  }
 
   return buildInventoryItemWithPlan(updated, regimens);
 }

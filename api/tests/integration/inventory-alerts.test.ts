@@ -85,15 +85,16 @@ describe("inventory alert emission", () => {
     await updateMedicationInventorySettings({
       patientId: "patient-1",
       medicationId: "med-1",
-      update: { inventoryQuantity: 4 }
+      update: { inventoryQuantity: 2 }
     });
     expect(mockData.alertEvents).toHaveLength(1);
     expect(mockData.alertEvents[0]?.type).toBe("LOW");
+    expect(mockData.medication.inventoryLowThreshold).toBe(3);
 
     await updateMedicationInventorySettings({
       patientId: "patient-1",
       medicationId: "med-1",
-      update: { inventoryQuantity: 3 }
+      update: { inventoryQuantity: 1 }
     });
     expect(mockData.alertEvents).toHaveLength(1);
 

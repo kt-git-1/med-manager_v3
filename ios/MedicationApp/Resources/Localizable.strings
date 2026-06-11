@@ -25,7 +25,6 @@
 "common.select" = "単位";
 "common.ok" = "OK";
 "common.logout" = "ログアウト";
-"settings.changeMode" = "利用方法を変更";
 "common.toast.updated" = "更新しました";
 "caregiver.timePreset.toast.updated" = "時間を更新しました";
 "caregiver.inventory.toast.saved" = "在庫情報を保存しました";
@@ -54,6 +53,8 @@
 "tutorial.caregiver.history.message" = "履歴タブでは、飲めた日や飲み忘れた回を日付ごとに確認できます。";
 "tutorial.caregiver.settings.title" = "連携と対象を管理";
 "tutorial.caregiver.settings.message" = "連携・設定では見守る方の登録、選択、連携コードの発行、通知設定を行います。";
+"tutorial.caregiver.timePreset.title" = "服用時間を調整";
+"tutorial.caregiver.timePreset.message" = "時間プリセット設定から、朝・昼・夜・眠前の時刻を本人の生活リズムに合わせて変更できます。";
 "tutorial.caregiver.register.title" = "まず見守る方を登録";
 "tutorial.caregiver.register.message" = "本人の名前を登録します。チュートリアル完了後に登録画面を開きます。";
 "tutorial.caregiver.issueCode.title" = "連携コードを発行";
@@ -416,14 +417,10 @@
 "caregiver.inventory.card.openDetail" = "タップで補充・修正";
 "caregiver.inventory.detail.section.settings" = "在庫設定";
 "caregiver.inventory.detail.section.adjust" = "在庫の調整";
-"caregiver.inventory.settings.section.global" = "低在庫残り日数設定";
-"caregiver.inventory.settings.item.threshold" = "低在庫残り日数設定";
 "caregiver.inventory.detail.enabled" = "在庫管理を有効にする";
-"caregiver.inventory.detail.threshold" = "残り日数の目安";
 "caregiver.inventory.detail.refill" = "補充数";
 "caregiver.inventory.detail.refill.action" = "補充する";
 "caregiver.inventory.detail.set" = "修正後の在庫数";
-"caregiver.inventory.settings.note" = "残り日数が目安以下で低在庫扱い";
 "common.days.unit" = "日";
 "caregiver.inventory.actions.refill" = "補充する";
 "caregiver.inventory.actions.refill.sheet.title" = "補充量";
@@ -519,9 +516,9 @@
 "caregiver.settings.section.link" = "連携";
 "caregiver.settings.section.detail" = "詳細設定";
 "caregiver.settings.patient.title" = "見守る方";
-"caregiver.settings.detail.message" = "服薬時間と在庫の基準をまとめて調整します";
+"caregiver.settings.detail.message" = "服薬時間など、見守りに使う設定を調整します";
 "caregiver.settings.account.title" = "アカウント";
-"caregiver.settings.account.message" = "利用方法の切り替えやログアウトを行います";
+"caregiver.settings.account.message" = "家族モードからログアウトできます";
 "caregiver.patients.single.help" = "この方の薬と服薬予定を管理します";
 "caregiver.patients.single.status" = "登録済み";
 "caregiver.patients.select.help" = "プルダウンから対象患者を選んでください";

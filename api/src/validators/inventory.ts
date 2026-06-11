@@ -4,7 +4,6 @@ export type InventoryUpdateValidationResult = {
   errors: string[];
   inventoryEnabled?: boolean;
   inventoryQuantity?: number;
-  inventoryLowThreshold?: number;
 };
 
 export type InventoryAdjustValidationResult = {
@@ -20,10 +19,6 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-function isInteger(value: unknown): value is number {
-  return typeof value === "number" && Number.isInteger(value);
-}
-
 export function validateInventoryUpdate(input: {
   inventoryEnabled?: unknown;
   inventoryQuantity?: unknown;
@@ -32,10 +27,13 @@ export function validateInventoryUpdate(input: {
   const errors: string[] = [];
   const result: InventoryUpdateValidationResult = { errors };
 
+  if (input.inventoryLowThreshold !== undefined) {
+    errors.push("inventoryLowThreshold is fixed and cannot be updated");
+  }
+
   if (
     input.inventoryEnabled === undefined &&
-    input.inventoryQuantity === undefined &&
-    input.inventoryLowThreshold === undefined
+    input.inventoryQuantity === undefined
   ) {
     errors.push("at least one field must be provided");
     return result;
@@ -56,16 +54,6 @@ export function validateInventoryUpdate(input: {
       errors.push("inventoryQuantity must be >= 0");
     } else {
       result.inventoryQuantity = input.inventoryQuantity;
-    }
-  }
-
-  if (input.inventoryLowThreshold !== undefined) {
-    if (!isInteger(input.inventoryLowThreshold)) {
-      errors.push("inventoryLowThreshold must be an integer");
-    } else if (input.inventoryLowThreshold < 0) {
-      errors.push("inventoryLowThreshold must be >= 0");
-    } else {
-      result.inventoryLowThreshold = input.inventoryLowThreshold;
     }
   }
 
