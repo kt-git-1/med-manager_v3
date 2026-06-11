@@ -42,6 +42,9 @@ targets:
     entitlements:
       path: App/MedicationApp.entitlements
       properties:
+        com.apple.developer.associated-domains:
+          - applinks:okusuri-mimamori.com
+          - applinks:www.okusuri-mimamori.com
         aps-environment: development
     settings:
       base:

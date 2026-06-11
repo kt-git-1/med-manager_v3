@@ -106,6 +106,16 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertTrue(store.shouldNavigateToCaregiverLogin)
     }
 
+    func testHandleIncomingUniversalLoginURLRoutesToLogin() {
+        let store = makeStore()
+
+        let handled = store.handleIncomingURL(URL(string: "https://www.okusuri-mimamori.com/auth/login")!)
+
+        XCTAssertTrue(handled)
+        XCTAssertEqual(store.mode, .caregiver)
+        XCTAssertTrue(store.shouldNavigateToCaregiverLogin)
+    }
+
     func testHandleIncomingURLIgnoresUnrelatedURL() {
         let store = makeStore()
         store.setMode(.patient)

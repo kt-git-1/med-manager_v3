@@ -326,7 +326,7 @@ final class SessionStore: ObservableObject {
 
         if scheme == "https",
            ["okusuri-mimamori.com", "www.okusuri-mimamori.com"].contains(host),
-           path == "/auth/confirmed" {
+           ["/auth/confirmed", "/auth/login"].contains(path) {
             return true
         }
 
