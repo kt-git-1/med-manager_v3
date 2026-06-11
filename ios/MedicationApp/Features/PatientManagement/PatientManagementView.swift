@@ -139,6 +139,7 @@ struct PatientManagementView: View {
     @State private var inventoryItems: [InventoryItemDTO] = []
     @State private var showingTimePresetSheet = false
     @State private var showingInventoryThresholdSheet = false
+    @State private var shouldShowPostCreateCodeGuide = false
     @StateObject private var pushSettingsViewModel: CaregiverPushSettingsViewModel
     private let timeZone = AppConstants.defaultTimeZone
     private let apiClient: APIClient
@@ -175,7 +176,10 @@ struct PatientManagementView: View {
                     onSave: { displayName in
                         await viewModel.createPatient(displayName: displayName)
                     },
-                    onSuccess: { showToast($0) }
+                    onSuccess: { message in
+                        shouldShowPostCreateCodeGuide = true
+                        showToast(message)
+                    }
                 )
             }
             .sheet(item: $viewModel.issuedCode) { code in
@@ -340,6 +344,7 @@ struct PatientManagementView: View {
                         subtitle: selectedPatient == nil ? NSLocalizedString("caregiver.common.patient.none", comment: "No patient") : nil
                     )
                     selectionCard
+                    postCreateCodeGuide
                     selectedPatientSection
                     detailSettingsSection
                     pushSettingsSection
@@ -415,6 +420,57 @@ struct PatientManagementView: View {
                 .background(CaregiverUI.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
         }
+        }
+    }
+
+    @ViewBuilder
+    private var postCreateCodeGuide: some View {
+        if shouldShowPostCreateCodeGuide, let selectedPatient {
+            CaregiverCard(accent: CaregiverUI.orange) {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "link.badge.plus")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(CaregiverUI.orange)
+                            .frame(width: 38, height: 38)
+                            .background(CaregiverUI.orange.opacity(0.12), in: Circle())
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(NSLocalizedString("caregiver.patients.postCreateCodeGuide.title", comment: "Post create code guide title"))
+                                .font(.headline.weight(.bold))
+                            Text(NSLocalizedString("caregiver.patients.postCreateCodeGuide.message", comment: "Post create code guide message"))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    HStack(spacing: 12) {
+                        Button {
+                            shouldShowPostCreateCodeGuide = false
+                            Task { await viewModel.issueLinkingCode(patientId: selectedPatient.id) }
+                        } label: {
+                            Label(NSLocalizedString("caregiver.patients.issueCode", comment: "Issue code"), systemImage: "link.badge.plus")
+                                .font(.subheadline.weight(.bold))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(CaregiverUI.orange, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .foregroundStyle(.white)
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            shouldShowPostCreateCodeGuide = false
+                        } label: {
+                            Text(NSLocalizedString("common.close", comment: "Close"))
+                                .font(.subheadline.weight(.bold))
+                                .frame(width: 82, height: 44)
+                                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .transition(.opacity.combined(with: .move(edge: .top)))
         }
     }
 

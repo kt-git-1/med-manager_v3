@@ -473,7 +473,9 @@ final class APIClient {
         case 200...299:
             return
         case 401:
-            sessionStore.handleAuthFailure(for: sessionStore.mode)
+            if !sessionStore.isPatientTutorialPreviewActive {
+                sessionStore.handleAuthFailure(for: sessionStore.mode)
+            }
             throw APIError.unauthorized
         case 403:
             // Check for PATIENT_LIMIT_EXCEEDED before generic 403 handling.

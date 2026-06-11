@@ -7,7 +7,7 @@ export const metadata = {
 const steps = [
   {
     title: "アプリを開く",
-    body: "このページを閉じて、お薬見守りアプリを起動してください。"
+    body: "下のボタンから、お薬見守りアプリのログイン画面を開きます。"
   },
   {
     title: "家族モードを選ぶ",
@@ -25,6 +25,8 @@ const helpItems = [
   "リンクの有効期限が切れている場合は、アプリのログイン画面から確認メールを再送してください。"
 ];
 
+const appLoginUrl = "okusurimimamori://auth/login";
+
 export default function AuthConfirmedPage() {
   return (
     <main className="page-shell">
@@ -38,6 +40,12 @@ export default function AuthConfirmedPage() {
           <p className="lead">
             ご登録ありがとうございます。家族モードでログインできる状態になりました。
             続きはお薬見守りアプリで行ってください。
+          </p>
+          <a className="app-open-button" href={appLoginUrl}>
+            アプリでログインへ進む
+          </a>
+          <p className="app-open-fallback">
+            ボタンで開かない場合は、アプリを起動して家族モードからログインしてください。
           </p>
         </div>
 
@@ -187,6 +195,36 @@ export default function AuthConfirmedPage() {
           color: #526173;
           font-size: 18px;
           line-height: 1.8;
+        }
+
+        .app-open-button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 52px;
+          margin-top: 28px;
+          padding: 0 24px;
+          border-radius: 8px;
+          background: #167a4a;
+          color: #ffffff;
+          font-size: 16px;
+          font-weight: 800;
+          line-height: 1.4;
+          text-decoration: none;
+          box-shadow: 0 12px 28px rgba(22, 122, 74, 0.22);
+        }
+
+        .app-open-button:focus-visible {
+          outline: 3px solid rgba(22, 122, 74, 0.28);
+          outline-offset: 3px;
+        }
+
+        .app-open-fallback {
+          margin: 14px 0 0;
+          max-width: 560px;
+          color: #657386;
+          font-size: 14px;
+          line-height: 1.7;
         }
 
         .summary-panel {
@@ -351,6 +389,10 @@ export default function AuthConfirmedPage() {
 
           .lead {
             font-size: 16px;
+          }
+
+          .app-open-button {
+            width: 100%;
           }
 
           .summary-title {

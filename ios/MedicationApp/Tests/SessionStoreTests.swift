@@ -75,6 +75,48 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertNil(restored.currentPatientId)
     }
 
+    func testHandleIncomingCaregiverLoginURLRoutesToLogin() {
+        let store = makeStore()
+        store.setMode(.patient)
+        store.saveCaregiverSession(
+            SupabaseSession(
+                accessToken: "caregiver-token",
+                refreshToken: "refresh-token",
+                expiresIn: 3600
+            )
+        )
+        store.setCurrentPatientId("patient-previous")
+
+        let handled = store.handleIncomingURL(URL(string: "okusurimimamori://auth/login")!)
+
+        XCTAssertTrue(handled)
+        XCTAssertEqual(store.mode, .caregiver)
+        XCTAssertNil(store.caregiverToken)
+        XCTAssertNil(store.currentPatientId)
+        XCTAssertTrue(store.shouldNavigateToCaregiverLogin)
+    }
+
+    func testHandleIncomingConfirmedURLRoutesToLogin() {
+        let store = makeStore()
+
+        let handled = store.handleIncomingURL(URL(string: "https://okusuri-mimamori.com/auth/confirmed")!)
+
+        XCTAssertTrue(handled)
+        XCTAssertEqual(store.mode, .caregiver)
+        XCTAssertTrue(store.shouldNavigateToCaregiverLogin)
+    }
+
+    func testHandleIncomingURLIgnoresUnrelatedURL() {
+        let store = makeStore()
+        store.setMode(.patient)
+
+        let handled = store.handleIncomingURL(URL(string: "https://example.com/auth/confirmed")!)
+
+        XCTAssertFalse(handled)
+        XCTAssertEqual(store.mode, .patient)
+        XCTAssertFalse(store.shouldNavigateToCaregiverLogin)
+    }
+
     func testSaveCaregiverSessionClearsCurrentPatientIdByDefault() {
         let store = makeStore()
         store.setMode(.patient)
@@ -131,6 +173,19 @@ final class SessionStoreTests: XCTestCase {
 
         let restored = makeStore()
         XCTAssertEqual(restored.mode, .patient)
+    }
+
+    func testModeTutorialSeenStatePersistsPerMode() {
+        let store = makeStore()
+
+        XCTAssertTrue(store.shouldShowModeTutorial(for: .patient))
+        XCTAssertTrue(store.shouldShowModeTutorial(for: .caregiver))
+
+        store.markModeTutorialSeen(for: .patient)
+
+        let restored = makeStore()
+        XCTAssertFalse(restored.shouldShowModeTutorial(for: .patient))
+        XCTAssertTrue(restored.shouldShowModeTutorial(for: .caregiver))
     }
 
     func testCaregiverTokenPersistsInSecureStorageAndRestoresBeforeExpiry() {

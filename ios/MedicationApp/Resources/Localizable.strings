@@ -38,6 +38,34 @@
 "mode.select.patient" = "本人として使う";
 "mode.select.patient.subtitle" = "今日のお薬を確認します";
 
+/* Mode tutorial */
+"tutorial.skip" = "スキップ";
+"tutorial.previous" = "前へ";
+"tutorial.next" = "次へ";
+"tutorial.done" = "完了";
+"tutorial.caregiver.today.title" = "今日の予定を確認";
+"tutorial.caregiver.today.message" = "選択中の方が今日飲むお薬と、記録状況をここで確認できます。";
+"tutorial.caregiver.medications.title" = "薬を登録・編集";
+"tutorial.caregiver.medications.message" = "薬タブでは定時薬や頓服、飲む時間を管理します。登録内容は本人画面に反映されます。";
+"tutorial.caregiver.inventory.title" = "在庫を見守る";
+"tutorial.caregiver.inventory.message" = "在庫タブでは残数や補充目安を確認できます。少なくなった薬は目立つように表示されます。";
+"tutorial.caregiver.history.title" = "記録を振り返る";
+"tutorial.caregiver.history.message" = "履歴タブでは、飲めた日や飲み忘れた回を日付ごとに確認できます。";
+"tutorial.caregiver.settings.title" = "連携と対象を管理";
+"tutorial.caregiver.settings.message" = "連携・設定では見守る方の登録、選択、連携コードの発行、通知設定を行います。";
+"tutorial.caregiver.register.title" = "まず見守る方を登録";
+"tutorial.caregiver.register.message" = "本人の名前を登録します。チュートリアル完了後に登録画面を開きます。";
+"tutorial.caregiver.issueCode.title" = "連携コードを発行";
+"tutorial.caregiver.issueCode.message" = "登録した方を選び、「コード発行」から本人用の6桁コードを作ります。";
+"tutorial.caregiver.shareCode.title" = "本人へコードを共有";
+"tutorial.caregiver.shareCode.message" = "発行したコードをコピーまたは共有して、本人モードの端末で入力してもらいます。";
+"tutorial.patient.today.title" = "今日のお薬";
+"tutorial.patient.today.message" = "飲むお薬を確認します。飲んだら「飲んだ」を押します。";
+"tutorial.patient.history.title" = "記録を見る";
+"tutorial.patient.history.message" = "飲めた日や、まだ飲んでいないお薬を確認できます。";
+"tutorial.patient.settings.title" = "通知を使う";
+"tutorial.patient.settings.message" = "お薬の時間に、この端末へお知らせできます。";
+
 /* Caregiver login */
 "caregiver.login.title" = "家族ログイン";
 "caregiver.login.email" = "Email";
@@ -507,6 +535,8 @@
 "caregiver.patients.code.copy" = "コピー";
 "caregiver.patients.code.share" = "共有";
 "caregiver.patients.code.copied" = "連携コードをコピーしました";
+"caregiver.patients.postCreateCodeGuide.title" = "次は連携コードを発行";
+"caregiver.patients.postCreateCodeGuide.message" = "登録した方のカードにある「コード発行」から、本人モードで入力する6桁コードを作れます。";
 "caregiver.patients.revoke.confirm.title" = "リンク解除";
 "caregiver.patients.revoke.confirm.message" = "この患者のリンクを解除します。既存セッションは失効します。";
 "caregiver.patients.revoke.confirm.action" = "解除する";

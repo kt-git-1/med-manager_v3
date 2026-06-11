@@ -18,6 +18,7 @@ struct CaregiverHomeView: View {
     @State private var hasLowStock = false
     @State private var deepLinkTarget: NotificationDeepLinkTarget?
     @State private var shouldOpenCreatePatient = false
+    @State private var tutorialStepIndex: Int?
     var entitlementStore: EntitlementStore?
 
     var body: some View {
@@ -69,15 +70,38 @@ struct CaregiverHomeView: View {
                     shouldOpenCreate: $shouldOpenCreatePatient
                 )
             }
+
+            if let tutorialStepIndex {
+                CaregiverTutorialSampleView(sample: caregiverTutorialSteps[tutorialStepIndex].sample)
+                    .zIndex(5)
+                    .allowsHitTesting(false)
+
+                GuidedTutorialOverlay(
+                    step: caregiverTutorialSteps[tutorialStepIndex].step,
+                    stepIndex: tutorialStepIndex,
+                    stepCount: caregiverTutorialSteps.count,
+                    tint: CaregiverUI.orange,
+                    onSkip: { finishTutorial(openRegistration: false) },
+                    onPrevious: { moveTutorial(by: -1) },
+                    onNext: { moveTutorial(by: 1) },
+                    onFinish: { finishTutorial(openRegistration: true) }
+                )
+                .zIndex(10)
+            }
         }
         .safeAreaInset(edge: .bottom) {
-            CaregiverBottomTabBar(selectedTab: $selectedTab, hasLowStock: hasLowStock)
+            CaregiverBottomTabBar(
+                selectedTab: $selectedTab,
+                hasLowStock: hasLowStock,
+                highlightedTab: currentTutorialTab
+            )
             .padding(.horizontal, 12)
             .padding(.bottom, 4)
         }
         .onAppear {
             loadCurrentPatientName()
             checkLowStock()
+            startTutorialIfNeeded()
         }
         .onChange(of: sessionStore.currentPatientId) { _, _ in
             loadCurrentPatientName()
@@ -91,6 +115,10 @@ struct CaregiverHomeView: View {
             if newTab == .inventory || newTab == .medications || newTab == .today {
                 checkLowStock()
             }
+        }
+        .onChange(of: tutorialStepIndex) { _, index in
+            guard let index else { return }
+            selectedTab = caregiverTutorialSteps[index].tab
         }
         .onReceive(NotificationCenter.default.publisher(for: .medicationUpdated)) { _ in
             checkLowStock()
@@ -107,6 +135,96 @@ struct CaregiverHomeView: View {
             deepLinkTarget = target
             notificationRouter.clear()
         }
+    }
+
+    private var caregiverTutorialSteps: [CaregiverTutorialStep] {
+        [
+            CaregiverTutorialStep(
+                tab: .today,
+                sample: .tab(.today),
+                step: GuidedTutorialStep(
+                    id: "caregiver-today",
+                    icon: "house.fill",
+                    title: NSLocalizedString("tutorial.caregiver.today.title", comment: "Caregiver today tutorial title"),
+                    message: NSLocalizedString("tutorial.caregiver.today.message", comment: "Caregiver today tutorial message")
+                )
+            ),
+            CaregiverTutorialStep(
+                tab: .medications,
+                sample: .tab(.medications),
+                step: GuidedTutorialStep(
+                    id: "caregiver-medications",
+                    icon: "pills.fill",
+                    title: NSLocalizedString("tutorial.caregiver.medications.title", comment: "Caregiver medications tutorial title"),
+                    message: NSLocalizedString("tutorial.caregiver.medications.message", comment: "Caregiver medications tutorial message")
+                )
+            ),
+            CaregiverTutorialStep(
+                tab: .inventory,
+                sample: .tab(.inventory),
+                step: GuidedTutorialStep(
+                    id: "caregiver-inventory",
+                    icon: "shippingbox.fill",
+                    title: NSLocalizedString("tutorial.caregiver.inventory.title", comment: "Caregiver inventory tutorial title"),
+                    message: NSLocalizedString("tutorial.caregiver.inventory.message", comment: "Caregiver inventory tutorial message")
+                )
+            ),
+            CaregiverTutorialStep(
+                tab: .history,
+                sample: .tab(.history),
+                step: GuidedTutorialStep(
+                    id: "caregiver-history",
+                    icon: "clock.fill",
+                    title: NSLocalizedString("tutorial.caregiver.history.title", comment: "Caregiver history tutorial title"),
+                    message: NSLocalizedString("tutorial.caregiver.history.message", comment: "Caregiver history tutorial message")
+                )
+            ),
+            CaregiverTutorialStep(
+                tab: .patients,
+                sample: .tab(.patients),
+                step: GuidedTutorialStep(
+                    id: "caregiver-settings",
+                    icon: "gearshape.fill",
+                    title: NSLocalizedString("tutorial.caregiver.settings.title", comment: "Caregiver settings tutorial title"),
+                    message: NSLocalizedString("tutorial.caregiver.settings.message", comment: "Caregiver settings tutorial message")
+                )
+            ),
+            CaregiverTutorialStep(
+                tab: .patients,
+                sample: .registerPatient,
+                step: GuidedTutorialStep(
+                    id: "caregiver-register-patient",
+                    icon: "person.badge.plus.fill",
+                    title: NSLocalizedString("tutorial.caregiver.register.title", comment: "Caregiver register tutorial title"),
+                    message: NSLocalizedString("tutorial.caregiver.register.message", comment: "Caregiver register tutorial message")
+                )
+            ),
+            CaregiverTutorialStep(
+                tab: .patients,
+                sample: .issueCode,
+                step: GuidedTutorialStep(
+                    id: "caregiver-issue-code",
+                    icon: "link.badge.plus",
+                    title: NSLocalizedString("tutorial.caregiver.issueCode.title", comment: "Caregiver issue code tutorial title"),
+                    message: NSLocalizedString("tutorial.caregiver.issueCode.message", comment: "Caregiver issue code tutorial message")
+                )
+            ),
+            CaregiverTutorialStep(
+                tab: .patients,
+                sample: .shareCode,
+                step: GuidedTutorialStep(
+                    id: "caregiver-share-code",
+                    icon: "square.and.arrow.up",
+                    title: NSLocalizedString("tutorial.caregiver.shareCode.title", comment: "Caregiver share code tutorial title"),
+                    message: NSLocalizedString("tutorial.caregiver.shareCode.message", comment: "Caregiver share code tutorial message")
+                )
+            )
+        ]
+    }
+
+    private var currentTutorialTab: CaregiverTab? {
+        guard let tutorialStepIndex else { return nil }
+        return caregiverTutorialSteps[tutorialStepIndex].tab
     }
 
     // MARK: - Data Loading
@@ -174,25 +292,907 @@ struct CaregiverHomeView: View {
         shouldOpenCreatePatient = true
         selectedTab = .patients
     }
+
+    private func startTutorialIfNeeded() {
+        guard sessionStore.shouldShowModeTutorial(for: .caregiver)
+            || sessionStore.shouldForceModeTutorial(for: .caregiver) else { return }
+        tutorialStepIndex = 0
+        selectedTab = caregiverTutorialSteps[0].tab
+    }
+
+    private func moveTutorial(by offset: Int) {
+        guard let tutorialStepIndex else { return }
+        let nextIndex = tutorialStepIndex + offset
+        guard caregiverTutorialSteps.indices.contains(nextIndex) else {
+            finishTutorial(openRegistration: true)
+            return
+        }
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+            self.tutorialStepIndex = nextIndex
+        }
+    }
+
+    private func finishTutorial(openRegistration: Bool = false) {
+        sessionStore.markModeTutorialSeen(for: .caregiver)
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
+            tutorialStepIndex = nil
+        }
+        if openRegistration {
+            selectedTab = .patients
+            shouldOpenCreatePatient = true
+        }
+    }
+}
+
+private struct CaregiverTutorialStep {
+    let tab: CaregiverTab
+    let sample: CaregiverTutorialSample
+    let step: GuidedTutorialStep
+}
+
+private enum CaregiverTutorialSample {
+    case tab(CaregiverTab)
+    case registerPatient
+    case issueCode
+    case shareCode
+
+    var tab: CaregiverTab {
+        switch self {
+        case .tab(let tab):
+            return tab
+        case .registerPatient, .issueCode, .shareCode:
+            return .patients
+        }
+    }
+}
+
+private struct CaregiverTutorialSampleView: View {
+    let sample: CaregiverTutorialSample
+
+    private var tab: CaregiverTab {
+        sample.tab
+    }
+
+    var body: some View {
+        CaregiverScreenBackground {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    if tab == .today {
+                        todayHeader
+                    } else {
+                        header
+                    }
+                    content
+                }
+                .padding(.horizontal, tab == .medications || tab == .inventory ? 16 : 20)
+                .padding(.top, 16)
+                .padding(.bottom, 260)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(CaregiverUI.background)
+        .ignoresSafeArea(edges: .bottom)
+        .transition(.opacity)
+    }
+
+    private var header: some View {
+        CaregiverPatientHeader(
+            title: title,
+            patientName: "田中 花子",
+            systemImage: icon,
+            subtitle: subtitle
+        )
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch sample {
+        case .registerPatient:
+            samplePatientRegistrationCard()
+        case .issueCode:
+            sampleSettingsSelectionCard()
+            sampleSettingsPatientCard(highlightIssueCode: true)
+        case .shareCode:
+            sampleLinkCodeCard()
+        case .tab:
+            tabContent
+        }
+    }
+
+    @ViewBuilder
+    private var tabContent: some View {
+        switch tab {
+        case .today:
+            CaregiverCard(accent: CaregiverUI.orange) {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(NSLocalizedString("caregiver.today.nextAction.title", comment: "Next action title"))
+                        .font(.headline.weight(.bold))
+                    HStack(alignment: .center, spacing: 16) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 34, weight: .bold))
+                            .foregroundStyle(CaregiverUI.tealDark)
+                            .frame(width: 66, height: 66)
+                            .background(CaregiverUI.tealDark.opacity(0.10), in: Circle())
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("次に記録する時間")
+                                .font(.headline.weight(.bold))
+                            Text("昼 12:30")
+                                .font(.system(size: 32, weight: .bold, design: .rounded))
+                                .foregroundStyle(CaregiverUI.tealDark)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                        }
+                        Spacer()
+                    }
+                    HStack(spacing: 10) {
+                        CaregiverStatusPill(text: "未記録", color: CaregiverUI.orange)
+                        Text("この時間帯の未記録2件をまとめて記録します")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    Text(NSLocalizedString("caregiver.today.nextAction.medicinesTitle", comment: "Medicines title"))
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.secondary)
+                    sampleCompactDoseLine(name: "血圧の薬 5 mg", detail: "1回1錠", color: CaregiverUI.teal)
+                    sampleCompactDoseLine(name: "胃薬", detail: "1回1錠", color: CaregiverUI.blue)
+                    samplePrimaryButton(title: NSLocalizedString("caregiver.today.primaryRecord.slot", comment: "Record slot"), systemImage: "pills.fill", color: CaregiverUI.teal)
+                }
+            }
+            CaregiverCard {
+                HStack(spacing: 16) {
+                    sampleProgressRing()
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(NSLocalizedString("caregiver.today.progress.title", comment: "Progress title"))
+                            .font(.headline.weight(.bold))
+                        Text("2/3回分 記録済み")
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(CaregiverUI.tealDark)
+                        Text("次は昼のお薬です")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+        case .medications:
+            sampleMedicationMetrics()
+            sampleFilterChips(items: [
+                ("すべて", "list.bullet", CaregiverUI.teal, true),
+                ("定時", "clock.fill", CaregiverUI.blue, false),
+                ("頓服", "cross.case.fill", CaregiverUI.orange, false),
+                ("終了", "calendar.badge.clock", .gray, false)
+            ])
+            VStack(alignment: .leading, spacing: 8) {
+                sectionHeader("定時")
+                sampleMedicationListRow(name: "血圧の薬 5 mg", badge: "定時", detail: "毎日 朝・昼", dose: "1回1錠", inventory: "残り18錠", color: CaregiverUI.blue)
+                sampleMedicationListRow(name: "整腸剤 50 mg", badge: "定時", detail: "毎日 夜", dose: "1回1錠", inventory: "残り10錠", color: CaregiverUI.teal)
+                sectionHeader("頓服")
+                sampleMedicationListRow(name: "頭痛薬", badge: "頓服", detail: "必要な時", dose: "1回1錠", inventory: nil, color: CaregiverUI.orange)
+            }
+        case .inventory:
+            sampleInventoryMetrics()
+            CaregiverCard {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "bell.badge.fill")
+                        .font(.title2)
+                        .foregroundStyle(CaregiverUI.orange)
+                        .frame(width: 34, height: 34)
+                        .background(CaregiverUI.orange.opacity(0.12), in: Circle())
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(NSLocalizedString("caregiver.inventory.guide.action.title", comment: "Inventory guide action title"))
+                            .font(.headline.weight(.bold))
+                        Text("血圧の薬 5 mg が残り少なくなっています。補充したら在庫数を更新してください。")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            sampleFilterChips(items: [
+                ("すべて", "list.bullet", CaregiverUI.teal, true),
+                ("低在庫のみ", "exclamationmark.triangle.fill", CaregiverUI.orange, false),
+                ("在庫なし", "xmark.circle.fill", CaregiverUI.red, false)
+            ])
+            sectionHeader("在庫一覧")
+            sampleInventoryListRow(name: "血圧の薬 5 mg", quantity: "4", unit: "錠", days: "あと2日分", help: "残り日数が少ないため、早めの補充が必要です。", color: CaregiverUI.orange, attention: true)
+            sampleInventoryListRow(name: "整腸剤 50 mg", quantity: "10", unit: "錠", days: "あと5日分", help: "服薬記録に合わせて自動で減ります。", color: CaregiverUI.teal, attention: false)
+        case .history:
+            CaregiverCard {
+                VStack(alignment: .leading, spacing: 14) {
+                    sampleSectionTitle("今日の進捗", systemImage: "calendar.badge.clock")
+                    HStack(spacing: 12) {
+                        sampleMetric(value: "2/3", label: "回分 記録済み", color: CaregiverUI.teal)
+                        sampleMetric(value: "1", label: "未記録", color: CaregiverUI.orange)
+                    }
+                    sampleMedicineRow(name: "朝のお薬", detail: "08:00 ・ 記録済み", color: CaregiverUI.teal)
+                    sampleMedicineRow(name: "昼のお薬", detail: "12:30 ・ 未記録", color: CaregiverUI.orange)
+                }
+            }
+        case .patients:
+            sampleSettingsSelectionCard()
+            sampleSettingsPatientCard()
+            sampleSettingsDetailCard()
+            sampleSettingsPushCard()
+        }
+    }
+
+    private var todayHeader: some View {
+        HStack(alignment: .center, spacing: 12) {
+            CaregiverAvatar(name: "田中 花子", systemImage: "person.crop.circle.fill")
+                .frame(width: 58, height: 58)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("田中 花子さん")
+                    .font(.title3.weight(.bold))
+                Text(NSLocalizedString("caregiver.today.title", comment: "Caregiver today title"))
+                    .font(.title2.weight(.bold))
+            }
+            Spacer()
+        }
+    }
+
+    private var title: String {
+        switch sample {
+        case .registerPatient:
+            return "見守る方を登録"
+        case .issueCode:
+            return "連携コードを発行"
+        case .shareCode:
+            return "本人へコードを共有"
+        case .tab:
+            break
+        }
+        switch tab {
+        case .today:
+            return "今日の予定"
+        case .medications:
+            return "薬を管理"
+        case .inventory:
+            return "在庫を確認"
+        case .history:
+            return "服薬履歴"
+        case .patients:
+            return "連携・設定"
+        }
+    }
+
+    private var subtitle: String {
+        switch sample {
+        case .registerPatient:
+            return "最初に本人の名前を登録します"
+        case .issueCode:
+            return "登録後に本人用のコードを作ります"
+        case .shareCode:
+            return "コピーまたは共有で本人へ渡します"
+        case .tab:
+            break
+        }
+        switch tab {
+        case .today:
+            return "このように今日飲む予定がまとまります"
+        case .medications:
+            return "登録した薬が一覧で表示されます"
+        case .inventory:
+            return "残数と補充目安を確認できます"
+        case .history:
+            return "記録状況を日付ごとに確認できます"
+        case .patients:
+            return "見守る方と連携状態を管理できます"
+        }
+    }
+
+    private var icon: String {
+        switch sample {
+        case .registerPatient:
+            return "person.badge.plus.fill"
+        case .issueCode:
+            return "link.badge.plus"
+        case .shareCode:
+            return "square.and.arrow.up"
+        case .tab:
+            break
+        }
+        switch tab {
+        case .today:
+            return "house.fill"
+        case .medications:
+            return "pills.fill"
+        case .inventory:
+            return "shippingbox.fill"
+        case .history:
+            return "clock.fill"
+        case .patients:
+            return "gearshape.fill"
+        }
+    }
+
+    private func samplePatientRegistrationCard() -> some View {
+        CaregiverCard(accent: CaregiverUI.orange) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 12) {
+                    Image(systemName: "person.badge.plus.fill")
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(CaregiverUI.orange)
+                        .frame(width: 48, height: 48)
+                        .background(CaregiverUI.orange.opacity(0.12), in: Circle())
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(NSLocalizedString("caregiver.patients.create.title", comment: "Create title"))
+                            .font(.title3.weight(.bold))
+                        Text("本人の名前を入力して保存します。")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(NSLocalizedString("caregiver.patients.create.section", comment: "Create section"))
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: 12) {
+                        Image(systemName: "person.fill")
+                            .foregroundStyle(CaregiverUI.teal)
+                        Text("田中 花子")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 14)
+                    .frame(height: 52)
+                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+
+                samplePrimaryButton(
+                    title: NSLocalizedString("common.save", comment: "Save"),
+                    systemImage: "checkmark",
+                    color: CaregiverUI.orange
+                )
+            }
+        }
+    }
+
+    private func sampleSettingsSelectionCard() -> some View {
+        CaregiverCard {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 12) {
+                    Image(systemName: "person.crop.circle.badge.checkmark")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(CaregiverUI.teal)
+                        .frame(width: 34, height: 34)
+                        .background(CaregiverUI.teal.opacity(0.12), in: Circle())
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(NSLocalizedString("caregiver.settings.patient.title", comment: "Settings patient title"))
+                            .font(.headline.weight(.bold))
+                        Text(NSLocalizedString("caregiver.patients.select.help", comment: "Select help text"))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                HStack {
+                    Text("田中 花子")
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(CaregiverUI.tealDark)
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(CaregiverUI.teal)
+                }
+                .padding(.horizontal, 12)
+                .frame(height: 44)
+                .background(CaregiverUI.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+        }
+    }
+
+    private func sampleSettingsPatientCard(highlightIssueCode: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                HStack(spacing: 10) {
+                    Image(systemName: "person.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(CaregiverUI.teal)
+                    Text("田中 花子")
+                        .font(.title3.weight(.semibold))
+                }
+                Spacer()
+                Text(NSLocalizedString("caregiver.patients.select.selected", comment: "Selected label"))
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(CaregiverUI.teal.opacity(0.18))
+                    .foregroundStyle(CaregiverUI.teal)
+                    .clipShape(Capsule())
+            }
+            HStack(spacing: 12) {
+                sampleSettingsButton(
+                    title: NSLocalizedString("caregiver.patients.issueCode", comment: "Issue code"),
+                    systemImage: "link.badge.plus",
+                    tint: CaregiverUI.teal,
+                    isHighlighted: highlightIssueCode
+                )
+                sampleSettingsButton(
+                    title: NSLocalizedString("caregiver.patients.revoke", comment: "Revoke"),
+                    systemImage: "person.crop.circle.badge.minus",
+                    tint: CaregiverUI.red
+                )
+            }
+            sampleSettingsButton(
+                title: NSLocalizedString("caregiver.patients.delete", comment: "Delete patient"),
+                systemImage: "trash",
+                tint: CaregiverUI.red
+            )
+        }
+        .padding(18)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(CaregiverUI.teal.opacity(0.24), lineWidth: 1))
+        .shadow(color: CaregiverUI.cardShadow, radius: 10, y: 4)
+    }
+
+    private func sampleLinkCodeCard() -> some View {
+        CaregiverCard(accent: CaregiverUI.teal) {
+            VStack(spacing: 18) {
+                VStack(spacing: 8) {
+                    Image(systemName: "link.badge.plus")
+                        .font(.system(size: 36, weight: .semibold))
+                        .foregroundStyle(CaregiverUI.teal)
+                    Text(NSLocalizedString("caregiver.patients.code.title", comment: "Linking code title"))
+                        .font(.title3.weight(.bold))
+                    Text(NSLocalizedString("caregiver.patients.code.subtitle", comment: "Code subtitle"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                HStack(spacing: 8) {
+                    ForEach(Array("482913"), id: \.self) { char in
+                        Text(String(char))
+                            .font(.title2.weight(.bold).monospacedDigit())
+                            .frame(width: 38, height: 50)
+                            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                }
+
+                HStack(spacing: 12) {
+                    sampleSettingsButton(
+                        title: NSLocalizedString("caregiver.patients.code.copy", comment: "Copy code"),
+                        systemImage: "doc.on.doc",
+                        tint: CaregiverUI.teal
+                    )
+                    sampleSettingsButton(
+                        title: NSLocalizedString("caregiver.patients.code.share", comment: "Share code"),
+                        systemImage: "square.and.arrow.up",
+                        tint: CaregiverUI.orange,
+                        isHighlighted: true
+                    )
+                }
+
+                HStack(spacing: 6) {
+                    Image(systemName: "clock")
+                    Text("有効期限: 今日 18:00")
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private func sampleSettingsDetailCard() -> some View {
+        CaregiverCard {
+            VStack(alignment: .leading, spacing: 14) {
+                sampleSettingsGroupHeader(
+                    title: NSLocalizedString("caregiver.settings.section.detail", comment: "Detail settings header"),
+                    message: NSLocalizedString("caregiver.settings.detail.message", comment: "Detail settings message"),
+                    systemImage: "slider.horizontal.3"
+                )
+                sampleSettingsActionRow(
+                    title: NSLocalizedString("patient.settings.notifications.detail.item", comment: "Detail settings item"),
+                    message: NSLocalizedString("patient.settings.notifications.detail.note", comment: "Detail settings note"),
+                    systemImage: "clock.fill",
+                    tint: CaregiverUI.blue
+                )
+                Divider()
+                sampleSettingsActionRow(
+                    title: NSLocalizedString("caregiver.inventory.settings.item.threshold", comment: "Inventory threshold item"),
+                    message: NSLocalizedString("caregiver.inventory.settings.note", comment: "Inventory settings note"),
+                    systemImage: "archivebox.fill",
+                    tint: CaregiverUI.orange
+                )
+            }
+        }
+    }
+
+    private func sampleSettingsPushCard() -> some View {
+        CaregiverCard {
+            VStack(alignment: .leading, spacing: 12) {
+                sampleSettingsGroupHeader(
+                    title: NSLocalizedString("caregiver.settings.push.section.title", comment: "Push section title"),
+                    message: NSLocalizedString("caregiver.settings.push.enabled", comment: "Push enabled"),
+                    systemImage: "bell.fill"
+                )
+                HStack {
+                    Text(NSLocalizedString("caregiver.settings.push.toggle", comment: "Push toggle"))
+                        .font(.body.weight(.semibold))
+                    Spacer()
+                    Capsule()
+                        .fill(CaregiverUI.teal)
+                        .frame(width: 52, height: 32)
+                        .overlay(alignment: .trailing) {
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 28, height: 28)
+                                .padding(.trailing, 2)
+                        }
+                }
+            }
+        }
+    }
+
+    private func sampleSettingsGroupHeader(title: String, message: String, systemImage: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.headline.weight(.bold))
+                .foregroundStyle(CaregiverUI.teal)
+                .frame(width: 34, height: 34)
+                .background(CaregiverUI.teal.opacity(0.12), in: Circle())
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline.weight(.bold))
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func sampleSettingsActionRow(title: String, message: String, systemImage: String, tint: Color) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(tint)
+                .frame(width: 32, height: 32)
+                .background(tint.opacity(0.12), in: Circle())
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(.primary)
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func sampleSettingsButton(
+        title: String,
+        systemImage: String,
+        tint: Color,
+        isHighlighted: Bool = false
+    ) -> some View {
+        Label(title, systemImage: systemImage)
+            .font(.subheadline.weight(.semibold))
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .background(tint.opacity(0.15))
+            .foregroundStyle(tint)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay {
+                if isHighlighted {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(tint, lineWidth: 3)
+                }
+            }
+    }
+
+    private func sampleSectionTitle(_ text: String, systemImage: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: systemImage)
+                .foregroundStyle(CaregiverUI.teal)
+            Text(text)
+                .font(.headline.weight(.bold))
+        }
+    }
+
+    private func sampleMedicineRow(name: String, detail: String, color: Color) -> some View {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(color.opacity(0.16))
+                .frame(width: 42, height: 42)
+                .overlay {
+                    Image(systemName: "pills.fill")
+                        .foregroundStyle(color)
+                }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(name)
+                    .font(.headline.weight(.bold))
+                Text(detail)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func sampleMetric(value: String, label: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(value)
+                .font(.title.weight(.bold))
+                .foregroundStyle(color)
+            Text(label)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func sampleCompactDoseLine(name: String, detail: String, color: Color) -> some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(color.opacity(0.14))
+                .frame(width: 32, height: 32)
+                .overlay {
+                    Image(systemName: "pills.fill")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(color)
+                }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name)
+                    .font(.subheadline.weight(.bold))
+                Text(detail)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func samplePrimaryButton(title: String, systemImage: String, color: Color) -> some View {
+        Label(title, systemImage: systemImage)
+            .font(.headline.weight(.bold))
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .background(color, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func sampleProgressRing() -> some View {
+        ZStack {
+            Circle()
+                .stroke(CaregiverUI.teal.opacity(0.16), lineWidth: 9)
+            Circle()
+                .trim(from: 0, to: 0.67)
+                .stroke(CaregiverUI.teal, style: StrokeStyle(lineWidth: 9, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            Text("2/3")
+                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .foregroundStyle(CaregiverUI.tealDark)
+        }
+        .frame(width: 76, height: 76)
+    }
+
+    private func sampleMedicationMetrics() -> some View {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+            sampleTile(title: NSLocalizedString("medication.list.metric.total", comment: "Total"), value: "3", tint: CaregiverUI.teal, systemImage: "pills.fill")
+            sampleTile(title: NSLocalizedString("medication.list.metric.today", comment: "Scheduled"), value: "2", tint: CaregiverUI.blue, systemImage: "clock.fill")
+            sampleTile(title: NSLocalizedString("medication.list.metric.prn", comment: "PRN"), value: "1", tint: CaregiverUI.orange, systemImage: "cross.case.fill")
+            sampleTile(title: NSLocalizedString("medication.list.metric.ended", comment: "Ended"), value: "0", tint: .gray, systemImage: "calendar.badge.clock")
+        }
+    }
+
+    private func sampleInventoryMetrics() -> some View {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+            sampleTile(title: NSLocalizedString("caregiver.inventory.summary.needsAction", comment: "Needs action"), value: "1", tint: CaregiverUI.orange, systemImage: "exclamationmark.triangle.fill")
+            sampleTile(title: NSLocalizedString("caregiver.inventory.summary.managed", comment: "Managed"), value: "2", tint: CaregiverUI.blue, systemImage: "archivebox.fill")
+            sampleTile(title: NSLocalizedString("caregiver.inventory.summary.notStarted", comment: "Not started"), value: "1", tint: .gray, systemImage: "questionmark.circle.fill")
+            sampleTile(title: NSLocalizedString("caregiver.inventory.summary.ended", comment: "Ended"), value: "0", tint: CaregiverUI.orange, systemImage: "calendar.badge.clock")
+        }
+    }
+
+    private func sampleTile(title: String, value: String, tint: Color, systemImage: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: systemImage)
+                .font(.headline.weight(.bold))
+                .foregroundStyle(tint)
+            Text(value)
+                .font(.system(size: 30, weight: .bold, design: .rounded))
+                .foregroundStyle(tint)
+            Text(title)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(tint.opacity(0.16), lineWidth: 1)
+        )
+    }
+
+    private func sampleFilterChips(items: [(String, String, Color, Bool)]) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(items, id: \.0) { item in
+                    Label(item.0, systemImage: item.1)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(item.3 ? .white : item.2)
+                        .padding(.horizontal, 12)
+                        .frame(height: 38)
+                        .background(item.3 ? item.2 : Color.white, in: Capsule())
+                        .overlay {
+                            Capsule().stroke(item.2.opacity(0.22), lineWidth: 1)
+                        }
+                }
+            }
+            .padding(.horizontal, 2)
+        }
+    }
+
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.headline)
+            .foregroundStyle(.secondary)
+            .padding(.top, 4)
+    }
+
+    private func sampleMedicationListRow(name: String, badge: String, detail: String, dose: String, inventory: String?, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 14) {
+                samplePillIcon(color: color)
+                    .frame(width: 62, height: 62)
+                VStack(alignment: .leading, spacing: 7) {
+                    Text(name)
+                        .font(.title2.weight(.bold))
+                    Text(badge)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(color)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(color.opacity(0.13), in: Capsule())
+                    Text(detail)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Text(dose)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+            }
+            if let inventory {
+                Text(inventory)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(CaregiverUI.teal)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(CaregiverUI.teal.opacity(0.12), in: Capsule())
+            }
+        }
+        .padding(16)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(CaregiverUI.cardStroke, lineWidth: 1)
+        )
+        .shadow(color: CaregiverUI.cardShadow, radius: 10, y: 4)
+    }
+
+    private func sampleInventoryListRow(name: String, quantity: String, unit: String, days: String, help: String, color: Color, attention: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .center, spacing: 14) {
+                sampleBoxIcon(color: color)
+                    .frame(width: 62, height: 62)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(name)
+                        .font(.title2.weight(.bold))
+                    if attention {
+                        Text(NSLocalizedString("caregiver.inventory.status.low", comment: "Low badge"))
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(CaregiverUI.orange)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(CaregiverUI.orange.opacity(0.15), in: Capsule())
+                    }
+                }
+                Spacer(minLength: 0)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(quantity)
+                        .font(.system(size: 30, weight: .bold, design: .rounded))
+                        .foregroundStyle(color)
+                    Text(unit)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Text(days)
+                .font(.body.weight(.bold))
+                .foregroundStyle(color)
+            Text(help)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 12) {
+                sampleStepperButton(systemImage: "minus", tint: color)
+                Text(quantity)
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .foregroundStyle(color)
+                    .frame(maxWidth: .infinity)
+                sampleStepperButton(systemImage: "plus", tint: color)
+            }
+            .padding(6)
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .padding(18)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(attention ? CaregiverUI.orange.opacity(0.75) : CaregiverUI.cardStroke, lineWidth: attention ? 1.5 : 1)
+        )
+        .shadow(color: CaregiverUI.cardShadow, radius: 10, y: 4)
+    }
+
+    private func samplePillIcon(color: Color) -> some View {
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .fill(color.opacity(0.12))
+            .overlay {
+                Image(systemName: "pills.fill")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(color)
+            }
+    }
+
+    private func sampleBoxIcon(color: Color) -> some View {
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .fill(color.opacity(0.12))
+            .overlay {
+                Image(systemName: "shippingbox.fill")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(color)
+            }
+    }
+
+    private func sampleStepperButton(systemImage: String, tint: Color) -> some View {
+        Image(systemName: systemImage)
+            .font(.headline.weight(.bold))
+            .foregroundStyle(tint)
+            .frame(width: 42, height: 42)
+            .background(Color.white, in: Circle())
+            .overlay {
+                Circle().stroke(tint.opacity(0.22), lineWidth: 1)
+            }
+    }
 }
 
 private struct CaregiverBottomTabBar: View {
     @Binding var selectedTab: CaregiverTab
     var hasLowStock: Bool = false
+    var highlightedTab: CaregiverTab?
 
     var body: some View {
         HStack(spacing: 12) {
             tabButton(
                 title: NSLocalizedString("caregiver.tabs.today", comment: "Today tab"),
                 systemImage: "house.fill",
-                isSelected: selectedTab == .today
+                isSelected: selectedTab == .today,
+                isHighlighted: highlightedTab == .today
             ) {
                 selectedTab = .today
             }
             tabButton(
                 title: NSLocalizedString("caregiver.tabs.medications", comment: "Medications tab"),
                 systemImage: "pills.fill",
-                isSelected: selectedTab == .medications
+                isSelected: selectedTab == .medications,
+                isHighlighted: highlightedTab == .medications
             ) {
                 selectedTab = .medications
             }
@@ -200,6 +1200,7 @@ private struct CaregiverBottomTabBar: View {
                 title: NSLocalizedString("caregiver.tabs.inventory", comment: "Inventory tab"),
                 systemImage: "shippingbox.fill",
                 isSelected: selectedTab == .inventory,
+                isHighlighted: highlightedTab == .inventory,
                 showBadge: hasLowStock
             ) {
                 selectedTab = .inventory
@@ -207,14 +1208,16 @@ private struct CaregiverBottomTabBar: View {
             tabButton(
                 title: NSLocalizedString("caregiver.tabs.history", comment: "History tab"),
                 systemImage: "clock",
-                isSelected: selectedTab == .history
+                isSelected: selectedTab == .history,
+                isHighlighted: highlightedTab == .history
             ) {
                 selectedTab = .history
             }
             tabButton(
                 title: NSLocalizedString("caregiver.tabs.patients", comment: "Patients tab"),
                 systemImage: "gearshape.fill",
-                isSelected: selectedTab == .patients
+                isSelected: selectedTab == .patients,
+                isHighlighted: highlightedTab == .patients
             ) {
                 selectedTab = .patients
             }
@@ -234,6 +1237,7 @@ private struct CaregiverBottomTabBar: View {
         title: String,
         systemImage: String,
         isSelected: Bool,
+        isHighlighted: Bool = false,
         showBadge: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
@@ -258,6 +1262,16 @@ private struct CaregiverBottomTabBar: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
             .contentShape(Rectangle())
+            .background(
+                isHighlighted ? CaregiverUI.orange.opacity(0.10) : Color.clear,
+                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+            )
+            .overlay {
+                if isHighlighted {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(CaregiverUI.orange, lineWidth: 3)
+                }
+            }
         }
         .buttonStyle(.plain)
     }

@@ -9,6 +9,7 @@ struct PatientReadOnlyView: View {
     @StateObject private var schedulingCoordinator = SchedulingRefreshCoordinator()
     @StateObject private var preferencesStore = NotificationPreferencesStore()
     @State private var deepLinkTarget: NotificationDeepLinkTarget?
+    @State private var tutorialStepIndex: Int?
 
     var body: some View {
         FullScreenContainer(content: {
@@ -32,13 +33,35 @@ struct PatientReadOnlyView: View {
                         onLogout: { sessionStore.clearPatientToken() }
                     )
                     }
+
+                    if let tutorialStepIndex {
+                        PatientTutorialSampleView(tab: patientTutorialSteps[tutorialStepIndex].tab)
+                            .zIndex(5)
+                            .allowsHitTesting(false)
+
+                        GuidedTutorialOverlay(
+                            step: patientTutorialSteps[tutorialStepIndex].step,
+                            stepIndex: tutorialStepIndex,
+                            stepCount: patientTutorialSteps.count,
+                            tint: PatientUI.teal,
+                            isSeniorFriendly: true,
+                            bottomClearance: 104,
+                            onPrevious: { moveTutorial(by: -1) },
+                            onNext: { moveTutorial(by: 1) },
+                            onFinish: { finishTutorial() }
+                        )
+                        .zIndex(10)
+                    }
                 }
                 .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)
             }
             .id(selectedTab)
             .safeAreaInset(edge: .bottom) {
-                PatientBottomTabBar(selectedTab: $selectedTab)
+                PatientBottomTabBar(
+                    selectedTab: $selectedTab,
+                    highlightedTab: currentTutorialTab
+                )
             }
         }, overlay: schedulingCoordinator.isRefreshing ? AnyView(SchedulingRefreshOverlay()) : nil)
         .onReceive(notificationRouter.$target) { target in
@@ -57,14 +80,59 @@ struct PatientReadOnlyView: View {
             }
         }
         .task {
+            startTutorialIfNeeded()
             await refreshNotificationSchedule(trigger: .appLaunch)
+        }
+        .onAppear {
+            startTutorialIfNeeded()
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 Task { await refreshNotificationSchedule(trigger: .appForeground) }
             }
         }
+        .onChange(of: tutorialStepIndex) { _, index in
+            guard let index else { return }
+            selectedTab = patientTutorialSteps[index].tab
+        }
         .accessibilityIdentifier("PatientReadOnlyView")
+    }
+
+    private var patientTutorialSteps: [PatientTutorialStep] {
+        [
+            PatientTutorialStep(
+                tab: .today,
+                step: GuidedTutorialStep(
+                    id: "patient-today",
+                    icon: "calendar",
+                    title: NSLocalizedString("tutorial.patient.today.title", comment: "Patient today tutorial title"),
+                    message: NSLocalizedString("tutorial.patient.today.message", comment: "Patient today tutorial message")
+                )
+            ),
+            PatientTutorialStep(
+                tab: .history,
+                step: GuidedTutorialStep(
+                    id: "patient-history",
+                    icon: "clock.fill",
+                    title: NSLocalizedString("tutorial.patient.history.title", comment: "Patient history tutorial title"),
+                    message: NSLocalizedString("tutorial.patient.history.message", comment: "Patient history tutorial message")
+                )
+            ),
+            PatientTutorialStep(
+                tab: .settings,
+                step: GuidedTutorialStep(
+                    id: "patient-settings",
+                    icon: "bell.badge.fill",
+                    title: NSLocalizedString("tutorial.patient.settings.title", comment: "Patient settings tutorial title"),
+                    message: NSLocalizedString("tutorial.patient.settings.message", comment: "Patient settings tutorial message")
+                )
+            )
+        ]
+    }
+
+    private var currentTutorialTab: PatientTab? {
+        guard let tutorialStepIndex else { return nil }
+        return patientTutorialSteps[tutorialStepIndex].tab
     }
 
     private func refreshNotificationSchedule(trigger: SchedulingRefreshCoordinator.RefreshTrigger) async {
@@ -84,6 +152,226 @@ struct PatientReadOnlyView: View {
         )
     }
 
+    private func startTutorialIfNeeded() {
+        guard sessionStore.shouldShowModeTutorial(for: .patient)
+            || sessionStore.shouldForceModeTutorial(for: .patient) else { return }
+        tutorialStepIndex = 0
+        selectedTab = patientTutorialSteps[0].tab
+    }
+
+    private func moveTutorial(by offset: Int) {
+        guard let tutorialStepIndex else { return }
+        let nextIndex = tutorialStepIndex + offset
+        guard patientTutorialSteps.indices.contains(nextIndex) else {
+            finishTutorial()
+            return
+        }
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+            self.tutorialStepIndex = nextIndex
+        }
+    }
+
+    private func finishTutorial() {
+        sessionStore.markModeTutorialSeen(for: .patient)
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
+            tutorialStepIndex = nil
+        }
+    }
+
+}
+
+private struct PatientTutorialStep {
+    let tab: PatientTab
+    let step: GuidedTutorialStep
+}
+
+private struct PatientTutorialSampleView: View {
+    let tab: PatientTab
+
+    var body: some View {
+        ZStack {
+            PatientScreenBackground()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    PatientHeader(title: title, subtitle: subtitle, systemImage: icon)
+                    content
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                .padding(.bottom, 260)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(PatientUI.backgroundBottom)
+        .ignoresSafeArea(edges: .bottom)
+        .transition(.opacity)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch tab {
+        case .today:
+            PatientCard {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(NSLocalizedString("patient.today.next.title", comment: "Next medication title"))
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.primary)
+
+                    HStack(alignment: .center, spacing: 16) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 34, weight: .bold))
+                            .foregroundStyle(PatientUI.blue)
+                            .frame(width: 66, height: 66)
+                            .background(PatientUI.blue.opacity(0.10), in: Circle())
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("昼のお薬")
+                                .font(.headline.weight(.bold))
+                            Text("12:30")
+                                .font(.system(size: 32, weight: .bold, design: .rounded))
+                                .foregroundStyle(PatientUI.tealDark)
+                                .lineLimit(1)
+                        }
+                        Spacer()
+                    }
+                    PatientStatusPill(text: "未記録", color: PatientUI.orange, systemImage: "circle")
+
+                    Text("この時間のお薬")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.secondary)
+                    sampleMedicineRow(name: "血圧の薬 5 mg", detail: "1回1錠", color: PatientUI.teal)
+                    sampleMedicineRow(name: "胃薬", detail: "1回1錠", color: PatientUI.blue)
+
+                    Text(NSLocalizedString("patient.today.slot.bulk.button", comment: "Bulk record button"))
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 52)
+                        .background(PatientUI.teal, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+            }
+        case .history:
+            PatientCard {
+                VStack(alignment: .leading, spacing: 14) {
+                    sampleSectionTitle(NSLocalizedString("patient.history.today.progress.title", comment: "Today progress"), systemImage: "chart.bar.fill")
+                    HStack(spacing: 12) {
+                        sampleMetric(value: "2/3", label: "回分 記録済み", color: PatientUI.teal)
+                        sampleMetric(value: "1", label: "未記録", color: PatientUI.orange)
+                    }
+                    Text(NSLocalizedString("patient.history.recent.title", comment: "Recent records title"))
+                        .font(.headline.weight(.bold))
+                    sampleMedicineRow(name: "朝のお薬", detail: "08:00 ・ 記録済み", color: PatientUI.teal)
+                    sampleMedicineRow(name: "昼のお薬", detail: "12:30 ・ 未記録", color: PatientUI.orange)
+                    sampleMedicineRow(name: "夜のお薬", detail: "20:00 ・ 予定", color: PatientUI.blue)
+                }
+            }
+        case .settings:
+            PatientCard {
+                VStack(alignment: .leading, spacing: 16) {
+                    sampleSectionTitle("お薬の通知", systemImage: "bell.badge.fill")
+                    sampleSettingRow(title: "通知を有効にする", detail: "飲む時間にこの端末へ通知します", systemImage: "bell.fill")
+                    sampleSettingRow(title: "再通知（15分後）", detail: "飲み忘れ防止のためもう一度知らせます", systemImage: "bell.and.waves.left.and.right.fill")
+                    sampleSettingRow(title: "連携中", detail: "家族と服薬記録を共有しています", systemImage: "person.2.fill")
+                }
+            }
+        }
+    }
+
+    private var title: String {
+        switch tab {
+        case .today:
+            return "今日のお薬"
+        case .history:
+            return "履歴"
+        case .settings:
+            return "設定"
+        }
+    }
+
+    private var subtitle: String {
+        switch tab {
+        case .today:
+            return "飲む予定と記録ボタンが表示されます"
+        case .history:
+            return "飲んだ記録を確認できます"
+        case .settings:
+            return "通知と連携状態を確認できます"
+        }
+    }
+
+    private var icon: String {
+        switch tab {
+        case .today:
+            return "calendar"
+        case .history:
+            return "clock.fill"
+        case .settings:
+            return "gearshape.fill"
+        }
+    }
+
+    private func sampleSectionTitle(_ text: String, systemImage: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: systemImage)
+                .foregroundStyle(PatientUI.teal)
+            Text(text)
+                .font(.headline.weight(.bold))
+        }
+    }
+
+    private func sampleMedicineRow(name: String, detail: String, color: Color) -> some View {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(color.opacity(0.16))
+                .frame(width: 42, height: 42)
+                .overlay {
+                    Image(systemName: "pills.fill")
+                        .foregroundStyle(color)
+                }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(name)
+                    .font(.headline.weight(.bold))
+                Text(detail)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func sampleMetric(value: String, label: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(value)
+                .font(.title.weight(.bold))
+                .foregroundStyle(color)
+            Text(label)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func sampleSettingRow(title: String, detail: String, systemImage: String) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: systemImage)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(PatientUI.teal)
+                .frame(width: 44, height: 44)
+                .background(PatientUI.teal.opacity(0.12), in: Circle())
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline.weight(.bold))
+                Text(detail)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+    }
 }
 
 struct PatientSettingsView: View {
@@ -428,27 +716,31 @@ struct PatientStatusPill: View {
 
 private struct PatientBottomTabBar: View {
     @Binding var selectedTab: PatientTab
+    var highlightedTab: PatientTab?
 
     var body: some View {
         HStack(spacing: 12) {
             tabButton(
                 title: NSLocalizedString("patient.readonly.today.tab", comment: "Today tab"),
                 systemImage: "calendar",
-                isSelected: selectedTab == .today
+                isSelected: selectedTab == .today,
+                isHighlighted: highlightedTab == .today
             ) {
                 selectedTab = .today
             }
             tabButton(
                 title: NSLocalizedString("patient.readonly.history.tab", comment: "History tab"),
                 systemImage: "clock",
-                isSelected: selectedTab == .history
+                isSelected: selectedTab == .history,
+                isHighlighted: highlightedTab == .history
             ) {
                 selectedTab = .history
             }
             tabButton(
                 title: NSLocalizedString("patient.readonly.settings.tab", comment: "Settings tab"),
                 systemImage: "gearshape",
-                isSelected: selectedTab == .settings
+                isSelected: selectedTab == .settings,
+                isHighlighted: highlightedTab == .settings
             ) {
                 selectedTab = .settings
             }
@@ -469,6 +761,7 @@ private struct PatientBottomTabBar: View {
         title: String,
         systemImage: String,
         isSelected: Bool,
+        isHighlighted: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -487,6 +780,12 @@ private struct PatientBottomTabBar: View {
             .padding(.horizontal, 10)
             .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .background(isSelected ? AnyShapeStyle(PatientUI.teal.opacity(0.13)) : AnyShapeStyle(Color.clear), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay {
+                if isHighlighted {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(PatientUI.teal, lineWidth: 3)
+                }
+            }
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])

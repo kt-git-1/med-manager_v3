@@ -80,6 +80,9 @@ struct MedicationApp: App {
                 let apiClient = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: sessionStore)
                 entitlementStore.configure(apiClient: apiClient)
             }
+            .onOpenURL { url in
+                _ = sessionStore.handleIncomingURL(url)
+            }
         }
     }
 }

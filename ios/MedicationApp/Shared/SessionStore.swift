@@ -16,6 +16,7 @@ final class SessionStore: ObservableObject {
         }
     }
     @Published var shouldRedirectCaregiverToMedicationTab = false
+    @Published var shouldNavigateToCaregiverLogin = false
 
     private let baseURL: URL
     private let userDefaults: UserDefaults
@@ -34,6 +35,8 @@ final class SessionStore: ObservableObject {
     static let patientTokenStorageKey = "patientToken"
     static let patientExpiresAtStorageKey = "patientSessionExpiresAt"
     static let lastModeStorageKey = "lastAppMode"
+    static let modeTutorialSeenStorageKeyPrefix = "modeTutorialSeen."
+    static let patientTutorialPreviewStorageKey = "debug.patientTutorialPreview"
 
     init(
         userDefaults: UserDefaults = .standard,
@@ -63,6 +66,8 @@ final class SessionStore: ObservableObject {
             self.mode = storedMode
         }
 
+        applyTutorialPreviewOverridesIfNeeded()
+
         if patientToken != nil {
             startPatientTokenRefreshLoop()
         }
@@ -84,6 +89,45 @@ final class SessionStore: ObservableObject {
     func setMode(_ mode: AppMode) {
         self.mode = mode
         userDefaults.set(mode.rawValue, forKey: SessionStore.lastModeStorageKey)
+    }
+
+    func shouldShowModeTutorial(for mode: AppMode) -> Bool {
+        !userDefaults.bool(forKey: Self.modeTutorialSeenStorageKey(for: mode))
+    }
+
+    func shouldForceModeTutorial(for mode: AppMode) -> Bool {
+        let arguments = ProcessInfo.processInfo.arguments
+        let isLaunchArgumentForced = arguments.contains("-ForceModeTutorial")
+            || arguments.contains("-ForceModeTutorial.\(mode.rawValue)")
+        #if DEBUG
+        if mode == .patient, userDefaults.bool(forKey: Self.patientTutorialPreviewStorageKey) {
+            return true
+        }
+        #endif
+        return isLaunchArgumentForced
+    }
+
+    private func applyTutorialPreviewOverridesIfNeeded() {
+        guard isPatientTutorialPreviewActive else { return }
+        mode = .patient
+        if patientToken == nil {
+            patientToken = "tutorial-preview-patient-token"
+        }
+    }
+
+    var isPatientTutorialPreviewActive: Bool {
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        return arguments.contains("-ForceModeTutorial")
+            || arguments.contains("-ForceModeTutorial.patient")
+            || userDefaults.bool(forKey: Self.patientTutorialPreviewStorageKey)
+        #else
+        return false
+        #endif
+    }
+
+    func markModeTutorialSeen(for mode: AppMode) {
+        userDefaults.set(true, forKey: Self.modeTutorialSeenStorageKey(for: mode))
     }
 
     func resetMode() {
@@ -136,6 +180,15 @@ final class SessionStore: ObservableObject {
     func returnToCaregiverLogin() {
         clearCaregiverToken()
         setMode(.caregiver)
+    }
+
+    @discardableResult
+    func handleIncomingURL(_ url: URL) -> Bool {
+        guard Self.isCaregiverLoginURL(url) else { return false }
+        clearCaregiverToken()
+        setMode(.caregiver)
+        shouldNavigateToCaregiverLogin = true
+        return true
     }
 
     func clearPatientToken() {
@@ -256,6 +309,28 @@ final class SessionStore: ObservableObject {
         } else {
             userDefaults.removeObject(forKey: SessionStore.currentPatientIdStorageKey)
         }
+    }
+
+    private static func modeTutorialSeenStorageKey(for mode: AppMode) -> String {
+        "\(modeTutorialSeenStorageKeyPrefix)\(mode.rawValue)"
+    }
+
+    private static func isCaregiverLoginURL(_ url: URL) -> Bool {
+        let scheme = url.scheme?.lowercased()
+        let host = url.host?.lowercased()
+        let path = url.path.lowercased()
+
+        if scheme == "okusurimimamori", host == "auth", path == "/login" {
+            return true
+        }
+
+        if scheme == "https",
+           ["okusuri-mimamori.com", "www.okusuri-mimamori.com"].contains(host),
+           path == "/auth/confirmed" {
+            return true
+        }
+
+        return false
     }
 
     private func restoredToken(

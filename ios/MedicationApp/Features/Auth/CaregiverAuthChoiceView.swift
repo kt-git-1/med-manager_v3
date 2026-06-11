@@ -64,6 +64,9 @@ struct CaregiverAuthChoiceView: View {
                     .padding(.bottom, 32)
                 }
             }
+            .navigationDestination(isPresented: $sessionStore.shouldNavigateToCaregiverLogin) {
+                CaregiverLoginView()
+            }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .accessibilityIdentifier("CaregiverAuthChoiceView")
         }
