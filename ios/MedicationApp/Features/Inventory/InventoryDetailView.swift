@@ -124,44 +124,41 @@ struct InventoryDetailView: View {
     private var inventoryHeader: some View {
         CaregiverCard(accent: shouldHighlightLowStock ? CaregiverUI.red : CaregiverUI.teal) {
             VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
-                Image(systemName: "shippingbox.fill")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 56, height: 56)
-                    .background(inventoryStatus.color, in: Circle())
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.name)
-                        .font(.title.weight(.bold))
-                        .lineLimit(3)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(dailyIntakeSummaryText)
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                HStack(alignment: .top, spacing: 12) {
+                    InventoryIllustrationView(tint: inventoryStatus.color, isPrn: item.isPrn)
+                        .frame(width: 56, height: 56)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.name)
+                            .font(.title.weight(.bold))
+                            .lineLimit(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(dailyIntakeSummaryText)
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .layoutPriority(1)
+                    Spacer(minLength: 0)
+                    statusBadge
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .layoutPriority(1)
-                Spacer(minLength: 0)
-                statusBadge
+
+                Divider()
+
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(NSLocalizedString("caregiver.inventory.remaining.label", comment: "Remaining label"))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(inventoryEnabled ? AppConstants.formatDecimal(quantity) : "—")
+                        .font(.system(size: 52, weight: .bold, design: .rounded))
+                        .foregroundStyle(inventoryEnabled ? inventoryStatus.color : Color.secondary)
+                    Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(inventoryStatus.color)
+                }
+
+                refillPlanSummary
             }
-
-            Divider()
-
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(NSLocalizedString("caregiver.inventory.remaining.label", comment: "Remaining label"))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text(inventoryEnabled ? AppConstants.formatDecimal(quantity) : "—")
-                    .font(.system(size: 52, weight: .bold, design: .rounded))
-                    .foregroundStyle(inventoryEnabled ? inventoryStatus.color : Color.secondary)
-                Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(inventoryStatus.color)
-            }
-
-            refillPlanSummary
-        }
         }
     }
 
@@ -327,12 +324,14 @@ struct InventoryDetailView: View {
     }
 
     private var statusBadge: some View {
-            Text(inventoryStatus.title)
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(inventoryStatus.color, in: Capsule())
+        Label(inventoryStatus.title, systemImage: inventoryStatus.systemImage)
+            .font(.caption.weight(.bold))
+            .foregroundStyle(inventoryStatus.color)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(inventoryStatus.color.opacity(0.13), in: Capsule())
     }
 
     private var inventoryStatus: InventoryStatus {
@@ -508,13 +507,26 @@ private enum InventoryStatus {
     var color: Color {
         switch self {
         case .available:
-            return .green
+            return CaregiverUI.teal
         case .low:
             return .orange
         case .out:
             return .red
         case .unconfigured:
             return .gray
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .available:
+            return "checkmark.circle.fill"
+        case .low:
+            return "exclamationmark.triangle.fill"
+        case .out:
+            return "xmark.octagon.fill"
+        case .unconfigured:
+            return "questionmark.circle.fill"
         }
     }
 }

@@ -98,7 +98,7 @@ struct CaregiverTodayView: View {
                     onRetry: { viewModel.load(showLoading: true) },
                     onReturnToLogin: { sessionStore.returnToCaregiverLogin() }
                 )
-            } else if viewModel.items.isEmpty {
+            } else if viewModel.items.isEmpty && viewModel.prnMedications.isEmpty {
                 CaregiverScreenBackground {
                     ScrollView {
                         LazyVStack(spacing: 16) {
@@ -125,10 +125,17 @@ struct CaregiverTodayView: View {
                             if hasMissedDoses {
                                 missedAlertCard
                             }
-                            nextDoseHeroCard
-                            progressCard
-                            todayScheduleTitle
-                            timelineSection
+                            if !viewModel.items.isEmpty {
+                                nextDoseHeroCard
+                                progressCard
+                            }
+                            if !viewModel.prnMedications.isEmpty {
+                                prnEntryCard
+                            }
+                            if !viewModel.items.isEmpty {
+                                todayScheduleTitle
+                                timelineSection
+                            }
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 16)
@@ -381,6 +388,52 @@ struct CaregiverTodayView: View {
         }
         .disabled(!canRecordNextSlot)
         .accessibilityIdentifier("CaregiverTodayPrimaryRecordButton")
+    }
+
+    private var prnEntryCard: some View {
+        NavigationLink {
+            CaregiverPrnMedicationListView(
+                medications: viewModel.prnMedications,
+                patientName: patientName,
+                isDisabled: viewModel.isUpdating,
+                onRecordConfirmed: { medication, onSuccess in
+                    viewModel.recordPrnDose(for: medication, onSuccess: onSuccess)
+                }
+            )
+        } label: {
+            CaregiverCard(accent: CaregiverUI.orange) {
+                HStack(alignment: .center, spacing: 16) {
+                    Image(systemName: "cross.case.fill")
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundStyle(CaregiverUI.orange)
+                        .frame(width: 62, height: 62)
+                        .background(CaregiverUI.orange.opacity(0.12), in: Circle())
+
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text(NSLocalizedString("caregiver.today.prn.entry.title", comment: "Caregiver PRN entry title"))
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.82)
+                        Text(
+                            String(
+                                format: NSLocalizedString("caregiver.today.prn.entry.message", comment: "Caregiver PRN entry message"),
+                                viewModel.prnMedications.count
+                            )
+                        )
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("CaregiverTodayPrnEntryCard")
     }
 
     private var timelineSection: some View {
@@ -758,6 +811,204 @@ struct CaregiverTodayView: View {
 private struct SlotRecordConfirmation {
     let slotTitle: String
     let doses: [ScheduleDoseDTO]
+}
+
+private struct CaregiverPrnMedicationListView: View {
+    let medications: [MedicationDTO]
+    let patientName: String?
+    let isDisabled: Bool
+    let onRecordConfirmed: (MedicationDTO, @escaping () -> Void) -> Void
+    @State private var selectedMedication: MedicationDTO?
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            CaregiverScreenBackground {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(NSLocalizedString("caregiver.today.prn.list.title", comment: "Caregiver PRN list title"))
+                                .font(.title2.weight(.bold))
+                                .foregroundStyle(.primary)
+                            Text(NSLocalizedString("caregiver.today.prn.list.subtitle", comment: "Caregiver PRN list subtitle"))
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(.top, 4)
+
+                        ForEach(medications) { medication in
+                            CaregiverPrnMedicationCard(
+                                medication: medication,
+                                isDisabled: isDisabled,
+                                onRecord: {
+                                    selectedMedication = medication
+                                }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .safeAreaPadding(.bottom, 120)
+                }
+            }
+        }
+        .navigationTitle(NSLocalizedString("caregiver.today.prn.screen.title", comment: "Caregiver PRN screen title"))
+        .navigationBarTitleDisplayMode(.inline)
+        .overlay {
+            if isDisabled {
+                SchedulingRefreshOverlay()
+            }
+        }
+        .alert(
+            NSLocalizedString("caregiver.today.prn.confirm.title", comment: "Caregiver PRN confirm title"),
+            isPresented: Binding(
+                get: { selectedMedication != nil },
+                set: { if !$0 { selectedMedication = nil } }
+            ),
+            presenting: selectedMedication
+        ) { medication in
+            Button(NSLocalizedString("caregiver.today.prn.confirm.action", comment: "Caregiver PRN confirm action")) {
+                onRecordConfirmed(medication) {
+                    dismiss()
+                }
+                selectedMedication = nil
+            }
+            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {
+                selectedMedication = nil
+            }
+        } message: { medication in
+            Text(confirmMessage(for: medication))
+        }
+    }
+
+    private func confirmMessage(for medication: MedicationDTO) -> String {
+        String(
+            format: NSLocalizedString("caregiver.today.prn.confirm.message", comment: "Caregiver PRN confirm message"),
+            patientDisplayName,
+            medication.name
+        )
+    }
+
+    private var patientDisplayName: String {
+        let trimmed = patientName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty
+            ? NSLocalizedString("caregiver.today.prn.patient.default", comment: "Default patient display name")
+            : trimmed
+    }
+}
+
+private struct CaregiverPrnMedicationCard: View {
+    let medication: MedicationDTO
+    let isDisabled: Bool
+    let onRecord: () -> Void
+    @State private var recordTrigger = 0
+    @State private var isPressed = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 14) {
+                MedicationSymbolView(tint: CaregiverUI.orange)
+                    .frame(width: 48, height: 48)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(medicationDisplayName)
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.82)
+                    Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count format"), AppConstants.formatDecimal(medication.doseCountPerIntake)))
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    if let noteText, !noteText.isEmpty {
+                        Text(noteText)
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if medication.isInsufficientForDose {
+                        Text(NSLocalizedString("caregiver.today.prn.outOfStock", comment: "Caregiver PRN out of stock"))
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(.white)
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 10)
+                            .background(CaregiverUI.red)
+                            .clipShape(Capsule())
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(1)
+            }
+
+            Button(action: handleRecord) {
+                Label(recordButtonTitle, systemImage: recordButtonIcon)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 58)
+                    .background(recordButtonColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .disabled(isDisabled || medication.isInsufficientForDose)
+            .opacity(isDisabled || medication.isInsufficientForDose ? 0.62 : 1)
+            .accessibilityLabel(recordButtonTitle)
+            .scaleEffect(isPressed ? 0.96 : 1.0)
+            .animation(.easeInOut(duration: 0.18), value: isPressed)
+            .sensoryFeedback(.success, trigger: recordTrigger)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(CaregiverUI.orange.opacity(0.38), lineWidth: 1.2)
+        }
+        .shadow(color: CaregiverUI.cardShadow, radius: 12, y: 5)
+    }
+
+    private var medicationDisplayName: String {
+        let trimmed = medication.dosageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == "不明" {
+            return medication.name
+        }
+        return "\(medication.name) \(trimmed)"
+    }
+
+    private var noteText: String? {
+        let instruction = medication.prnInstructions?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !instruction.isEmpty {
+            return instruction
+        }
+        let notes = medication.notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return notes.isEmpty ? nil : notes
+    }
+
+    private var recordButtonTitle: String {
+        medication.isInsufficientForDose
+            ? NSLocalizedString("caregiver.today.prn.outOfStock.button", comment: "Caregiver PRN out of stock button")
+            : NSLocalizedString("caregiver.today.prn.record.button", comment: "Caregiver PRN record button")
+    }
+
+    private var recordButtonIcon: String {
+        medication.isInsufficientForDose ? "exclamationmark.triangle.fill" : "checkmark.circle.fill"
+    }
+
+    private var recordButtonColor: Color {
+        medication.isInsufficientForDose ? .gray : CaregiverUI.teal
+    }
+
+    private func handleRecord() {
+        guard !isDisabled, !medication.isInsufficientForDose else { return }
+        recordTrigger += 1
+        withAnimation(.easeInOut(duration: 0.12)) {
+            isPressed = true
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(180))
+            isPressed = false
+        }
+        onRecord()
+    }
 }
 
 private struct CaregiverTodayTimelineRow: View {

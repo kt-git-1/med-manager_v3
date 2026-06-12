@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 final class CaregiverTodayViewModel: ObservableObject {
     @Published var items: [ScheduleDoseDTO] = []
+    @Published var prnMedications: [MedicationDTO] = []
     @Published var isLoading = false
     @Published var isUpdating = false
     @Published var errorMessage: String?
@@ -48,14 +49,19 @@ final class CaregiverTodayViewModel: ObservableObject {
             do {
                 let slotTimeItems = preferencesStore.slotTimeQueryItems()
                 async let dosesTask = apiClient.fetchCaregiverToday(slotTimeItems: slotTimeItems)
+                async let medicationsTask = apiClient.fetchMedications(patientId: nil)
                 async let inventoryTask = apiClient.fetchInventory()
-                let (doses, inventory) = try await (dosesTask, inventoryTask)
+                let (doses, medications, inventory) = try await (dosesTask, medicationsTask, inventoryTask)
                 items = doses.sorted(by: sortDose)
+                prnMedications = medications
+                    .filter { $0.isPrn && $0.isActive && !$0.isArchived }
+                    .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
                 outOfStockMedicationIds = Set(
                     inventory.filter { $0.isInsufficientForDose }.map { $0.medicationId }
                 )
             } catch {
                 items = []
+                prnMedications = []
                 outOfStockMedicationIds = []
                 errorMessage = NSLocalizedString("caregiver.dataUnavailable.message", comment: "Caregiver data unavailable message")
             }
@@ -68,6 +74,7 @@ final class CaregiverTodayViewModel: ObservableObject {
 
     func reset() {
         items = []
+        prnMedications = []
         outOfStockMedicationIds = []
         isLoading = false
         isUpdating = false
@@ -112,6 +119,29 @@ final class CaregiverTodayViewModel: ObservableObject {
                 let format = NSLocalizedString("caregiver.today.recorded.bulk", comment: "Bulk recorded")
                 showToast(String(format: format, recordableDoses.count))
                 load(showLoading: false)
+            } catch {
+                showToastMessage(for: error)
+            }
+        }
+    }
+
+    func recordPrnDose(for medication: MedicationDTO, onSuccess: @escaping () -> Void) {
+        guard !isUpdating, !medication.isInsufficientForDose else { return }
+        isUpdating = true
+        Task {
+            defer { isUpdating = false }
+            do {
+                _ = try await apiClient.createPrnDoseRecord(
+                    patientId: medication.patientId,
+                    input: PrnDoseRecordCreateRequestDTO(
+                        medicationId: medication.id,
+                        takenAt: nil,
+                        quantityTaken: nil
+                    )
+                )
+                showToast(NSLocalizedString("caregiver.today.prn.recorded", comment: "Caregiver PRN recorded"))
+                load(showLoading: false)
+                onSuccess()
             } catch {
                 showToastMessage(for: error)
             }

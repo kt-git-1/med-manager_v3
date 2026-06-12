@@ -233,7 +233,7 @@ struct InventoryListView: View {
         CaregiverCard(accent: CaregiverUI.teal) {
             VStack(alignment: .leading, spacing: 18) {
                 HStack(alignment: .top, spacing: 14) {
-                    InventoryIllustrationView(tint: CaregiverUI.teal)
+                    InventoryIllustrationView(tint: CaregiverUI.teal, isPrn: false)
                         .frame(width: 64, height: 64)
 
                     VStack(alignment: .leading, spacing: 6) {
@@ -612,7 +612,7 @@ struct InventoryListView: View {
         let accent = inventoryAccentColor(for: item)
         return VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 14) {
-                InventoryIllustrationView(tint: accent)
+                InventoryIllustrationView(tint: accent, isPrn: item.isPrn)
                     .frame(width: 62, height: 62)
 
                 VStack(alignment: .leading, spacing: 6) {
@@ -905,7 +905,7 @@ struct InventoryListView: View {
         if shouldShowAttention(for: item) {
             return CaregiverUI.orange
         }
-        return CaregiverUI.blue
+        return CaregiverUI.teal
     }
 
     private func filterTint(_ filter: InventoryFilter) -> Color {
@@ -954,31 +954,36 @@ private enum InventoryFilter: String, CaseIterable, Identifiable {
     }
 }
 
-private struct InventoryIllustrationView: View {
+struct InventoryIllustrationView: View {
     let tint: Color
+    var isPrn = false
 
     var body: some View {
         ZStack {
             Circle()
-                .fill(tint.opacity(0.14))
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(Color.white)
-                .frame(width: 40, height: 34)
-                .offset(y: 4)
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .stroke(tint, lineWidth: 2.4)
-                .frame(width: 40, height: 34)
-                .offset(y: 4)
-            Path { path in
-                path.move(to: CGPoint(x: 22, y: 25))
-                path.addLine(to: CGPoint(x: 31, y: 18))
-                path.addLine(to: CGPoint(x: 40, y: 25))
+                .fill(
+                    LinearGradient(
+                        colors: [tint.opacity(0.18), tint.opacity(0.07)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            Circle()
+                .stroke(tint.opacity(0.18), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.92))
+                .frame(width: 40, height: 32)
+                .shadow(color: tint.opacity(0.10), radius: 4, y: 2)
+            HStack(spacing: 5) {
+                Image(systemName: isPrn ? "cross.case.fill" : "pills.fill")
+                    .font(.system(size: 20, weight: .bold))
+                    .symbolRenderingMode(.hierarchical)
+                Circle()
+                    .fill(tint.opacity(0.24))
+                    .frame(width: 6, height: 6)
             }
-            .stroke(tint, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
-            Capsule()
-                .fill(tint.opacity(0.86))
-                .frame(width: 22, height: 9)
-                .offset(y: -18)
+            .foregroundStyle(tint)
         }
+        .accessibilityHidden(true)
     }
 }
