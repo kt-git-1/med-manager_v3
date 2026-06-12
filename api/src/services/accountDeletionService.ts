@@ -1,4 +1,5 @@
 import { prisma } from "../repositories/prisma";
+import { log } from "../logging/logger";
 
 export class SupabaseAccountDeletionError extends Error {
   statusCode = 502;
@@ -13,29 +14,75 @@ type SupabaseAdminDeleteResult = {
   deleted: boolean;
 };
 
-async function deleteSupabaseAuthUser(caregiverId: string): Promise<SupabaseAdminDeleteResult> {
+function supabaseAdminConfig() {
   const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
+    log("error", "account_delete.supabase_admin_config_missing");
     throw new SupabaseAccountDeletionError("Supabase admin config is missing");
   }
+
+  return { supabaseUrl, serviceRoleKey };
+}
+
+function supabaseAdminHeaders(serviceRoleKey: string) {
+  return {
+    apikey: serviceRoleKey,
+    authorization: `Bearer ${serviceRoleKey}`
+  };
+}
+
+async function assertSupabaseAuthUserDeleted(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  caregiverId: string
+) {
+  const response = await fetch(
+    `${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(caregiverId)}`,
+    {
+      method: "GET",
+      headers: supabaseAdminHeaders(serviceRoleKey)
+    }
+  );
+
+  if (response.status === 404) {
+    return;
+  }
+
+  const body = await response.text().catch(() => "");
+  log(
+    "error",
+    `account_delete.supabase_auth_user_still_exists status=${response.status} body=${body.slice(0, 500)}`
+  );
+  throw new SupabaseAccountDeletionError();
+}
+
+async function deleteSupabaseAuthUser(caregiverId: string): Promise<SupabaseAdminDeleteResult> {
+  const { supabaseUrl, serviceRoleKey } = supabaseAdminConfig();
 
   const response = await fetch(
     `${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(caregiverId)}`,
     {
       method: "DELETE",
-      headers: {
-        apikey: serviceRoleKey,
-        authorization: `Bearer ${serviceRoleKey}`
-      }
+      headers: supabaseAdminHeaders(serviceRoleKey)
     }
   );
 
-  if (response.ok || response.status === 404) {
+  if (response.status === 404) {
     return { deleted: true };
   }
 
+  if (response.ok) {
+    await assertSupabaseAuthUserDeleted(supabaseUrl, serviceRoleKey, caregiverId);
+    return { deleted: true };
+  }
+
+  const body = await response.text().catch(() => "");
+  log(
+    "error",
+    `account_delete.supabase_auth_delete_failed status=${response.status} body=${body.slice(0, 500)}`
+  );
   throw new SupabaseAccountDeletionError();
 }
 

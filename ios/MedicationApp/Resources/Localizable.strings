@@ -30,6 +30,16 @@
 "caregiver.inventory.toast.saved" = "在庫情報を保存しました";
 "caregiver.inventory.toast.refilled" = "薬を補充しました";
 
+/* Legal / Support */
+"legal.section.title" = "法務・サポート";
+"legal.section.message" = "アプリのデータ取り扱い、ご利用条件、問い合わせ先を確認できます";
+"legal.privacy.title" = "プライバシーポリシー";
+"legal.privacy.message" = "データの取り扱いと削除について確認できます";
+"legal.terms.title" = "利用規約";
+"legal.terms.message" = "ご利用条件と医療上の注意を確認できます";
+"legal.support.title" = "サポート";
+"legal.support.message" = "問い合わせとトラブル対応を確認できます";
+
 /* Mode select */
 "mode.select.title" = "どちらで\n使いますか？";
 "mode.select.subtitle" = "";
@@ -524,6 +534,7 @@
 "caregiver.account.delete.confirm.message" = "家族アカウントと、登録した患者・お薬・服薬記録・在庫などの関連データを完全に削除します。この操作は取り消せません。";
 "caregiver.account.delete.confirm.action" = "削除する";
 "caregiver.account.delete.toast" = "アカウントを削除しました";
+"caregiver.account.delete.failed" = "アカウントを削除できませんでした。時間をおいて再試行してください。続く場合はサポートへお問い合わせください。";
 "caregiver.patients.single.help" = "この方の薬と服薬予定を管理します";
 "caregiver.patients.single.status" = "登録済み";
 "caregiver.patients.select.help" = "プルダウンから対象患者を選んでください";

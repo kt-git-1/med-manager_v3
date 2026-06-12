@@ -135,6 +135,22 @@ final class SessionStore: ObservableObject {
         userDefaults.removeObject(forKey: SessionStore.lastModeStorageKey)
     }
 
+    func resetAfterAccountDeletion() {
+        caregiverToken = nil
+        patientToken = nil
+        mode = nil
+        shouldRedirectCaregiverToMedicationTab = false
+        shouldNavigateToCaregiverLogin = false
+        userDefaults.removeObject(forKey: SessionStore.lastModeStorageKey)
+        removeCaregiverSession()
+        removePatientSession()
+        clearCurrentPatientId()
+        patientRefreshTask?.cancel()
+        patientRefreshTask = nil
+        isRefreshingCaregiverToken = false
+        isRefreshingPatientToken = false
+    }
+
     func saveCaregiverToken(_ token: String) {
         saveCaregiverSession(
             SupabaseSession(

@@ -278,6 +278,43 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertEqual(restored.patientToken, "patient-token")
     }
 
+    func testResetAfterAccountDeletionClearsAllLocalSessionStateAndReturnsToModeSelect() {
+        let store = makeStore()
+        store.setMode(.caregiver)
+        store.saveCaregiverSession(
+            SupabaseSession(
+                accessToken: "caregiver-token",
+                refreshToken: "refresh-token",
+                expiresIn: 3600
+            )
+        )
+        store.savePatientToken("patient-token")
+        store.setCurrentPatientId("patient-current")
+        store.shouldRedirectCaregiverToMedicationTab = true
+        store.shouldNavigateToCaregiverLogin = true
+
+        store.resetAfterAccountDeletion()
+
+        XCTAssertNil(store.mode)
+        XCTAssertNil(store.caregiverToken)
+        XCTAssertNil(store.patientToken)
+        XCTAssertNil(store.currentPatientId)
+        XCTAssertFalse(store.shouldRedirectCaregiverToMedicationTab)
+        XCTAssertFalse(store.shouldNavigateToCaregiverLogin)
+        XCTAssertNil(secureStorage.string(forKey: SessionStore.caregiverTokenStorageKey))
+        XCTAssertNil(secureStorage.string(forKey: SessionStore.caregiverRefreshTokenStorageKey))
+        XCTAssertNil(secureStorage.string(forKey: SessionStore.caregiverExpiresAtStorageKey))
+        XCTAssertNil(secureStorage.string(forKey: SessionStore.patientTokenStorageKey))
+        XCTAssertNil(secureStorage.string(forKey: SessionStore.patientExpiresAtStorageKey))
+        XCTAssertNil(userDefaults.string(forKey: SessionStore.lastModeStorageKey))
+
+        let restored = makeStore()
+        XCTAssertNil(restored.mode)
+        XCTAssertNil(restored.caregiverToken)
+        XCTAssertNil(restored.patientToken)
+        XCTAssertNil(restored.currentPatientId)
+    }
+
     func testClearTokensRemoveSecureStorageAndMode() {
         let store = makeStore()
         store.setMode(.caregiver)

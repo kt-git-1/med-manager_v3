@@ -739,6 +739,7 @@ private struct PatientTutorialSampleView: View {
 
 struct PatientSettingsView: View {
     @EnvironmentObject private var globalBannerPresenter: GlobalBannerPresenter
+    @Environment(\.openURL) private var openURL
     private let sessionStore: SessionStore
     private let apiClient: APIClient
     @ObservedObject private var schedulingCoordinator: SchedulingRefreshCoordinator
@@ -801,6 +802,52 @@ struct PatientSettingsView: View {
                         systemImage: "person.2.fill",
                         color: PatientUI.teal
                     )
+                }
+
+                PatientCard {
+                    VStack(alignment: .leading, spacing: 18) {
+                        settingsSectionTitle(
+                            NSLocalizedString("legal.section.title", comment: "Legal and support section title"),
+                            systemImage: "doc.text.magnifyingglass",
+                            color: PatientUI.teal
+                        )
+
+                        Button {
+                            openURL(AppConstants.privacyPolicyURL)
+                        } label: {
+                            settingsNavigationRow(
+                                title: NSLocalizedString("legal.privacy.title", comment: "Privacy policy title"),
+                                subtitle: NSLocalizedString("legal.privacy.message", comment: "Privacy policy message"),
+                                systemImage: "hand.raised.fill",
+                                color: PatientUI.teal
+                            )
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            openURL(AppConstants.termsURL)
+                        } label: {
+                            settingsNavigationRow(
+                                title: NSLocalizedString("legal.terms.title", comment: "Terms title"),
+                                subtitle: NSLocalizedString("legal.terms.message", comment: "Terms message"),
+                                systemImage: "doc.text.fill",
+                                color: PatientUI.blue
+                            )
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            openURL(AppConstants.supportURL)
+                        } label: {
+                            settingsNavigationRow(
+                                title: NSLocalizedString("legal.support.title", comment: "Support title"),
+                                subtitle: NSLocalizedString("legal.support.message", comment: "Support message"),
+                                systemImage: "questionmark.circle.fill",
+                                color: PatientUI.orange
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
 
                 if notificationsDisabled {

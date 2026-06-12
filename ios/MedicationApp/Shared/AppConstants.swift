@@ -27,6 +27,11 @@ enum AppConstants {
     /// Billing is intentionally disabled for the initial public release.
     static let billingEnabled = false
 
+    /// Public legal and support pages used from App Store metadata and in-app settings.
+    static let privacyPolicyURL = URL(string: "https://okusuri-mimamori.com/privacy")!
+    static let termsURL = URL(string: "https://okusuri-mimamori.com/terms")!
+    static let supportURL = URL(string: "https://okusuri-mimamori.com/support")!
+
     /// Patient token refresh interval in seconds.
     static let patientTokenRefreshInterval: TimeInterval = 600 // 10 minutes
 

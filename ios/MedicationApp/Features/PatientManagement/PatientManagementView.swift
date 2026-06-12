@@ -136,6 +136,7 @@ struct PatientManagementView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var globalBannerPresenter: GlobalBannerPresenter
     @EnvironmentObject private var toastPresenter: ToastPresenter
+    @Environment(\.openURL) private var openURL
     @StateObject private var viewModel: PatientManagementViewModel
     @StateObject private var preferencesStore = NotificationPreferencesStore()
     @StateObject private var schedulingCoordinator = SchedulingRefreshCoordinator()
@@ -311,6 +312,7 @@ struct PatientManagementView: View {
                     CaregiverNoPatientEmptyStateView {
                         showingCreate = true
                     }
+                    legalSupportSection
                     logoutSection
                 }
                 .padding(.horizontal, 16)
@@ -332,6 +334,7 @@ struct PatientManagementView: View {
                     selectedPatientSection
                     detailSettingsSection
                     pushSettingsSection
+                    legalSupportSection
                     logoutSection
                 }
                 .padding(.horizontal, 16)
@@ -688,19 +691,56 @@ struct PatientManagementView: View {
         }
     }
 
+    private var legalSupportSection: some View {
+        CaregiverCard {
+            VStack(alignment: .leading, spacing: 14) {
+                settingsGroupHeader(
+                    title: NSLocalizedString("legal.section.title", comment: "Legal and support section title"),
+                    message: NSLocalizedString("legal.section.message", comment: "Legal and support section message"),
+                    systemImage: "doc.text.magnifyingglass"
+                )
+
+                settingsActionRow(
+                    title: NSLocalizedString("legal.privacy.title", comment: "Privacy policy title"),
+                    message: NSLocalizedString("legal.privacy.message", comment: "Privacy policy message"),
+                    systemImage: "hand.raised.fill",
+                    tint: CaregiverUI.teal
+                ) {
+                    openURL(AppConstants.privacyPolicyURL)
+                }
+
+                settingsActionRow(
+                    title: NSLocalizedString("legal.terms.title", comment: "Terms title"),
+                    message: NSLocalizedString("legal.terms.message", comment: "Terms message"),
+                    systemImage: "doc.text.fill",
+                    tint: CaregiverUI.blue
+                ) {
+                    openURL(AppConstants.termsURL)
+                }
+
+                settingsActionRow(
+                    title: NSLocalizedString("legal.support.title", comment: "Support title"),
+                    message: NSLocalizedString("legal.support.message", comment: "Support message"),
+                    systemImage: "questionmark.circle.fill",
+                    tint: CaregiverUI.orange
+                ) {
+                    openURL(AppConstants.supportURL)
+                }
+            }
+        }
+    }
+
     private func deleteAccount() async {
         guard !isDeletingAccount else { return }
         isDeletingAccount = true
         let success = await viewModel.deleteCaregiverAccount()
         isDeletingAccount = false
         if success {
-            sessionStore.clearCaregiverToken()
-            globalBannerPresenter.show(
-                message: NSLocalizedString("caregiver.account.delete.toast", comment: "Account deleted toast"),
-                duration: 2
-            )
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                sessionStore.resetAfterAccountDeletion()
+            }
         } else {
-            showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
+            showToast(NSLocalizedString("caregiver.account.delete.failed", comment: "Account delete failed"), kind: .error)
         }
     }
 

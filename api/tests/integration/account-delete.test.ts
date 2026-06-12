@@ -87,7 +87,10 @@ describe("DELETE /api/me", () => {
     Object.values(deleteMocks).forEach((mock) => mock.mockResolvedValue({ count: 1 }));
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => new Response(null, { status: 200 }))
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response(null, { status: 200 }))
+        .mockResolvedValueOnce(new Response(null, { status: 404 }))
     );
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
   });
@@ -126,10 +129,22 @@ describe("DELETE /api/me", () => {
     expect(deleteMocks.caregiverEntitlement).toHaveBeenCalledWith({
       where: { caregiverId: "caregiver-delete-1" }
     });
-    expect(fetch).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
       "https://example.supabase.co/auth/v1/admin/users/caregiver-delete-1",
       expect.objectContaining({
         method: "DELETE",
+        headers: {
+          apikey: "service-role-key",
+          authorization: "Bearer service-role-key"
+        }
+      })
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      "https://example.supabase.co/auth/v1/admin/users/caregiver-delete-1",
+      expect.objectContaining({
+        method: "GET",
         headers: {
           apikey: "service-role-key",
           authorization: "Bearer service-role-key"
@@ -151,7 +166,7 @@ describe("DELETE /api/me", () => {
   it("treats already-deleted Supabase Auth user as success for retry", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => new Response(null, { status: 404 }))
+      vi.fn().mockResolvedValueOnce(new Response(null, { status: 404 }))
     );
 
     const { DELETE } = await import("../../app/api/me/route");
@@ -163,7 +178,7 @@ describe("DELETE /api/me", () => {
   it("returns 502 when Supabase Auth deletion fails after app data cleanup", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => new Response(null, { status: 500 }))
+      vi.fn().mockResolvedValueOnce(new Response(null, { status: 500 }))
     );
 
     const { DELETE } = await import("../../app/api/me/route");
@@ -173,6 +188,37 @@ describe("DELETE /api/me", () => {
     const body = await res.json();
     expect(body.error).toBe("supabase_account_delete_failed");
     expect(deleteMocks.patient).toHaveBeenCalled();
+  });
+
+  it("returns 502 when Supabase Auth user still exists after delete", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response(null, { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify({ id: "caregiver-delete-1" }), { status: 200 }))
+    );
+
+    const { DELETE } = await import("../../app/api/me/route");
+    const res = await DELETE(caregiverRequest());
+
+    expect(res.status).toBe(502);
+    const body = await res.json();
+    expect(body.error).toBe("supabase_account_delete_failed");
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns 502 when Supabase admin config is missing", async () => {
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    const { DELETE } = await import("../../app/api/me/route");
+    const res = await DELETE(caregiverRequest());
+
+    expect(res.status).toBe(502);
+    const body = await res.json();
+    expect(body.error).toBe("supabase_account_delete_failed");
+    expect(deleteMocks.patient).toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
   });
 });
 
