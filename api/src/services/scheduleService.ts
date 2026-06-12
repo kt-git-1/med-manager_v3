@@ -23,6 +23,7 @@ export type RegimenRecord = {
   times: string[];
   daysOfWeek?: string[];
   enabled: boolean;
+  createdAt?: Date;
 };
 
 export type MedicationSnapshot = {
@@ -182,6 +183,18 @@ function intersectWindow(
   return { start: windowStart, end: windowEnd };
 }
 
+function laterDate(left: Date, right: Date) {
+  return left > right ? left : right;
+}
+
+function getRegimenWindowStart(regimen: RegimenRecord, tz: string) {
+  const startDateFloor = startOfLocalDay(regimen.startDate, tz);
+  if (!regimen.createdAt) {
+    return startDateFloor;
+  }
+  return laterDate(startDateFloor, truncateToMinutes(regimen.createdAt, tz));
+}
+
 function buildMedicationSnapshot(medication: MedicationRecord): MedicationSnapshot {
   return {
     name: medication.name,
@@ -218,7 +231,7 @@ export function generateSchedule({
     const tz = normalizeRegimenTimeZone(regimen.timezone);
     const normalizedFrom = truncateToMinutes(from, tz);
     const normalizedTo = truncateToMinutes(to, tz);
-    const regimenStart = startOfLocalDay(regimen.startDate, tz);
+    const regimenStart = getRegimenWindowStart(regimen, tz);
     const regimenEnd = regimen.endDate ? startOfLocalDay(regimen.endDate, tz) : null;
     const window = intersectWindow(normalizedFrom, normalizedTo, regimenStart, regimenEnd);
     if (!window) {
