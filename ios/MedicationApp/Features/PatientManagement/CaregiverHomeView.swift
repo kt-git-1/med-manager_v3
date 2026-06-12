@@ -29,6 +29,7 @@ struct CaregiverHomeView: View {
                     sessionStore: sessionStore,
                     patientName: currentPatientName,
                     onOpenPatients: { openPatientSettings() },
+                    onOpenMedications: { selectedTab = .medications },
                     onCreatePatient: { openPatientCreate() }
                 )
             case .medications:
@@ -56,6 +57,7 @@ struct CaregiverHomeView: View {
                     InventoryListView(
                         sessionStore: sessionStore,
                         onOpenPatients: { openPatientSettings() },
+                        onOpenMedications: { selectedTab = .medications },
                         onCreatePatient: { openPatientCreate() },
                         hasAnyPatient: hasAnyPatient,
                         patientListErrorMessage: patientListErrorMessage,
@@ -1703,6 +1705,7 @@ struct CaregiverTodayTabView: View {
     private let sessionStore: SessionStore
     private let patientName: String?
     private let onOpenPatients: () -> Void
+    private let onOpenMedications: () -> Void
     private let onCreatePatient: () -> Void
     @StateObject private var viewModel: CaregiverMedicationViewModel
 
@@ -1710,11 +1713,13 @@ struct CaregiverTodayTabView: View {
         sessionStore: SessionStore,
         patientName: String?,
         onOpenPatients: @escaping () -> Void,
+        onOpenMedications: @escaping () -> Void,
         onCreatePatient: @escaping () -> Void
     ) {
         self.sessionStore = sessionStore
         self.patientName = patientName
         self.onOpenPatients = onOpenPatients
+        self.onOpenMedications = onOpenMedications
         self.onCreatePatient = onCreatePatient
         let baseURL = SessionStore.resolveBaseURL()
         _viewModel = StateObject(
@@ -1748,6 +1753,7 @@ struct CaregiverTodayTabView: View {
                     CaregiverTodayView(
                         sessionStore: sessionStore,
                         onOpenPatients: onOpenPatients,
+                        onOpenMedications: onOpenMedications,
                         patientName: patientName
                     )
                 }

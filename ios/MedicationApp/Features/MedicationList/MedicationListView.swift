@@ -240,40 +240,46 @@ struct MedicationListView: View {
                         ErrorStateView(message: errorMessage)
                     }
                 } else if viewModel.items.isEmpty {
-                    ZStack {
-                        Color.clear
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        VStack {
-                            Spacer(minLength: 0)
-                            VStack(spacing: 16) {
-                                Image(systemName: "pills")
-                                    .font(.system(size: 44))
-                                    .foregroundStyle(.secondary)
-                                EmptyStateView(
-                                    title: NSLocalizedString("medication.list.empty.title", comment: "Empty list title"),
-                                    message: NSLocalizedString("medication.list.empty.message", comment: "Empty list message")
-                                )
-                                if sessionStore.mode == .caregiver {
-                                    Button {
-                                        showingCreate = true
-                                    } label: {
-                                        Text(NSLocalizedString("medication.list.empty.action", comment: "Add medication action"))
-                                            .font(.headline)
-                                            .foregroundStyle(.white)
-                                            .frame(maxWidth: .infinity)
-                                            .frame(height: 50)
-                                            .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
+                    if sessionStore.mode == .caregiver {
+                        CaregiverScreenBackground {
+                            ScrollView {
+                                LazyVStack(spacing: 16) {
+                                    if let headerView {
+                                        headerView
                                     }
+                                    emptyMedicationHeader
+                                    emptyMedicationCard
                                 }
+                                .padding(.horizontal, 20)
+                                .padding(.top, headerView == nil ? 16 : 0)
                             }
-                            .padding(24)
-                            .frame(maxWidth: .infinity)
-                            .glassEffect(.regular, in: .rect(cornerRadius: 20))
-                            .padding(.horizontal, 24)
-                            Spacer(minLength: 120)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                            .safeAreaPadding(.bottom, 120)
                         }
+                    } else {
+                        ZStack {
+                            Color.clear
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            VStack {
+                                Spacer(minLength: 0)
+                                VStack(spacing: 16) {
+                                    Image(systemName: "pills")
+                                        .font(.system(size: 44))
+                                        .foregroundStyle(.secondary)
+                                    EmptyStateView(
+                                        title: NSLocalizedString("medication.list.empty.title", comment: "Empty list title"),
+                                        message: NSLocalizedString("medication.list.empty.message", comment: "Empty list message")
+                                    )
+                                }
+                                .padding(24)
+                                .frame(maxWidth: .infinity)
+                                .glassEffect(.regular, in: .rect(cornerRadius: 20))
+                                .padding(.horizontal, 24)
+                                Spacer(minLength: 120)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     let baseList = List {
                         if let headerView {
@@ -398,6 +404,78 @@ struct MedicationListView: View {
 
     private func showToast(_ message: String) {
         toastPresenter.show(message)
+    }
+
+    private var emptyMedicationHeader: some View {
+        HStack(alignment: .center, spacing: 14) {
+            CaregiverAvatar(name: patientName, systemImage: "pills.fill")
+            VStack(alignment: .leading, spacing: 4) {
+                Text(NSLocalizedString("caregiver.medications.title", comment: "Medications title"))
+                    .font(.largeTitle.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                Text(patientNameLine)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.top, 4)
+    }
+
+    private var emptyMedicationCard: some View {
+        CaregiverCard(accent: CaregiverUI.teal) {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .top, spacing: 14) {
+                    MedicationIllustrationView(tint: CaregiverUI.teal)
+                        .frame(width: 64, height: 64)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(NSLocalizedString("medication.list.empty.title", comment: "Empty list title"))
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(NSLocalizedString("medication.list.empty.message", comment: "Empty list message"))
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                VStack(spacing: 10) {
+                    CaregiverOnboardingStepRow(
+                        number: 1,
+                        title: NSLocalizedString("medication.list.empty.step.name", comment: "Medication empty name step"),
+                        systemImage: "textformat",
+                        tint: CaregiverUI.teal
+                    )
+                    CaregiverOnboardingStepRow(
+                        number: 2,
+                        title: NSLocalizedString("medication.list.empty.step.schedule", comment: "Medication empty schedule step"),
+                        systemImage: "clock.fill",
+                        tint: CaregiverUI.blue
+                    )
+                    CaregiverOnboardingStepRow(
+                        number: 3,
+                        title: NSLocalizedString("medication.list.empty.step.inventory", comment: "Medication empty inventory step"),
+                        systemImage: "shippingbox.fill",
+                        tint: CaregiverUI.orange
+                    )
+                }
+
+                CaregiverPrimaryButton(
+                    title: NSLocalizedString("medication.list.empty.action", comment: "Add medication action"),
+                    systemImage: "plus"
+                ) {
+                    showingCreate = true
+                }
+            }
+        }
+        .accessibilityIdentifier("MedicationListEmptyCard")
     }
 
     private var medicationHeaderRow: some View {

@@ -123,6 +123,42 @@ struct CaregiverPatientSelectionRequiredView: View {
     }
 }
 
+struct CaregiverOnboardingStepRow: View {
+    let number: Int
+    let title: String
+    let systemImage: String
+    let tint: Color
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text("\(number)")
+                .font(.caption.weight(.black))
+                .foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(tint, in: Circle())
+                .accessibilityHidden(true)
+
+            Image(systemName: systemImage)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(tint)
+                .frame(width: 34, height: 34)
+                .background(tint.opacity(0.12), in: Circle())
+                .accessibilityHidden(true)
+
+            Text(title)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .accessibilityLabel("\(number). \(title)")
+    }
+}
+
 struct CaregiverDataUnavailableView: View {
     let message: String
     let onRetry: () -> Void

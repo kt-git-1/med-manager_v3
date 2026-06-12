@@ -122,8 +122,11 @@
 
 /* Medication list */
 "medication.list.empty.title" = "薬がありません";
-"medication.list.empty.message" = "右上の追加から登録できます";
+"medication.list.empty.message" = "まず1つ目の薬を登録しましょう。定時薬も、必要な時だけ飲む薬もここで管理できます。";
 "medication.list.empty.action" = "薬を追加する";
+"medication.list.empty.step.name" = "薬名、用量、1回に飲む量を入力";
+"medication.list.empty.step.schedule" = "定時薬は飲む時間と曜日を設定";
+"medication.list.empty.step.inventory" = "必要に応じて在庫管理をオン";
 "medication.list.add" = "追加";
 "medication.list.section.title" = "薬一覧";
 "medication.list.section.scheduled" = "定時";
@@ -404,8 +407,12 @@
 "caregiver.inventory.list.quickRefill" = "+10";
 "caregiver.inventory.list.weeklyRefill.button" = "1週間分補充する";
 "caregiver.inventory.list.refilled" = "補充しました";
-"caregiver.inventory.list.empty.title" = "在庫がありません";
-"caregiver.inventory.list.empty.message" = "薬の在庫を設定してください";
+"caregiver.inventory.list.empty.title" = "在庫管理はまだ空です";
+"caregiver.inventory.list.empty.message" = "薬を登録して在庫管理をオンにすると、残数や補充目安をここで確認できます。";
+"caregiver.inventory.list.empty.step.medication" = "薬タブで薬を登録";
+"caregiver.inventory.list.empty.step.enable" = "薬の編集画面で在庫管理をオン";
+"caregiver.inventory.list.empty.step.refill" = "残数が少ない薬を在庫画面で確認";
+"caregiver.inventory.list.empty.action" = "薬を登録する";
 "caregiver.inventory.remaining.label" = "残り";
 "caregiver.inventory.remaining.count" = "残り%@錠";
 "caregiver.inventory.unit" = "錠";
@@ -448,8 +455,12 @@
 "caregiver.inventory.banner.medicationFallback" = "薬";
 
 /* Caregiver today */
-"caregiver.today.empty.title" = "予定がありません";
-"caregiver.today.empty.message" = "今日の服用予定はありません";
+"caregiver.today.empty.title" = "今日の予定はまだ空です";
+"caregiver.today.empty.message" = "薬を登録して飲む時間を設定すると、この画面に今日の予定が並びます。";
+"caregiver.today.empty.step.medication" = "薬タブで薬名と飲む量を登録";
+"caregiver.today.empty.step.schedule" = "朝・昼・夜・眠前などの時間を設定";
+"caregiver.today.empty.step.record" = "今日画面で服薬状況を確認・記録";
+"caregiver.today.empty.action" = "薬を登録する";
 "caregiver.today.title" = "今日の服薬";
 "caregiver.today.progress.format" = "%d/%d回分 完了";
 "caregiver.today.pending.count" = "未記録 %d";

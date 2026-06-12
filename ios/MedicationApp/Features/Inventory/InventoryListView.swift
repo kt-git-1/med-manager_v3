@@ -99,6 +99,7 @@ final class InventoryViewModel: ObservableObject {
 struct InventoryListView: View {
     private let sessionStore: SessionStore
     private let onOpenPatients: () -> Void
+    private let onOpenMedications: () -> Void
     private let onCreatePatient: () -> Void
     private let hasAnyPatient: Bool?
     private let patientListErrorMessage: String?
@@ -112,6 +113,7 @@ struct InventoryListView: View {
     init(
         sessionStore: SessionStore,
         onOpenPatients: @escaping () -> Void,
+        onOpenMedications: @escaping () -> Void = {},
         onCreatePatient: @escaping () -> Void = {},
         hasAnyPatient: Bool? = nil,
         patientListErrorMessage: String? = nil,
@@ -120,6 +122,7 @@ struct InventoryListView: View {
     ) {
         self.sessionStore = sessionStore
         self.onOpenPatients = onOpenPatients
+        self.onOpenMedications = onOpenMedications
         self.onCreatePatient = onCreatePatient
         self.hasAnyPatient = hasAnyPatient
         self.patientListErrorMessage = patientListErrorMessage
@@ -154,10 +157,7 @@ struct InventoryListView: View {
                     } else if let errorMessage = viewModel.errorMessage {
                         errorSection(message: errorMessage)
                     } else if viewModel.items.isEmpty {
-                        EmptyStateView(
-                            title: NSLocalizedString("caregiver.inventory.list.empty.title", comment: "Inventory list empty title"),
-                            message: NSLocalizedString("caregiver.inventory.list.empty.message", comment: "Inventory list empty message")
-                        )
+                        emptyInventoryView
                     } else {
                         inventoryList
                     }
@@ -192,6 +192,93 @@ struct InventoryListView: View {
             )
         }
         .accessibilityIdentifier("InventoryListView")
+    }
+
+    private var emptyInventoryView: some View {
+        CaregiverScreenBackground {
+            ScrollView {
+                LazyVStack(spacing: 16) {
+                    emptyInventoryHeader
+                    emptyInventoryCard
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .safeAreaPadding(.bottom, 120)
+        }
+    }
+
+    private var emptyInventoryHeader: some View {
+        HStack(alignment: .center, spacing: 14) {
+            CaregiverAvatar(name: patientName, systemImage: "shippingbox.fill")
+                .frame(width: 58, height: 58)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(NSLocalizedString("caregiver.inventory.title", comment: "Inventory title"))
+                    .font(.largeTitle.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                Text(patientNameLine)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var emptyInventoryCard: some View {
+        CaregiverCard(accent: CaregiverUI.teal) {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .top, spacing: 14) {
+                    InventoryIllustrationView(tint: CaregiverUI.teal)
+                        .frame(width: 64, height: 64)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(NSLocalizedString("caregiver.inventory.list.empty.title", comment: "Inventory list empty title"))
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(NSLocalizedString("caregiver.inventory.list.empty.message", comment: "Inventory list empty message"))
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                VStack(spacing: 10) {
+                    CaregiverOnboardingStepRow(
+                        number: 1,
+                        title: NSLocalizedString("caregiver.inventory.list.empty.step.medication", comment: "Inventory empty medication step"),
+                        systemImage: "pills.fill",
+                        tint: CaregiverUI.teal
+                    )
+                    CaregiverOnboardingStepRow(
+                        number: 2,
+                        title: NSLocalizedString("caregiver.inventory.list.empty.step.enable", comment: "Inventory empty enable step"),
+                        systemImage: "shippingbox.fill",
+                        tint: CaregiverUI.blue
+                    )
+                    CaregiverOnboardingStepRow(
+                        number: 3,
+                        title: NSLocalizedString("caregiver.inventory.list.empty.step.refill", comment: "Inventory empty refill step"),
+                        systemImage: "bell.badge.fill",
+                        tint: CaregiverUI.orange
+                    )
+                }
+
+                CaregiverPrimaryButton(
+                    title: NSLocalizedString("caregiver.inventory.list.empty.action", comment: "Open medications action"),
+                    systemImage: "pills.fill"
+                ) {
+                    onOpenMedications()
+                }
+            }
+        }
+        .accessibilityIdentifier("InventoryListEmptyCard")
     }
 
     private var inventoryList: some View {

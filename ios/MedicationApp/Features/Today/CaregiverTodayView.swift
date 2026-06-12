@@ -3,6 +3,7 @@ import SwiftUI
 struct CaregiverTodayView: View {
     private let sessionStore: SessionStore
     private let onOpenPatients: () -> Void
+    private let onOpenMedications: () -> Void
     private let patientName: String?
     private let headerView: AnyView?
     @StateObject private var viewModel: CaregiverTodayViewModel
@@ -13,12 +14,14 @@ struct CaregiverTodayView: View {
     init(
         sessionStore: SessionStore? = nil,
         onOpenPatients: @escaping () -> Void = {},
+        onOpenMedications: @escaping () -> Void = {},
         patientName: String? = nil,
         headerView: AnyView? = nil
     ) {
         let store = sessionStore ?? SessionStore()
         self.sessionStore = store
         self.onOpenPatients = onOpenPatients
+        self.onOpenMedications = onOpenMedications
         self.patientName = patientName
         self.headerView = headerView
         let baseURL = SessionStore.resolveBaseURL()
@@ -98,20 +101,12 @@ struct CaregiverTodayView: View {
             } else if viewModel.items.isEmpty {
                 CaregiverScreenBackground {
                     ScrollView {
-                        VStack(spacing: 18) {
-                            todayHeader
-                            CaregiverCard {
-                                VStack(spacing: 12) {
-                                    Image(systemName: "checklist")
-                                        .font(.system(size: 44, weight: .semibold))
-                                        .foregroundStyle(CaregiverUI.teal)
-                                    EmptyStateView(
-                                        title: NSLocalizedString("caregiver.today.empty.title", comment: "Empty title"),
-                                        message: NSLocalizedString("caregiver.today.empty.message", comment: "Empty message")
-                                    )
-                                }
-                                .frame(maxWidth: .infinity)
+                        LazyVStack(spacing: 16) {
+                            if let headerView {
+                                headerView
                             }
+                            todayHeader
+                            emptyTodayCard
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 16)
@@ -146,6 +141,65 @@ struct CaregiverTodayView: View {
                 }
             }
         }
+    }
+
+    private var emptyTodayCard: some View {
+        CaregiverCard(accent: CaregiverUI.teal) {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .top, spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(CaregiverUI.teal.opacity(0.13))
+                            .frame(width: 58, height: 58)
+                        Image(systemName: "calendar.badge.plus")
+                            .font(.title.weight(.bold))
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(CaregiverUI.teal)
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(NSLocalizedString("caregiver.today.empty.title", comment: "Empty title"))
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(NSLocalizedString("caregiver.today.empty.message", comment: "Empty message"))
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                VStack(spacing: 10) {
+                    CaregiverOnboardingStepRow(
+                        number: 1,
+                        title: NSLocalizedString("caregiver.today.empty.step.medication", comment: "Empty today medication step"),
+                        systemImage: "pills.fill",
+                        tint: CaregiverUI.teal
+                    )
+                    CaregiverOnboardingStepRow(
+                        number: 2,
+                        title: NSLocalizedString("caregiver.today.empty.step.schedule", comment: "Empty today schedule step"),
+                        systemImage: "clock.fill",
+                        tint: CaregiverUI.blue
+                    )
+                    CaregiverOnboardingStepRow(
+                        number: 3,
+                        title: NSLocalizedString("caregiver.today.empty.step.record", comment: "Empty today record step"),
+                        systemImage: "checkmark.circle.fill",
+                        tint: CaregiverUI.orange
+                    )
+                }
+
+                CaregiverPrimaryButton(
+                    title: NSLocalizedString("caregiver.today.empty.action", comment: "Open medications action"),
+                    systemImage: "pills.fill"
+                ) {
+                    onOpenMedications()
+                }
+            }
+        }
+        .accessibilityIdentifier("CaregiverTodayEmptyCard")
     }
 
     private var centeredLoadingState: some View {
