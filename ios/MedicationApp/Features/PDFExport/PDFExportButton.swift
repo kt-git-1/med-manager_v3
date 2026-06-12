@@ -17,7 +17,7 @@ struct PDFExportButton: View {
     @State private var viewModel = PeriodPickerViewModel()
 
     var body: some View {
-        if sessionStore.mode == .caregiver {
+        if AppConstants.billingEnabled, sessionStore.mode == .caregiver {
             Button {
                 handleTap()
             } label: {

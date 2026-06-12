@@ -76,9 +76,10 @@ struct MedicationApp: App {
             .onAppear {
                 // Wire AppDelegate → DeviceTokenManager for APNs callbacks
                 appDelegate.deviceTokenManager = caregiverSessionController.tokenManager
-                // Configure EntitlementStore with APIClient for server claims
-                let apiClient = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: sessionStore)
-                entitlementStore.configure(apiClient: apiClient)
+                if AppConstants.billingEnabled {
+                    let apiClient = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: sessionStore)
+                    entitlementStore.configure(apiClient: apiClient)
+                }
             }
             .onOpenURL { url in
                 _ = sessionStore.handleIncomingURL(url)

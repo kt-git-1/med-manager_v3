@@ -38,32 +38,34 @@ struct PDFExportLockView: View {
             Spacer()
 
             VStack(spacing: 12) {
-                Button {
-                    showPaywall = true
-                } label: {
-                    Text(NSLocalizedString(
-                        "pdfexport.lock.upgrade",
-                        comment: "Upgrade button"
-                    ))
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
-                }
-                .accessibilityIdentifier("pdfexport.lock.upgrade")
+                if AppConstants.billingEnabled {
+                    Button {
+                        showPaywall = true
+                    } label: {
+                        Text(NSLocalizedString(
+                            "pdfexport.lock.upgrade",
+                            comment: "Upgrade button"
+                        ))
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
+                    }
+                    .accessibilityIdentifier("pdfexport.lock.upgrade")
 
-                Button {
-                    Task { await entitlementStore.restore() }
-                } label: {
-                    Text(NSLocalizedString(
-                        "pdfexport.lock.restore",
-                        comment: "Restore button"
-                    ))
-                    .font(.subheadline)
-                    .foregroundStyle(.tint)
+                    Button {
+                        Task { await entitlementStore.restore() }
+                    } label: {
+                        Text(NSLocalizedString(
+                            "pdfexport.lock.restore",
+                            comment: "Restore button"
+                        ))
+                        .font(.subheadline)
+                        .foregroundStyle(.tint)
+                    }
+                    .accessibilityIdentifier("pdfexport.lock.restore")
                 }
-                .accessibilityIdentifier("pdfexport.lock.restore")
 
                 Button {
                     onDismiss()

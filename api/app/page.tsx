@@ -223,6 +223,12 @@ export default function Home() {
         </div>
       </section>
 
+      <footer className="footer-links" aria-label="公開情報">
+        <a href="/privacy">プライバシーポリシー</a>
+        <a href="/terms">利用規約</a>
+        <a href="/support">サポート</a>
+      </footer>
+
       <style>{`
         :root {
           color-scheme: light;
@@ -268,11 +274,12 @@ export default function Home() {
 
         .hero-copy,
         .overview,
-        .demo-section,
-        .mail-note {
-          width: min(1040px, 100%);
-          margin: 0 auto;
-        }
+          .demo-section,
+          .mail-note,
+          .footer-links {
+            width: min(1040px, 100%);
+            margin: 0 auto;
+          }
 
         .hero-copy {
           position: relative;
@@ -322,6 +329,19 @@ export default function Home() {
         .demo-section,
         .mail-note {
           padding: 72px 20px 0;
+        }
+
+        .footer-links {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 14px;
+          padding: 40px 20px 56px;
+        }
+
+        .footer-links a {
+          color: #24614d;
+          font-weight: 800;
+          text-decoration: none;
         }
 
         .section-heading {

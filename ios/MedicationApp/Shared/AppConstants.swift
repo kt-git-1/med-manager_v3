@@ -24,6 +24,9 @@ enum AppConstants {
     /// Fallback base URL used when API_BASE_URL is not configured.
     static let defaultAPIBaseURL = URL(string: "http://localhost:3000")!
 
+    /// Billing is intentionally disabled for the initial public release.
+    static let billingEnabled = false
+
     /// Patient token refresh interval in seconds.
     static let patientTokenRefreshInterval: TimeInterval = 600 // 10 minutes
 

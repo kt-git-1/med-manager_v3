@@ -114,6 +114,16 @@ final class PatientManagementViewModel: ObservableObject {
         }
     }
 
+    func deleteCaregiverAccount() async -> Bool {
+        do {
+            try await apiClient.deleteCaregiverAccount()
+            patients.removeAll()
+            return true
+        } catch {
+            return false
+        }
+    }
+
     func updateSlotTimes(patientId: String, slotTimes: PatientSlotTimesDTO) {
         patients = patients.map { patient in
             guard patient.id == patientId else { return patient }
@@ -133,6 +143,8 @@ struct PatientManagementView: View {
     @State private var revokeTarget: PatientDTO?
     @State private var deleteTarget: PatientDTO?
     @State private var showingLogoutConfirm = false
+    @State private var showingAccountDeleteConfirm = false
+    @State private var isDeletingAccount = false
     @State private var draftTimes: [NotificationSlot: Date] = [:]
     @State private var isSavingDetail = false
     @State private var showingTimePresetSheet = false
@@ -262,7 +274,7 @@ struct PatientManagementView: View {
             draftTimes = buildDraftTimes()
         }
         .overlay {
-            if isSavingDetail || pushSettingsViewModel.isUpdating {
+            if isSavingDetail || pushSettingsViewModel.isUpdating || isDeletingAccount {
                 SchedulingRefreshOverlay()
             }
         }
@@ -288,9 +300,24 @@ struct PatientManagementView: View {
                 onReturnToLogin: { sessionStore.returnToCaregiverLogin() }
             )
         } else if viewModel.patients.isEmpty {
-            CaregiverNoPatientEmptyStateView {
-                showingCreate = true
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    CaregiverPatientHeader(
+                        title: NSLocalizedString("caregiver.settings.title", comment: "Caregiver settings title"),
+                        patientName: nil,
+                        systemImage: "person.2.badge.gearshape.fill",
+                        subtitle: NSLocalizedString("caregiver.common.patient.none", comment: "No patient")
+                    )
+                    CaregiverNoPatientEmptyStateView {
+                        showingCreate = true
+                    }
+                    logoutSection
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+                .padding(.bottom, 64)
             }
+            .background(CaregiverUI.background)
         } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
@@ -604,32 +631,76 @@ struct PatientManagementView: View {
                     message: NSLocalizedString("caregiver.settings.account.message", comment: "Account settings message"),
                     systemImage: "person.crop.circle.fill"
                 )
-            Button {
-                showingLogoutConfirm = true
-            } label: {
-                Text(NSLocalizedString("common.logout", comment: "Logout"))
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Color.red, in: RoundedRectangle(cornerRadius: 14))
-            }
-            .alert(
-                NSLocalizedString("caregiver.logout.confirm.title", comment: "Logout confirm title"),
-                isPresented: $showingLogoutConfirm
-            ) {
-                Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
-                Button(NSLocalizedString("caregiver.logout.confirm.action", comment: "Logout confirm action"), role: .destructive) {
-                    sessionStore.clearCaregiverToken()
-                    globalBannerPresenter.show(
-                        message: NSLocalizedString("caregiver.logout.toast", comment: "Logout toast"),
-                        duration: 2
-                    )
+
+                Button {
+                    showingLogoutConfirm = true
+                } label: {
+                    Text(NSLocalizedString("common.logout", comment: "Logout"))
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.red, in: RoundedRectangle(cornerRadius: 14))
                 }
-            } message: {
-                Text(NSLocalizedString("caregiver.logout.confirm.message", comment: "Logout confirm message"))
+                .alert(
+                    NSLocalizedString("caregiver.logout.confirm.title", comment: "Logout confirm title"),
+                    isPresented: $showingLogoutConfirm
+                ) {
+                    Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
+                    Button(NSLocalizedString("caregiver.logout.confirm.action", comment: "Logout confirm action"), role: .destructive) {
+                        sessionStore.clearCaregiverToken()
+                        globalBannerPresenter.show(
+                            message: NSLocalizedString("caregiver.logout.toast", comment: "Logout toast"),
+                            duration: 2
+                        )
+                    }
+                } message: {
+                    Text(NSLocalizedString("caregiver.logout.confirm.message", comment: "Logout confirm message"))
+                }
+
+                Button {
+                    showingAccountDeleteConfirm = true
+                } label: {
+                    Label(NSLocalizedString("caregiver.account.delete", comment: "Delete caregiver account"), systemImage: "trash")
+                        .font(.headline)
+                        .foregroundStyle(.red)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Color.red.opacity(0.35), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled(isDeletingAccount)
+                .alert(
+                    NSLocalizedString("caregiver.account.delete.confirm.title", comment: "Delete account title"),
+                    isPresented: $showingAccountDeleteConfirm
+                ) {
+                    Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
+                    Button(NSLocalizedString("caregiver.account.delete.confirm.action", comment: "Delete account action"), role: .destructive) {
+                        Task { await deleteAccount() }
+                    }
+                } message: {
+                    Text(NSLocalizedString("caregiver.account.delete.confirm.message", comment: "Delete account message"))
+                }
             }
-            }
+        }
+    }
+
+    private func deleteAccount() async {
+        guard !isDeletingAccount else { return }
+        isDeletingAccount = true
+        let success = await viewModel.deleteCaregiverAccount()
+        isDeletingAccount = false
+        if success {
+            sessionStore.clearCaregiverToken()
+            globalBannerPresenter.show(
+                message: NSLocalizedString("caregiver.account.delete.toast", comment: "Account deleted toast"),
+                duration: 2
+            )
+        } else {
+            showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
         }
     }
 

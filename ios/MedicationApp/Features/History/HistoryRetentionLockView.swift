@@ -81,32 +81,34 @@ struct HistoryRetentionLockView: View {
 
     private var caregiverButtons: some View {
         VStack(spacing: 12) {
-            Button {
-                showPaywall = true
-            } label: {
-                Text(NSLocalizedString(
-                    "history.retention.lock.upgrade",
-                    comment: "Upgrade button"
-                ))
-                .font(.headline)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
-            }
-            .accessibilityIdentifier("history.retention.lock.upgrade")
+            if AppConstants.billingEnabled {
+                Button {
+                    showPaywall = true
+                } label: {
+                    Text(NSLocalizedString(
+                        "history.retention.lock.upgrade",
+                        comment: "Upgrade button"
+                    ))
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
+                }
+                .accessibilityIdentifier("history.retention.lock.upgrade")
 
-            Button {
-                Task { await entitlementStore.restore() }
-            } label: {
-                Text(NSLocalizedString(
-                    "history.retention.lock.restore",
-                    comment: "Restore button"
-                ))
-                .font(.subheadline)
-                .foregroundStyle(.tint)
+                Button {
+                    Task { await entitlementStore.restore() }
+                } label: {
+                    Text(NSLocalizedString(
+                        "history.retention.lock.restore",
+                        comment: "Restore button"
+                    ))
+                    .font(.subheadline)
+                    .foregroundStyle(.tint)
+                }
+                .accessibilityIdentifier("history.retention.lock.restore")
             }
-            .accessibilityIdentifier("history.retention.lock.restore")
 
             Button {
                 onDismiss()

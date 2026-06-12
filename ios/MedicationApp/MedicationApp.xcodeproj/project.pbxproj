@@ -12,8 +12,9 @@
 		07A122CD68554DEF139F0929 /* MedicationFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0822331373D994BC40BCB45F /* MedicationFormView.swift */; };
 		08F2E2D7265212F0DAEC48C8 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B421542D92993BB7B79D9D3 /* APIError.swift */; };
 		0BE25CB60B085ADA81C99A63 /* Products.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 9B64AF7EE295BBF73C74DC54 /* Products.storekit */; };
-		0BEE3094B08648A295008EC4 /* SessionKeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E051C14827C2DAF7D4738AA0 /* SessionKeychainStore.swift */; };
-		0C743631749D3703ECF117C7 /* PrnOverlayUiTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59803E8F1DB8D7C07E6285E5 /* PrnOverlayUiTests.swift */; };
+			0BEE3094B08648A295008EC4 /* SessionKeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E051C14827C2DAF7D4738AA0 /* SessionKeychainStore.swift */; };
+			0C01AA111111111111111111 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0C01AA222222222222222222 /* PrivacyInfo.xcprivacy */; };
+			0C743631749D3703ECF117C7 /* PrnOverlayUiTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59803E8F1DB8D7C07E6285E5 /* PrnOverlayUiTests.swift */; };
 		0D5ECB5EDCE89C6243561201 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C14C533AD6E811851375D3BA /* LaunchScreen.storyboard */; };
 		0E7183A7256CA67A2F98F040 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D944249F964B12755FD2DF /* APIClient.swift */; };
 		0F4FB82A94528ACED5A8531C /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 147DEFCBB105644FFF683E3A /* SplashView.swift */; };
@@ -234,8 +235,9 @@
 		94643C1CA7FC56CD9674234A /* HistoryDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryDTO.swift; sourceTree = "<group>"; };
 		96625C38F8A39E22EE9BDE70 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9A52478DEFCCAE46F0F50136 /* HistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewModel.swift; sourceTree = "<group>"; };
-		9B64AF7EE295BBF73C74DC54 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
-		A0553302E054BBF130267A11 /* NotificationPlanBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPlanBuilder.swift; sourceTree = "<group>"; };
+			9B64AF7EE295BBF73C74DC54 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
+			0C01AA222222222222222222 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+			A0553302E054BBF130267A11 /* NotificationPlanBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPlanBuilder.swift; sourceTree = "<group>"; };
 		ABBF5EB307A2B918E9712162 /* NotificationDeepLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationDeepLinkTests.swift; sourceTree = "<group>"; };
 		ABD7675083AAF91936829813 /* PeriodPickerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodPickerViewModel.swift; sourceTree = "<group>"; };
 		AC0B3D46C84BDF4988FAD45A /* CaregiverAuthChoiceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverAuthChoiceView.swift; sourceTree = "<group>"; };
@@ -343,9 +345,10 @@
 				96625C38F8A39E22EE9BDE70 /* AppDelegate.swift */,
 				B787856EA1456F50596935F0 /* Info.plist */,
 				C14C533AD6E811851375D3BA /* LaunchScreen.storyboard */,
-				6422C8656A2A888B307E5A94 /* MedicationApp.swift */,
-				9B64AF7EE295BBF73C74DC54 /* Products.storekit */,
-				0C5E58283CB0DE531C70CF9B /* RootView.swift */,
+					6422C8656A2A888B307E5A94 /* MedicationApp.swift */,
+					9B64AF7EE295BBF73C74DC54 /* Products.storekit */,
+					0C01AA222222222222222222 /* PrivacyInfo.xcprivacy */,
+					0C5E58283CB0DE531C70CF9B /* RootView.swift */,
 				147DEFCBB105644FFF683E3A /* SplashView.swift */,
 			);
 			path = App;
@@ -800,10 +803,11 @@
 			files = (
 				3F51C80C88632AC450E9771A /* Assets.xcassets in Resources */,
 				831DFECBC7CBCAE01A5B9BD4 /* GoogleService-Info.plist in Resources */,
-				0D5ECB5EDCE89C6243561201 /* LaunchScreen.storyboard in Resources */,
-				69F70E3ACDD8576579F8AD0E /* Localizable.strings in Resources */,
-				0BE25CB60B085ADA81C99A63 /* Products.storekit in Resources */,
-			);
+					0D5ECB5EDCE89C6243561201 /* LaunchScreen.storyboard in Resources */,
+					69F70E3ACDD8576579F8AD0E /* Localizable.strings in Resources */,
+					0BE25CB60B085ADA81C99A63 /* Products.storekit in Resources */,
+					0C01AA111111111111111111 /* PrivacyInfo.xcprivacy in Resources */,
+				);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
@@ -1027,7 +1031,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.afterlifearchive.medmanager;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1145,7 +1149,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.afterlifearchive.medmanager;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";

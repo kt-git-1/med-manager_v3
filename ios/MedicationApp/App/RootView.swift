@@ -37,7 +37,7 @@ struct RootView: View {
         .task {
             if sessionStore.mode == .caregiver {
                 await sessionStore.refreshCaregiverTokenIfNeeded()
-                if sessionStore.caregiverToken != nil {
+                if AppConstants.billingEnabled, sessionStore.caregiverToken != nil {
                     await entitlementStore?.refresh()
                 }
             }
@@ -50,7 +50,7 @@ struct RootView: View {
             if phase == .active && sessionStore.mode == .caregiver {
                 Task {
                     await sessionStore.refreshCaregiverTokenIfNeeded()
-                    if sessionStore.caregiverToken != nil {
+                    if AppConstants.billingEnabled, sessionStore.caregiverToken != nil {
                         await entitlementStore?.refresh()
                     }
                 }
@@ -63,6 +63,7 @@ struct RootView: View {
             )
         }
         .onReceive(NotificationCenter.default.publisher(for: .caregiverDidLogin)) { _ in
+            guard AppConstants.billingEnabled else { return }
             Task { await entitlementStore?.refresh() }
         }
     }
