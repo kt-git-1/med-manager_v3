@@ -1,8 +1,9 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 type LegalSection = {
   title: string;
-  body: string;
+  body: ReactNode;
 };
 
 type LegalPageProps = {
@@ -116,6 +117,13 @@ export function LegalPage({ title, description, sections }: LegalPageProps) {
           margin: 0;
           color: #4d6159;
           line-height: 1.9;
+        }
+
+        .legal-content a {
+          color: #24614d;
+          font-weight: 800;
+          text-decoration-thickness: 0.08em;
+          text-underline-offset: 0.18em;
         }
 
         @media (max-width: 640px) {

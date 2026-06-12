@@ -4,6 +4,8 @@ export const metadata = {
   title: "サポート | お薬見守り"
 };
 
+const supportEmail = "support@okusuri-mimamori.com";
+
 export default function SupportPage() {
   return (
     <LegalPage
@@ -12,11 +14,22 @@ export default function SupportPage() {
       sections={[
         {
           title: "問い合わせ",
-          body: "アプリの利用方法、不具合、アカウント削除、データ削除については、App Store に掲載するサポート連絡先までお問い合わせください。"
+          body: (
+            <>
+              アプリの利用方法、不具合、アカウント削除、データ削除については{" "}
+              <a href={`mailto:${supportEmail}`}>{supportEmail}</a>{" "}
+              までお問い合わせください。
+            </>
+          )
         },
         {
           title: "アカウント削除",
-          body: "家族モードでログイン後、設定画面の「アカウントを削除」から削除できます。削除に失敗する場合は、サポート連絡先へご相談ください。"
+          body: (
+            <>
+              家族モードでログイン後、設定画面の「アカウントを削除」から削除できます。
+              削除に失敗する場合は、上記メールアドレスへご相談ください。
+            </>
+          )
         },
         {
           title: "通知が届かない場合",

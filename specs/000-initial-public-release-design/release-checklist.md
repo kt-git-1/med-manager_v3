@@ -14,6 +14,7 @@
 - Privacy policy URL: `https://okusuri-mimamori.com/privacy`
 - Terms URL: `https://okusuri-mimamori.com/terms`
 - Support URL: `https://okusuri-mimamori.com/support`
+- Support contact email: `support@okusuri-mimamori.com`
 - `PrivacyInfo.xcprivacy` is included in the app target.
 
 ## Manual Smoke

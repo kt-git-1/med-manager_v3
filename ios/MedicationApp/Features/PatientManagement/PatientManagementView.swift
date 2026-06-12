@@ -740,6 +740,11 @@ struct PatientManagementView: View {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                 sessionStore.resetAfterAccountDeletion()
             }
+            toastPresenter.show(
+                NSLocalizedString("caregiver.account.delete.toast", comment: "Account deleted toast"),
+                kind: .success,
+                duration: 3
+            )
         } else {
             showToast(NSLocalizedString("caregiver.account.delete.failed", comment: "Account delete failed"), kind: .error)
         }
