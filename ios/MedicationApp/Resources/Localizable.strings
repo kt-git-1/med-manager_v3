@@ -292,6 +292,8 @@
 "history.status.pending" = "未記録";
 "history.status.taken" = "記録済み";
 "history.status.missed" = "飲み忘れ";
+"history.recordedBy.patient" = "本人が記録";
+"history.recordedBy.caregiver" = "家族が代理で記録";
 "history.day.backfill.button" = "服用済みにする";
 "history.day.backfill.confirm.title" = "後から記録しますか？";
 "history.day.backfill.confirm.message" = "%@を服用済みとして記録します。";
@@ -507,18 +509,18 @@
 "caregiver.today.confirm.message" = "%@の服用を代理で記録しますか？";
 "caregiver.today.confirm.missed.message" = "%@の飲み忘れを服用済みとして記録しますか？";
 "caregiver.today.confirm.slot.title" = "時間帯の服薬を記録";
-"caregiver.today.confirm.slot.message" = "%@の未記録%d件をまとめて記録しますか？";
-"caregiver.today.confirm.slot.missed.message" = "%@の未記録・飲み忘れ%d件をまとめて服用済みにしますか？";
-"caregiver.today.confirm.record" = "記録する";
+"caregiver.today.confirm.slot.message" = "%@の未記録%d件を代理でまとめて記録しますか？";
+"caregiver.today.confirm.slot.missed.message" = "%@の未記録・飲み忘れ%d件を代理でまとめて服用済みにしますか？";
+"caregiver.today.confirm.record" = "代理で記録する";
 "caregiver.today.delete.button" = "取り消す";
 "caregiver.today.recorded" = "記録しました";
 "caregiver.today.deleted" = "記録を取り消しました";
 "caregiver.today.section.planned" = "今日の服用予定";
 "caregiver.today.section.taken" = "服用済み";
 "caregiver.today.section.missed" = "飲み忘れ";
-"caregiver.today.recordedBy" = "記録: %@";
-"caregiver.today.recordedBy.patient" = "本人";
-"caregiver.today.recordedBy.caregiver" = "家族";
+"caregiver.today.recordedBy" = "%@";
+"caregiver.today.recordedBy.patient" = "本人が記録";
+"caregiver.today.recordedBy.caregiver" = "家族が代理で記録";
 "caregiver.banner.withinTime" = "%@さんが時間内に薬を服用しました！";
 "caregiver.banner.scheduled" = "%@さんが%@の薬を服用しました";
 "caregiver.banner.prn" = "%@さんが頓服（%@）を服用しました";
@@ -717,8 +719,8 @@
 "pdfexport.pdf.status.taken" = "服用済";
 "pdfexport.pdf.status.missed" = "未服用";
 "pdfexport.pdf.status.pending" = "未記録";
-"pdfexport.pdf.recorder.patient" = "患者";
-"pdfexport.pdf.recorder.caregiver" = "家族";
+"pdfexport.pdf.recorder.patient" = "本人が記録";
+"pdfexport.pdf.recorder.caregiver" = "家族が代理で記録";
 
 /* Slot Bulk Recording (0115) */
 "patient.today.slot.bulk.button" = "この時間のお薬を飲んだ";

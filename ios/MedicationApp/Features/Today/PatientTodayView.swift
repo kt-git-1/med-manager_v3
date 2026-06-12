@@ -1418,11 +1418,8 @@ private struct PrnMedicationCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 14) {
-                Image(systemName: "pills.fill")
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(PatientUI.orange)
+                MedicationSymbolView(tint: PatientUI.orange)
                     .frame(width: 50, height: 50)
-                    .background(PatientUI.orange.opacity(0.12), in: Circle())
                 VStack(alignment: .leading, spacing: 8) {
                     Text(prnMedicationDisplayName)
                         .font(.title.weight(.bold))

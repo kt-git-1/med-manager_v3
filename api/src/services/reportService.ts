@@ -25,6 +25,7 @@ type ReportSlotItem = {
   doseCount: number;
   status: "TAKEN" | "MISSED" | "PENDING";
   recordedAt: string | null;
+  recordedBy: "PATIENT" | "CAREGIVER" | null;
 };
 
 type ReportPrnItem = {
@@ -155,7 +156,11 @@ export async function generateReport(
         doseCount: dose.medicationSnapshot.doseCountPerIntake,
         status: dose.effectiveStatus.toUpperCase() as ReportSlotItem["status"],
         recordedAt:
-          dose.effectiveStatus === "taken" ? (dose.takenAt ?? dose.scheduledAt) : null
+          dose.effectiveStatus === "taken" ? (dose.takenAt ?? dose.scheduledAt) : null,
+        recordedBy:
+          dose.effectiveStatus === "taken" && dose.recordedByType
+            ? (dose.recordedByType.toUpperCase() as ReportSlotItem["recordedBy"])
+            : null
       });
     }
 

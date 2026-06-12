@@ -75,6 +75,7 @@ struct HistoryDayDetailView: View {
                                 name: dose.medicationName,
                                 dosage: dose.dosageText,
                                 status: dose.effectiveStatus,
+                                recordedByText: recordedByText(for: dose),
                                 isHighlighted: isSlotHighlighted(dose.slot),
                                 style: style,
                                 canBackfill: style == .caregiver && dose.effectiveStatus == .missed,
@@ -88,6 +89,7 @@ struct HistoryDayDetailView: View {
                                 timeText: HistoryDayDetailView.timeFormatter.string(from: record.takenAt),
                                 name: record.medicationName,
                                 quantity: record.quantityTaken,
+                                recordedByText: recordedByText(for: record.actorType),
                                 style: style
                             )
                         }
@@ -183,6 +185,31 @@ struct HistoryDayDetailView: View {
             return AppConstants.slotColor(for: .bedtime)
         }
     }
+
+    private func recordedByText(for dose: HistoryDayItemDTO) -> String? {
+        guard dose.effectiveStatus == .taken, let recordedByType = dose.recordedByType else {
+            return nil
+        }
+        return recordedByText(for: recordedByType)
+    }
+
+    private func recordedByText(for actorType: RecordedByTypeDTO) -> String {
+        switch actorType {
+        case .patient:
+            return NSLocalizedString("history.recordedBy.patient", comment: "Patient recorded")
+        case .caregiver:
+            return NSLocalizedString("history.recordedBy.caregiver", comment: "Caregiver recorded")
+        }
+    }
+
+    private func recordedByText(for actorType: PrnActorTypeDTO) -> String {
+        switch actorType {
+        case .patient:
+            return NSLocalizedString("history.recordedBy.patient", comment: "Patient recorded")
+        case .caregiver:
+            return NSLocalizedString("history.recordedBy.caregiver", comment: "Caregiver recorded")
+        }
+    }
 }
 
 enum HistoryDayDetailStyle {
@@ -197,6 +224,7 @@ private struct HistoryDayRow: View {
     let name: String
     let dosage: String
     let status: HistoryDoseStatusDTO
+    let recordedByText: String?
     var isHighlighted: Bool = false
     var style: HistoryDayDetailStyle = .caregiver
     var canBackfill = false
@@ -221,6 +249,9 @@ private struct HistoryDayRow: View {
                         .font(style == .patient ? .title3.weight(.bold) : .title3.weight(.semibold))
                         .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
+                    if let recordedByText {
+                        HistoryRecordedByLabel(text: recordedByText, style: style)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .layoutPriority(1)
@@ -375,6 +406,7 @@ private struct HistoryDayPrnRow: View {
     let timeText: String
     let name: String
     let quantity: Double
+    let recordedByText: String
     var style: HistoryDayDetailStyle = .caregiver
 
     private var prnPrefix: String {
@@ -388,6 +420,7 @@ private struct HistoryDayPrnRow: View {
                     .font(style == .patient ? .title3.weight(.bold) : .headline)
                 Text("\(prnPrefix): \(name)")
                     .font(style == .patient ? .title3.weight(.bold) : .title3.weight(.semibold))
+                HistoryRecordedByLabel(text: recordedByText, style: style)
             }
             Spacer()
             Text(prnPrefix)
@@ -418,5 +451,19 @@ private struct HistoryDayPrnRow: View {
             return AnyShapeStyle(Color.white)
         }
         return AnyShapeStyle(.regularMaterial)
+    }
+}
+
+private struct HistoryRecordedByLabel: View {
+    let text: String
+    let style: HistoryDayDetailStyle
+
+    var body: some View {
+        Label(text, systemImage: "person.crop.circle.badge.checkmark")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(style == .patient ? PatientUI.teal : CaregiverUI.tealDark)
+            .lineLimit(2)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityLabel(text)
     }
 }

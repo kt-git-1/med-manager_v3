@@ -168,7 +168,8 @@ function mockReportResponse(from: string, to: string) {
               dosageText: "5mg",
               doseCount: 1,
               status: "TAKEN",
-              recordedAt: `${from}T08:15:00+09:00`
+              recordedAt: `${from}T08:15:00+09:00`,
+              recordedBy: "PATIENT"
             }
           ],
           noon: [],

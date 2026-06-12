@@ -220,7 +220,7 @@ Error responses: 400 `INVALID_RANGE`, 403 `NOT_AUTHORIZED`, 403 `HISTORY_RETENTI
 
 7) Report service
    - **Files**: `api/src/services/reportService.ts`
-   - **Action**: `generateReport(patientId, from, to)` — converts date strings to Date range, calls `getScheduleWithStatus(patientId, rangeFrom, rangeTo, "Asia/Tokyo")` for scheduled doses, calls `groupDosesByLocalDate` + `resolveSlot` for slot grouping per day, calls `listPrnHistoryItemsByRange` for PRN data, fetches patient `displayName` from repo. Assembles into spec response shape with per-day `{ date, slots: { morning[], noon[], evening[], bedtime[] }, prn[] }`. Each slot item includes `{ medicationId, name, dosageText, doseCount, status, recordedAt }` (recordedAt from DoseRecord.takenAt if status is TAKEN). Each PRN item includes `{ medicationId, name, dosageText, quantity, recordedAt, recordedBy }`.
+   - **Action**: `generateReport(patientId, from, to)` — converts date strings to Date range, calls `getScheduleWithStatus(patientId, rangeFrom, rangeTo, "Asia/Tokyo")` for scheduled doses, calls `groupDosesByLocalDate` + `resolveSlot` for slot grouping per day, calls `listPrnHistoryItemsByRange` for PRN data, fetches patient `displayName` from repo. Assembles into spec response shape with per-day `{ date, slots: { morning[], noon[], evening[], bedtime[] }, prn[] }`. Each slot item includes `{ medicationId, name, dosageText, doseCount, status, recordedAt, recordedBy }` (recordedAt/recordedBy are set when status is TAKEN). Each PRN item includes `{ medicationId, name, dosageText, quantity, recordedAt, recordedBy }`.
    - **Tests**: `cd api && npm test`
 
 8) Report API route
@@ -235,7 +235,7 @@ Error responses: 400 `INVALID_RANGE`, 403 `NOT_AUTHORIZED`, 403 `HISTORY_RETENTI
 
 10) HistoryReportDTO
     - **Files**: `ios/MedicationApp/Networking/DTOs/HistoryReportDTO.swift`
-    - **Action**: Decodable structs: `HistoryReportResponseDTO` (patient, range, days), `HistoryReportPatientDTO` (id, displayName), `HistoryReportRangeDTO` (from, to, timezone, days), `HistoryReportDayDTO` (date, slots, prn), `HistoryReportSlotItemDTO` (medicationId, name, dosageText, doseCount, status, recordedAt?), `HistoryReportPrnItemDTO` (medicationId, name, dosageText, quantity, recordedAt, recordedBy).
+    - **Action**: Decodable structs: `HistoryReportResponseDTO` (patient, range, days), `HistoryReportPatientDTO` (id, displayName), `HistoryReportRangeDTO` (from, to, timezone, days), `HistoryReportDayDTO` (date, slots, prn), `HistoryReportSlotItemDTO` (medicationId, name, dosageText, doseCount, status, recordedAt?, recordedBy?), `HistoryReportPrnItemDTO` (medicationId, name, dosageText, quantity, recordedAt, recordedBy).
     - **Tests**: `xcodebuild -project "ios/MedicationApp/MedicationApp.xcodeproj" -scheme "MedicationApp" -destination "platform=iOS Simulator,name=iPhone 17 Pro" test`
 
 11) APIClient.fetchCaregiverHistoryReport

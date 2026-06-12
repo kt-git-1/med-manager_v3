@@ -87,7 +87,8 @@ export async function GET(request: Request) {
           doseCountPerIntake: dose.medicationSnapshot.doseCountPerIntake,
           scheduledAt: dose.scheduledAt,
           slot,
-          effectiveStatus: dose.effectiveStatus
+          effectiveStatus: dose.effectiveStatus,
+          recordedByType: dose.recordedByType ?? null
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null)

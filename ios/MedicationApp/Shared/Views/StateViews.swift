@@ -1,5 +1,30 @@
 import SwiftUI
 
+struct MedicationSymbolView: View {
+    let tint: Color
+    var systemImage = "pills.fill"
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [tint.opacity(0.18), tint.opacity(0.08)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            Circle()
+                .stroke(tint.opacity(0.18), lineWidth: 1)
+            Image(systemName: systemImage)
+                .font(.system(size: 28, weight: .bold))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(tint)
+        }
+        .accessibilityHidden(true)
+    }
+}
+
 struct LoadingStateView: View {
     let message: String
 

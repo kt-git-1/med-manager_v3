@@ -430,7 +430,7 @@ struct MedicationListView: View {
         CaregiverCard(accent: CaregiverUI.teal) {
             VStack(alignment: .leading, spacing: 18) {
                 HStack(alignment: .top, spacing: 14) {
-                    MedicationIllustrationView(tint: CaregiverUI.teal)
+                    MedicationSymbolView(tint: CaregiverUI.teal)
                         .frame(width: 64, height: 64)
 
                     VStack(alignment: .leading, spacing: 6) {
@@ -681,8 +681,11 @@ struct MedicationListView: View {
     @ViewBuilder
     private func medicationRow(_ item: MedicationListItem) -> some View {
         let rowContent = HStack(alignment: .top, spacing: 14) {
-            MedicationIllustrationView(tint: medicationAccentColor(for: item))
-                .frame(width: 62, height: 62)
+            MedicationSymbolView(
+                tint: medicationAccentColor(for: item),
+                systemImage: item.medication.isPrn ? "cross.case.fill" : "pills.fill"
+            )
+            .frame(width: 62, height: 62)
 
             VStack(alignment: .leading, spacing: 9) {
                 VStack(alignment: .leading, spacing: 6) {
@@ -698,18 +701,17 @@ struct MedicationListView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                HStack(spacing: 8) {
-                    Label(item.doseText, systemImage: "pills.fill")
+                VStack(alignment: .leading, spacing: 7) {
+                    medicationDetailLine(item.doseText, systemImage: "pills.fill")
                     if let schedule = item.scheduleText {
-                        Label(schedule, systemImage: "clock")
+                        medicationDetailLine(schedule, systemImage: "clock.fill", lineLimit: 3)
                     } else if item.medication.isPrn {
-                        Label(NSLocalizedString("medication.list.prn.whenNeeded", comment: "PRN when needed"), systemImage: "cross.case")
+                        medicationDetailLine(
+                            NSLocalizedString("medication.list.prn.whenNeeded", comment: "PRN when needed"),
+                            systemImage: "cross.case.fill"
+                        )
                     }
                 }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.primary)
-                .lineLimit(2)
-                .minimumScaleFactor(0.82)
 
                 HStack(spacing: 8) {
                     if let inventoryText = inventoryStatusText(for: item) {
@@ -776,35 +778,29 @@ struct MedicationListView: View {
             .accessibilityLabel(text)
     }
 
+    private func medicationDetailLine(
+        _ text: String,
+        systemImage: String,
+        lineLimit: Int = 2
+    ) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: systemImage)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(CaregiverUI.tealDark)
+                .frame(width: 20, alignment: .center)
+            Text(text)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(lineLimit)
+                .fixedSize(horizontal: false, vertical: true)
+                .multilineTextAlignment(.leading)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+
     private func medicationAccentColor(for item: MedicationListItem) -> Color {
         item.medication.isPrn ? CaregiverUI.orange : CaregiverUI.teal
-    }
-}
-
-private struct MedicationIllustrationView: View {
-    let tint: Color
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(tint.opacity(0.14))
-            Capsule()
-                .fill(Color.white)
-                .frame(width: 22, height: 42)
-                .rotationEffect(.degrees(42))
-            Capsule()
-                .stroke(tint, lineWidth: 2.6)
-                .frame(width: 22, height: 42)
-                .rotationEffect(.degrees(42))
-            Rectangle()
-                .fill(tint.opacity(0.68))
-                .frame(width: 20, height: 2.4)
-                .rotationEffect(.degrees(42))
-            Circle()
-                .fill(tint)
-                .frame(width: 8, height: 8)
-                .offset(x: 15, y: -17)
-        }
     }
 }
 

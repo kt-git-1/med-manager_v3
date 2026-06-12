@@ -72,7 +72,8 @@ describe("history caregiver contract", () => {
           doseCountPerIntake: 1,
           scheduledAt: "2026-02-02T08:00:00.000Z",
           slot: "morning",
-          effectiveStatus: "taken"
+          effectiveStatus: "taken",
+          recordedByType: "caregiver"
         }
       ]
     };
@@ -86,8 +87,10 @@ describe("history caregiver contract", () => {
       doseCountPerIntake: 1,
       scheduledAt: "2026-02-02T08:00:00.000Z",
       slot: "morning",
-      effectiveStatus: "taken"
+      effectiveStatus: "taken",
+      recordedByType: "caregiver"
     });
     expect(doseStatuses).toContain(dose.effectiveStatus);
+    expect(["patient", "caregiver", null]).toContain(dose.recordedByType);
   });
 });

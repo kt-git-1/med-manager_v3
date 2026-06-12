@@ -67,6 +67,7 @@ struct HistoryDayItemDTO: Decodable, Equatable {
     let scheduledAt: Date
     let slot: HistorySlotDTO
     let effectiveStatus: HistoryDoseStatusDTO
+    let recordedByType: RecordedByTypeDTO?
 }
 
 struct PrnHistoryItemDTO: Decodable, Equatable {

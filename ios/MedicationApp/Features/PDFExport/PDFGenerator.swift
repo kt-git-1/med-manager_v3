@@ -139,8 +139,13 @@ enum PDFGenerator {
 
                             if let recordedAt = item.recordedAt, item.status == "TAKEN" {
                                 let timeStr = formatRecordedTime(recordedAt)
+                                let recorderLabel = item.recordedBy.map(recorderText(for:))
+                                let recordedText = [
+                                    timeStr,
+                                    recorderLabel
+                                ].compactMap { $0 }.joined(separator: " / ")
                                 y = drawText(
-                                    "    記録: \(timeStr)",
+                                    "    記録: \(recordedText)",
                                     font: smallFont,
                                     color: .secondaryLabel,
                                     at: CGPoint(x: margin + 24, y: y),

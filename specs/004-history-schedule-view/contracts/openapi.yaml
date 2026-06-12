@@ -179,6 +179,13 @@ components:
           $ref: "#/components/schemas/Slot"
         effectiveStatus:
           $ref: "#/components/schemas/DoseStatus"
+        recordedByType:
+          type: string
+          nullable: true
+          enum:
+            - patient
+            - caregiver
+          description: Actor who recorded the dose. Null when the dose is not taken.
     HistoryDayResponse:
       type: object
       properties:

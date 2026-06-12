@@ -227,6 +227,14 @@ components:
           nullable: true
           description: When the dose was recorded (ISO 8601 with Asia/Tokyo offset). Null if not yet taken.
           example: "2026-01-01T08:15:00+09:00"
+        recordedBy:
+          type: string
+          nullable: true
+          description: Actor who recorded the scheduled dose. Null when the dose is not taken.
+          enum:
+            - PATIENT
+            - CAREGIVER
+          example: PATIENT
 
     ReportPrnItem:
       type: object

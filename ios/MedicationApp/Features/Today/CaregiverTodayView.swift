@@ -899,11 +899,8 @@ private struct CaregiverTodayDoseLine: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: "pills.fill")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(statusColor)
+            MedicationSymbolView(tint: statusColor)
                 .frame(width: 30, height: 30)
-                .background(statusColor.opacity(0.12), in: Circle())
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(medicationDisplayName)

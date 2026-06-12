@@ -145,6 +145,7 @@ The response shape returned by the report endpoint. Not a database entity — as
 | `doseCount` | number | Number of doses per intake |
 | `status` | string | `"TAKEN"` \| `"MISSED"` \| `"PENDING"` |
 | `recordedAt` | string (ISO 8601, nullable) | When the dose was recorded (Asia/Tokyo offset), null if not taken |
+| `recordedBy` | string (nullable) | `"PATIENT"` \| `"CAREGIVER"` when taken, null if not taken |
 
 #### ReportPrnItem
 
@@ -228,7 +229,7 @@ Decodable struct matching the API response. Contains nested DTOs:
 - `HistoryReportPatientDTO` (id, displayName)
 - `HistoryReportRangeDTO` (from, to, timezone, days)
 - `HistoryReportDayDTO` (date, slots, prn)
-- `HistoryReportSlotItemDTO` (medicationId, name, dosageText, doseCount, status, recordedAt?)
+- `HistoryReportSlotItemDTO` (medicationId, name, dosageText, doseCount, status, recordedAt?, recordedBy?)
 - `HistoryReportPrnItemDTO` (medicationId, name, dosageText, quantity, recordedAt, recordedBy)
 
 ### APIError Extension (modify)

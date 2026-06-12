@@ -6,7 +6,7 @@ enum DoseStatusDTO: String, Decodable {
     case missed
 }
 
-enum RecordedByTypeDTO: String, Decodable {
+enum RecordedByTypeDTO: String, Decodable, Equatable {
     case patient
     case caregiver
 }

@@ -33,7 +33,8 @@ function historyReportResponse(
                 dosageText: "5mg",
                 doseCount: 1,
                 status: "TAKEN",
-                recordedAt: `${from}T08:15:00+09:00`
+                recordedAt: `${from}T08:15:00+09:00`,
+                recordedBy: "PATIENT"
               }
             ],
             noon: [
@@ -43,7 +44,8 @@ function historyReportResponse(
                 dosageText: "500mg",
                 doseCount: 2,
                 status: "MISSED",
-                recordedAt: null
+                recordedAt: null,
+                recordedBy: null
               }
             ],
             evening: [],
@@ -54,7 +56,8 @@ function historyReportResponse(
                 dosageText: "5mg",
                 doseCount: 1,
                 status: "PENDING",
-                recordedAt: null
+                recordedAt: null,
+                recordedBy: null
               }
             ]
           },
@@ -198,7 +201,7 @@ describe("HistoryReportResponse contract", () => {
     expect(Array.isArray(slots.bedtime)).toBe(true);
   });
 
-  it("slot items have medicationId, name, dosageText, doseCount, status, optional recordedAt", async () => {
+  it("slot items have medicationId, name, dosageText, doseCount, status, optional recordedAt and recordedBy", async () => {
     const response = historyReportResponse(
       "patient-uuid",
       "太郎",
@@ -217,16 +220,19 @@ describe("HistoryReportResponse contract", () => {
     expect(["TAKEN", "MISSED", "PENDING"]).toContain(takenItem.status);
     expect(takenItem.status).toBe("TAKEN");
     expect(typeof takenItem.recordedAt).toBe("string");
+    expect(takenItem.recordedBy).toBe("PATIENT");
 
     // MISSED item — recordedAt is null
     const missedItem = payload.days[0].slots.noon[0];
     expect(missedItem.status).toBe("MISSED");
     expect(missedItem.recordedAt).toBeNull();
+    expect(missedItem.recordedBy).toBeNull();
 
     // PENDING item — recordedAt is null
     const pendingItem = payload.days[0].slots.bedtime[0];
     expect(pendingItem.status).toBe("PENDING");
     expect(pendingItem.recordedAt).toBeNull();
+    expect(pendingItem.recordedBy).toBeNull();
   });
 
   it("status is one of TAKEN, MISSED, PENDING (uppercase)", async () => {

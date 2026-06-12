@@ -906,13 +906,8 @@ private struct CaregiverTutorialSampleView: View {
 
     private func sampleMedicineRow(name: String, detail: String, color: Color) -> some View {
         HStack(spacing: 12) {
-            Circle()
-                .fill(color.opacity(0.16))
+            MedicationSymbolView(tint: color)
                 .frame(width: 42, height: 42)
-                .overlay {
-                    Image(systemName: "pills.fill")
-                        .foregroundStyle(color)
-                }
             VStack(alignment: .leading, spacing: 4) {
                 Text(name)
                     .font(.headline.weight(.bold))
@@ -1101,14 +1096,8 @@ private struct CaregiverTutorialSampleView: View {
 
     private func sampleCompactDoseLine(name: String, detail: String, color: Color) -> some View {
         HStack(spacing: 10) {
-            Circle()
-                .fill(color.opacity(0.14))
+            MedicationSymbolView(tint: color)
                 .frame(width: 32, height: 32)
-                .overlay {
-                    Image(systemName: "pills.fill")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(color)
-                }
             VStack(alignment: .leading, spacing: 2) {
                 Text(name)
                     .font(.subheadline.weight(.bold))
@@ -1307,13 +1296,7 @@ private struct CaregiverTutorialSampleView: View {
     }
 
     private func samplePillIcon(color: Color) -> some View {
-        RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .fill(color.opacity(0.12))
-            .overlay {
-                Image(systemName: "pills.fill")
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(color)
-            }
+        MedicationSymbolView(tint: color)
     }
 
     private func sampleBoxIcon(color: Color) -> some View {

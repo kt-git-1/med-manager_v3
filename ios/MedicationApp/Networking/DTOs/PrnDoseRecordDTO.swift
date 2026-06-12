@@ -1,6 +1,6 @@
 import Foundation
 
-enum PrnActorTypeDTO: String, Decodable {
+enum PrnActorTypeDTO: String, Decodable, Equatable {
     case patient = "PATIENT"
     case caregiver = "CAREGIVER"
 }

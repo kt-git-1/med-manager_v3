@@ -42,6 +42,7 @@ struct HistoryReportSlotItemDTO: Decodable {
     let doseCount: Double
     let status: String
     let recordedAt: String?
+    let recordedBy: String?
 }
 
 struct HistoryReportPrnItemDTO: Decodable {
