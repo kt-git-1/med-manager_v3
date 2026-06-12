@@ -3,6 +3,7 @@ import SwiftUI
 struct MedicationListItem: Identifiable {
     let medication: MedicationDTO
     let name: String
+    let dosageText: String?
     let scheduleText: String?
     let doseText: String
 
@@ -99,6 +100,7 @@ final class MedicationListViewModel: ObservableObject {
                     MedicationListItem(
                         medication: medication,
                         name: medication.name,
+                        dosageText: buildDosageText(medication),
                         scheduleText: buildScheduleText(medication),
                         doseText: buildDoseText(medication)
                     )
@@ -115,6 +117,17 @@ final class MedicationListViewModel: ObservableObject {
     }
 
     // MARK: - Dose text
+
+    private func buildDosageText(_ medication: MedicationDTO) -> String? {
+        let trimmed = medication.dosageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == "不明" {
+            return nil
+        }
+        return String(
+            format: NSLocalizedString("medication.list.dosage.format", comment: "Medication dosage"),
+            trimmed
+        )
+    }
 
     private func buildDoseText(_ medication: MedicationDTO) -> String {
         let count = AppConstants.formatDecimal(medication.doseCountPerIntake)
@@ -702,6 +715,9 @@ struct MedicationListView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(alignment: .leading, spacing: 7) {
+                    if sessionStore.mode == .caregiver, let dosageText = item.dosageText {
+                        medicationDetailLine(dosageText, systemImage: "cross.vial.fill")
+                    }
                     medicationDetailLine(item.doseText, systemImage: "pills.fill")
                     if let schedule = item.scheduleText {
                         medicationDetailLine(schedule, systemImage: "clock.fill", lineLimit: 3)
