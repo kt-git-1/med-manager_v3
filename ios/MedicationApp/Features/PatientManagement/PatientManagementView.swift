@@ -120,6 +120,7 @@ final class PatientManagementViewModel: ObservableObject {
             patients.removeAll()
             return true
         } catch {
+            print("PatientManagementViewModel: delete caregiver account failed: \(error.localizedDescription)")
             return false
         }
     }

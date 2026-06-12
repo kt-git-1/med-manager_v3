@@ -125,7 +125,7 @@ async function deleteCaregiverAppData(caregiverId: string) {
 }
 
 export async function deleteCaregiverAccount(caregiverId: string) {
-  await deleteCaregiverAppData(caregiverId);
   await deleteSupabaseAuthUser(caregiverId);
+  await deleteCaregiverAppData(caregiverId);
   return { deleted: true };
 }

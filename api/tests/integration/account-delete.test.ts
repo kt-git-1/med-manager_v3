@@ -175,7 +175,7 @@ describe("DELETE /api/me", () => {
     expect(res.status).toBe(200);
   });
 
-  it("returns 502 when Supabase Auth deletion fails after app data cleanup", async () => {
+  it("returns 502 and does not delete app data when Supabase Auth deletion fails", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValueOnce(new Response(null, { status: 500 }))
@@ -187,7 +187,7 @@ describe("DELETE /api/me", () => {
     expect(res.status).toBe(502);
     const body = await res.json();
     expect(body.error).toBe("supabase_account_delete_failed");
-    expect(deleteMocks.patient).toHaveBeenCalled();
+    expect(deleteMocks.patient).not.toHaveBeenCalled();
   });
 
   it("returns 502 when Supabase Auth user still exists after delete", async () => {
@@ -206,6 +206,7 @@ describe("DELETE /api/me", () => {
     const body = await res.json();
     expect(body.error).toBe("supabase_account_delete_failed");
     expect(fetch).toHaveBeenCalledTimes(2);
+    expect(deleteMocks.patient).not.toHaveBeenCalled();
   });
 
   it("returns 502 when Supabase admin config is missing", async () => {
@@ -217,7 +218,7 @@ describe("DELETE /api/me", () => {
     expect(res.status).toBe(502);
     const body = await res.json();
     expect(body.error).toBe("supabase_account_delete_failed");
-    expect(deleteMocks.patient).toHaveBeenCalled();
+    expect(deleteMocks.patient).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
   });
 });
