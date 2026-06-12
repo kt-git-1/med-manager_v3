@@ -847,7 +847,7 @@ struct HistoryMonthView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             if selectedTotalCount > 0 {
-                HStack(spacing: 8) {
+                LazyVGrid(columns: selectedSummaryPillColumns, alignment: .leading, spacing: 8) {
                     historyStatusPill(
                         text: String(format: NSLocalizedString("caregiver.history.summary.taken", comment: "Taken count"), selectedTakenCount),
                         color: historyTakenColor,
@@ -866,8 +866,13 @@ struct HistoryMonthView: View {
                         )
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
+    }
+
+    private var selectedSummaryPillColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 140), spacing: 8, alignment: .leading)]
     }
 
     private var calendarGrid: some View {
