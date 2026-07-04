@@ -7,6 +7,7 @@
 - Vercel Production `SUPABASE_URL` and `SUPABASE_ANON_KEY` point to the same production Supabase project as the iOS build.
 - Vercel Production `SUPABASE_SERVICE_ROLE_KEY` is set and is never embedded in iOS.
 - Vercel Production `FCM_SERVICE_ACCOUNT_JSON` is set if caregiver push notifications are enabled.
+- Supabase Auth confirm-signup email uses the production template in `docs/operations/supabase-auth-email-template.md`.
 
 ## App Store
 

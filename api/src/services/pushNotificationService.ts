@@ -201,6 +201,10 @@ export async function notifyCaregiversOfDoseTaken(
       }
     };
 
+    let sentCount = 0;
+    let failedCount = 0;
+    let duplicateCount = 0;
+
     // Send to each device with dedup
     for (const device of devices) {
       const inserted = await tryInsertDelivery({
@@ -210,12 +214,20 @@ export async function notifyCaregiversOfDoseTaken(
 
       if (!inserted) {
         // Duplicate — already sent for this event+device
+        duplicateCount += 1;
         continue;
       }
 
       const result = await sendFcmMessage(device.token, notification, data, apns);
 
-      if (!result.success && result.errorCode === "UNREGISTERED") {
+      if (result.success) {
+        sentCount += 1;
+        continue;
+      }
+
+      failedCount += 1;
+
+      if (result.errorCode === "UNREGISTERED") {
         try {
           await disablePushDeviceById(device.id);
         } catch (disableError) {
@@ -226,6 +238,18 @@ export async function notifyCaregiversOfDoseTaken(
         }
       }
     }
+
+    log(
+      failedCount > 0 ? "warn" : "info",
+      [
+        "FCM dose taken push result",
+        `patientId=${input.patientId}`,
+        `devices=${devices.length}`,
+        `sent=${sentCount}`,
+        `failed=${failedCount}`,
+        `duplicates=${duplicateCount}`
+      ].join(" ")
+    );
   } catch (error) {
     log(
       "error",

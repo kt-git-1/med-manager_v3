@@ -265,8 +265,8 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
     }
 
     if (records.length > 0) {
-      // Fire-and-forget: single push notification per bulk recording
-      void notifyCaregiversOfDoseTaken({
+      // Await notification work so serverless runtimes do not stop before FCM send completes.
+      await notifyCaregiversOfDoseTaken({
         patientId: input.patientId,
         displayName: patient.displayName,
         date: input.date,

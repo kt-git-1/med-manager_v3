@@ -63,10 +63,10 @@ export async function createPrnRecord(
       isPrn: true
     });
 
-    // Fire-and-forget: send FCM push notifications to linked caregivers
+    // Await notification work so serverless runtimes do not stop before FCM send completes.
     const dateKey = getLocalDateKey(record.takenAt, DEFAULT_TIMEZONE);
     const slot = resolveSlot(record.takenAt.toISOString(), DEFAULT_TIMEZONE);
-    void notifyCaregiversOfDoseTaken({
+    await notifyCaregiversOfDoseTaken({
       patientId: record.patientId,
       displayName: patient.displayName,
       date: dateKey,

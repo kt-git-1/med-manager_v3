@@ -60,10 +60,10 @@ export async function createDoseRecordIdempotent(
     isPrn: medication?.isPrn ?? false
   });
 
-  // Fire-and-forget: send FCM push notifications to linked caregivers
+  // Await notification work so serverless runtimes do not stop before FCM send completes.
   const dateKey = getLocalDateKey(record.scheduledAt, DEFAULT_TIMEZONE);
   const slot = resolveSlot(record.scheduledAt.toISOString(), DEFAULT_TIMEZONE);
-  void notifyCaregiversOfDoseTaken({
+  await notifyCaregiversOfDoseTaken({
     patientId: record.patientId,
     displayName: patient.displayName,
     date: dateKey,
