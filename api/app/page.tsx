@@ -223,10 +223,37 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="public-info" aria-labelledby="public-info-title">
+        <div className="section-heading">
+          <p className="eyebrow">Legal / Support</p>
+          <h2 id="public-info-title">公開情報とサポート</h2>
+        </div>
+        <div className="public-grid">
+          <a href="/privacy">
+            <span>個人情報の取り扱い</span>
+            <strong>プライバシーポリシー</strong>
+            <p>取得する情報、利用目的、外部サービス、削除について確認できます。</p>
+          </a>
+          <a href="/terms">
+            <span>利用前の確認事項</span>
+            <strong>利用規約</strong>
+            <p>サービス内容、医療上の注意、利用者の責任、免責事項を確認できます。</p>
+          </a>
+          <a href="/support">
+            <span>困ったときの連絡先</span>
+            <strong>サポート</strong>
+            <p>問い合わせ、アカウント削除、不具合、通知が届かない場合の案内です。</p>
+          </a>
+        </div>
+      </section>
+
       <footer className="footer-links" aria-label="公開情報">
-        <a href="/privacy">プライバシーポリシー</a>
-        <a href="/terms">利用規約</a>
-        <a href="/support">サポート</a>
+        <span>お薬見守り</span>
+        <div>
+          <a href="/privacy">プライバシーポリシー</a>
+          <a href="/terms">利用規約</a>
+          <a href="/support">サポート</a>
+        </div>
       </footer>
 
       <style>{`
@@ -276,6 +303,7 @@ export default function Home() {
         .overview,
           .demo-section,
           .mail-note,
+          .public-info,
           .footer-links {
             width: min(1040px, 100%);
             margin: 0 auto;
@@ -327,15 +355,29 @@ export default function Home() {
 
         .overview,
         .demo-section,
-        .mail-note {
+        .mail-note,
+        .public-info {
           padding: 72px 20px 0;
         }
 
         .footer-links {
           display: flex;
+          align-items: center;
+          justify-content: space-between;
           flex-wrap: wrap;
           gap: 14px;
-          padding: 40px 20px 56px;
+          padding: 34px 20px 56px;
+        }
+
+        .footer-links span {
+          color: #12221d;
+          font-weight: 900;
+        }
+
+        .footer-links div {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 14px;
         }
 
         .footer-links a {
@@ -364,19 +406,28 @@ export default function Home() {
           gap: 16px;
         }
 
+        .public-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 16px;
+        }
+
         .feature,
-        .mail-note > div {
+        .mail-note > div,
+        .public-grid a {
           border: 1px solid rgba(18, 34, 29, 0.08);
           border-radius: 8px;
           background: #ffffff;
           box-shadow: 0 18px 50px rgba(18, 34, 29, 0.08);
         }
 
-        .feature {
+        .feature,
+        .public-grid a {
           padding: 26px;
         }
 
-        .feature span {
+        .feature span,
+        .public-grid span {
           display: inline-flex;
           margin-bottom: 18px;
           padding: 6px 10px;
@@ -387,14 +438,24 @@ export default function Home() {
           font-weight: 800;
         }
 
-        .feature h3 {
+        .public-grid a {
+          color: inherit;
+          text-decoration: none;
+        }
+
+        .feature h3,
+        .public-grid strong {
+          display: block;
           margin: 0;
           font-size: 20px;
           line-height: 1.45;
           letter-spacing: 0;
+          word-break: keep-all;
+          overflow-wrap: normal;
         }
 
         .feature p,
+        .public-grid p,
         .demo-copy p,
         .mail-note p {
           margin: 12px 0 0;
@@ -960,13 +1021,15 @@ export default function Home() {
           }
 
           .feature-grid,
+          .public-grid,
           .demo-layout {
             grid-template-columns: 1fr;
           }
 
           .overview,
           .demo-section,
-          .mail-note {
+          .mail-note,
+          .public-info {
             padding: 52px 16px 0;
           }
 
@@ -1016,6 +1079,14 @@ export default function Home() {
           .demo-stage {
             grid-template-columns: 1fr;
             padding: 18px;
+          }
+
+          .public-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .public-grid strong {
+            font-size: 18px;
           }
 
           .main-demo {
