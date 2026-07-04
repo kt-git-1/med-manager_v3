@@ -31,6 +31,35 @@ const demoRows = [
 export default function Home() {
   return (
     <main className="page">
+      <header className="home-header">
+        <nav className="home-nav" aria-label="サイト内リンク">
+          <a className="home-brand" href="/">
+            <img src="/brand-logo.png" alt="" />
+            <span>お薬見守り</span>
+          </a>
+          <div className="home-nav-links">
+            <a href="#overview">概要</a>
+            <a href="#demo">画面イメージ</a>
+            <a href="/privacy">プライバシー</a>
+            <a href="/terms">利用規約</a>
+            <a href="/support">サポート</a>
+          </div>
+          <details className="mobile-menu">
+            <summary aria-label="メニューを開く">
+              <span>メニュー</span>
+              <em />
+            </summary>
+            <div>
+              <a href="#overview">概要</a>
+              <a href="#demo">画面イメージ</a>
+              <a href="/privacy">プライバシー</a>
+              <a href="/terms">利用規約</a>
+              <a href="/support">サポート</a>
+            </div>
+          </details>
+        </nav>
+      </header>
+
       <section className="hero" aria-labelledby="home-title">
         <div className="hero-bg" aria-hidden="true">
           <div className="iphone-shell hero-phone">
@@ -89,7 +118,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="overview" aria-label="アプリの概要">
+      <section className="overview" id="overview" aria-label="アプリの概要">
         <div className="section-heading">
           <p className="eyebrow">Overview</p>
           <h2>毎日の服薬を、見える形にします</h2>
@@ -105,7 +134,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="demo-section" aria-labelledby="demo-title">
+      <section className="demo-section" id="demo" aria-labelledby="demo-title">
         <div className="section-heading">
           <p className="eyebrow">Demo</p>
           <h2 id="demo-title">画面イメージ</h2>
@@ -274,6 +303,143 @@ export default function Home() {
           font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Helvetica Neue", sans-serif;
           background: #f6f8f7;
           color: #12221d;
+        }
+
+        .home-header {
+          background: #f6f8f7;
+          border-bottom: 1px solid rgba(18, 34, 29, 0.08);
+        }
+
+        .home-nav {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+          width: min(1040px, 100%);
+          min-height: 76px;
+          margin: 0 auto;
+          padding: 0 20px;
+        }
+
+        .home-brand {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          flex: 0 0 auto;
+          color: #123b32;
+          font-size: 18px;
+          font-weight: 900;
+          text-decoration: none;
+        }
+
+        .home-brand img {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          object-fit: cover;
+          object-position: 50% 34%;
+          background: #ffffff;
+          box-shadow: 0 8px 22px rgba(18, 34, 29, 0.12);
+        }
+
+        .home-nav-links {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          gap: 8px;
+        }
+
+        .home-nav-links a,
+        .mobile-menu a {
+          display: inline-flex;
+          align-items: center;
+          min-height: 38px;
+          padding: 0 12px;
+          border-radius: 999px;
+          background: #ffffff;
+          border: 1px solid rgba(18, 34, 29, 0.08);
+          color: #24614d;
+          font-size: 14px;
+          font-weight: 800;
+          text-decoration: none;
+          white-space: nowrap;
+        }
+
+        .mobile-menu {
+          display: none;
+        }
+
+        .mobile-menu summary {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          min-height: 42px;
+          padding: 0 14px 0 16px;
+          border-radius: 8px;
+          background: #123b32;
+          border: 1px solid rgba(18, 34, 29, 0.08);
+          color: #ffffff;
+          cursor: pointer;
+          list-style: none;
+          box-shadow: 0 12px 28px rgba(18, 34, 29, 0.18);
+        }
+
+        .mobile-menu summary::-webkit-details-marker {
+          display: none;
+        }
+
+        .mobile-menu summary:focus-visible {
+          outline: 3px solid rgba(60, 138, 105, 0.34);
+          outline-offset: 3px;
+        }
+
+        .mobile-menu summary span {
+          color: #ffffff;
+          font-size: 13px;
+          font-weight: 900;
+          line-height: 1;
+        }
+
+        .mobile-menu summary em {
+          width: 8px;
+          height: 8px;
+          border-right: 2px solid currentColor;
+          border-bottom: 2px solid currentColor;
+          transform: translateY(-2px) rotate(45deg);
+          transition: transform 160ms ease;
+        }
+
+        .mobile-menu[open] summary em {
+          transform: translateY(2px) rotate(225deg);
+        }
+
+        .mobile-menu div {
+          position: absolute;
+          top: calc(100% + 10px);
+          right: 16px;
+          z-index: 10;
+          display: grid;
+          gap: 6px;
+          width: min(260px, calc(100vw - 32px));
+          padding: 10px;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.98);
+          border: 1px solid rgba(18, 34, 29, 0.08);
+          box-shadow: 0 22px 60px rgba(18, 34, 29, 0.2);
+          backdrop-filter: blur(12px);
+        }
+
+        .mobile-menu a {
+          justify-content: flex-start;
+          width: 100%;
+          min-height: 44px;
+          border-radius: 6px;
+          background: transparent;
+          border: 0;
+        }
+
+        .mobile-menu a:hover {
+          background: #e7f5ee;
         }
 
         .hero {
@@ -983,11 +1149,27 @@ export default function Home() {
           font-size: 24px;
         }
 
+        @media (max-width: 1080px) {
+          .home-nav {
+            position: relative;
+            min-height: auto;
+            padding: 18px 20px;
+          }
+
+          .home-nav-links {
+            display: none;
+          }
+
+          .mobile-menu {
+            display: block;
+          }
+        }
+
         @media (max-width: 920px) {
           .hero {
             min-height: auto;
             display: block;
-            padding: 22px 16px 36px;
+            padding: 34px 16px 36px;
             background:
               linear-gradient(180deg, rgba(14, 41, 35, 0.24) 0%, rgba(14, 41, 35, 0.94) 58%, rgba(14, 41, 35, 0.98) 100%),
               radial-gradient(circle at 50% 10%, rgba(120, 212, 170, 0.45), transparent 42%),
@@ -1060,6 +1242,14 @@ export default function Home() {
         }
 
         @media (max-width: 480px) {
+          .home-nav {
+            padding: 18px 16px;
+          }
+
+          .home-brand {
+            font-size: 17px;
+          }
+
           .hero {
             padding-top: 20px;
           }
