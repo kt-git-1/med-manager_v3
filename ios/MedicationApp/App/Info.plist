@@ -36,9 +36,9 @@
 	<key>EMAIL_CONFIRMATION_REDIRECT_URL</key>
 	<string>https://okusuri-mimamori.com/auth/confirmed</string>
 	<key>SUPABASE_ANON_KEY</key>
-	<string>sb_publishable_nVf6RMV1tUkg8ew7BJLVnw_YDnUMRra</string>
+	<string>sb_publishable_7hGwwBAmU55gsNVbMw8IAg_KgS2GyaM</string>
 	<key>SUPABASE_URL</key>
-	<string>https://kairaeahklftpjfcaddh.supabase.co</string>
+	<string>https://gnsnasheyrncfbbnbomh.supabase.co</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

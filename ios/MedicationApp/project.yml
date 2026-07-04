@@ -31,8 +31,8 @@ targets:
         API_BASE_URL: "https://www.okusuri-mimamori.com/"
         EMAIL_CONFIRMATION_REDIRECT_URL: "https://okusuri-mimamori.com/auth/confirmed"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
-        SUPABASE_URL: "https://kairaeahklftpjfcaddh.supabase.co"
-        SUPABASE_ANON_KEY: "sb_publishable_nVf6RMV1tUkg8ew7BJLVnw_YDnUMRra"
+        SUPABASE_URL: "https://gnsnasheyrncfbbnbomh.supabase.co"
+        SUPABASE_ANON_KEY: "sb_publishable_7hGwwBAmU55gsNVbMw8IAg_KgS2GyaM"
         CFBundleDisplayName: "お薬見守り"
         CFBundleURLTypes:
           - CFBundleURLName: com.afterlifearchive.medmanager
