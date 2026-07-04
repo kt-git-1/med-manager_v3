@@ -13,11 +13,11 @@ export function SiteHeader({ current = "legal" }: SiteHeaderProps) {
     current === "home"
       ? [
           { href: "#overview", label: "概要" },
-          { href: "#demo", label: "画面イメージ" }
+          { href: "#demo", label: "画面例" }
         ]
       : [
           { href: "/#overview", label: "概要" },
-          { href: "/#demo", label: "画面イメージ" }
+          { href: "/#demo", label: "画面例" }
         ];
   const navLinks = [...sectionLinks, ...legalLinks];
 

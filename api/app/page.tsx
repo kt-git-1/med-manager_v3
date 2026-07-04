@@ -4,24 +4,24 @@ import { SiteFooter } from "./SiteFooter";
 export const metadata = {
   title: "お薬見守り | 家族で服薬を見守るアプリ",
   description:
-    "お薬見守りは、服薬予定・服薬記録・お薬の在庫を家族で確認できるアプリです。"
+    "お薬見守りは、毎日の服薬予定・服薬記録・お薬の残量を家族で確認できるアプリです。"
 };
 
 const featureRows = [
   {
-    label: "登録",
-    title: "家族がお薬と服薬時間を設定",
-    body: "家族モードからお薬名・飲む量・朝昼夕などの服薬時間を登録できます。本人が迷わず記録できるよう、先に予定を整えられます。"
+    label: "準備",
+    title: "お薬と飲む時間を家族が登録",
+    body: "お薬名、飲む量、朝・昼・夜などの時間帯を家族が先に登録します。本人はその日に飲む分だけを確認できます。"
   },
   {
-    label: "見守り",
-    title: "家族が記録状況を確認",
-    body: "家族モードでは、服薬済み・未記録・飲み忘れを確認できます。離れていても、必要なタイミングで気づけます。"
+    label: "記録",
+    title: "本人は今日のお薬を見て記録",
+    body: "本人画面には、次に飲むお薬と時間帯を大きく表示します。飲めたらボタンを押すだけで記録できます。"
   },
   {
-    label: "予定と在庫",
-    title: "今日の予定と残量をまとめて確認",
-    body: "登録した服薬時間に沿って、今日飲むお薬を時間帯ごとに表示します。お薬の残り数も管理し、補充が必要なものを見落としにくくします。"
+    label: "共有",
+    title: "離れていても状況が分かる",
+    body: "家族は服薬済み・未記録・飲み忘れを確認できます。お薬の残量も見られるので、補充のタイミングにも気づきやすくなります。"
   }
 ];
 
@@ -123,10 +123,10 @@ export default function Home() {
 
         <div className="hero-copy">
           <p className="eyebrow">お薬見守り</p>
-          <h1 id="home-title">飲み忘れに、家族で気づけるように。</h1>
+          <h1 id="home-title">今日のお薬を、家族で見守る。</h1>
           <p>
-            お薬見守りは、家族がお薬と服薬時間を登録し、毎日の服薬予定・服薬記録・お薬の在庫を確認するためのアプリです。
-            本人の記録しやすさと、家族の見守りやすさを両方大切にしています。
+            お薬見守りは、毎日の服薬予定・記録・残量を家族で確認できるアプリです。
+            本人は飲むお薬を迷わず確認でき、家族は離れていても服薬状況に気づけます。
           </p>
         </div>
       </section>
@@ -134,7 +134,7 @@ export default function Home() {
       <section className="overview" id="overview" aria-label="アプリの概要">
         <div className="section-heading">
           <p className="eyebrow">Overview</p>
-          <h2>毎日の服薬を、見える形にします</h2>
+          <h2>服薬予定・記録・残量をひとつに</h2>
         </div>
         <div className="feature-grid">
           {featureRows.map((feature) => (
@@ -150,165 +150,177 @@ export default function Home() {
       <section className="demo-section" id="demo" aria-labelledby="demo-title">
         <div className="section-heading">
           <p className="eyebrow">Demo</p>
-          <h2 id="demo-title">画面イメージ</h2>
+          <h2 id="demo-title">画面例</h2>
         </div>
 
         <div className="demo-layout">
           <div className="demo-copy">
-            <h3>実際のアプリ画面に近い流れで、本人と家族の見え方を分けています。</h3>
+            <h3>本人は迷わず記録。家族は必要な状況を確認。</h3>
             <p>
-              本人画面は「次に飲むお薬」を大きく表示し、時間帯ごとのまとめ記録に寄せています。
-              家族画面は「次にすること」「今日の進み具合」「今日の予定」を並べ、離れていても状況が追いやすい構成です。
+              本人には、次に飲むお薬と時間を分かりやすく表示します。
+              家族は、今日の進み具合や未記録の予定を確認できるため、声をかけるタイミングを判断しやすくなります。
             </p>
             <div className="mini-metrics" aria-label="デモ指標">
               <div>
-                <strong>次に飲むお薬</strong>
-                <span>本人画面の先頭に表示</span>
+                <strong>今日飲む分が分かる</strong>
+                <span>次に飲む分を分かりやすく案内</span>
               </div>
               <div>
-                <strong>朝・昼・夜</strong>
-                <span>時間帯ごとにまとめる</span>
+                <strong>まとめて記録できる</strong>
+                <span>朝・昼・夜など時間帯ごとに整理</span>
               </div>
               <div>
-                <strong>2/4回分 完了</strong>
-                <span>家族画面で進捗を確認</span>
+                <strong>進み具合が見える</strong>
+                <span>家族が記録状況を確認</span>
               </div>
               <div>
-                <strong>必要な時のお薬</strong>
-                <span>頓服も別導線で記録</span>
+                <strong>頓服にも対応</strong>
+                <span>必要な時のお薬も記録</span>
               </div>
             </div>
           </div>
 
           <div className="demo-stage" aria-label="アプリ画面デモ">
-            <div className="demo-phone app-demo-phone main-demo">
-              <div className="demo-statusbar">
-                <span>9:41</span>
-                <span>●●●</span>
-              </div>
-              <div className="app-nav">
-                <span>本人モード</span>
-                <strong>今日のお薬</strong>
-              </div>
-              <div className="app-hero-card">
-                <span>次に飲むお薬</span>
-                <div>
-                  <strong>昼のお薬</strong>
-                  <em>12:30</em>
+            <figure className="demo-device">
+              <figcaption>
+                <strong>本人用</strong>
+                <span>今日飲むお薬を確認して記録</span>
+              </figcaption>
+              <div className="demo-phone app-demo-phone main-demo">
+                <div className="demo-statusbar">
+                  <span>9:41</span>
+                  <span>●●●</span>
                 </div>
-                <p>1錠 / 1種類</p>
-                <div className="medicine-line">
-                  <b>胃のお薬</b>
-                  <small>1錠</small>
+                <div className="app-nav">
+                  <span>本人モード</span>
+                  <strong>今日のお薬</strong>
                 </div>
-                <button className="demo-action" type="button">
-                  この時間のお薬を飲んだ
-                </button>
+                <div className="app-hero-card">
+                  <span>次に飲むお薬</span>
+                  <div>
+                    <strong>昼のお薬</strong>
+                    <em>12:30</em>
+                  </div>
+                  <p>1錠 / 1種類</p>
+                  <div className="medicine-line">
+                    <b>胃のお薬</b>
+                    <small>1錠</small>
+                  </div>
+                  <button className="demo-action" type="button">
+                    この時間のお薬を飲んだ
+                  </button>
+                </div>
+                <div className="app-section-title">
+                  <strong>今日のお薬</strong>
+                  <span>時間帯ごと</span>
+                </div>
+                <div className="slot-card-list">
+                  {patientSlots.map((row) => (
+                    <div className="slot-card" key={row.slot}>
+                      <div className="slot-card-head">
+                        <i />
+                        <div>
+                          <strong>{row.slot}</strong>
+                          <span>{row.time}</span>
+                        </div>
+                        <em
+                          className={
+                            row.status === "記録済み"
+                              ? "status-done"
+                              : row.status === "未記録"
+                                ? "status-pending"
+                                : "status-waiting"
+                          }
+                        >
+                          {row.status}
+                        </em>
+                      </div>
+                      {row.medicines.map((medicine) => (
+                        <div className="medicine-line" key={medicine}>
+                          <b>{medicine.replace(/ [0-9.]+錠$/, "")}</b>
+                          <small>{medicine.match(/[0-9.]+錠$/)?.[0]}</small>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <div className="prn-tile">
+                  <div>
+                    <strong>必要な時のお薬</strong>
+                    <span>痛い時・つらい時だけ記録</span>
+                  </div>
+                  <b>›</b>
+                </div>
               </div>
-              <div className="app-section-title">
-                <strong>今日のお薬</strong>
-                <span>時間帯ごと</span>
-              </div>
-              <div className="slot-card-list">
-                {patientSlots.map((row) => (
-                  <div className="slot-card" key={row.slot}>
-                    <div className="slot-card-head">
-                      <i />
+            </figure>
+
+            <figure className="demo-device">
+              <figcaption>
+                <strong>家族用</strong>
+                <span>服薬状況と未記録を確認</span>
+              </figcaption>
+              <div className="demo-phone app-demo-phone watcher-demo">
+                <div className="demo-statusbar">
+                  <span>9:41</span>
+                  <span>●●●</span>
+                </div>
+                <div className="caregiver-title">
+                  <div className="avatar">太</div>
+                  <div>
+                    <span>山田 太郎さん</span>
+                    <strong>今日の服薬</strong>
+                  </div>
+                </div>
+                <div className="caregiver-action-card">
+                  <span>次にすること</span>
+                  <div>
+                    <b>昼 12:30</b>
+                    <em>未記録</em>
+                  </div>
+                  <p>この時間帯の未記録1件をまとめて記録します</p>
+                  <button className="demo-action" type="button">
+                    この時間帯をまとめて記録
+                  </button>
+                </div>
+                <div className="caregiver-progress">
+                  <div className="progress-ring">2/4</div>
+                  <div>
+                    <span>今日の進み具合</span>
+                    <strong>2/4回分 完了</strong>
+                    <p>昼が次に記録する服薬です</p>
+                  </div>
+                </div>
+                <div className="app-section-title">
+                  <strong>今日の予定</strong>
+                  <span>見守り</span>
+                </div>
+                <div className="timeline-list">
+                  {caregiverTimeline.map((row) => (
+                    <div className="timeline-row" key={row.slot}>
                       <div>
                         <strong>{row.slot}</strong>
                         <span>{row.time}</span>
                       </div>
+                      <div>
+                        <strong>{row.summary}</strong>
+                        <span>{row.status}</span>
+                      </div>
                       <em
                         className={
-                          row.status === "記録済み"
+                          row.status === "飲みました"
                             ? "status-done"
-                            : row.status === "未記録"
+                            : row.status === "次に記録"
                               ? "status-pending"
                               : "status-waiting"
                         }
                       >
-                        {row.status}
+                        {row.status === "飲みました" ? "済" : row.status === "次に記録" ? "次" : "未"}
                       </em>
                     </div>
-                    {row.medicines.map((medicine) => (
-                      <div className="medicine-line" key={medicine}>
-                        <b>{medicine.replace(/ [0-9.]+錠$/, "")}</b>
-                        <small>{medicine.match(/[0-9.]+錠$/)?.[0]}</small>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-              <div className="prn-tile">
-                <div>
-                  <strong>必要な時のお薬</strong>
-                  <span>痛い時・つらい時だけ記録</span>
-                </div>
-                <b>›</b>
-              </div>
-            </div>
-
-            <div className="demo-phone app-demo-phone watcher-demo">
-              <div className="demo-statusbar">
-                <span>9:41</span>
-                <span>●●●</span>
-              </div>
-              <div className="caregiver-title">
-                <div className="avatar">太</div>
-                <div>
-                  <span>山田 太郎さん</span>
-                  <strong>今日の服薬</strong>
+                  ))}
                 </div>
               </div>
-              <div className="caregiver-action-card">
-                <span>次にすること</span>
-                <div>
-                  <b>昼 12:30</b>
-                  <em>未記録</em>
-                </div>
-                <p>この時間帯の未記録1件をまとめて記録します</p>
-                <button className="demo-action" type="button">
-                  この時間帯をまとめて記録
-                </button>
-              </div>
-              <div className="caregiver-progress">
-                <div className="progress-ring">2/4</div>
-                <div>
-                  <span>今日の進み具合</span>
-                  <strong>2/4回分 完了</strong>
-                  <p>昼が次に記録する服薬です</p>
-                </div>
-              </div>
-              <div className="app-section-title">
-                <strong>今日の予定</strong>
-                <span>見守り</span>
-              </div>
-              <div className="timeline-list">
-                {caregiverTimeline.map((row) => (
-                  <div className="timeline-row" key={row.slot}>
-                    <div>
-                      <strong>{row.slot}</strong>
-                      <span>{row.time}</span>
-                    </div>
-                    <div>
-                      <strong>{row.summary}</strong>
-                      <span>{row.status}</span>
-                    </div>
-                    <em
-                      className={
-                        row.status === "飲みました"
-                          ? "status-done"
-                          : row.status === "次に記録"
-                            ? "status-pending"
-                            : "status-waiting"
-                      }
-                    >
-                      {row.status === "飲みました" ? "済" : row.status === "次に記録" ? "次" : "未"}
-                    </em>
-                  </div>
-                ))}
-              </div>
-            </div>
+            </figure>
           </div>
         </div>
       </section>
@@ -316,10 +328,10 @@ export default function Home() {
       <section className="mail-note" aria-label="登録メールから開いた方へ">
         <div>
           <p className="eyebrow">For signup</p>
-          <h2>登録メールから開いた方へ</h2>
+          <h2>メール確認が終わった方へ</h2>
           <p>
-            メール確認が完了した後は、このページを閉じて、お薬見守りアプリの家族モードからログインしてください。
-            確認状態はアカウントに保存されています。
+            メール確認が完了したら、このページを閉じてアプリに戻ってください。
+            家族モードからログインすると、確認済みのアカウントとして利用できます。
           </p>
         </div>
       </section>
@@ -327,21 +339,21 @@ export default function Home() {
       <section className="public-info" aria-labelledby="public-info-title">
         <div className="section-heading">
           <p className="eyebrow">Legal / Support</p>
-          <h2 id="public-info-title">公開情報とサポート</h2>
+          <h2 id="public-info-title">安心して使うための情報</h2>
         </div>
         <div className="public-grid">
           <a href="/privacy">
-            <span>個人情報の取り扱い</span>
+            <span>データの扱い</span>
             <strong>プライバシーポリシー</strong>
-            <p>取得する情報、利用目的、外部サービス、削除について確認できます。</p>
+            <p>取得する情報、利用目的、外部サービス、削除依頼について確認できます。</p>
           </a>
           <a href="/terms">
-            <span>利用前の確認事項</span>
+            <span>利用時の約束</span>
             <strong>利用規約</strong>
-            <p>サービス内容、医療上の注意、利用者の責任、免責事項を確認できます。</p>
+            <p>サービス内容、医療上の注意、利用者の責任、免責事項をまとめています。</p>
           </a>
           <a href="/support">
-            <span>困ったときの連絡先</span>
+            <span>困ったとき</span>
             <strong>サポート</strong>
             <p>問い合わせ、アカウント削除、不具合、通知が届かない場合の案内です。</p>
           </a>
@@ -517,8 +529,8 @@ export default function Home() {
           font-size: 20px;
           line-height: 1.45;
           letter-spacing: 0;
-          word-break: keep-all;
-          overflow-wrap: normal;
+          word-break: normal;
+          overflow-wrap: anywhere;
         }
 
         .feature p,
@@ -572,8 +584,8 @@ export default function Home() {
           position: relative;
           display: grid;
           grid-template-columns: repeat(2, minmax(220px, 1fr));
-          gap: 18px;
-          align-items: center;
+          gap: 22px;
+          align-items: start;
           justify-content: center;
           padding: 28px;
           border-radius: 8px;
@@ -581,6 +593,32 @@ export default function Home() {
             linear-gradient(135deg, #e7f5ee 0%, #fffdf7 100%);
           border: 1px solid rgba(18, 34, 29, 0.08);
           overflow: hidden;
+        }
+
+        .demo-device {
+          display: grid;
+          gap: 12px;
+          justify-items: center;
+          margin: 0;
+        }
+
+        .demo-device figcaption {
+          display: grid;
+          gap: 3px;
+          width: min(268px, 100%);
+          color: #12221d;
+        }
+
+        .demo-device figcaption strong {
+          font-size: 18px;
+          line-height: 1.25;
+        }
+
+        .demo-device figcaption span {
+          color: #52635d;
+          font-size: 13px;
+          font-weight: 700;
+          line-height: 1.45;
         }
 
         .demo-phone {
