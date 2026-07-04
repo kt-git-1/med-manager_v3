@@ -292,8 +292,6 @@ function makeUnauthPostRequest(body: Record<string, unknown>) {
 // Morning = 07:30 JST = 22:30 UTC previous day
 // 2026-02-11T07:30:00+09:00 = 2026-02-10T22:30:00.000Z
 const MORNING_SCHEDULED_AT_1 = "2026-02-10T22:30:00.000Z";
-const MORNING_SCHEDULED_AT_2 = "2026-02-10T22:30:00.000Z";
-const MORNING_SCHEDULED_AT_3 = "2026-02-10T22:30:00.000Z";
 
 // For tests needing 3 distinct medications at the same morning slot time
 function makeMorningDoses(status: "pending" | "missed" = "pending") {

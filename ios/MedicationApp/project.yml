@@ -28,7 +28,9 @@ targets:
     info:
       path: App/Info.plist
       properties:
-        API_BASE_URL: "https://okusuri-mimamori.com/"
+        API_BASE_URL: "https://www.okusuri-mimamori.com/"
+        EMAIL_CONFIRMATION_REDIRECT_URL: "https://okusuri-mimamori.com/auth/confirmed"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
         SUPABASE_URL: "https://kairaeahklftpjfcaddh.supabase.co"
         SUPABASE_ANON_KEY: "sb_publishable_nVf6RMV1tUkg8ew7BJLVnw_YDnUMRra"
         CFBundleDisplayName: "お薬見守り"
@@ -60,11 +62,27 @@ targets:
       storeKitConfiguration: App/Products.storekit
       testTargets:
         - MedicationAppTests
+        - MedicationAppUITests
   MedicationAppTests:
     type: bundle.unit-test
     platform: iOS
     sources:
       - path: Tests
+        excludes:
+          - "HistoryOverlayTests.swift"
+          - "**/*UITests.swift"
+    info:
+      path: Tests/Info.plist
+    dependencies:
+      - target: MedicationApp
+  MedicationAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: Tests
+        includes:
+          - "HistoryOverlayTests.swift"
+          - "**/*UITests.swift"
     info:
       path: Tests/Info.plist
     dependencies:

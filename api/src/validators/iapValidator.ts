@@ -14,8 +14,7 @@ type ClaimValidationResult = {
   environment: string;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function validateClaimInput(body: any): ClaimValidationResult {
+export function validateClaimInput(body: Record<string, unknown>): ClaimValidationResult {
   const errors: string[] = [];
 
   // productId
@@ -56,7 +55,10 @@ export function validateClaimInput(body: any): ClaimValidationResult {
   // environment (optional, defaults to "Production")
   let environment = "Production";
   if (body.environment !== undefined && body.environment !== null) {
-    if (typeof body.environment === "string" && VALID_ENVIRONMENTS.includes(body.environment as (typeof VALID_ENVIRONMENTS)[number])) {
+    if (
+      typeof body.environment === "string" &&
+      VALID_ENVIRONMENTS.includes(body.environment as (typeof VALID_ENVIRONMENTS)[number])
+    ) {
       environment = body.environment;
     }
     // Invalid environment silently falls back to Production

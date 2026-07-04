@@ -50,6 +50,17 @@
                ReferencedContainer = "container:MedicationApp.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "893B027E6B05FAD5555888EE"
+               BuildableName = "MedicationAppUITests.xctest"
+               BlueprintName = "MedicationAppUITests"
+               ReferencedContainer = "container:MedicationApp.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <CommandLineArguments>
       </CommandLineArguments>

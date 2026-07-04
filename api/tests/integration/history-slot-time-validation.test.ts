@@ -50,6 +50,25 @@ vi.mock("../../src/validators/schedule", () => ({
   validateYearMonth: vi.fn(() => [])
 }));
 
+vi.mock("../../src/repositories/prisma", () => ({
+  prisma: {
+    caregiverEntitlement: {
+      findFirst: vi.fn(async () => ({
+        id: "entitlement-1",
+        caregiverId: "caregiver-1",
+        status: "ACTIVE"
+      }))
+    },
+    caregiverPatientLink: {
+      findFirst: vi.fn(async () => ({
+        patientId: "patient-1",
+        caregiverId: "caregiver-1",
+        status: "ACTIVE"
+      }))
+    }
+  }
+}));
+
 describe("history slot time validation", () => {
   it("returns 422 for invalid morningTime=99:99", async () => {
     const request = new Request(

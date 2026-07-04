@@ -46,7 +46,7 @@ export function validateDateString(date: string) {
     errors.push("date must be in YYYY-MM-DD format");
     return errors;
   }
-  const [year, month, day] = date.split("-").map(Number);
+  const [, month, day] = date.split("-").map(Number);
   if (month < 1 || month > 12) {
     errors.push("date month must be between 1 and 12");
   }

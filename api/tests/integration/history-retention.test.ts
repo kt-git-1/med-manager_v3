@@ -15,12 +15,32 @@ vi.mock("../../src/auth/patientSessionVerifier", () => ({
 }));
 
 vi.mock("../../src/repositories/patientRepo", () => ({
+  getPatientRecordById: vi.fn(async (patientId: string) => {
+    if (patientId === "patient-1") {
+      return {
+        id: "patient-1",
+        caregiverId: "caregiver-1",
+        displayName: "Test Patient",
+        morningTime: "08:00",
+        noonTime: "13:00",
+        eveningTime: "19:00",
+        bedtimeTime: "22:00",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+    }
+    return null;
+  }),
   getPatientRecordForCaregiver: vi.fn(async (patientId: string, caregiverUserId: string) => {
     if (patientId === "patient-1" && caregiverUserId === "caregiver-1") {
       return {
         id: "patient-1",
         caregiverId: "caregiver-1",
         displayName: "Test Patient",
+        morningTime: "08:00",
+        noonTime: "13:00",
+        eveningTime: "19:00",
+        bedtimeTime: "22:00",
         createdAt: new Date(),
         updatedAt: new Date()
       };

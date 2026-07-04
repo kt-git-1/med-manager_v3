@@ -22,10 +22,6 @@ function base64UrlDecode(input: string) {
   return Buffer.from(`${normalized}${padding}`, "base64");
 }
 
-function base64UrlEncode(input: Buffer) {
-  return input.toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-}
-
 function verifyHmacSignature(token: string, secret: string) {
   const [header, payload, signature] = token.split(".");
   const data = `${header}.${payload}`;

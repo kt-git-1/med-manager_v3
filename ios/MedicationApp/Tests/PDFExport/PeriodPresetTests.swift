@@ -177,19 +177,19 @@ final class PeriodPresetTests: XCTestCase {
         for i in 0..<taken {
             items.append(HistoryReportSlotItemDTO(
                 medicationId: "med-\(i)", name: "Med\(i)", dosageText: "5mg",
-                doseCount: 1, status: "TAKEN", recordedAt: nil
+                doseCount: 1, status: "TAKEN", recordedAt: nil, recordedBy: "patient"
             ))
         }
         for i in 0..<missed {
             items.append(HistoryReportSlotItemDTO(
                 medicationId: "med-m\(i)", name: "MedM\(i)", dosageText: "5mg",
-                doseCount: 1, status: "MISSED", recordedAt: nil
+                doseCount: 1, status: "MISSED", recordedAt: nil, recordedBy: nil
             ))
         }
         for i in 0..<pending {
             items.append(HistoryReportSlotItemDTO(
                 medicationId: "med-p\(i)", name: "MedP\(i)", dosageText: "5mg",
-                doseCount: 1, status: "PENDING", recordedAt: nil
+                doseCount: 1, status: "PENDING", recordedAt: nil, recordedBy: nil
             ))
         }
         let slots = HistoryReportSlotsDTO(

@@ -1,5 +1,6 @@
 import XCTest
 
+@MainActor
 final class HistoryOverlayTests: XCTestCase {
     func testHistoryOverlayAppearsOnLoad() throws {
         let app = XCUIApplication()

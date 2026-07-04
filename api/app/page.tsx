@@ -52,6 +52,35 @@ const caregiverTimeline = [
   { time: "20:30", slot: "夜", summary: "1件の薬", status: "まだです" }
 ];
 
+const appStoreUrl = "";
+
+function AppStoreBadge() {
+  const content = (
+    <>
+      <span className="app-store-icon" aria-hidden="true" />
+      <span className="app-store-text">
+        <span>iPhoneアプリ</span>
+        <strong>{appStoreUrl ? "App Storeでダウンロード" : "App Storeで公開予定"}</strong>
+      </span>
+      {!appStoreUrl && <em>準備中</em>}
+    </>
+  );
+
+  if (appStoreUrl) {
+    return (
+      <a className="app-store-badge" href={appStoreUrl} rel="noreferrer" target="_blank">
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <span className="app-store-badge app-store-badge-disabled" aria-disabled="true" role="link">
+      {content}
+    </span>
+  );
+}
+
 export default function Home() {
   return (
     <main className="page">
@@ -128,6 +157,10 @@ export default function Home() {
             お薬見守りは、毎日の服薬予定・記録・残量を家族で確認できるアプリです。
             本人は飲むお薬を迷わず確認でき、家族は離れていても服薬状況に気づけます。
           </p>
+          <div className="hero-download" aria-label="アプリのダウンロード">
+            <AppStoreBadge />
+            <span className="hero-download-note">iPhone版を準備中です。公開後、このページからApp Storeへ進めます。</span>
+          </div>
         </div>
       </section>
 
@@ -336,6 +369,19 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="download-note" id="download" aria-labelledby="download-title">
+        <div>
+          <div>
+            <p className="eyebrow">Download</p>
+            <h2 id="download-title">公開後はApp Storeからダウンロードできます</h2>
+            <p>
+              現在、iPhone版の公開準備中です。公開後は、このページのボタンをApp Storeへのリンクに切り替えます。
+            </p>
+          </div>
+          <AppStoreBadge />
+        </div>
+      </section>
+
       <section className="public-info" aria-labelledby="public-info-title">
         <div className="section-heading">
           <p className="eyebrow">Legal / Support</p>
@@ -409,6 +455,7 @@ export default function Home() {
         .overview,
           .demo-section,
           .mail-note,
+          .download-note,
           .public-info {
             width: min(1040px, 100%);
             margin: 0 auto;
@@ -458,9 +505,87 @@ export default function Home() {
           line-height: 1.9;
         }
 
+        .hero-download {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 14px;
+          max-width: 680px;
+          margin-top: 26px;
+        }
+
+        .hero-download-note {
+          max-width: 360px;
+          color: #d8f6e9;
+          font-size: 14px;
+          font-weight: 700;
+          line-height: 1.7;
+        }
+
+        .app-store-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 270px;
+          padding: 12px 14px;
+          border-radius: 8px;
+          background: #ffffff;
+          color: #12221d;
+          text-decoration: none;
+          box-shadow: 0 18px 40px rgba(4, 18, 15, 0.18);
+          border: 1px solid rgba(18, 34, 29, 0.08);
+        }
+
+        .app-store-icon {
+          flex: 0 0 auto;
+          width: 42px;
+          height: 42px;
+          border-radius: 10px;
+          background:
+            url("/brand-mark.png") center / contain no-repeat,
+            #f5f8f6;
+          box-shadow: inset 0 0 0 1px rgba(18, 34, 29, 0.08);
+        }
+
+        .app-store-text {
+          display: grid;
+          gap: 2px;
+          min-width: 0;
+        }
+
+        .app-store-text span {
+          color: #52635d;
+          font-size: 11px;
+          font-weight: 800;
+          line-height: 1.1;
+        }
+
+        .app-store-text strong {
+          color: #12221d;
+          font-size: 17px;
+          line-height: 1.25;
+        }
+
+        .app-store-badge em {
+          margin-left: auto;
+          padding: 5px 8px;
+          border-radius: 999px;
+          background: #e7f5ee;
+          color: #2f745d;
+          font-size: 11px;
+          font-style: normal;
+          font-weight: 900;
+          white-space: nowrap;
+        }
+
+        .app-store-badge-disabled {
+          cursor: default;
+        }
+
         .overview,
         .demo-section,
         .mail-note,
+        .download-note,
         .public-info {
           padding: 72px 20px 0;
         }
@@ -493,6 +618,7 @@ export default function Home() {
 
         .feature,
         .mail-note > div,
+        .download-note > div,
         .public-grid a {
           border: 1px solid rgba(18, 34, 29, 0.08);
           border-radius: 8px;
@@ -536,7 +662,8 @@ export default function Home() {
         .feature p,
         .public-grid p,
         .demo-copy p,
-        .mail-note p {
+        .mail-note p,
+        .download-note p {
           margin: 12px 0 0;
           color: #52635d;
           font-size: 15px;
@@ -1442,7 +1569,7 @@ export default function Home() {
         }
 
         .mail-note {
-          padding-bottom: 72px;
+          padding-bottom: 0;
         }
 
         .mail-note > div {
@@ -1452,6 +1579,28 @@ export default function Home() {
 
         .mail-note h2 {
           font-size: 24px;
+        }
+
+        .download-note > div {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 24px;
+          padding: 30px 32px;
+          background:
+            linear-gradient(135deg, #ffffff 0%, #edf8f2 100%);
+          border-left: 6px solid #3c8a69;
+        }
+
+        .download-note h2 {
+          margin: 0;
+          font-size: 24px;
+          line-height: 1.3;
+        }
+
+        .download-note .app-store-badge {
+          flex: 0 0 auto;
+          box-shadow: 0 12px 28px rgba(18, 34, 29, 0.12);
         }
 
         @media (max-width: 920px) {
@@ -1500,6 +1649,7 @@ export default function Home() {
           .overview,
           .demo-section,
           .mail-note,
+          .download-note,
           .public-info {
             padding: 52px 16px 0;
           }
@@ -1528,6 +1678,11 @@ export default function Home() {
           .mail-note {
             padding-bottom: 52px;
           }
+
+          .download-note > div {
+            display: grid;
+            justify-items: start;
+          }
         }
 
         @media (max-width: 480px) {
@@ -1550,6 +1705,11 @@ export default function Home() {
           .demo-stage {
             grid-template-columns: 1fr;
             padding: 18px;
+          }
+
+          .app-store-badge {
+            width: 100%;
+            min-width: 0;
           }
 
           .public-grid {

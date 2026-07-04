@@ -10,9 +10,35 @@ vi.mock("../../src/auth/supabaseJwt", () => ({
 }));
 
 vi.mock("../../src/repositories/patientRepo", () => ({
+  getPatientRecordById: vi.fn(async (patientId: string) => {
+    if (ownedPatients.has(patientId)) {
+      return {
+        id: patientId,
+        caregiverId: "caregiver-1",
+        displayName: "Care Recipient",
+        morningTime: "08:00",
+        noonTime: "13:00",
+        eveningTime: "19:00",
+        bedtimeTime: "22:00",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+    }
+    return null;
+  }),
   getPatientRecordForCaregiver: vi.fn(async (patientId: string, caregiverId: string) => {
     if (caregiverId === "caregiver-1" && ownedPatients.has(patientId)) {
-      return { id: patientId, caregiverId, displayName: "Care Recipient", createdAt: new Date(), updatedAt: new Date() };
+      return {
+        id: patientId,
+        caregiverId,
+        displayName: "Care Recipient",
+        morningTime: "08:00",
+        noonTime: "13:00",
+        eveningTime: "19:00",
+        bedtimeTime: "22:00",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
     }
     return null;
   })

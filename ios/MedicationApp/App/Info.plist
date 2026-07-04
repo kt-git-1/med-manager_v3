@@ -4,8 +4,6 @@
 <dict>
 	<key>API_BASE_URL</key>
 	<string>https://www.okusuri-mimamori.com/</string>
-	<key>EMAIL_CONFIRMATION_REDIRECT_URL</key>
-	<string>https://okusuri-mimamori.com/auth/confirmed</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -20,6 +18,8 @@
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -31,10 +31,10 @@
 			</array>
 		</dict>
 	</array>
-	<key>CFBundleShortVersionString</key>
-	<string>1.0.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>EMAIL_CONFIRMATION_REDIRECT_URL</key>
+	<string>https://okusuri-mimamori.com/auth/confirmed</string>
 	<key>SUPABASE_ANON_KEY</key>
 	<string>sb_publishable_nVf6RMV1tUkg8ew7BJLVnw_YDnUMRra</string>
 	<key>SUPABASE_URL</key>

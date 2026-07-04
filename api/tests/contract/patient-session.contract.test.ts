@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  LINKING_CODE_LENGTH,
-  LINKING_CODE_MAX_ATTEMPTS
-} from "../../src/services/linkingConstants";
+import { LINKING_CODE_MAX_ATTEMPTS } from "../../src/services/linkingConstants";
 import { validateLinkCodeInput } from "../../src/validators/patient";
 import { isCaregiverToken } from "../../src/middleware/auth";
 
