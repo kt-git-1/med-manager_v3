@@ -55,6 +55,52 @@ final class ExploratoryUITapCoverageTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["今日のお薬"].waitForExistence(timeout: 10))
     }
 
+    func testCaregiverCanRegisterForPushNotifications() throws {
+        let app = launchedApp(mode: "caregiver")
+
+        handleSystemPermissionPrompts(in: app)
+        XCTAssertTrue(waitForCaregiverToday(in: app), app.debugDescription)
+
+        tapTab("設定", in: app)
+        XCTAssertTrue(app.otherElements["PatientManagementView"].waitForExistence(timeout: 10))
+
+        let pushToggle = app.switches["PushNotificationToggle"]
+        XCTAssertTrue(pushToggle.waitForExistence(timeout: 10), app.debugDescription)
+        if pushToggle.frame.maxY > app.frame.height - 140 {
+            app.swipeUp()
+        }
+        if (pushToggle.value as? String) != "1" {
+            pushToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+            handleSystemPermissionPrompts(in: app)
+        }
+
+        XCTAssertTrue(
+            waitForSwitch(pushToggle, value: "1", timeout: 30),
+            "Push toggle did not become enabled. Current UI: \(app.debugDescription)"
+        )
+        XCTAssertFalse(app.alerts.firstMatch.exists, app.debugDescription)
+    }
+
+    func testCaregiverReceivesAndOpensDoseTakenPushNotification() async throws {
+        let app = launchedApp(mode: "caregiver")
+
+        handleSystemPermissionPrompts(in: app)
+        XCTAssertTrue(waitForCaregiverToday(in: app), app.debugDescription)
+        try enableCaregiverPushIfNeeded(in: app)
+
+        XCUIDevice.shared.press(.home)
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        XCTAssertTrue(springboard.wait(for: .runningForeground, timeout: 10))
+
+        try await qaContext.recordPatientDoseForPush()
+        let notification = waitForDoseTakenNotification(in: springboard, timeout: 45)
+        XCTAssertNotNil(notification, springboard.debugDescription)
+        notification?.tap()
+
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15))
+        XCTAssertTrue(app.staticTexts["服薬履歴"].waitForExistence(timeout: 20), app.debugDescription)
+    }
+
     private func launchedApp(mode: String) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment = [
@@ -112,6 +158,61 @@ final class ExploratoryUITapCoverageTests: XCTestCase {
         XCTAssertTrue(tab.waitForExistence(timeout: 10), "Missing tab: \(label)")
         tab.tap()
     }
+
+    private func enableCaregiverPushIfNeeded(in app: XCUIApplication) throws {
+        tapTab("設定", in: app)
+        XCTAssertTrue(app.otherElements["PatientManagementView"].waitForExistence(timeout: 10))
+
+        let pushToggle = app.switches["PushNotificationToggle"]
+        XCTAssertTrue(pushToggle.waitForExistence(timeout: 10), app.debugDescription)
+        if pushToggle.frame.maxY > app.frame.height - 140 {
+            app.swipeUp()
+        }
+        if (pushToggle.value as? String) != "1" {
+            pushToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+            handleSystemPermissionPrompts(in: app)
+        }
+        XCTAssertTrue(waitForSwitch(pushToggle, value: "1", timeout: 30), app.debugDescription)
+    }
+
+    private func waitForDoseTakenNotification(
+        in springboard: XCUIApplication,
+        timeout: TimeInterval
+    ) -> XCUIElement? {
+        let title = springboard.staticTexts["服薬記録"].firstMatch
+        if title.waitForExistence(timeout: 8) {
+            return title
+        }
+
+        let top = springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.01))
+        let middle = springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.72))
+        top.press(forDuration: 0.15, thenDragTo: middle)
+
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            let title = springboard.staticTexts["服薬記録"].firstMatch
+            if title.exists {
+                return title
+            }
+            let body = springboard.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "お薬を記録")).firstMatch
+            if body.exists {
+                return body
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(1.0))
+        }
+        return nil
+    }
+
+    private func waitForSwitch(_ toggle: XCUIElement, value expectedValue: String, timeout: TimeInterval) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if (toggle.value as? String) == expectedValue {
+                return true
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+        }
+        return (toggle.value as? String) == expectedValue
+    }
 }
 
 private struct QAContext {
@@ -121,6 +222,7 @@ private struct QAContext {
     let caregiverJWT: String
     let patientId: String
     let patientName: String
+    let medicationId: String
     let medicationName: String
     let patientToken: String
 
@@ -172,8 +274,21 @@ private struct QAContext {
             caregiverJWT: jwt,
             patientId: patientId,
             patientName: patientName,
+            medicationId: medicationId,
             medicationName: medicationName,
             patientToken: patientToken
+        )
+    }
+
+    func recordPatientDoseForPush() async throws {
+        _ = try await Self.jsonRequest(
+            url: "\(apiBaseURL)/api/patient/dose-records",
+            method: "POST",
+            headers: ["authorization": "Bearer \(patientToken)"],
+            body: [
+                "medicationId": medicationId,
+                "scheduledAt": ISO8601DateFormatter().string(from: Date().addingTimeInterval(-60))
+            ]
         )
     }
 

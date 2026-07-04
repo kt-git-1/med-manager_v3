@@ -121,6 +121,8 @@ final class SessionStore: ObservableObject {
         let env = ProcessInfo.processInfo.environment
         guard env["UITEST_SESSION_BOOTSTRAP"] == "1" else { return }
 
+        clearSessionForUITestBootstrap()
+
         if let caregiverToken = env["UITEST_CAREGIVER_TOKEN"], !caregiverToken.isEmpty {
             saveCaregiverToken(caregiverToken)
         }
@@ -140,6 +142,25 @@ final class SessionStore: ObservableObject {
         }
         #endif
     }
+
+    #if DEBUG
+    private func clearSessionForUITestBootstrap() {
+        caregiverToken = nil
+        patientToken = nil
+        mode = nil
+        shouldRedirectCaregiverToMedicationTab = false
+        shouldNavigateToCaregiverLogin = false
+        userDefaults.removeObject(forKey: SessionStore.lastModeStorageKey)
+        userDefaults.removeObject(forKey: CaregiverPushSettingsViewModel.persistKey)
+        removeCaregiverSession()
+        removePatientSession()
+        clearCurrentPatientId()
+        patientRefreshTask?.cancel()
+        patientRefreshTask = nil
+        isRefreshingCaregiverToken = false
+        isRefreshingPatientToken = false
+    }
+    #endif
 
     var isPatientTutorialPreviewActive: Bool {
         #if DEBUG
@@ -168,6 +189,7 @@ final class SessionStore: ObservableObject {
         shouldRedirectCaregiverToMedicationTab = false
         shouldNavigateToCaregiverLogin = false
         userDefaults.removeObject(forKey: SessionStore.lastModeStorageKey)
+        userDefaults.removeObject(forKey: CaregiverPushSettingsViewModel.persistKey)
         removeCaregiverSession()
         removePatientSession()
         clearCurrentPatientId()
@@ -212,6 +234,7 @@ final class SessionStore: ObservableObject {
     func clearCaregiverToken() {
         caregiverToken = nil
         removeCaregiverSession()
+        userDefaults.removeObject(forKey: CaregiverPushSettingsViewModel.persistKey)
         if mode == .caregiver {
             mode = nil
             userDefaults.removeObject(forKey: SessionStore.lastModeStorageKey)

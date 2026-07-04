@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import UserNotifications
 import FirebaseMessaging
 
@@ -38,7 +39,7 @@ final class CaregiverPushSettingsViewModel: ObservableObject {
     @Published var isUpdating: Bool = false
     @Published var errorMessage: String?
 
-    private static let persistKey = "push.isEnabled"
+    static let persistKey = "push.isEnabled"
 
     private let userDefaults: UserDefaults
     private let notificationCenter: NotificationAuthorizationProvider
@@ -87,10 +88,14 @@ final class CaregiverPushSettingsViewModel: ObservableObject {
                 return
             }
 
-            // 2. Get FCM token
-            let fcmToken = try await tokenProvider.token()
+            // 2. Register with APNs before requesting an FCM token. Firebase may
+            // reject token retrieval until the APNs token has been delivered.
+            UIApplication.shared.registerForRemoteNotifications()
 
-            // 3. Register with backend
+            // 3. Get FCM token
+            let fcmToken = try await retrieveFCMTokenWithRetry()
+
+            // 4. Register with backend
             let apiClient = apiClientFactory()
             try await apiClient.registerPushDevice(
                 token: fcmToken,
@@ -98,10 +103,11 @@ final class CaregiverPushSettingsViewModel: ObservableObject {
                 environment: DeviceTokenManager.pushEnvironment
             )
 
-            // 4. Success
+            // 5. Success
             isPushEnabled = true
             userDefaults.set(true, forKey: Self.persistKey)
         } catch {
+            print("CaregiverPushSettingsViewModel: enable push failed: \(error.localizedDescription)")
             errorMessage = NSLocalizedString(
                 "caregiver.settings.push.error",
                 comment: "Push registration error"
@@ -127,5 +133,20 @@ final class CaregiverPushSettingsViewModel: ObservableObject {
                 comment: "Push unregistration error"
             )
         }
+    }
+
+    private func retrieveFCMTokenWithRetry() async throws -> String {
+        var lastError: Error?
+        for attempt in 0..<4 {
+            do {
+                return try await tokenProvider.token()
+            } catch {
+                lastError = error
+                if attempt < 3 {
+                    try await Task.sleep(nanoseconds: 750_000_000)
+                }
+            }
+        }
+        throw lastError ?? DeviceTokenError.noFCMToken
     }
 }
