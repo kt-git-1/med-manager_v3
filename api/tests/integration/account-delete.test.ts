@@ -153,6 +153,28 @@ describe("DELETE /api/me", () => {
     );
   });
 
+  it("deletes push deliveries for all caregiver devices before deleting devices", async () => {
+    pushDeviceFindManyMock.mockResolvedValue([
+      { id: "push-device-1" },
+      { id: "push-device-2" },
+      { id: "push-device-3" }
+    ]);
+
+    const { DELETE } = await import("../../app/api/me/route");
+    const res = await DELETE(caregiverRequest());
+
+    expect(res.status).toBe(200);
+    expect(deleteMocks.pushDelivery).toHaveBeenCalledWith({
+      where: { pushDeviceId: { in: ["push-device-1", "push-device-2", "push-device-3"] } }
+    });
+    expect(deleteMocks.pushDelivery.mock.invocationCallOrder[0]).toBeLessThan(
+      deleteMocks.pushDevice.mock.invocationCallOrder[0]
+    );
+    expect(deleteMocks.pushDevice).toHaveBeenCalledWith({
+      where: { ownerType: "caregiver", ownerId: "caregiver-delete-1" }
+    });
+  });
+
   it("does not delete unrelated caregiver patient rows", async () => {
     const { DELETE } = await import("../../app/api/me/route");
     await DELETE(caregiverRequest());

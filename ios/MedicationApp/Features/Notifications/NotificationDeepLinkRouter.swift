@@ -21,9 +21,15 @@ enum NotificationDeepLinkParser {
     static func parseRemotePush(userInfo: [AnyHashable: Any]) -> NotificationDeepLinkTarget? {
         guard let type = userInfo["type"] as? String, type == "DOSE_TAKEN" else { return nil }
         guard let dateKey = userInfo["date"] as? String else { return nil }
+        guard isDateKey(dateKey) else { return nil }
         guard let slotString = userInfo["slot"] as? String,
               let slot = NotificationSlot(rawValue: slotString) else { return nil }
         return NotificationDeepLinkTarget(dateKey: dateKey, slot: slot)
+    }
+
+    private static func isDateKey(_ value: String) -> Bool {
+        let pattern = #"^\d{4}-\d{2}-\d{2}$"#
+        return value.range(of: pattern, options: .regularExpression) != nil
     }
 }
 
@@ -41,7 +47,10 @@ final class NotificationDeepLinkRouter: ObservableObject {
 
     /// Route from a remote push notification payload (012-push-foundation).
     func routeFromRemotePush(userInfo: [AnyHashable: Any]) {
-        target = NotificationDeepLinkParser.parseRemotePush(userInfo: userInfo)
+        guard let parsedTarget = NotificationDeepLinkParser.parseRemotePush(userInfo: userInfo) else {
+            return
+        }
+        target = parsedTarget
     }
 
     /// Route from an already-parsed deep link target. Used when parsing happens
