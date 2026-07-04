@@ -1,5 +1,6 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { SiteFooter } from "./SiteFooter";
+import { SiteHeader } from "./SiteHeader";
 
 type LegalSection = {
   title: string;
@@ -16,13 +17,6 @@ type LegalPageProps = {
   sections: LegalSection[];
 };
 
-const navItems = [
-  { href: "/", label: "ホーム" },
-  { href: "/privacy", label: "プライバシー" },
-  { href: "/terms", label: "利用規約" },
-  { href: "/support", label: "サポート" }
-];
-
 const supportEmail = "support@okusuri-mimamori.com";
 
 export function LegalPage({
@@ -34,21 +28,10 @@ export function LegalPage({
   sections
 }: LegalPageProps) {
   return (
-    <main className="legal-page">
-      <div className="legal-shell">
-        <nav className="site-nav" aria-label="サイト内リンク">
-          <Link className="brand-link" href="/">
-            <span>お薬見守り</span>
-          </Link>
-          <div>
-            {navItems.map((item) => (
-              <Link key={item.href} href={item.href}>
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        </nav>
-
+    <>
+      <SiteHeader />
+      <main className="legal-page">
+        <div className="legal-shell">
         <header className="legal-hero">
           <div>
             <p className="eyebrow">Legal / Support</p>
@@ -112,8 +95,8 @@ export function LegalPage({
             メールで問い合わせる
           </a>
         </section>
-      </div>
-      <style>{`
+        </div>
+        <style>{`
         * {
           box-sizing: border-box;
         }
@@ -130,48 +113,12 @@ export function LegalPage({
           background:
             linear-gradient(180deg, #eef6f2 0, #f6f8f7 360px),
             #f6f8f7;
-          padding: 32px 20px 72px;
+          padding: 32px 20px 20px;
         }
 
         .legal-shell {
           width: min(1080px, 100%);
           margin: 0 auto;
-        }
-
-        .site-nav {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 18px;
-          margin-bottom: 28px;
-        }
-
-        .site-nav div {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          justify-content: flex-end;
-        }
-
-        .site-nav a {
-          display: inline-flex;
-          align-items: center;
-          min-height: 38px;
-          padding: 0 12px;
-          border-radius: 999px;
-          color: #24614d;
-          font-weight: 800;
-          text-decoration: none;
-          background: rgba(255, 255, 255, 0.72);
-          border: 1px solid rgba(18, 34, 29, 0.08);
-        }
-
-        .brand-link {
-          color: #123b32 !important;
-          background: transparent !important;
-          border: 0 !important;
-          padding: 0 !important;
-          font-size: 17px;
         }
 
         .legal-hero {
@@ -390,16 +337,7 @@ export function LegalPage({
 
         @media (max-width: 780px) {
           .legal-page {
-            padding: 22px 14px 56px;
-          }
-
-          .site-nav {
-            display: grid;
-            gap: 14px;
-          }
-
-          .site-nav div {
-            justify-content: flex-start;
+            padding: 22px 14px 20px;
           }
 
           .legal-hero,
@@ -434,7 +372,9 @@ export function LegalPage({
             width: 100%;
           }
         }
-      `}</style>
-    </main>
+        `}</style>
+      </main>
+      <SiteFooter />
+    </>
   );
 }

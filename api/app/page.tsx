@@ -1,3 +1,6 @@
+import { SiteHeader } from "./SiteHeader";
+import { SiteFooter } from "./SiteFooter";
+
 export const metadata = {
   title: "お薬見守り | 家族で服薬を見守るアプリ",
   description:
@@ -22,43 +25,37 @@ const featureRows = [
   }
 ];
 
-const demoRows = [
-  { time: "07:30", slot: "朝", name: "血圧のお薬", amount: "1錠", status: "服用済み" },
-  { time: "12:30", slot: "昼", name: "胃のお薬", amount: "1錠", status: "これから" },
-  { time: "20:30", slot: "夜", name: "眠る前のお薬", amount: "0.5錠", status: "未記録" }
+const patientSlots = [
+  {
+    time: "07:30",
+    slot: "朝",
+    medicines: ["血圧のお薬 1錠", "胃のお薬 1錠"],
+    status: "記録済み"
+  },
+  {
+    time: "12:30",
+    slot: "昼",
+    medicines: ["胃のお薬 1錠"],
+    status: "未記録"
+  },
+  {
+    time: "20:30",
+    slot: "夜",
+    medicines: ["眠る前のお薬 0.5錠"],
+    status: "これから"
+  }
+];
+
+const caregiverTimeline = [
+  { time: "07:30", slot: "朝", summary: "2件の薬", status: "飲みました" },
+  { time: "12:30", slot: "昼", summary: "1件の薬 / 未記録1件", status: "次に記録" },
+  { time: "20:30", slot: "夜", summary: "1件の薬", status: "まだです" }
 ];
 
 export default function Home() {
   return (
     <main className="page">
-      <header className="home-header">
-        <nav className="home-nav" aria-label="サイト内リンク">
-          <a className="home-brand" href="/">
-            <img src="/brand-logo.png" alt="" />
-            <span>お薬見守り</span>
-          </a>
-          <div className="home-nav-links">
-            <a href="#overview">概要</a>
-            <a href="#demo">画面イメージ</a>
-            <a href="/privacy">プライバシー</a>
-            <a href="/terms">利用規約</a>
-            <a href="/support">サポート</a>
-          </div>
-          <details className="mobile-menu">
-            <summary aria-label="メニューを開く">
-              <span>メニュー</span>
-              <em />
-            </summary>
-            <div>
-              <a href="#overview">概要</a>
-              <a href="#demo">画面イメージ</a>
-              <a href="/privacy">プライバシー</a>
-              <a href="/terms">利用規約</a>
-              <a href="/support">サポート</a>
-            </div>
-          </details>
-        </nav>
-      </header>
+      <SiteHeader current="home" />
 
       <section className="hero" aria-labelledby="home-title">
         <div className="hero-bg" aria-hidden="true">
@@ -74,33 +71,49 @@ export default function Home() {
                 </div>
               </div>
               <div className="iphone-screen">
-                <div className="demo-caption">
-                  <span>本人画面</span>
-                  <strong>次に飲む薬がすぐ分かる</strong>
-                </div>
-                <div className="phone-top">
-                  <span>お薬見守り</span>
+                <div className="app-nav">
+                  <span>本人モード</span>
                   <strong>今日のお薬</strong>
                 </div>
-                <div className="next-card">
+                <div className="app-hero-card">
                   <span>次に飲むお薬</span>
-                  <strong>昼 12:30</strong>
-                  <p>胃のお薬 1錠</p>
-                </div>
-                <button className="demo-action" type="button">
-                  飲んだらここを押す
-                </button>
-                <div className="progress-panel">
-                  <span>家族にも共有されます</span>
-                  <strong>今日 2/3回分 完了</strong>
-                  <div className="progress-track">
-                    <span />
+                  <div>
+                    <strong>昼のお薬</strong>
+                    <em>12:30</em>
                   </div>
+                  <p>1錠 / 1種類</p>
+                  <div className="medicine-line">
+                    <b>胃のお薬</b>
+                    <small>1錠</small>
+                  </div>
+                  <button className="demo-action" type="button">
+                    この時間のお薬を飲んだ
+                  </button>
                 </div>
-                <div className="family-card">
-                  <span>家族画面</span>
-                  <strong>昼のお薬がまだ未記録です</strong>
-                  <p>必要なときだけ状況を確認できます。</p>
+                <div className="app-section-title">
+                  <strong>今日のお薬</strong>
+                  <span>2/4 記録済み</span>
+                </div>
+                <div className="compact-slot-list">
+                  {patientSlots.slice(0, 2).map((row) => (
+                    <div className="compact-slot" key={row.slot}>
+                      <div>
+                        <strong>{row.slot}</strong>
+                        <span>{row.time}</span>
+                      </div>
+                      <p>{row.medicines[0]}</p>
+                      <em className={row.status === "記録済み" ? "status-done" : "status-pending"}>
+                        {row.status}
+                      </em>
+                    </div>
+                  ))}
+                </div>
+                <div className="prn-tile">
+                  <div>
+                    <strong>必要な時のお薬</strong>
+                    <span>頓服薬が2件あります</span>
+                  </div>
+                  <b>›</b>
                 </div>
                 <div className="home-indicator" />
               </div>
@@ -142,99 +155,158 @@ export default function Home() {
 
         <div className="demo-layout">
           <div className="demo-copy">
-            <h3>本人画面は、大きく迷わない操作に。</h3>
+            <h3>実際のアプリ画面に近い流れで、本人と家族の見え方を分けています。</h3>
             <p>
-              家族が登録したお薬と服薬時間をもとに、本人画面では予定の時間帯ごとにお薬をまとめます。
-              飲めたら大きなボタンで記録します。
-              家族側では同じ記録を確認し、飲み忘れや未記録に気づけます。
+              本人画面は「次に飲むお薬」を大きく表示し、時間帯ごとのまとめ記録に寄せています。
+              家族画面は「次にすること」「今日の進み具合」「今日の予定」を並べ、離れていても状況が追いやすい構成です。
             </p>
             <div className="mini-metrics" aria-label="デモ指標">
               <div>
-                <strong>薬登録</strong>
-                <span>家族が設定</span>
+                <strong>次に飲むお薬</strong>
+                <span>本人画面の先頭に表示</span>
               </div>
               <div>
                 <strong>朝・昼・夜</strong>
-                <span>服薬時間を設定</span>
+                <span>時間帯ごとにまとめる</span>
               </div>
               <div>
-                <strong>2/3回分</strong>
-                <span>進捗を表示</span>
+                <strong>2/4回分 完了</strong>
+                <span>家族画面で進捗を確認</span>
               </div>
               <div>
-                <strong>残り12錠</strong>
-                <span>在庫も確認</span>
+                <strong>必要な時のお薬</strong>
+                <span>頓服も別導線で記録</span>
               </div>
             </div>
           </div>
 
           <div className="demo-stage" aria-label="アプリ画面デモ">
-            <div className="demo-phone mode-phone main-demo">
-              <div className="phone-top">
+            <div className="demo-phone app-demo-phone main-demo">
+              <div className="demo-statusbar">
+                <span>9:41</span>
+                <span>●●●</span>
+              </div>
+              <div className="app-nav">
                 <span>本人モード</span>
                 <strong>今日のお薬</strong>
               </div>
-              <div className="next-slot">
-                <span>次のお薬</span>
-                <strong>昼 12:30</strong>
-                <p>胃のお薬 1錠</p>
+              <div className="app-hero-card">
+                <span>次に飲むお薬</span>
+                <div>
+                  <strong>昼のお薬</strong>
+                  <em>12:30</em>
+                </div>
+                <p>1錠 / 1種類</p>
+                <div className="medicine-line">
+                  <b>胃のお薬</b>
+                  <small>1錠</small>
+                </div>
+                <button className="demo-action" type="button">
+                  この時間のお薬を飲んだ
+                </button>
               </div>
-              <button className="demo-action" type="button">
-                飲んだら記録する
-              </button>
-              <div className="slot-list">
-                {demoRows.slice(0, 2).map((row) => (
-                  <div className="dose-row" key={row.name}>
-                    <div>
-                      <span className="time">{row.time}</span>
-                      <strong>{row.slot}</strong>
+              <div className="app-section-title">
+                <strong>今日のお薬</strong>
+                <span>時間帯ごと</span>
+              </div>
+              <div className="slot-card-list">
+                {patientSlots.map((row) => (
+                  <div className="slot-card" key={row.slot}>
+                    <div className="slot-card-head">
+                      <i />
+                      <div>
+                        <strong>{row.slot}</strong>
+                        <span>{row.time}</span>
+                      </div>
+                      <em
+                        className={
+                          row.status === "記録済み"
+                            ? "status-done"
+                            : row.status === "未記録"
+                              ? "status-pending"
+                              : "status-waiting"
+                        }
+                      >
+                        {row.status}
+                      </em>
                     </div>
-                    <div>
-                      <strong>{row.name}</strong>
-                      <span>{row.amount}</span>
-                    </div>
-                    <em
-                      className={
-                        row.status === "服用済み"
-                          ? "status-done"
-                          : row.status === "未記録"
-                            ? "status-missed"
-                            : "status-pending"
-                      }
-                    >
-                      {row.status}
-                    </em>
+                    {row.medicines.map((medicine) => (
+                      <div className="medicine-line" key={medicine}>
+                        <b>{medicine.replace(/ [0-9.]+錠$/, "")}</b>
+                        <small>{medicine.match(/[0-9.]+錠$/)?.[0]}</small>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
+              <div className="prn-tile">
+                <div>
+                  <strong>必要な時のお薬</strong>
+                  <span>痛い時・つらい時だけ記録</span>
+                </div>
+                <b>›</b>
+              </div>
             </div>
 
-            <div className="demo-phone mode-phone watcher-demo">
-              <div className="phone-top">
-                <span>家族モード</span>
-                <strong>見守り</strong>
+            <div className="demo-phone app-demo-phone watcher-demo">
+              <div className="demo-statusbar">
+                <span>9:41</span>
+                <span>●●●</span>
               </div>
-              <div className="watch-summary">
-                <span>山田 太郎さん</span>
-                <strong>今日 2/3回分 完了</strong>
-                <div className="progress-track">
-                  <span />
-                </div>
-              </div>
-              <div className="watch-alert">
-                <span>確認が必要</span>
-                <strong>昼のお薬がまだ未記録です</strong>
-                <p>本人画面で記録されると、家族画面にも反映されます。</p>
-              </div>
-              <div className="watch-list">
+              <div className="caregiver-title">
+                <div className="avatar">太</div>
                 <div>
-                  <span>朝 07:30</span>
-                  <strong>服用済み</strong>
+                  <span>山田 太郎さん</span>
+                  <strong>今日の服薬</strong>
                 </div>
+              </div>
+              <div className="caregiver-action-card">
+                <span>次にすること</span>
                 <div>
-                  <span>昼 12:30</span>
-                  <strong>未記録</strong>
+                  <b>昼 12:30</b>
+                  <em>未記録</em>
                 </div>
+                <p>この時間帯の未記録1件をまとめて記録します</p>
+                <button className="demo-action" type="button">
+                  この時間帯をまとめて記録
+                </button>
+              </div>
+              <div className="caregiver-progress">
+                <div className="progress-ring">2/4</div>
+                <div>
+                  <span>今日の進み具合</span>
+                  <strong>2/4回分 完了</strong>
+                  <p>昼が次に記録する服薬です</p>
+                </div>
+              </div>
+              <div className="app-section-title">
+                <strong>今日の予定</strong>
+                <span>見守り</span>
+              </div>
+              <div className="timeline-list">
+                {caregiverTimeline.map((row) => (
+                  <div className="timeline-row" key={row.slot}>
+                    <div>
+                      <strong>{row.slot}</strong>
+                      <span>{row.time}</span>
+                    </div>
+                    <div>
+                      <strong>{row.summary}</strong>
+                      <span>{row.status}</span>
+                    </div>
+                    <em
+                      className={
+                        row.status === "飲みました"
+                          ? "status-done"
+                          : row.status === "次に記録"
+                            ? "status-pending"
+                            : "status-waiting"
+                      }
+                    >
+                      {row.status === "飲みました" ? "済" : row.status === "次に記録" ? "次" : "未"}
+                    </em>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -276,14 +348,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="footer-links" aria-label="公開情報">
-        <span>お薬見守り</span>
-        <div>
-          <a href="/privacy">プライバシーポリシー</a>
-          <a href="/terms">利用規約</a>
-          <a href="/support">サポート</a>
-        </div>
-      </footer>
+      <SiteFooter />
 
       <style>{`
         :root {
@@ -303,143 +368,6 @@ export default function Home() {
           font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Helvetica Neue", sans-serif;
           background: #f6f8f7;
           color: #12221d;
-        }
-
-        .home-header {
-          background: #f6f8f7;
-          border-bottom: 1px solid rgba(18, 34, 29, 0.08);
-        }
-
-        .home-nav {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 18px;
-          width: min(1040px, 100%);
-          min-height: 76px;
-          margin: 0 auto;
-          padding: 0 20px;
-        }
-
-        .home-brand {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          flex: 0 0 auto;
-          color: #123b32;
-          font-size: 18px;
-          font-weight: 900;
-          text-decoration: none;
-        }
-
-        .home-brand img {
-          width: 44px;
-          height: 44px;
-          border-radius: 12px;
-          object-fit: cover;
-          object-position: 50% 34%;
-          background: #ffffff;
-          box-shadow: 0 8px 22px rgba(18, 34, 29, 0.12);
-        }
-
-        .home-nav-links {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-          gap: 8px;
-        }
-
-        .home-nav-links a,
-        .mobile-menu a {
-          display: inline-flex;
-          align-items: center;
-          min-height: 38px;
-          padding: 0 12px;
-          border-radius: 999px;
-          background: #ffffff;
-          border: 1px solid rgba(18, 34, 29, 0.08);
-          color: #24614d;
-          font-size: 14px;
-          font-weight: 800;
-          text-decoration: none;
-          white-space: nowrap;
-        }
-
-        .mobile-menu {
-          display: none;
-        }
-
-        .mobile-menu summary {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          min-height: 42px;
-          padding: 0 14px 0 16px;
-          border-radius: 8px;
-          background: #123b32;
-          border: 1px solid rgba(18, 34, 29, 0.08);
-          color: #ffffff;
-          cursor: pointer;
-          list-style: none;
-          box-shadow: 0 12px 28px rgba(18, 34, 29, 0.18);
-        }
-
-        .mobile-menu summary::-webkit-details-marker {
-          display: none;
-        }
-
-        .mobile-menu summary:focus-visible {
-          outline: 3px solid rgba(60, 138, 105, 0.34);
-          outline-offset: 3px;
-        }
-
-        .mobile-menu summary span {
-          color: #ffffff;
-          font-size: 13px;
-          font-weight: 900;
-          line-height: 1;
-        }
-
-        .mobile-menu summary em {
-          width: 8px;
-          height: 8px;
-          border-right: 2px solid currentColor;
-          border-bottom: 2px solid currentColor;
-          transform: translateY(-2px) rotate(45deg);
-          transition: transform 160ms ease;
-        }
-
-        .mobile-menu[open] summary em {
-          transform: translateY(2px) rotate(225deg);
-        }
-
-        .mobile-menu div {
-          position: absolute;
-          top: calc(100% + 10px);
-          right: 16px;
-          z-index: 10;
-          display: grid;
-          gap: 6px;
-          width: min(260px, calc(100vw - 32px));
-          padding: 10px;
-          border-radius: 8px;
-          background: rgba(255, 255, 255, 0.98);
-          border: 1px solid rgba(18, 34, 29, 0.08);
-          box-shadow: 0 22px 60px rgba(18, 34, 29, 0.2);
-          backdrop-filter: blur(12px);
-        }
-
-        .mobile-menu a {
-          justify-content: flex-start;
-          width: 100%;
-          min-height: 44px;
-          border-radius: 6px;
-          background: transparent;
-          border: 0;
-        }
-
-        .mobile-menu a:hover {
-          background: #e7f5ee;
         }
 
         .hero {
@@ -469,8 +397,7 @@ export default function Home() {
         .overview,
           .demo-section,
           .mail-note,
-          .public-info,
-          .footer-links {
+          .public-info {
             width: min(1040px, 100%);
             margin: 0 auto;
           }
@@ -524,32 +451,6 @@ export default function Home() {
         .mail-note,
         .public-info {
           padding: 72px 20px 0;
-        }
-
-        .footer-links {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 14px;
-          padding: 34px 20px 56px;
-        }
-
-        .footer-links span {
-          color: #12221d;
-          font-weight: 900;
-        }
-
-        .footer-links div {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 14px;
-        }
-
-        .footer-links a {
-          color: #24614d;
-          font-weight: 800;
-          text-decoration: none;
         }
 
         .section-heading {
@@ -690,6 +591,27 @@ export default function Home() {
           background: #10231e;
           box-shadow: 0 28px 70px rgba(18, 34, 29, 0.28);
           color: #12221d;
+        }
+
+        .app-demo-phone {
+          aspect-ratio: 393 / 852;
+          display: grid;
+          align-content: start;
+          gap: 10px;
+          overflow: hidden;
+          padding: 14px;
+          border: 10px solid #10231e;
+          background: #f5f8f6;
+        }
+
+        .demo-statusbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 10px 2px;
+          color: #10231e;
+          font-size: 12px;
+          font-weight: 900;
         }
 
         .mode-phone {
@@ -835,8 +757,353 @@ export default function Home() {
           opacity: 0.78;
         }
 
+        .app-nav,
+        .app-hero-card,
+        .slot-card,
+        .prn-tile,
+        .caregiver-action-card,
+        .caregiver-progress,
+        .timeline-row {
+          background: #ffffff;
+          box-shadow: 0 10px 24px rgba(18, 34, 29, 0.08);
+        }
+
+        .app-nav {
+          display: grid;
+          gap: 3px;
+          padding: 14px 16px;
+          border-radius: 22px 22px 14px 14px;
+        }
+
+        .app-nav span,
+        .app-hero-card > span,
+        .app-section-title span,
+        .slot-card span,
+        .prn-tile span,
+        .caregiver-title span,
+        .caregiver-action-card > span,
+        .caregiver-progress span,
+        .timeline-row span {
+          color: #667771;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .app-nav strong {
+          font-size: 22px;
+          line-height: 1.2;
+        }
+
+        .app-hero-card {
+          display: grid;
+          gap: 10px;
+          padding: 16px;
+          border-radius: 18px;
+          border-left: 6px solid #2f745d;
+        }
+
+        .app-hero-card div:first-of-type {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        .app-hero-card div:first-of-type strong {
+          min-width: 0;
+        }
+
+        .app-hero-card strong {
+          color: #174f40;
+          font-size: 26px;
+          line-height: 1.1;
+        }
+
+        .app-hero-card em {
+          flex: 0 0 auto;
+          color: #667771;
+          font-size: 18px;
+          font-style: normal;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .app-hero-card p {
+          margin: 0;
+          color: #667771;
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        .medicine-line {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          padding: 10px 12px;
+          border-radius: 12px;
+          background: #f5f8f6;
+          border: 1px solid #e4ece8;
+        }
+
+        .medicine-line b {
+          font-size: 13px;
+        }
+
+        .medicine-line small {
+          color: #667771;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .app-section-title {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          padding: 2px 4px;
+        }
+
+        .app-section-title strong {
+          font-size: 15px;
+        }
+
+        .compact-slot-list,
+        .slot-card-list,
+        .timeline-list {
+          display: grid;
+          gap: 9px;
+        }
+
+        .compact-slot {
+          display: grid;
+          grid-template-columns: 42px minmax(0, 1fr) auto;
+          gap: 9px;
+          align-items: center;
+          padding: 10px;
+          border-radius: 14px;
+          background: #ffffff;
+          border: 1px solid #e4ece8;
+        }
+
+        .compact-slot div {
+          display: grid;
+          gap: 2px;
+        }
+
+        .compact-slot p {
+          margin: 0;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .compact-slot em,
+        .slot-card em,
+        .timeline-row em,
+        .caregiver-action-card em {
+          padding: 5px 8px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-style: normal;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .status-done {
+          background: #e7f5ee;
+          color: #2f745d;
+        }
+
+        .status-pending {
+          background: #eaf2ff;
+          color: #245a9c;
+        }
+
+        .status-waiting {
+          background: #fff3d8;
+          color: #77510e;
+        }
+
+        .prn-tile {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 13px 14px;
+          border-radius: 16px;
+          border-left: 5px solid #d88a22;
+        }
+
+        .prn-tile div {
+          display: grid;
+          gap: 3px;
+        }
+
+        .prn-tile strong {
+          font-size: 15px;
+        }
+
+        .prn-tile b {
+          color: #667771;
+          font-size: 24px;
+          line-height: 1;
+        }
+
+        .slot-card {
+          display: grid;
+          gap: 10px;
+          padding: 12px;
+          border-radius: 16px;
+          border-left: 5px solid #2f745d;
+        }
+
+        .slot-card-head {
+          display: grid;
+          grid-template-columns: 10px minmax(0, 1fr) auto;
+          gap: 9px;
+          align-items: center;
+        }
+
+        .slot-card-head i {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: #2f745d;
+        }
+
+        .slot-card-head div {
+          display: grid;
+          gap: 2px;
+        }
+
+        .slot-card-head strong {
+          font-size: 17px;
+        }
+
+        .caregiver-title {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 7px 4px 2px;
+        }
+
+        .avatar {
+          display: grid;
+          place-items: center;
+          width: 46px;
+          height: 46px;
+          border-radius: 50%;
+          background: #dff2ea;
+          color: #174f40;
+          font-weight: 900;
+        }
+
+        .caregiver-title div:last-child {
+          display: grid;
+          gap: 2px;
+        }
+
+        .caregiver-title strong {
+          font-size: 22px;
+          line-height: 1.2;
+        }
+
+        .caregiver-action-card {
+          display: grid;
+          gap: 10px;
+          padding: 16px;
+          border-radius: 18px;
+          border-left: 6px solid #2f745d;
+        }
+
+        .caregiver-action-card div {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        .caregiver-action-card b {
+          color: #174f40;
+          font-size: 22px;
+        }
+
+        .caregiver-action-card p {
+          margin: 0;
+          color: #667771;
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 1.45;
+        }
+
+        .caregiver-progress {
+          display: grid;
+          grid-template-columns: 64px minmax(0, 1fr);
+          gap: 12px;
+          align-items: center;
+          padding: 14px;
+          border-radius: 16px;
+        }
+
+        .progress-ring {
+          display: grid;
+          place-items: center;
+          width: 62px;
+          height: 62px;
+          border-radius: 50%;
+          background:
+            radial-gradient(circle at center, #ffffff 55%, transparent 57%),
+            conic-gradient(#3c8a69 0 50%, #dce7e2 50% 100%);
+          color: #174f40;
+          font-size: 16px;
+          font-weight: 900;
+        }
+
+        .caregiver-progress div:last-child {
+          display: grid;
+          gap: 4px;
+        }
+
+        .caregiver-progress strong {
+          font-size: 17px;
+        }
+
+        .caregiver-progress p {
+          margin: 0;
+          color: #667771;
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 1.45;
+        }
+
+        .timeline-row {
+          display: grid;
+          grid-template-columns: 42px minmax(0, 1fr) auto;
+          gap: 9px;
+          align-items: center;
+          padding: 10px;
+          border-radius: 14px;
+        }
+
+        .timeline-row div {
+          display: grid;
+          gap: 2px;
+        }
+
+        .timeline-row strong {
+          font-size: 13px;
+        }
+
         .hero-phone {
           transform: none;
+        }
+
+        .hero-phone .app-hero-card strong {
+          font-size: 23px;
+        }
+
+        .hero-phone .app-hero-card em {
+          font-size: 16px;
         }
 
         .main-demo {
@@ -1149,22 +1416,6 @@ export default function Home() {
           font-size: 24px;
         }
 
-        @media (max-width: 1080px) {
-          .home-nav {
-            position: relative;
-            min-height: auto;
-            padding: 18px 20px;
-          }
-
-          .home-nav-links {
-            display: none;
-          }
-
-          .mobile-menu {
-            display: block;
-          }
-        }
-
         @media (max-width: 920px) {
           .hero {
             min-height: auto;
@@ -1242,14 +1493,6 @@ export default function Home() {
         }
 
         @media (max-width: 480px) {
-          .home-nav {
-            padding: 18px 16px;
-          }
-
-          .home-brand {
-            font-size: 17px;
-          }
-
           .hero {
             padding-top: 20px;
           }
