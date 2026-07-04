@@ -25,6 +25,25 @@ vi.mock("../../src/auth/patientSessionVerifier", () => ({
   }
 }));
 
+vi.mock("../../src/repositories/patientRepo", () => ({
+  getPatientRecordById: vi.fn(async (patientId: string) => {
+    if (patientId !== "patient-1") {
+      return null;
+    }
+    return {
+      id: "patient-1",
+      caregiverId: "caregiver-1",
+      displayName: "Test Patient",
+      morningTime: "08:00",
+      noonTime: "13:00",
+      eveningTime: "19:00",
+      bedtimeTime: "22:00",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  })
+}));
+
 describe("schedule range integration", () => {
   it("returns 401 when authorization is missing", async () => {
     const request = new Request("http://localhost/api/schedule?from=2026-02-01&to=2026-02-02");

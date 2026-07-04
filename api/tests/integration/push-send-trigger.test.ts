@@ -46,8 +46,7 @@ const disablePushDeviceByIdMock = vi.fn();
 vi.mock("../../src/repositories/pushDeviceRepo", () => ({
   listEnabledPushDevicesForCaregivers: (...args: unknown[]) =>
     listEnabledPushDevicesForCaregiversMock(...args),
-  disablePushDeviceById: (...args: unknown[]) =>
-    disablePushDeviceByIdMock(...args),
+  disablePushDeviceById: (...args: unknown[]) => disablePushDeviceByIdMock(...args),
   upsertPushDevice: vi.fn(),
   disablePushDevice: vi.fn()
 }));
@@ -127,9 +126,8 @@ describe("notifyCaregiversOfDoseTaken — send trigger", () => {
 
     seedDevices(defaultDevices);
 
-    listEnabledPushDevicesForCaregiversMock.mockImplementation(
-      async (caregiverIds: string[]) =>
-        deviceStore.filter((d) => caregiverIds.includes(d.ownerId) && d.isEnabled)
+    listEnabledPushDevicesForCaregiversMock.mockImplementation(async (caregiverIds: string[]) =>
+      deviceStore.filter((d) => caregiverIds.includes(d.ownerId) && d.isEnabled)
     );
 
     tryInsertDeliveryMock.mockImplementation(
@@ -151,9 +149,8 @@ describe("notifyCaregiversOfDoseTaken — send trigger", () => {
   });
 
   it("sends push to all enabled devices for linked caregivers", async () => {
-    const { notifyCaregiversOfDoseTaken } = await import(
-      "../../src/services/pushNotificationService"
-    );
+    const { notifyCaregiversOfDoseTaken } =
+      await import("../../src/services/pushNotificationService");
 
     await notifyCaregiversOfDoseTaken({
       patientId: "patient-1",
@@ -170,9 +167,8 @@ describe("notifyCaregiversOfDoseTaken — send trigger", () => {
   });
 
   it("includes correct payload with type, date, slot, recordingGroupId", async () => {
-    const { notifyCaregiversOfDoseTaken } = await import(
-      "../../src/services/pushNotificationService"
-    );
+    const { notifyCaregiversOfDoseTaken } =
+      await import("../../src/services/pushNotificationService");
 
     await notifyCaregiversOfDoseTaken({
       patientId: "patient-1",
@@ -201,9 +197,8 @@ describe("notifyCaregiversOfDoseTaken — send trigger", () => {
   });
 
   it("notification body contains displayName", async () => {
-    const { notifyCaregiversOfDoseTaken } = await import(
-      "../../src/services/pushNotificationService"
-    );
+    const { notifyCaregiversOfDoseTaken } =
+      await import("../../src/services/pushNotificationService");
 
     await notifyCaregiversOfDoseTaken({
       patientId: "patient-1",
@@ -232,9 +227,8 @@ describe("notifyCaregiversOfDoseTaken — send trigger", () => {
       }
     ]);
 
-    const { notifyCaregiversOfDoseTaken } = await import(
-      "../../src/services/pushNotificationService"
-    );
+    const { notifyCaregiversOfDoseTaken } =
+      await import("../../src/services/pushNotificationService");
 
     await notifyCaregiversOfDoseTaken({
       patientId: "patient-3",
@@ -263,9 +257,8 @@ describe("notifyCaregiversOfDoseTaken — dedup", () => {
     resetStores();
     seedDevices(defaultDevices);
 
-    listEnabledPushDevicesForCaregiversMock.mockImplementation(
-      async (caregiverIds: string[]) =>
-        deviceStore.filter((d) => caregiverIds.includes(d.ownerId) && d.isEnabled)
+    listEnabledPushDevicesForCaregiversMock.mockImplementation(async (caregiverIds: string[]) =>
+      deviceStore.filter((d) => caregiverIds.includes(d.ownerId) && d.isEnabled)
     );
 
     tryInsertDeliveryMock.mockImplementation(
@@ -287,9 +280,8 @@ describe("notifyCaregiversOfDoseTaken — dedup", () => {
   });
 
   it("prevents duplicate push for same recordingGroupId (second call skipped)", async () => {
-    const { notifyCaregiversOfDoseTaken } = await import(
-      "../../src/services/pushNotificationService"
-    );
+    const { notifyCaregiversOfDoseTaken } =
+      await import("../../src/services/pushNotificationService");
 
     const input = {
       patientId: "patient-1",
@@ -313,9 +305,8 @@ describe("notifyCaregiversOfDoseTaken — dedup", () => {
   });
 
   it("uses eventKey doseTaken:{recordingGroupId} when recordingGroupId present", async () => {
-    const { notifyCaregiversOfDoseTaken } = await import(
-      "../../src/services/pushNotificationService"
-    );
+    const { notifyCaregiversOfDoseTaken } =
+      await import("../../src/services/pushNotificationService");
 
     await notifyCaregiversOfDoseTaken({
       patientId: "patient-1",
@@ -338,9 +329,8 @@ describe("notifyCaregiversOfDoseTaken — dedup", () => {
   it("sends no push when no linked caregiver has push enabled (empty device list)", async () => {
     listEnabledPushDevicesForCaregiversMock.mockResolvedValue([]);
 
-    const { notifyCaregiversOfDoseTaken } = await import(
-      "../../src/services/pushNotificationService"
-    );
+    const { notifyCaregiversOfDoseTaken } =
+      await import("../../src/services/pushNotificationService");
 
     await notifyCaregiversOfDoseTaken({
       patientId: "patient-1",
@@ -366,9 +356,8 @@ describe("notifyCaregiversOfDoseTaken — stable eventKey + linkage + NotRegiste
     resetStores();
     seedDevices(defaultDevices);
 
-    listEnabledPushDevicesForCaregiversMock.mockImplementation(
-      async (caregiverIds: string[]) =>
-        deviceStore.filter((d) => caregiverIds.includes(d.ownerId) && d.isEnabled)
+    listEnabledPushDevicesForCaregiversMock.mockImplementation(async (caregiverIds: string[]) =>
+      deviceStore.filter((d) => caregiverIds.includes(d.ownerId) && d.isEnabled)
     );
 
     tryInsertDeliveryMock.mockImplementation(
@@ -390,9 +379,8 @@ describe("notifyCaregiversOfDoseTaken — stable eventKey + linkage + NotRegiste
   });
 
   it("uses doseEventId in eventKey for single-dose recording", async () => {
-    const { notifyCaregiversOfDoseTaken } = await import(
-      "../../src/services/pushNotificationService"
-    );
+    const { notifyCaregiversOfDoseTaken } =
+      await import("../../src/services/pushNotificationService");
 
     await notifyCaregiversOfDoseTaken({
       patientId: "patient-1",
@@ -409,9 +397,8 @@ describe("notifyCaregiversOfDoseTaken — stable eventKey + linkage + NotRegiste
   });
 
   it("uses prnDoseRecordId in eventKey for PRN dose recording", async () => {
-    const { notifyCaregiversOfDoseTaken } = await import(
-      "../../src/services/pushNotificationService"
-    );
+    const { notifyCaregiversOfDoseTaken } =
+      await import("../../src/services/pushNotificationService");
 
     await notifyCaregiversOfDoseTaken({
       patientId: "patient-1",
@@ -428,9 +415,8 @@ describe("notifyCaregiversOfDoseTaken — stable eventKey + linkage + NotRegiste
   });
 
   it("sends no push when caregiver is not linked to patient", async () => {
-    const { notifyCaregiversOfDoseTaken } = await import(
-      "../../src/services/pushNotificationService"
-    );
+    const { notifyCaregiversOfDoseTaken } =
+      await import("../../src/services/pushNotificationService");
 
     // patient-2 has no linked caregivers (see prisma mock above)
     await notifyCaregiversOfDoseTaken({
@@ -453,9 +439,8 @@ describe("notifyCaregiversOfDoseTaken — stable eventKey + linkage + NotRegiste
       errorCode: "UNREGISTERED"
     });
 
-    const { notifyCaregiversOfDoseTaken } = await import(
-      "../../src/services/pushNotificationService"
-    );
+    const { notifyCaregiversOfDoseTaken } =
+      await import("../../src/services/pushNotificationService");
 
     await notifyCaregiversOfDoseTaken({
       patientId: "patient-1",

@@ -21,8 +21,7 @@ export default function SupportPage() {
           body: (
             <>
               アプリの利用方法、不具合、アカウント削除、データ削除については{" "}
-              <a href={`mailto:${supportEmail}`}>{supportEmail}</a>{" "}
-              までお問い合わせください。
+              <a href={`mailto:${supportEmail}`}>{supportEmail}</a> までお問い合わせください。
             </>
           )
         },

@@ -80,9 +80,7 @@ export async function disablePushDeviceById(id: string) {
 // List enabled devices for caregivers — used by push dispatch
 // ---------------------------------------------------------------------------
 
-export async function listEnabledPushDevicesForCaregivers(
-  caregiverIds: string[]
-) {
+export async function listEnabledPushDevicesForCaregivers(caregiverIds: string[]) {
   if (caregiverIds.length === 0) return [];
 
   return prisma.pushDevice.findMany({

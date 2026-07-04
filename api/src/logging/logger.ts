@@ -5,8 +5,8 @@ type DoseRecordActor = "patient" | "caregiver";
 function redact(input: string) {
   return input
     .replace(/Bearer\s+[A-Za-z0-9\-_\.]+/g, "Bearer ***")
-    .replace(/"patientSessionToken"\s*:\s*"[^"]+"/g, "\"patientSessionToken\":\"***\"")
-    .replace(/"code"\s*:\s*"\d{6}"/g, "\"code\":\"***\"")
+    .replace(/"patientSessionToken"\s*:\s*"[^"]+"/g, '"patientSessionToken":"***"')
+    .replace(/"code"\s*:\s*"\d{6}"/g, '"code":"***"')
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "***@***");
 }
 

@@ -7,7 +7,13 @@ const ownedPatients = new Set<string>();
 vi.mock("../../src/repositories/patientRepo", () => ({
   getPatientRecordForCaregiver: vi.fn(async (patientId: string, caregiverId: string) => {
     if (caregiverId === "caregiver-1" && ownedPatients.has(patientId)) {
-      return { id: patientId, caregiverId, displayName: "Care Recipient", createdAt: new Date(), updatedAt: new Date() };
+      return {
+        id: patientId,
+        caregiverId,
+        displayName: "Care Recipient",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
     }
     return null;
   })

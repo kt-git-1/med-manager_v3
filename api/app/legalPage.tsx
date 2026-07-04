@@ -32,69 +32,69 @@ export function LegalPage({
       <SiteHeader />
       <main className="legal-page">
         <div className="legal-shell">
-        <header className="legal-hero">
-          <div>
-            <p className="eyebrow">Legal / Support</p>
-            <h1>{title}</h1>
-            <span>{description}</span>
-          </div>
-          <aside className="hero-summary" aria-label="ページの要点">
-            {updatedAt ? (
-              <div>
-                <span>最終更新</span>
-                <strong>{updatedAt}</strong>
-              </div>
-            ) : null}
+          <header className="legal-hero">
             <div>
-              <span>問い合わせ</span>
-              <a href={`mailto:${supportEmail}`}>{supportEmail}</a>
+              <p className="eyebrow">Legal / Support</p>
+              <h1>{title}</h1>
+              <span>{description}</span>
             </div>
-          </aside>
-        </header>
-
-        {lead || notice ? (
-          <section className="intro-band" aria-label="重要な案内">
-            {lead ? <p>{lead}</p> : null}
-            {notice ? <strong>{notice}</strong> : null}
-          </section>
-        ) : null}
-
-        <div className="legal-layout">
-          <aside className="toc" aria-label="目次">
-            <p>目次</p>
-            {sections.map((section, index) => (
-              <a key={section.title} href={`#section-${index + 1}`}>
-                {section.title}
-              </a>
-            ))}
-          </aside>
-
-          <div className="legal-content">
-            {sections.map((section, index) => (
-              <section id={`section-${index + 1}`} key={section.title}>
-                <span className="section-number">{String(index + 1).padStart(2, "0")}</span>
+            <aside className="hero-summary" aria-label="ページの要点">
+              {updatedAt ? (
                 <div>
-                  <h2>{section.title}</h2>
-                  {section.summary ? <strong>{section.summary}</strong> : null}
-                  <p>{section.body}</p>
+                  <span>最終更新</span>
+                  <strong>{updatedAt}</strong>
                 </div>
-              </section>
-            ))}
-          </div>
-        </div>
+              ) : null}
+              <div>
+                <span>問い合わせ</span>
+                <a href={`mailto:${supportEmail}`}>{supportEmail}</a>
+              </div>
+            </aside>
+          </header>
 
-        <section className="contact-panel" aria-label="サポートへの問い合わせ">
-          <div>
-            <p className="eyebrow">Need help?</p>
-            <h2>不明点や削除依頼はサポートへ</h2>
-            <p>
-              アプリの利用方法、アカウント削除、データ削除、不具合についてはメールでお問い合わせください。
-            </p>
+          {lead || notice ? (
+            <section className="intro-band" aria-label="重要な案内">
+              {lead ? <p>{lead}</p> : null}
+              {notice ? <strong>{notice}</strong> : null}
+            </section>
+          ) : null}
+
+          <div className="legal-layout">
+            <aside className="toc" aria-label="目次">
+              <p>目次</p>
+              {sections.map((section, index) => (
+                <a key={section.title} href={`#section-${index + 1}`}>
+                  {section.title}
+                </a>
+              ))}
+            </aside>
+
+            <div className="legal-content">
+              {sections.map((section, index) => (
+                <section id={`section-${index + 1}`} key={section.title}>
+                  <span className="section-number">{String(index + 1).padStart(2, "0")}</span>
+                  <div>
+                    <h2>{section.title}</h2>
+                    {section.summary ? <strong>{section.summary}</strong> : null}
+                    <p>{section.body}</p>
+                  </div>
+                </section>
+              ))}
+            </div>
           </div>
-          <a className="mail-button" href={`mailto:${supportEmail}`}>
-            メールで問い合わせる
-          </a>
-        </section>
+
+          <section className="contact-panel" aria-label="サポートへの問い合わせ">
+            <div>
+              <p className="eyebrow">Need help?</p>
+              <h2>不明点や削除依頼はサポートへ</h2>
+              <p>
+                アプリの利用方法、アカウント削除、データ削除、不具合についてはメールでお問い合わせください。
+              </p>
+            </div>
+            <a className="mail-button" href={`mailto:${supportEmail}`}>
+              メールで問い合わせる
+            </a>
+          </section>
         </div>
         <style>{`
         * {

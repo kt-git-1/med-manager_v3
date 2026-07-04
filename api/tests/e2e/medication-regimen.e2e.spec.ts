@@ -4,6 +4,13 @@ let caregiverToken = "";
 let patientToken = "";
 let patientId = "";
 
+const hasSupabaseTestEnv = Boolean(
+  process.env.SUPABASE_URL &&
+  process.env.SUPABASE_ANON_KEY &&
+  process.env.SUPABASE_TEST_EMAIL &&
+  process.env.SUPABASE_TEST_PASSWORD
+);
+
 async function fetchCaregiverJwt() {
   const supabaseUrl = process.env.SUPABASE_URL;
   const anonKey = process.env.SUPABASE_ANON_KEY;
@@ -32,6 +39,11 @@ async function fetchCaregiverJwt() {
 }
 
 test.describe("medication regimen e2e", () => {
+  test.skip(
+    !hasSupabaseTestEnv,
+    "Set SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_TEST_EMAIL, and SUPABASE_TEST_PASSWORD to run Supabase-backed E2E tests."
+  );
+
   test.beforeAll(async ({ request }) => {
     const jwt = await fetchCaregiverJwt();
     caregiverToken = `caregiver-${jwt}`;
@@ -135,7 +147,9 @@ test.describe("medication regimen e2e", () => {
     const payload = await schedule.json();
     expect(schedule.status()).toBe(200);
     expect(
-      payload.data.every((dose: { medicationId: string }) => dose.medicationId !== createdMedication.id)
+      payload.data.every(
+        (dose: { medicationId: string }) => dose.medicationId !== createdMedication.id
+      )
     ).toBe(true);
   });
 

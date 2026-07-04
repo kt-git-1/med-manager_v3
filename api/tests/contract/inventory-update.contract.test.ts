@@ -48,22 +48,25 @@ async function updateInventory(
   }
   const { patientId, medicationId } = extractIds(request);
   if (isCaregiverToken(token) && (!patientId || !medicationId)) {
-    return jsonResponse({ error: "validation", message: "patientId and medicationId required" }, 422);
+    return jsonResponse(
+      { error: "validation", message: "patientId and medicationId required" },
+      422
+    );
   }
   if (!patientId || !medicationId || !caregiverPatientIds.has(patientId)) {
     return jsonResponse({ error: "not_found" }, 404);
   }
   const body = await request.json();
   if (body.inventoryLowThreshold !== undefined) {
-    return jsonResponse({
-      error: "validation",
-      message: "inventoryLowThreshold is fixed and cannot be updated"
-    }, 422);
+    return jsonResponse(
+      {
+        error: "validation",
+        message: "inventoryLowThreshold is fixed and cannot be updated"
+      },
+      422
+    );
   }
-  if (
-    body.inventoryEnabled === undefined &&
-    body.inventoryQuantity === undefined
-  ) {
+  if (body.inventoryEnabled === undefined && body.inventoryQuantity === undefined) {
     return jsonResponse({ error: "validation", message: "no fields provided" }, 422);
   }
   const existing = store.find(
@@ -76,9 +79,10 @@ async function updateInventory(
     ...existing,
     inventoryEnabled: body.inventoryEnabled ?? existing.inventoryEnabled,
     inventoryQuantity: body.inventoryQuantity ?? existing.inventoryQuantity,
-    inventoryLowThreshold: (body.inventoryEnabled ?? existing.inventoryEnabled)
-      ? DEFAULT_INVENTORY_LOW_THRESHOLD_DAYS
-      : 0
+    inventoryLowThreshold:
+      (body.inventoryEnabled ?? existing.inventoryEnabled)
+        ? DEFAULT_INVENTORY_LOW_THRESHOLD_DAYS
+        : 0
   };
   return jsonResponse({
     data: {

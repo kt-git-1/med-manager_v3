@@ -15,20 +15,18 @@ vi.mock("../../src/auth/patientSessionVerifier", () => ({
 }));
 
 vi.mock("../../src/repositories/patientRepo", () => ({
-  getPatientRecordForCaregiver: vi.fn(
-    async (patientId: string, caregiverUserId: string) => {
-      if (patientId === "patient-1" && caregiverUserId === "caregiver-1") {
-        return {
-          id: "patient-1",
-          caregiverId: "caregiver-1",
-          displayName: "テスト太郎",
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-      }
-      return null;
+  getPatientRecordForCaregiver: vi.fn(async (patientId: string, caregiverUserId: string) => {
+    if (patientId === "patient-1" && caregiverUserId === "caregiver-1") {
+      return {
+        id: "patient-1",
+        caregiverId: "caregiver-1",
+        displayName: "テスト太郎",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
     }
-  )
+    return null;
+  })
 }));
 
 // Mock report service (new module — will be created in Phase 2)
@@ -151,8 +149,7 @@ function patientHeaders(): HeadersInit {
 function mockReportResponse(from: string, to: string) {
   const fromDate = new Date(from);
   const toDate = new Date(to);
-  const dayCount =
-    Math.round((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  const dayCount = Math.round((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
   return {
     patient: { id: "patient-1", displayName: "テスト太郎" },
@@ -200,9 +197,8 @@ describe("History report endpoint — valid ranges", () => {
     vi.clearAllMocks();
     // Default: validator passes, report returns mock data
     validateReportRangeMock.mockImplementation(() => undefined);
-    generateReportMock.mockImplementation(
-      async (_patientId: string, from: string, to: string) =>
-        mockReportResponse(from, to)
+    generateReportMock.mockImplementation(async (_patientId: string, from: string, to: string) =>
+      mockReportResponse(from, to)
     );
   });
 
@@ -213,9 +209,7 @@ describe("History report endpoint — valid ranges", () => {
     const url = `http://localhost/api/patients/patient-1/history/report?from=${fromStr}&to=${todayStr}`;
     const req = new Request(url, { method: "GET", headers: caregiverHeaders() });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/report/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/report/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-1" })
     });
@@ -258,9 +252,7 @@ describe("History report endpoint — valid ranges", () => {
     const url = `http://localhost/api/patients/patient-1/history/report?from=${fromStr}&to=${todayStr}`;
     const req = new Request(url, { method: "GET", headers: caregiverHeaders() });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/report/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/report/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-1" })
     });
@@ -287,9 +279,7 @@ describe("History report endpoint — invalid ranges", () => {
     const url = `http://localhost/api/patients/patient-1/history/report?to=${todayStr}`;
     const req = new Request(url, { method: "GET", headers: caregiverHeaders() });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/report/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/report/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-1" })
     });
@@ -305,9 +295,7 @@ describe("History report endpoint — invalid ranges", () => {
     const url = `http://localhost/api/patients/patient-1/history/report?from=${fromStr}`;
     const req = new Request(url, { method: "GET", headers: caregiverHeaders() });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/report/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/report/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-1" })
     });
@@ -323,9 +311,7 @@ describe("History report endpoint — invalid ranges", () => {
     const url = `http://localhost/api/patients/patient-1/history/report?from=${fromStr}&to=${futureStr}`;
     const req = new Request(url, { method: "GET", headers: caregiverHeaders() });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/report/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/report/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-1" })
     });
@@ -341,9 +327,7 @@ describe("History report endpoint — invalid ranges", () => {
     const url = `http://localhost/api/patients/patient-1/history/report?from=${todayStr}&to=${yesterdayStr}`;
     const req = new Request(url, { method: "GET", headers: caregiverHeaders() });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/report/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/report/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-1" })
     });
@@ -359,9 +343,7 @@ describe("History report endpoint — invalid ranges", () => {
     const url = `http://localhost/api/patients/patient-1/history/report?from=${fromStr}&to=${todayStr}`;
     const req = new Request(url, { method: "GET", headers: caregiverHeaders() });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/report/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/report/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-1" })
     });
@@ -376,9 +358,8 @@ describe("History report endpoint — auth enforcement", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     validateReportRangeMock.mockImplementation(() => undefined);
-    generateReportMock.mockImplementation(
-      async (_patientId: string, from: string, to: string) =>
-        mockReportResponse(from, to)
+    generateReportMock.mockImplementation(async (_patientId: string, from: string, to: string) =>
+      mockReportResponse(from, to)
     );
   });
 
@@ -388,9 +369,7 @@ describe("History report endpoint — auth enforcement", () => {
     const url = `http://localhost/api/patients/patient-1/history/report?from=${fromStr}&to=${todayStr}`;
     const req = new Request(url, { method: "GET", headers: patientHeaders() });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/report/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/report/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-1" })
     });
@@ -405,9 +384,7 @@ describe("History report endpoint — auth enforcement", () => {
     const url = `http://localhost/api/patients/patient-unknown/history/report?from=${fromStr}&to=${todayStr}`;
     const req = new Request(url, { method: "GET", headers: caregiverHeaders() });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/report/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/report/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-unknown" })
     });
@@ -422,9 +399,7 @@ describe("History report endpoint — auth enforcement", () => {
     const url = `http://localhost/api/patients/patient-1/history/report?from=${fromStr}&to=${todayStr}`;
     const req = new Request(url, { method: "GET" });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/report/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/report/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-1" })
     });

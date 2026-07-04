@@ -26,8 +26,6 @@ describe("caregiver concealment integration", () => {
   });
 
   it("allows access for owned patient", async () => {
-    await expect(
-      assertCaregiverPatientScope("caregiver-1", "patient-1")
-    ).resolves.toBeUndefined();
+    await expect(assertCaregiverPatientScope("caregiver-1", "patient-1")).resolves.toBeUndefined();
   });
 });

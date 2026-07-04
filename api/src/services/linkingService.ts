@@ -3,8 +3,14 @@ import { AuthError } from "../middleware/auth";
 import { prisma } from "../repositories/prisma";
 import { FREE_PATIENT_LIMIT } from "./patientLimitConstants";
 import { PatientLimitError } from "../errors/patientLimitError";
-import { listPatientRecordsByCaregiver, getPatientRecordForCaregiver } from "../repositories/patientRepo";
-import { createLinkingCodeRecord, invalidateActiveLinkingCodes } from "../repositories/linkingCodeRepo";
+import {
+  listPatientRecordsByCaregiver,
+  getPatientRecordForCaregiver
+} from "../repositories/patientRepo";
+import {
+  createLinkingCodeRecord,
+  invalidateActiveLinkingCodes
+} from "../repositories/linkingCodeRepo";
 import {
   LINKING_CODE_LENGTH,
   LINKING_CODE_MAX_ATTEMPTS,
@@ -75,9 +81,7 @@ export async function createPatientForCaregiver(
   };
 }
 
-export async function listPatientsForCaregiver(
-  caregiverUserId: string
-): Promise<PatientSummary[]> {
+export async function listPatientsForCaregiver(caregiverUserId: string): Promise<PatientSummary[]> {
   const records = await listPatientRecordsByCaregiver(caregiverUserId);
   return records.map((record) => ({
     id: record.id,
@@ -122,10 +126,7 @@ export async function issueLinkingCodeForPatient(
   return { code, expiresAt };
 }
 
-export async function revokePatientLinkForCaregiver(
-  caregiverUserId: string,
-  patientId: string
-) {
+export async function revokePatientLinkForCaregiver(caregiverUserId: string, patientId: string) {
   const now = new Date();
   const [linkResult] = await prisma.$transaction([
     prisma.caregiverPatientLink.updateMany({
@@ -177,10 +178,7 @@ export async function resetLinkingAttempts(patientId: string) {
   await resetLinkingAttempt(patientId);
 }
 
-export async function deletePatientForCaregiver(
-  caregiverUserId: string,
-  patientId: string
-) {
+export async function deletePatientForCaregiver(caregiverUserId: string, patientId: string) {
   const patient = await getPatientRecordForCaregiver(patientId, caregiverUserId);
   if (!patient) {
     throw new AuthError("Not found", 404);

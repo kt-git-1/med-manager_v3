@@ -82,16 +82,15 @@ describe("supabase jwt verification", () => {
 
   it("rejects missing subject", async () => {
     process.env.SUPABASE_JWT_SECRET = "secret";
-    const token = signToken(
-      { exp: Math.floor(Date.now() / 1000) + 60 },
-      "secret"
-    );
+    const token = signToken({ exp: Math.floor(Date.now() / 1000) + 60 }, "secret");
     await expect(verifySupabaseJwt(token)).rejects.toThrow("Missing subject");
   });
 
   it("verifies ES256 token using public key", async () => {
     const { privateKey, publicKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
-    process.env.SUPABASE_JWT_PUBLIC_KEY = publicKey.export({ type: "spki", format: "pem" }).toString();
+    process.env.SUPABASE_JWT_PUBLIC_KEY = publicKey
+      .export({ type: "spki", format: "pem" })
+      .toString();
     const header = { alg: "ES256", typ: "JWT" };
     const payload = { sub: "caregiver-1", exp: Math.floor(Date.now() / 1000) + 60 };
     const encodedHeader = base64UrlEncode(Buffer.from(JSON.stringify(header)));
@@ -122,19 +121,18 @@ describe("supabase jwt verification", () => {
     const derSignature = createSign("sha256").update(data).end().sign(privateKey);
     const rawSignature = derSignatureToRaw(derSignature);
     const token = `${data}.${base64UrlEncode(rawSignature)}`;
-    const fetchMock = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          keys: [{ ...jwk, kid: "test-key-1", alg: "ES256", use: "sig" }]
-        }),
-        { status: 200 }
-      )
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            keys: [{ ...jwk, kid: "test-key-1", alg: "ES256", use: "sig" }]
+          }),
+          { status: 200 }
+        )
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const { verifySupabaseJwt: verifyWithFreshModule } = await import(
-      "../../src/auth/supabaseJwt"
-    );
+    const { verifySupabaseJwt: verifyWithFreshModule } = await import("../../src/auth/supabaseJwt");
     const session = await verifyWithFreshModule(token);
 
     expect(session.caregiverUserId).toBe("caregiver-1");

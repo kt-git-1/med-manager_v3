@@ -59,21 +59,23 @@ vi.mock("../../src/repositories/prisma", () => {
         }
         return null;
       }),
-      updateMany: vi.fn(async (input: {
-        where: { id: string; patientId: string; inventoryQuantity?: { gte: number } };
-        data: Record<string, unknown>;
-      }) => {
-        if (
-          input.where.id !== mockData.medication.id ||
-          input.where.patientId !== mockData.medication.patientId ||
-          (input.where.inventoryQuantity?.gte !== undefined &&
-            mockData.medication.inventoryQuantity < input.where.inventoryQuantity.gte)
-        ) {
-          return { count: 0 };
+      updateMany: vi.fn(
+        async (input: {
+          where: { id: string; patientId: string; inventoryQuantity?: { gte: number } };
+          data: Record<string, unknown>;
+        }) => {
+          if (
+            input.where.id !== mockData.medication.id ||
+            input.where.patientId !== mockData.medication.patientId ||
+            (input.where.inventoryQuantity?.gte !== undefined &&
+              mockData.medication.inventoryQuantity < input.where.inventoryQuantity.gte)
+          ) {
+            return { count: 0 };
+          }
+          applyMedicationUpdate(input.data);
+          return { count: 1 };
         }
-        applyMedicationUpdate(input.data);
-        return { count: 1 };
-      }),
+      ),
       update: vi.fn(async (input: { data: Record<string, unknown> }) => {
         applyMedicationUpdate(input.data);
         return mockData.medication;
@@ -102,11 +104,7 @@ vi.mock("../../src/repositories/prisma", () => {
 function applyMedicationUpdate(data: Record<string, unknown>) {
   const next = { ...mockData.medication };
   for (const [key, value] of Object.entries(data)) {
-    if (
-      key === "inventoryQuantity" &&
-      typeof value === "object" &&
-      value !== null
-    ) {
+    if (key === "inventoryQuantity" && typeof value === "object" && value !== null) {
       const operation = value as { increment?: number; decrement?: number };
       if (typeof operation.increment === "number") {
         next.inventoryQuantity += operation.increment;
@@ -148,7 +146,11 @@ vi.mock("../../src/repositories/doseRecordRepo", () => ({
     store.set(key, record);
     return record;
   },
-  getDoseRecordByKey: async (key: { patientId: string; medicationId: string; scheduledAt: Date }) => {
+  getDoseRecordByKey: async (key: {
+    patientId: string;
+    medicationId: string;
+    scheduledAt: Date;
+  }) => {
     return store.get(buildKey(key)) ?? null;
   }
 }));

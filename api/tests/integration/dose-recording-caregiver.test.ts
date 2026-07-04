@@ -47,10 +47,18 @@ vi.mock("../../src/repositories/doseRecordRepo", () => ({
     store.set(key, record);
     return record;
   },
-  getDoseRecordByKey: async (key: { patientId: string; medicationId: string; scheduledAt: Date }) => {
+  getDoseRecordByKey: async (key: {
+    patientId: string;
+    medicationId: string;
+    scheduledAt: Date;
+  }) => {
     return store.get(buildKey(key)) ?? null;
   },
-  deleteDoseRecordByKey: async (key: { patientId: string; medicationId: string; scheduledAt: Date }) => {
+  deleteDoseRecordByKey: async (key: {
+    patientId: string;
+    medicationId: string;
+    scheduledAt: Date;
+  }) => {
     const record = store.get(buildKey(key));
     if (!record) {
       throw new Error("Dose record not found");

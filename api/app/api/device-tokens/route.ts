@@ -1,6 +1,9 @@
 import { errorResponse } from "../../../src/middleware/error";
 import { getBearerToken, isCaregiverToken, requireCaregiver } from "../../../src/middleware/auth";
-import { validateDeviceTokenRegister, validateDeviceTokenDelete } from "../../../src/validators/deviceToken";
+import {
+  validateDeviceTokenRegister,
+  validateDeviceTokenDelete
+} from "../../../src/validators/deviceToken";
 import { upsertDeviceToken, deleteDeviceToken } from "../../../src/repositories/deviceTokenRepo";
 
 export const runtime = "nodejs";

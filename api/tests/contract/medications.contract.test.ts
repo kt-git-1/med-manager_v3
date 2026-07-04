@@ -120,11 +120,9 @@ describe("medications contract", () => {
     const request = new Request("http://localhost/api/medications?patientId=patient-2", {
       headers: { authorization: "Bearer caregiver-1" }
     });
-    const response = await listMedications(
-      request,
-      new Set(["patient-1"]),
-      [{ id: "med-1", patientId: "patient-1", name: "Medication A" }]
-    );
+    const response = await listMedications(request, new Set(["patient-1"]), [
+      { id: "med-1", patientId: "patient-1", name: "Medication A" }
+    ]);
     const payload = await response.json();
 
     expect(response.status).toBe(404);
@@ -135,14 +133,10 @@ describe("medications contract", () => {
     const request = new Request("http://localhost/api/medications?patientId=patient-1", {
       headers: { authorization: "Bearer caregiver-1" }
     });
-    const response = await listMedications(
-      request,
-      new Set(["patient-1"]),
-      [
-        { id: "med-1", patientId: "patient-1", name: "Medication A" },
-        { id: "med-2", patientId: "patient-2", name: "Medication B" }
-      ]
-    );
+    const response = await listMedications(request, new Set(["patient-1"]), [
+      { id: "med-1", patientId: "patient-1", name: "Medication A" },
+      { id: "med-2", patientId: "patient-2", name: "Medication B" }
+    ]);
     const payload = await response.json();
 
     expect(response.status).toBe(200);

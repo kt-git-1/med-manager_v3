@@ -14,10 +14,10 @@ export async function POST(request: Request) {
     const validation = validateClaimInput(body);
 
     if (validation.errors.length > 0) {
-      return new Response(
-        JSON.stringify({ error: "validation", messages: validation.errors }),
-        { status: 422, headers: { "content-type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "validation", messages: validation.errors }), {
+        status: 422,
+        headers: { "content-type": "application/json" }
+      });
     }
 
     const result = await claimEntitlement(session.caregiverUserId, {

@@ -35,10 +35,7 @@ async function exchangeLinkCode(request: Request, validCodes: Set<string>) {
   return jsonResponse({ data: { patientSessionToken: token, expiresAt: null } }, 200);
 }
 
-async function refreshSessionToken(
-  request: Request,
-  sessions: Map<string, SessionRecord>
-) {
+async function refreshSessionToken(request: Request, sessions: Map<string, SessionRecord>) {
   const authHeader = request.headers.get("authorization");
   const token = parseBearerToken(authHeader);
   if (!token) {

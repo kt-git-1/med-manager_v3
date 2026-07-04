@@ -9,7 +9,12 @@ import {
   requirePatient
 } from "../../../src/middleware/auth";
 import { validateMedication } from "../../../src/validators/medication";
-import { createMedication, listMedications, listMedicationInventory, listActiveRegimens } from "../../../src/services/medicationService";
+import {
+  createMedication,
+  listMedications,
+  listMedicationInventory,
+  listActiveRegimens
+} from "../../../src/services/medicationService";
 import { generateScheduleForPatient } from "../../../src/services/scheduleService";
 import { SCHEDULE_LOOKAHEAD_DAYS } from "../../../src/constants";
 import { resolvePatientSlotTimes } from "../../../src/services/patientSlotTimeService";

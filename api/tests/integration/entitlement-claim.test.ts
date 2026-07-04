@@ -21,8 +21,7 @@ const findEntitlementsByCaregiverIdMock = vi.fn();
 
 vi.mock("../../src/repositories/entitlementRepo", () => ({
   upsertEntitlement: (...args: unknown[]) => upsertEntitlementMock(...args),
-  findEntitlementsByCaregiverId: (...args: unknown[]) =>
-    findEntitlementsByCaregiverIdMock(...args)
+  findEntitlementsByCaregiverId: (...args: unknown[]) => findEntitlementsByCaregiverIdMock(...args)
 }));
 
 // ---------------------------------------------------------------------------

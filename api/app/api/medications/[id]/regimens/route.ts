@@ -9,7 +9,10 @@ import {
   requirePatient
 } from "../../../../../src/middleware/auth";
 import { validateRegimen } from "../../../../../src/validators/regimen";
-import { createRegimen, listRegimensForMedication } from "../../../../../src/services/regimenService";
+import {
+  createRegimen,
+  listRegimensForMedication
+} from "../../../../../src/services/regimenService";
 import { getMedication } from "../../../../../src/services/medicationService";
 
 export const runtime = "nodejs";
@@ -34,10 +37,7 @@ function parseDate(value: string | undefined) {
   return value ? new Date(value) : undefined;
 }
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const authHeader = request.headers.get("authorization") ?? undefined;
@@ -92,10 +92,7 @@ export async function POST(
   }
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const authHeader = request.headers.get("authorization") ?? undefined;

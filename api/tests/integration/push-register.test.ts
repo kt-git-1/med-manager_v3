@@ -95,7 +95,13 @@ describe("POST /api/push/register", () => {
     store.clear();
 
     upsertPushDeviceMock.mockImplementation(
-      async (input: { ownerType: string; ownerId: string; token: string; platform: string; environment: string }) => {
+      async (input: {
+        ownerType: string;
+        ownerId: string;
+        token: string;
+        platform: string;
+        environment: string;
+      }) => {
         const key = `${input.ownerType}:${input.ownerId}:${input.token}`;
         const now = new Date();
         const existing = store.get(key);
@@ -224,7 +230,13 @@ describe("POST /api/push/unregister", () => {
 
     // Setup: pre-populate store for unregister tests
     upsertPushDeviceMock.mockImplementation(
-      async (input: { ownerType: string; ownerId: string; token: string; platform: string; environment: string }) => {
+      async (input: {
+        ownerType: string;
+        ownerId: string;
+        token: string;
+        platform: string;
+        environment: string;
+      }) => {
         const key = `${input.ownerType}:${input.ownerId}:${input.token}`;
         const now = new Date();
         const existing = store.get(key);

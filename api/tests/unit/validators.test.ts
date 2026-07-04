@@ -37,12 +37,8 @@ describe("link code validator", () => {
   });
 
   it("rejects non-numeric or wrong length codes", () => {
-    expect(validateLinkCodeInput({ code: "12345" }).errors).toEqual([
-      "code must be 6 digits"
-    ]);
-    expect(validateLinkCodeInput({ code: "abc123" }).errors).toEqual([
-      "code must be 6 digits"
-    ]);
+    expect(validateLinkCodeInput({ code: "12345" }).errors).toEqual(["code must be 6 digits"]);
+    expect(validateLinkCodeInput({ code: "abc123" }).errors).toEqual(["code must be 6 digits"]);
   });
 
   it("rejects non-string codes", () => {

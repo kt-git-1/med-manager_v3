@@ -56,13 +56,13 @@ function generateApnsJwt(config: ApnsConfig): string {
     return cachedToken.jwt;
   }
 
-  const header = Buffer.from(
-    JSON.stringify({ alg: "ES256", kid: config.keyId })
-  ).toString("base64url");
+  const header = Buffer.from(JSON.stringify({ alg: "ES256", kid: config.keyId })).toString(
+    "base64url"
+  );
 
-  const payload = Buffer.from(
-    JSON.stringify({ iss: config.teamId, iat: now })
-  ).toString("base64url");
+  const payload = Buffer.from(JSON.stringify({ iss: config.teamId, iat: now })).toString(
+    "base64url"
+  );
 
   // Decode the .p8 key – it may come as raw base64 (no PEM headers) or full PEM.
   let pemKey = config.key;
@@ -109,9 +109,7 @@ export interface ApnsSendResult {
 }
 
 function apnsHost(environment: "production" | "development"): string {
-  return environment === "production"
-    ? "api.push.apple.com"
-    : "api.sandbox.push.apple.com";
+  return environment === "production" ? "api.push.apple.com" : "api.sandbox.push.apple.com";
 }
 
 /**
@@ -148,7 +146,7 @@ export function sendPushNotification(
       authorization: `bearer ${jwt}`,
       "apns-topic": config.bundleId,
       "apns-push-type": "alert",
-      "apns-priority": "10",
+      "apns-priority": "10"
     };
 
     if (options?.collapseId) {
@@ -183,7 +181,10 @@ export function sendPushNotification(
         } catch {
           // ignore parse error
         }
-        log("warn", `APNs send failed: status=${statusCode} reason=${reason} token=${deviceToken.slice(0, 8)}...`);
+        log(
+          "warn",
+          `APNs send failed: status=${statusCode} reason=${reason} token=${deviceToken.slice(0, 8)}...`
+        );
         resolve({ token: deviceToken, success: false, statusCode, reason });
       }
     });
@@ -215,9 +216,7 @@ export async function sendPushNotifications(
     return deviceTokens.map((token) => ({ token, success: false, reason: "not_configured" }));
   }
 
-  return Promise.all(
-    deviceTokens.map((token) => sendPushNotification(token, payload, options))
-  );
+  return Promise.all(deviceTokens.map((token) => sendPushNotification(token, payload, options)));
 }
 
 /**

@@ -56,7 +56,7 @@ export async function notifyCaregiversOfDoseRecord(
     const tokens = deviceTokens.map((dt) => dt.token);
 
     const results = await sendPushNotifications(tokens, payload, {
-      collapseId: `dose-${input.patientId}`,
+      collapseId: `dose-${input.patientId}`
     });
 
     const failed = results.filter((r) => !r.success);
@@ -102,13 +102,13 @@ function buildDoseRecordPayload(input: DoseRecordNotificationInput): ApnsPayload
     aps: {
       alert: {
         title: "服薬記録",
-        body,
+        body
       },
       sound: "default",
-      "thread-id": `patient-${input.patientId}`,
+      "thread-id": `patient-${input.patientId}`
     },
     type: "dose_record",
-    patientId: input.patientId,
+    patientId: input.patientId
   };
 }
 
@@ -119,11 +119,11 @@ function buildDoseRecordPayload(input: DoseRecordNotificationInput): ApnsPayload
 export interface DoseTakenNotificationInput {
   patientId: string;
   displayName: string;
-  date: string;               // YYYY-MM-DD in Asia/Tokyo
-  slot: string;               // morning | noon | evening | bedtime
-  recordingGroupId?: string;  // present for bulk recordings
-  doseEventId?: string;       // DoseRecordEvent.id for single-dose dedup
-  prnDoseRecordId?: string;   // PrnDoseRecord.id for PRN dedup
+  date: string; // YYYY-MM-DD in Asia/Tokyo
+  slot: string; // morning | noon | evening | bedtime
+  recordingGroupId?: string; // present for bulk recordings
+  doseEventId?: string; // DoseRecordEvent.id for single-dose dedup
+  prnDoseRecordId?: string; // PrnDoseRecord.id for PRN dedup
   excludeCaregiverId?: string; // caregiver who recorded on behalf of the patient
   withinTime: boolean;
   isPrn: boolean;

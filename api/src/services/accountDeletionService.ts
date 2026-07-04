@@ -101,7 +101,9 @@ async function deleteCaregiverAppData(caregiverId: string) {
 
     if (patientIds.length > 0) {
       await tx.inventoryAlertEvent.deleteMany({ where: { patientId: { in: patientIds } } });
-      await tx.medicationInventoryAdjustment.deleteMany({ where: { patientId: { in: patientIds } } });
+      await tx.medicationInventoryAdjustment.deleteMany({
+        where: { patientId: { in: patientIds } }
+      });
       await tx.prnDoseRecord.deleteMany({ where: { patientId: { in: patientIds } } });
       await tx.doseRecord.deleteMany({ where: { patientId: { in: patientIds } } });
       await tx.doseRecordEvent.deleteMany({ where: { patientId: { in: patientIds } } });

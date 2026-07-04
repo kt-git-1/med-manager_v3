@@ -164,10 +164,7 @@ describe("DELETE /api/me", () => {
   });
 
   it("treats already-deleted Supabase Auth user as success for retry", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValueOnce(new Response(null, { status: 404 }))
-    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(new Response(null, { status: 404 })));
 
     const { DELETE } = await import("../../app/api/me/route");
     const res = await DELETE(caregiverRequest());
@@ -176,10 +173,7 @@ describe("DELETE /api/me", () => {
   });
 
   it("returns 502 and does not delete app data when Supabase Auth deletion fails", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValueOnce(new Response(null, { status: 500 }))
-    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(new Response(null, { status: 500 })));
 
     const { DELETE } = await import("../../app/api/me/route");
     const res = await DELETE(caregiverRequest());
@@ -196,7 +190,9 @@ describe("DELETE /api/me", () => {
       vi
         .fn()
         .mockResolvedValueOnce(new Response(null, { status: 200 }))
-        .mockResolvedValueOnce(new Response(JSON.stringify({ id: "caregiver-delete-1" }), { status: 200 }))
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ id: "caregiver-delete-1" }), { status: 200 })
+        )
     );
 
     const { DELETE } = await import("../../app/api/me/route");

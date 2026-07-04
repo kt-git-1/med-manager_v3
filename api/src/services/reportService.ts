@@ -93,8 +93,7 @@ export async function generateReport(
   rangeTo.setUTCDate(rangeTo.getUTCDate() + 1);
 
   // Compute inclusive day count from the date strings (avoids DST edge cases)
-  const dayCount =
-    Math.round((rangeTo.getTime() - rangeFrom.getTime()) / (1000 * 60 * 60 * 24));
+  const dayCount = Math.round((rangeTo.getTime() - rangeFrom.getTime()) / (1000 * 60 * 60 * 24));
 
   // ----- 1. Scheduled doses -----
   const slotTimes = await resolvePatientSlotTimes(patientId);
@@ -155,8 +154,7 @@ export async function generateReport(
         dosageText: dose.medicationSnapshot.dosageText,
         doseCount: dose.medicationSnapshot.doseCountPerIntake,
         status: dose.effectiveStatus.toUpperCase() as ReportSlotItem["status"],
-        recordedAt:
-          dose.effectiveStatus === "taken" ? (dose.takenAt ?? dose.scheduledAt) : null,
+        recordedAt: dose.effectiveStatus === "taken" ? (dose.takenAt ?? dose.scheduledAt) : null,
         recordedBy:
           dose.effectiveStatus === "taken" && dose.recordedByType
             ? (dose.recordedByType.toUpperCase() as ReportSlotItem["recordedBy"])

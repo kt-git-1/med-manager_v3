@@ -112,35 +112,17 @@ function invalidRangeErrorResponse(message = "指定された期間が不正で�
 
 describe("HistoryReportResponse contract", () => {
   it("returns HTTP 200 status", () => {
-    const response = historyReportResponse(
-      "patient-uuid",
-      "太郎",
-      "2026-01-01",
-      "2026-01-30",
-      30
-    );
+    const response = historyReportResponse("patient-uuid", "太郎", "2026-01-01", "2026-01-30", 30);
     expect(response.status).toBe(200);
   });
 
   it("response content-type is application/json", () => {
-    const response = historyReportResponse(
-      "patient-uuid",
-      "太郎",
-      "2026-01-01",
-      "2026-01-30",
-      30
-    );
+    const response = historyReportResponse("patient-uuid", "太郎", "2026-01-01", "2026-01-30", 30);
     expect(response.headers.get("content-type")).toBe("application/json");
   });
 
   it("patient has id (string) and displayName (string)", async () => {
-    const response = historyReportResponse(
-      "patient-uuid",
-      "太郎",
-      "2026-01-01",
-      "2026-01-30",
-      30
-    );
+    const response = historyReportResponse("patient-uuid", "太郎", "2026-01-01", "2026-01-30", 30);
     const payload = await response.json();
     expect(typeof payload.patient.id).toBe("string");
     expect(payload.patient.id.length).toBeGreaterThan(0);
@@ -149,13 +131,7 @@ describe("HistoryReportResponse contract", () => {
   });
 
   it("range has from (YYYY-MM-DD), to (YYYY-MM-DD), timezone (Asia/Tokyo), days (integer)", async () => {
-    const response = historyReportResponse(
-      "patient-uuid",
-      "太郎",
-      "2026-01-01",
-      "2026-01-30",
-      30
-    );
+    const response = historyReportResponse("patient-uuid", "太郎", "2026-01-01", "2026-01-30", 30);
     const payload = await response.json();
     expect(payload.range.from).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(payload.range.to).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -166,13 +142,7 @@ describe("HistoryReportResponse contract", () => {
   });
 
   it("days is array with each element having date, slots, and prn", async () => {
-    const response = historyReportResponse(
-      "patient-uuid",
-      "太郎",
-      "2026-01-01",
-      "2026-01-30",
-      30
-    );
+    const response = historyReportResponse("patient-uuid", "太郎", "2026-01-01", "2026-01-30", 30);
     const payload = await response.json();
     expect(Array.isArray(payload.days)).toBe(true);
     expect(payload.days.length).toBeGreaterThan(0);
@@ -185,13 +155,7 @@ describe("HistoryReportResponse contract", () => {
   });
 
   it("slots object has morning, noon, evening, bedtime arrays", async () => {
-    const response = historyReportResponse(
-      "patient-uuid",
-      "太郎",
-      "2026-01-01",
-      "2026-01-30",
-      30
-    );
+    const response = historyReportResponse("patient-uuid", "太郎", "2026-01-01", "2026-01-30", 30);
     const payload = await response.json();
     const slots = payload.days[0].slots;
 
@@ -202,13 +166,7 @@ describe("HistoryReportResponse contract", () => {
   });
 
   it("slot items have medicationId, name, dosageText, doseCount, status, optional recordedAt and recordedBy", async () => {
-    const response = historyReportResponse(
-      "patient-uuid",
-      "太郎",
-      "2026-01-01",
-      "2026-01-30",
-      30
-    );
+    const response = historyReportResponse("patient-uuid", "太郎", "2026-01-01", "2026-01-30", 30);
     const payload = await response.json();
 
     // TAKEN item — has recordedAt
@@ -236,13 +194,7 @@ describe("HistoryReportResponse contract", () => {
   });
 
   it("status is one of TAKEN, MISSED, PENDING (uppercase)", async () => {
-    const response = historyReportResponse(
-      "patient-uuid",
-      "太郎",
-      "2026-01-01",
-      "2026-01-30",
-      30
-    );
+    const response = historyReportResponse("patient-uuid", "太郎", "2026-01-01", "2026-01-30", 30);
     const payload = await response.json();
     const allSlotItems = [
       ...payload.days[0].slots.morning,
@@ -258,13 +210,7 @@ describe("HistoryReportResponse contract", () => {
   });
 
   it("PRN items have medicationId, name, dosageText, quantity, recordedAt, recordedBy", async () => {
-    const response = historyReportResponse(
-      "patient-uuid",
-      "太郎",
-      "2026-01-01",
-      "2026-01-30",
-      30
-    );
+    const response = historyReportResponse("patient-uuid", "太郎", "2026-01-01", "2026-01-30", 30);
     const payload = await response.json();
     const prnItems = payload.days[0].prn;
     expect(prnItems.length).toBe(2);
@@ -280,13 +226,7 @@ describe("HistoryReportResponse contract", () => {
   });
 
   it("recordedBy is PATIENT or CAREGIVER (uppercase)", async () => {
-    const response = historyReportResponse(
-      "patient-uuid",
-      "太郎",
-      "2026-01-01",
-      "2026-01-30",
-      30
-    );
+    const response = historyReportResponse("patient-uuid", "太郎", "2026-01-01", "2026-01-30", 30);
     const payload = await response.json();
     const prnItems = payload.days[0].prn;
     expect(prnItems[0].recordedBy).toBe("PATIENT");

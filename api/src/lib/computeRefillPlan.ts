@@ -64,7 +64,14 @@ function getZonedParts(date: Date, timeZone: string) {
 
 function getTimeZoneOffset(date: Date, tz: string) {
   const parts = getZonedParts(date, tz);
-  const asUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+  const asUtc = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second
+  );
   return asUtc - date.getTime();
 }
 
@@ -72,7 +79,15 @@ function makeUtcFromZonedParts(
   parts: { year: number; month: number; day: number; hour: number; minute: number },
   tz: string
 ) {
-  const assumedUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, 0, 0);
+  const assumedUtc = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    0,
+    0
+  );
   const offset = getTimeZoneOffset(new Date(assumedUtc), tz);
   return new Date(assumedUtc - offset);
 }
@@ -94,7 +109,10 @@ function nextLocalDay(date: Date, tz: string) {
 }
 
 function getWeekday(date: Date, tz: string) {
-  const label = new Intl.DateTimeFormat(INTL_PARSE_LOCALE, { timeZone: tz, weekday: "short" }).format(date);
+  const label = new Intl.DateTimeFormat(INTL_PARSE_LOCALE, {
+    timeZone: tz,
+    weekday: "short"
+  }).format(date);
   return weekdayMap[label];
 }
 
@@ -160,7 +178,9 @@ export function computeRefillPlan(input: RefillPlanInput): RefillPlanResult {
     return { dailyPlannedUnits: null, daysRemaining: null, refillDueDate: null };
   }
 
-  const activeRegimens = input.regimens.filter((regimen) => regimen.enabled && regimen.times.length > 0);
+  const activeRegimens = input.regimens.filter(
+    (regimen) => regimen.enabled && regimen.times.length > 0
+  );
   if (activeRegimens.length === 0) {
     return { dailyPlannedUnits: null, daysRemaining: null, refillDueDate: null };
   }

@@ -27,8 +27,7 @@ export type PrnDoseRecordCreateInput = {
 };
 
 export type PrnDoseRecordCreateResult =
-  | { record: PrnDoseRecord }
-  | { error: "not_found" | "not_prn" };
+  { record: PrnDoseRecord } | { error: "not_found" | "not_prn" };
 
 export async function createPrnRecord(
   input: PrnDoseRecordCreateInput
@@ -100,10 +99,7 @@ export async function deletePrnRecord(input: {
   if (!existing) {
     return null;
   }
-  const medication = await getMedicationRecordForPatient(
-    existing.patientId,
-    existing.medicationId
-  );
+  const medication = await getMedicationRecordForPatient(existing.patientId, existing.medicationId);
   const deleted = await deletePrnDoseRecordById({ prnRecordId: input.prnRecordId });
   if (medication) {
     await applyInventoryDeltaForDoseRecord({

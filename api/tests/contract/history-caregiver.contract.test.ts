@@ -29,9 +29,9 @@ describe("history caregiver contract", () => {
   });
 
   it("conceals non-owned patient access", async () => {
-    await expect(
-      assertCaregiverPatientScope("caregiver-1", "patient-999")
-    ).rejects.toMatchObject({ statusCode: 404 });
+    await expect(assertCaregiverPatientScope("caregiver-1", "patient-999")).rejects.toMatchObject({
+      statusCode: 404
+    });
   });
 
   it("defines month response shape", () => {

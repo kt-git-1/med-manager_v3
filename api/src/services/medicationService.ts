@@ -167,12 +167,18 @@ function isPeriodEnded(endDate?: Date | null, now: Date = new Date()) {
 
 function buildInventoryItem(
   medication: Medication,
-  plan?: { dailyPlannedUnits: number | null; daysRemaining: number | null; refillDueDate: string | null }
+  plan?: {
+    dailyPlannedUnits: number | null;
+    daysRemaining: number | null;
+    refillDueDate: string | null;
+  }
 ): InventoryItem {
   const enabled = medication.inventoryEnabled;
   const quantity = medication.inventoryQuantity;
   const threshold = inventoryLowThresholdFor(enabled);
-  const state = enabled ? computeInventoryState(quantity, threshold, plan?.daysRemaining ?? null) : "NONE";
+  const state = enabled
+    ? computeInventoryState(quantity, threshold, plan?.daysRemaining ?? null)
+    : "NONE";
   return {
     medicationId: medication.id,
     name: medication.name,
@@ -253,10 +259,7 @@ export async function updateMedicationInventorySettings(input: {
     return null;
   }
   const nextEnabled = input.update.inventoryEnabled ?? medication.inventoryEnabled;
-  const nextQuantity = Math.max(
-    0,
-    input.update.inventoryQuantity ?? medication.inventoryQuantity
-  );
+  const nextQuantity = Math.max(0, input.update.inventoryQuantity ?? medication.inventoryQuantity);
   const nextThreshold = inventoryLowThresholdFor(nextEnabled);
   const regimens = await prisma.regimen.findMany({ where: { medicationId: medication.id } });
   const plan = computeRefillPlan({

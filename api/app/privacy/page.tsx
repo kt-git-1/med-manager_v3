@@ -55,8 +55,7 @@ export default function PrivacyPage() {
           body: (
             <>
               個人情報の取り扱い、アカウント削除、データ削除に関する問い合わせは{" "}
-              <a href={`mailto:${supportEmail}`}>{supportEmail}</a>{" "}
-              までご連絡ください。
+              <a href={`mailto:${supportEmail}`}>{supportEmail}</a> までご連絡ください。
             </>
           )
         }

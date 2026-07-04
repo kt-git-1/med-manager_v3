@@ -29,11 +29,7 @@ export function getClientIp(request: Request): string {
   );
 }
 
-export function assertIpRateLimit(
-  request: Request,
-  keyPrefix: string,
-  options: RateLimitOptions
-) {
+export function assertIpRateLimit(request: Request, keyPrefix: string, options: RateLimitOptions) {
   const now = Date.now();
   const key = `${keyPrefix}:${getClientIp(request)}`;
   const current = buckets.get(key);

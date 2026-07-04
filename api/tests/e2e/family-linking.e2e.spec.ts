@@ -3,6 +3,13 @@ import { LINKING_CODE_MAX_ATTEMPTS } from "../../src/services/linkingConstants";
 
 let caregiverToken = "";
 
+const hasSupabaseTestEnv = Boolean(
+  process.env.SUPABASE_URL &&
+  process.env.SUPABASE_ANON_KEY &&
+  process.env.SUPABASE_TEST_EMAIL &&
+  process.env.SUPABASE_TEST_PASSWORD
+);
+
 async function fetchCaregiverJwt() {
   const supabaseUrl = process.env.SUPABASE_URL;
   const anonKey = process.env.SUPABASE_ANON_KEY;
@@ -39,10 +46,7 @@ async function createPatient(request: Parameters<typeof test>[0]["request"], nam
   return (await response.json()).data.id as string;
 }
 
-async function issueLinkingCode(
-  request: Parameters<typeof test>[0]["request"],
-  patientId: string
-) {
+async function issueLinkingCode(request: Parameters<typeof test>[0]["request"], patientId: string) {
   const response = await request.post(`/api/patients/${patientId}/linking-codes`, {
     headers: { authorization: `Bearer ${caregiverToken}` }
   });
@@ -50,23 +54,22 @@ async function issueLinkingCode(
   return (await response.json()).data.code as string;
 }
 
-async function exchangeCode(
-  request: Parameters<typeof test>[0]["request"],
-  code: string
-) {
+async function exchangeCode(request: Parameters<typeof test>[0]["request"], code: string) {
   return request.post("/api/patient/link", { data: { code } });
 }
 
-async function refreshPatientToken(
-  request: Parameters<typeof test>[0]["request"],
-  token: string
-) {
+async function refreshPatientToken(request: Parameters<typeof test>[0]["request"], token: string) {
   return request.post("/api/patient/session/refresh", {
     headers: { authorization: `Bearer ${token}` }
   });
 }
 
 test.describe("family linking e2e", () => {
+  test.skip(
+    !hasSupabaseTestEnv,
+    "Set SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_TEST_EMAIL, and SUPABASE_TEST_PASSWORD to run Supabase-backed E2E tests."
+  );
+
   test.beforeAll(async () => {
     const jwt = await fetchCaregiverJwt();
     caregiverToken = `caregiver-${jwt}`;

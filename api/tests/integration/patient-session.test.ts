@@ -18,8 +18,11 @@ function exchangeLinkCode(code: string, validCodes: Set<string>, sessions: Sessi
   return token;
 }
 
-
-function exchangeLinkCodeRequest(body: { code: unknown }, validCodes: Set<string>, sessions: SessionStore) {
+function exchangeLinkCodeRequest(
+  body: { code: unknown },
+  validCodes: Set<string>,
+  sessions: SessionStore
+) {
   const { errors, code } = validateLinkCodeInput({ code: body.code });
   if (errors.length) {
     return { status: 422, error: "validation", messages: errors };
@@ -39,7 +42,6 @@ function refreshSessionToken(currentToken: string, sessions: SessionStore) {
 }
 
 describe("patient session integration", () => {
-
   it("rejects non-string link code types", () => {
     const validCodes = new Set<string>([issueLinkCode()]);
     const sessions: SessionStore = new Map();

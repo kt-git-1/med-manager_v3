@@ -41,55 +41,57 @@ vi.mock("../../src/auth/supabaseJwt", () => ({
 }));
 
 vi.mock("../../src/repositories/doseRecordRepo", () => ({
-  upsertDoseRecord: vi.fn(async (input: {
-    patientId: string;
-    medicationId: string;
-    scheduledAt: Date;
-    recordedByType: "PATIENT" | "CAREGIVER";
-    recordedById?: string | null;
-  }) => {
-    const key = `${input.patientId}:${input.medicationId}:${input.scheduledAt.toISOString()}`;
-    const existing = store.get(key);
-    if (existing) {
-      return existing;
-    }
-    const now = new Date();
-    const record: DoseRecord = {
-      id: `dose-${store.size + 1}`,
-      patientId: input.patientId,
-      medicationId: input.medicationId,
-      scheduledAt: input.scheduledAt,
-      takenAt: now,
-      recordedByType: input.recordedByType,
-      recordedById: input.recordedById ?? null,
-      recordingGroupId: null,
-      createdAt: now,
-      updatedAt: now
-    };
-    store.set(key, record);
-    return record;
-  }),
-  getDoseRecordByKey: vi.fn(async (key: { patientId: string; medicationId: string; scheduledAt: Date }) => {
-    const lookupKey = `${key.patientId}:${key.medicationId}:${key.scheduledAt.toISOString()}`;
-    return store.get(lookupKey) ?? null;
-  }),
-  listDoseRecordsByPatientRange: vi.fn(async (input: {
-    patientId: string;
-    from: Date;
-    to: Date;
-  }) => {
-    const results: DoseRecord[] = [];
-    for (const record of store.values()) {
-      if (
-        record.patientId === input.patientId &&
-        record.scheduledAt >= input.from &&
-        record.scheduledAt < input.to
-      ) {
-        results.push(record);
+  upsertDoseRecord: vi.fn(
+    async (input: {
+      patientId: string;
+      medicationId: string;
+      scheduledAt: Date;
+      recordedByType: "PATIENT" | "CAREGIVER";
+      recordedById?: string | null;
+    }) => {
+      const key = `${input.patientId}:${input.medicationId}:${input.scheduledAt.toISOString()}`;
+      const existing = store.get(key);
+      if (existing) {
+        return existing;
       }
+      const now = new Date();
+      const record: DoseRecord = {
+        id: `dose-${store.size + 1}`,
+        patientId: input.patientId,
+        medicationId: input.medicationId,
+        scheduledAt: input.scheduledAt,
+        takenAt: now,
+        recordedByType: input.recordedByType,
+        recordedById: input.recordedById ?? null,
+        recordingGroupId: null,
+        createdAt: now,
+        updatedAt: now
+      };
+      store.set(key, record);
+      return record;
     }
-    return results;
-  })
+  ),
+  getDoseRecordByKey: vi.fn(
+    async (key: { patientId: string; medicationId: string; scheduledAt: Date }) => {
+      const lookupKey = `${key.patientId}:${key.medicationId}:${key.scheduledAt.toISOString()}`;
+      return store.get(lookupKey) ?? null;
+    }
+  ),
+  listDoseRecordsByPatientRange: vi.fn(
+    async (input: { patientId: string; from: Date; to: Date }) => {
+      const results: DoseRecord[] = [];
+      for (const record of store.values()) {
+        if (
+          record.patientId === input.patientId &&
+          record.scheduledAt >= input.from &&
+          record.scheduledAt < input.to
+        ) {
+          results.push(record);
+        }
+      }
+      return results;
+    }
+  )
 }));
 
 vi.mock("../../src/repositories/patientRepo", () => ({
@@ -103,30 +105,33 @@ vi.mock("../../src/repositories/patientRepo", () => ({
   getPatientRecordForCaregiver: vi.fn(async () => null)
 }));
 
-const medications: Record<string, {
-  id: string;
-  patientId: string;
-  name: string;
-  dosageText: string;
-  doseCountPerIntake: number;
-  dosageStrengthValue: number;
-  dosageStrengthUnit: string;
-  notes: null;
-  isPrn: boolean;
-  startDate: Date;
-  endDate: null;
-  inventoryCount: null;
-  inventoryUnit: null;
-  inventoryEnabled: boolean;
-  inventoryQuantity: number;
-  inventoryLowThreshold: number;
-  inventoryUpdatedAt: null;
-  inventoryLastAlertState: null;
-  isActive: boolean;
-  isArchived: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}> = {
+const medications: Record<
+  string,
+  {
+    id: string;
+    patientId: string;
+    name: string;
+    dosageText: string;
+    doseCountPerIntake: number;
+    dosageStrengthValue: number;
+    dosageStrengthUnit: string;
+    notes: null;
+    isPrn: boolean;
+    startDate: Date;
+    endDate: null;
+    inventoryCount: null;
+    inventoryUnit: null;
+    inventoryEnabled: boolean;
+    inventoryQuantity: number;
+    inventoryLowThreshold: number;
+    inventoryUpdatedAt: null;
+    inventoryLastAlertState: null;
+    isActive: boolean;
+    isArchived: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  }
+> = {
   "med-1": {
     id: "med-1",
     patientId: "patient-1",
@@ -208,19 +213,21 @@ vi.mock("../../src/repositories/medicationRepo", () => ({
 }));
 
 vi.mock("../../src/repositories/doseRecordEventRepo", () => ({
-  createDoseRecordEvent: vi.fn(async (input: {
-    patientId: string;
-    scheduledAt: Date;
-    takenAt: Date;
-    withinTime: boolean;
-    displayName: string;
-    medicationName?: string;
-    isPrn: boolean;
-  }) => ({
-    id: `event-${Date.now()}`,
-    ...input,
-    createdAt: new Date()
-  }))
+  createDoseRecordEvent: vi.fn(
+    async (input: {
+      patientId: string;
+      scheduledAt: Date;
+      takenAt: Date;
+      withinTime: boolean;
+      displayName: string;
+      medicationName?: string;
+      isPrn: boolean;
+    }) => ({
+      id: `event-${Date.now()}`,
+      ...input,
+      createdAt: new Date()
+    })
+  )
 }));
 
 vi.mock("../../src/services/pushNotificationService", () => ({
@@ -230,20 +237,22 @@ vi.mock("../../src/services/pushNotificationService", () => ({
 
 vi.mock("../../src/services/medicationService", () => ({
   applyInventoryDeltaForDoseRecord: vi.fn(async () => {}),
-  assertInventoryAvailableForMedication: vi.fn((
-    medication: { inventoryEnabled: boolean; inventoryQuantity: number },
-    requiredQuantity: number
-  ) => {
-    if (medication.inventoryEnabled && medication.inventoryQuantity < requiredQuantity) {
-      const error = new Error("Insufficient inventory") as Error & {
-        statusCode: number;
-        code: string;
-      };
-      error.statusCode = 409;
-      error.code = "insufficient_inventory";
-      throw error;
+  assertInventoryAvailableForMedication: vi.fn(
+    (
+      medication: { inventoryEnabled: boolean; inventoryQuantity: number },
+      requiredQuantity: number
+    ) => {
+      if (medication.inventoryEnabled && medication.inventoryQuantity < requiredQuantity) {
+        const error = new Error("Insufficient inventory") as Error & {
+          statusCode: number;
+          code: string;
+        };
+        error.statusCode = 409;
+        error.code = "insufficient_inventory";
+        throw error;
+      }
     }
-  })
+  )
 }));
 
 // -- Helpers ----------------------------------------------------------------
@@ -357,7 +366,7 @@ try {
 let mockScheduleDoses: ReturnType<typeof makeMorningDoses> = [];
 
 vi.mock("../../src/services/scheduleService", async (importOriginal) => {
-  const original = await importOriginal() as Record<string, unknown>;
+  const original = (await importOriginal()) as Record<string, unknown>;
   return {
     ...original,
     getScheduleWithStatus: vi.fn(async () => mockScheduleDoses),
@@ -370,39 +379,47 @@ vi.mock("../../src/services/scheduleService", async (importOriginal) => {
 vi.mock("../../src/repositories/prisma", () => ({
   prisma: {
     doseRecord: {
-      upsert: vi.fn(async (args: {
-        where: { patientId_medicationId_scheduledAt: { patientId: string; medicationId: string; scheduledAt: Date } };
-        create: {
-          patientId: string;
-          medicationId: string;
-          scheduledAt: Date;
-          takenAt: Date;
-          recordedByType: string;
-          recordedById: string | null;
-          recordingGroupId: string;
-        };
-        update: Record<string, never>;
-      }) => {
-        const key = `${args.where.patientId_medicationId_scheduledAt.patientId}:${args.where.patientId_medicationId_scheduledAt.medicationId}:${args.where.patientId_medicationId_scheduledAt.scheduledAt.toISOString()}`;
-        const existing = store.get(key);
-        if (existing) {
-          return existing;
+      upsert: vi.fn(
+        async (args: {
+          where: {
+            patientId_medicationId_scheduledAt: {
+              patientId: string;
+              medicationId: string;
+              scheduledAt: Date;
+            };
+          };
+          create: {
+            patientId: string;
+            medicationId: string;
+            scheduledAt: Date;
+            takenAt: Date;
+            recordedByType: string;
+            recordedById: string | null;
+            recordingGroupId: string;
+          };
+          update: Record<string, never>;
+        }) => {
+          const key = `${args.where.patientId_medicationId_scheduledAt.patientId}:${args.where.patientId_medicationId_scheduledAt.medicationId}:${args.where.patientId_medicationId_scheduledAt.scheduledAt.toISOString()}`;
+          const existing = store.get(key);
+          if (existing) {
+            return existing;
+          }
+          const record: DoseRecord = {
+            id: `dose-${store.size + 1}`,
+            patientId: args.create.patientId,
+            medicationId: args.create.medicationId,
+            scheduledAt: args.create.scheduledAt,
+            takenAt: args.create.takenAt,
+            recordedByType: args.create.recordedByType as "PATIENT" | "CAREGIVER",
+            recordedById: args.create.recordedById,
+            recordingGroupId: args.create.recordingGroupId,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          store.set(key, record);
+          return record;
         }
-        const record: DoseRecord = {
-          id: `dose-${store.size + 1}`,
-          patientId: args.create.patientId,
-          medicationId: args.create.medicationId,
-          scheduledAt: args.create.scheduledAt,
-          takenAt: args.create.takenAt,
-          recordedByType: args.create.recordedByType as "PATIENT" | "CAREGIVER",
-          recordedById: args.create.recordedById,
-          recordingGroupId: args.create.recordingGroupId,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        store.set(key, record);
-        return record;
-      })
+      )
     },
     $transaction: vi.fn(async (promises: Promise<DoseRecord>[]) => {
       return Promise.all(promises);
@@ -435,9 +452,8 @@ describe("slot bulk record integration", () => {
   describe("T001: PENDING bulk -> TAKEN", () => {
     it("records 3 PENDING morning doses as TAKEN in a single bulk operation", async () => {
       mockScheduleDoses = makeMorningDoses("pending");
-      const { notifyCaregiversOfDoseTaken } = await import(
-        "../../src/services/pushNotificationService"
-      );
+      const { notifyCaregiversOfDoseTaken } =
+        await import("../../src/services/pushNotificationService");
       const notifyMock = vi.mocked(notifyCaregiversOfDoseTaken);
 
       const request = makePostRequest({ date: "2026-02-11", slot: "morning" });

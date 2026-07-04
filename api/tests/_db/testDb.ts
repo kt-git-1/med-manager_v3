@@ -41,10 +41,7 @@ export async function createCaregiverPatientLinkFixture(input: {
   });
 }
 
-export async function createMultiPatientFixture(
-  caregiverId: string,
-  count: number
-): Promise<void> {
+export async function createMultiPatientFixture(caregiverId: string, count: number): Promise<void> {
   for (let i = 0; i < count; i++) {
     const patientId = `patient-fixture-${caregiverId}-${i}`;
     await createCaregiverPatientLinkFixture({

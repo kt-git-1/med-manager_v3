@@ -51,9 +51,7 @@ export async function listDeviceTokensForCaregivers(
   });
 }
 
-export async function deleteAllDeviceTokensForCaregiver(
-  caregiverId: string
-): Promise<number> {
+export async function deleteAllDeviceTokensForCaregiver(caregiverId: string): Promise<number> {
   const result = await prisma.deviceToken.deleteMany({
     where: { caregiverId }
   });

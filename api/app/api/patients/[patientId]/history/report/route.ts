@@ -29,10 +29,7 @@ export async function GET(
     const { patientId } = await params;
 
     // ----- Scope assertion + patient record for displayName -----
-    const patient = await getPatientRecordForCaregiver(
-      patientId,
-      session.caregiverUserId
-    );
+    const patient = await getPatientRecordForCaregiver(patientId, session.caregiverUserId);
     if (!patient) {
       throw new AuthError("Not found", 404);
     }
@@ -47,12 +44,7 @@ export async function GET(
     await checkRetentionForDay(from!, "caregiver", session.caregiverUserId);
 
     // ----- Generate report -----
-    const result = await generateReport(
-      patientId,
-      from!,
-      to!,
-      patient.displayName
-    );
+    const result = await generateReport(patientId, from!, to!, patient.displayName);
 
     return new Response(JSON.stringify(result), {
       headers: { "content-type": "application/json" }

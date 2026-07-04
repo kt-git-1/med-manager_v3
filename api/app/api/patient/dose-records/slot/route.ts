@@ -20,20 +20,20 @@ export async function POST(request: Request) {
       slot: body.slot
     });
     if (validation.errors.length) {
-      return new Response(
-        JSON.stringify({ error: "validation", messages: validation.errors }),
-        { status: 422, headers: { "content-type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "validation", messages: validation.errors }), {
+        status: 422,
+        headers: { "content-type": "application/json" }
+      });
     }
 
     // Parse optional custom slot times from query params
     const url = new URL(request.url);
     const slotTimeParse = parseSlotTimesFromParams(url.searchParams);
     if (slotTimeParse.errors.length) {
-      return new Response(
-        JSON.stringify({ error: "validation", messages: slotTimeParse.errors }),
-        { status: 422, headers: { "content-type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "validation", messages: slotTimeParse.errors }), {
+        status: 422,
+        headers: { "content-type": "application/json" }
+      });
     }
 
     // Execute bulk record

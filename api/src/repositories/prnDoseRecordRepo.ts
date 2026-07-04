@@ -9,9 +9,7 @@ export type PrnDoseRecordCreateInput = {
   actorType: RecordedByType;
 };
 
-export async function createPrnDoseRecord(
-  input: PrnDoseRecordCreateInput
-): Promise<PrnDoseRecord> {
+export async function createPrnDoseRecord(input: PrnDoseRecordCreateInput): Promise<PrnDoseRecord> {
   return prisma.prnDoseRecord.create({
     data: {
       patientId: input.patientId,

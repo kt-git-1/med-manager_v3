@@ -50,7 +50,12 @@ export type ScheduleDoseWithStatus = ScheduleDose & {
   takenAt?: string;
 };
 
-import { DEFAULT_TIMEZONE, INTL_PARSE_LOCALE, DOSE_MISSED_WINDOW_MS, DEFAULT_SLOT_TIMES } from "../constants";
+import {
+  DEFAULT_TIMEZONE,
+  INTL_PARSE_LOCALE,
+  DOSE_MISSED_WINDOW_MS,
+  DEFAULT_SLOT_TIMES
+} from "../constants";
 
 const DEFAULT_REGIMEN_TZ = DEFAULT_TIMEZONE;
 type RegimenSlot = keyof typeof DEFAULT_SLOT_TIMES;
@@ -110,7 +115,14 @@ function getZonedParts(date: Date, timeZone: string) {
 
 function getTimeZoneOffset(date: Date, tz: string) {
   const parts = getZonedParts(date, tz);
-  const asUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+  const asUtc = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second
+  );
   return asUtc - date.getTime();
 }
 
@@ -118,7 +130,15 @@ function makeUtcFromZonedParts(
   parts: { year: number; month: number; day: number; hour: number; minute: number },
   tz: string
 ) {
-  const assumedUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, 0, 0);
+  const assumedUtc = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    0,
+    0
+  );
   const offset = getTimeZoneOffset(new Date(assumedUtc), tz);
   return new Date(assumedUtc - offset);
 }
@@ -126,7 +146,13 @@ function makeUtcFromZonedParts(
 function truncateToMinutes(date: Date, tz: string) {
   const parts = getZonedParts(date, tz);
   return makeUtcFromZonedParts(
-    { year: parts.year, month: parts.month, day: parts.day, hour: parts.hour, minute: parts.minute },
+    {
+      year: parts.year,
+      month: parts.month,
+      day: parts.day,
+      hour: parts.hour,
+      minute: parts.minute
+    },
     tz
   );
 }
@@ -148,7 +174,10 @@ function nextLocalDay(date: Date, tz: string) {
 }
 
 function getWeekday(date: Date, tz: string) {
-  const label = new Intl.DateTimeFormat(INTL_PARSE_LOCALE, { timeZone: tz, weekday: "short" }).format(date);
+  const label = new Intl.DateTimeFormat(INTL_PARSE_LOCALE, {
+    timeZone: tz,
+    weekday: "short"
+  }).format(date);
   return weekdayMap[label];
 }
 
@@ -275,9 +304,7 @@ export function generateSchedule({
     }
   }
 
-  return doses.sort(
-    (left, right) => Date.parse(left.scheduledAt) - Date.parse(right.scheduledAt)
-  );
+  return doses.sort((left, right) => Date.parse(left.scheduledAt) - Date.parse(right.scheduledAt));
 }
 
 export async function generateScheduleForPatient({
@@ -322,7 +349,13 @@ function deriveDoseStatus({
 
 export function applyDoseStatuses(
   doses: ScheduleDose[],
-  doseRecords: { patientId: string; medicationId: string; scheduledAt: Date; takenAt?: Date; recordedByType: string }[],
+  doseRecords: {
+    patientId: string;
+    medicationId: string;
+    scheduledAt: Date;
+    takenAt?: Date;
+    recordedByType: string;
+  }[],
   now: Date = new Date()
 ): ScheduleDoseWithStatus[] {
   const recordMap = new Map(

@@ -70,7 +70,7 @@ export async function createDoseRecordIdempotent(
     slot: slot ?? "morning",
     doseEventId: doseEvent.id,
     excludeCaregiverId:
-      input.recordedByType === "CAREGIVER" ? input.recordedById ?? undefined : undefined,
+      input.recordedByType === "CAREGIVER" ? (input.recordedById ?? undefined) : undefined,
     withinTime,
     isPrn: medication?.isPrn ?? false
   });
@@ -87,18 +87,13 @@ export async function createDoseRecordIdempotent(
   return record;
 }
 
-export async function deleteDoseRecord(
-  key: DoseRecordKey
-): Promise<DoseRecord | null> {
+export async function deleteDoseRecord(key: DoseRecordKey): Promise<DoseRecord | null> {
   const existing = await getDoseRecordByKey(key);
   if (!existing) {
     return null;
   }
   const deleted = await deleteDoseRecordByKey(key);
-  const medication = await getMedicationRecordForPatient(
-    existing.patientId,
-    existing.medicationId
-  );
+  const medication = await getMedicationRecordForPatient(existing.patientId, existing.medicationId);
   if (medication) {
     await applyInventoryDeltaForDoseRecord({
       patientId: existing.patientId,

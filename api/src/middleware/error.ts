@@ -50,10 +50,7 @@ export function errorResponse(error: unknown) {
   const httpError = toHttpError(error);
   if (httpError.status >= 500) {
     if (error instanceof Error) {
-      log(
-        "error",
-        `Unhandled error: ${error.message}${error.stack ? `\n${error.stack}` : ""}`
-      );
+      log("error", `Unhandled error: ${error.message}${error.stack ? `\n${error.stack}` : ""}`);
     } else {
       log("error", `Unhandled error: ${JSON.stringify(error)}`);
     }

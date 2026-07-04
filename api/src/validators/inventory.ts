@@ -31,10 +31,7 @@ export function validateInventoryUpdate(input: {
     errors.push("inventoryLowThreshold is fixed and cannot be updated");
   }
 
-  if (
-    input.inventoryEnabled === undefined &&
-    input.inventoryQuantity === undefined
-  ) {
+  if (input.inventoryEnabled === undefined && input.inventoryQuantity === undefined) {
     errors.push("at least one field must be provided");
     return result;
   }

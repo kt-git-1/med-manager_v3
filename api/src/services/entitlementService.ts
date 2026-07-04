@@ -2,10 +2,7 @@
 // Entitlement Service — claim + read
 // ---------------------------------------------------------------------------
 
-import {
-  upsertEntitlement,
-  findEntitlementsByCaregiverId
-} from "../repositories/entitlementRepo";
+import { upsertEntitlement, findEntitlementsByCaregiverId } from "../repositories/entitlementRepo";
 import { X509Certificate, createPublicKey, verify } from "crypto";
 
 // ---------------------------------------------------------------------------
@@ -107,9 +104,7 @@ function pemFromBase64Certificate(input: string) {
 }
 
 function normalizeCertificatePem(input: string) {
-  return input.includes("-----BEGIN CERTIFICATE-----")
-    ? input
-    : pemFromBase64Certificate(input);
+  return input.includes("-----BEGIN CERTIFICATE-----") ? input : pemFromBase64Certificate(input);
 }
 
 function certificateFingerprint(cert: X509Certificate) {
@@ -176,7 +171,9 @@ function resolveVerificationKey(header: JwsHeader) {
   if (!Array.isArray(header.x5c) || header.x5c.length === 0) {
     throw new InvalidStoreKitTransactionError("Missing StoreKit certificate chain");
   }
-  const certificates = header.x5c.map((cert) => new X509Certificate(pemFromBase64Certificate(cert)));
+  const certificates = header.x5c.map(
+    (cert) => new X509Certificate(pemFromBase64Certificate(cert))
+  );
   verifyCertificateChain(certificates);
   return certificates[0].publicKey;
 }
@@ -249,9 +246,7 @@ export async function claimEntitlement(
 // Get Entitlements
 // ---------------------------------------------------------------------------
 
-export async function getEntitlements(
-  caregiverId: string
-): Promise<EntitlementReadResult> {
+export async function getEntitlements(caregiverId: string): Promise<EntitlementReadResult> {
   const records = await findEntitlementsByCaregiverId(caregiverId);
   const premium = records.some((r) => r.status === "ACTIVE");
 

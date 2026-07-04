@@ -43,13 +43,13 @@ export const DEFAULT_SLOT_TIMES = {
   morning: "08:00",
   noon: "13:00",
   evening: "19:00",
-  bedtime: "22:00",
+  bedtime: "22:00"
 } as const;
 
 /** Hour ranges used to assign a slot when the exact time doesn't match. */
 export const SLOT_HOUR_RANGES = {
   morning: { min: 4, max: 10 },
   noon: { min: 11, max: 15 },
-  evening: { min: 16, max: 20 },
+  evening: { min: 16, max: 20 }
   // bedtime covers 21-23 and 0-3 (fallback)
 } as const;

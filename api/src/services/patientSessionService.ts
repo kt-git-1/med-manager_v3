@@ -6,10 +6,7 @@ import {
   findActivePatientSessionByTokenHash,
   revokePatientSessionByTokenHash
 } from "../repositories/patientSessionRepo";
-import {
-  findLinkingCodeByHash,
-  markLinkingCodeUsed
-} from "../repositories/linkingCodeRepo";
+import { findLinkingCodeByHash, markLinkingCodeUsed } from "../repositories/linkingCodeRepo";
 import {
   assertLinkingNotLocked,
   registerLinkingAttemptFailure,

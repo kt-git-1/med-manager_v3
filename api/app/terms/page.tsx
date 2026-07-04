@@ -64,8 +64,7 @@ export default function TermsPage() {
           summary: "規約に関する質問はサポートへご連絡ください。",
           body: (
             <>
-              本規約に関する問い合わせは{" "}
-              <a href={`mailto:${supportEmail}`}>{supportEmail}</a>{" "}
+              本規約に関する問い合わせは <a href={`mailto:${supportEmail}`}>{supportEmail}</a>{" "}
               までご連絡ください。
             </>
           )

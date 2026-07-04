@@ -77,9 +77,7 @@ function scheduleDoseKey(dose: { patientId: string; medicationId: string; schedu
 // Service
 // ---------------------------------------------------------------------------
 
-export async function bulkRecordSlot(
-  input: SlotBulkRecordInput
-): Promise<SlotBulkRecordResult> {
+export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBulkRecordResult> {
   const tz = DEFAULT_TIMEZONE;
   const now = new Date();
 
@@ -88,7 +86,14 @@ export async function bulkRecordSlot(
   const { from, to } = getDayRange(dateObj, tz);
 
   // 2. Fetch today's schedule with statuses
-  const allDoses = await getScheduleWithStatus(input.patientId, from, to, tz, now, input.customSlotTimes);
+  const allDoses = await getScheduleWithStatus(
+    input.patientId,
+    from,
+    to,
+    tz,
+    now,
+    input.customSlotTimes
+  );
 
   // 3. Filter to target slot
   const slotDoses = allDoses.filter((dose) => {
@@ -104,9 +109,8 @@ export async function bulkRecordSlot(
   const medCount = slotDoses.length;
 
   // 5. Derive slot time from first dose's scheduledAt
-  const slotTime = slotDoses.length > 0
-    ? getLocalTimeString(slotDoses[0].scheduledAt, tz)
-    : "00:00";
+  const slotTime =
+    slotDoses.length > 0 ? getLocalTimeString(slotDoses[0].scheduledAt, tz) : "00:00";
 
   // 5b. Check recording window: slotTime −30 min … slotTime +60 min
   if (slotDoses.length > 0) {
@@ -150,7 +154,10 @@ export async function bulkRecordSlot(
     };
   }
 
-  const medicationById = new Map<string, Awaited<ReturnType<typeof getMedicationRecordForPatient>>>();
+  const medicationById = new Map<
+    string,
+    Awaited<ReturnType<typeof getMedicationRecordForPatient>>
+  >();
   const availableQuantityByMedicationId = new Map<string, number>();
   const recordableWithInventory: typeof recordable = [];
   const insufficientDoses: typeof recordable = [];

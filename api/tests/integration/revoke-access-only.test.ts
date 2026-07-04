@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 type Patient = { id: string; caregiverId: string };
 type Medication = { id: string; patientId: string; name: string };
-type Link = { caregiverId: string; patientId: string; status: "ACTIVE" | "REVOKED"; revokedAt: Date | null };
+type Link = {
+  caregiverId: string;
+  patientId: string;
+  status: "ACTIVE" | "REVOKED";
+  revokedAt: Date | null;
+};
 type Session = { token: string; patientId: string; revokedAt: Date | null };
 
 function createPatient(caregiverId: string): Patient {
@@ -21,7 +26,9 @@ function listCaregiverMedications(
   patients: Patient[],
   meds: Medication[]
 ) {
-  const patient = patients.find((entry) => entry.id === patientId && entry.caregiverId === caregiverId);
+  const patient = patients.find(
+    (entry) => entry.id === patientId && entry.caregiverId === caregiverId
+  );
   if (!patient) {
     throw new Error("not_found");
   }
@@ -61,11 +68,7 @@ function revokeLink(link: Link, caregiverId: string, sessions: Session[]) {
   }
 }
 
-function readMedicationsWithPatientToken(
-  token: string,
-  sessions: Session[],
-  meds: Medication[]
-) {
+function readMedicationsWithPatientToken(token: string, sessions: Session[], meds: Medication[]) {
   const session = sessions.find((entry) => entry.token === token);
   if (!session || session.revokedAt) {
     throw new Error("unauthorized");

@@ -10,7 +10,10 @@ import {
   createCaregiverDoseRecord,
   deleteCaregiverDoseRecord
 } from "../../../../../src/services/doseRecordService";
-import { validateDoseRecordCreate, validateDoseRecordDelete } from "../../../../../src/validators/doseRecord";
+import {
+  validateDoseRecordCreate,
+  validateDoseRecordDelete
+} from "../../../../../src/validators/doseRecord";
 
 export const runtime = "nodejs";
 

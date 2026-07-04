@@ -31,9 +31,7 @@ function parseBearerToken(authHeader?: string | null) {
 
 function extractIds(request: Request) {
   const { pathname } = new URL(request.url);
-  const match = pathname.match(
-    /\/api\/patients\/([^/]+)\/medications\/([^/]+)\/inventory\/adjust/
-  );
+  const match = pathname.match(/\/api\/patients\/([^/]+)\/medications\/([^/]+)\/inventory\/adjust/);
   return { patientId: match?.[1] ?? null, medicationId: match?.[2] ?? null };
 }
 
@@ -48,7 +46,10 @@ async function adjustInventory(
   }
   const { patientId, medicationId } = extractIds(request);
   if (isCaregiverToken(token) && (!patientId || !medicationId)) {
-    return jsonResponse({ error: "validation", message: "patientId and medicationId required" }, 422);
+    return jsonResponse(
+      { error: "validation", message: "patientId and medicationId required" },
+      422
+    );
   }
   if (!patientId || !medicationId || !caregiverPatientIds.has(patientId)) {
     return jsonResponse({ error: "not_found" }, 404);
@@ -58,7 +59,10 @@ async function adjustInventory(
     return jsonResponse({ error: "validation", message: "reason required" }, 422);
   }
   if (body.delta === undefined && body.absoluteQuantity === undefined) {
-    return jsonResponse({ error: "validation", message: "delta or absoluteQuantity required" }, 422);
+    return jsonResponse(
+      { error: "validation", message: "delta or absoluteQuantity required" },
+      422
+    );
   }
   const existing = store.find(
     (item) => item.patientId === patientId && item.medicationId === medicationId

@@ -19,9 +19,7 @@ export async function createPatientRecord(input: {
   return prisma.patient.create({ data: input });
 }
 
-export async function listPatientRecordsByCaregiver(
-  caregiverId: string
-): Promise<PatientRecord[]> {
+export async function listPatientRecordsByCaregiver(caregiverId: string): Promise<PatientRecord[]> {
   return prisma.patient.findMany({
     where: { caregiverId },
     orderBy: { createdAt: "desc" }

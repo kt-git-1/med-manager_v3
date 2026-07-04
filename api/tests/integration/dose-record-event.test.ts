@@ -32,7 +32,11 @@ vi.mock("../../src/repositories/doseRecordRepo", () => ({
     store.set(key, record);
     return record;
   },
-  getDoseRecordByKey: async (key: { patientId: string; medicationId: string; scheduledAt: Date }) => {
+  getDoseRecordByKey: async (key: {
+    patientId: string;
+    medicationId: string;
+    scheduledAt: Date;
+  }) => {
     const lookupKey = `${key.patientId}:${key.medicationId}:${key.scheduledAt.toISOString()}`;
     return store.get(lookupKey) ?? null;
   }

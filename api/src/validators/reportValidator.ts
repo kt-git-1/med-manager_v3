@@ -65,11 +65,8 @@ export function validateReportRange(
   }
 
   // Inclusive day count must not exceed MAX_REPORT_RANGE_DAYS
-  const dayCount =
-    Math.round((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  const dayCount = Math.round((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   if (dayCount > MAX_REPORT_RANGE_DAYS) {
-    throw new InvalidRangeError(
-      `期間は${MAX_REPORT_RANGE_DAYS}日以内で指定してください。`
-    );
+    throw new InvalidRangeError(`期間は${MAX_REPORT_RANGE_DAYS}日以内で指定してください。`);
   }
 }

@@ -3,8 +3,7 @@ import { SiteFooter } from "./SiteFooter";
 
 export const metadata = {
   title: "お薬見守り | 家族で服薬を見守るアプリ",
-  description:
-    "お薬見守りは、毎日の服薬予定・服薬記録・お薬の残量を家族で確認できるアプリです。"
+  description: "お薬見守りは、毎日の服薬予定・服薬記録・お薬の残量を家族で確認できるアプリです。"
 };
 
 const featureRows = [
@@ -159,7 +158,9 @@ export default function Home() {
           </p>
           <div className="hero-download" aria-label="アプリのダウンロード">
             <AppStoreBadge />
-            <span className="hero-download-note">iPhone版を準備中です。公開後、このページからApp Storeへ進めます。</span>
+            <span className="hero-download-note">
+              iPhone版を準備中です。公開後、このページからApp Storeへ進めます。
+            </span>
           </div>
         </div>
       </section>
@@ -347,7 +348,11 @@ export default function Home() {
                               : "status-waiting"
                         }
                       >
-                        {row.status === "飲みました" ? "済" : row.status === "次に記録" ? "次" : "未"}
+                        {row.status === "飲みました"
+                          ? "済"
+                          : row.status === "次に記録"
+                            ? "次"
+                            : "未"}
                       </em>
                     </div>
                   ))}
@@ -375,7 +380,8 @@ export default function Home() {
             <p className="eyebrow">Download</p>
             <h2 id="download-title">公開後はApp Storeからダウンロードできます</h2>
             <p>
-              現在、iPhone版の公開準備中です。公開後は、このページのボタンをApp Storeへのリンクに切り替えます。
+              現在、iPhone版の公開準備中です。公開後は、このページのボタンをApp
+              Storeへのリンクに切り替えます。
             </p>
           </div>
           <AppStoreBadge />

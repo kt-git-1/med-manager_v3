@@ -92,11 +92,13 @@ describe("POST /api/patients — patient limit enforcement", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Default: patient creation succeeds, returning the passed-in data
-    patientCreateMock.mockImplementation(async (args: { data: { caregiverId: string; displayName: string } }) => ({
-      id: "new-patient-1",
-      caregiverId: args.data.caregiverId,
-      displayName: args.data.displayName
-    }));
+    patientCreateMock.mockImplementation(
+      async (args: { data: { caregiverId: string; displayName: string } }) => ({
+        id: "new-patient-1",
+        caregiverId: args.data.caregiverId,
+        displayName: args.data.displayName
+      })
+    );
     linkCreateMock.mockResolvedValue({
       id: "link-1",
       caregiverId: "caregiver-limit-1",
@@ -221,9 +223,27 @@ describe("GET /api/patients — grandfather viewing", () => {
     // This tests that listing is NOT gated — free caregivers see all their patients.
     // Grandfather rule: free caregiver with >1 patients can VIEW all, just can't ADD.
     patientFindManyMock.mockResolvedValue([
-      { id: "p-1", caregiverId: "caregiver-limit-1", displayName: "Patient 1", createdAt: new Date(), updatedAt: new Date() },
-      { id: "p-2", caregiverId: "caregiver-limit-1", displayName: "Patient 2", createdAt: new Date(), updatedAt: new Date() },
-      { id: "p-3", caregiverId: "caregiver-limit-1", displayName: "Patient 3", createdAt: new Date(), updatedAt: new Date() }
+      {
+        id: "p-1",
+        caregiverId: "caregiver-limit-1",
+        displayName: "Patient 1",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: "p-2",
+        caregiverId: "caregiver-limit-1",
+        displayName: "Patient 2",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: "p-3",
+        caregiverId: "caregiver-limit-1",
+        displayName: "Patient 3",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
     ]);
 
     const { GET } = await import("../../app/api/patients/route");

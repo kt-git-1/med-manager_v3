@@ -52,9 +52,11 @@ function getLocalTimeString(scheduledAt: string, tz: string) {
 }
 
 function resolveSlotByRange(hour: number): HistorySlot {
-  if (hour >= SLOT_HOUR_RANGES.morning.min && hour <= SLOT_HOUR_RANGES.morning.max) return "morning";
+  if (hour >= SLOT_HOUR_RANGES.morning.min && hour <= SLOT_HOUR_RANGES.morning.max)
+    return "morning";
   if (hour >= SLOT_HOUR_RANGES.noon.min && hour <= SLOT_HOUR_RANGES.noon.max) return "noon";
-  if (hour >= SLOT_HOUR_RANGES.evening.min && hour <= SLOT_HOUR_RANGES.evening.max) return "evening";
+  if (hour >= SLOT_HOUR_RANGES.evening.min && hour <= SLOT_HOUR_RANGES.evening.max)
+    return "evening";
   // 21-23 and 0-3
   return "bedtime";
 }

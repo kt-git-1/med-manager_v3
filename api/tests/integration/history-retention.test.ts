@@ -239,9 +239,7 @@ describe("History retention enforcement — caregiver month", () => {
     const url = `http://localhost/api/patients/patient-1/history/month?year=${year}&month=${month}`;
     const req = new Request(url, { method: "GET", headers: caregiverHeaders() });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/month/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/month/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-1" })
     });
@@ -260,9 +258,7 @@ describe("History retention enforcement — caregiver month", () => {
     const url = `http://localhost/api/patients/patient-1/history/month?year=${year}&month=${month}`;
     const req = new Request(url, { method: "GET", headers: caregiverHeaders() });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/month/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/month/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-1" })
     });
@@ -278,9 +274,7 @@ describe("History retention enforcement — caregiver month", () => {
     const url = `http://localhost/api/patients/patient-1/history/month?year=${year}&month=${month}`;
     const req = new Request(url, { method: "GET", headers: caregiverHeaders() });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/month/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/month/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-1" })
     });
@@ -300,9 +294,7 @@ describe("History retention enforcement — caregiver day", () => {
     const url = `http://localhost/api/patients/patient-1/history/day?date=${dateStr}`;
     const req = new Request(url, { method: "GET", headers: caregiverHeaders() });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/day/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/day/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-1" })
     });
@@ -320,9 +312,7 @@ describe("History retention enforcement — caregiver day", () => {
     const url = `http://localhost/api/patients/patient-1/history/day?date=${dateStr}`;
     const req = new Request(url, { method: "GET", headers: caregiverHeaders() });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/day/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/day/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-1" })
     });
@@ -336,9 +326,7 @@ describe("History retention enforcement — caregiver day", () => {
     const url = `http://localhost/api/patients/patient-1/history/day?date=${todayStr}`;
     const req = new Request(url, { method: "GET", headers: caregiverHeaders() });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/day/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/day/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-1" })
     });
@@ -420,9 +408,7 @@ describe("History retention — auth preserved", () => {
     const url = "http://localhost/api/patients/patient-1/history/month?year=2026&month=1";
     const req = new Request(url, { method: "GET" });
 
-    const { GET } = await import(
-      "../../app/api/patients/[patientId]/history/month/route"
-    );
+    const { GET } = await import("../../app/api/patients/[patientId]/history/month/route");
     const res = await GET(req, {
       params: Promise.resolve({ patientId: "patient-1" })
     });

@@ -1,7 +1,6 @@
 export const metadata = {
   title: "メール確認完了 | お薬見守りアプリ",
-  description:
-    "お薬見守りアプリの家族アカウント登録メール確認が完了したことを案内するページです。"
+  description: "お薬見守りアプリの家族アカウント登録メール確認が完了したことを案内するページです。"
 };
 
 const steps = [
