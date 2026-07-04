@@ -26,12 +26,20 @@ protocol FCMTokenProvider: Sendable {
     func token() async throws -> String
 }
 
+/// Push-device API surface used by the settings ViewModel.
+protocol PushDeviceAPIClient: Sendable {
+    func registerPushDevice(token: String, platform: String, environment: String) async throws
+    func unregisterPushDevice(token: String) async throws
+}
+
 /// Sendable wrapper around Messaging for FCM token retrieval.
 struct MessagingTokenProvider: FCMTokenProvider {
     func token() async throws -> String {
         try await Messaging.messaging().token()
     }
 }
+
+extension APIClient: PushDeviceAPIClient {}
 
 @MainActor
 final class CaregiverPushSettingsViewModel: ObservableObject {
@@ -44,18 +52,21 @@ final class CaregiverPushSettingsViewModel: ObservableObject {
     private let userDefaults: UserDefaults
     private let notificationCenter: NotificationAuthorizationProvider
     private let tokenProvider: FCMTokenProvider
-    private let apiClientFactory: @MainActor @Sendable () -> APIClient
+    private let apiClientFactory: @MainActor @Sendable () -> any PushDeviceAPIClient
+    private let retryDelayNanoseconds: UInt64
 
     init(
         userDefaults: UserDefaults = .standard,
         notificationCenter: NotificationAuthorizationProvider = UNUserNotificationCenter.current(),
         tokenProvider: FCMTokenProvider = MessagingTokenProvider(),
-        apiClientFactory: @MainActor @escaping @Sendable () -> APIClient
+        apiClientFactory: @MainActor @escaping @Sendable () -> any PushDeviceAPIClient,
+        retryDelayNanoseconds: UInt64 = 750_000_000
     ) {
         self.userDefaults = userDefaults
         self.notificationCenter = notificationCenter
         self.tokenProvider = tokenProvider
         self.apiClientFactory = apiClientFactory
+        self.retryDelayNanoseconds = retryDelayNanoseconds
         self.isPushEnabled = userDefaults.bool(forKey: Self.persistKey)
     }
 
@@ -143,7 +154,7 @@ final class CaregiverPushSettingsViewModel: ObservableObject {
             } catch {
                 lastError = error
                 if attempt < 3 {
-                    try await Task.sleep(nanoseconds: 750_000_000)
+                    try await Task.sleep(nanoseconds: retryDelayNanoseconds)
                 }
             }
         }

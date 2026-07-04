@@ -245,6 +245,26 @@ describe("notifyCaregiversOfDoseTaken — send trigger", () => {
     expect(sendFcmMessageMock).toHaveBeenCalledTimes(1);
     expect(sendFcmMessageMock.mock.calls[0][0]).toBe("fcm-token-c");
   });
+
+  it("sends no push when the recording caregiver is the only linked caregiver", async () => {
+    const { notifyCaregiversOfDoseTaken } =
+      await import("../../src/services/pushNotificationService");
+
+    await notifyCaregiversOfDoseTaken({
+      patientId: "patient-1",
+      displayName: "太郎",
+      date: "2026-02-11",
+      slot: "morning",
+      doseEventId: "dose-event-uuid-only-caregiver",
+      excludeCaregiverId: "caregiver-1",
+      withinTime: true,
+      isPrn: false
+    });
+
+    expect(listEnabledPushDevicesForCaregiversMock).not.toHaveBeenCalled();
+    expect(tryInsertDeliveryMock).not.toHaveBeenCalled();
+    expect(sendFcmMessageMock).not.toHaveBeenCalled();
+  });
 });
 
 // ---------------------------------------------------------------------------

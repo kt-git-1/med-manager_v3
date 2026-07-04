@@ -1,134 +1,209 @@
 import XCTest
+import UserNotifications
 @testable import MedicationApp
 
-// ---------------------------------------------------------------------------
-// T007: Unit tests for CaregiverPushSettingsViewModel
-//
-// Validates toggle ON/OFF flows, permission handling, overlay state,
-// persisted state, and error handling.
-// Tests will fail until Phase 3 implements CaregiverPushSettingsViewModel.
-// ---------------------------------------------------------------------------
-
-@MainActor
 final class CaregiverPushSettingsTests: XCTestCase {
+    private let suiteName = "CaregiverPushSettingsTests"
+    private var userDefaults: UserDefaults!
 
-    // MARK: - Initial State
-
-    func testInitialStateIsPushDisabledAndNotUpdating() throws {
-        throw XCTSkip("CaregiverPushSettingsViewModel not yet implemented (Phase 3 T029).")
-        // Given: Fresh ViewModel with no persisted state
-        // When: Initialized
-        // Then: isPushEnabled == false, isUpdating == false
-        //
-        // let vm = CaregiverPushSettingsViewModel()
-        // XCTAssertFalse(vm.isPushEnabled)
-        // XCTAssertFalse(vm.isUpdating)
+    override func setUp() {
+        super.setUp()
+        userDefaults = UserDefaults(suiteName: suiteName)
+        userDefaults.removePersistentDomain(forName: suiteName)
     }
 
-    // MARK: - Toggle ON
-
-    func testToggleOnRequestsPermissionThenRegisters() throws {
-        throw XCTSkip("CaregiverPushSettingsViewModel not yet implemented (Phase 3 T029).")
-        // Given: isPushEnabled == false
-        // When: Toggle ON triggered
-        // Then:
-        //   1. isUpdating becomes true
-        //   2. Notification permission requested (mock grant)
-        //   3. FCM token obtained (mock "test-token")
-        //   4. registerPushDevice called with token, platform "ios", environment
-        //   5. On success: isPushEnabled == true, isUpdating == false
-        //
-        // let vm = CaregiverPushSettingsViewModel(
-        //     notificationCenter: MockNotificationCenter(authorizationResult: true),
-        //     tokenProvider: MockTokenProvider(token: "test-token"),
-        //     apiClient: MockAPIClient()
-        // )
-        // await vm.togglePush(enabled: true)
-        // XCTAssertTrue(vm.isPushEnabled)
-        // XCTAssertFalse(vm.isUpdating)
+    override func tearDown() {
+        userDefaults.removePersistentDomain(forName: suiteName)
+        userDefaults = nil
+        super.tearDown()
     }
 
-    // MARK: - Toggle OFF
+    @MainActor
+    func testInitialStateIsPushDisabledAndNotUpdating() {
+        let vm = makeViewModel()
 
-    func testToggleOffUnregistersDevice() throws {
-        throw XCTSkip("CaregiverPushSettingsViewModel not yet implemented (Phase 3 T029).")
-        // Given: isPushEnabled == true (previously registered)
-        // When: Toggle OFF triggered
-        // Then:
-        //   1. isUpdating becomes true
-        //   2. unregisterPushDevice called with token
-        //   3. On success: isPushEnabled == false, isUpdating == false
-        //
-        // let vm = CaregiverPushSettingsViewModel(
-        //     notificationCenter: MockNotificationCenter(authorizationResult: true),
-        //     tokenProvider: MockTokenProvider(token: "test-token"),
-        //     apiClient: MockAPIClient()
-        // )
-        // // Pre-enable
-        // await vm.togglePush(enabled: true)
-        // XCTAssertTrue(vm.isPushEnabled)
-        //
-        // // Now toggle off
-        // await vm.togglePush(enabled: false)
-        // XCTAssertFalse(vm.isPushEnabled)
-        // XCTAssertFalse(vm.isUpdating)
+        XCTAssertFalse(vm.isPushEnabled)
+        XCTAssertFalse(vm.isUpdating)
+        XCTAssertNil(vm.errorMessage)
     }
 
-    // MARK: - Permission Denied
+    @MainActor
+    func testToggleOnRequestsPermissionRetriesTokenThenRegisters() async {
+        let notificationCenter = MockNotificationAuthorizationProvider(granted: true)
+        let tokenProvider = MockFCMTokenProvider(results: [
+            .failure(MockPushError.transientTokenFailure),
+            .success("fcm-token-after-retry")
+        ])
+        let apiClient = MockPushDeviceAPIClient()
+        let vm = makeViewModel(
+            notificationCenter: notificationCenter,
+            tokenProvider: tokenProvider,
+            apiClient: apiClient
+        )
 
-    func testPermissionDeniedKeepsPushDisabledWithError() throws {
-        throw XCTSkip("CaregiverPushSettingsViewModel not yet implemented (Phase 3 T029).")
-        // Given: isPushEnabled == false
-        // When: Toggle ON triggered, but notification permission denied
-        // Then:
-        //   isPushEnabled stays false
-        //   errorMessage is set (permission denied message)
-        //   isUpdating == false
-        //
-        // let vm = CaregiverPushSettingsViewModel(
-        //     notificationCenter: MockNotificationCenter(authorizationResult: false),
-        //     tokenProvider: MockTokenProvider(token: "test-token"),
-        //     apiClient: MockAPIClient()
-        // )
-        // await vm.togglePush(enabled: true)
-        // XCTAssertFalse(vm.isPushEnabled)
-        // XCTAssertNotNil(vm.errorMessage)
-        // XCTAssertFalse(vm.isUpdating)
+        await vm.togglePush(enabled: true)
+
+        XCTAssertTrue(vm.isPushEnabled)
+        XCTAssertFalse(vm.isUpdating)
+        XCTAssertNil(vm.errorMessage)
+        XCTAssertEqual(notificationCenter.requestCount, 1)
+        XCTAssertEqual(tokenProvider.requestCount, 2)
+        XCTAssertEqual(userDefaults.bool(forKey: CaregiverPushSettingsViewModel.persistKey), true)
+        XCTAssertEqual(apiClient.registerCalls, [
+            MockPushDeviceAPIClient.RegisterCall(
+                token: "fcm-token-after-retry",
+                platform: "ios",
+                environment: DeviceTokenManager.pushEnvironment
+            )
+        ])
+        XCTAssertTrue(apiClient.unregisterTokens.isEmpty)
     }
 
-    // MARK: - Network Error
+    @MainActor
+    func testToggleOffUnregistersDeviceAndClearsPersistedState() async {
+        userDefaults.set(true, forKey: CaregiverPushSettingsViewModel.persistKey)
+        let tokenProvider = MockFCMTokenProvider(results: [.success("fcm-token-1")])
+        let apiClient = MockPushDeviceAPIClient()
+        let vm = makeViewModel(tokenProvider: tokenProvider, apiClient: apiClient)
 
-    func testNetworkErrorDuringRegisterKeepsPushDisabled() throws {
-        throw XCTSkip("CaregiverPushSettingsViewModel not yet implemented (Phase 3 T029).")
-        // Given: isPushEnabled == false
-        // When: Toggle ON triggered, permission granted, but API call fails
-        // Then:
-        //   isPushEnabled stays false
-        //   isUpdating == false
-        //   errorMessage is set (network error message)
-        //
-        // let vm = CaregiverPushSettingsViewModel(
-        //     notificationCenter: MockNotificationCenter(authorizationResult: true),
-        //     tokenProvider: MockTokenProvider(token: "test-token"),
-        //     apiClient: MockAPIClient(shouldFail: true)
-        // )
-        // await vm.togglePush(enabled: true)
-        // XCTAssertFalse(vm.isPushEnabled)
-        // XCTAssertNotNil(vm.errorMessage)
-        // XCTAssertFalse(vm.isUpdating)
+        XCTAssertTrue(vm.isPushEnabled)
+
+        await vm.togglePush(enabled: false)
+
+        XCTAssertFalse(vm.isPushEnabled)
+        XCTAssertFalse(vm.isUpdating)
+        XCTAssertNil(vm.errorMessage)
+        XCTAssertEqual(tokenProvider.requestCount, 1)
+        XCTAssertEqual(apiClient.unregisterTokens, ["fcm-token-1"])
+        XCTAssertFalse(userDefaults.bool(forKey: CaregiverPushSettingsViewModel.persistKey))
     }
 
-    // MARK: - Persisted State
+    @MainActor
+    func testPermissionDeniedKeepsPushDisabledAndDoesNotRequestToken() async {
+        let notificationCenter = MockNotificationAuthorizationProvider(granted: false)
+        let tokenProvider = MockFCMTokenProvider(results: [.success("unused-token")])
+        let apiClient = MockPushDeviceAPIClient()
+        let vm = makeViewModel(
+            notificationCenter: notificationCenter,
+            tokenProvider: tokenProvider,
+            apiClient: apiClient
+        )
 
-    func testPersistedStateRestoredOnInit() throws {
-        throw XCTSkip("CaregiverPushSettingsViewModel not yet implemented (Phase 3 T029).")
-        // Given: UserDefaults has push enabled = true for this caregiver
-        // When: ViewModel initialized
-        // Then: isPushEnabled == true (restored from persistence)
-        //
-        // UserDefaults.standard.set(true, forKey: "push.isEnabled")
-        // let vm = CaregiverPushSettingsViewModel()
-        // XCTAssertTrue(vm.isPushEnabled)
-        // UserDefaults.standard.removeObject(forKey: "push.isEnabled")
+        await vm.togglePush(enabled: true)
+
+        XCTAssertFalse(vm.isPushEnabled)
+        XCTAssertFalse(vm.isUpdating)
+        XCTAssertNotNil(vm.errorMessage)
+        XCTAssertEqual(notificationCenter.requestCount, 1)
+        XCTAssertEqual(tokenProvider.requestCount, 0)
+        XCTAssertTrue(apiClient.registerCalls.isEmpty)
+        XCTAssertFalse(userDefaults.bool(forKey: CaregiverPushSettingsViewModel.persistKey))
     }
+
+    @MainActor
+    func testRegisterErrorKeepsPushDisabledAndDoesNotPersistOnState() async {
+        let tokenProvider = MockFCMTokenProvider(results: [.success("fcm-token-1")])
+        let apiClient = MockPushDeviceAPIClient(registerError: MockPushError.apiFailure)
+        let vm = makeViewModel(tokenProvider: tokenProvider, apiClient: apiClient)
+
+        await vm.togglePush(enabled: true)
+
+        XCTAssertFalse(vm.isPushEnabled)
+        XCTAssertFalse(vm.isUpdating)
+        XCTAssertNotNil(vm.errorMessage)
+        XCTAssertEqual(apiClient.registerCalls.count, 1)
+        XCTAssertFalse(userDefaults.bool(forKey: CaregiverPushSettingsViewModel.persistKey))
+    }
+
+    @MainActor
+    func testPersistedStateRestoredOnInit() {
+        userDefaults.set(true, forKey: CaregiverPushSettingsViewModel.persistKey)
+
+        let vm = makeViewModel()
+
+        XCTAssertTrue(vm.isPushEnabled)
+        XCTAssertFalse(vm.isUpdating)
+    }
+
+    @MainActor
+    private func makeViewModel(
+        notificationCenter: MockNotificationAuthorizationProvider = MockNotificationAuthorizationProvider(granted: true),
+        tokenProvider: MockFCMTokenProvider = MockFCMTokenProvider(results: [.success("fcm-token-1")]),
+        apiClient: MockPushDeviceAPIClient = MockPushDeviceAPIClient()
+    ) -> CaregiverPushSettingsViewModel {
+        CaregiverPushSettingsViewModel(
+            userDefaults: userDefaults,
+            notificationCenter: notificationCenter,
+            tokenProvider: tokenProvider,
+            apiClientFactory: { apiClient },
+            retryDelayNanoseconds: 0
+        )
+    }
+}
+
+private final class MockNotificationAuthorizationProvider: NotificationAuthorizationProvider, @unchecked Sendable {
+    private let granted: Bool
+    private(set) var requestCount = 0
+
+    init(granted: Bool) {
+        self.granted = granted
+    }
+
+    func requestAuthorization(options: UNAuthorizationOptions) async throws -> Bool {
+        requestCount += 1
+        return granted
+    }
+}
+
+private final class MockFCMTokenProvider: FCMTokenProvider, @unchecked Sendable {
+    private var results: [Result<String, Error>]
+    private(set) var requestCount = 0
+
+    init(results: [Result<String, Error>]) {
+        self.results = results
+    }
+
+    func token() async throws -> String {
+        requestCount += 1
+        let result = results.isEmpty ? .failure(MockPushError.noMoreTokenResults) : results.removeFirst()
+        switch result {
+        case .success(let token):
+            return token
+        case .failure(let error):
+            throw error
+        }
+    }
+}
+
+private final class MockPushDeviceAPIClient: PushDeviceAPIClient, @unchecked Sendable {
+    struct RegisterCall: Equatable {
+        let token: String
+        let platform: String
+        let environment: String
+    }
+
+    private let registerError: Error?
+    private(set) var registerCalls: [RegisterCall] = []
+    private(set) var unregisterTokens: [String] = []
+
+    init(registerError: Error? = nil) {
+        self.registerError = registerError
+    }
+
+    func registerPushDevice(token: String, platform: String, environment: String) async throws {
+        registerCalls.append(RegisterCall(token: token, platform: platform, environment: environment))
+        if let registerError {
+            throw registerError
+        }
+    }
+
+    func unregisterPushDevice(token: String) async throws {
+        unregisterTokens.append(token)
+    }
+}
+
+private enum MockPushError: Error {
+    case transientTokenFailure
+    case apiFailure
+    case noMoreTokenResults
 }

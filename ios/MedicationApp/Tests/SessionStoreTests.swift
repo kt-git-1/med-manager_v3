@@ -292,6 +292,7 @@ final class SessionStoreTests: XCTestCase {
         store.setCurrentPatientId("patient-current")
         store.shouldRedirectCaregiverToMedicationTab = true
         store.shouldNavigateToCaregiverLogin = true
+        userDefaults.set(true, forKey: CaregiverPushSettingsViewModel.persistKey)
 
         store.resetAfterAccountDeletion()
 
@@ -307,6 +308,7 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertNil(secureStorage.string(forKey: SessionStore.patientTokenStorageKey))
         XCTAssertNil(secureStorage.string(forKey: SessionStore.patientExpiresAtStorageKey))
         XCTAssertNil(userDefaults.string(forKey: SessionStore.lastModeStorageKey))
+        XCTAssertNil(userDefaults.object(forKey: CaregiverPushSettingsViewModel.persistKey))
 
         let restored = makeStore()
         XCTAssertNil(restored.mode)
@@ -325,6 +327,7 @@ final class SessionStoreTests: XCTestCase {
                 expiresIn: 3600
             )
         )
+        userDefaults.set(true, forKey: CaregiverPushSettingsViewModel.persistKey)
 
         store.clearCaregiverToken()
 
@@ -333,6 +336,7 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertNil(secureStorage.string(forKey: SessionStore.caregiverTokenStorageKey))
         XCTAssertNil(secureStorage.string(forKey: SessionStore.caregiverRefreshTokenStorageKey))
         XCTAssertNil(secureStorage.string(forKey: SessionStore.caregiverExpiresAtStorageKey))
+        XCTAssertNil(userDefaults.object(forKey: CaregiverPushSettingsViewModel.persistKey))
     }
 
     func testLegacyUserDefaultsTokensMigrateToSecureStorage() {
