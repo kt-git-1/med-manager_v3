@@ -41,12 +41,16 @@
 "legal.support.message" = "問い合わせとトラブル対応を確認できます";
 
 /* Mode select */
+"mode.select.appName" = "お薬見守り";
 "mode.select.title" = "どちらで\n使いますか？";
 "mode.select.subtitle" = "";
+"mode.select.start" = "このモードで始める";
 "mode.select.caregiver" = "家族として使う";
 "mode.select.caregiver.subtitle" = "薬と在庫を管理します";
+"mode.select.caregiver.detail" = "家族モード";
 "mode.select.patient" = "本人として使う";
 "mode.select.patient.subtitle" = "今日のお薬を確認します";
+"mode.select.patient.detail" = "本人モード";
 
 /* Mode tutorial */
 "tutorial.skip" = "スキップ";

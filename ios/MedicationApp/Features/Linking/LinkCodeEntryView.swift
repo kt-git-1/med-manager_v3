@@ -7,6 +7,13 @@ struct LinkCodeEntryView: View {
     @State private var isLoading = false
 
     private let linkingService: LinkingService
+    private var normalizedCode: String {
+        code.filter(\.isNumber)
+    }
+
+    private var isCodeReady: Bool {
+        normalizedCode.count == 6
+    }
 
     init(sessionStore: SessionStore? = nil) {
         let store = sessionStore ?? SessionStore()
@@ -72,8 +79,8 @@ struct LinkCodeEntryView: View {
                                 .background(PatientUI.teal, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                             }
                             .buttonStyle(.plain)
-                            .disabled(isLoading || code.isEmpty)
-                            .opacity(code.isEmpty ? 0.55 : 1)
+                            .disabled(isLoading || !isCodeReady)
+                            .opacity(isCodeReady ? 1 : 0.55)
                             .accessibilityLabel(NSLocalizedString("a11y.linkCode.submit", comment: "Submit link code"))
                         }
                     }
@@ -101,6 +108,15 @@ struct LinkCodeEntryView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onChange(of: code) { _, newValue in
+            let sanitized = String(newValue.filter(\.isNumber).prefix(6))
+            if sanitized != newValue {
+                code = sanitized
+            }
+            if errorMessage != nil {
+                errorMessage = nil
+            }
+        }
         .accessibilityIdentifier("LinkCodeEntryView")
     }
 
@@ -120,10 +136,14 @@ struct LinkCodeEntryView: View {
 
     @MainActor
     private func link() async {
+        guard isCodeReady else {
+            errorMessage = NSLocalizedString("link.code.error.invalid", comment: "Invalid code")
+            return
+        }
         isLoading = true
         defer { isLoading = false }
         do {
-            let token = try await linkingService.link(code: code)
+            let token = try await linkingService.link(code: normalizedCode)
             sessionStore.savePatientToken(token)
             code = ""
         } catch {

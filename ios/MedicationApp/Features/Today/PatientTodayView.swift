@@ -51,6 +51,7 @@ private struct PatientTodayRootView: View {
     var body: some View {
         PatientTodayBaseView(
             viewModel: viewModel,
+            suppressErrorState: sessionStore.isPatientTutorialPreviewActive,
             pendingScrollTarget: $pendingScrollTarget,
             slotSections: slotSections,
             missedItems: missedItems,
@@ -276,6 +277,7 @@ private struct PatientTodayRootView: View {
 
 private struct PatientTodayBaseView: View {
     @ObservedObject var viewModel: PatientTodayViewModel
+    let suppressErrorState: Bool
     @Binding var pendingScrollTarget: String?
     let slotSections: [SlotSection]
     let missedItems: [ScheduleDoseDTO]
@@ -316,7 +318,7 @@ private struct PatientTodayBaseView: View {
         Group {
             if viewModel.isLoading {
                 LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
-            } else if let errorMessage = viewModel.errorMessage {
+            } else if let errorMessage = viewModel.errorMessage, !suppressErrorState {
                 ErrorStateView(message: errorMessage)
             } else if !hasScheduledContent {
                 EmptyStateView(

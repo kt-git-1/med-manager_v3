@@ -27,6 +27,10 @@ struct CaregiverSignupView: View {
         resendCooldownRemainingSeconds > 0
     }
 
+    private var isEmailFormatValid: Bool {
+        Self.isValidEmail(trimmedEmail)
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -167,6 +171,9 @@ struct CaregiverSignupView: View {
             guard resendCooldownRemainingSeconds > 0 else { return }
             resendCooldownRemainingSeconds -= 1
         }
+        .onChange(of: email) { _, _ in clearTransientMessages() }
+        .onChange(of: password) { _, _ in clearTransientMessages() }
+        .onChange(of: passwordConfirmation) { _, _ in clearTransientMessages() }
         .accessibilityIdentifier("CaregiverSignupView")
     }
 
@@ -177,7 +184,7 @@ struct CaregiverSignupView: View {
         canResendConfirmationEmail = false
         resendCooldownRemainingSeconds = 0
 
-        guard trimmedEmail.contains("@"), trimmedEmail.contains(".") else {
+        guard isEmailFormatValid else {
             errorMessage = NSLocalizedString("auth.error.invalidEmail", comment: "Invalid email")
             return
         }
@@ -219,7 +226,7 @@ struct CaregiverSignupView: View {
 
         guard !isResendCooldownActive else { return }
 
-        guard trimmedEmail.contains("@"), trimmedEmail.contains(".") else {
+        guard isEmailFormatValid else {
             errorMessage = NSLocalizedString("auth.error.invalidEmail", comment: "Invalid email")
             return
         }
@@ -251,6 +258,20 @@ struct CaregiverSignupView: View {
 
     private func startResendCooldown() {
         resendCooldownRemainingSeconds = resendCooldownSeconds
+    }
+
+    private func clearTransientMessages() {
+        if errorMessage != nil {
+            errorMessage = nil
+        }
+        if infoMessage != nil {
+            infoMessage = nil
+        }
+    }
+
+    private static func isValidEmail(_ value: String) -> Bool {
+        let pattern = #"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$"#
+        return value.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil
     }
 }
 

@@ -1,3 +1,4 @@
+import SafariServices
 import SwiftUI
 
 struct PatientReadOnlyView: View {
@@ -739,13 +740,14 @@ private struct PatientTutorialSampleView: View {
 
 struct PatientSettingsView: View {
     @EnvironmentObject private var globalBannerPresenter: GlobalBannerPresenter
-    @Environment(\.openURL) private var openURL
     private let sessionStore: SessionStore
     private let apiClient: APIClient
     @ObservedObject private var schedulingCoordinator: SchedulingRefreshCoordinator
     @StateObject private var permissionManager = NotificationPermissionManager()
     @ObservedObject private var preferencesStore: NotificationPreferencesStore
     @State private var showingLogoutConfirm = false
+    @State private var selectedLegalURL: URL?
+    @State private var showingLegalWebView = false
     let onLogout: () -> Void
 
     init(
@@ -813,7 +815,7 @@ struct PatientSettingsView: View {
                         )
 
                         Button {
-                            openURL(AppConstants.privacyPolicyURL)
+                            presentLegalURL(AppConstants.privacyPolicyURL)
                         } label: {
                             settingsNavigationRow(
                                 title: NSLocalizedString("legal.privacy.title", comment: "Privacy policy title"),
@@ -825,7 +827,7 @@ struct PatientSettingsView: View {
                         .buttonStyle(.plain)
 
                         Button {
-                            openURL(AppConstants.termsURL)
+                            presentLegalURL(AppConstants.termsURL)
                         } label: {
                             settingsNavigationRow(
                                 title: NSLocalizedString("legal.terms.title", comment: "Terms title"),
@@ -837,7 +839,7 @@ struct PatientSettingsView: View {
                         .buttonStyle(.plain)
 
                         Button {
-                            openURL(AppConstants.supportURL)
+                            presentLegalURL(AppConstants.supportURL)
                         } label: {
                             settingsNavigationRow(
                                 title: NSLocalizedString("legal.support.title", comment: "Support title"),
@@ -899,6 +901,11 @@ struct PatientSettingsView: View {
         }
         .onAppear {
             Task { await permissionManager.refreshStatus() }
+        }
+        .sheet(isPresented: $showingLegalWebView) {
+            if let selectedLegalURL {
+                SafariSheet(url: selectedLegalURL)
+            }
         }
         .accessibilityIdentifier("PatientSettingsView")
     }
@@ -1014,6 +1021,21 @@ struct PatientSettingsView: View {
             trigger: .settingsChange
         )
     }
+
+    private func presentLegalURL(_ url: URL) {
+        selectedLegalURL = url
+        showingLegalWebView = true
+    }
+}
+
+private struct SafariSheet: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        SFSafariViewController(url: url)
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
 }
 
 enum PatientTab: Hashable {

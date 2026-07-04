@@ -2,102 +2,151 @@ import SwiftUI
 
 struct ModeSelectView: View {
     @EnvironmentObject private var sessionStore: SessionStore
+    private let patientTint = Color(red: 0.0, green: 0.55, blue: 0.50)
+    private let caregiverTint = Color(red: 0.94, green: 0.42, blue: 0.0)
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                header
-                    .padding(.top, 50)
+        ZStack {
+            ModeSelectBackground()
 
-                VStack(spacing: 18) {
-                    modeCard(
-                        illustration: .patient,
-                        title: NSLocalizedString("mode.select.patient", comment: "Patient mode"),
-                        subtitle: NSLocalizedString("mode.select.patient.subtitle", comment: "Patient subtitle"),
-                        tint: Color(red: 0.0, green: 0.55, blue: 0.50)
-                    ) {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            sessionStore.setMode(.patient)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    header
+                        .padding(.top, 52)
+
+                    VStack(spacing: 14) {
+                        modeCard(
+                            illustration: .patient,
+                            title: NSLocalizedString("mode.select.patient", comment: "Patient mode"),
+                            subtitle: NSLocalizedString("mode.select.patient.subtitle", comment: "Patient subtitle"),
+                            detail: NSLocalizedString("mode.select.patient.detail", comment: "Patient detail"),
+                            symbol: "checkmark.seal.fill",
+                            tint: patientTint
+                        ) {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                sessionStore.setMode(.patient)
+                            }
+                        }
+
+                        modeCard(
+                            illustration: .family,
+                            title: NSLocalizedString("mode.select.caregiver", comment: "Caregiver mode"),
+                            subtitle: NSLocalizedString("mode.select.caregiver.subtitle", comment: "Caregiver subtitle"),
+                            detail: NSLocalizedString("mode.select.caregiver.detail", comment: "Caregiver detail"),
+                            symbol: "person.2.fill",
+                            tint: caregiverTint
+                        ) {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                sessionStore.setMode(.caregiver)
+                            }
                         }
                     }
-
-                    modeCard(
-                        illustration: .family,
-                        title: NSLocalizedString("mode.select.caregiver", comment: "Caregiver mode"),
-                        subtitle: NSLocalizedString("mode.select.caregiver.subtitle", comment: "Caregiver subtitle"),
-                        tint: Color.orange
-                    ) {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            sessionStore.setMode(.caregiver)
-                        }
-                    }
+                    .padding(.bottom, 34)
                 }
-                .padding(.horizontal, 14)
-                .padding(.bottom, 40)
+                .padding(.horizontal, 22)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white)
     }
 
     private var header: some View {
-        VStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                Image(systemName: "pills.fill")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(patientTint)
+                    .frame(width: 28, height: 28)
+                    .background(patientTint.opacity(0.12), in: Circle())
+
+                Text(NSLocalizedString("mode.select.appName", comment: "App name"))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+
             Text(NSLocalizedString("mode.select.title", comment: "Mode selection title"))
-                .font(.system(size: 42, weight: .bold, design: .rounded))
+                .font(.system(size: 38, weight: .bold, design: .rounded))
                 .foregroundStyle(.primary)
-                .multilineTextAlignment(.center)
-                .lineSpacing(5)
+                .multilineTextAlignment(.leading)
+                .lineSpacing(3)
                 .lineLimit(2)
                 .minimumScaleFactor(0.82)
         }
-        .padding(.horizontal, 28)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func modeCard(
         illustration: RoleIllustration,
         title: String,
         subtitle: String,
+        detail: String,
+        symbol: String,
         tint: Color,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(alignment: .center, spacing: 10) {
-                RoleIllustrationView(kind: illustration, tint: tint)
-                    .frame(width: 132, height: 132)
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .top, spacing: 16) {
+                    RoleIllustrationView(kind: illustration, tint: tint)
+                        .frame(width: 112, height: 112)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(title)
-                        .font(.title2.weight(.bold))
-                        .foregroundStyle(tint)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.88)
-                    Text(subtitle)
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.70)
-                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label {
+                            Text(detail)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(tint)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                        } icon: {
+                            Image(systemName: symbol)
+                                .font(.caption.weight(.bold))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(tint.opacity(0.10), in: Capsule())
+
+                        Text(title)
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .foregroundStyle(.primary)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.82)
+
+                        Text(subtitle)
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.78)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(.trailing, 38)
+
+                HStack {
+                    Text(NSLocalizedString("mode.select.start", comment: "Start"))
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(tint)
+
+                    Spacer()
+
+                    Image(systemName: "arrow.right")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 38, height: 38)
+                        .background(tint, in: Circle())
+                        .shadow(color: tint.opacity(0.25), radius: 12, x: 0, y: 6)
+                }
             }
-            .padding(.vertical, 16)
-            .padding(.leading, 14)
-            .padding(.trailing, 12)
+            .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(minHeight: 186)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(alignment: .trailing) {
-                Image(systemName: "chevron.right")
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(tint)
-                    .frame(width: 34, height: 34)
-                    .background(tint.opacity(0.10), in: Circle())
-                    .padding(.trailing, 12)
-            }
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(tint.opacity(0.72), lineWidth: 1.2)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color(.secondarySystemBackground))
+                    .shadow(color: tint.opacity(0.14), radius: 18, x: 0, y: 10)
+                    .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 3)
             )
+            .overlay(alignment: .topTrailing) {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(tint.opacity(0.16), lineWidth: 1)
+            }
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
@@ -124,18 +173,39 @@ private struct RoleIllustrationView: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(tint.opacity(0.09))
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [tint.opacity(0.14), tint.opacity(0.06)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
 
             Image(kind.assetName)
                 .resizable()
                 .scaledToFill()
-                .padding(kind == .patient ? 6 : 1)
-                .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+                .padding(kind == .patient ? 7 : 2)
+                .clipShape(RoundedRectangle(cornerRadius: 21, style: .continuous))
         }
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(tint.opacity(0.20), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(tint.opacity(0.18), lineWidth: 1)
         )
+    }
+}
+
+private struct ModeSelectBackground: View {
+    var body: some View {
+        LinearGradient(
+            colors: [
+                Color(.systemBackground),
+                Color(red: 0.95, green: 0.98, blue: 0.99),
+                Color(.systemGroupedBackground)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .ignoresSafeArea()
     }
 }

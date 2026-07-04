@@ -66,6 +66,7 @@ final class SessionStore: ObservableObject {
             self.mode = storedMode
         }
 
+        applyUITestSessionOverridesIfNeeded()
         applyTutorialPreviewOverridesIfNeeded()
 
         if patientToken != nil {
@@ -113,6 +114,31 @@ final class SessionStore: ObservableObject {
         if patientToken == nil {
             patientToken = "tutorial-preview-patient-token"
         }
+    }
+
+    private func applyUITestSessionOverridesIfNeeded() {
+        #if DEBUG
+        let env = ProcessInfo.processInfo.environment
+        guard env["UITEST_SESSION_BOOTSTRAP"] == "1" else { return }
+
+        if let caregiverToken = env["UITEST_CAREGIVER_TOKEN"], !caregiverToken.isEmpty {
+            saveCaregiverToken(caregiverToken)
+        }
+        if let patientToken = env["UITEST_PATIENT_TOKEN"], !patientToken.isEmpty {
+            savePatientToken(patientToken)
+        }
+        if let currentPatientId = env["UITEST_CURRENT_PATIENT_ID"], !currentPatientId.isEmpty {
+            setCurrentPatientId(currentPatientId)
+        }
+
+        if env["UITEST_MARK_TUTORIALS_SEEN"] == "1" {
+            markModeTutorialSeen(for: .caregiver)
+            markModeTutorialSeen(for: .patient)
+        }
+        if let rawMode = env["UITEST_MODE"], let mode = AppMode(rawValue: rawMode) {
+            setMode(mode)
+        }
+        #endif
     }
 
     var isPatientTutorialPreviewActive: Bool {
