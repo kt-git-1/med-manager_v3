@@ -309,6 +309,12 @@ final class AuthService: Sendable {
             return NSLocalizedString("auth.error.invalidCredentials", comment: "Invalid credentials")
         }
 
+        if normalized.contains("sending confirmation email") ||
+            normalized.contains("send confirmation email") ||
+            normalized.contains("confirmation email") && normalized.contains("failed") {
+            return NSLocalizedString("auth.error.confirmationEmailFailed", comment: "Confirmation email failed")
+        }
+
         if normalized.contains("email not confirmed") ||
             normalized.contains("email_not_confirmed") ||
             normalized.contains("confirm") {

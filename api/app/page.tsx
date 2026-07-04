@@ -974,14 +974,15 @@ export default function Home() {
         }
 
         .app-hero-card div:first-of-type {
-          display: flex;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
           align-items: baseline;
-          justify-content: space-between;
-          gap: 10px;
+          column-gap: 6px;
         }
 
         .app-hero-card div:first-of-type strong {
           min-width: 0;
+          white-space: nowrap;
         }
 
         .app-hero-card strong {
@@ -1270,11 +1271,11 @@ export default function Home() {
         }
 
         .hero-phone .app-hero-card strong {
-          font-size: 23px;
+          font-size: 19px;
         }
 
         .hero-phone .app-hero-card em {
-          font-size: 16px;
+          font-size: 14px;
         }
 
         .main-demo {

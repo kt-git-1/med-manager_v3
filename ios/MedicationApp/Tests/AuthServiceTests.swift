@@ -118,6 +118,15 @@ final class AuthServiceTests: XCTestCase {
         XCTAssertEqual(message, "このメールアドレスはすでに登録されています。ログインしてください。")
     }
 
+    func testUserFacingAuthErrorMapsConfirmationEmailFailure() {
+        let message = AuthService.userFacingAuthErrorMessage(
+            statusCode: 500,
+            serverMessage: "Error sending confirmation email"
+        )
+
+        XCTAssertEqual(message, "確認メールを送信できませんでした。しばらくしてからもう一度お試しください。")
+    }
+
     func testUserFacingAuthErrorMapsNetworkUnavailable() {
         let message = AuthService.userFacingAuthErrorMessage(
             statusCode: 500,

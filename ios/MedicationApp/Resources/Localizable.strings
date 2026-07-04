@@ -11,6 +11,7 @@
 "auth.error.invalidCredentials" = "メールアドレスまたはパスワードが正しくありません。";
 "auth.error.checkCredentials" = "メールアドレスとパスワードを確認してください。";
 "auth.error.emailNotConfirmed" = "メール確認が完了していません。受信メールを確認してください。";
+"auth.error.confirmationEmailFailed" = "確認メールを送信できませんでした。しばらくしてからもう一度お試しください。";
 "auth.error.emailAlreadyRegistered" = "このメールアドレスはすでに登録されています。ログインしてください。";
 "auth.error.weakPassword" = "パスワードは6文字以上で入力してください。";
 "auth.error.passwordMismatch" = "確認用のパスワードが一致していません。";
