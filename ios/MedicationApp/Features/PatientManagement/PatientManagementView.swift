@@ -1,3 +1,4 @@
+import SafariServices
 import SwiftUI
 
 @MainActor
@@ -137,7 +138,6 @@ struct PatientManagementView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var globalBannerPresenter: GlobalBannerPresenter
     @EnvironmentObject private var toastPresenter: ToastPresenter
-    @Environment(\.openURL) private var openURL
     @StateObject private var viewModel: PatientManagementViewModel
     @StateObject private var preferencesStore = NotificationPreferencesStore()
     @StateObject private var schedulingCoordinator = SchedulingRefreshCoordinator()
@@ -145,6 +145,8 @@ struct PatientManagementView: View {
     @State private var deleteTarget: PatientDTO?
     @State private var showingLogoutConfirm = false
     @State private var showingAccountDeleteConfirm = false
+    @State private var selectedLegalURL: URL?
+    @State private var showingLegalWebView = false
     @State private var isDeletingAccount = false
     @State private var draftTimes: [NotificationSlot: Date] = [:]
     @State private var isSavingDetail = false
@@ -207,6 +209,11 @@ struct PatientManagementView: View {
                         deleteTarget = nil
                     }
                 )
+            }
+            .sheet(isPresented: $showingLegalWebView) {
+                if let selectedLegalURL {
+                    CaregiverLegalSafariSheet(url: selectedLegalURL)
+                }
             }
         .sheet(isPresented: $showingTimePresetSheet) {
             NavigationStack {
@@ -678,7 +685,7 @@ struct PatientManagementView: View {
                     systemImage: "hand.raised.fill",
                     tint: CaregiverUI.teal
                 ) {
-                    openURL(AppConstants.privacyPolicyURL)
+                    presentLegalURL(AppConstants.privacyPolicyURL)
                 }
 
                 settingsActionRow(
@@ -687,7 +694,7 @@ struct PatientManagementView: View {
                     systemImage: "doc.text.fill",
                     tint: CaregiverUI.blue
                 ) {
-                    openURL(AppConstants.termsURL)
+                    presentLegalURL(AppConstants.termsURL)
                 }
 
                 settingsActionRow(
@@ -696,10 +703,15 @@ struct PatientManagementView: View {
                     systemImage: "questionmark.circle.fill",
                     tint: CaregiverUI.orange
                 ) {
-                    openURL(AppConstants.supportURL)
+                    presentLegalURL(AppConstants.supportURL)
                 }
             }
         }
+    }
+
+    private func presentLegalURL(_ url: URL) {
+        selectedLegalURL = url
+        showingLegalWebView = true
     }
 
     private func deleteAccount() async {
@@ -1022,4 +1034,14 @@ struct PatientManagementView: View {
         toastPresenter.show(message, kind: kind)
     }
 
+}
+
+private struct CaregiverLegalSafariSheet: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        SFSafariViewController(url: url)
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
 }
