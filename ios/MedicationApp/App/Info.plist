@@ -34,7 +34,7 @@
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>EMAIL_CONFIRMATION_REDIRECT_URL</key>
-	<string>https://okusuri-mimamori.com/auth/confirmed</string>
+	<string>https://www.okusuri-mimamori.com/auth/confirmed</string>
 	<key>SUPABASE_ANON_KEY</key>
 	<string>sb_publishable_7hGwwBAmU55gsNVbMw8IAg_KgS2GyaM</string>
 	<key>SUPABASE_URL</key>

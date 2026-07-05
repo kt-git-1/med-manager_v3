@@ -142,7 +142,6 @@ struct PatientManagementView: View {
     @StateObject private var preferencesStore = NotificationPreferencesStore()
     @StateObject private var schedulingCoordinator = SchedulingRefreshCoordinator()
     @State private var showingCreate = false
-    @State private var revokeTarget: PatientDTO?
     @State private var deleteTarget: PatientDTO?
     @State private var showingLogoutConfirm = false
     @State private var showingAccountDeleteConfirm = false
@@ -194,20 +193,6 @@ struct PatientManagementView: View {
             }
             .sheet(item: $viewModel.issuedCode) { code in
                 PatientLinkCodeView(code: code)
-            }
-            .sheet(item: $revokeTarget) { patient in
-                PatientRevokeView(
-                    patient: patient,
-                    onConfirm: {
-                        await viewModel.revokePatient(patientId: patient.id)
-                    },
-                    onSuccess: { message in
-                        globalBannerPresenter.show(message: message, duration: 2)
-                    },
-                    onCancel: {
-                        revokeTarget = nil
-                    }
-                )
             }
             .sheet(item: $deleteTarget) { patient in
                 PatientDeleteView(
@@ -485,32 +470,18 @@ struct PatientManagementView: View {
                         .foregroundStyle(Color.accentColor)
                         .clipShape(Capsule())
                 }
-                HStack(spacing: 12) {
-                    Button {
-                        Task { await viewModel.issueLinkingCode(patientId: selectedPatient.id) }
-                    } label: {
-                        Label(NSLocalizedString("caregiver.patients.issueCode", comment: "Issue code"), systemImage: "link.badge.plus")
-                            .font(.subheadline.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                            .background(Color.accentColor.opacity(0.12))
-                            .foregroundStyle(.tint)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    .buttonStyle(.plain)
-                    Button {
-                        revokeTarget = selectedPatient
-                    } label: {
-                        Label(NSLocalizedString("caregiver.patients.revoke", comment: "Revoke"), systemImage: "person.crop.circle.badge.minus")
-                            .font(.subheadline.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                            .background(Color.red.opacity(0.15))
-                            .foregroundStyle(.red)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    .buttonStyle(.plain)
+                Button {
+                    Task { await viewModel.issueLinkingCode(patientId: selectedPatient.id) }
+                } label: {
+                    Label(NSLocalizedString("caregiver.patients.issueCode", comment: "Issue code"), systemImage: "link.badge.plus")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(Color.accentColor.opacity(0.12))
+                        .foregroundStyle(.tint)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
+                .buttonStyle(.plain)
                 Button {
                     deleteTarget = selectedPatient
                 } label: {

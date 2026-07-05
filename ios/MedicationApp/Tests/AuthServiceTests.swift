@@ -53,7 +53,7 @@ final class AuthServiceTests: XCTestCase {
         let service = AuthService(
             supabaseURL: URL(string: "https://example.supabase.co")!,
             supabaseAnonKey: "anon-key",
-            emailConfirmationRedirectURL: URL(string: "https://okusuri-mimamori.com/auth/confirmed")!
+            emailConfirmationRedirectURL: URL(string: "https://www.okusuri-mimamori.com/auth/confirmed")!
         )
 
         let request = try service.makeSignupRequest(email: " user@example.com ", password: "password")
@@ -65,7 +65,7 @@ final class AuthServiceTests: XCTestCase {
         XCTAssertEqual(components?.path, "/auth/v1/signup")
         XCTAssertEqual(
             components?.queryItems,
-            [URLQueryItem(name: "redirect_to", value: "https://okusuri-mimamori.com/auth/confirmed")]
+            [URLQueryItem(name: "redirect_to", value: "https://www.okusuri-mimamori.com/auth/confirmed")]
         )
         XCTAssertEqual(payload?["email"], "user@example.com")
         XCTAssertEqual(payload?["password"], "password")
@@ -75,7 +75,7 @@ final class AuthServiceTests: XCTestCase {
         let service = AuthService(
             supabaseURL: URL(string: "https://example.supabase.co")!,
             supabaseAnonKey: "anon-key",
-            emailConfirmationRedirectURL: URL(string: "https://okusuri-mimamori.com/auth/confirmed")!
+            emailConfirmationRedirectURL: URL(string: "https://www.okusuri-mimamori.com/auth/confirmed")!
         )
 
         let request = try service.makeResendSignupConfirmationRequest(email: " user@example.com ")
@@ -88,7 +88,7 @@ final class AuthServiceTests: XCTestCase {
         XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-key")
         XCTAssertEqual(payload?["type"] as? String, "signup")
         XCTAssertEqual(payload?["email"] as? String, "user@example.com")
-        XCTAssertEqual(options?["email_redirect_to"], "https://okusuri-mimamori.com/auth/confirmed")
+        XCTAssertEqual(options?["email_redirect_to"], "https://www.okusuri-mimamori.com/auth/confirmed")
     }
 
     func testUserFacingAuthErrorMapsInvalidCredentials() {

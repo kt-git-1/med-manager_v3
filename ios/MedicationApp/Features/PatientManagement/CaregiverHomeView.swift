@@ -715,19 +715,12 @@ private struct CaregiverTutorialSampleView: View {
                     .foregroundStyle(CaregiverUI.teal)
                     .clipShape(Capsule())
             }
-            HStack(spacing: 12) {
-                sampleSettingsButton(
-                    title: NSLocalizedString("caregiver.patients.issueCode", comment: "Issue code"),
-                    systemImage: "link.badge.plus",
-                    tint: CaregiverUI.teal,
-                    isHighlighted: highlightIssueCode
-                )
-                sampleSettingsButton(
-                    title: NSLocalizedString("caregiver.patients.revoke", comment: "Revoke"),
-                    systemImage: "person.crop.circle.badge.minus",
-                    tint: CaregiverUI.red
-                )
-            }
+            sampleSettingsButton(
+                title: NSLocalizedString("caregiver.patients.issueCode", comment: "Issue code"),
+                systemImage: "link.badge.plus",
+                tint: CaregiverUI.teal,
+                isHighlighted: highlightIssueCode
+            )
             sampleSettingsButton(
                 title: NSLocalizedString("caregiver.patients.delete", comment: "Delete patient"),
                 systemImage: "trash",

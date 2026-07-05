@@ -91,4 +91,4 @@ HTML body:
 - CTA の `href="{{ .ConfirmationURL }}"` は Supabase の確認リンクとして必要です。
 - 本文中に `{{ .ConfirmationURL }}` を表示しないでください。Supabase のプレビューや一部の見え方で、テンプレート変数がそのままユーザーに見えることがあります。
 - 実務メールとしての互換性を優先し、主要レイアウトは `table` と inline style で組んでいます。
-- 確認後の遷移先は iOS 側の `EMAIL_CONFIRMATION_REDIRECT_URL` と同じ `https://okusuri-mimamori.com/auth/confirmed` を使います。
+- 確認後の遷移先は iOS 側の `EMAIL_CONFIRMATION_REDIRECT_URL` と同じ `https://www.okusuri-mimamori.com/auth/confirmed` を使います。
