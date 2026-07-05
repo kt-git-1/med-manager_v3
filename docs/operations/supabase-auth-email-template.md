@@ -25,9 +25,16 @@ HTML body:
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:560px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 12px 32px rgba(15,23,42,0.08);">
         <tr>
           <td bgcolor="#2563eb" style="padding:28px 28px 20px;background:#2563eb;background:linear-gradient(135deg,#2563eb 0%,#38bdf8 100%);color:#ffffff;">
-            <div style="font-size:14px;line-height:1.4;font-weight:700;letter-spacing:0.04em;opacity:0.95;">
-              お薬見守り
-            </div>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 12px;">
+              <tr>
+                <td width="54" valign="middle" style="width:54px;padding:0 12px 0 0;">
+                  <img src="https://www.okusuri-mimamori.com/brand-mark.png" width="54" height="54" alt="お薬見守り" style="display:block;width:54px;height:54px;border:0;border-radius:12px;background:#ffffff;">
+                </td>
+                <td valign="middle" style="font-size:14px;line-height:1.4;font-weight:700;letter-spacing:0.04em;color:#ffffff;opacity:0.95;">
+                  お薬見守り
+                </td>
+              </tr>
+            </table>
             <h1 style="margin:10px 0 0;font-size:24px;line-height:1.4;font-weight:800;">
               メールアドレス確認のお願い
             </h1>
@@ -89,6 +96,7 @@ HTML body:
 注意:
 
 - CTA の `href="{{ .ConfirmationURL }}"` は Supabase の確認リンクとして必要です。
+- ロゴ画像は `https://www.okusuri-mimamori.com/brand-mark.png` を参照します。メール送信前に本番サイトでこの画像が公開されていることを確認してください。
 - 本文中に `{{ .ConfirmationURL }}` を表示しないでください。Supabase のプレビューや一部の見え方で、テンプレート変数がそのままユーザーに見えることがあります。
 - 実務メールとしての互換性を優先し、主要レイアウトは `table` と inline style で組んでいます。
 - 確認後の遷移先は iOS 側の `EMAIL_CONFIRMATION_REDIRECT_URL` と同じ `https://www.okusuri-mimamori.com/auth/confirmed` を使います。
