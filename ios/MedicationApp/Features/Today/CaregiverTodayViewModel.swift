@@ -11,18 +11,13 @@ final class CaregiverTodayViewModel: ObservableObject {
     @Published var outOfStockMedicationIds: Set<String> = []
 
     private let apiClient: APIClient
-    private let preferencesStore: NotificationPreferencesStore
     private let dateFormatter: DateFormatter
     private let timeFormatter: DateFormatter
     private let calendar: Calendar
     var toastPresenter: ToastPresenter?
 
-    init(
-        apiClient: APIClient,
-        preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore()
-    ) {
+    init(apiClient: APIClient) {
         self.apiClient = apiClient
-        self.preferencesStore = preferencesStore
         self.dateFormatter = DateFormatter()
         self.dateFormatter.locale = AppConstants.japaneseLocale
         self.dateFormatter.dateStyle = .medium
@@ -47,8 +42,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                 isUpdating = false
             }
             do {
-                let slotTimeItems = preferencesStore.slotTimeQueryItems()
-                async let dosesTask = apiClient.fetchCaregiverToday(slotTimeItems: slotTimeItems)
+                async let dosesTask = apiClient.fetchCaregiverToday(slotTimeItems: [])
                 async let medicationsTask = apiClient.fetchMedications(patientId: nil)
                 async let inventoryTask = apiClient.fetchInventory()
                 let (doses, medications, inventory) = try await (dosesTask, medicationsTask, inventoryTask)

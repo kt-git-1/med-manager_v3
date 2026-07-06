@@ -16,18 +16,15 @@ final class HistoryViewModel: ObservableObject {
 
     private let apiClient: APIClient
     private let sessionStore: SessionStore
-    private let preferencesStore: NotificationPreferencesStore
     private var activeRequests = 0
     var toastPresenter: ToastPresenter?
 
     init(
         apiClient: APIClient,
-        sessionStore: SessionStore,
-        preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore()
+        sessionStore: SessionStore
     ) {
         self.apiClient = apiClient
         self.sessionStore = sessionStore
-        self.preferencesStore = preferencesStore
     }
 
     func loadMonth(year: Int, month: Int) {
@@ -50,8 +47,7 @@ final class HistoryViewModel: ObservableObject {
                 case .patient:
                     self.month = try await apiClient.fetchPatientHistoryMonth(year: year, month: month, slotTimeItems: [])
                 case .caregiver:
-                    let slotItems = preferencesStore.slotTimeQueryItems()
-                    self.month = try await apiClient.fetchCaregiverHistoryMonth(year: year, month: month, slotTimeItems: slotItems)
+                    self.month = try await apiClient.fetchCaregiverHistoryMonth(year: year, month: month, slotTimeItems: [])
                 case .none:
                     self.month = nil
                 }
@@ -92,8 +88,7 @@ final class HistoryViewModel: ObservableObject {
                 case .patient:
                     self.day = try await apiClient.fetchPatientHistoryDay(date: date, slotTimeItems: [])
                 case .caregiver:
-                    let slotItems = preferencesStore.slotTimeQueryItems()
-                    self.day = try await apiClient.fetchCaregiverHistoryDay(date: date, slotTimeItems: slotItems)
+                    self.day = try await apiClient.fetchCaregiverHistoryDay(date: date, slotTimeItems: [])
                 case .none:
                     self.day = nil
                 }

@@ -29,8 +29,7 @@ struct CaregiverTodayView: View {
         self.preferencesStore = preferencesStore
         _viewModel = StateObject(
             wrappedValue: CaregiverTodayViewModel(
-                apiClient: APIClient(baseURL: baseURL, sessionStore: store),
-                preferencesStore: preferencesStore
+                apiClient: APIClient(baseURL: baseURL, sessionStore: store)
             )
         )
     }
@@ -707,7 +706,7 @@ struct CaregiverTodayView: View {
     }
 
     private func slot(for dose: ScheduleDoseDTO) -> NotificationSlot? {
-        NotificationSlot.from(date: dose.scheduledAt, slotTimes: preferencesStore.slotTimesMap())
+        NotificationSlot.from(date: dose.scheduledAt)
     }
 
     private func configuredTimeText(for slot: NotificationSlot) -> String {

@@ -151,8 +151,7 @@ struct HistoryMonthView: View {
         _viewModel = StateObject(
             wrappedValue: HistoryViewModel(
                 apiClient: client,
-                sessionStore: store,
-                preferencesStore: preferencesStore
+                sessionStore: store
             )
         )
         _displayedMonth = State(initialValue: HistoryMonthView.startOfMonth(for: Date()))
