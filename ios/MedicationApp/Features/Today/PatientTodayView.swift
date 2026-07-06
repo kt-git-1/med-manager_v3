@@ -270,8 +270,45 @@ private struct PatientTodayRootView: View {
     private func handleDeepLinkIfNeeded() {
         guard let target = deepLinkTarget else { return }
         guard !viewModel.isLoading else { return }
-        pendingScrollTarget = viewModel.handleDeepLink(target)
+        if viewModel.handleDeepLink(target) != nil {
+            pendingScrollTarget = scrollTarget(for: target)
+        }
         deepLinkTarget = nil
+    }
+
+    private func scrollTarget(for target: NotificationDeepLinkTarget) -> String {
+        if nextSlotSection?.slot == target.slot {
+            return PatientTodayScrollTarget.nextSlot(target.slot)
+        }
+        return target.slot.rawValue
+    }
+
+    private var nextSlotSection: SlotSection? {
+        let candidates = slotSections.compactMap { section -> PatientTodayNextSlotSelector.Candidate? in
+            guard
+                let slot = section.slot,
+                let scheduledAt = section.items.map(\.scheduledAt).min(),
+                let summary = viewModel.slotSummaries[slot]
+            else {
+                return nil
+            }
+            return PatientTodayNextSlotSelector.Candidate(
+                slot: slot,
+                scheduledAt: scheduledAt,
+                remainingCount: summary.remainingCount,
+                isWithinRecordingWindow: summary.isWithinRecordingWindow
+            )
+        }
+        guard let nextSlot = PatientTodayNextSlotSelector.selectSlot(from: candidates) else {
+            return nil
+        }
+        return slotSections.first { $0.slot == nextSlot }
+    }
+}
+
+private enum PatientTodayScrollTarget {
+    static func nextSlot(_ slot: NotificationSlot) -> String {
+        "nextSlot-\(slot.rawValue)"
     }
 }
 
@@ -349,7 +386,7 @@ private struct PatientTodayBaseView: View {
                     .onChange(of: pendingScrollTarget) { _, target in
                         guard let target else { return }
                         withAnimation(.easeInOut) {
-                            proxy.scrollTo(target, anchor: .top)
+                            proxy.scrollTo(target, anchor: .center)
                         }
                         pendingScrollTarget = nil
                     }
@@ -625,6 +662,7 @@ private struct PatientTodayListView: View {
                     .accessibilityIdentifier("PatientTodayPrimaryBulkRecordButton")
                 }
             }
+            .id(PatientTodayScrollTarget.nextSlot(slot))
         } else {
             PatientCard(accent: PatientUI.teal) {
                 HStack(spacing: 16) {
