@@ -215,21 +215,30 @@ struct HistoryMonthView: View {
         .onAppear {
             viewModel.toastPresenter = toastPresenter
             syncPatientPreferences()
-            loadMonth()
+            if !clampDisplayedMonthIfNeeded(animated: false) {
+                loadMonth()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .presetTimesUpdated)) { _ in
             syncPatientPreferences()
-            loadMonth()
+            if !clampDisplayedMonthIfNeeded(animated: false) {
+                loadMonth()
+            }
             updateSelectionForDisplayedMonth()
             loadSelectedDay()
         }
         .onChange(of: sessionStore.currentPatientId) { _, _ in
             syncPatientPreferences()
-            loadMonth()
+            if !clampDisplayedMonthIfNeeded(animated: false) {
+                loadMonth()
+            }
             updateSelectionForDisplayedMonth()
             loadSelectedDay()
         }
         .onChange(of: displayedMonth) { _, _ in
+            if clampDisplayedMonthIfNeeded(animated: true) {
+                return
+            }
             loadMonth()
             updateSelectionForDisplayedMonth()
         }
@@ -241,7 +250,12 @@ struct HistoryMonthView: View {
             viewModel.loadDay(date: HistoryMonthView.dateKeyFormatter.string(from: date))
         }
         .onChange(of: viewModel.retentionLocked) { _, locked in
-            showRetentionLock = locked
+            if locked && isCaregiverMonthLimitedToCurrent {
+                showRetentionLock = false
+                _ = clampDisplayedMonthIfNeeded(animated: true)
+            } else {
+                showRetentionLock = locked
+            }
         }
         .fullScreenCover(isPresented: $showRetentionLock) {
             if let cutoffDate = viewModel.retentionCutoffDate {
@@ -308,15 +322,17 @@ struct HistoryMonthView: View {
 
     private var monthSelector: some View {
         HStack(spacing: 12) {
-            Button(action: showPreviousMonth) {
-                Image(systemName: "chevron.left")
-                    .font(.headline.weight(.bold))
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
+            if !isCaregiverMonthLimitedToCurrent {
+                Button(action: showPreviousMonth) {
+                    Image(systemName: "chevron.left")
+                        .font(.headline.weight(.bold))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(!canGoToPreviousMonth)
+                .accessibilityLabel(NSLocalizedString("history.month.previous", comment: "Previous month"))
             }
-            .buttonStyle(.plain)
-            .disabled(!canGoToPreviousMonth)
-            .accessibilityLabel(NSLocalizedString("history.month.previous", comment: "Previous month"))
 
             Spacer()
 
@@ -326,15 +342,17 @@ struct HistoryMonthView: View {
 
             Spacer()
 
-            Button(action: showNextMonth) {
-                Image(systemName: "chevron.right")
-                    .font(.headline.weight(.bold))
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
+            if !isCaregiverMonthLimitedToCurrent {
+                Button(action: showNextMonth) {
+                    Image(systemName: "chevron.right")
+                        .font(.headline.weight(.bold))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(!canGoToNextMonth)
+                .accessibilityLabel(NSLocalizedString("history.month.next", comment: "Next month"))
             }
-            .buttonStyle(.plain)
-            .disabled(!canGoToNextMonth)
-            .accessibilityLabel(NSLocalizedString("history.month.next", comment: "Next month"))
         }
     }
 
@@ -1126,6 +1144,10 @@ struct HistoryMonthView: View {
         HistoryMonthView.startOfMonth(for: Date())
     }
 
+    private var isCaregiverMonthLimitedToCurrent: Bool {
+        !isPatientMode && !AppConstants.billingEnabled
+    }
+
     private var minMonth: Date {
         // Allow navigating back up to 36 months. The backend enforces the actual
         // retention limit and the lock UI handles the restriction display.
@@ -1133,11 +1155,13 @@ struct HistoryMonthView: View {
     }
 
     private var canGoToPreviousMonth: Bool {
-        displayedMonth > minMonth
+        guard !isCaregiverMonthLimitedToCurrent else { return false }
+        return displayedMonth > minMonth
     }
 
     private var canGoToNextMonth: Bool {
-        displayedMonth < currentMonthStart
+        guard !isCaregiverMonthLimitedToCurrent else { return false }
+        return displayedMonth < currentMonthStart
     }
 
     private func showPreviousMonth() {
@@ -1161,9 +1185,30 @@ struct HistoryMonthView: View {
     }
 
     private func loadMonth() {
+        if clampDisplayedMonthIfNeeded(animated: false) {
+            return
+        }
         let components = Self.calendar.dateComponents([.year, .month], from: displayedMonth)
         guard let year = components.year, let month = components.month else { return }
         viewModel.loadMonth(year: year, month: month)
+    }
+
+    @discardableResult
+    private func clampDisplayedMonthIfNeeded(animated: Bool) -> Bool {
+        guard isCaregiverMonthLimitedToCurrent,
+              !Self.calendar.isDate(displayedMonth, equalTo: currentMonthStart, toGranularity: .month) else {
+            return false
+        }
+
+        let update = {
+            displayedMonth = currentMonthStart
+        }
+        if animated {
+            withAnimation(.easeInOut(duration: 0.25), update)
+        } else {
+            update()
+        }
+        return true
     }
 
     private func loadSelectedDay() {
@@ -1304,6 +1349,11 @@ struct HistoryMonthView: View {
 
         // Navigate to the month containing the target date
         let targetMonth = HistoryMonthView.startOfMonth(for: date)
+        if isCaregiverMonthLimitedToCurrent,
+           !Self.calendar.isDate(targetMonth, equalTo: currentMonthStart, toGranularity: .month) {
+            deepLinkTarget = nil
+            return
+        }
         if targetMonth != displayedMonth {
             withAnimation(.easeInOut(duration: 0.25)) {
                 displayedMonth = targetMonth

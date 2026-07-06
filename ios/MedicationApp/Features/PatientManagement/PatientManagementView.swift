@@ -69,6 +69,20 @@ final class PatientManagementViewModel: ObservableObject {
         }
     }
 
+    func refreshPatients() async -> Bool {
+        do {
+            let loadedPatients = try await apiClient.listPatients()
+            patientRevision += 1
+            patients = loadedPatients
+            if patients.count == 1, selectedPatientId == nil {
+                setSelectedPatientId(patients[0].id)
+            }
+            return true
+        } catch {
+            return false
+        }
+    }
+
     func createPatient(displayName: String) async -> Bool {
         isPatientLimitExceeded = false
         do {
@@ -154,6 +168,7 @@ struct PatientManagementView: View {
     @State private var isDeletingAccount = false
     @State private var draftTimes: [NotificationSlot: Date] = [:]
     @State private var isSavingDetail = false
+    @State private var isPreparingTimePreset = false
     @State private var showingTimePresetSheet = false
     @State private var shouldShowPostCreateCodeGuide = false
     @StateObject private var pushSettingsViewModel: CaregiverPushSettingsViewModel
@@ -261,6 +276,11 @@ struct PatientManagementView: View {
             applySelectedPatientSlotTimes()
             draftTimes = buildDraftTimes()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .presetTimesUpdated)) { _ in
+            Task {
+                await refreshTimePresetStateFromServer()
+            }
+        }
         .onChange(of: shouldOpenCreate.wrappedValue) { _, _ in
             openCreateIfRequested()
         }
@@ -270,7 +290,7 @@ struct PatientManagementView: View {
             draftTimes = buildDraftTimes()
         }
         .overlay {
-            if isSavingDetail || pushSettingsViewModel.isUpdating || isDeletingAccount {
+            if isSavingDetail || isPreparingTimePreset || pushSettingsViewModel.isUpdating || isDeletingAccount {
                 SchedulingRefreshOverlay()
             }
         }
@@ -537,8 +557,7 @@ struct PatientManagementView: View {
                         systemImage: "clock.fill",
                         tint: CaregiverUI.blue
                     ) {
-                        draftTimes = buildDraftTimes()
-                        showingTimePresetSheet = true
+                        openTimePresetSheet()
                     }
                 }
             }
@@ -891,6 +910,23 @@ struct PatientManagementView: View {
     private func applySelectedPatientSlotTimes() {
         guard let slotTimes = selectedPatient?.slotTimes else { return }
         applySlotTimes(slotTimes)
+    }
+
+    private func openTimePresetSheet() {
+        guard !isPreparingTimePreset else { return }
+        Task {
+            await refreshTimePresetStateFromServer()
+            showingTimePresetSheet = true
+        }
+    }
+
+    private func refreshTimePresetStateFromServer() async {
+        isPreparingTimePreset = true
+        defer { isPreparingTimePreset = false }
+        _ = await viewModel.refreshPatients()
+        preferencesStore.switchPatient(viewModel.selectedPatientId)
+        applySelectedPatientSlotTimes()
+        draftTimes = buildDraftTimes()
     }
 
     private func applySlotTimes(_ slotTimes: PatientSlotTimesDTO) {
