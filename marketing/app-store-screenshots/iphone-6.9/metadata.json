@@ -1,0 +1,19 @@
+{
+  "target": "App Store iPhone screenshots",
+  "device_family": "iPhone 6.9-inch compatible",
+  "size_px": [
+    1320,
+    2868
+  ],
+  "format": "PNG",
+  "count": 6,
+  "files": [
+    "marketing/app-store-screenshots/iphone-6.9/01_modes_overview.png",
+    "marketing/app-store-screenshots/iphone-6.9/02_one_tap_record.png",
+    "marketing/app-store-screenshots/iphone-6.9/03_medication_list.png",
+    "marketing/app-store-screenshots/iphone-6.9/04_inventory.png",
+    "marketing/app-store-screenshots/iphone-6.9/05_history.png",
+    "marketing/app-store-screenshots/iphone-6.9/06_patient_mode.png"
+  ],
+  "contact_sheet": "marketing/app-store-screenshots/iphone-6.9-contact-sheet.png"
+}
