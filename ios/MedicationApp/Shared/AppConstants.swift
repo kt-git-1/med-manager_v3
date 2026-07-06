@@ -32,9 +32,6 @@ enum AppConstants {
     static let termsURL = URL(string: "https://www.okusuri-mimamori.com/terms")!
     static let supportURL = URL(string: "https://www.okusuri-mimamori.com/support")!
 
-    /// Patient token refresh interval in seconds.
-    static let patientTokenRefreshInterval: TimeInterval = 600 // 10 minutes
-
     // MARK: - Notification
 
     /// Identifier prefix for scheduled local notifications.

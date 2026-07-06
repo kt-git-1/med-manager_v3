@@ -11,6 +11,7 @@ final class APIClient {
     }
 
     func request(path: String, method: String = "GET") async throws -> Data {
+        await refreshCaregiverAuthenticationIfNeeded()
         let url = baseURL.appendingPathComponent(path)
         var request = URLRequest(url: url)
         request.httpMethod = method
@@ -23,6 +24,7 @@ final class APIClient {
     }
 
     func listPatients() async throws -> [PatientDTO] {
+        await refreshCaregiverAuthenticationIfNeeded()
         let url = baseURL.appendingPathComponent("api/patients")
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
@@ -36,6 +38,7 @@ final class APIClient {
     }
 
     func createPatient(displayName: String) async throws -> PatientDTO {
+        await refreshCaregiverAuthenticationIfNeeded()
         let url = baseURL.appendingPathComponent("api/patients")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -52,6 +55,7 @@ final class APIClient {
     }
 
     func updatePatientSlotTimes(patientId: String, slotTimes: PatientSlotTimesDTO) async throws -> PatientSlotTimesDTO {
+        await refreshCaregiverAuthenticationIfNeeded()
         let url = baseURL.appendingPathComponent("api/patients/\(patientId)")
         var request = URLRequest(url: url)
         request.httpMethod = "PATCH"
@@ -66,6 +70,7 @@ final class APIClient {
     }
 
     func issueLinkingCode(patientId: String) async throws -> LinkingCodeDTO {
+        await refreshCaregiverAuthenticationIfNeeded()
         let url = baseURL.appendingPathComponent("api/patients/\(patientId)/linking-codes")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -80,6 +85,7 @@ final class APIClient {
     }
 
     func revokePatient(patientId: String) async throws {
+        await refreshCaregiverAuthenticationIfNeeded()
         let url = baseURL.appendingPathComponent("api/patients/\(patientId)/revoke")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -94,6 +100,7 @@ final class APIClient {
     }
 
     func deletePatient(patientId: String) async throws {
+        await refreshCaregiverAuthenticationIfNeeded()
         let url = baseURL.appendingPathComponent("api/patients/\(patientId)")
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
@@ -108,6 +115,7 @@ final class APIClient {
     }
 
     func deleteCaregiverAccount() async throws {
+        await refreshCaregiverAuthenticationIfNeeded()
         let url = baseURL.appendingPathComponent("api/me")
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
@@ -121,6 +129,7 @@ final class APIClient {
     }
 
     func fetchMedications(patientId: String?) async throws -> [MedicationDTO] {
+        await refreshCaregiverAuthenticationIfNeeded()
         let request = try makeMedicationListRequest(patientId: patientId)
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
@@ -130,6 +139,7 @@ final class APIClient {
     }
 
     func createMedication(_ input: MedicationCreateRequestDTO) async throws -> MedicationDTO {
+        await refreshCaregiverAuthenticationIfNeeded()
         let request = try makeMedicationCreateRequest(input: input)
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
@@ -139,6 +149,7 @@ final class APIClient {
     }
 
     func updateMedication(id: String, patientId: String, input: MedicationUpdateRequestDTO) async throws -> MedicationDTO {
+        await refreshCaregiverAuthenticationIfNeeded()
         let request = try makeMedicationUpdateRequest(id: id, patientId: patientId, input: input)
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
@@ -148,12 +159,14 @@ final class APIClient {
     }
 
     func deleteMedication(id: String, patientId: String) async throws {
+        await refreshCaregiverAuthenticationIfNeeded()
         let request = try makeMedicationDeleteRequest(id: id, patientId: patientId)
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
     }
 
     func fetchRegimens(medicationId: String) async throws -> [RegimenDTO] {
+        await refreshCaregiverAuthenticationIfNeeded()
         let request = try makeRegimenListRequest(medicationId: medicationId)
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
@@ -163,6 +176,7 @@ final class APIClient {
     }
 
     func createRegimen(medicationId: String, input: RegimenCreateRequestDTO) async throws -> RegimenDTO {
+        await refreshCaregiverAuthenticationIfNeeded()
         let request = try makeRegimenCreateRequest(medicationId: medicationId, input: input)
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
@@ -172,6 +186,7 @@ final class APIClient {
     }
 
     func updateRegimen(id: String, input: RegimenUpdateRequestDTO) async throws -> RegimenDTO {
+        await refreshCaregiverAuthenticationIfNeeded()
         let request = try makeRegimenUpdateRequest(id: id, input: input)
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
@@ -311,6 +326,7 @@ final class APIClient {
         patientId: String,
         input: PrnDoseRecordCreateRequestDTO
     ) async throws -> PrnDoseRecordDTO {
+        await refreshCaregiverAuthenticationIfNeeded()
         let url = baseURL.appendingPathComponent("api/patients/\(patientId)/prn-dose-records")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -332,6 +348,7 @@ final class APIClient {
         patientId: String? = nil,
         slotTimeItems: [URLQueryItem] = []
     ) async throws -> [ScheduleDoseDTO] {
+        await refreshCaregiverAuthenticationIfNeeded()
         let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
         var url = baseURL.appendingPathComponent("api/patients/\(resolvedPatientId)/today")
         if !slotTimeItems.isEmpty {
@@ -357,6 +374,7 @@ final class APIClient {
         month: Int,
         slotTimeItems: [URLQueryItem] = []
     ) async throws -> HistoryMonthResponseDTO {
+        await refreshCaregiverAuthenticationIfNeeded()
         let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
         var queryItems = [
             URLQueryItem(name: "year", value: String(year)),
@@ -379,6 +397,7 @@ final class APIClient {
         date: String,
         slotTimeItems: [URLQueryItem] = []
     ) async throws -> HistoryDayResponseDTO {
+        await refreshCaregiverAuthenticationIfNeeded()
         let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
         var queryItems = [URLQueryItem(name: "date", value: date)]
         queryItems.append(contentsOf: slotTimeItems)
@@ -400,6 +419,7 @@ final class APIClient {
         from: String,
         to: String
     ) async throws -> HistoryReportResponseDTO {
+        await refreshCaregiverAuthenticationIfNeeded()
         let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
         let queryItems = [
             URLQueryItem(name: "from", value: from),
@@ -420,6 +440,7 @@ final class APIClient {
         patientId: String? = nil,
         input: DoseRecordCreateRequestDTO
     ) async throws -> DoseRecordDTO {
+        await refreshCaregiverAuthenticationIfNeeded()
         let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
         let url = baseURL.appendingPathComponent("api/patients/\(resolvedPatientId)/dose-records")
         var request = URLRequest(url: url)
@@ -443,6 +464,7 @@ final class APIClient {
         medicationId: String,
         scheduledAt: Date
     ) async throws {
+        await refreshCaregiverAuthenticationIfNeeded()
         let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
         var components = URLComponents(
             url: baseURL.appendingPathComponent("api/patients/\(resolvedPatientId)/dose-records"),
@@ -462,6 +484,12 @@ final class APIClient {
         }
         let (data, response) = try await URLSession.shared.data(for: request)
         try mapErrorIfNeeded(response: response, data: data)
+    }
+
+    @MainActor
+    func refreshCaregiverAuthenticationIfNeeded() async {
+        guard sessionStore.mode == .caregiver else { return }
+        await sessionStore.refreshCaregiverTokenIfNeeded()
     }
 
     @MainActor

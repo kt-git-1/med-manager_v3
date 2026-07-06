@@ -746,8 +746,7 @@ struct PatientSettingsView: View {
     @StateObject private var permissionManager = NotificationPermissionManager()
     @ObservedObject private var preferencesStore: NotificationPreferencesStore
     @State private var showingLogoutConfirm = false
-    @State private var selectedLegalURL: URL?
-    @State private var showingLegalWebView = false
+    @State private var selectedLegalDestination: PatientLegalWebDestination?
     let onLogout: () -> Void
 
     init(
@@ -902,10 +901,8 @@ struct PatientSettingsView: View {
         .onAppear {
             Task { await permissionManager.refreshStatus() }
         }
-        .sheet(isPresented: $showingLegalWebView) {
-            if let selectedLegalURL {
-                SafariSheet(url: selectedLegalURL)
-            }
+        .sheet(item: $selectedLegalDestination) { destination in
+            SafariSheet(url: destination.url)
         }
         .accessibilityIdentifier("PatientSettingsView")
     }
@@ -1023,9 +1020,13 @@ struct PatientSettingsView: View {
     }
 
     private func presentLegalURL(_ url: URL) {
-        selectedLegalURL = url
-        showingLegalWebView = true
+        selectedLegalDestination = PatientLegalWebDestination(url: url)
     }
+}
+
+private struct PatientLegalWebDestination: Identifiable {
+    let id = UUID()
+    let url: URL
 }
 
 private struct SafariSheet: UIViewControllerRepresentable {

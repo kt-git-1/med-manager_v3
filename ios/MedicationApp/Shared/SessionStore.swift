@@ -24,10 +24,10 @@ final class SessionStore: ObservableObject {
     private let authService: AuthService
     private let now: () -> Date
     private lazy var apiClient = APIClient(baseURL: baseURL, sessionStore: self)
-    private var patientRefreshTask: Task<Void, Never>?
+    private var caregiverRefreshTask: Task<Void, Never>?
     private var isRefreshingCaregiverToken = false
-    private var isRefreshingPatientToken = false
     private static let sessionDuration: TimeInterval = 30 * 24 * 60 * 60
+    private static let caregiverRefreshBuffer: TimeInterval = 2 * 60
     static let currentPatientIdStorageKey = "currentPatientId"
     static let caregiverTokenStorageKey = "caregiverToken"
     static let caregiverRefreshTokenStorageKey = "caregiverRefreshToken"
@@ -56,10 +56,7 @@ final class SessionStore: ObservableObject {
             expiresAtKey: SessionStore.caregiverExpiresAtStorageKey,
             extraKeysToRemoveWhenExpired: [SessionStore.caregiverRefreshTokenStorageKey]
         )
-        self.patientToken = restoredToken(
-            tokenKey: SessionStore.patientTokenStorageKey,
-            expiresAtKey: SessionStore.patientExpiresAtStorageKey
-        )
+        self.patientToken = restoredPatientToken(tokenKey: SessionStore.patientTokenStorageKey)
 
         if let rawMode = userDefaults.string(forKey: SessionStore.lastModeStorageKey),
            let storedMode = AppMode(rawValue: rawMode) {
@@ -69,9 +66,7 @@ final class SessionStore: ObservableObject {
         applyUITestSessionOverridesIfNeeded()
         applyTutorialPreviewOverridesIfNeeded()
 
-        if patientToken != nil {
-            startPatientTokenRefreshLoop()
-        }
+        secureStorage.removeString(forKey: SessionStore.patientExpiresAtStorageKey)
     }
 
     static func resolveBaseURL() -> URL {
@@ -155,10 +150,9 @@ final class SessionStore: ObservableObject {
         removeCaregiverSession()
         removePatientSession()
         clearCurrentPatientId()
-        patientRefreshTask?.cancel()
-        patientRefreshTask = nil
+        caregiverRefreshTask?.cancel()
+        caregiverRefreshTask = nil
         isRefreshingCaregiverToken = false
-        isRefreshingPatientToken = false
     }
     #endif
 
@@ -193,10 +187,9 @@ final class SessionStore: ObservableObject {
         removeCaregiverSession()
         removePatientSession()
         clearCurrentPatientId()
-        patientRefreshTask?.cancel()
-        patientRefreshTask = nil
+        caregiverRefreshTask?.cancel()
+        caregiverRefreshTask = nil
         isRefreshingCaregiverToken = false
-        isRefreshingPatientToken = false
     }
 
     func saveCaregiverToken(_ token: String) {
@@ -220,20 +213,22 @@ final class SessionStore: ObservableObject {
         if let refreshToken = session.refreshToken, !refreshToken.isEmpty {
             persistToken(refreshToken, key: SessionStore.caregiverRefreshTokenStorageKey)
         }
-        persistExpiry(forKey: SessionStore.caregiverExpiresAtStorageKey)
+        persistExpiry(forKey: SessionStore.caregiverExpiresAtStorageKey, duration: caregiverAccessTokenDuration(for: session))
         NotificationCenter.default.post(name: .caregiverDidLogin, object: nil)
     }
 
     func savePatientToken(_ token: String) {
         patientToken = token
         persistToken(token, key: SessionStore.patientTokenStorageKey)
-        persistExpiry(forKey: SessionStore.patientExpiresAtStorageKey)
-        startPatientTokenRefreshLoop()
+        secureStorage.removeString(forKey: SessionStore.patientExpiresAtStorageKey)
     }
 
     func clearCaregiverToken() {
         caregiverToken = nil
         removeCaregiverSession()
+        caregiverRefreshTask?.cancel()
+        caregiverRefreshTask = nil
+        isRefreshingCaregiverToken = false
         userDefaults.removeObject(forKey: CaregiverPushSettingsViewModel.persistKey)
         if mode == .caregiver {
             mode = nil
@@ -263,9 +258,6 @@ final class SessionStore: ObservableObject {
             mode = nil
             userDefaults.removeObject(forKey: SessionStore.lastModeStorageKey)
         }
-        patientRefreshTask?.cancel()
-        patientRefreshTask = nil
-        isRefreshingPatientToken = false
     }
 
     func handleAuthFailure(for mode: AppMode?) {
@@ -284,69 +276,50 @@ final class SessionStore: ObservableObject {
     func invalidateCaregiverToken() {
         caregiverToken = nil
         removeCaregiverSession()
+        caregiverRefreshTask?.cancel()
+        caregiverRefreshTask = nil
+        isRefreshingCaregiverToken = false
         clearCurrentPatientId()
     }
 
     func invalidatePatientToken() {
         patientToken = nil
         removePatientSession()
-        patientRefreshTask?.cancel()
-        patientRefreshTask = nil
-        isRefreshingPatientToken = false
     }
 
     func refreshCaregiverTokenIfNeeded() async {
-        guard mode == .caregiver, caregiverToken != nil else { return }
-        guard !isRefreshingCaregiverToken else { return }
-        guard !isExpired(expiresAtKey: SessionStore.caregiverExpiresAtStorageKey) else {
-            invalidateCaregiverToken()
+        if let caregiverRefreshTask {
+            await caregiverRefreshTask.value
             return
         }
+        guard mode == .caregiver, caregiverToken != nil else { return }
+        let shouldRefresh = isExpiringSoon(
+            expiresAtKey: SessionStore.caregiverExpiresAtStorageKey,
+            buffer: Self.caregiverRefreshBuffer
+        )
+        guard shouldRefresh else { return }
         guard let refreshToken = secureStorage.string(forKey: SessionStore.caregiverRefreshTokenStorageKey),
               !refreshToken.isEmpty else {
+            if isExpired(expiresAtKey: SessionStore.caregiverExpiresAtStorageKey) {
+                invalidateCaregiverToken()
+            }
             return
         }
-        isRefreshingCaregiverToken = true
-        defer { isRefreshingCaregiverToken = false }
-        do {
-            let refreshed = try await authService.refreshSession(refreshToken: refreshToken)
-            saveCaregiverSession(refreshed, preserveCurrentPatientId: true)
-        } catch {
-            invalidateCaregiverToken()
-            NotificationCenter.default.post(name: .authFailure, object: nil)
-        }
-    }
-
-    private func startPatientTokenRefreshLoop() {
-        patientRefreshTask?.cancel()
-        patientRefreshTask = Task { @MainActor [weak self] in
+        let task = Task { @MainActor [weak self] in
             guard let self else { return }
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(AppConstants.patientTokenRefreshInterval))
-                await refreshPatientTokenIfNeeded()
+            self.isRefreshingCaregiverToken = true
+            defer { self.isRefreshingCaregiverToken = false }
+            do {
+                let refreshed = try await self.authService.refreshSession(refreshToken: refreshToken)
+                self.saveCaregiverSession(refreshed, preserveCurrentPatientId: true)
+            } catch {
+                self.invalidateCaregiverToken()
+                NotificationCenter.default.post(name: .authFailure, object: nil)
             }
         }
-    }
-
-    private func refreshPatientTokenIfNeeded() async {
-        guard patientToken != nil else { return }
-        guard !isRefreshingPatientToken else { return }
-        guard !isExpired(expiresAtKey: SessionStore.patientExpiresAtStorageKey) else {
-            clearPatientToken()
-            return
-        }
-        isRefreshingPatientToken = true
-        defer { isRefreshingPatientToken = false }
-        do {
-            let refreshed = try await apiClient.refreshPatientSessionToken()
-            savePatientToken(refreshed)
-        } catch {
-            if case APIError.unauthorized = error {
-                clearPatientToken()
-            } else if case APIError.forbidden = error {
-                clearPatientToken()
-            }
-        }
+        caregiverRefreshTask = task
+        await task.value
+        caregiverRefreshTask = nil
     }
 
     func setCurrentPatientId(_ patientId: String?) {
@@ -417,18 +390,24 @@ final class SessionStore: ObservableObject {
         expiresAtKey: String,
         extraKeysToRemoveWhenExpired: [String] = []
     ) -> String? {
-        guard let token = restoredToken(
-            tokenKey: tokenKey,
-            expiresAtKey: expiresAtKey,
-            extraKeysToRemoveWhenExpired: extraKeysToRemoveWhenExpired
-        ) else {
+        if isExpired(expiresAtKey: expiresAtKey),
+           secureStorage.string(forKey: SessionStore.caregiverRefreshTokenStorageKey)?.isEmpty != false {
+            secureStorage.removeString(forKey: tokenKey)
+            secureStorage.removeString(forKey: expiresAtKey)
+            extraKeysToRemoveWhenExpired.forEach { secureStorage.removeString(forKey: $0) }
             return nil
         }
+        guard let token = secureStorage.string(forKey: tokenKey) else { return nil }
         let normalized = normalizedCaregiverToken(token)
         if normalized != token {
             secureStorage.setString(normalized, forKey: tokenKey)
         }
         return normalized
+    }
+
+    private func restoredPatientToken(tokenKey: String) -> String? {
+        secureStorage.removeString(forKey: SessionStore.patientExpiresAtStorageKey)
+        return secureStorage.string(forKey: tokenKey)
     }
 
     private func normalizedCaregiverToken(_ token: String) -> String {
@@ -446,9 +425,16 @@ final class SessionStore: ObservableObject {
         }
     }
 
-    private func persistExpiry(forKey key: String) {
-        let expiresAt = now().addingTimeInterval(Self.sessionDuration).timeIntervalSince1970
+    private func persistExpiry(forKey key: String, duration: TimeInterval = SessionStore.sessionDuration) {
+        let expiresAt = now().addingTimeInterval(duration).timeIntervalSince1970
         secureStorage.setString(String(expiresAt), forKey: key)
+    }
+
+    private func caregiverAccessTokenDuration(for session: SupabaseSession) -> TimeInterval {
+        guard let expiresIn = session.expiresIn, expiresIn > 0 else {
+            return Self.sessionDuration
+        }
+        return TimeInterval(expiresIn)
     }
 
     private func isExpired(expiresAtKey: String) -> Bool {
@@ -457,6 +443,14 @@ final class SessionStore: ObservableObject {
             return false
         }
         return Date(timeIntervalSince1970: expiresAt) <= now()
+    }
+
+    private func isExpiringSoon(expiresAtKey: String, buffer: TimeInterval) -> Bool {
+        guard let raw = secureStorage.string(forKey: expiresAtKey),
+              let expiresAt = TimeInterval(raw) else {
+            return false
+        }
+        return Date(timeIntervalSince1970: expiresAt).timeIntervalSince(now()) <= buffer
     }
 
     private func removeCaregiverSession() {

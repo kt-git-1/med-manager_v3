@@ -11,6 +11,7 @@ final class PatientManagementViewModel: ObservableObject {
 
     private let apiClient: APIClient
     private let sessionStore: SessionStore
+    private var patientRevision = 0
 
     init(apiClient: APIClient, sessionStore: SessionStore) {
         self.apiClient = apiClient
@@ -49,10 +50,13 @@ final class PatientManagementViewModel: ObservableObject {
         guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
+        let revisionAtStart = patientRevision
         Task {
             defer { isLoading = false }
             do {
-                patients = try await apiClient.listPatients()
+                let loadedPatients = try await apiClient.listPatients()
+                guard revisionAtStart == patientRevision else { return }
+                patients = loadedPatients
                 if patients.count == 1, selectedPatientId == nil {
                     setSelectedPatientId(patients[0].id)
                 }
@@ -127,6 +131,7 @@ final class PatientManagementViewModel: ObservableObject {
     }
 
     func updateSlotTimes(patientId: String, slotTimes: PatientSlotTimesDTO) {
+        patientRevision += 1
         patients = patients.map { patient in
             guard patient.id == patientId else { return patient }
             return PatientDTO(id: patient.id, displayName: patient.displayName, slotTimes: slotTimes)
@@ -145,8 +150,7 @@ struct PatientManagementView: View {
     @State private var deleteTarget: PatientDTO?
     @State private var showingLogoutConfirm = false
     @State private var showingAccountDeleteConfirm = false
-    @State private var selectedLegalURL: URL?
-    @State private var showingLegalWebView = false
+    @State private var selectedLegalDestination: LegalWebDestination?
     @State private var isDeletingAccount = false
     @State private var draftTimes: [NotificationSlot: Date] = [:]
     @State private var isSavingDetail = false
@@ -210,10 +214,8 @@ struct PatientManagementView: View {
                     }
                 )
             }
-            .sheet(isPresented: $showingLegalWebView) {
-                if let selectedLegalURL {
-                    CaregiverLegalSafariSheet(url: selectedLegalURL)
-                }
+            .sheet(item: $selectedLegalDestination) { destination in
+                CaregiverLegalSafariSheet(url: destination.url)
             }
         .sheet(isPresented: $showingTimePresetSheet) {
             NavigationStack {
@@ -710,8 +712,7 @@ struct PatientManagementView: View {
     }
 
     private func presentLegalURL(_ url: URL) {
-        selectedLegalURL = url
-        showingLegalWebView = true
+        selectedLegalDestination = LegalWebDestination(url: url)
     }
 
     private func deleteAccount() async {
@@ -889,6 +890,10 @@ struct PatientManagementView: View {
 
     private func applySelectedPatientSlotTimes() {
         guard let slotTimes = selectedPatient?.slotTimes else { return }
+        applySlotTimes(slotTimes)
+    }
+
+    private func applySlotTimes(_ slotTimes: PatientSlotTimesDTO) {
         applySlotTime(slotTimes.morning, to: .morning)
         applySlotTime(slotTimes.noon, to: .noon)
         applySlotTime(slotTimes.evening, to: .evening)
@@ -947,6 +952,8 @@ struct PatientManagementView: View {
                 slotTimes: currentSlotTimesDTO()
             )
             viewModel.updateSlotTimes(patientId: patientId, slotTimes: savedSlotTimes)
+            applySlotTimes(savedSlotTimes)
+            draftTimes = buildDraftTimes()
             try await migrateRegimensToPresetSlots(oldSlotTimes: oldSlotTimes)
             await rescheduleIfNeeded()
             NotificationCenter.default.post(name: .presetTimesUpdated, object: nil)
@@ -1034,6 +1041,11 @@ struct PatientManagementView: View {
         toastPresenter.show(message, kind: kind)
     }
 
+}
+
+private struct LegalWebDestination: Identifiable {
+    let id = UUID()
+    let url: URL
 }
 
 private struct CaregiverLegalSafariSheet: UIViewControllerRepresentable {

@@ -2,6 +2,7 @@ import Foundation
 
 extension APIClient {
     func fetchInventory(patientId: String? = nil) async throws -> [InventoryItemDTO] {
+        await refreshCaregiverAuthenticationIfNeeded()
         let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
         let url = baseURL.appendingPathComponent("api/patients/\(resolvedPatientId)/inventory")
         var request = URLRequest(url: url)
@@ -21,6 +22,7 @@ extension APIClient {
         medicationId: String,
         input: InventoryUpdateRequestDTO
     ) async throws -> InventoryItemDTO {
+        await refreshCaregiverAuthenticationIfNeeded()
         let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
         let url = baseURL.appendingPathComponent(
             "api/patients/\(resolvedPatientId)/medications/\(medicationId)/inventory"
@@ -43,6 +45,7 @@ extension APIClient {
         medicationId: String,
         input: InventoryAdjustRequestDTO
     ) async throws -> InventoryItemDTO {
+        await refreshCaregiverAuthenticationIfNeeded()
         let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
         let url = baseURL.appendingPathComponent(
             "api/patients/\(resolvedPatientId)/medications/\(medicationId)/inventory/adjust"

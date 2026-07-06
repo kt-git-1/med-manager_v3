@@ -198,7 +198,7 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertTrue(restored.shouldShowModeTutorial(for: .caregiver))
     }
 
-    func testCaregiverTokenPersistsInSecureStorageAndRestoresBeforeExpiry() {
+    func testCaregiverTokenPersistsInSecureStorageAndRestoresBeforeAccessExpiry() {
         let store = makeStore()
         store.setMode(.caregiver)
         store.saveCaregiverSession(
@@ -209,7 +209,7 @@ final class SessionStoreTests: XCTestCase {
             )
         )
 
-        clock.now = clock.now.addingTimeInterval(29 * 24 * 60 * 60)
+        clock.now = clock.now.addingTimeInterval(30 * 60)
         let restored = makeStore()
 
         XCTAssertEqual(restored.mode, .caregiver)
@@ -221,17 +221,53 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertNil(userDefaults.string(forKey: SessionStore.caregiverTokenStorageKey))
     }
 
-    func testPatientTokenPersistsInSecureStorageAndRestoresBeforeExpiry() {
+    func testExpiredCaregiverAccessTokenRestoresWhenRefreshTokenExists() {
+        let store = makeStore()
+        store.setMode(.caregiver)
+        store.saveCaregiverSession(
+            SupabaseSession(
+                accessToken: "caregiver-token",
+                refreshToken: "refresh-token",
+                expiresIn: 3600
+            )
+        )
+
+        clock.now = clock.now.addingTimeInterval(2 * 60 * 60)
+        let restored = makeStore()
+
+        XCTAssertEqual(restored.mode, .caregiver)
+        XCTAssertEqual(restored.caregiverToken, "caregiver-token")
+        XCTAssertEqual(
+            secureStorage.string(forKey: SessionStore.caregiverRefreshTokenStorageKey),
+            "refresh-token"
+        )
+    }
+
+    func testPatientTokenPersistsInSecureStorageWithoutLocalExpiry() {
         let store = makeStore()
         store.setMode(.patient)
         store.savePatientToken("patient-token")
 
-        clock.now = clock.now.addingTimeInterval(29 * 24 * 60 * 60)
+        clock.now = clock.now.addingTimeInterval(365 * 24 * 60 * 60)
         let restored = makeStore()
 
         XCTAssertEqual(restored.mode, .patient)
         XCTAssertEqual(restored.patientToken, "patient-token")
+        XCTAssertNil(secureStorage.string(forKey: SessionStore.patientExpiresAtStorageKey))
         XCTAssertNil(userDefaults.string(forKey: SessionStore.patientTokenStorageKey))
+    }
+
+    func testPatientTokenRestoresAndClearsLegacyExpiry() {
+        secureStorage.setString("patient-token", forKey: SessionStore.patientTokenStorageKey)
+        secureStorage.setString(
+            String(clock.now.addingTimeInterval(-60).timeIntervalSince1970),
+            forKey: SessionStore.patientExpiresAtStorageKey
+        )
+
+        let restored = makeStore()
+
+        XCTAssertEqual(restored.patientToken, "patient-token")
+        XCTAssertNil(secureStorage.string(forKey: SessionStore.patientExpiresAtStorageKey))
     }
 
     func testRawCaregiverTokenInSecureStorageIsNormalizedOnRestore() {
