@@ -572,7 +572,7 @@ struct HistoryMonthView: View {
     private var todayTakenCount: Int { todayStatuses.filter { $0 == .taken }.count }
     private var todayPendingCount: Int { todayStatuses.filter { $0 == .pending }.count }
     private var todayMissedCount: Int { todayStatuses.filter { $0 == .missed }.count }
-    private var todayRemainingCount: Int { todayPendingCount + todayMissedCount }
+    private var todayRemainingCount: Int { todayPendingCount }
 
     private var todayProgressFraction: Double {
         guard todayTotalCount > 0 else { return 0 }
