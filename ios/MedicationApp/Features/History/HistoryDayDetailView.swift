@@ -12,6 +12,7 @@ struct HistoryDayDetailView: View {
         let formatter = DateFormatter()
         formatter.calendar = HistoryDayDetailView.calendar
         formatter.timeZone = HistoryDayDetailView.historyTimeZone
+        formatter.locale = AppConstants.japaneseLocale
         formatter.dateFormat = "M月d日 (E)"
         return formatter
     }()

@@ -56,10 +56,16 @@ import {
   DOSE_MISSED_WINDOW_MS,
   DEFAULT_SLOT_TIMES
 } from "../constants";
+import { resolveSlot } from "./scheduleResponse";
 
 const DEFAULT_REGIMEN_TZ = DEFAULT_TIMEZONE;
 type RegimenSlot = keyof typeof DEFAULT_SLOT_TIMES;
 type SlotTimeOverrides = Partial<Record<RegimenSlot, string>>;
+type DoseRecordMatch = {
+  recordedByType: string;
+  takenAt?: Date;
+  scheduledAt: Date;
+};
 
 function normalizeRegimenTimeZone(timezone: string | null | undefined) {
   if (!timezone) {
@@ -330,6 +336,23 @@ function doseKey(input: { patientId: string; medicationId: string; scheduledAt: 
   return `${input.patientId}:${input.medicationId}:${input.scheduledAt}`;
 }
 
+function localSlotDoseKey(input: {
+  patientId: string;
+  medicationId: string;
+  scheduledAt: string | Date;
+  timeZone: string;
+  slotTimes?: SlotTimeOverrides;
+}) {
+  const scheduledAt =
+    typeof input.scheduledAt === "string" ? input.scheduledAt : input.scheduledAt.toISOString();
+  const slot = resolveSlot(scheduledAt, input.timeZone, input.slotTimes);
+  if (!slot) {
+    return null;
+  }
+  const dateKey = getLocalDateKey(new Date(scheduledAt), input.timeZone);
+  return `${input.patientId}:${input.medicationId}:${dateKey}:${slot}`;
+}
+
 function deriveDoseStatus({
   scheduledAt,
   hasTaken,
@@ -356,21 +379,85 @@ export function applyDoseStatuses(
     takenAt?: Date;
     recordedByType: string;
   }[],
-  now: Date = new Date()
+  now: Date = new Date(),
+  options: {
+    timeZone?: string;
+    slotTimes?: SlotTimeOverrides;
+  } = {}
 ): ScheduleDoseWithStatus[] {
-  const recordMap = new Map(
+  const timeZone = options.timeZone ?? DEFAULT_TIMEZONE;
+  const recordMap = new Map<string, DoseRecordMatch>(
     doseRecords.map((record) => [
       doseKey({
         patientId: record.patientId,
         medicationId: record.medicationId,
         scheduledAt: record.scheduledAt.toISOString()
       }),
-      { recordedByType: record.recordedByType.toLowerCase(), takenAt: record.takenAt }
+      {
+        recordedByType: record.recordedByType.toLowerCase(),
+        takenAt: record.takenAt,
+        scheduledAt: record.scheduledAt
+      }
     ])
   );
+  const localSlotRecordMap = new Map<string, DoseRecordMatch[]>();
+  for (const record of doseRecords) {
+    const key = localSlotDoseKey({
+      patientId: record.patientId,
+      medicationId: record.medicationId,
+      scheduledAt: record.scheduledAt,
+      timeZone,
+      slotTimes: options.slotTimes
+    });
+    if (!key) {
+      continue;
+    }
+    const existing = localSlotRecordMap.get(key) ?? [];
+    existing.push({
+      recordedByType: record.recordedByType.toLowerCase(),
+      takenAt: record.takenAt,
+      scheduledAt: record.scheduledAt
+    });
+    localSlotRecordMap.set(key, existing);
+  }
+  const consumedRecordKeys = new Set<string>();
+
   return doses.map((dose) => {
     const key = doseKey(dose);
-    const record = recordMap.get(key);
+    let record = recordMap.get(key);
+    if (record) {
+      consumedRecordKeys.add(key);
+    }
+    if (!record) {
+      const localSlotKey = localSlotDoseKey({
+        patientId: dose.patientId,
+        medicationId: dose.medicationId,
+        scheduledAt: dose.scheduledAt,
+        timeZone,
+        slotTimes: options.slotTimes
+      });
+      if (localSlotKey) {
+        const candidates = localSlotRecordMap.get(localSlotKey) ?? [];
+        const fallbackRecord = candidates.find((candidate) => {
+          const candidateKey = doseKey({
+            patientId: dose.patientId,
+            medicationId: dose.medicationId,
+            scheduledAt: candidate.scheduledAt.toISOString()
+          });
+          return !consumedRecordKeys.has(candidateKey);
+        });
+        if (fallbackRecord) {
+          record = fallbackRecord;
+          consumedRecordKeys.add(
+            doseKey({
+              patientId: dose.patientId,
+              medicationId: dose.medicationId,
+              scheduledAt: fallbackRecord.scheduledAt.toISOString()
+            })
+          );
+        }
+      }
+    }
     const hasTaken = !!record;
     return {
       ...dose,
@@ -386,20 +473,22 @@ export async function generateScheduleForPatientWithStatus({
   from,
   to,
   now = new Date(),
-  slotTimes
+  slotTimes,
+  timeZone = DEFAULT_TIMEZONE
 }: {
   patientId: string;
   from: Date;
   to: Date;
   now?: Date;
   slotTimes?: SlotTimeOverrides;
+  timeZone?: string;
 }) {
   const { listDoseRecordsByPatientRange } = await import("../repositories/doseRecordRepo");
   const [doses, records] = await Promise.all([
     generateScheduleForPatient({ patientId, from, to, slotTimes }),
     listDoseRecordsByPatientRange({ patientId, from, to })
   ]);
-  return applyDoseStatuses(doses, records, now);
+  return applyDoseStatuses(doses, records, now, { timeZone, slotTimes });
 }
 
 export function getLocalDateKey(date: Date, tz: string) {
@@ -446,6 +535,7 @@ export async function getScheduleWithStatus(
     from: normalized.from,
     to: normalized.to,
     now,
-    slotTimes
+    slotTimes,
+    timeZone: tz
   });
 }

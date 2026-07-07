@@ -1061,12 +1061,18 @@ export default function Home() {
         .compact-slot div {
           display: grid;
           gap: 2px;
+          min-width: 0;
         }
 
         .compact-slot p {
           margin: 0;
+          min-width: 0;
           font-size: 12px;
           font-weight: 800;
+          line-height: 1.25;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .compact-slot em,
@@ -1276,6 +1282,14 @@ export default function Home() {
 
         .hero-phone .app-hero-card em {
           font-size: 14px;
+        }
+
+        .hero-phone .compact-slot {
+          grid-template-columns: 42px minmax(0, 1fr);
+        }
+
+        .hero-phone .compact-slot em {
+          display: none;
         }
 
         .main-demo {

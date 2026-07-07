@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateSchedule } from "../../src/services/scheduleService";
+import { applyDoseStatuses, generateSchedule } from "../../src/services/scheduleService";
 
 const baseMedication = {
   id: "med-1",
@@ -226,5 +226,40 @@ describe("schedule generator", () => {
       "2026-02-01T10:00:00.000Z",
       "2026-02-01T13:00:00.000Z"
     ]);
+  });
+
+  it("keeps an existing same-day slot record taken after a slot preset time changes", () => {
+    const doses = [
+      {
+        patientId: "patient-1",
+        medicationId: "med-1",
+        scheduledAt: "2026-07-06T11:00:00.000Z", // 20:00 JST, new bedtime preset
+        medicationSnapshot: {
+          name: "Medication A",
+          dosageText: "1 tablet",
+          doseCountPerIntake: 1,
+          dosageStrengthValue: 10,
+          dosageStrengthUnit: "mg",
+          notes: null
+        }
+      }
+    ];
+    const records = [
+      {
+        patientId: "patient-1",
+        medicationId: "med-1",
+        scheduledAt: new Date("2026-07-06T13:00:00.000Z"), // 22:00 JST, old bedtime preset
+        takenAt: new Date("2026-07-06T13:05:00.000Z"),
+        recordedByType: "patient"
+      }
+    ];
+
+    const result = applyDoseStatuses(doses, records, new Date("2026-07-07T00:00:00.000Z"), {
+      timeZone: "Asia/Tokyo",
+      slotTimes: { bedtime: "20:00" }
+    });
+
+    expect(result[0].effectiveStatus).toBe("taken");
+    expect(result[0].recordedByType).toBe("patient");
   });
 });
