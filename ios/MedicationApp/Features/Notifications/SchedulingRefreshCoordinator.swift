@@ -73,6 +73,10 @@ final class SchedulingRefreshCoordinator: ObservableObject {
         isRefreshing = false
     }
 
+    func cancelScheduledNotifications() async {
+        await scheduler.cancelAllScheduledNotifications()
+    }
+
     /// Fetches today's schedule from the backend and derives slot times from regimen
     /// `scheduledAt` values. Updates the preferences store so that future notification
     /// scheduling uses the correct (caregiver-configured) times.

@@ -16,7 +16,8 @@ ICON_PATH = ROOT / "ios" / "MedicationApp" / "Assets.xcassets" / "AppIcon.appico
 ROLE_PATIENT_PATH = ROOT / "ios" / "MedicationApp" / "Assets.xcassets" / "RolePatient.imageset" / "role-patient.png"
 ROLE_FAMILY_PATH = ROOT / "ios" / "MedicationApp" / "Assets.xcassets" / "RoleFamily.imageset" / "role-family.png"
 
-W, H = 1320, 2868
+DESIGN_W, DESIGN_H = 1320, 2868
+W, H = 1242, 2688
 
 TEAL = (0, 140, 128)
 TEAL_DARK = (0, 110, 102)
@@ -447,9 +448,9 @@ def draw_brand(draw, img):
 
 
 def draw_slide(slide: Slide) -> Image.Image:
-    img = Image.new("RGBA", (W, H), BG + (255,))
+    img = Image.new("RGBA", (DESIGN_W, DESIGN_H), BG + (255,))
     draw = ImageDraw.Draw(img)
-    draw.rectangle((0, 0, W, H), fill=BG)
+    draw.rectangle((0, 0, DESIGN_W, DESIGN_H), fill=BG)
     draw.ellipse((-260, -210, 520, 520), fill=blend(slide.accent, 0.10, BG))
     draw.ellipse((930, 200, 1560, 830), fill=blend(BLUE, 0.08, BG))
     draw_brand(draw, img)
@@ -467,7 +468,7 @@ def draw_slide(slide: Slide) -> Image.Image:
         "history": screen_history,
         "patient": screen_patient,
     }[slide.screen](screen_draw, box)
-    return img.convert("RGB")
+    return img.convert("RGB").resize((W, H), Image.LANCZOS)
 
 
 def make_contact_sheet(images: Sequence[Path]):

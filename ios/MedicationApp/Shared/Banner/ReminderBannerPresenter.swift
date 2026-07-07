@@ -29,4 +29,8 @@ final class ReminderBannerPresenter: ObservableObject {
         banner = ReminderBanner(slot: slot, dateKey: dateKey, message: slot.notificationBody)
         toastPresenter.show(slot.notificationBody, kind: .info, duration: 3)
     }
+
+    func dismiss() {
+        banner = nil
+    }
 }

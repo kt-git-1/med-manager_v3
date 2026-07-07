@@ -31,7 +31,7 @@ struct PatientReadOnlyView: View {
                         sessionStore: sessionStore,
                         schedulingCoordinator: schedulingCoordinator,
                         preferencesStore: preferencesStore,
-                        onLogout: { sessionStore.clearPatientToken() }
+                        onLogout: { logoutPatient() }
                     )
                     }
 
@@ -129,6 +129,16 @@ struct PatientReadOnlyView: View {
                 )
             )
         ]
+    }
+
+    private func logoutPatient() {
+        deepLinkTarget = nil
+        notificationRouter.clear()
+        reminderBannerPresenter.dismiss()
+        Task {
+            await schedulingCoordinator.cancelScheduledNotifications()
+        }
+        sessionStore.clearPatientToken()
     }
 
     private var currentTutorialTab: PatientTab? {

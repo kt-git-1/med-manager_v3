@@ -157,6 +157,7 @@ struct PatientManagementView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var globalBannerPresenter: GlobalBannerPresenter
     @EnvironmentObject private var toastPresenter: ToastPresenter
+    @EnvironmentObject private var caregiverSessionController: CaregiverSessionController
     @StateObject private var viewModel: PatientManagementViewModel
     @StateObject private var preferencesStore = NotificationPreferencesStore()
     @StateObject private var schedulingCoordinator = SchedulingRefreshCoordinator()
@@ -651,11 +652,13 @@ struct PatientManagementView: View {
                 ) {
                     Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
                     Button(NSLocalizedString("caregiver.logout.confirm.action", comment: "Logout confirm action"), role: .destructive) {
-                        sessionStore.clearCaregiverToken()
-                        globalBannerPresenter.show(
-                            message: NSLocalizedString("caregiver.logout.toast", comment: "Logout toast"),
-                            duration: 2
-                        )
+                        Task {
+                            await caregiverSessionController.logoutCaregiver()
+                            globalBannerPresenter.show(
+                                message: NSLocalizedString("caregiver.logout.toast", comment: "Logout toast"),
+                                duration: 2
+                            )
+                        }
                     }
                 } message: {
                     Text(NSLocalizedString("caregiver.logout.confirm.message", comment: "Logout confirm message"))

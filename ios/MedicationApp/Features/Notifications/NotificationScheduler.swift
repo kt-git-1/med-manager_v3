@@ -48,6 +48,10 @@ final class NotificationScheduler {
         notificationCenter.removePendingNotificationRequests(withIdentifiers: [identifier])
     }
 
+    func cancelAllScheduledNotifications() async {
+        await clearExistingReminders()
+    }
+
     private func clearExistingReminders() async {
         let identifiers = await pendingReminderIdentifiers()
         if !identifiers.isEmpty {

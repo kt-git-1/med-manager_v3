@@ -5,7 +5,7 @@ Generated iPhone screenshots for the App Store product page.
 ## iPhone 6.9-inch Set
 
 - Directory: `iphone-6.9/`
-- Size: `1320 x 2868` pixels
+- Size: `1242 x 2688` pixels
 - Format: PNG
 - Count: 6
 - Preview: `iphone-6.9-contact-sheet.png`

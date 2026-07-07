@@ -23,6 +23,14 @@ final class CaregiverSessionController: ObservableObject {
     /// Provide access to the device token manager for AppDelegate bridging.
     var tokenManager: DeviceTokenManager { deviceTokenManager }
 
+    func logoutCaregiver() async {
+        let baseURL = SessionStore.resolveBaseURL()
+        let apiClient = APIClient(baseURL: baseURL, sessionStore: sessionStore)
+        await deviceTokenManager.unregisterAllFromBackend(apiClient: apiClient)
+        hasRegisteredPush = false
+        sessionStore.clearCaregiverToken()
+    }
+
     // MARK: - Push Notification Registration
 
     private func registerPushTokenIfNeeded() {

@@ -67,10 +67,16 @@ final class NotificationDeepLinkRouter: ObservableObject {
 final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate {
     private let router: NotificationDeepLinkRouter
     private let bannerPresenter: ReminderBannerPresenter
+    private let canRouteLocalNotification: @MainActor () -> Bool
 
-    init(router: NotificationDeepLinkRouter, bannerPresenter: ReminderBannerPresenter) {
+    init(
+        router: NotificationDeepLinkRouter,
+        bannerPresenter: ReminderBannerPresenter,
+        canRouteLocalNotification: @escaping @MainActor () -> Bool = { true }
+    ) {
         self.router = router
         self.bannerPresenter = bannerPresenter
+        self.canRouteLocalNotification = canRouteLocalNotification
         super.init()
     }
 
@@ -82,16 +88,19 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         let userInfo = response.notification.request.content.userInfo
         let identifier = response.notification.request.identifier
         let router = self.router
+        let canRouteLocalNotification = self.canRouteLocalNotification
 
         // Parse remote push target on the current thread to avoid Sendable issues
         let remotePushTarget = NotificationDeepLinkParser.parseRemotePush(userInfo: userInfo)
         let isRemotePush = userInfo["type"] != nil
 
-        DispatchQueue.main.async {
+        Task { @MainActor in
             if isRemotePush, let target = remotePushTarget {
                 router.routeFromTarget(target)
-            } else if !isRemotePush {
+            } else if !isRemotePush, canRouteLocalNotification() {
                 router.route(identifier: identifier)
+            } else if !isRemotePush {
+                router.clear()
             }
         }
         completionHandler()
@@ -105,6 +114,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         let userInfo = notification.request.content.userInfo
         let identifier = notification.request.identifier
         let bannerPresenter = self.bannerPresenter
+        let canRouteLocalNotification = self.canRouteLocalNotification
 
         let isRemotePush = userInfo["type"] != nil
 
@@ -114,8 +124,10 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
             completionHandler([.banner, .sound])
         } else {
             // Local notification: show custom in-app banner, suppress system UI
-            DispatchQueue.main.async {
-                bannerPresenter.handleNotificationIdentifier(identifier)
+            Task { @MainActor in
+                if canRouteLocalNotification() {
+                    bannerPresenter.handleNotificationIdentifier(identifier)
+                }
             }
             completionHandler([])
         }

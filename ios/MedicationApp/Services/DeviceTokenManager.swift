@@ -135,6 +135,18 @@ final class DeviceTokenManager: ObservableObject {
         print("DeviceTokenManager: unregistered from backend (FCM)")
     }
 
+    func unregisterAllFromBackend(apiClient: APIClient) async {
+        await unregisterFromBackend(apiClient: apiClient)
+
+        do {
+            try await unregisterFCMFromBackend(apiClient: apiClient)
+        } catch DeviceTokenError.noFCMToken {
+            userDefaults.set(false, forKey: Self.fcmRegisteredKey)
+        } catch {
+            print("DeviceTokenManager: backend unregister failed (FCM): \(error.localizedDescription)")
+        }
+    }
+
     /// Mark as needing re-registration (e.g. when switching caregiver accounts).
     func markNeedsRegistration() {
         userDefaults.set(false, forKey: Self.registeredKey)

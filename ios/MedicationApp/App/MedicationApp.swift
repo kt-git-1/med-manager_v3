@@ -34,7 +34,10 @@ struct MedicationApp: App {
         _caregiverSessionController = StateObject(wrappedValue: caregiverSessionController)
         notificationCoordinator = NotificationCoordinator(
             router: notificationRouter,
-            bannerPresenter: reminderBannerPresenter
+            bannerPresenter: reminderBannerPresenter,
+            canRouteLocalNotification: {
+                sessionStore.mode == .patient && sessionStore.patientToken != nil
+            }
         )
         UNUserNotificationCenter.current().delegate = notificationCoordinator
 
