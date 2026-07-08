@@ -1039,7 +1039,7 @@ private struct SlotCardView: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(PatientUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(alignment: .leading) {
             RoundedRectangle(cornerRadius: 3)
                 .fill(slotColor)
@@ -1431,7 +1431,7 @@ private struct PatientTodayRow: View {
             }
         }
         .padding(18)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(PatientUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(alignment: .leading) {
             if let slotColor {
                 RoundedRectangle(cornerRadius: 3)
@@ -1620,7 +1620,7 @@ private struct PrnMedicationCard: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(PatientUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(PatientUI.orange.opacity(0.32), lineWidth: 1.2)

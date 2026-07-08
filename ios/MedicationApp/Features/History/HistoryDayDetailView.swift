@@ -361,7 +361,7 @@ private struct HistoryDayRow: View {
 
     private var rowBackground: some ShapeStyle {
         if style == .patient {
-            return AnyShapeStyle(Color.white)
+            return AnyShapeStyle(PatientUI.cardBackground)
         }
         return AnyShapeStyle(.regularMaterial)
     }
@@ -449,7 +449,7 @@ private struct HistoryDayPrnRow: View {
 
     private var rowBackground: some ShapeStyle {
         if style == .patient {
-            return AnyShapeStyle(Color.white)
+            return AnyShapeStyle(PatientUI.cardBackground)
         }
         return AnyShapeStyle(.regularMaterial)
     }

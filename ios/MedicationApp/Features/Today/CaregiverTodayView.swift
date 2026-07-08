@@ -957,7 +957,7 @@ private struct CaregiverPrnMedicationCard: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(CaregiverUI.orange.opacity(0.38), lineWidth: 1.2)
@@ -1084,7 +1084,7 @@ private struct CaregiverTodayTimelineRow: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .background(row.isNextAction ? CaregiverUI.orange.opacity(0.06) : Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(row.isNextAction ? CaregiverUI.orange.opacity(0.10) : CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(borderColor, lineWidth: row.isNextAction ? 1.6 : 1)
@@ -1183,10 +1183,10 @@ private struct CaregiverTodayDoseLine: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 9)
-        .background(Color.white.opacity(0.78), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(CaregiverUI.elevatedBackground.opacity(0.78), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                .stroke(CaregiverUI.cardStroke, lineWidth: 1)
         }
     }
 

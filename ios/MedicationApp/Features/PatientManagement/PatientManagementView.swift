@@ -543,7 +543,7 @@ struct PatientManagementView: View {
                 .buttonStyle(.plain)
             }
             .padding(18)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(CaregiverUI.teal.opacity(0.24), lineWidth: 1))
             .shadow(color: CaregiverUI.cardShadow, radius: 10, y: 4)
             .accessibilityLabel("\(selectedPatient.displayName) \(selectedPatientStatusText)")
@@ -554,7 +554,7 @@ struct PatientManagementView: View {
             )
             .padding(16)
             .frame(maxWidth: .infinity)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(CaregiverUI.cardStroke, lineWidth: 1))
         }
     }

@@ -578,7 +578,7 @@ struct MedicationListView: View {
                             .foregroundStyle(selectedFilter == filter ? .white : filterTint(filter))
                             .padding(.horizontal, 12)
                             .frame(height: 38)
-                            .background(selectedFilter == filter ? filterTint(filter) : Color.white, in: Capsule())
+                            .background(selectedFilter == filter ? filterTint(filter) : CaregiverUI.cardBackground, in: Capsule())
                             .overlay {
                                 Capsule()
                                     .stroke(filterTint(filter).opacity(0.22), lineWidth: 1)
@@ -754,7 +754,7 @@ struct MedicationListView: View {
                 rowContent
                     .padding(18)
                     .frame(maxWidth: .infinity)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .stroke(medicationAccentColor(for: item).opacity(0.20), lineWidth: 1.2)
@@ -769,10 +769,10 @@ struct MedicationListView: View {
             rowContent
                 .padding(18)
                 .frame(maxWidth: .infinity)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color.black.opacity(0.10), lineWidth: 1)
+                        .stroke(CaregiverUI.cardStroke, lineWidth: 1)
                 )
                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                 .listRowSeparator(.hidden)
@@ -846,7 +846,7 @@ private struct MedicationMetricTile: View {
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(minHeight: 124)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(tint.opacity(0.18), lineWidth: 1)

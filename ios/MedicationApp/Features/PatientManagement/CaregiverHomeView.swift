@@ -894,7 +894,7 @@ private struct CaregiverTutorialSampleView: View {
             )
         }
         .padding(18)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(CaregiverUI.teal.opacity(0.24), lineWidth: 1))
         .shadow(color: CaregiverUI.cardShadow, radius: 10, y: 4)
     }
@@ -1326,7 +1326,7 @@ private struct CaregiverTutorialSampleView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(tint.opacity(0.16), lineWidth: 1)
@@ -1342,7 +1342,7 @@ private struct CaregiverTutorialSampleView: View {
                         .foregroundStyle(item.3 ? .white : item.2)
                         .padding(.horizontal, 12)
                         .frame(height: 38)
-                        .background(item.3 ? item.2 : Color.white, in: Capsule())
+                        .background(item.3 ? item.2 : CaregiverUI.cardBackground, in: Capsule())
                         .overlay {
                             Capsule().stroke(item.2.opacity(0.22), lineWidth: 1)
                         }
@@ -1392,7 +1392,7 @@ private struct CaregiverTutorialSampleView: View {
             }
         }
         .padding(16)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(CaregiverUI.cardStroke, lineWidth: 1)
@@ -1446,7 +1446,7 @@ private struct CaregiverTutorialSampleView: View {
             .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .padding(18)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(attention ? CaregiverUI.orange.opacity(0.75) : CaregiverUI.cardStroke, lineWidth: attention ? 1.5 : 1)
@@ -1473,7 +1473,7 @@ private struct CaregiverTutorialSampleView: View {
             .font(.headline.weight(.bold))
             .foregroundStyle(tint)
             .frame(width: 42, height: 42)
-            .background(Color.white, in: Circle())
+            .background(CaregiverUI.elevatedBackground, in: Circle())
             .overlay {
                 Circle().stroke(tint.opacity(0.22), lineWidth: 1)
             }
@@ -1532,10 +1532,10 @@ private struct CaregiverBottomTabBar: View {
         .padding(.horizontal, 8)
         .padding(.top, 8)
         .padding(.bottom, 6)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.black.opacity(0.08), lineWidth: 1)
+                .stroke(CaregiverUI.cardStroke, lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.08), radius: 14, y: 4)
     }
@@ -1590,8 +1590,10 @@ enum CaregiverUI {
     static let blue = Color(red: 0.12, green: 0.48, blue: 0.82)
     static let orange = Color(red: 0.94, green: 0.42, blue: 0.0)
     static let red = Color(red: 0.82, green: 0.16, blue: 0.16)
-    static let background = Color(red: 0.95, green: 0.98, blue: 0.99)
-    static let cardStroke = Color.black.opacity(0.10)
+    static let background = Color(.systemGroupedBackground)
+    static let cardBackground = Color(.secondarySystemGroupedBackground)
+    static let elevatedBackground = Color(.tertiarySystemGroupedBackground)
+    static let cardStroke = Color.primary.opacity(0.10)
     static let cardShadow = Color.black.opacity(0.06)
 }
 
@@ -1605,7 +1607,7 @@ struct CaregiverScreenBackground<Content: View>: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [Color(red: 0.93, green: 0.98, blue: 1.0), Color(.systemGroupedBackground)],
+                colors: [CaregiverUI.background, Color(.systemGroupedBackground)],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -1660,7 +1662,7 @@ struct CaregiverAvatar: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(Color.white)
+                .fill(CaregiverUI.cardBackground)
                 .frame(width: 62, height: 62)
                 .shadow(color: CaregiverUI.cardShadow, radius: 8, y: 3)
             if let initial = name?.prefix(1), !initial.isEmpty {
@@ -1692,7 +1694,7 @@ struct CaregiverCard<Content: View>: View {
         content
             .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .stroke((accent ?? CaregiverUI.cardStroke).opacity(accent == nil ? 1 : 0.55), lineWidth: accent == nil ? 1 : 1.5)

@@ -404,7 +404,7 @@ struct InventoryListView: View {
             }
         }
         .padding(16)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(CaregiverUI.cardStroke, lineWidth: 1)
@@ -429,7 +429,7 @@ struct InventoryListView: View {
                             .foregroundStyle(self.filter == filter ? .white : filterTint(filter))
                             .padding(.horizontal, 12)
                             .frame(height: 38)
-                            .background(self.filter == filter ? filterTint(filter) : Color.white, in: Capsule())
+                            .background(self.filter == filter ? filterTint(filter) : CaregiverUI.cardBackground, in: Capsule())
                             .overlay {
                                 Capsule()
                                     .stroke(filterTint(filter).opacity(0.22), lineWidth: 1)
@@ -682,7 +682,7 @@ struct InventoryListView: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(shouldShowAttention(for: item) ? CaregiverUI.orange.opacity(0.75) : CaregiverUI.cardStroke, lineWidth: shouldShowAttention(for: item) ? 1.5 : 1)
@@ -712,7 +712,7 @@ struct InventoryListView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(tint.opacity(0.22), lineWidth: 1)
@@ -948,7 +948,7 @@ struct InventoryIllustrationView: View {
             Circle()
                 .stroke(tint.opacity(0.18), lineWidth: 1)
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.white.opacity(0.92))
+                .fill(CaregiverUI.elevatedBackground.opacity(0.92))
                 .frame(width: 40, height: 32)
                 .shadow(color: tint.opacity(0.10), radius: 4, y: 2)
             HStack(spacing: 5) {

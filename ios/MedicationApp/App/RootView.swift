@@ -182,7 +182,7 @@ struct GuidedTutorialOverlay: View {
                 }
             }
             .padding(cardPadding)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(tint.opacity(0.18), lineWidth: 1)

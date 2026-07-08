@@ -405,7 +405,7 @@ struct MedicationFormView: View {
             }
             .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .stroke(accent.opacity(0.24), lineWidth: 1.2)
@@ -452,7 +452,7 @@ struct MedicationFormView: View {
                         .accessibilityLabel(NSLocalizedString("a11y.medication.prnInstructions", comment: "PRN instructions"))
                     }
                     .padding(12)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .stroke(CaregiverUI.cardStroke, lineWidth: 1)
@@ -501,7 +501,7 @@ struct MedicationFormView: View {
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(isSelected ? color.opacity(0.45) : CaregiverUI.cardStroke, lineWidth: isSelected ? 1.5 : 1)

@@ -95,7 +95,7 @@ struct LinkCodeEntryView: View {
                             .foregroundStyle(PatientUI.teal)
                             .frame(maxWidth: .infinity)
                             .frame(height: 52)
-                            .background(Color.white.opacity(0.75), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .background(PatientUI.cardBackground.opacity(0.75), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                             .overlay {
                                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                                     .stroke(PatientUI.teal.opacity(0.18), lineWidth: 1)

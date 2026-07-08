@@ -53,7 +53,7 @@ struct CaregiverAuthChoiceView: View {
                                 .foregroundStyle(CaregiverUI.teal)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 52)
-                                .background(Color.white.opacity(0.75), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                .background(CaregiverUI.cardBackground.opacity(0.75), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                                 .overlay {
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                                         .stroke(CaregiverUI.teal.opacity(0.18), lineWidth: 1)

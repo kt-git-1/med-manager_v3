@@ -608,7 +608,7 @@ private struct PatientTutorialSampleView: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(PatientUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(alignment: .leading) {
             RoundedRectangle(cornerRadius: 3)
                 .fill(color)
@@ -1103,9 +1103,11 @@ enum PatientUI {
     static let orange = Color(red: 0.94, green: 0.42, blue: 0.0)
     static let indigo = Color(red: 0.34, green: 0.32, blue: 0.78)
     static let red = Color(red: 0.86, green: 0.18, blue: 0.20)
-    static let backgroundTop = Color(red: 0.93, green: 0.98, blue: 1.0)
+    static let backgroundTop = Color(.systemGroupedBackground)
     static let backgroundBottom = Color(.systemGroupedBackground)
-    static let cardStroke = Color.black.opacity(0.10)
+    static let cardBackground = Color(.secondarySystemGroupedBackground)
+    static let elevatedBackground = Color(.tertiarySystemGroupedBackground)
+    static let cardStroke = Color.primary.opacity(0.10)
     static let cardShadow = Color.black.opacity(0.07)
 }
 
@@ -1133,7 +1135,7 @@ struct PatientHeader: View {
                 .frame(width: 62, height: 62)
                 .background(PatientUI.teal, in: Circle())
                 .overlay {
-                    Circle().stroke(Color.white, lineWidth: 5)
+                    Circle().stroke(PatientUI.cardBackground, lineWidth: 5)
                 }
                 .shadow(color: PatientUI.cardShadow, radius: 8, y: 3)
             VStack(alignment: .leading, spacing: 4) {
@@ -1166,7 +1168,7 @@ struct PatientCard<Content: View>: View {
         content
             .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(PatientUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .stroke((accent ?? PatientUI.cardStroke).opacity(accent == nil ? 1 : 0.55), lineWidth: accent == nil ? 1 : 1.5)
@@ -1231,7 +1233,7 @@ private struct PatientBottomTabBar: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .background(PatientUI.cardBackground, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .stroke(PatientUI.cardStroke, lineWidth: 1)
