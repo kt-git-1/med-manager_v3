@@ -187,11 +187,28 @@ struct PatientManagementView: View {
         _viewModel = StateObject(wrappedValue: PatientManagementViewModel(sessionStore: store))
         let client = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: store)
         self.apiClient = client
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["UITEST_MOCK_PUSH"] == "1" {
+            _pushSettingsViewModel = StateObject(wrappedValue: CaregiverPushSettingsViewModel(
+                notificationCenter: UITestNotificationAuthorizationProvider(),
+                tokenProvider: UITestFCMTokenProvider(),
+                apiClientFactory: { UITestPushDeviceAPIClient() },
+                retryDelayNanoseconds: 0
+            ))
+        } else {
+            _pushSettingsViewModel = StateObject(wrappedValue: CaregiverPushSettingsViewModel(
+                apiClientFactory: {
+                    APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: store)
+                }
+            ))
+        }
+        #else
         _pushSettingsViewModel = StateObject(wrappedValue: CaregiverPushSettingsViewModel(
             apiClientFactory: {
                 APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: store)
             }
         ))
+        #endif
         self.entitlementStore = entitlementStore
         self.shouldOpenCreate = shouldOpenCreate
     }
@@ -1022,6 +1039,25 @@ struct PatientManagementView: View {
     }
 
 }
+
+#if DEBUG
+private struct UITestNotificationAuthorizationProvider: NotificationAuthorizationProvider {
+    func requestAuthorization(options: UNAuthorizationOptions) async throws -> Bool {
+        true
+    }
+}
+
+private struct UITestFCMTokenProvider: FCMTokenProvider {
+    func token() async throws -> String {
+        "uitest-fcm-token"
+    }
+}
+
+private struct UITestPushDeviceAPIClient: PushDeviceAPIClient {
+    func registerPushDevice(token: String, platform: String, environment: String) async throws {}
+    func unregisterPushDevice(token: String) async throws {}
+}
+#endif
 
 private struct LegalWebDestination: Identifiable {
     let id = UUID()

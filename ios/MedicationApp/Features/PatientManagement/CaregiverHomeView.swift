@@ -114,6 +114,7 @@ struct CaregiverHomeView: View {
             loadCurrentPatientName()
             checkLowStock()
             startTutorialIfNeeded()
+            routeUITestRemotePushIfNeeded()
         }
         .onChange(of: sessionStore.currentPatientId) { _, _ in
             loadCurrentPatientName()
@@ -328,6 +329,23 @@ struct CaregiverHomeView: View {
     private func openPatientCreate() {
         shouldOpenCreatePatient = true
         selectedTab = .patients
+    }
+
+    private func routeUITestRemotePushIfNeeded() {
+        #if DEBUG
+        let env = ProcessInfo.processInfo.environment
+        guard env["UITEST_MOCK_PUSH"] == "1",
+              let date = env["UITEST_REMOTE_PUSH_DATE"],
+              let slot = env["UITEST_REMOTE_PUSH_SLOT"],
+              NotificationSlot(rawValue: slot) != nil else {
+            return
+        }
+        notificationRouter.routeFromRemotePush(userInfo: [
+            "type": "DOSE_TAKEN",
+            "date": date,
+            "slot": slot
+        ])
+        #endif
     }
 
     private func startTutorialIfNeeded() {

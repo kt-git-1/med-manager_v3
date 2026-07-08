@@ -32,7 +32,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<string>18</string>
 	<key>EMAIL_CONFIRMATION_REDIRECT_URL</key>
 	<string>https://www.okusuri-mimamori.com/auth/confirmed</string>
 	<key>SUPABASE_ANON_KEY</key>

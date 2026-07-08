@@ -66,8 +66,6 @@ final class SessionStore: ObservableObject {
 
         applyUITestSessionOverridesIfNeeded()
         applyTutorialPreviewOverridesIfNeeded()
-
-        secureStorage.removeString(forKey: SessionStore.patientExpiresAtStorageKey)
     }
 
     static func resolveBaseURL() -> URL {

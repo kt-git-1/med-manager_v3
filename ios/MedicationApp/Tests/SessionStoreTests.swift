@@ -243,21 +243,21 @@ final class SessionStoreTests: XCTestCase {
         )
     }
 
-    func testPatientTokenPersistsInSecureStorageWithoutLocalExpiry() {
+    func testPatientTokenPersistsInSecureStorageWithLocalExpiry() {
         let store = makeStore()
         store.setMode(.patient)
         store.savePatientToken("patient-token")
 
-        clock.now = clock.now.addingTimeInterval(365 * 24 * 60 * 60)
+        clock.now = clock.now.addingTimeInterval(29 * 24 * 60 * 60)
         let restored = makeStore()
 
         XCTAssertEqual(restored.mode, .patient)
         XCTAssertEqual(restored.patientToken, "patient-token")
-        XCTAssertNil(secureStorage.string(forKey: SessionStore.patientExpiresAtStorageKey))
+        XCTAssertNotNil(secureStorage.string(forKey: SessionStore.patientExpiresAtStorageKey))
         XCTAssertNil(userDefaults.string(forKey: SessionStore.patientTokenStorageKey))
     }
 
-    func testPatientTokenRestoresAndClearsLegacyExpiry() {
+    func testPatientTokenWithExpiredLocalExpiryIsCleared() {
         secureStorage.setString("patient-token", forKey: SessionStore.patientTokenStorageKey)
         secureStorage.setString(
             String(clock.now.addingTimeInterval(-60).timeIntervalSince1970),
@@ -266,7 +266,8 @@ final class SessionStoreTests: XCTestCase {
 
         let restored = makeStore()
 
-        XCTAssertEqual(restored.patientToken, "patient-token")
+        XCTAssertNil(restored.patientToken)
+        XCTAssertNil(secureStorage.string(forKey: SessionStore.patientTokenStorageKey))
         XCTAssertNil(secureStorage.string(forKey: SessionStore.patientExpiresAtStorageKey))
     }
 

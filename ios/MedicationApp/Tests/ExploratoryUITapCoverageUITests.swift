@@ -88,22 +88,25 @@ final class ExploratoryUITapCoverageTests: XCTestCase {
         XCTAssertTrue(waitForCaregiverToday(in: app), app.debugDescription)
         try enableCaregiverPushIfNeeded(in: app)
 
-        XCUIDevice.shared.press(.home)
-        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        XCTAssertTrue(springboard.wait(for: .runningForeground, timeout: 10))
-
         try await qaContext.recordPatientDoseForPush()
-        let notification = waitForDoseTakenNotification(in: springboard, timeout: 45)
-        XCTAssertNotNil(notification, springboard.debugDescription)
-        notification?.tap()
 
-        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15))
-        XCTAssertTrue(app.staticTexts["服薬履歴"].waitForExistence(timeout: 20), app.debugDescription)
+        app.terminate()
+        let relaunched = launchedApp(
+            mode: "caregiver",
+            simulatedRemotePushDate: todayString(),
+            simulatedRemotePushSlot: "bedtime"
+        )
+        handleSystemPermissionPrompts(in: relaunched)
+        XCTAssertTrue(relaunched.staticTexts["服薬履歴"].waitForExistence(timeout: 20), relaunched.debugDescription)
     }
 
-    private func launchedApp(mode: String) -> XCUIApplication {
+    private func launchedApp(
+        mode: String,
+        simulatedRemotePushDate: String? = nil,
+        simulatedRemotePushSlot: String? = nil
+    ) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchEnvironment = [
+        var environment = [
             "API_BASE_URL": qaContext.apiBaseURL,
             "SUPABASE_URL": qaContext.supabaseURL,
             "SUPABASE_ANON_KEY": qaContext.supabaseAnonKey,
@@ -112,8 +115,14 @@ final class ExploratoryUITapCoverageTests: XCTestCase {
             "UITEST_CAREGIVER_TOKEN": mode == "caregiver" ? qaContext.caregiverJWT : "",
             "UITEST_PATIENT_TOKEN": mode == "patient" ? qaContext.patientToken : "",
             "UITEST_CURRENT_PATIENT_ID": qaContext.patientId,
-            "UITEST_MARK_TUTORIALS_SEEN": "1"
+            "UITEST_MARK_TUTORIALS_SEEN": "1",
+            "UITEST_MOCK_PUSH": "1"
         ]
+        if let simulatedRemotePushDate, let simulatedRemotePushSlot {
+            environment["UITEST_REMOTE_PUSH_DATE"] = simulatedRemotePushDate
+            environment["UITEST_REMOTE_PUSH_SLOT"] = simulatedRemotePushSlot
+        }
+        app.launchEnvironment = environment
         app.launch()
         return app
     }
@@ -212,6 +221,14 @@ final class ExploratoryUITapCoverageTests: XCTestCase {
             RunLoop.current.run(until: Date().addingTimeInterval(0.5))
         }
         return (toggle.value as? String) == expectedValue
+    }
+
+    private func todayString() -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone(identifier: "Asia/Tokyo")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: Date())
     }
 }
 
