@@ -104,6 +104,14 @@ final class SessionStore: ObservableObject {
     }
 
     private func applyTutorialPreviewOverridesIfNeeded() {
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("-CaregiverTutorialPreview") {
+            saveCaregiverToken("tutorial-preview-caregiver-token")
+            return
+        }
+        #endif
+
         guard isPatientTutorialPreviewActive else { return }
         mode = .patient
         if patientToken == nil {

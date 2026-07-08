@@ -331,6 +331,14 @@ struct CaregiverHomeView: View {
     }
 
     private func startTutorialIfNeeded() {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-CaregiverNotificationTutorialPreview") {
+            let index = caregiverTutorialSteps.count - 1
+            tutorialStepIndex = index
+            selectedTab = caregiverTutorialSteps[index].tab
+            return
+        }
+        #endif
         guard sessionStore.shouldShowModeTutorial(for: .caregiver)
             || sessionStore.shouldForceModeTutorial(for: .caregiver) else { return }
         tutorialStepIndex = 0

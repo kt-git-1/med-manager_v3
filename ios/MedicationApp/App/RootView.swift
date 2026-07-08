@@ -12,9 +12,13 @@ struct RootView: View {
         Group {
             switch sessionStore.mode {
             case .none:
-                ModeSelectView()
+                if isCaregiverTutorialPreviewActive {
+                    CaregiverHomeView(entitlementStore: entitlementStore)
+                } else {
+                    ModeSelectView()
+                }
             case .some(.caregiver):
-                if sessionStore.caregiverToken == nil {
+                if sessionStore.caregiverToken == nil && !isCaregiverTutorialPreviewActive {
                     CaregiverAuthChoiceView()
                 } else {
                     CaregiverHomeView(entitlementStore: entitlementStore)
@@ -66,6 +70,14 @@ struct RootView: View {
             guard AppConstants.billingEnabled else { return }
             Task { await entitlementStore?.refresh() }
         }
+    }
+
+    private var isCaregiverTutorialPreviewActive: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-CaregiverTutorialPreview")
+        #else
+        false
+        #endif
     }
 
 }
