@@ -485,11 +485,31 @@ final class APIClient {
         await sessionStore.refreshCaregiverTokenIfNeeded()
     }
 
+    @MainActor
+    func refreshPatientAuthenticationIfNeeded() async throws {
+        guard sessionStore.shouldRefreshPatientToken() else { return }
+        let refreshedSession = try await refreshPatientSessionToken()
+        sessionStore.savePatientToken(
+            refreshedSession.patientSessionToken,
+            expiresAt: refreshedSession.expiresAt
+        )
+    }
+
     func send(
         _ request: URLRequest,
         allowsPatientRefreshRetry: Bool = true
     ) async throws -> Data {
         await refreshCaregiverAuthenticationIfNeeded()
+        if allowsPatientRefreshRetry {
+            do {
+                try await refreshPatientAuthenticationIfNeeded()
+            } catch {
+                if !sessionStore.isPatientTutorialPreviewActive {
+                    sessionStore.handleAuthFailure(for: .patient)
+                }
+                throw error
+            }
+        }
         let authorizedRequest = requestWithCurrentAuthorization(request)
         let (data, response) = try await URLSession.shared.data(for: authorizedRequest)
         if shouldRefreshPatientSession(

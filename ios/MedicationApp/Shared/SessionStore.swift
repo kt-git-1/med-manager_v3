@@ -28,6 +28,7 @@ final class SessionStore: ObservableObject {
     private var isRefreshingCaregiverToken = false
     private static let sessionDuration: TimeInterval = 30 * 24 * 60 * 60
     private static let caregiverRefreshBuffer: TimeInterval = 2 * 60
+    private static let patientRefreshBuffer: TimeInterval = 30 * 24 * 60 * 60
     static let currentPatientIdStorageKey = "currentPatientId"
     static let caregiverTokenStorageKey = "caregiverToken"
     static let caregiverRefreshTokenStorageKey = "caregiverRefreshToken"
@@ -339,6 +340,14 @@ final class SessionStore: ObservableObject {
         caregiverRefreshTask = task
         await task.value
         caregiverRefreshTask = nil
+    }
+
+    func shouldRefreshPatientToken() -> Bool {
+        guard mode == .patient, patientToken != nil else { return false }
+        return isExpiringSoon(
+            expiresAtKey: SessionStore.patientExpiresAtStorageKey,
+            buffer: Self.patientRefreshBuffer
+        )
     }
 
     func setCurrentPatientId(_ patientId: String?) {

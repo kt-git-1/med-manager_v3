@@ -21,7 +21,7 @@ export type PatientSessionIssued = {
   patientId: string;
 };
 
-const PATIENT_SESSION_TTL_DAYS = Number(process.env.PATIENT_SESSION_TTL_DAYS ?? 90);
+const PATIENT_SESSION_TTL_DAYS = Number(process.env.PATIENT_SESSION_TTL_DAYS ?? 365);
 
 function hashLinkingCode(code: string) {
   return createHash("sha256").update(code).digest("hex");
