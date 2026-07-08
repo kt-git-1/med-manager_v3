@@ -31,4 +31,19 @@ describe("history month aggregation integration", () => {
 
     expect(summary.morning).toBe("pending");
   });
+
+  it("uses custom slot times when aggregating history slots", () => {
+    const summary = buildSlotSummary(
+      [{ scheduledAt: "2026-07-06T05:20:00.000Z", effectiveStatus: "missed" }],
+      "Asia/Tokyo",
+      { noon: "14:20" }
+    );
+
+    expect(summary).toEqual({
+      morning: "none",
+      noon: "missed",
+      evening: "none",
+      bedtime: "none"
+    });
+  });
 });

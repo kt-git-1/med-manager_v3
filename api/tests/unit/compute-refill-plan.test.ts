@@ -20,5 +20,7 @@ describe("computeRefillPlan", () => {
 
     expect(plan.dailyPlannedUnits).toBe(1);
     expect(plan.nextSevenDaysPlannedUnits).toBe(5);
+    expect(plan.nextFourteenDaysPlannedUnits).toBe(10);
+    expect(plan.nextTwentyOneDaysPlannedUnits).toBe(15);
   });
 });

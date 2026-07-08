@@ -52,6 +52,18 @@ final class FeatureGateTests: XCTestCase {
         XCTAssertFalse(AppConstants.billingEnabled)
     }
 
+    func testInitialReleasePatientLimitCopyDoesNotMentionPremium() throws {
+        let copy = [
+            NSLocalizedString("caregiver.patients.limit.initialRelease", comment: ""),
+            NSLocalizedString("billing.gate.patientLimit.title", comment: ""),
+            NSLocalizedString("billing.gate.patientLimit.body", comment: ""),
+            APIError.patientLimitExceeded(limit: 1, current: 1).errorDescription ?? ""
+        ].joined(separator: "\n")
+
+        XCTAssertFalse(copy.contains("プレミアム"))
+        XCTAssertTrue(copy.contains("1人"))
+    }
+
     // MARK: - canAddPatient Decision Logic (009-free-limit-gates)
 
     func testCanAddPatient_FreeWith0Patients_ReturnsTrue() throws {

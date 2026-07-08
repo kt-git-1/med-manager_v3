@@ -98,6 +98,19 @@ final class HistoryRetentionTests: XCTestCase {
         XCTAssertEqual(bannerText, "全期間表示中")
     }
 
+    func testInitialReleaseHistoryLockCopyDoesNotMentionPremium() throws {
+        let lockCopy = [
+            NSLocalizedString("history.retention.lock.caregiver.title", comment: ""),
+            NSLocalizedString("history.retention.lock.caregiver.body", comment: ""),
+            NSLocalizedString("history.retention.lock.patient.title", comment: ""),
+            NSLocalizedString("history.retention.lock.patient.body", comment: ""),
+            APIError.historyRetentionLimit(cutoffDate: "2026-01-12", retentionDays: 30).errorDescription ?? ""
+        ].joined(separator: "\n")
+
+        XCTAssertFalse(lockCopy.contains("プレミアム"))
+        XCTAssertTrue(lockCopy.contains("30日"))
+    }
+
     // MARK: - Constants
 
     func testRetentionDaysFreeEquals30() throws {

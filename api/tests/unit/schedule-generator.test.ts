@@ -215,6 +215,37 @@ describe("schedule generator", () => {
     ]);
   });
 
+  it("uses the latest same-day noon preset from the slot time timeline", () => {
+    const from = new Date("2026-07-06T00:00:00+09:00");
+    const to = new Date("2026-07-07T00:00:00+09:00");
+
+    const doses = generateSchedule({
+      medications: [baseMedication],
+      regimens: [
+        {
+          ...baseRegimen,
+          timezone: "Asia/Tokyo",
+          daysOfWeek: [],
+          times: ["noon"]
+        }
+      ],
+      from,
+      to,
+      slotTimeTimeline: [
+        {
+          effectiveFrom: new Date("2026-07-06T14:10:00+09:00"),
+          slotTimes: { noon: "14:15" }
+        },
+        {
+          effectiveFrom: new Date("2026-07-06T14:18:00+09:00"),
+          slotTimes: { noon: "14:20" }
+        }
+      ]
+    });
+
+    expect(doses.map((dose) => dose.scheduledAt)).toEqual(["2026-07-06T05:20:00.000Z"]);
+  });
+
   it("resolves noon slot key to one pm by default", () => {
     const from = new Date("2026-02-01T00:00:00+09:00");
     const to = new Date("2026-02-02T00:00:00+09:00");
