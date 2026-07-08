@@ -556,6 +556,7 @@ private struct PatientTodayListView: View {
                             slotColor: slotColor(slot),
                             slotTitle: slotTitle(slot),
                             isUpdating: viewModel.isUpdating,
+                            isOutOfStock: isOutOfStock,
                             onRecord: { onBulkRecord(slot) },
                             onPresentDetail: onPresentDetail
                         )
@@ -646,7 +647,10 @@ private struct PatientTodayListView: View {
 
                     VStack(spacing: 10) {
                         ForEach(nextSlotSection.items) { dose in
-                            SlotMedicationRow(dose: dose)
+                            SlotMedicationRow(
+                                dose: dose,
+                                isInventoryInsufficient: isOutOfStock(dose.medicationId)
+                            )
                                 .onTapGesture { onPresentDetail(dose) }
                         }
                     }
@@ -917,6 +921,7 @@ private struct PlannedSectionsView: View {
                         slotColor: slotColor(slot),
                         slotTitle: slotTitle(slot),
                         isUpdating: false,
+                        isOutOfStock: isOutOfStock,
                         onRecord: { onBulkRecord(slot) },
                         onPresentDetail: onPresentDetail
                     )
@@ -961,6 +966,7 @@ private struct SlotCardView: View {
     let slotColor: Color
     let slotTitle: String
     let isUpdating: Bool
+    let isOutOfStock: (String) -> Bool
     let onRecord: () -> Void
     let onPresentDetail: (ScheduleDoseDTO) -> Void
 
@@ -1002,7 +1008,10 @@ private struct SlotCardView: View {
             }
 
             ForEach(doses) { dose in
-                SlotMedicationRow(dose: dose)
+                SlotMedicationRow(
+                    dose: dose,
+                    isInventoryInsufficient: isDoseInventoryInsufficient(dose)
+                )
                     .onTapGesture { onPresentDetail(dose) }
             }
 
@@ -1066,17 +1075,23 @@ private struct SlotCardView: View {
             return (NSLocalizedString("patient.today.status.pending", comment: "Pending"), Color.primary.opacity(0.06))
         }
     }
+
+    private func isDoseInventoryInsufficient(_ dose: ScheduleDoseDTO) -> Bool {
+        guard dose.effectiveStatus != .taken else { return false }
+        return isOutOfStock(dose.medicationId)
+    }
 }
 
 private struct SlotMedicationRow: View {
     let dose: ScheduleDoseDTO
+    var isInventoryInsufficient = false
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 5) {
                 Text(medicationDisplayName)
                     .font(.title3.weight(.bold))
-                    .foregroundStyle(dose.effectiveStatus == .missed ? Color.red : Color.primary)
+                    .foregroundStyle(shouldHighlightAsProblem ? Color.red : Color.primary)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(String(
@@ -1085,17 +1100,35 @@ private struct SlotMedicationRow: View {
                 ))
                 .font(.body)
                 .foregroundStyle(.secondary)
+
+                if isInventoryInsufficient {
+                    Text(NSLocalizedString("patient.today.inventory.insufficient.badge", comment: "Insufficient inventory badge"))
+                        .font(.subheadline.weight(.bold))
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 10)
+                        .background(PatientUI.red.opacity(0.16))
+                        .foregroundStyle(PatientUI.red)
+                        .clipShape(Capsule())
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .layoutPriority(1)
             Spacer()
-            if let status = dose.effectiveStatus {
+            if isInventoryInsufficient {
+                Image(systemName: "exclamationmark.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(PatientUI.red)
+            } else if let status = dose.effectiveStatus {
                 doseStatusIndicator(status)
             }
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 12)
         .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private var shouldHighlightAsProblem: Bool {
+        isInventoryInsufficient || dose.effectiveStatus == .missed
     }
 
     private var medicationDisplayName: String {
