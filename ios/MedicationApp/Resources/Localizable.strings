@@ -407,7 +407,7 @@
 "caregiver.inventory.guide.ok.title" = "今すぐ補充が必要な薬はありません";
 "caregiver.inventory.guide.low.message" = "%@ が%@です。補充日を確認して、補充したら在庫数を更新してください。";
 "caregiver.inventory.guide.out.message" = "%@ の在庫がありません。服薬前に補充して、在庫数を更新してください。";
-"caregiver.inventory.guide.ok.message" = "在庫が少なくなると、この場所に最優先で表示されます。普段はカードの + / - で数だけ直せます。";
+"caregiver.inventory.guide.ok.message" = "在庫が少なくなると、この場所に最優先で表示されます。数が違うときはカードを開いて修正できます。";
 "caregiver.inventory.guide.action.button" = "対象の薬を詳しく見る";
 "caregiver.inventory.empty.title" = "患者を選択してください";
 "caregiver.inventory.empty.message" = "連携・設定タブから対象を選んでください";
@@ -438,7 +438,7 @@
 "caregiver.inventory.plan.daysRemaining.short" = "あと%d日分";
 "caregiver.inventory.plan.ended" = "服用期間終了";
 "caregiver.inventory.plan.refillDue" = "補充目安";
-"caregiver.inventory.help.available" = "服薬記録に合わせて自動で減ります。数が違うときは + / - で調整できます。";
+"caregiver.inventory.help.available" = "服薬記録に合わせて自動で減ります。数が違うときはタップして補充・修正できます。";
 "caregiver.inventory.help.low" = "残り日数が少ないため、早めの補充が必要です。";
 "caregiver.inventory.help.out" = "在庫が0です。服薬前に補充してください。";
 "caregiver.inventory.help.prn" = "頓服薬です。使った分だけ在庫が減ります。";
