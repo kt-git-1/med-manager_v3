@@ -9,7 +9,7 @@ export class PatientLimitError extends Error {
   readonly current: number;
 
   constructor(limit: number, current: number) {
-    super("Patient limit reached. Upgrade to premium for unlimited patients.");
+    super("Current release supports one patient per caregiver account.");
     this.name = "PatientLimitError";
     this.limit = limit;
     this.current = current;

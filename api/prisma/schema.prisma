@@ -130,6 +130,22 @@ model Patient {
   doseRecordEvents      DoseRecordEvent[]
   inventoryAdjustments  MedicationInventoryAdjustment[]
   inventoryAlertEvents  InventoryAlertEvent[]
+  slotTimeRevisions     PatientSlotTimeRevision[]
+}
+
+model PatientSlotTimeRevision {
+  id            String   @id @default(uuid())
+  patientId     String
+  effectiveFrom DateTime
+  morningTime   String
+  noonTime      String
+  eveningTime   String
+  bedtimeTime   String
+  createdAt     DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([patientId, effectiveFrom])
 }
 
 model CaregiverPatientLink {

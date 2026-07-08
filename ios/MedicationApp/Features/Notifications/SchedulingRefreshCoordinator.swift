@@ -41,7 +41,7 @@ final class SchedulingRefreshCoordinator: ObservableObject {
             var effectiveSlotTimes = slotTimes
 
             if caregiverPatientId == nil && effectiveSlotTimes.isEmpty {
-                let synced = await syncSlotTimesFromRegimens(
+                let synced = await syncPatientSlotTimes(
                     apiClient: apiClient,
                     preferencesStore: preferencesStore
                 )
@@ -77,25 +77,15 @@ final class SchedulingRefreshCoordinator: ObservableObject {
         await scheduler.cancelAllScheduledNotifications()
     }
 
-    /// Fetches today's schedule from the backend and derives slot times from regimen
-    /// `scheduledAt` values. Updates the preferences store so that future notification
-    /// scheduling uses the correct (caregiver-configured) times.
-    private func syncSlotTimesFromRegimens(
+    /// Fetches patient-scoped slot times directly. This avoids deriving notification
+    /// times from today's schedule, which can be empty for weekly/alternate-day meds.
+    private func syncPatientSlotTimes(
         apiClient: APIClient,
         preferencesStore: NotificationPreferencesStore?
     ) async -> [NotificationSlot: (hour: Int, minute: Int)] {
         do {
-            let doses = try await apiClient.fetchPatientToday()
-            var slotTimeMap: [NotificationSlot: (hour: Int, minute: Int)] = [:]
-            for dose in doses {
-                guard let slot = NotificationSlot.from(date: dose.scheduledAt) else { continue }
-                if slotTimeMap[slot] != nil { continue }
-                var calendar = Calendar(identifier: .gregorian)
-                calendar.timeZone = AppConstants.defaultTimeZone
-                let components = calendar.dateComponents([.hour, .minute], from: dose.scheduledAt)
-                guard let hour = components.hour, let minute = components.minute else { continue }
-                slotTimeMap[slot] = (hour: hour, minute: minute)
-            }
+            let dto = try await apiClient.fetchPatientSlotTimes()
+            let slotTimeMap = Self.slotTimesMap(from: dto)
             if let store = preferencesStore {
                 for (slot, time) in slotTimeMap {
                     let current = store.slotTime(for: slot)
@@ -108,6 +98,25 @@ final class SchedulingRefreshCoordinator: ObservableObject {
         } catch {
             return [:]
         }
+    }
+
+    private static func slotTimesMap(from dto: PatientSlotTimesDTO) -> [NotificationSlot: (hour: Int, minute: Int)] {
+        [
+            .morning: parseTime(dto.morning) ?? NotificationSlot.morning.hourMinute,
+            .noon: parseTime(dto.noon) ?? NotificationSlot.noon.hourMinute,
+            .evening: parseTime(dto.evening) ?? NotificationSlot.evening.hourMinute,
+            .bedtime: parseTime(dto.bedtime) ?? NotificationSlot.bedtime.hourMinute
+        ]
+    }
+
+    private static func parseTime(_ value: String) -> (hour: Int, minute: Int)? {
+        let parts = value.split(separator: ":").compactMap { Int($0) }
+        guard parts.count == 2,
+              (0...23).contains(parts[0]),
+              (0...59).contains(parts[1]) else {
+            return nil
+        }
+        return (parts[0], parts[1])
     }
 
     static func slotTimeQueryItems(

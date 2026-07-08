@@ -32,7 +32,7 @@ extension APIError: LocalizedError {
             return message
         case .patientLimitExceeded:
             return NSLocalizedString(
-                "billing.gate.patientLimit.body",
+                "caregiver.patients.limit.initialRelease",
                 comment: "Patient limit exceeded"
             )
         case .historyRetentionLimit:

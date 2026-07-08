@@ -61,6 +61,10 @@ import { resolveSlot } from "./scheduleResponse";
 const DEFAULT_REGIMEN_TZ = DEFAULT_TIMEZONE;
 type RegimenSlot = keyof typeof DEFAULT_SLOT_TIMES;
 type SlotTimeOverrides = Partial<Record<RegimenSlot, string>>;
+export type SlotTimeTimelineEntry = {
+  effectiveFrom: Date;
+  slotTimes: SlotTimeOverrides;
+};
 type DoseRecordMatch = {
   recordedByType: string;
   takenAt?: Date;
@@ -198,6 +202,32 @@ function resolveRegimenTime(time: string, slotTimes?: SlotTimeOverrides) {
   return time;
 }
 
+function slotTimesForDate(
+  date: Date,
+  timeline?: SlotTimeTimelineEntry[]
+): SlotTimeOverrides | undefined {
+  if (!timeline?.length) {
+    return undefined;
+  }
+  let selected: SlotTimeTimelineEntry | undefined;
+  for (const entry of timeline) {
+    if (entry.effectiveFrom <= date) {
+      selected = entry;
+    } else {
+      break;
+    }
+  }
+  return selected?.slotTimes ?? timeline[0]?.slotTimes;
+}
+
+export function resolveSlotTimesForDate(
+  date: Date,
+  fallbackSlotTimes?: SlotTimeOverrides,
+  timeline?: SlotTimeTimelineEntry[]
+): SlotTimeOverrides | undefined {
+  return slotTimesForDate(date, timeline) ?? fallbackSlotTimes;
+}
+
 function parseTime(time: string, slotTimes?: SlotTimeOverrides) {
   const resolved = resolveRegimenTime(time, slotTimes);
   const [hour, minute] = resolved.split(":").map(Number);
@@ -246,13 +276,15 @@ export function generateSchedule({
   regimens,
   from,
   to,
-  slotTimes
+  slotTimes,
+  slotTimeTimeline
 }: {
   medications: MedicationRecord[];
   regimens: RegimenRecord[];
   from: Date;
   to: Date;
   slotTimes?: SlotTimeOverrides;
+  slotTimeTimeline?: SlotTimeTimelineEntry[];
 }): ScheduleDose[] {
   const doses: ScheduleDose[] = [];
   const medicationMap = new Map(medications.map((medication) => [medication.id, medication]));
@@ -274,17 +306,21 @@ export function generateSchedule({
     }
 
     const daysOfWeek = regimen.daysOfWeek ?? [];
-    const times = [...regimen.times].sort((left, right) =>
-      resolveRegimenTime(left, slotTimes).localeCompare(resolveRegimenTime(right, slotTimes))
-    );
     let cursor = startOfLocalDay(window.start, tz);
 
     while (cursor < window.end) {
       const weekday = getWeekday(cursor, tz);
       const matchesDay = daysOfWeek.length === 0 || daysOfWeek.includes(weekday);
       if (matchesDay) {
+        const dayEnd = new Date(nextLocalDay(cursor, tz).getTime() - 1);
+        const effectiveSlotTimes = resolveSlotTimesForDate(dayEnd, slotTimes, slotTimeTimeline);
+        const times = [...regimen.times].sort((left, right) =>
+          resolveRegimenTime(left, effectiveSlotTimes).localeCompare(
+            resolveRegimenTime(right, effectiveSlotTimes)
+          )
+        );
         for (const time of times) {
-          const { hour, minute } = parseTime(time, slotTimes);
+          const { hour, minute } = parseTime(time, effectiveSlotTimes);
           const cursorParts = getZonedParts(cursor, tz);
           const scheduledAtDate = makeUtcFromZonedParts(
             {
@@ -317,19 +353,21 @@ export async function generateScheduleForPatient({
   patientId,
   from,
   to,
-  slotTimes
+  slotTimes,
+  slotTimeTimeline
 }: {
   patientId: string;
   from: Date;
   to: Date;
   slotTimes?: SlotTimeOverrides;
+  slotTimeTimeline?: SlotTimeTimelineEntry[];
 }) {
   const { prisma } = await import("../repositories/prisma");
   const [medications, regimens] = await Promise.all([
     prisma.medication.findMany({ where: { patientId, isPrn: false } }),
     prisma.regimen.findMany({ where: { patientId } })
   ]);
-  return generateSchedule({ medications, regimens, from, to, slotTimes });
+  return generateSchedule({ medications, regimens, from, to, slotTimes, slotTimeTimeline });
 }
 
 function doseKey(input: { patientId: string; medicationId: string; scheduledAt: string }) {
@@ -342,10 +380,16 @@ function localSlotDoseKey(input: {
   scheduledAt: string | Date;
   timeZone: string;
   slotTimes?: SlotTimeOverrides;
+  slotTimeTimeline?: SlotTimeTimelineEntry[];
 }) {
   const scheduledAt =
     typeof input.scheduledAt === "string" ? input.scheduledAt : input.scheduledAt.toISOString();
-  const slot = resolveSlot(scheduledAt, input.timeZone, input.slotTimes);
+  const effectiveSlotTimes = resolveSlotTimesForDate(
+    new Date(scheduledAt),
+    input.slotTimes,
+    input.slotTimeTimeline
+  );
+  const slot = resolveSlot(scheduledAt, input.timeZone, effectiveSlotTimes);
   if (!slot) {
     return null;
   }
@@ -383,6 +427,7 @@ export function applyDoseStatuses(
   options: {
     timeZone?: string;
     slotTimes?: SlotTimeOverrides;
+    slotTimeTimeline?: SlotTimeTimelineEntry[];
   } = {}
 ): ScheduleDoseWithStatus[] {
   const timeZone = options.timeZone ?? DEFAULT_TIMEZONE;
@@ -407,7 +452,8 @@ export function applyDoseStatuses(
       medicationId: record.medicationId,
       scheduledAt: record.scheduledAt,
       timeZone,
-      slotTimes: options.slotTimes
+      slotTimes: options.slotTimes,
+      slotTimeTimeline: options.slotTimeTimeline
     });
     if (!key) {
       continue;
@@ -434,7 +480,8 @@ export function applyDoseStatuses(
         medicationId: dose.medicationId,
         scheduledAt: dose.scheduledAt,
         timeZone,
-        slotTimes: options.slotTimes
+        slotTimes: options.slotTimes,
+        slotTimeTimeline: options.slotTimeTimeline
       });
       if (localSlotKey) {
         const candidates = localSlotRecordMap.get(localSlotKey) ?? [];
@@ -474,6 +521,7 @@ export async function generateScheduleForPatientWithStatus({
   to,
   now = new Date(),
   slotTimes,
+  slotTimeTimeline,
   timeZone = DEFAULT_TIMEZONE
 }: {
   patientId: string;
@@ -481,14 +529,15 @@ export async function generateScheduleForPatientWithStatus({
   to: Date;
   now?: Date;
   slotTimes?: SlotTimeOverrides;
+  slotTimeTimeline?: SlotTimeTimelineEntry[];
   timeZone?: string;
 }) {
   const { listDoseRecordsByPatientRange } = await import("../repositories/doseRecordRepo");
   const [doses, records] = await Promise.all([
-    generateScheduleForPatient({ patientId, from, to, slotTimes }),
+    generateScheduleForPatient({ patientId, from, to, slotTimes, slotTimeTimeline }),
     listDoseRecordsByPatientRange({ patientId, from, to })
   ]);
-  return applyDoseStatuses(doses, records, now, { timeZone, slotTimes });
+  return applyDoseStatuses(doses, records, now, { timeZone, slotTimes, slotTimeTimeline });
 }
 
 export function getLocalDateKey(date: Date, tz: string) {
@@ -527,7 +576,8 @@ export async function getScheduleWithStatus(
   to: Date,
   tz: string,
   now: Date = new Date(),
-  slotTimes?: SlotTimeOverrides
+  slotTimes?: SlotTimeOverrides,
+  slotTimeTimeline?: SlotTimeTimelineEntry[]
 ) {
   const normalized = normalizeRangeToTimeZone(from, to, tz);
   return generateScheduleForPatientWithStatus({
@@ -536,6 +586,7 @@ export async function getScheduleWithStatus(
     to: normalized.to,
     now,
     slotTimes,
+    slotTimeTimeline,
     timeZone: tz
   });
 }

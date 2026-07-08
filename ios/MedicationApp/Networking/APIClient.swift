@@ -18,8 +18,7 @@ final class APIClient {
         if let token = tokenForCurrentMode() {
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         return data
     }
 
@@ -31,8 +30,7 @@ final class APIClient {
         if let token = tokenForCurrentMode() {
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         return try decoder.decode(PatientListResponseDTO.self, from: data).data
     }
@@ -48,8 +46,7 @@ final class APIClient {
         }
         let payload = ["displayName": displayName]
         request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         return try decoder.decode(CreatePatientResponseDTO.self, from: data).data
     }
@@ -64,8 +61,18 @@ final class APIClient {
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         request.httpBody = try JSONEncoder().encode(PatientSlotTimesUpdateRequestDTO(slotTimes: slotTimes))
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
+        return try JSONDecoder().decode(PatientSlotTimesResponseDTO.self, from: data).data.slotTimes
+    }
+
+    func fetchPatientSlotTimes() async throws -> PatientSlotTimesDTO {
+        let url = baseURL.appendingPathComponent("api/patient/slot-times")
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let data = try await send(request)
         return try JSONDecoder().decode(PatientSlotTimesResponseDTO.self, from: data).data.slotTimes
     }
 
@@ -77,8 +84,7 @@ final class APIClient {
         if let token = tokenForCurrentMode() {
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(LinkingCodeResponseDTO.self, from: data).data
@@ -92,8 +98,7 @@ final class APIClient {
         if let token = tokenForCurrentMode() {
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         _ = try decoder.decode(RevokeResponseDTO.self, from: data)
         sessionStore.handlePatientRevoked(patientId)
@@ -107,8 +112,7 @@ final class APIClient {
         if let token = tokenForCurrentMode() {
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         _ = try decoder.decode(DeletePatientResponseDTO.self, from: data)
         sessionStore.handlePatientRevoked(patientId)
@@ -122,8 +126,7 @@ final class APIClient {
         if let token = tokenForCurrentMode() {
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         _ = try decoder.decode(DeletePatientResponseDTO.self, from: data)
     }
@@ -131,8 +134,7 @@ final class APIClient {
     func fetchMedications(patientId: String?) async throws -> [MedicationDTO] {
         await refreshCaregiverAuthenticationIfNeeded()
         let request = try makeMedicationListRequest(patientId: patientId)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(MedicationListResponseDTO.self, from: data).data
@@ -141,8 +143,7 @@ final class APIClient {
     func createMedication(_ input: MedicationCreateRequestDTO) async throws -> MedicationDTO {
         await refreshCaregiverAuthenticationIfNeeded()
         let request = try makeMedicationCreateRequest(input: input)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(MedicationResponseDTO.self, from: data).data
@@ -151,8 +152,7 @@ final class APIClient {
     func updateMedication(id: String, patientId: String, input: MedicationUpdateRequestDTO) async throws -> MedicationDTO {
         await refreshCaregiverAuthenticationIfNeeded()
         let request = try makeMedicationUpdateRequest(id: id, patientId: patientId, input: input)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(MedicationResponseDTO.self, from: data).data
@@ -161,15 +161,13 @@ final class APIClient {
     func deleteMedication(id: String, patientId: String) async throws {
         await refreshCaregiverAuthenticationIfNeeded()
         let request = try makeMedicationDeleteRequest(id: id, patientId: patientId)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        _ = try await send(request)
     }
 
     func fetchRegimens(medicationId: String) async throws -> [RegimenDTO] {
         await refreshCaregiverAuthenticationIfNeeded()
         let request = try makeRegimenListRequest(medicationId: medicationId)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(RegimenListResponseDTO.self, from: data).data
@@ -178,8 +176,7 @@ final class APIClient {
     func createRegimen(medicationId: String, input: RegimenCreateRequestDTO) async throws -> RegimenDTO {
         await refreshCaregiverAuthenticationIfNeeded()
         let request = try makeRegimenCreateRequest(medicationId: medicationId, input: input)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(RegimenResponseDTO.self, from: data).data
@@ -188,8 +185,7 @@ final class APIClient {
     func updateRegimen(id: String, input: RegimenUpdateRequestDTO) async throws -> RegimenDTO {
         await refreshCaregiverAuthenticationIfNeeded()
         let request = try makeRegimenUpdateRequest(id: id, input: input)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(RegimenResponseDTO.self, from: data).data
@@ -203,8 +199,7 @@ final class APIClient {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         let payload = ["code": code]
         request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         do {
             let result = try decoder.decode(PatientSessionResponseDTO.self, from: data)
@@ -221,8 +216,7 @@ final class APIClient {
         if let token = tokenForCurrentMode() {
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request, allowsPatientRefreshRetry: false)
         let decoder = JSONDecoder()
         let result = try decoder.decode(PatientSessionResponseDTO.self, from: data)
         return result.data.patientSessionToken
@@ -240,8 +234,7 @@ final class APIClient {
         if let token = tokenForCurrentMode() {
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(ScheduleResponseDTO.self, from: data).data
@@ -261,8 +254,7 @@ final class APIClient {
             path: "api/patient/history/month",
             queryItems: queryItems
         )
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(HistoryMonthResponseDTO.self, from: data)
@@ -278,8 +270,7 @@ final class APIClient {
             path: "api/patient/history/day",
             queryItems: queryItems
         )
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(HistoryDayResponseDTO.self, from: data)
@@ -296,8 +287,7 @@ final class APIClient {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         request.httpBody = try encoder.encode(input)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(DoseRecordResponseDTO.self, from: data).data
@@ -316,8 +306,7 @@ final class APIClient {
         }
         let encoder = JSONEncoder()
         request.httpBody = try encoder.encode(SlotBulkRecordRequestDTO(date: date, slot: slot))
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         return try decoder.decode(SlotBulkRecordResponseDTO.self, from: data)
     }
@@ -337,8 +326,7 @@ final class APIClient {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         request.httpBody = try encoder.encode(input)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(PrnDoseRecordCreateResponseDTO.self, from: data).record
@@ -361,8 +349,7 @@ final class APIClient {
         if let token = tokenForCurrentMode() {
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(ScheduleResponseDTO.self, from: data).data
@@ -385,8 +372,7 @@ final class APIClient {
             path: "api/patients/\(resolvedPatientId)/history/month",
             queryItems: queryItems
         )
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(HistoryMonthResponseDTO.self, from: data)
@@ -405,8 +391,7 @@ final class APIClient {
             path: "api/patients/\(resolvedPatientId)/history/day",
             queryItems: queryItems
         )
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(HistoryDayResponseDTO.self, from: data)
@@ -429,8 +414,7 @@ final class APIClient {
             path: "api/patients/\(resolvedPatientId)/history/report",
             queryItems: queryItems
         )
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(HistoryReportResponseDTO.self, from: data)
@@ -452,8 +436,7 @@ final class APIClient {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         request.httpBody = try encoder.encode(input)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(DoseRecordResponseDTO.self, from: data).data
@@ -482,14 +465,65 @@ final class APIClient {
         if let token = tokenForCurrentMode() {
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        _ = try await send(request)
     }
 
     @MainActor
     func refreshCaregiverAuthenticationIfNeeded() async {
         guard sessionStore.mode == .caregiver else { return }
         await sessionStore.refreshCaregiverTokenIfNeeded()
+    }
+
+    func send(
+        _ request: URLRequest,
+        allowsPatientRefreshRetry: Bool = true
+    ) async throws -> Data {
+        await refreshCaregiverAuthenticationIfNeeded()
+        let authorizedRequest = requestWithCurrentAuthorization(request)
+        let (data, response) = try await URLSession.shared.data(for: authorizedRequest)
+        if shouldRefreshPatientSession(
+            response: response,
+            allowsPatientRefreshRetry: allowsPatientRefreshRetry
+        ) {
+            do {
+                let refreshedToken = try await refreshPatientSessionToken()
+                sessionStore.savePatientToken(refreshedToken)
+                let retryRequest = requestWithCurrentAuthorization(request)
+                let (retryData, retryResponse) = try await URLSession.shared.data(for: retryRequest)
+                try mapErrorIfNeeded(response: retryResponse, data: retryData)
+                return retryData
+            } catch {
+                if !sessionStore.isPatientTutorialPreviewActive {
+                    sessionStore.handleAuthFailure(for: .patient)
+                }
+                throw error
+            }
+        }
+        try mapErrorIfNeeded(response: response, data: data)
+        return data
+    }
+
+    private func requestWithCurrentAuthorization(_ request: URLRequest) -> URLRequest {
+        var request = request
+        request.setValue(nil, forHTTPHeaderField: "Authorization")
+        if let token = tokenForCurrentMode() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        return request
+    }
+
+    private func shouldRefreshPatientSession(
+        response: URLResponse,
+        allowsPatientRefreshRetry: Bool
+    ) -> Bool {
+        guard allowsPatientRefreshRetry,
+              sessionStore.mode == .patient,
+              sessionStore.patientToken != nil,
+              !sessionStore.isPatientTutorialPreviewActive,
+              let httpResponse = response as? HTTPURLResponse else {
+            return false
+        }
+        return httpResponse.statusCode == 401
     }
 
     @MainActor
@@ -798,8 +832,7 @@ final class APIClient {
         }
         let encoder = JSONEncoder()
         urlRequest.httpBody = try encoder.encode(request)
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(urlRequest)
         let decoder = JSONDecoder()
         return try decoder.decode(ClaimResponse.self, from: data)
     }
@@ -811,8 +844,7 @@ final class APIClient {
         if let token = tokenForCurrentMode() {
             urlRequest.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(urlRequest)
         let decoder = JSONDecoder()
         return try decoder.decode(EntitlementsResponse.self, from: data)
     }
@@ -829,8 +861,7 @@ final class APIClient {
         }
         let payload: [String: String] = ["token": token, "platform": platform]
         request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        _ = try await send(request)
     }
 
     func unregisterDeviceToken(token: String) async throws {
@@ -843,8 +874,7 @@ final class APIClient {
         }
         let payload: [String: String] = ["token": token]
         request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        _ = try await send(request)
     }
 
     // MARK: - Push Device Registration (FCM, 012-push-foundation)
@@ -865,8 +895,7 @@ final class APIClient {
             "environment": environment
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        _ = try await send(request)
     }
 
     /// Unregister an FCM push device token from the backend.
@@ -881,8 +910,7 @@ final class APIClient {
         }
         let payload: [String: String] = ["token": token]
         request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        _ = try await send(request)
     }
 
     // MARK: - Private Helpers

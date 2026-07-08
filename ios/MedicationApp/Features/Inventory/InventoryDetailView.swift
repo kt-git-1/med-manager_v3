@@ -180,9 +180,9 @@ struct InventoryDetailView: View {
             CaregiverCard {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack(spacing: 10) {
-                        refillPresetButton(title: "+7", amount: 7)
-                        refillPresetButton(title: "+14", amount: 14)
-                        refillPresetButton(title: "+21", amount: 21)
+                        refillPresetButton(title: "1週間", amount: plannedRefillAmount(days: 7))
+                        refillPresetButton(title: "2週間", amount: plannedRefillAmount(days: 14))
+                        refillPresetButton(title: "3週間", amount: plannedRefillAmount(days: 21))
                         Button(NSLocalizedString("caregiver.inventory.actions.refill.sheet.custom", comment: "Custom input")) {
                             refillAmount = max(0, refillAmount)
                             focusedField = .refillAmount
@@ -389,6 +389,23 @@ struct InventoryDetailView: View {
             AppConstants.formatDecimal(count),
             AppConstants.formatDecimal(item.doseCountPerIntake)
         )
+    }
+
+    private func plannedRefillAmount(days: Int) -> Double {
+        switch days {
+        case 7:
+            if let value = item.nextSevenDaysPlannedUnits, value > 0 { return value }
+        case 14:
+            if let value = item.nextFourteenDaysPlannedUnits, value > 0 { return value }
+        case 21:
+            if let value = item.nextTwentyOneDaysPlannedUnits, value > 0 { return value }
+        default:
+            break
+        }
+        if let dailyPlannedUnits = item.dailyPlannedUnits, dailyPlannedUnits > 0 {
+            return dailyPlannedUnits * Double(days)
+        }
+        return max(item.doseCountPerIntake, 1) * Double(days)
     }
 
     private var hasSettingsChanges: Bool {

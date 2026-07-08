@@ -740,9 +740,11 @@ struct PatientManagementView: View {
     private func deleteAccount() async {
         guard !isDeletingAccount else { return }
         isDeletingAccount = true
+        await caregiverSessionController.unregisterPushFromBackend()
         let success = await viewModel.deleteCaregiverAccount()
         isDeletingAccount = false
         if success {
+            await schedulingCoordinator.cancelScheduledNotifications()
             withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                 sessionStore.resetAfterAccountDeletion()
             }
@@ -974,7 +976,6 @@ struct PatientManagementView: View {
         defer { isSavingDetail = false }
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
-        let oldSlotTimes = preferencesStore.slotTimesMap()
         for slot in NotificationSlot.allCases {
             if let date = draftTimes[slot] {
                 let components = calendar.dateComponents([.hour, .minute], from: date)
@@ -993,7 +994,6 @@ struct PatientManagementView: View {
             viewModel.updateSlotTimes(patientId: patientId, slotTimes: savedSlotTimes)
             applySlotTimes(savedSlotTimes)
             draftTimes = buildDraftTimes()
-            try await migrateRegimensToPresetSlots(oldSlotTimes: oldSlotTimes)
             await rescheduleIfNeeded()
             NotificationCenter.default.post(name: .presetTimesUpdated, object: nil)
             return true
@@ -1015,65 +1015,6 @@ struct PatientManagementView: View {
             caregiverPatientId: patientId,
             trigger: .settingsChange
         )
-    }
-
-    private func migrateRegimensToPresetSlots(oldSlotTimes: [NotificationSlot: (hour: Int, minute: Int)]) async throws {
-        guard sessionStore.mode == .caregiver, let patientId = sessionStore.currentPatientId else {
-            return
-        }
-        let medications = try await apiClient.fetchMedications(patientId: patientId)
-        let mapping = buildLegacyTimeSlotMapping(oldSlotTimes: oldSlotTimes)
-        for medication in medications {
-            let regimens = try await apiClient.fetchRegimens(medicationId: medication.id)
-            for regimen in regimens {
-                let updatedTimes = regimen.times.map { time in
-                    mapping[time] ?? time
-                }
-                if updatedTimes != regimen.times {
-                    let input = RegimenUpdateRequestDTO(
-                        timezone: nil,
-                        startDate: nil,
-                        endDate: nil,
-                        times: updatedTimes,
-                        daysOfWeek: nil,
-                        enabled: regimen.enabled
-                    )
-                    _ = try await apiClient.updateRegimen(id: regimen.id, input: input)
-                }
-            }
-        }
-    }
-
-    private func buildLegacyTimeSlotMapping(oldSlotTimes: [NotificationSlot: (hour: Int, minute: Int)]) -> [String: String] {
-        var mapping: [String: String] = [:]
-        for slot in NotificationSlot.allCases {
-            if let oldTime = oldSlotTimes[slot] {
-                let oldString = String(format: "%02d:%02d", oldTime.hour, oldTime.minute)
-                mapping[oldString] = slot.rawValue
-            }
-            let defaultTime = slot.hourMinute
-            let defaultString = String(format: "%02d:%02d", defaultTime.hour, defaultTime.minute)
-            mapping[defaultString] = slot.rawValue
-            let scheduleDefault = defaultScheduleTimeString(for: slot)
-            mapping[scheduleDefault] = slot.rawValue
-            let configured = preferencesStore.slotTime(for: slot)
-            let configuredString = String(format: "%02d:%02d", configured.hour, configured.minute)
-            mapping[configuredString] = slot.rawValue
-        }
-        return mapping
-    }
-
-    private func defaultScheduleTimeString(for slot: NotificationSlot) -> String {
-        switch slot {
-        case .morning:
-            return ScheduleTimeSlot.morning.timeValue
-        case .noon:
-            return ScheduleTimeSlot.noon.timeValue
-        case .evening:
-            return ScheduleTimeSlot.evening.timeValue
-        case .bedtime:
-            return ScheduleTimeSlot.bedtime.timeValue
-        }
     }
 
     private func showToast(_ message: String, kind: ToastKind = .success) {

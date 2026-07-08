@@ -24,17 +24,24 @@ final class CaregiverSessionController: ObservableObject {
     var tokenManager: DeviceTokenManager { deviceTokenManager }
 
     func logoutCaregiver() async {
+        await unregisterPushFromBackend()
+        sessionStore.clearCaregiverToken()
+    }
+
+    func unregisterPushFromBackend() async {
         let baseURL = SessionStore.resolveBaseURL()
         let apiClient = APIClient(baseURL: baseURL, sessionStore: sessionStore)
         await deviceTokenManager.unregisterAllFromBackend(apiClient: apiClient)
         hasRegisteredPush = false
-        sessionStore.clearCaregiverToken()
     }
 
     // MARK: - Push Notification Registration
 
     private func registerPushTokenIfNeeded() {
         guard sessionStore.mode == .caregiver, sessionStore.caregiverToken != nil else { return }
+        guard UserDefaults.standard.bool(forKey: CaregiverPushSettingsViewModel.persistKey) else {
+            return
+        }
 
         // Request APNs registration (idempotent; iOS returns cached token if already registered)
         deviceTokenManager.requestRemoteNotificationRegistration()

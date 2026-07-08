@@ -97,6 +97,8 @@ export type InventoryItem = {
   out: boolean;
   dailyPlannedUnits: number | null;
   nextSevenDaysPlannedUnits: number | null;
+  nextFourteenDaysPlannedUnits: number | null;
+  nextTwentyOneDaysPlannedUnits: number | null;
   daysRemaining: number | null;
   refillDueDate: string | null;
 };
@@ -171,6 +173,8 @@ function buildInventoryItem(
   plan?: {
     dailyPlannedUnits: number | null;
     nextSevenDaysPlannedUnits: number | null;
+    nextFourteenDaysPlannedUnits: number | null;
+    nextTwentyOneDaysPlannedUnits: number | null;
     daysRemaining: number | null;
     refillDueDate: string | null;
   }
@@ -194,6 +198,8 @@ function buildInventoryItem(
     out: state === "OUT",
     dailyPlannedUnits: plan?.dailyPlannedUnits ?? null,
     nextSevenDaysPlannedUnits: plan?.nextSevenDaysPlannedUnits ?? null,
+    nextFourteenDaysPlannedUnits: plan?.nextFourteenDaysPlannedUnits ?? null,
+    nextTwentyOneDaysPlannedUnits: plan?.nextTwentyOneDaysPlannedUnits ?? null,
     daysRemaining: plan?.daysRemaining ?? null,
     refillDueDate: plan?.refillDueDate ?? null
   };

@@ -10,8 +10,7 @@ extension APIClient {
         if let token = tokenForCurrentMode() {
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         let payload = try decoder.decode(InventoryListResponseDTO.self, from: data)
         return payload.data.medications
@@ -34,8 +33,7 @@ extension APIClient {
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         request.httpBody = try JSONEncoder().encode(input)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         return try decoder.decode(InventoryResponseDTO.self, from: data).data
     }
@@ -57,8 +55,7 @@ extension APIClient {
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         request.httpBody = try JSONEncoder().encode(input)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try mapErrorIfNeeded(response: response, data: data)
+        let data = try await send(request)
         let decoder = JSONDecoder()
         return try decoder.decode(InventoryResponseDTO.self, from: data).data
     }

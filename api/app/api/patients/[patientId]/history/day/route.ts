@@ -15,7 +15,10 @@ import {
   resolveSlot,
   parseSlotTimesFromParams
 } from "../../../../../../src/services/scheduleResponse";
-import { resolvePatientSlotTimes } from "../../../../../../src/services/patientSlotTimeService";
+import {
+  getPatientSlotTimeTimeline,
+  resolvePatientSlotTimes
+} from "../../../../../../src/services/patientSlotTimeService";
 import { listPrnHistoryItemsByRange } from "../../../../../../src/services/prnDoseRecordService";
 import { validateDateString } from "../../../../../../src/validators/schedule";
 import { checkRetentionForDay } from "../../../../../../src/services/historyRetentionService";
@@ -25,6 +28,25 @@ export const runtime = "nodejs";
 
 const historyTimeZone = "Asia/Tokyo";
 const slotOrder = ["morning", "noon", "evening", "bedtime"] as const;
+
+type RouteSlotTimes = Partial<Record<(typeof slotOrder)[number], string>>;
+type RouteSlotTimeTimelineEntry = { effectiveFrom: Date; slotTimes: RouteSlotTimes };
+
+function resolveRouteSlotTimesForDate(
+  date: Date,
+  fallback?: RouteSlotTimes,
+  timeline?: RouteSlotTimeTimelineEntry[]
+) {
+  if (!timeline?.length) {
+    return fallback;
+  }
+  let selected: RouteSlotTimeTimelineEntry | undefined;
+  for (const entry of timeline) {
+    if (entry.effectiveFrom <= date) selected = entry;
+    else break;
+  }
+  return selected?.slotTimes ?? timeline[0]?.slotTimes ?? fallback;
+}
 
 export async function GET(
   request: Request,
@@ -71,17 +93,28 @@ export async function GET(
     const session = await requireCaregiver(authHeader);
     const { patientId } = await params;
     await assertCaregiverPatientScope(session.caregiverUserId, patientId);
-    const effectiveSlotTimes = await resolvePatientSlotTimes(patientId, customSlotTimes);
     await checkRetentionForDay(dateParam, "caregiver", session.caregiverUserId);
 
     const range = getDayRange(parsedDate, historyTimeZone);
+    const slotTimeTimeline = customSlotTimes
+      ? undefined
+      : await getPatientSlotTimeTimeline(patientId, range.from, range.to);
+    const effectiveSlotTimes = customSlotTimes
+      ? await resolvePatientSlotTimes(patientId, customSlotTimes)
+      : undefined;
+    const daySlotTimes = resolveRouteSlotTimesForDate(
+      new Date(range.to.getTime() - 1),
+      effectiveSlotTimes,
+      slotTimeTimeline
+    );
     const doses = await getScheduleWithStatus(
       patientId,
       range.from,
       range.to,
       historyTimeZone,
       new Date(),
-      effectiveSlotTimes
+      effectiveSlotTimes,
+      slotTimeTimeline
     );
     const prn = await listPrnHistoryItemsByRange({
       patientId,
@@ -92,7 +125,7 @@ export async function GET(
 
     const items = doses
       .map((dose) => {
-        const slot = resolveSlot(dose.scheduledAt, historyTimeZone, effectiveSlotTimes);
+        const slot = resolveSlot(dose.scheduledAt, historyTimeZone, daySlotTimes);
         if (!slot) {
           return null;
         }

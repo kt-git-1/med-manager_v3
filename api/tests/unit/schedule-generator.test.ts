@@ -181,6 +181,40 @@ describe("schedule generator", () => {
     expect(doses.map((dose) => dose.scheduledAt)).toEqual(["2026-01-31T22:30:00.000Z"]);
   });
 
+  it("resolves regimen slot keys with the slot time timeline for each day", () => {
+    const from = new Date("2026-07-06T00:00:00+09:00");
+    const to = new Date("2026-07-08T00:00:00+09:00");
+
+    const doses = generateSchedule({
+      medications: [baseMedication],
+      regimens: [
+        {
+          ...baseRegimen,
+          timezone: "Asia/Tokyo",
+          daysOfWeek: [],
+          times: ["bedtime"]
+        }
+      ],
+      from,
+      to,
+      slotTimeTimeline: [
+        {
+          effectiveFrom: new Date("2026-07-01T00:00:00+09:00"),
+          slotTimes: { bedtime: "20:00" }
+        },
+        {
+          effectiveFrom: new Date("2026-07-07T12:00:00+09:00"),
+          slotTimes: { bedtime: "22:40" }
+        }
+      ]
+    });
+
+    expect(doses.map((dose) => dose.scheduledAt)).toEqual([
+      "2026-07-06T11:00:00.000Z",
+      "2026-07-07T13:40:00.000Z"
+    ]);
+  });
+
   it("resolves noon slot key to one pm by default", () => {
     const from = new Date("2026-02-01T00:00:00+09:00");
     const to = new Date("2026-02-02T00:00:00+09:00");

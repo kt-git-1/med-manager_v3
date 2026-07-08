@@ -107,7 +107,7 @@ describe("PATIENT_LIMIT_EXCEEDED contract", () => {
     return jsonResponse(
       {
         code: "PATIENT_LIMIT_EXCEEDED",
-        message: "Patient limit reached. Upgrade to premium for unlimited patients.",
+        message: "Current release supports one patient per caregiver account.",
         limit,
         current
       },
