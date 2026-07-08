@@ -5,8 +5,22 @@ import { claimEntitlement } from "../../../../src/services/entitlementService";
 
 export const runtime = "nodejs";
 
+function isBillingApiEnabled() {
+  return process.env.BILLING_API_ENABLED === "true" || process.env.NODE_ENV === "test";
+}
+
 export async function POST(request: Request) {
   try {
+    if (!isBillingApiEnabled()) {
+      return new Response(
+        JSON.stringify({ error: "billing_disabled", message: "Billing is disabled" }),
+        {
+          status: 403,
+          headers: { "content-type": "application/json" }
+        }
+      );
+    }
+
     const authHeader = request.headers.get("authorization") ?? undefined;
     const session = await requireCaregiver(authHeader);
 

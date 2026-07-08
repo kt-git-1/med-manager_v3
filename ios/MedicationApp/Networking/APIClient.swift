@@ -191,9 +191,8 @@ final class APIClient {
         return try decoder.decode(RegimenResponseDTO.self, from: data).data
     }
 
-    func exchangeLinkCode(code: String) async throws -> String {
+    func exchangeLinkCode(code: String) async throws -> PatientSessionTokenDTO {
         let url = baseURL.appendingPathComponent("api/patient/link")
-        print("APIClient: exchangeLinkCode url=\(url.absoluteString)")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -201,15 +200,16 @@ final class APIClient {
         request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
         let data = try await send(request)
         let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
         do {
             let result = try decoder.decode(PatientSessionResponseDTO.self, from: data)
-            return result.data.patientSessionToken
+            return result.data
         } catch {
             throw APIError.network("Invalid server response")
         }
     }
 
-    func refreshPatientSessionToken() async throws -> String {
+    func refreshPatientSessionToken() async throws -> PatientSessionTokenDTO {
         let url = baseURL.appendingPathComponent("api/patient/session/refresh")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -218,8 +218,19 @@ final class APIClient {
         }
         let data = try await send(request, allowsPatientRefreshRetry: false)
         let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
         let result = try decoder.decode(PatientSessionResponseDTO.self, from: data)
-        return result.data.patientSessionToken
+        return result.data
+    }
+
+    func revokePatientSession() async throws {
+        let url = baseURL.appendingPathComponent("api/patient/session")
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        _ = try await send(request, allowsPatientRefreshRetry: false)
     }
 
     func fetchPatientToday(slotTimeItems: [URLQueryItem] = []) async throws -> [ScheduleDoseDTO] {
@@ -486,8 +497,11 @@ final class APIClient {
             allowsPatientRefreshRetry: allowsPatientRefreshRetry
         ) {
             do {
-                let refreshedToken = try await refreshPatientSessionToken()
-                sessionStore.savePatientToken(refreshedToken)
+                let refreshedSession = try await refreshPatientSessionToken()
+                sessionStore.savePatientToken(
+                    refreshedSession.patientSessionToken,
+                    expiresAt: refreshedSession.expiresAt
+                )
                 let retryRequest = requestWithCurrentAuthorization(request)
                 let (retryData, retryResponse) = try await URLSession.shared.data(for: retryRequest)
                 try mapErrorIfNeeded(response: retryResponse, data: retryData)

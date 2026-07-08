@@ -226,9 +226,20 @@ final class SessionStore: ObservableObject {
     }
 
     func savePatientToken(_ token: String) {
+        savePatientToken(token, expiresAt: nil)
+    }
+
+    func savePatientToken(_ token: String, expiresAt: Date?) {
         patientToken = token
         persistToken(token, key: SessionStore.patientTokenStorageKey)
-        secureStorage.removeString(forKey: SessionStore.patientExpiresAtStorageKey)
+        if let expiresAt {
+            secureStorage.setString(
+                String(expiresAt.timeIntervalSince1970),
+                forKey: SessionStore.patientExpiresAtStorageKey
+            )
+        } else {
+            persistExpiry(forKey: SessionStore.patientExpiresAtStorageKey)
+        }
     }
 
     func clearCaregiverToken() {
@@ -414,8 +425,16 @@ final class SessionStore: ObservableObject {
     }
 
     private func restoredPatientToken(tokenKey: String) -> String? {
-        secureStorage.removeString(forKey: SessionStore.patientExpiresAtStorageKey)
-        return secureStorage.string(forKey: tokenKey)
+        guard let token = restoredToken(
+            tokenKey: tokenKey,
+            expiresAtKey: SessionStore.patientExpiresAtStorageKey
+        ) else {
+            return nil
+        }
+        if secureStorage.string(forKey: SessionStore.patientExpiresAtStorageKey) == nil {
+            persistExpiry(forKey: SessionStore.patientExpiresAtStorageKey)
+        }
+        return token
     }
 
     private func normalizedCaregiverToken(_ token: String) -> String {

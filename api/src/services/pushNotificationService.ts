@@ -243,7 +243,6 @@ export async function notifyCaregiversOfDoseTaken(
       failedCount > 0 ? "warn" : "info",
       [
         "FCM dose taken push result",
-        `patientId=${input.patientId}`,
         `devices=${devices.length}`,
         `sent=${sentCount}`,
         `failed=${failedCount}`,

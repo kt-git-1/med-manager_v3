@@ -10,7 +10,7 @@ final class LinkingService {
         self.apiClient = APIClient(baseURL: baseURL, sessionStore: store)
     }
 
-    func link(code: String) async throws -> String {
+    func link(code: String) async throws -> PatientSessionTokenDTO {
         let trimmed = code.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             throw APIError.validation("code required")

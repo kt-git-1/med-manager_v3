@@ -192,6 +192,15 @@ model PatientSession {
   @@index([revokedAt])
 }
 
+model ApiRateLimit {
+  key       String   @id
+  count     Int      @default(0)
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
+}
+
 model DoseRecord {
   id             String         @id @default(uuid())
   patientId      String

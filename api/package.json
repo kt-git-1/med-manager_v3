@@ -14,7 +14,9 @@
     "format:write": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "check:release-security": "node scripts/release-security-check.mjs",
+    "smoke:account-delete": "node scripts/account-delete-smoke.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.1",

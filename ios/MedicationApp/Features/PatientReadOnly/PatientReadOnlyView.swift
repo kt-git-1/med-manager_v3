@@ -154,8 +154,10 @@ struct PatientReadOnlyView: View {
         reminderBannerPresenter.dismiss()
         Task {
             await schedulingCoordinator.cancelScheduledNotifications()
+            let apiClient = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: sessionStore)
+            try? await apiClient.revokePatientSession()
+            sessionStore.clearPatientToken()
         }
-        sessionStore.clearPatientToken()
     }
 
     private var currentTutorialTab: PatientTab? {

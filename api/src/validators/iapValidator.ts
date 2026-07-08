@@ -3,7 +3,8 @@
 // ---------------------------------------------------------------------------
 
 /** Known product identifier for Premium Unlock (Non-Consumable). */
-export const PREMIUM_PRODUCT_ID = "com.yourcompany.medicationapp.premium_unlock";
+export const PREMIUM_PRODUCT_ID =
+  process.env.PREMIUM_PRODUCT_ID ?? "com.yourcompany.medicationapp.premium_unlock";
 
 const VALID_ENVIRONMENTS = ["Sandbox", "Production"] as const;
 

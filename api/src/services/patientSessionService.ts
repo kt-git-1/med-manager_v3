@@ -21,12 +21,18 @@ export type PatientSessionIssued = {
   patientId: string;
 };
 
+const PATIENT_SESSION_TTL_DAYS = Number(process.env.PATIENT_SESSION_TTL_DAYS ?? 90);
+
 function hashLinkingCode(code: string) {
   return createHash("sha256").update(code).digest("hex");
 }
 
 function generatePatientSessionToken() {
   return randomBytes(32).toString("hex");
+}
+
+function patientSessionExpiresAt(now: Date) {
+  return new Date(now.getTime() + PATIENT_SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);
 }
 
 export async function exchangeLinkingCodeForSession(code: string): Promise<PatientSessionIssued> {
@@ -37,6 +43,7 @@ export async function exchangeLinkingCodeForSession(code: string): Promise<Patie
   }
   await assertLinkingNotLocked(linkingCode.patientId);
   const now = new Date();
+  const expiresAt = patientSessionExpiresAt(now);
   if (linkingCode.usedAt || linkingCode.expiresAt <= now) {
     await registerLinkingAttemptFailure(linkingCode.patientId);
     throw new AuthError("Not found", 404);
@@ -51,11 +58,11 @@ export async function exchangeLinkingCodeForSession(code: string): Promise<Patie
       tokenHash,
       issuedAt: now,
       lastRotatedAt: now,
-      expiresAt: null
+      expiresAt
     })
   ]);
   await resetLinkingAttempts(linkingCode.patientId);
-  return { patientSessionToken, expiresAt: null, patientId: linkingCode.patientId };
+  return { patientSessionToken, expiresAt, patientId: linkingCode.patientId };
 }
 
 export async function refreshPatientSessionToken(token: string): Promise<PatientSessionIssued> {
@@ -70,6 +77,7 @@ export async function refreshPatientSessionToken(token: string): Promise<Patient
   const now = new Date();
   const nextToken = generatePatientSessionToken();
   const nextHash = hashPatientSessionToken(nextToken);
+  const expiresAt = patientSessionExpiresAt(now);
 
   await prisma.$transaction([
     revokePatientSessionByTokenHash(tokenHash, now),
@@ -78,8 +86,17 @@ export async function refreshPatientSessionToken(token: string): Promise<Patient
       tokenHash: nextHash,
       issuedAt: now,
       lastRotatedAt: now,
-      expiresAt: null
+      expiresAt
     })
   ]);
-  return { patientSessionToken: nextToken, expiresAt: null, patientId: session.patientId };
+  return { patientSessionToken: nextToken, expiresAt, patientId: session.patientId };
+}
+
+export async function revokePatientSessionToken(token: string) {
+  const tokenHash = hashPatientSessionToken(token);
+  const result = await revokePatientSessionByTokenHash(tokenHash, new Date());
+  if (result.count === 0) {
+    throw new AuthError("Unauthorized", 401);
+  }
+  return { revoked: true };
 }

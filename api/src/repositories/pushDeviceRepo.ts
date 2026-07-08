@@ -82,12 +82,14 @@ export async function disablePushDeviceById(id: string) {
 
 export async function listEnabledPushDevicesForCaregivers(caregiverIds: string[]) {
   if (caregiverIds.length === 0) return [];
+  const environment = process.env.PUSH_DEVICE_ENVIRONMENT ?? "PROD";
 
   return prisma.pushDevice.findMany({
     where: {
       ownerType: "CAREGIVER",
       ownerId: { in: caregiverIds },
-      isEnabled: true
+      isEnabled: true,
+      environment
     }
   });
 }

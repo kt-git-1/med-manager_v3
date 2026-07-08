@@ -143,8 +143,11 @@ struct LinkCodeEntryView: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            let token = try await linkingService.link(code: normalizedCode)
-            sessionStore.savePatientToken(token)
+            let session = try await linkingService.link(code: normalizedCode)
+            sessionStore.savePatientToken(
+                session.patientSessionToken,
+                expiresAt: session.expiresAt
+            )
             code = ""
         } catch {
             print("LinkCodeEntryView: link failed \(error)")

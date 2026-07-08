@@ -1,6 +1,6 @@
 import { errorResponse } from "../../../../src/middleware/error";
 import { AuthError, getBearerToken, isCaregiverToken } from "../../../../src/middleware/auth";
-import { assertIpRateLimit } from "../../../../src/middleware/ipRateLimit";
+import { assertPersistentIpRateLimit } from "../../../../src/middleware/persistentRateLimit";
 import { validateLinkCodeInput } from "../../../../src/validators/patient";
 import { exchangeLinkingCodeForSession } from "../../../../src/services/patientSessionService";
 
@@ -13,7 +13,7 @@ const LINK_EXCHANGE_RATE_LIMIT = {
 
 export async function POST(request: Request) {
   try {
-    assertIpRateLimit(request, "patient-link", LINK_EXCHANGE_RATE_LIMIT);
+    await assertPersistentIpRateLimit(request, "patient-link", LINK_EXCHANGE_RATE_LIMIT);
     const authHeader = request.headers.get("authorization") ?? undefined;
     const token = getBearerToken(authHeader);
     if (token && isCaregiverToken(token)) {
