@@ -96,6 +96,7 @@ export type InventoryItem = {
   low: boolean;
   out: boolean;
   dailyPlannedUnits: number | null;
+  nextSevenDaysPlannedUnits: number | null;
   daysRemaining: number | null;
   refillDueDate: string | null;
 };
@@ -169,6 +170,7 @@ function buildInventoryItem(
   medication: Medication,
   plan?: {
     dailyPlannedUnits: number | null;
+    nextSevenDaysPlannedUnits: number | null;
     daysRemaining: number | null;
     refillDueDate: string | null;
   }
@@ -191,6 +193,7 @@ function buildInventoryItem(
     low: state === "LOW",
     out: state === "OUT",
     dailyPlannedUnits: plan?.dailyPlannedUnits ?? null,
+    nextSevenDaysPlannedUnits: plan?.nextSevenDaysPlannedUnits ?? null,
     daysRemaining: plan?.daysRemaining ?? null,
     refillDueDate: plan?.refillDueDate ?? null
   };

@@ -12,6 +12,7 @@ struct InventoryItemDTO: Decodable, Identifiable {
     let low: Bool
     let out: Bool
     let dailyPlannedUnits: Double?
+    let nextSevenDaysPlannedUnits: Double?
     let daysRemaining: Int?
     let refillDueDate: String?
 

@@ -641,21 +641,6 @@ struct InventoryListView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                HStack(spacing: 12) {
-                    inventoryStepperButton(systemImage: "minus", tint: accent) {
-                        Task { await adjustListInventory(item, delta: -1) }
-                    }
-                    Text(AppConstants.formatDecimal(item.inventoryQuantity))
-                        .font(.system(size: 30, weight: .bold, design: .rounded))
-                        .foregroundStyle(accent)
-                        .frame(maxWidth: .infinity)
-                    inventoryStepperButton(systemImage: "plus", tint: accent) {
-                        Task { await adjustListInventory(item, delta: 1) }
-                    }
-                }
-                .padding(6)
-                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-
                 if shouldShowLowInventory(for: item) || item.out {
                     Button {
                         Task { await adjustListInventory(item, delta: weeklyRefillAmount(for: item)) }
@@ -749,18 +734,6 @@ struct InventoryListView: View {
         }
     }
 
-    private func inventoryStepperButton(systemImage: String, tint: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(tint)
-                .frame(width: 46, height: 42)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(CaregiverUI.cardStroke, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-    }
-
     private func adjustListInventory(_ item: InventoryItemDTO, delta: Double) async {
         guard item.inventoryEnabled else { return }
         let effectiveDelta = delta < 0 ? max(delta, -item.inventoryQuantity) : delta
@@ -779,6 +752,10 @@ struct InventoryListView: View {
     }
 
     private func weeklyRefillAmount(for item: InventoryItemDTO) -> Double {
+        if let nextSevenDaysPlannedUnits = item.nextSevenDaysPlannedUnits,
+           nextSevenDaysPlannedUnits > 0 {
+            return nextSevenDaysPlannedUnits
+        }
         if let dailyPlannedUnits = item.dailyPlannedUnits, dailyPlannedUnits > 0 {
             return dailyPlannedUnits * 7
         }

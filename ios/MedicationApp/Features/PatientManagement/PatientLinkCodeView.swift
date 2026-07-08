@@ -57,7 +57,7 @@ struct PatientLinkCodeView: View {
                 .buttonStyle(.plain)
 
                 ShareLink(
-                    item: code.code,
+                    item: shareMessage,
                     label: {
                         Label(NSLocalizedString("caregiver.patients.code.share", comment: "Share code"), systemImage: "square.and.arrow.up")
                             .font(.subheadline.weight(.medium))
@@ -95,5 +95,13 @@ struct PatientLinkCodeView: View {
             Button(NSLocalizedString("common.ok", comment: "OK"), role: .cancel) {}
         }
         .accessibilityIdentifier("PatientLinkCodeView")
+    }
+
+    private var shareMessage: String {
+        String(
+            format: NSLocalizedString("caregiver.patients.code.share.message", comment: "Linking code share message"),
+            code.code,
+            formatter.string(from: code.expiresAt)
+        )
     }
 }

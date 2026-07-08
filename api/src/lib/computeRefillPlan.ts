@@ -16,10 +16,12 @@ export type RefillPlanInput = {
   inventoryQuantity: number;
   doseCountPerIntake: number;
   regimens: RefillPlanRegimen[];
+  now?: Date;
 };
 
 export type RefillPlanResult = {
   dailyPlannedUnits: number | null;
+  nextSevenDaysPlannedUnits: number | null;
   daysRemaining: number | null;
   refillDueDate: string | null;
 };
@@ -173,22 +175,66 @@ function plannedUnitsForDate({
   return total;
 }
 
+function plannedUnitsForNextDays({
+  regimens,
+  startDate,
+  days,
+  doseCountPerIntake,
+  tz
+}: {
+  regimens: RefillPlanRegimen[];
+  startDate: Date;
+  days: number;
+  doseCountPerIntake: number;
+  tz: string;
+}) {
+  let total = 0;
+  let cursor = startDate;
+  for (let dayOffset = 0; dayOffset < days; dayOffset += 1) {
+    total += plannedUnitsForDate({
+      regimens,
+      date: cursor,
+      doseCountPerIntake,
+      tz
+    });
+    cursor = nextLocalDay(cursor, tz);
+  }
+  return total;
+}
+
 export function computeRefillPlan(input: RefillPlanInput): RefillPlanResult {
   if (!input.inventoryEnabled) {
-    return { dailyPlannedUnits: null, daysRemaining: null, refillDueDate: null };
+    return {
+      dailyPlannedUnits: null,
+      nextSevenDaysPlannedUnits: null,
+      daysRemaining: null,
+      refillDueDate: null
+    };
   }
 
   const activeRegimens = input.regimens.filter(
     (regimen) => regimen.enabled && regimen.times.length > 0
   );
   if (activeRegimens.length === 0) {
-    return { dailyPlannedUnits: null, daysRemaining: null, refillDueDate: null };
+    return {
+      dailyPlannedUnits: null,
+      nextSevenDaysPlannedUnits: null,
+      daysRemaining: null,
+      refillDueDate: null
+    };
   }
 
-  const today = startOfLocalDay(new Date(), TOKYO_TIMEZONE);
+  const today = startOfLocalDay(input.now ?? new Date(), TOKYO_TIMEZONE);
   const dailyPlannedUnits = plannedUnitsForDate({
     regimens: activeRegimens,
     date: today,
+    doseCountPerIntake: input.doseCountPerIntake,
+    tz: TOKYO_TIMEZONE
+  });
+  const nextSevenDaysPlannedUnits = plannedUnitsForNextDays({
+    regimens: activeRegimens,
+    startDate: today,
+    days: 7,
     doseCountPerIntake: input.doseCountPerIntake,
     tz: TOKYO_TIMEZONE
   });
@@ -196,6 +242,7 @@ export function computeRefillPlan(input: RefillPlanInput): RefillPlanResult {
   if (input.inventoryQuantity === 0) {
     return {
       dailyPlannedUnits,
+      nextSevenDaysPlannedUnits,
       daysRemaining: 0,
       refillDueDate: dateKey(today, TOKYO_TIMEZONE)
     };
@@ -216,6 +263,7 @@ export function computeRefillPlan(input: RefillPlanInput): RefillPlanResult {
       if (remaining < plannedUnits) {
         return {
           dailyPlannedUnits,
+          nextSevenDaysPlannedUnits,
           daysRemaining: dayOffset,
           refillDueDate: dateKey(cursor, TOKYO_TIMEZONE)
         };
@@ -226,8 +274,13 @@ export function computeRefillPlan(input: RefillPlanInput): RefillPlanResult {
   }
 
   if (!hasPlannedUnits) {
-    return { dailyPlannedUnits: null, daysRemaining: null, refillDueDate: null };
+    return {
+      dailyPlannedUnits: null,
+      nextSevenDaysPlannedUnits: null,
+      daysRemaining: null,
+      refillDueDate: null
+    };
   }
 
-  return { dailyPlannedUnits, daysRemaining: null, refillDueDate: null };
+  return { dailyPlannedUnits, nextSevenDaysPlannedUnits, daysRemaining: null, refillDueDate: null };
 }

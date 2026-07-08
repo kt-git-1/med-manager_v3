@@ -584,6 +584,7 @@
 "caregiver.patients.code.expires" = "有効期限: %@";
 "caregiver.patients.code.copy" = "コピー";
 "caregiver.patients.code.share" = "共有";
+"caregiver.patients.code.share.message" = "お薬見守りの本人モードで、次の連携コードを入力してください。\n\n連携コード: %@\n有効期限: %@\n\nアプリを開き、「本人モード」からコードを入力すると、服薬予定と記録を家族と共有できます。";
 "caregiver.patients.code.copied" = "連携コードをコピーしました";
 "caregiver.patients.postCreateCodeGuide.title" = "次は連携コードを発行";
 "caregiver.patients.postCreateCodeGuide.message" = "登録した方のカードにある「コード発行」から、本人モードで入力する6桁コードを作れます。";
