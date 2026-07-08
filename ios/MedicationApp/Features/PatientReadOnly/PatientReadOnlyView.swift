@@ -1053,7 +1053,7 @@ struct PatientSettingsView: View {
             await rescheduleIfNeeded()
         } else {
             let scheduler = NotificationScheduler()
-            await scheduler.schedule(planEntries: [], now: Date())
+            await scheduler.cancelAllScheduledNotifications()
         }
     }
 

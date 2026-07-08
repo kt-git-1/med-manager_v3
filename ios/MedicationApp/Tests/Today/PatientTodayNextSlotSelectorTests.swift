@@ -9,8 +9,20 @@ final class PatientTodayNextSlotSelectorTests: XCTestCase {
 
         let selected = PatientTodayNextSlotSelector.selectSlot(
             from: [
-                .init(slot: .noon, scheduledAt: noon, remainingCount: 2, isWithinRecordingWindow: false),
-                .init(slot: .evening, scheduledAt: evening, remainingCount: 1, isWithinRecordingWindow: true)
+                .init(
+                    slot: .noon,
+                    scheduledAt: noon,
+                    remainingCount: 2,
+                    isWithinRecordingWindow: false,
+                    hasRecordableInventory: true
+                ),
+                .init(
+                    slot: .evening,
+                    scheduledAt: evening,
+                    remainingCount: 1,
+                    isWithinRecordingWindow: true,
+                    hasRecordableInventory: true
+                )
             ],
             now: now
         )
@@ -25,8 +37,20 @@ final class PatientTodayNextSlotSelectorTests: XCTestCase {
 
         let selected = PatientTodayNextSlotSelector.selectSlot(
             from: [
-                .init(slot: .noon, scheduledAt: noon, remainingCount: 2, isWithinRecordingWindow: false),
-                .init(slot: .bedtime, scheduledAt: bedtime, remainingCount: 1, isWithinRecordingWindow: false)
+                .init(
+                    slot: .noon,
+                    scheduledAt: noon,
+                    remainingCount: 2,
+                    isWithinRecordingWindow: false,
+                    hasRecordableInventory: true
+                ),
+                .init(
+                    slot: .bedtime,
+                    scheduledAt: bedtime,
+                    remainingCount: 1,
+                    isWithinRecordingWindow: false,
+                    hasRecordableInventory: true
+                )
             ],
             now: now
         )
@@ -40,7 +64,61 @@ final class PatientTodayNextSlotSelectorTests: XCTestCase {
 
         let selected = PatientTodayNextSlotSelector.selectSlot(
             from: [
-                .init(slot: .noon, scheduledAt: noon, remainingCount: 2, isWithinRecordingWindow: false)
+                .init(
+                    slot: .noon,
+                    scheduledAt: noon,
+                    remainingCount: 2,
+                    isWithinRecordingWindow: false,
+                    hasRecordableInventory: true
+                )
+            ],
+            now: now
+        )
+
+        XCTAssertNil(selected)
+    }
+
+    func testSkipsSlotWhenOnlyOutOfStockDosesRemain() {
+        let now = tokyoDate(year: 2026, month: 6, day: 8, hour: 11, minute: 30)
+        let noon = tokyoDate(year: 2026, month: 6, day: 8, hour: 13, minute: 0)
+        let evening = tokyoDate(year: 2026, month: 6, day: 8, hour: 19, minute: 0)
+
+        let selected = PatientTodayNextSlotSelector.selectSlot(
+            from: [
+                .init(
+                    slot: .noon,
+                    scheduledAt: noon,
+                    remainingCount: 1,
+                    isWithinRecordingWindow: false,
+                    hasRecordableInventory: false
+                ),
+                .init(
+                    slot: .evening,
+                    scheduledAt: evening,
+                    remainingCount: 1,
+                    isWithinRecordingWindow: false,
+                    hasRecordableInventory: true
+                )
+            ],
+            now: now
+        )
+
+        XCTAssertEqual(selected, .evening)
+    }
+
+    func testReturnsNilWhenRemainingDosesAreAllOutOfStock() {
+        let now = tokyoDate(year: 2026, month: 6, day: 8, hour: 11, minute: 30)
+        let noon = tokyoDate(year: 2026, month: 6, day: 8, hour: 13, minute: 0)
+
+        let selected = PatientTodayNextSlotSelector.selectSlot(
+            from: [
+                .init(
+                    slot: .noon,
+                    scheduledAt: noon,
+                    remainingCount: 1,
+                    isWithinRecordingWindow: false,
+                    hasRecordableInventory: false
+                )
             ],
             now: now
         )

@@ -296,7 +296,8 @@ private struct PatientTodayRootView: View {
                 slot: slot,
                 scheduledAt: scheduledAt,
                 remainingCount: summary.remainingCount,
-                isWithinRecordingWindow: summary.isWithinRecordingWindow
+                isWithinRecordingWindow: summary.isWithinRecordingWindow,
+                hasRecordableInventory: summary.hasRecordableInventory
             )
         }
         guard let nextSlot = PatientTodayNextSlotSelector.selectSlot(from: candidates) else {
@@ -525,6 +526,10 @@ private struct PatientTodayListView: View {
                     systemImage: "pills.fill"
                 )
 
+                if let inventoryWarning {
+                    PatientInventoryWarningCard(warning: inventoryWarning)
+                }
+
                 nextDoseHeroCard
 
                 if !prnMedications.isEmpty {
@@ -694,13 +699,42 @@ private struct PatientTodayListView: View {
                 slot: slot,
                 scheduledAt: scheduledAt,
                 remainingCount: summary.remainingCount,
-                isWithinRecordingWindow: summary.isWithinRecordingWindow
+                isWithinRecordingWindow: summary.isWithinRecordingWindow,
+                hasRecordableInventory: summary.hasRecordableInventory
             )
         }
         guard let nextSlot = PatientTodayNextSlotSelector.selectSlot(from: candidates) else {
             return nil
         }
         return slotSections.first { $0.slot == nextSlot }
+    }
+
+    private var inventoryWarning: PatientInventoryWarning? {
+        let affectedDoses = viewModel.items.filter { dose in
+            dose.effectiveStatus != .taken && isOutOfStock(dose.medicationId)
+        }
+        var seenMedicationIds = Set<String>()
+        let medicationNames = affectedDoses.compactMap { dose -> String? in
+            guard seenMedicationIds.insert(dose.medicationId).inserted else {
+                return nil
+            }
+            return medicationDisplayName(for: dose)
+        }
+        guard let firstMedicationName = medicationNames.first else {
+            return nil
+        }
+        return PatientInventoryWarning(
+            firstMedicationName: firstMedicationName,
+            medicationCount: medicationNames.count
+        )
+    }
+
+    private func medicationDisplayName(for dose: ScheduleDoseDTO) -> String {
+        let trimmedDosage = dose.medicationSnapshot.dosageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedDosage.isEmpty || trimmedDosage == "不明" {
+            return dose.medicationSnapshot.name
+        }
+        return "\(dose.medicationSnapshot.name) \(trimmedDosage)"
     }
 
     private var progressText: String {
@@ -744,6 +778,54 @@ private struct PatientTodayListView: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("PatientTodayPrnEntryCard")
+    }
+}
+
+private struct PatientInventoryWarning {
+    let firstMedicationName: String
+    let medicationCount: Int
+
+    var message: String {
+        if medicationCount <= 1 {
+            return String(
+                format: NSLocalizedString("patient.today.inventory.warning.single", comment: "Single out-of-stock medication warning"),
+                firstMedicationName
+            )
+        }
+        return String(
+            format: NSLocalizedString("patient.today.inventory.warning.multiple", comment: "Multiple out-of-stock medications warning"),
+            medicationCount
+        )
+    }
+}
+
+private struct PatientInventoryWarningCard: View {
+    let warning: PatientInventoryWarning
+
+    var body: some View {
+        PatientCard(accent: PatientUI.red) {
+            HStack(alignment: .center, spacing: 14) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 30, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 56, height: 56)
+                    .background(PatientUI.red, in: Circle())
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(NSLocalizedString("patient.today.inventory.warning.title", comment: "Inventory warning title"))
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(PatientUI.red)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text(warning.message)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("PatientTodayInventoryWarningCard")
     }
 }
 

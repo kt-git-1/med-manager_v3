@@ -5,9 +5,9 @@ import UserNotifications
 final class NotificationScheduler {
     private let notificationCenter: UNUserNotificationCenter
     private let calendar: Calendar
-    private let identifierPrefix = AppConstants.notificationIdentifierPrefix
+    private nonisolated static let identifierPrefix = AppConstants.notificationIdentifierPrefix
     /// Legacy prefix used by the now-removed ReminderService; kept for cleanup.
-    private let legacyReminderPrefix = "dose-reminder-"
+    private nonisolated static let legacyReminderPrefix = "dose-reminder-"
 
     init(
         notificationCenter: UNUserNotificationCenter = .current(),
@@ -53,9 +53,14 @@ final class NotificationScheduler {
     }
 
     private func clearExistingReminders() async {
-        let identifiers = await pendingReminderIdentifiers()
-        if !identifiers.isEmpty {
-            notificationCenter.removePendingNotificationRequests(withIdentifiers: identifiers)
+        let pendingIdentifiers = await pendingReminderIdentifiers()
+        if !pendingIdentifiers.isEmpty {
+            notificationCenter.removePendingNotificationRequests(withIdentifiers: pendingIdentifiers)
+        }
+
+        let deliveredIdentifiers = await deliveredReminderIdentifiers()
+        if !deliveredIdentifiers.isEmpty {
+            notificationCenter.removeDeliveredNotifications(withIdentifiers: deliveredIdentifiers)
         }
     }
 
@@ -64,10 +69,25 @@ final class NotificationScheduler {
             notificationCenter.getPendingNotificationRequests { requests in
                 let identifiers = requests
                     .map(\.identifier)
-                    .filter { $0.hasPrefix(self.identifierPrefix) || $0.hasPrefix(self.legacyReminderPrefix) }
+                    .filter { Self.isReminderIdentifier($0) }
                 continuation.resume(returning: identifiers)
             }
         }
+    }
+
+    private func deliveredReminderIdentifiers() async -> [String] {
+        await withCheckedContinuation { continuation in
+            notificationCenter.getDeliveredNotifications { notifications in
+                let identifiers = notifications
+                    .map { $0.request.identifier }
+                    .filter { Self.isReminderIdentifier($0) }
+                continuation.resume(returning: identifiers)
+            }
+        }
+    }
+
+    private nonisolated static func isReminderIdentifier(_ identifier: String) -> Bool {
+        identifier.hasPrefix(identifierPrefix) || identifier.hasPrefix(legacyReminderPrefix)
     }
 
     private func isAuthorized() async -> Bool {
