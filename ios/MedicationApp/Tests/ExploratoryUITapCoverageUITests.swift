@@ -41,7 +41,10 @@ final class ExploratoryUITapCoverageTests: XCTestCase {
         let app = launchedApp(mode: "patient")
 
         handleSystemPermissionPrompts(in: app)
-        XCTAssertTrue(app.staticTexts["今日のお薬"].waitForExistence(timeout: 10))
+        if !app.staticTexts["今日のお薬"].waitForExistence(timeout: 10) {
+            try linkPatientIfNeeded(in: app)
+        }
+        XCTAssertTrue(app.staticTexts["今日のお薬"].waitForExistence(timeout: 30), app.debugDescription)
 
         tapTab("履歴", in: app)
         XCTAssertTrue(app.staticTexts["履歴"].waitForExistence(timeout: 10))
@@ -184,6 +187,24 @@ final class ExploratoryUITapCoverageTests: XCTestCase {
         XCTAssertTrue(waitForSwitch(pushToggle, value: "1", timeout: 30), app.debugDescription)
     }
 
+    private func linkPatientIfNeeded(in app: XCUIApplication) throws {
+        guard app.otherElements["LinkCodeEntryView"].waitForExistence(timeout: 5) else {
+            return
+        }
+        let field = app.textFields["連携コード"].firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 10), app.debugDescription)
+        field.tap()
+        for character in qaContext.patientLinkingCodeForUI {
+            field.typeText(String(character))
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        }
+        let submit = app.buttons["連携コード送信"].firstMatch
+        XCTAssertTrue(submit.waitForExistence(timeout: 10), app.debugDescription)
+        XCTAssertTrue(submit.isEnabled, app.debugDescription)
+        submit.tap()
+        handleSystemPermissionPrompts(in: app)
+    }
+
     private func waitForDoseTakenNotification(
         in springboard: XCUIApplication,
         timeout: TimeInterval
@@ -242,6 +263,7 @@ private struct QAContext {
     let medicationId: String
     let medicationName: String
     let patientToken: String
+    let patientLinkingCodeForUI: String
 
     static func build() async throws -> QAContext {
         let apiBaseURL = try env("API_BASE_URL")
@@ -283,6 +305,11 @@ private struct QAContext {
             patientId: patientId
         )
         let patientToken = try await exchangeLinkingCode(apiBaseURL: apiBaseURL, code: code)
+        let patientLinkingCodeForUI = try await issueLinkingCode(
+            apiBaseURL: apiBaseURL,
+            caregiverToken: caregiverToken,
+            patientId: patientId
+        )
 
         return QAContext(
             apiBaseURL: apiBaseURL,
@@ -293,7 +320,8 @@ private struct QAContext {
             patientName: patientName,
             medicationId: medicationId,
             medicationName: medicationName,
-            patientToken: patientToken
+            patientToken: patientToken,
+            patientLinkingCodeForUI: patientLinkingCodeForUI
         )
     }
 
