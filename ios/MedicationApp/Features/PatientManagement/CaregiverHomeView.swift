@@ -1,4 +1,7 @@
+import FirebaseMessaging
 import SwiftUI
+import UIKit
+import UserNotifications
 
 enum CaregiverTab: Hashable {
     case medications
@@ -83,9 +86,16 @@ struct CaregiverHomeView: View {
                     stepIndex: tutorialStepIndex,
                     stepCount: caregiverTutorialSteps.count,
                     tint: CaregiverUI.orange,
+                    skipTitle: isCurrentTutorialNotificationStep
+                        ? NSLocalizedString("tutorial.notification.later", comment: "Set notification later")
+                        : nil,
+                    finalPrimaryTitle: isCurrentTutorialNotificationStep
+                        ? NSLocalizedString("tutorial.notification.enable", comment: "Enable notification tutorial action")
+                        : nil,
+                    finalPrimarySystemImage: isCurrentTutorialNotificationStep ? "bell.badge.fill" : nil,
                     onSkip: { finishTutorial(openRegistration: false) },
                     onPrevious: { moveTutorial(by: -1) },
-                    onNext: { moveTutorial(by: 1) },
+                    onNext: { handleTutorialNext() },
                     onFinish: { finishTutorial(openRegistration: true) }
                 )
                 .zIndex(10)
@@ -230,6 +240,16 @@ struct CaregiverHomeView: View {
                     title: NSLocalizedString("tutorial.caregiver.shareCode.title", comment: "Caregiver share code tutorial title"),
                     message: NSLocalizedString("tutorial.caregiver.shareCode.message", comment: "Caregiver share code tutorial message")
                 )
+            ),
+            CaregiverTutorialStep(
+                tab: .today,
+                sample: .notificationPermission,
+                step: GuidedTutorialStep(
+                    id: "caregiver-notification-permission",
+                    icon: "bell.badge.fill",
+                    title: NSLocalizedString("tutorial.caregiver.notification.title", comment: "Caregiver notification permission tutorial title"),
+                    message: NSLocalizedString("tutorial.caregiver.notification.message", comment: "Caregiver notification permission tutorial message")
+                )
             )
         ]
     }
@@ -237,6 +257,11 @@ struct CaregiverHomeView: View {
     private var currentTutorialTab: CaregiverTab? {
         guard let tutorialStepIndex else { return nil }
         return caregiverTutorialSteps[tutorialStepIndex].tab
+    }
+
+    private var isCurrentTutorialNotificationStep: Bool {
+        guard let tutorialStepIndex else { return false }
+        return caregiverTutorialSteps[tutorialStepIndex].step.id == "caregiver-notification-permission"
     }
 
     // MARK: - Data Loading
@@ -324,6 +349,61 @@ struct CaregiverHomeView: View {
         }
     }
 
+    private func handleTutorialNext() {
+        if isCurrentTutorialNotificationStep {
+            Task { await enablePushNotificationsFromTutorial() }
+        } else {
+            moveTutorial(by: 1)
+        }
+    }
+
+    private func enablePushNotificationsFromTutorial() async {
+        let granted = await requestNotificationAuthorization()
+        if granted {
+            UIApplication.shared.registerForRemoteNotifications()
+            await registerCaregiverPushDeviceIfPossible()
+        }
+        finishTutorial(openRegistration: true)
+    }
+
+    private func requestNotificationAuthorization() async -> Bool {
+        await withCheckedContinuation { continuation in
+            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+                continuation.resume(returning: granted)
+            }
+        }
+    }
+
+    private func registerCaregiverPushDeviceIfPossible() async {
+        do {
+            let token = try await retrieveFCMTokenWithRetry()
+            let apiClient = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: sessionStore)
+            try await apiClient.registerPushDevice(
+                token: token,
+                platform: "ios",
+                environment: DeviceTokenManager.pushEnvironment
+            )
+            UserDefaults.standard.set(true, forKey: CaregiverPushSettingsViewModel.persistKey)
+        } catch {
+            print("CaregiverHomeView: tutorial push registration failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func retrieveFCMTokenWithRetry() async throws -> String {
+        var lastError: Error?
+        for attempt in 0..<4 {
+            do {
+                return try await Messaging.messaging().token()
+            } catch {
+                lastError = error
+                if attempt < 3 {
+                    try await Task.sleep(nanoseconds: 750_000_000)
+                }
+            }
+        }
+        throw lastError ?? DeviceTokenError.noFCMToken
+    }
+
     private func finishTutorial(openRegistration: Bool = false) {
         sessionStore.markModeTutorialSeen(for: .caregiver)
         withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
@@ -348,6 +428,7 @@ private enum CaregiverTutorialSample {
     case registerPatient
     case issueCode
     case shareCode
+    case notificationPermission
 
     var tab: CaregiverTab {
         switch self {
@@ -355,6 +436,8 @@ private enum CaregiverTutorialSample {
             return tab
         case .timePreset, .registerPatient, .issueCode, .shareCode:
             return .patients
+        case .notificationPermission:
+            return .today
         }
     }
 }
@@ -410,6 +493,8 @@ private struct CaregiverTutorialSampleView: View {
             sampleSettingsPatientCard(highlightIssueCode: true)
         case .shareCode:
             sampleLinkCodeCard()
+        case .notificationPermission:
+            sampleNotificationPermissionCard()
         case .tab:
             tabContent
         }
@@ -547,6 +632,8 @@ private struct CaregiverTutorialSampleView: View {
             return "本人へコードを共有"
         case .timePreset:
             return "服用時間を調整"
+        case .notificationPermission:
+            return "通知を受け取る"
         case .tab:
             break
         }
@@ -574,6 +661,8 @@ private struct CaregiverTutorialSampleView: View {
             return "コピーまたは共有で本人へ渡します"
         case .timePreset:
             return "朝・昼・夜・眠前の時刻を変更できます"
+        case .notificationPermission:
+            return "服薬記録や飲み忘れを通知します"
         case .tab:
             break
         }
@@ -601,6 +690,8 @@ private struct CaregiverTutorialSampleView: View {
             return "square.and.arrow.up"
         case .timePreset:
             return "clock.badge.checkmark.fill"
+        case .notificationPermission:
+            return "bell.badge.fill"
         case .tab:
             break
         }
@@ -615,6 +706,55 @@ private struct CaregiverTutorialSampleView: View {
             return "clock.fill"
         case .patients:
             return "gearshape.fill"
+        }
+    }
+
+    private func sampleNotificationPermissionCard() -> some View {
+        CaregiverCard(accent: CaregiverUI.orange) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(alignment: .center, spacing: 14) {
+                    Image(systemName: "bell.badge.fill")
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(CaregiverUI.orange)
+                        .frame(width: 52, height: 52)
+                        .background(CaregiverUI.orange.opacity(0.12), in: Circle())
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(NSLocalizedString("tutorial.caregiver.notification.title", comment: "Caregiver notification permission tutorial title"))
+                            .font(.title3.weight(.bold))
+                        Text("本人が記録したときにこの端末へ知らせます。")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    sampleNotificationBenefit(
+                        icon: "checkmark.circle.fill",
+                        text: "服薬記録をすぐ確認できます",
+                        color: CaregiverUI.teal
+                    )
+                    sampleNotificationBenefit(
+                        icon: "exclamationmark.triangle.fill",
+                        text: "飲み忘れに気づきやすくなります",
+                        color: CaregiverUI.red
+                    )
+                }
+            }
+        }
+    }
+
+    private func sampleNotificationBenefit(icon: String, text: String, color: Color) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.headline.weight(.bold))
+                .foregroundStyle(color)
+                .frame(width: 28, height: 28)
+                .background(color.opacity(0.10), in: Circle())
+            Text(text)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.primary)
+            Spacer(minLength: 0)
         }
     }
 

@@ -58,6 +58,8 @@
 "tutorial.previous" = "前へ";
 "tutorial.next" = "次へ";
 "tutorial.done" = "完了";
+"tutorial.notification.enable" = "通知をオンにする";
+"tutorial.notification.later" = "あとで設定する";
 "tutorial.caregiver.today.title" = "今日の予定を確認";
 "tutorial.caregiver.today.message" = "選択中の方が今日飲むお薬と、記録状況をここで確認できます。";
 "tutorial.caregiver.medications.title" = "薬を登録・編集";
@@ -76,12 +78,16 @@
 "tutorial.caregiver.issueCode.message" = "登録した方を選び、「コード発行」から本人用の6桁コードを作ります。";
 "tutorial.caregiver.shareCode.title" = "本人へコードを共有";
 "tutorial.caregiver.shareCode.message" = "発行したコードをコピーまたは共有して、本人モードの端末で入力してもらいます。";
+"tutorial.caregiver.notification.title" = "家族の服薬状況を通知しますか？";
+"tutorial.caregiver.notification.message" = "本人がお薬を飲んだときや、飲み忘れがありそうなときに通知で確認できます。離れていても状況に気づきやすくなります。";
 "tutorial.patient.today.title" = "今日のお薬";
 "tutorial.patient.today.message" = "飲むお薬を確認します。飲んだら「飲んだ」を押します。";
 "tutorial.patient.history.title" = "記録を見る";
 "tutorial.patient.history.message" = "飲めた日や、まだ飲んでいないお薬を確認できます。";
 "tutorial.patient.settings.title" = "通知を使う";
 "tutorial.patient.settings.message" = "お薬の時間に、この端末へお知らせできます。";
+"tutorial.patient.notification.title" = "お薬の時間に通知しますか？";
+"tutorial.patient.notification.message" = "朝・昼・夜など、設定した時間にお薬の通知を受け取れます。通知をオンにすると、飲み忘れに気づきやすくなります。";
 
 /* Caregiver login */
 "caregiver.login.title" = "家族ログイン";

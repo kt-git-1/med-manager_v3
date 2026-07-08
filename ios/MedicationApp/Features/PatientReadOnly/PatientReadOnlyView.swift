@@ -9,6 +9,7 @@ struct PatientReadOnlyView: View {
     @State private var selectedTab: PatientTab = .today
     @StateObject private var schedulingCoordinator = SchedulingRefreshCoordinator()
     @StateObject private var preferencesStore = NotificationPreferencesStore()
+    @StateObject private var permissionManager = NotificationPermissionManager()
     @State private var deepLinkTarget: NotificationDeepLinkTarget?
     @State private var tutorialStepIndex: Int?
 
@@ -47,8 +48,15 @@ struct PatientReadOnlyView: View {
                             tint: PatientUI.teal,
                             isSeniorFriendly: true,
                             bottomClearance: 104,
+                            skipTitle: isCurrentTutorialNotificationStep
+                                ? NSLocalizedString("tutorial.notification.later", comment: "Set notification later")
+                                : nil,
+                            finalPrimaryTitle: isCurrentTutorialNotificationStep
+                                ? NSLocalizedString("tutorial.notification.enable", comment: "Enable notification tutorial action")
+                                : nil,
+                            finalPrimarySystemImage: isCurrentTutorialNotificationStep ? "bell.badge.fill" : nil,
                             onPrevious: { moveTutorial(by: -1) },
-                            onNext: { moveTutorial(by: 1) },
+                            onNext: { handleTutorialNext() },
                             onFinish: { finishTutorial() }
                         )
                         .zIndex(10)
@@ -127,6 +135,15 @@ struct PatientReadOnlyView: View {
                     title: NSLocalizedString("tutorial.patient.settings.title", comment: "Patient settings tutorial title"),
                     message: NSLocalizedString("tutorial.patient.settings.message", comment: "Patient settings tutorial message")
                 )
+            ),
+            PatientTutorialStep(
+                tab: .today,
+                step: GuidedTutorialStep(
+                    id: "patient-notification-permission",
+                    icon: "bell.badge.fill",
+                    title: NSLocalizedString("tutorial.patient.notification.title", comment: "Patient notification permission tutorial title"),
+                    message: NSLocalizedString("tutorial.patient.notification.message", comment: "Patient notification permission tutorial message")
+                )
             )
         ]
     }
@@ -144,6 +161,11 @@ struct PatientReadOnlyView: View {
     private var currentTutorialTab: PatientTab? {
         guard let tutorialStepIndex else { return nil }
         return patientTutorialSteps[tutorialStepIndex].tab
+    }
+
+    private var isCurrentTutorialNotificationStep: Bool {
+        guard let tutorialStepIndex else { return false }
+        return patientTutorialSteps[tutorialStepIndex].step.id == "patient-notification-permission"
     }
 
     private func refreshNotificationSchedule(trigger: SchedulingRefreshCoordinator.RefreshTrigger) async {
@@ -180,6 +202,23 @@ struct PatientReadOnlyView: View {
         withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
             self.tutorialStepIndex = nextIndex
         }
+    }
+
+    private func handleTutorialNext() {
+        if isCurrentTutorialNotificationStep {
+            Task { await enableNotificationsFromTutorial() }
+        } else {
+            moveTutorial(by: 1)
+        }
+    }
+
+    private func enableNotificationsFromTutorial() async {
+        let granted = await permissionManager.requestAuthorizationIfNeeded()
+        preferencesStore.masterEnabled = granted
+        if granted {
+            await refreshNotificationSchedule(trigger: .settingsChange)
+        }
+        finishTutorial()
     }
 
     private func finishTutorial() {

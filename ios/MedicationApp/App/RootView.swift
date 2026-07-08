@@ -84,6 +84,9 @@ struct GuidedTutorialOverlay: View {
     let tint: Color
     var isSeniorFriendly = false
     var bottomClearance: CGFloat = 4
+    var skipTitle: String?
+    var finalPrimaryTitle: String?
+    var finalPrimarySystemImage: String?
     var onSkip: (() -> Void)?
     let onPrevious: () -> Void
     let onNext: () -> Void
@@ -131,7 +134,7 @@ struct GuidedTutorialOverlay: View {
 
                 HStack(spacing: 12) {
                     Button(action: onSkip ?? onFinish) {
-                        Text(NSLocalizedString("tutorial.skip", comment: "Skip tutorial action"))
+                        Text(skipTitle ?? NSLocalizedString("tutorial.skip", comment: "Skip tutorial action"))
                             .font(buttonFont)
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity)
@@ -153,10 +156,8 @@ struct GuidedTutorialOverlay: View {
 
                     Button(action: onNext) {
                         Label(
-                            stepIndex == stepCount - 1
-                                ? NSLocalizedString("tutorial.done", comment: "Done tutorial action")
-                                : NSLocalizedString("tutorial.next", comment: "Next tutorial action"),
-                            systemImage: stepIndex == stepCount - 1 ? "checkmark" : "chevron.right"
+                            primaryTitle,
+                            systemImage: primarySystemImage
                         )
                         .font(buttonFont)
                         .labelStyle(.titleAndIcon)
@@ -203,6 +204,26 @@ struct GuidedTutorialOverlay: View {
 
     private var buttonHeight: CGFloat {
         isSeniorFriendly ? 50 : 42
+    }
+
+    private var isFinalStep: Bool {
+        stepIndex == stepCount - 1
+    }
+
+    private var primaryTitle: String {
+        if isFinalStep, let finalPrimaryTitle {
+            return finalPrimaryTitle
+        }
+        return isFinalStep
+            ? NSLocalizedString("tutorial.done", comment: "Done tutorial action")
+            : NSLocalizedString("tutorial.next", comment: "Next tutorial action")
+    }
+
+    private var primarySystemImage: String {
+        if isFinalStep, let finalPrimarySystemImage {
+            return finalPrimarySystemImage
+        }
+        return isFinalStep ? "checkmark" : "chevron.right"
     }
 
     private var cardSpacing: CGFloat {
