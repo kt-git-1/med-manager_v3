@@ -1,0 +1,19 @@
+{
+  "target": "App Store iPad screenshots",
+  "device_family": "iPad 13-inch compatible",
+  "size_px": [
+    2064,
+    2752
+  ],
+  "format": "PNG",
+  "count": 6,
+  "files": [
+    "marketing/app-store-screenshots/ipad-13/01_modes_overview.png",
+    "marketing/app-store-screenshots/ipad-13/02_one_tap_record.png",
+    "marketing/app-store-screenshots/ipad-13/03_medication_list.png",
+    "marketing/app-store-screenshots/ipad-13/04_inventory.png",
+    "marketing/app-store-screenshots/ipad-13/05_history.png",
+    "marketing/app-store-screenshots/ipad-13/06_patient_mode.png"
+  ],
+  "contact_sheet": "marketing/app-store-screenshots/ipad-13-contact-sheet.png"
+}
