@@ -26,10 +26,10 @@ struct PatientDeleteView: View {
                         .font(.title2.weight(.bold))
                     Text(patient.displayName)
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                     Text(NSLocalizedString("caregiver.patients.delete.confirm.message", comment: "Delete message"))
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                         .multilineTextAlignment(.center)
                 }
 

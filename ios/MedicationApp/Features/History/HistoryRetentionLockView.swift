@@ -15,7 +15,7 @@ struct HistoryRetentionLockView: View {
 
             Image(systemName: "lock.fill")
                 .font(.system(size: 48))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
 
             Text(titleText)
                 .font(.title3.weight(.semibold))
@@ -23,7 +23,7 @@ struct HistoryRetentionLockView: View {
 
             Text(bodyText)
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
 
@@ -40,7 +40,7 @@ struct HistoryRetentionLockView: View {
             .padding(.bottom, 32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
+        .background(AppTheme.screenBackground)
         .accessibilityIdentifier("HistoryRetentionLockView")
         .sheet(isPresented: $showPaywall) {
             PaywallView(entitlementStore: entitlementStore)
@@ -118,7 +118,7 @@ struct HistoryRetentionLockView: View {
                     comment: "Close button"
                 ))
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
             }
             .accessibilityIdentifier("history.retention.lock.close")
         }
@@ -150,7 +150,7 @@ struct HistoryRetentionLockView: View {
                     comment: "Close button"
                 ))
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
             }
             .accessibilityIdentifier("history.retention.lock.close")
         }

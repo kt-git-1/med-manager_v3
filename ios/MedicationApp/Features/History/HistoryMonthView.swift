@@ -164,12 +164,8 @@ struct HistoryMonthView: View {
                     if isPatientMode {
                         PatientScreenBackground()
                     } else {
-                        LinearGradient(
-                            colors: [Color(red: 0.93, green: 0.98, blue: 1.0), Color(.systemGroupedBackground)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        .ignoresSafeArea()
+                        CaregiverUI.background
+                            .ignoresSafeArea()
                     }
 
                     ScrollView {
@@ -210,7 +206,8 @@ struct HistoryMonthView: View {
                     }
                 }
             },
-            overlay: viewModel.isUpdating ? AnyView(updatingOverlay) : nil
+            overlay: viewModel.isUpdating ? AnyView(updatingOverlay) : nil,
+            background: historyBackground
         )
         .onAppear {
             viewModel.toastPresenter = toastPresenter
@@ -309,7 +306,7 @@ struct HistoryMonthView: View {
                             .minimumScaleFactor(0.72)
                         Text(patientNameLine)
                             .font(.headline.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondaryText)
                             .lineLimit(1)
                             .minimumScaleFactor(0.78)
                     }
@@ -386,7 +383,7 @@ struct HistoryMonthView: View {
 
                     Text(NSLocalizedString(patientWeekEncouragementKey, comment: "Patient week encouragement"))
                         .font(.body.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -414,7 +411,7 @@ struct HistoryMonthView: View {
                                     .minimumScaleFactor(0.76)
                                 Text(patientHistorySubtitle(for: date))
                                     .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(Color.readableSecondaryText)
                                     .lineLimit(2)
                             }
 
@@ -440,7 +437,7 @@ struct HistoryMonthView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(NSLocalizedString("patient.history.today.progress.title", comment: "Today progress title"))
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
 
                     Text(todayProgressTitle)
                         .font(.title3.weight(.bold))
@@ -449,7 +446,7 @@ struct HistoryMonthView: View {
 
                     Text(NSLocalizedString(todayEncouragementKey, comment: "Today encouragement"))
                         .font(.body.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                         .fixedSize(horizontal: false, vertical: true)
 
                     if todayTotalCount > 0 {
@@ -509,7 +506,7 @@ struct HistoryMonthView: View {
                     .minimumScaleFactor(0.64)
                 Text(NSLocalizedString("patient.history.today.progress.unit", comment: "Dose slot unit"))
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
             }
         }
         .frame(width: 86, height: 86)
@@ -533,7 +530,7 @@ struct HistoryMonthView: View {
             }
             Text(Self.shortDateFormatter.string(from: date))
                 .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
@@ -812,7 +809,7 @@ struct HistoryMonthView: View {
                         .font((isPatientMode ? Font.title3 : Font.headline).weight(.bold))
                     Text(NSLocalizedString(isPatientMode ? "patient.history.calendar.message" : "history.calendar.message", comment: "History calendar message"))
                         .font(isPatientMode ? .body.weight(.semibold) : .subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -842,7 +839,7 @@ struct HistoryMonthView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(NSLocalizedString("history.selected.title", comment: "Selected day section title"))
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                     Text(selectedDateTitle)
                         .font(.title3.weight(.bold))
                         .foregroundStyle(.primary)
@@ -861,7 +858,7 @@ struct HistoryMonthView: View {
                 .foregroundStyle(.primary)
             Text(selectedSummaryHelpText)
                 .font(isPatientMode ? .body.weight(.semibold) : .subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
                 .fixedSize(horizontal: false, vertical: true)
             if selectedTotalCount > 0 {
                 LazyVGrid(columns: selectedSummaryPillColumns, alignment: .leading, spacing: 8) {
@@ -898,7 +895,7 @@ struct HistoryMonthView: View {
                 ForEach(weekdaySymbols, id: \.self) { symbol in
                     Text(symbol)
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -928,7 +925,7 @@ struct HistoryMonthView: View {
             VStack(spacing: 6) {
                 Text("\(dayNumber)")
                     .font(isPatientMode ? .headline.weight(.bold) : .subheadline.weight(.semibold))
-                    .foregroundStyle(isSelected ? Color.white : (hasAnyHistory ? Color.primary : Color.secondary))
+                    .foregroundStyle(isSelected ? Color.white : (hasAnyHistory ? Color.primary : Color.readableSecondaryText))
                     .frame(maxWidth: .infinity)
                 HStack(spacing: 4) {
                     slotDot(summary?.morning ?? .none, slotKey: "morning")
@@ -997,7 +994,7 @@ struct HistoryMonthView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(NSLocalizedString("history.legend.help", comment: "Legend help"))
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 8)], alignment: .leading, spacing: 8) {
                 legendItem(color: historyTakenColor, title: NSLocalizedString("history.legend.taken", comment: "Legend taken"))
                 legendItem(color: historyMissedColor, title: NSLocalizedString("history.legend.missed", comment: "Legend missed"))
@@ -1016,7 +1013,7 @@ struct HistoryMonthView: View {
                 .frame(width: 8, height: 8)
             Text(title)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.78)
         }
@@ -1218,6 +1215,10 @@ struct HistoryMonthView: View {
 
     private func syncPatientPreferences() {
         preferencesStore.switchPatient(sessionStore.currentPatientId)
+    }
+
+    private var historyBackground: Color {
+        isPatientMode ? PatientUI.backgroundTop : CaregiverUI.background
     }
 
     private func recordMissedDose(_ dose: HistoryDayItemDTO) {

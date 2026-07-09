@@ -216,7 +216,7 @@ struct PatientManagementView: View {
     var body: some View {
         NavigationStack {
             contentView
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .background(AppTheme.screenBackground.ignoresSafeArea())
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showingCreate) {
@@ -400,7 +400,7 @@ struct PatientManagementView: View {
                             ? NSLocalizedString("caregiver.patients.select.help", comment: "Select help text")
                             : NSLocalizedString("caregiver.patients.single.help", comment: "Single patient help text"))
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondaryText)
                     }
                 }
             if viewModel.patients.count > 1 {
@@ -459,7 +459,7 @@ struct PatientManagementView: View {
                                 .font(.headline.weight(.bold))
                             Text(NSLocalizedString("caregiver.patients.postCreateCodeGuide.message", comment: "Post create code guide message"))
                                 .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Color.readableSecondaryText)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
@@ -483,8 +483,8 @@ struct PatientManagementView: View {
                             Text(NSLocalizedString("common.close", comment: "Close"))
                                 .font(.subheadline.weight(.bold))
                                 .frame(width: 82, height: 44)
-                                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                .foregroundStyle(.secondary)
+                                .background(AppTheme.elevatedBackground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .foregroundStyle(Color.readableSecondaryText)
                         }
                         .buttonStyle(.plain)
                     }
@@ -605,7 +605,7 @@ struct PatientManagementView: View {
                     .foregroundStyle(.primary)
                 Text(message)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -631,13 +631,13 @@ struct PatientManagementView: View {
                         .foregroundStyle(.primary)
                     Text(message)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
             }
             .contentShape(Rectangle())
         }

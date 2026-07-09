@@ -25,7 +25,7 @@ struct PatientLinkCodeView: View {
                     .font(.title2.weight(.bold))
                 Text(NSLocalizedString("caregiver.patients.code.subtitle", comment: "Code subtitle"))
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
                     .multilineTextAlignment(.center)
             }
 
@@ -83,7 +83,7 @@ struct PatientLinkCodeView: View {
                 )
                 .font(.subheadline)
             }
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.readableSecondaryText)
         }
         .padding(24)
         .glassEffect(.regular, in: .rect(cornerRadius: 20))

@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import UIKit
 
 // MARK: - Application-wide Constants
 
@@ -90,4 +91,59 @@ enum AppConstants {
             return .gray
         }
     }
+}
+
+// MARK: - App Theme
+
+enum AppTheme {
+    static let primaryTeal = Color.dynamic(
+        light: UIColor(red: 0.0, green: 0.55, blue: 0.50, alpha: 1),
+        dark: UIColor(red: 0.0, green: 0.62, blue: 0.60, alpha: 1)
+    )
+
+    static let primaryTealText = Color.dynamic(
+        light: UIColor(red: 0.0, green: 0.43, blue: 0.40, alpha: 1),
+        dark: UIColor(red: 0.54, green: 0.90, blue: 0.87, alpha: 1)
+    )
+
+    static let blue = Color(red: 0.10, green: 0.45, blue: 0.82)
+    static let caregiverBlue = Color(red: 0.12, green: 0.48, blue: 0.82)
+    static let orange = Color(red: 0.94, green: 0.42, blue: 0.0)
+    static let indigo = Color(red: 0.34, green: 0.32, blue: 0.78)
+    static let patientRed = Color(red: 0.86, green: 0.18, blue: 0.20)
+    static let caregiverRed = Color(red: 0.82, green: 0.16, blue: 0.16)
+
+    static let screenBackground = Color.dynamic(
+        light: UIColor(red: 0.95, green: 0.98, blue: 0.99, alpha: 1),
+        dark: UIColor(red: 0.14, green: 0.18, blue: 0.19, alpha: 1)
+    )
+
+    static let cardBackground = Color.dynamic(
+        light: .secondarySystemGroupedBackground,
+        dark: UIColor(red: 0.22, green: 0.27, blue: 0.28, alpha: 1)
+    )
+
+    static let elevatedBackground = Color.dynamic(
+        light: .tertiarySystemGroupedBackground,
+        dark: UIColor(red: 0.27, green: 0.31, blue: 0.32, alpha: 1)
+    )
+
+    static let readableSecondaryText = Color.dynamic(
+        light: .secondaryLabel,
+        dark: UIColor(red: 0.82, green: 0.85, blue: 0.87, alpha: 1)
+    )
+
+    static let cardStroke = Color.primary.opacity(0.10)
+    static let patientCardShadow = Color.black.opacity(0.07)
+    static let caregiverCardShadow = Color.black.opacity(0.06)
+}
+
+extension Color {
+    static func dynamic(light: UIColor, dark: UIColor) -> Color {
+        Color(UIColor { traits in
+            traits.userInterfaceStyle == .dark ? dark : light
+        })
+    }
+
+    static let readableSecondaryText = AppTheme.readableSecondaryText
 }

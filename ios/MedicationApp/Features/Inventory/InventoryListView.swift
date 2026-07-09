@@ -667,7 +667,7 @@ struct InventoryListView: View {
                     }
                 }
                 .padding(12)
-                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(AppTheme.elevatedBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
 
             HStack(spacing: 6) {

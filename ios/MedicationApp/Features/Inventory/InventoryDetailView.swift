@@ -191,7 +191,7 @@ struct InventoryDetailView: View {
                         .foregroundStyle(CaregiverUI.blue)
                         .padding(.horizontal, 14)
                         .frame(height: 38)
-                        .background(Color(.secondarySystemGroupedBackground), in: Capsule())
+                        .background(AppTheme.elevatedBackground, in: Capsule())
                         .buttonStyle(.plain)
                     }
 

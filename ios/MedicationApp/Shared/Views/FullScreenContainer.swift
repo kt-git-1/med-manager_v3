@@ -4,16 +4,22 @@ import UIKit
 struct FullScreenContainer<Content: View>: View {
     private let content: Content
     private let overlay: AnyView?
+    private let background: Color
 
-    init(@ViewBuilder content: () -> Content, overlay: AnyView? = nil) {
+    init(
+        @ViewBuilder content: () -> Content,
+        overlay: AnyView? = nil,
+        background: Color = AppTheme.screenBackground
+    ) {
         self.content = content()
         self.overlay = overlay
+        self.background = background
     }
 
     var body: some View {
         GeometryReader { proxy in
             ZStack {
-                Color(.systemGroupedBackground)
+                background
                     .ignoresSafeArea()
                 content
                 if let overlay {

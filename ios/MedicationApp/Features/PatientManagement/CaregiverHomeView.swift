@@ -555,11 +555,11 @@ private struct CaregiverTutorialSampleView: View {
                         CaregiverStatusPill(text: "未記録", color: CaregiverUI.orange)
                         Text("この時間帯の未記録2件をまとめて記録します")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondaryText)
                     }
                     Text(NSLocalizedString("caregiver.today.nextAction.medicinesTitle", comment: "Medicines title"))
                         .font(.subheadline.weight(.bold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                     sampleCompactDoseLine(name: "血圧の薬 5 mg", detail: "1回1錠", color: CaregiverUI.teal)
                     sampleCompactDoseLine(name: "胃薬", detail: "1回1錠", color: CaregiverUI.blue)
                     samplePrimaryButton(title: NSLocalizedString("caregiver.today.primaryRecord.slot", comment: "Record slot"), systemImage: "pills.fill", color: CaregiverUI.teal)
@@ -576,7 +576,7 @@ private struct CaregiverTutorialSampleView: View {
                             .foregroundStyle(CaregiverUI.tealDark)
                         Text("次は昼のお薬です")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondaryText)
                     }
                     Spacer(minLength: 0)
                 }
@@ -610,7 +610,7 @@ private struct CaregiverTutorialSampleView: View {
                             .font(.headline.weight(.bold))
                         Text("血圧の薬 5 mg が残り少なくなっています。補充したら在庫数を更新してください。")
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondaryText)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -749,7 +749,7 @@ private struct CaregiverTutorialSampleView: View {
                             .font(.title3.weight(.bold))
                         Text("本人が記録したときにこの端末へ知らせます。")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondaryText)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -798,14 +798,14 @@ private struct CaregiverTutorialSampleView: View {
                             .font(.title3.weight(.bold))
                         Text("本人の名前を入力して保存します。")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondaryText)
                     }
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(NSLocalizedString("caregiver.patients.create.section", comment: "Create section"))
                         .font(.subheadline.weight(.bold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                     HStack(spacing: 12) {
                         Image(systemName: "person.fill")
                             .foregroundStyle(CaregiverUI.teal)
@@ -816,7 +816,7 @@ private struct CaregiverTutorialSampleView: View {
                     }
                     .padding(.horizontal, 14)
                     .frame(height: 52)
-                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(AppTheme.elevatedBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
 
                 samplePrimaryButton(
@@ -842,7 +842,7 @@ private struct CaregiverTutorialSampleView: View {
                             .font(.headline.weight(.bold))
                         Text(NSLocalizedString("caregiver.patients.select.help", comment: "Select help text"))
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondaryText)
                     }
                 }
 
@@ -910,7 +910,7 @@ private struct CaregiverTutorialSampleView: View {
                         .font(.title3.weight(.bold))
                     Text(NSLocalizedString("caregiver.patients.code.subtitle", comment: "Code subtitle"))
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                         .multilineTextAlignment(.center)
                 }
 
@@ -919,7 +919,7 @@ private struct CaregiverTutorialSampleView: View {
                         Text(String(char))
                             .font(.title2.weight(.bold).monospacedDigit())
                             .frame(width: 38, height: 50)
-                            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .background(AppTheme.elevatedBackground, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
                 }
 
@@ -942,7 +942,7 @@ private struct CaregiverTutorialSampleView: View {
                     Text("有効期限: 今日 18:00")
                 }
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
             }
             .frame(maxWidth: .infinity)
         }
@@ -1004,7 +1004,7 @@ private struct CaregiverTutorialSampleView: View {
                     .font(.headline.weight(.bold))
                 Text(message)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -1023,13 +1023,13 @@ private struct CaregiverTutorialSampleView: View {
                     .foregroundStyle(.primary)
                 Text(message)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.bold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
         }
     }
 
@@ -1072,12 +1072,12 @@ private struct CaregiverTutorialSampleView: View {
                     .font(.headline.weight(.bold))
                 Text(detail)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
             }
             Spacer(minLength: 0)
         }
         .padding(12)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(AppTheme.elevatedBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private func sampleHistoryCalendarCard() -> some View {
@@ -1088,7 +1088,7 @@ private struct CaregiverTutorialSampleView: View {
                         .font(.headline.weight(.bold))
                     Text(NSLocalizedString("history.calendar.message", comment: "History calendar message"))
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 sampleHistoryCalendarGrid()
@@ -1105,7 +1105,7 @@ private struct CaregiverTutorialSampleView: View {
                 ForEach(weekdays, id: \.self) { symbol in
                     Text(symbol)
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -1127,7 +1127,7 @@ private struct CaregiverTutorialSampleView: View {
         return VStack(spacing: 6) {
             Text("\(day)")
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(selected ? Color.white : (statuses.isEmpty ? Color.secondary : Color.primary))
+                .foregroundStyle(selected ? Color.white : (statuses.isEmpty ? Color.readableSecondaryText : Color.primary))
                 .frame(maxWidth: .infinity)
             HStack(spacing: 4) {
                 ForEach(statuses.indices, id: \.self) { index in
@@ -1173,7 +1173,7 @@ private struct CaregiverTutorialSampleView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(NSLocalizedString("history.legend.help", comment: "Legend help"))
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 8)], alignment: .leading, spacing: 8) {
                 sampleHistoryLegendItem(color: CaregiverUI.teal, title: NSLocalizedString("history.legend.taken", comment: "Legend taken"))
                 sampleHistoryLegendItem(color: CaregiverUI.red, title: NSLocalizedString("history.legend.missed", comment: "Legend missed"))
@@ -1191,7 +1191,7 @@ private struct CaregiverTutorialSampleView: View {
                 .frame(width: 8, height: 8)
             Text(title)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.78)
         }
@@ -1204,7 +1204,7 @@ private struct CaregiverTutorialSampleView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(NSLocalizedString("history.selected.title", comment: "Selected day section title"))
                             .font(.caption.weight(.bold))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondaryText)
                         Text("6月10日（水）")
                             .font(.title3.weight(.bold))
                             .foregroundStyle(.primary)
@@ -1216,7 +1216,7 @@ private struct CaregiverTutorialSampleView: View {
                     .foregroundStyle(.primary)
                 Text(NSLocalizedString("history.selected.missedHelp", comment: "Missed help"))
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 8) {
                     CaregiverStatusPill(
@@ -1246,7 +1246,7 @@ private struct CaregiverTutorialSampleView: View {
                 .foregroundStyle(color)
             Text(label)
                 .font(.caption.weight(.bold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
@@ -1262,7 +1262,7 @@ private struct CaregiverTutorialSampleView: View {
                     .font(.subheadline.weight(.bold))
                 Text(detail)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
             }
             Spacer(minLength: 0)
         }
@@ -1320,7 +1320,7 @@ private struct CaregiverTutorialSampleView: View {
                 .foregroundStyle(tint)
             Text(title)
                 .font(.caption.weight(.bold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
         }
@@ -1355,7 +1355,7 @@ private struct CaregiverTutorialSampleView: View {
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
             .font(.headline)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.readableSecondaryText)
             .padding(.top, 4)
     }
 
@@ -1375,10 +1375,10 @@ private struct CaregiverTutorialSampleView: View {
                         .background(color.opacity(0.13), in: Capsule())
                     Text(detail)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                     Text(dose)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                 }
                 Spacer(minLength: 0)
             }
@@ -1424,7 +1424,7 @@ private struct CaregiverTutorialSampleView: View {
                         .foregroundStyle(color)
                     Text(unit)
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                 }
             }
             Text(days)
@@ -1432,7 +1432,7 @@ private struct CaregiverTutorialSampleView: View {
                 .foregroundStyle(color)
             Text(help)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 12) {
                 sampleStepperButton(systemImage: "minus", tint: color)
@@ -1443,7 +1443,7 @@ private struct CaregiverTutorialSampleView: View {
                 sampleStepperButton(systemImage: "plus", tint: color)
             }
             .padding(6)
-            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(AppTheme.elevatedBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .padding(18)
         .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -1565,7 +1565,7 @@ private struct CaregiverBottomTabBar: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.70)
             }
-            .foregroundStyle(isSelected ? Color(red: 0.0, green: 0.55, blue: 0.50) : Color.secondary)
+            .foregroundStyle(isSelected ? Color(red: 0.0, green: 0.55, blue: 0.50) : Color.readableSecondaryText)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
             .contentShape(Rectangle())
@@ -1585,16 +1585,16 @@ private struct CaregiverBottomTabBar: View {
 }
 
 enum CaregiverUI {
-    static let teal = Color(red: 0.0, green: 0.55, blue: 0.50)
-    static let tealDark = Color(red: 0.0, green: 0.43, blue: 0.40)
-    static let blue = Color(red: 0.12, green: 0.48, blue: 0.82)
-    static let orange = Color(red: 0.94, green: 0.42, blue: 0.0)
-    static let red = Color(red: 0.82, green: 0.16, blue: 0.16)
-    static let background = Color(.systemGroupedBackground)
-    static let cardBackground = Color(.secondarySystemGroupedBackground)
-    static let elevatedBackground = Color(.tertiarySystemGroupedBackground)
-    static let cardStroke = Color.primary.opacity(0.10)
-    static let cardShadow = Color.black.opacity(0.06)
+    static let teal = AppTheme.primaryTeal
+    static let tealDark = AppTheme.primaryTealText
+    static let blue = AppTheme.caregiverBlue
+    static let orange = AppTheme.orange
+    static let red = AppTheme.caregiverRed
+    static let background = AppTheme.screenBackground
+    static let cardBackground = AppTheme.cardBackground
+    static let elevatedBackground = AppTheme.elevatedBackground
+    static let cardStroke = AppTheme.cardStroke
+    static let cardShadow = AppTheme.caregiverCardShadow
 }
 
 struct CaregiverScreenBackground<Content: View>: View {
@@ -1606,12 +1606,8 @@ struct CaregiverScreenBackground<Content: View>: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [CaregiverUI.background, Color(.systemGroupedBackground)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            CaregiverUI.background
+                .ignoresSafeArea()
             content
         }
     }
@@ -1636,7 +1632,7 @@ struct CaregiverPatientHeader: View {
                     .minimumScaleFactor(0.72)
                 Text(subtitle ?? patientNameText)
                     .font(.headline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
                     .lineLimit(subtitleLineLimit)
                     .minimumScaleFactor(0.78)
             }
@@ -1832,7 +1828,7 @@ struct CaregiverMedicationView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: viewModel.isLoading ? .center : .top)
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .background(AppTheme.screenBackground.ignoresSafeArea())
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
         }

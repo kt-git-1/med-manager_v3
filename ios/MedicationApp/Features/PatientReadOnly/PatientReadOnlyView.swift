@@ -294,7 +294,7 @@ private struct PatientTutorialSampleView: View {
                                 .minimumScaleFactor(0.72)
                             Text("12:30")
                                 .font(.title2.weight(.bold))
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Color.readableSecondaryText)
                         }
                         Spacer(minLength: 0)
                     }
@@ -305,7 +305,7 @@ private struct PatientTutorialSampleView: View {
                         "2"
                     ))
                     .font(.body.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
 
                     VStack(spacing: 10) {
                         sampleSlotMedicationRow(name: "血圧の薬 5 mg", pills: "1", status: .pending)
@@ -336,13 +336,13 @@ private struct PatientTutorialSampleView: View {
                             .minimumScaleFactor(0.82)
                         Text(String(format: NSLocalizedString("patient.today.prn.entry.message", comment: "PRN entry message"), 1))
                             .font(.body.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondaryText)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right")
                         .font(.title3.weight(.bold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                 }
             }
 
@@ -390,14 +390,14 @@ private struct PatientTutorialSampleView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(NSLocalizedString("patient.history.today.progress.title", comment: "Today progress"))
                             .font(.caption.weight(.bold))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondaryText)
                         Text(String(format: NSLocalizedString("patient.history.today.progress.format", comment: "Today progress format"), 1, 3))
                             .font(.title3.weight(.bold))
                             .foregroundStyle(.primary)
                             .fixedSize(horizontal: false, vertical: true)
                         Text(NSLocalizedString("patient.history.today.encouragement.partial", comment: "Today encouragement"))
                             .font(.body.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondaryText)
                             .fixedSize(horizontal: false, vertical: true)
                         ViewThatFits(in: .horizontal) {
                             HStack(spacing: 8) {
@@ -439,7 +439,7 @@ private struct PatientTutorialSampleView: View {
                     .frame(maxWidth: .infinity)
                     Text(NSLocalizedString("patient.history.week.encouragement.some", comment: "Patient week encouragement"))
                         .font(.body.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -565,7 +565,7 @@ private struct PatientTutorialSampleView: View {
                         .font(.title2.weight(.bold))
                     Text(time)
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 8) {
@@ -596,7 +596,7 @@ private struct PatientTutorialSampleView: View {
                 "\(rows.count)"
             ))
             .font(.body.weight(.semibold))
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.readableSecondaryText)
 
             Label(NSLocalizedString("patient.today.slot.bulk.button", comment: "Bulk record"), systemImage: "checkmark.circle.fill")
                 .font(.title2.weight(.bold))
@@ -635,7 +635,7 @@ private struct PatientTutorialSampleView: View {
                     pills
                 ))
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .layoutPriority(1)
@@ -661,7 +661,7 @@ private struct PatientTutorialSampleView: View {
         case .pending:
             Image(systemName: "circle")
                 .font(.title2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
         }
     }
 
@@ -681,7 +681,7 @@ private struct PatientTutorialSampleView: View {
                     .minimumScaleFactor(0.64)
                 Text(NSLocalizedString("patient.history.today.progress.unit", comment: "Dose slot unit"))
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
             }
         }
         .frame(width: 86, height: 86)
@@ -702,7 +702,7 @@ private struct PatientTutorialSampleView: View {
             }
             Text(date)
                 .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
@@ -725,7 +725,7 @@ private struct PatientTutorialSampleView: View {
                         .minimumScaleFactor(0.76)
                     Text(subtitle)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                         .lineLimit(2)
                 }
                 Spacer(minLength: 0)
@@ -747,12 +747,12 @@ private struct PatientTutorialSampleView: View {
                     .foregroundStyle(.primary)
                 Text(subtitle)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
             Capsule()
-                .fill(isOn ? PatientUI.teal : Color.secondary.opacity(0.24))
+                .fill(isOn ? PatientUI.teal : Color.readableSecondaryText.opacity(0.24))
                 .frame(width: 52, height: 32)
                 .overlay(alignment: isOn ? .trailing : .leading) {
                     Circle()
@@ -777,7 +777,7 @@ private struct PatientTutorialSampleView: View {
                     .foregroundStyle(.primary)
                 Text(subtitle)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
@@ -910,7 +910,7 @@ struct PatientSettingsView: View {
                                 .foregroundStyle(PatientUI.red)
                             Text(NSLocalizedString("patient.settings.notifications.permission.denied", comment: "Permission denied guidance"))
                                 .font(.body.weight(.semibold))
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Color.readableSecondaryText)
                         }
                     }
                 }
@@ -977,7 +977,7 @@ struct PatientSettingsView: View {
                         .foregroundStyle(.primary)
                     Text(subtitle)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -1009,7 +1009,7 @@ struct PatientSettingsView: View {
                     .foregroundStyle(.primary)
                 Text(subtitle)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
@@ -1033,12 +1033,12 @@ struct PatientSettingsView: View {
                     .foregroundStyle(.primary)
                 Text(subtitle)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
             }
             Spacer()
             Image(systemName: "chevron.right")
                 .font(.headline.weight(.bold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondaryText)
         }
         .contentShape(Rectangle())
     }
@@ -1097,28 +1097,24 @@ enum PatientTab: Hashable {
 }
 
 enum PatientUI {
-    static let teal = Color(red: 0.0, green: 0.55, blue: 0.50)
-    static let tealDark = Color(red: 0.0, green: 0.43, blue: 0.40)
-    static let blue = Color(red: 0.10, green: 0.45, blue: 0.82)
-    static let orange = Color(red: 0.94, green: 0.42, blue: 0.0)
-    static let indigo = Color(red: 0.34, green: 0.32, blue: 0.78)
-    static let red = Color(red: 0.86, green: 0.18, blue: 0.20)
-    static let backgroundTop = Color(.systemGroupedBackground)
-    static let backgroundBottom = Color(.systemGroupedBackground)
-    static let cardBackground = Color(.secondarySystemGroupedBackground)
-    static let elevatedBackground = Color(.tertiarySystemGroupedBackground)
-    static let cardStroke = Color.primary.opacity(0.10)
-    static let cardShadow = Color.black.opacity(0.07)
+    static let teal = AppTheme.primaryTeal
+    static let tealDark = AppTheme.primaryTealText
+    static let blue = AppTheme.blue
+    static let orange = AppTheme.orange
+    static let indigo = AppTheme.indigo
+    static let red = AppTheme.patientRed
+    static let backgroundTop = AppTheme.screenBackground
+    static let backgroundBottom = backgroundTop
+    static let cardBackground = AppTheme.cardBackground
+    static let elevatedBackground = AppTheme.elevatedBackground
+    static let cardStroke = AppTheme.cardStroke
+    static let cardShadow = AppTheme.patientCardShadow
 }
 
 struct PatientScreenBackground: View {
     var body: some View {
-        LinearGradient(
-            colors: [PatientUI.backgroundTop, PatientUI.backgroundBottom],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-        .ignoresSafeArea()
+        PatientUI.backgroundTop
+            .ignoresSafeArea()
     }
 }
 
@@ -1146,7 +1142,7 @@ struct PatientHeader: View {
                     .minimumScaleFactor(0.72)
                 Text(subtitle)
                     .font(.headline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
                     .lineLimit(2)
                     .minimumScaleFactor(0.82)
             }
@@ -1260,7 +1256,7 @@ private struct PatientBottomTabBar: View {
                     .multilineTextAlignment(.center)
                     .minimumScaleFactor(0.82)
             }
-            .foregroundStyle(isSelected ? PatientUI.teal : Color.secondary)
+            .foregroundStyle(isSelected ? PatientUI.teal : Color.readableSecondaryText)
             .frame(maxWidth: .infinity)
             .frame(minHeight: 74)
             .padding(.horizontal, 10)
@@ -1287,7 +1283,7 @@ struct PatientHistoryPlaceholderView: View {
                     .font(.title3.weight(.semibold))
                 Text(NSLocalizedString("patient.readonly.history.message", comment: "History message"))
                     .font(.body)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
             }
             .padding(24)
             .frame(maxWidth: .infinity)

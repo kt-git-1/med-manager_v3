@@ -83,7 +83,7 @@ struct PDFExportLockView: View {
             .padding(.bottom, 32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
+        .background(AppTheme.screenBackground)
         .accessibilityIdentifier("PDFExportLockView")
         .sheet(isPresented: $showPaywall) {
             PaywallView(entitlementStore: entitlementStore)

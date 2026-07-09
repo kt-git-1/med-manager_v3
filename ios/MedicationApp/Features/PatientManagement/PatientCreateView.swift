@@ -103,9 +103,9 @@ struct PatientCreateView: View {
                     }
                 }
                 .scrollContentBackground(.hidden)
-                .background(Color(.systemGroupedBackground))
+                .background(AppTheme.screenBackground)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(AppTheme.screenBackground)
             .overlay {
                 if isSaving {
                     SchedulingRefreshOverlay()

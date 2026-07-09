@@ -2,8 +2,8 @@ import SwiftUI
 
 struct ModeSelectView: View {
     @EnvironmentObject private var sessionStore: SessionStore
-    private let patientTint = Color(red: 0.0, green: 0.55, blue: 0.50)
-    private let caregiverTint = Color(red: 0.94, green: 0.42, blue: 0.0)
+    private let patientTint = PatientUI.teal
+    private let caregiverTint = CaregiverUI.orange
 
     var body: some View {
         ZStack {
@@ -60,7 +60,7 @@ struct ModeSelectView: View {
 
                 Text(NSLocalizedString("mode.select.appName", comment: "App name"))
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondaryText)
             }
 
             Text(NSLocalizedString("mode.select.title", comment: "Mode selection title"))
@@ -112,7 +112,7 @@ struct ModeSelectView: View {
 
                         Text(subtitle)
                             .font(.body.weight(.medium))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondaryText)
                             .lineLimit(2)
                             .minimumScaleFactor(0.78)
                             .fixedSize(horizontal: false, vertical: true)
@@ -139,7 +139,7 @@ struct ModeSelectView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(Color(.secondarySystemBackground))
+                    .fill(ModeSelectUI.cardBackground)
                     .shadow(color: tint.opacity(0.14), radius: 18, x: 0, y: 10)
                     .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 3)
             )
@@ -197,15 +197,12 @@ private struct RoleIllustrationView: View {
 
 private struct ModeSelectBackground: View {
     var body: some View {
-        LinearGradient(
-            colors: [
-                Color(.systemBackground),
-                Color(red: 0.95, green: 0.98, blue: 0.99),
-                Color(.systemGroupedBackground)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
+        ModeSelectUI.background
         .ignoresSafeArea()
     }
+}
+
+private enum ModeSelectUI {
+    static let background = AppTheme.screenBackground
+    static let cardBackground = AppTheme.cardBackground
 }
