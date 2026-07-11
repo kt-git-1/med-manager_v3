@@ -51,7 +51,7 @@ const caregiverTimeline = [
   { time: "20:30", slot: "夜", summary: "1件の薬", status: "まだです" }
 ];
 
-const appStoreUrl = "";
+const appStoreUrl = "https://apps.apple.com/us/app/%E3%81%8A%E8%96%AC%E8%A6%8B%E5%AE%88%E3%82%8A/id6787427428";
 
 function AppStoreBadge() {
   const content = (
@@ -77,6 +77,31 @@ function AppStoreBadge() {
     <span className="app-store-badge app-store-badge-disabled" aria-disabled="true" role="link">
       {content}
     </span>
+  );
+}
+
+function AndroidComingSoonBadge() {
+  return (
+    <span className="app-store-badge android-badge app-store-badge-disabled" aria-disabled="true" role="link">
+      <span className="android-store-icon" aria-hidden="true" />
+      <span className="app-store-text">
+        <span>Androidアプリ</span>
+        <strong>Google Play版を配信予定</strong>
+      </span>
+      <em>予定</em>
+    </span>
+  );
+}
+
+function AppStoreQRCode() {
+  return (
+    <a className="app-store-qr" href={appStoreUrl} rel="noreferrer" target="_blank">
+      <img alt="iPhone版のApp Storeページを開くQRコード" height="132" src="/app-store-qr.svg" width="132" />
+      <span>
+        <strong>iPhone版QR</strong>
+        <small>スマートフォンのカメラで読み取れます</small>
+      </span>
+    </a>
   );
 }
 
@@ -158,8 +183,9 @@ export default function Home() {
           </p>
           <div className="hero-download" aria-label="アプリのダウンロード">
             <AppStoreBadge />
+            <AndroidComingSoonBadge />
             <span className="hero-download-note">
-              iPhone版を準備中です。公開後、このページからApp Storeへ進めます。
+              iPhone版をApp Storeで配信中です。Android版も今後の配信を予定しています。
             </span>
           </div>
         </div>
@@ -378,13 +404,17 @@ export default function Home() {
         <div>
           <div>
             <p className="eyebrow">Download</p>
-            <h2 id="download-title">公開後はApp Storeからダウンロードできます</h2>
+            <h2 id="download-title">iPhone版をApp Storeで配信中です</h2>
             <p>
-              現在、iPhone版の公開準備中です。公開後は、このページのボタンをApp
-              Storeへのリンクに切り替えます。
+              iPhoneをご利用の方は、App Storeからお薬見守りをダウンロードできます。
+              Android版は今後の配信を予定しています。
             </p>
           </div>
-          <AppStoreBadge />
+          <div className="download-actions" aria-label="アプリストア">
+            <AppStoreBadge />
+            <AndroidComingSoonBadge />
+            <AppStoreQRCode />
+          </div>
         </div>
       </section>
 
@@ -553,6 +583,25 @@ export default function Home() {
           box-shadow: inset 0 0 0 1px rgba(18, 34, 29, 0.08);
         }
 
+        .android-store-icon {
+          position: relative;
+          flex: 0 0 auto;
+          width: 42px;
+          height: 42px;
+          border-radius: 10px;
+          background: #f5f8f6;
+          box-shadow: inset 0 0 0 1px rgba(18, 34, 29, 0.08);
+        }
+
+        .android-store-icon::before {
+          content: "";
+          position: absolute;
+          inset: 9px 10px;
+          clip-path: polygon(12% 2%, 86% 50%, 12% 98%);
+          background:
+            linear-gradient(135deg, #2f745d 0%, #52b788 46%, #38bdf8 100%);
+        }
+
         .app-store-text {
           display: grid;
           gap: 2px;
@@ -586,6 +635,52 @@ export default function Home() {
 
         .app-store-badge-disabled {
           cursor: default;
+        }
+
+        .android-badge {
+          background: #f8fbf9;
+        }
+
+        .app-store-qr {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr);
+          align-items: center;
+          gap: 14px;
+          min-width: 270px;
+          padding: 12px;
+          border-radius: 8px;
+          background: #ffffff;
+          border: 1px solid rgba(18, 34, 29, 0.08);
+          color: #12221d;
+          text-decoration: none;
+          box-shadow: 0 12px 28px rgba(18, 34, 29, 0.12);
+        }
+
+        .app-store-qr img {
+          width: 112px;
+          height: 112px;
+          border-radius: 8px;
+          border: 1px solid #e1ebe6;
+          background: #ffffff;
+        }
+
+        .app-store-qr span {
+          display: grid;
+          gap: 6px;
+          min-width: 0;
+        }
+
+        .app-store-qr strong {
+          color: #12221d;
+          font-size: 16px;
+          line-height: 1.35;
+        }
+
+        .app-store-qr small {
+          color: #52635d;
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 1.5;
         }
 
         .overview,
@@ -1622,6 +1717,12 @@ export default function Home() {
         .download-note .app-store-badge {
           flex: 0 0 auto;
           box-shadow: 0 12px 28px rgba(18, 34, 29, 0.12);
+        }
+
+        .download-actions {
+          display: grid;
+          gap: 12px;
+          flex: 0 0 auto;
         }
 
         @media (max-width: 920px) {
