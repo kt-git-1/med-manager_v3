@@ -374,21 +374,14 @@ vi.mock("../../src/services/scheduleService", async (importOriginal) => {
   };
 });
 
-// -- Mock prisma.$transaction for bulk upserts ------------------------------
+// -- Mock Prisma bulk insert -------------------------------------------------
 
 vi.mock("../../src/repositories/prisma", () => ({
   prisma: {
     doseRecord: {
-      upsert: vi.fn(
+      createManyAndReturn: vi.fn(
         async (args: {
-          where: {
-            patientId_medicationId_scheduledAt: {
-              patientId: string;
-              medicationId: string;
-              scheduledAt: Date;
-            };
-          };
-          create: {
+          data: Array<{
             patientId: string;
             medicationId: string;
             scheduledAt: Date;
@@ -396,34 +389,32 @@ vi.mock("../../src/repositories/prisma", () => ({
             recordedByType: string;
             recordedById: string | null;
             recordingGroupId: string;
-          };
-          update: Record<string, never>;
+          }>;
+          skipDuplicates: boolean;
         }) => {
-          const key = `${args.where.patientId_medicationId_scheduledAt.patientId}:${args.where.patientId_medicationId_scheduledAt.medicationId}:${args.where.patientId_medicationId_scheduledAt.scheduledAt.toISOString()}`;
-          const existing = store.get(key);
-          if (existing) {
-            return existing;
+          const inserted: DoseRecord[] = [];
+          for (const data of args.data) {
+            const key = `${data.patientId}:${data.medicationId}:${data.scheduledAt.toISOString()}`;
+            if (args.skipDuplicates && store.has(key)) continue;
+            const record: DoseRecord = {
+              id: `dose-${store.size + 1}`,
+              patientId: data.patientId,
+              medicationId: data.medicationId,
+              scheduledAt: data.scheduledAt,
+              takenAt: data.takenAt,
+              recordedByType: data.recordedByType as "PATIENT" | "CAREGIVER",
+              recordedById: data.recordedById,
+              recordingGroupId: data.recordingGroupId,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            };
+            store.set(key, record);
+            inserted.push(record);
           }
-          const record: DoseRecord = {
-            id: `dose-${store.size + 1}`,
-            patientId: args.create.patientId,
-            medicationId: args.create.medicationId,
-            scheduledAt: args.create.scheduledAt,
-            takenAt: args.create.takenAt,
-            recordedByType: args.create.recordedByType as "PATIENT" | "CAREGIVER",
-            recordedById: args.create.recordedById,
-            recordingGroupId: args.create.recordingGroupId,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          };
-          store.set(key, record);
-          return record;
+          return inserted;
         }
       )
-    },
-    $transaction: vi.fn(async (promises: Promise<DoseRecord>[]) => {
-      return Promise.all(promises);
-    })
+    }
   }
 }));
 

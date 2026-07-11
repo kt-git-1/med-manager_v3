@@ -51,7 +51,7 @@ const caregiverTimeline = [
   { time: "20:30", slot: "夜", summary: "1件の薬", status: "まだです" }
 ];
 
-const appStoreUrl = "https://apps.apple.com/us/app/%E3%81%8A%E8%96%AC%E8%A6%8B%E5%AE%88%E3%82%8A/id6787427428";
+const appStoreUrl = "https://apps.apple.com/jp/app/%E3%81%8A%E8%96%AC%E8%A6%8B%E5%AE%88%E3%82%8A/id6787427428";
 
 function AppStoreBadge() {
   const content = (

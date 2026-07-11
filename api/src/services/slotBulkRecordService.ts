@@ -203,31 +203,21 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
   // 8. Generate recording group ID
   const recordingGroupId = randomUUID();
 
-  // 9. Transactional bulk upsert
+  // 9. Insert all records in one database round trip. The unique constraint keeps
+  // concurrent/retried requests idempotent without an upsert per medication.
   const takenAt = now;
-  const records = await prisma.$transaction(
-    recordableWithInventory.map((dose) =>
-      prisma.doseRecord.upsert({
-        where: {
-          patientId_medicationId_scheduledAt: {
-            patientId: input.patientId,
-            medicationId: dose.medicationId,
-            scheduledAt: new Date(dose.scheduledAt)
-          }
-        },
-        create: {
-          patientId: input.patientId,
-          medicationId: dose.medicationId,
-          scheduledAt: new Date(dose.scheduledAt),
-          takenAt,
-          recordedByType: "PATIENT",
-          recordedById: null,
-          recordingGroupId
-        },
-        update: {}
-      })
-    )
-  );
+  const records = await prisma.doseRecord.createManyAndReturn({
+    data: recordableWithInventory.map((dose) => ({
+      patientId: input.patientId,
+      medicationId: dose.medicationId,
+      scheduledAt: new Date(dose.scheduledAt),
+      takenAt,
+      recordedByType: "PATIENT" as const,
+      recordedById: null,
+      recordingGroupId
+    })),
+    skipDuplicates: true
+  });
 
   // 10. Side effects (outside the transaction)
   const patient = await getPatientRecordById(input.patientId);
