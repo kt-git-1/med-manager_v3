@@ -12,6 +12,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 ROOT = Path(__file__).resolve().parents[2]
 OUT_DIR = ROOT / "marketing" / "app-store-screenshots" / "iphone-6.9"
 CONTACT_SHEET = ROOT / "marketing" / "app-store-screenshots" / "iphone-6.9-contact-sheet.png"
+RAW_SCREENSHOT_DIR = ROOT / "marketing" / "app-store-screenshots" / "raw-real" / "iphone-6.9"
 ICON_PATH = ROOT / "ios" / "MedicationApp" / "Assets.xcassets" / "AppIcon.appiconset" / "med_1024_transparent.png"
 ROLE_PATIENT_PATH = ROOT / "ios" / "MedicationApp" / "Assets.xcassets" / "RolePatient.imageset" / "role-patient.png"
 ROLE_FAMILY_PATH = ROOT / "ios" / "MedicationApp" / "Assets.xcassets" / "RoleFamily.imageset" / "role-family.png"
@@ -133,7 +134,25 @@ SLIDES = [
         "今日飲むお薬だけを分かりやすく表示し、迷わず操作できます。",
         "patient",
     ),
+    Slide(
+        "07_family_notification.png",
+        ORANGE,
+        "家族へ通知",
+        "本人が記録すると\n家族にお知らせ",
+        "離れていても、服薬できたことを家族の端末で確認できます。",
+        "notification",
+    ),
 ]
+
+RAW_SCREENSHOTS = {
+    "modes": "01_modes.png",
+    "record": "02_record.png",
+    "meds": "03_medications.png",
+    "inventory": "04_inventory.png",
+    "history": "05_history.png",
+    "patient": "06_patient.png",
+    "notification": "07_notification.png",
+}
 
 
 def rounded(draw: ImageDraw.ImageDraw, box, r, fill, outline=None, width=1):
@@ -219,6 +238,34 @@ def phone_frame(img: Image.Image):
     rounded(d, inner, 64, BG)
     d.rounded_rectangle((x + 486, y + 44, x + 726, y + 72), radius=18, fill=(22, 35, 42))
     return inner
+
+
+def place_real_screenshot(img: Image.Image, screen: str):
+    source_path = RAW_SCREENSHOT_DIR / RAW_SCREENSHOTS[screen]
+    if not source_path.exists():
+        raise FileNotFoundError(f"Real simulator screenshot is missing: {source_path}")
+
+    source = Image.open(source_path).convert("RGB")
+    target_h = 2100
+    target_w = round(source.width * target_h / source.height)
+    source = source.resize((target_w, target_h), Image.LANCZOS).convert("RGBA")
+    x = (DESIGN_W - target_w) // 2
+    y = 724
+    radius = 82
+
+    shadowed_panel(
+        img,
+        (x - 14, y - 14, x + target_w + 14, y + target_h + 14),
+        r=radius + 14,
+        fill=(20, 30, 35),
+        shadow=(0, 38, 58, 48),
+        blur=34,
+        offset=20,
+        outline=(20, 30, 35),
+    )
+    mask = Image.new("L", (target_w, target_h), 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, target_w, target_h), radius=radius, fill=255)
+    img.paste(source, (x, y), mask)
 
 
 def screen_header(draw, box, title, subtitle, accent=TEAL):
@@ -457,23 +504,14 @@ def draw_slide(slide: Slide) -> Image.Image:
     draw.text((72, 218), slide.eyebrow, font=F["eyebrow"], fill=slide.accent)
     hero_bottom = draw_text(draw, (72, 284), slide.title, F["hero"], fill=INK, max_width=1140, line_gap=20)
     draw_text(draw, (72, hero_bottom + 34), slide.subtitle, F["sub"], fill=MUTED, max_width=1160, line_gap=14)
-    box = phone_frame(img)
-    screen_draw = ImageDraw.Draw(img)
-    {
-        "modes": screen_modes,
-        "today": screen_today,
-        "record": screen_record,
-        "meds": screen_meds,
-        "inventory": screen_inventory,
-        "history": screen_history,
-        "patient": screen_patient,
-    }[slide.screen](screen_draw, box)
+    place_real_screenshot(img, slide.screen)
     return img.convert("RGB").resize((W, H), Image.LANCZOS)
 
 
 def make_contact_sheet(images: Sequence[Path]):
     thumb_w, thumb_h = 330, 717
-    sheet = Image.new("RGB", (thumb_w * 3, thumb_h * 2), (246, 249, 250))
+    rows = (len(images) + 2) // 3
+    sheet = Image.new("RGB", (thumb_w * 3, thumb_h * rows), (246, 249, 250))
     for i, path in enumerate(images):
         im = Image.open(path).convert("RGB")
         im.thumbnail((thumb_w, thumb_h), Image.LANCZOS)
@@ -499,6 +537,8 @@ def main():
         "device_family": "iPhone 6.9-inch compatible",
         "size_px": [W, H],
         "format": "PNG",
+        "ui_source": "real light-mode iPhone simulator screenshots with DEBUG sample data",
+        "raw_screenshot_directory": str(RAW_SCREENSHOT_DIR.relative_to(ROOT)),
         "count": len(paths),
         "files": [str(path.relative_to(ROOT)) for path in paths],
         "contact_sheet": str(CONTACT_SHEET.relative_to(ROOT)),

@@ -41,25 +41,27 @@ struct PatientReadOnlyView: View {
                             .zIndex(5)
                             .allowsHitTesting(false)
 
-                        GuidedTutorialOverlay(
-                            step: patientTutorialSteps[tutorialStepIndex].step,
-                            stepIndex: tutorialStepIndex,
-                            stepCount: patientTutorialSteps.count,
-                            tint: PatientUI.teal,
-                            isSeniorFriendly: true,
-                            bottomClearance: 104,
-                            skipTitle: isCurrentTutorialNotificationStep
-                                ? NSLocalizedString("tutorial.notification.later", comment: "Set notification later")
-                                : nil,
-                            finalPrimaryTitle: isCurrentTutorialNotificationStep
-                                ? NSLocalizedString("tutorial.notification.enable", comment: "Enable notification tutorial action")
-                                : nil,
-                            finalPrimarySystemImage: isCurrentTutorialNotificationStep ? "bell.badge.fill" : nil,
-                            onPrevious: { moveTutorial(by: -1) },
-                            onNext: { handleTutorialNext() },
-                            onFinish: { finishTutorial() }
-                        )
-                        .zIndex(10)
+                        if !isMarketingScreenshotPreview {
+                            GuidedTutorialOverlay(
+                                step: patientTutorialSteps[tutorialStepIndex].step,
+                                stepIndex: tutorialStepIndex,
+                                stepCount: patientTutorialSteps.count,
+                                tint: PatientUI.teal,
+                                isSeniorFriendly: true,
+                                bottomClearance: 104,
+                                skipTitle: isCurrentTutorialNotificationStep
+                                    ? NSLocalizedString("tutorial.notification.later", comment: "Set notification later")
+                                    : nil,
+                                finalPrimaryTitle: isCurrentTutorialNotificationStep
+                                    ? NSLocalizedString("tutorial.notification.enable", comment: "Enable notification tutorial action")
+                                    : nil,
+                                finalPrimarySystemImage: isCurrentTutorialNotificationStep ? "bell.badge.fill" : nil,
+                                onPrevious: { moveTutorial(by: -1) },
+                                onNext: { handleTutorialNext() },
+                                onFinish: { finishTutorial() }
+                            )
+                            .zIndex(10)
+                        }
                     }
                 }
                 .navigationTitle("")
@@ -90,13 +92,15 @@ struct PatientReadOnlyView: View {
         }
         .task {
             startTutorialIfNeeded()
-            await refreshNotificationSchedule(trigger: .appLaunch)
+            if !isMarketingScreenshotPreview {
+                await refreshNotificationSchedule(trigger: .appLaunch)
+            }
         }
         .onAppear {
             startTutorialIfNeeded()
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
+            if phase == .active && !isMarketingScreenshotPreview {
                 Task { await refreshNotificationSchedule(trigger: .appForeground) }
             }
         }
@@ -170,6 +174,14 @@ struct PatientReadOnlyView: View {
         return patientTutorialSteps[tutorialStepIndex].step.id == "patient-notification-permission"
     }
 
+    private var isMarketingScreenshotPreview: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains { $0.hasPrefix("-PatientMarketingScreenshot.") }
+        #else
+        false
+        #endif
+    }
+
     private func refreshNotificationSchedule(trigger: SchedulingRefreshCoordinator.RefreshTrigger) async {
         guard preferencesStore.masterEnabled else { return }
         let apiClient = APIClient(
@@ -188,6 +200,13 @@ struct PatientReadOnlyView: View {
     }
 
     private func startTutorialIfNeeded() {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-PatientMarketingScreenshot.today") {
+            tutorialStepIndex = 0
+            selectedTab = .today
+            return
+        }
+        #endif
         guard sessionStore.shouldShowModeTutorial(for: .patient)
             || sessionStore.shouldForceModeTutorial(for: .patient) else { return }
         tutorialStepIndex = 0

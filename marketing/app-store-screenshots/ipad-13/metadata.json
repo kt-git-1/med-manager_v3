@@ -6,14 +6,17 @@
     2752
   ],
   "format": "PNG",
-  "count": 6,
+  "ui_source": "real light-mode iPad simulator screenshots with DEBUG sample data",
+  "raw_screenshot_directory": "marketing/app-store-screenshots/raw-real/ipad-13",
+  "count": 7,
   "files": [
     "marketing/app-store-screenshots/ipad-13/01_modes_overview.png",
     "marketing/app-store-screenshots/ipad-13/02_one_tap_record.png",
     "marketing/app-store-screenshots/ipad-13/03_medication_list.png",
     "marketing/app-store-screenshots/ipad-13/04_inventory.png",
     "marketing/app-store-screenshots/ipad-13/05_history.png",
-    "marketing/app-store-screenshots/ipad-13/06_patient_mode.png"
+    "marketing/app-store-screenshots/ipad-13/06_patient_mode.png",
+    "marketing/app-store-screenshots/ipad-13/07_family_notification.png"
   ],
   "contact_sheet": "marketing/app-store-screenshots/ipad-13-contact-sheet.png"
 }

@@ -81,24 +81,26 @@ struct CaregiverHomeView: View {
                     .zIndex(5)
                     .allowsHitTesting(false)
 
-                GuidedTutorialOverlay(
-                    step: caregiverTutorialSteps[tutorialStepIndex].step,
-                    stepIndex: tutorialStepIndex,
-                    stepCount: caregiverTutorialSteps.count,
-                    tint: CaregiverUI.orange,
-                    skipTitle: isCurrentTutorialNotificationStep
-                        ? NSLocalizedString("tutorial.notification.later", comment: "Set notification later")
-                        : nil,
-                    finalPrimaryTitle: isCurrentTutorialNotificationStep
-                        ? NSLocalizedString("tutorial.notification.enable", comment: "Enable notification tutorial action")
-                        : nil,
-                    finalPrimarySystemImage: isCurrentTutorialNotificationStep ? "bell.badge.fill" : nil,
-                    onSkip: { finishTutorial(openRegistration: false) },
-                    onPrevious: { moveTutorial(by: -1) },
-                    onNext: { handleTutorialNext() },
-                    onFinish: { finishTutorial(openRegistration: true) }
-                )
-                .zIndex(10)
+                if !isMarketingScreenshotPreview {
+                    GuidedTutorialOverlay(
+                        step: caregiverTutorialSteps[tutorialStepIndex].step,
+                        stepIndex: tutorialStepIndex,
+                        stepCount: caregiverTutorialSteps.count,
+                        tint: CaregiverUI.orange,
+                        skipTitle: isCurrentTutorialNotificationStep
+                            ? NSLocalizedString("tutorial.notification.later", comment: "Set notification later")
+                            : nil,
+                        finalPrimaryTitle: isCurrentTutorialNotificationStep
+                            ? NSLocalizedString("tutorial.notification.enable", comment: "Enable notification tutorial action")
+                            : nil,
+                        finalPrimarySystemImage: isCurrentTutorialNotificationStep ? "bell.badge.fill" : nil,
+                        onSkip: { finishTutorial(openRegistration: false) },
+                        onPrevious: { moveTutorial(by: -1) },
+                        onNext: { handleTutorialNext() },
+                        onFinish: { finishTutorial(openRegistration: true) }
+                    )
+                    .zIndex(10)
+                }
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -265,6 +267,14 @@ struct CaregiverHomeView: View {
         return caregiverTutorialSteps[tutorialStepIndex].step.id == "caregiver-notification-permission"
     }
 
+    private var isMarketingScreenshotPreview: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains { $0.hasPrefix("-CaregiverMarketingScreenshot.") }
+        #else
+        false
+        #endif
+    }
+
     // MARK: - Data Loading
 
     private func loadCurrentPatientName() {
@@ -350,6 +360,21 @@ struct CaregiverHomeView: View {
 
     private func startTutorialIfNeeded() {
         #if DEBUG
+        if let argument = ProcessInfo.processInfo.arguments.first(where: {
+            $0.hasPrefix("-CaregiverMarketingScreenshot.")
+        }) {
+            let requestedTab = String(argument.dropFirst("-CaregiverMarketingScreenshot.".count))
+            let index: Int
+            switch requestedTab {
+            case "medications": index = 1
+            case "inventory": index = 2
+            case "history": index = 3
+            default: index = 0
+            }
+            tutorialStepIndex = index
+            selectedTab = caregiverTutorialSteps[index].tab
+            return
+        }
         if ProcessInfo.processInfo.arguments.contains("-CaregiverNotificationTutorialPreview") {
             let index = caregiverTutorialSteps.count - 1
             tutorialStepIndex = index

@@ -1,0 +1,15 @@
+{
+  "aps": {
+    "alert": {
+      "title": "服薬記録",
+      "body": "田中 花子さんの昼のお薬を記録しました"
+    },
+    "sound": "default",
+    "thread-id": "patient-marketing-preview"
+  },
+  "type": "DOSE_TAKEN",
+  "patientId": "marketing-patient",
+  "date": "2026-07-12",
+  "slot": "noon",
+  "recordingGroupId": "marketing-preview"
+}

@@ -10,7 +10,14 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            switch sessionStore.mode {
+            if isMedicationFormMarketingPreviewActive {
+                NavigationStack {
+                    MedicationFormView(sessionStore: sessionStore, marketingPreview: true)
+                        .navigationTitle(NSLocalizedString("medication.form.title.add", comment: "Add medication title"))
+                        .navigationBarTitleDisplayMode(.inline)
+                }
+            } else {
+                switch sessionStore.mode {
             case .none:
                 if isCaregiverTutorialPreviewActive {
                     CaregiverHomeView(entitlementStore: entitlementStore)
@@ -29,6 +36,7 @@ struct RootView: View {
                 } else {
                     PatientReadOnlyView()
                 }
+            }
             }
         }
         .overlay(alignment: .top) {
@@ -75,6 +83,14 @@ struct RootView: View {
     private var isCaregiverTutorialPreviewActive: Bool {
         #if DEBUG
         ProcessInfo.processInfo.arguments.contains("-CaregiverTutorialPreview")
+        #else
+        false
+        #endif
+    }
+
+    private var isMedicationFormMarketingPreviewActive: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-MedicationFormMarketingScreenshot")
         #else
         false
         #endif

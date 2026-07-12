@@ -12,6 +12,7 @@ struct MedicationFormView: View {
     init(
         sessionStore: SessionStore? = nil,
         medication: MedicationDTO? = nil,
+        marketingPreview: Bool = false,
         onSuccess: ((String) -> Void)? = nil
     ) {
         let store = sessionStore ?? SessionStore()
@@ -21,14 +22,24 @@ struct MedicationFormView: View {
         if store.mode == .caregiver, let patientId = store.currentPatientId {
             prefs.switchPatient(patientId)
         }
-        _viewModel = StateObject(
-            wrappedValue: MedicationFormViewModel(
-                apiClient: APIClient(baseURL: baseURL, sessionStore: store),
-                sessionStore: store,
-                existingMedication: medication,
-                preferencesStore: prefs
-            )
+        let viewModel = MedicationFormViewModel(
+            apiClient: APIClient(baseURL: baseURL, sessionStore: store),
+            sessionStore: store,
+            existingMedication: medication,
+            preferencesStore: prefs
         )
+        #if DEBUG
+        if marketingPreview {
+            viewModel.name = "血圧の薬"
+            viewModel.dosageStrengthValue = "5"
+            viewModel.dosageStrengthUnit = "mg"
+            viewModel.doseCountPerIntake = "1"
+            viewModel.inventoryCount = "30"
+            viewModel.selectedTimeSlots = [.morning, .evening]
+            viewModel.notes = "朝食後・夕食後"
+        }
+        #endif
+        _viewModel = StateObject(wrappedValue: viewModel)
     }
 
     var body: some View {
