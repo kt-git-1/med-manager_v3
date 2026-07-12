@@ -175,26 +175,33 @@ struct CaregiverSignupView: View {
         .onChange(of: password) { _, _ in clearTransientMessages() }
         .onChange(of: passwordConfirmation) { _, _ in clearTransientMessages() }
         .accessibilityIdentifier("CaregiverSignupView")
+        .onAppear {
+            AnalyticsService.shared.logScreenViewed(.caregiverSignup)
+        }
     }
 
     @MainActor
     private func signup() async {
+        AnalyticsService.shared.logAuth(.signupStarted, method: .email)
         errorMessage = nil
         infoMessage = nil
         canResendConfirmationEmail = false
         resendCooldownRemainingSeconds = 0
 
         guard isEmailFormatValid else {
+            AnalyticsService.shared.logAuth(.signupFailed, method: .email, reason: .invalidInput)
             errorMessage = NSLocalizedString("auth.error.invalidEmail", comment: "Invalid email")
             return
         }
 
         guard password.count >= 6 else {
+            AnalyticsService.shared.logAuth(.signupFailed, method: .email, reason: .weakPassword)
             errorMessage = NSLocalizedString("auth.error.weakPassword", comment: "Weak password")
             return
         }
 
         guard password == passwordConfirmation else {
+            AnalyticsService.shared.logAuth(.signupFailed, method: .email, reason: .passwordMismatch)
             errorMessage = NSLocalizedString("auth.error.passwordMismatch", comment: "Password mismatch")
             return
         }
@@ -203,7 +210,9 @@ struct CaregiverSignupView: View {
         defer { isLoading = false }
         do {
             let session = try await authService.signup(email: trimmedEmail, password: password)
+            AnalyticsService.shared.logAuth(.signupCompleted, method: .email)
             if !session.hasAccessToken {
+                AnalyticsService.shared.logAuth(.signupConfirmationRequired, method: .email)
                 infoMessage = NSLocalizedString("caregiver.signup.confirm.email", comment: "Email confirmation required")
                 canResendConfirmationEmail = true
                 startResendCooldown()
@@ -211,6 +220,11 @@ struct CaregiverSignupView: View {
                 sessionStore.saveCaregiverSession(session)
             }
         } catch {
+            AnalyticsService.shared.logAuth(
+                .signupFailed,
+                method: .email,
+                reason: AnalyticsService.failureReason(for: error)
+            )
             if let apiError = error as? LocalizedError, let message = apiError.errorDescription {
                 errorMessage = message
             } else {
@@ -235,6 +249,7 @@ struct CaregiverSignupView: View {
         defer { isResending = false }
         do {
             try await authService.resendSignupConfirmation(email: trimmedEmail)
+            AnalyticsService.shared.logAuth(.confirmationEmailResent, method: .email)
             infoMessage = NSLocalizedString("caregiver.signup.resend.sent", comment: "Confirmation email resent")
             startResendCooldown()
             toastPresenter.show(

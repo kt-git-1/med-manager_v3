@@ -67,3 +67,9 @@ Packages/
 *.dSYM
 *.dSYM.zip
 *.xcuserdata/
+
+# other
+marketing/
+docs/
+tmp/
+output/

@@ -108,6 +108,7 @@ final class PatientTodayViewModel: ObservableObject {
                         scheduledAt: dose.scheduledAt
                     )
                 )
+                AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
                 showToast(NSLocalizedString("patient.today.recorded", comment: "Recorded"))
                 load(showLoading: false)
             } catch {
@@ -144,6 +145,7 @@ final class PatientTodayViewModel: ObservableObject {
                         quantityTaken: nil
                     )
                 )
+                AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
                 showToast(NSLocalizedString("patient.today.prn.recorded", comment: "PRN recorded"))
                 try await refreshTodayData()
                 onSuccess()
@@ -306,6 +308,9 @@ final class PatientTodayViewModel: ObservableObject {
                     slot: slot.rawValue,
                     slotTimes: []
                 )
+                if result.updatedCount > 0 {
+                    AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
+                }
                 if result.insufficientCount > 0 && result.updatedCount > 0 {
                     showToast(NSLocalizedString("patient.today.slot.bulk.partialSuccess", comment: "Bulk partially recorded"), kind: .warning)
                 } else if result.insufficientCount > 0 {

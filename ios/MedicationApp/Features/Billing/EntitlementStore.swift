@@ -67,7 +67,7 @@ final class EntitlementStore {
 
     // MARK: - Purchase
 
-    func purchase(product: Product) async throws {
+    func purchase(product: Product) async throws -> PurchaseAnalyticsResult {
         isRefreshing = true
         defer { isRefreshing = false }
 
@@ -88,24 +88,27 @@ final class EntitlementStore {
                     jwsRepresentation: jwsString,
                     environmentValue: String(describing: transaction.environment)
                 )
+                return .success
             }
+            return .failed
         case .userCancelled:
-            break
+            return .cancelled
         case .pending:
-            break
+            return .pending
         @unknown default:
-            break
+            return .failed
         }
     }
 
     // MARK: - Restore
 
-    func restore() async {
+    func restore() async -> PurchaseAnalyticsResult {
         isRefreshing = true
         defer { isRefreshing = false }
 
         try? await AppStore.sync()
         await refresh()
+        return isPremium ? .success : .notFound
     }
 
     // MARK: - Server Claim (fire-and-forget)

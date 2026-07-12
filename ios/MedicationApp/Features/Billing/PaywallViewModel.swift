@@ -15,14 +15,22 @@ final class PaywallViewModel {
     // MARK: - Dependencies
 
     private let entitlementStore: EntitlementStore
+    private let feature: PremiumFeature
+    private let surface: AnalyticsSurface
     private static let premiumProductId = "com.yourcompany.medicationapp.premium_unlock"
 
     var isRefreshing: Bool { entitlementStore.isRefreshing }
 
     // MARK: - Init
 
-    init(entitlementStore: EntitlementStore) {
+    init(
+        entitlementStore: EntitlementStore,
+        feature: PremiumFeature,
+        surface: AnalyticsSurface
+    ) {
         self.entitlementStore = entitlementStore
+        self.feature = feature
+        self.surface = surface
     }
 
     // MARK: - Product Loading
@@ -52,15 +60,26 @@ final class PaywallViewModel {
 
     func purchase() async {
         guard let product else { return }
+        AnalyticsService.shared.logPurchaseStarted(feature: feature, surface: surface)
         do {
-            try await entitlementStore.purchase(product: product)
+            let result = try await entitlementStore.purchase(product: product)
+            AnalyticsService.shared.logPurchaseResult(result, feature: feature, surface: surface)
+            if result == .success {
+                AnalyticsService.shared.logPremiumActivated(source: .purchase)
+            }
         } catch {
+            AnalyticsService.shared.logPurchaseResult(.failed, feature: feature, surface: surface)
             // Purchase errors are handled silently (user cancelled, network, etc.)
             print("PaywallViewModel: purchase failed: \(error.localizedDescription)")
         }
     }
 
     func restore() async {
-        await entitlementStore.restore()
+        AnalyticsService.shared.logRestoreStarted(surface: surface)
+        let result = await entitlementStore.restore()
+        AnalyticsService.shared.logRestoreResult(result, surface: surface)
+        if result == .success {
+            AnalyticsService.shared.logPremiumActivated(source: .restore)
+        }
     }
 }

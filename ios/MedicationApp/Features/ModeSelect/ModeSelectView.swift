@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ModeSelectView: View {
     @EnvironmentObject private var sessionStore: SessionStore
+    @ObservedObject private var analyticsService = AnalyticsService.shared
+    @State private var showAnalyticsConsent = false
     private let patientTint = PatientUI.teal
     private let caregiverTint = CaregiverUI.orange
 
@@ -23,6 +25,7 @@ struct ModeSelectView: View {
                             symbol: "checkmark.seal.fill",
                             tint: patientTint
                         ) {
+                            AnalyticsService.shared.logModeSelected(.patient)
                             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                 sessionStore.setMode(.patient)
                             }
@@ -36,17 +39,38 @@ struct ModeSelectView: View {
                             symbol: "person.2.fill",
                             tint: caregiverTint
                         ) {
+                            AnalyticsService.shared.logModeSelected(.caregiver)
                             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                 sessionStore.setMode(.caregiver)
                             }
                         }
                     }
-                    .padding(.bottom, 34)
+
+                    Spacer(minLength: 10)
+                        .padding(.bottom, 34)
                 }
                 .padding(.horizontal, 22)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            AnalyticsService.shared.logScreenViewed(.modeSelect)
+            showAnalyticsConsent = !analyticsService.hasConsentDecision
+        }
+        .alert(
+            NSLocalizedString("analytics.consent.title", comment: "Analytics consent title"),
+            isPresented: $showAnalyticsConsent
+        ) {
+            Button(NSLocalizedString("analytics.consent.allow", comment: "Allow analytics")) {
+                analyticsService.setCollectionEnabled(true)
+                analyticsService.logScreenViewed(.modeSelect)
+            }
+            Button(NSLocalizedString("analytics.consent.decline", comment: "Decline analytics"), role: .cancel) {
+                analyticsService.setCollectionEnabled(false)
+            }
+        } message: {
+            Text(NSLocalizedString("analytics.consent.message", comment: "Analytics consent explanation"))
+        }
     }
 
     private var header: some View {

@@ -27,6 +27,8 @@ targets:
     dependencies:
       - package: firebase-ios-sdk
         product: FirebaseMessaging
+      - package: firebase-ios-sdk
+        product: FirebaseAnalyticsCore
     info:
       path: App/Info.plist
       properties:
@@ -36,6 +38,10 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         SUPABASE_URL: "https://gnsnasheyrncfbbnbomh.supabase.co"
         SUPABASE_ANON_KEY: "sb_publishable_7hGwwBAmU55gsNVbMw8IAg_KgS2GyaM"
+        FIREBASE_ANALYTICS_COLLECTION_ENABLED: false
+        GOOGLE_ANALYTICS_IDFV_COLLECTION_ENABLED: false
+        GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS: false
+        FirebaseAutomaticScreenReportingEnabled: false
         CFBundleDisplayName: "お薬見守り"
         CFBundleDevelopmentRegion: ja
         CFBundleLocalizations:

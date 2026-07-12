@@ -29,6 +29,9 @@ struct CaregiverAuthChoiceView: View {
                                 )
                             }
                             .buttonStyle(.plain)
+                            .simultaneousGesture(TapGesture().onEnded {
+                                AnalyticsService.shared.logAuth(.loginMethodSelected, method: .email)
+                            })
 
                             NavigationLink {
                                 CaregiverSignupView()
@@ -41,6 +44,9 @@ struct CaregiverAuthChoiceView: View {
                                 )
                             }
                             .buttonStyle(.plain)
+                            .simultaneousGesture(TapGesture().onEnded {
+                                AnalyticsService.shared.logAuth(.signupMethodSelected, method: .email)
+                            })
                         }
 
                         Button {
@@ -70,6 +76,9 @@ struct CaregiverAuthChoiceView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .accessibilityIdentifier("CaregiverAuthChoiceView")
+            .onAppear {
+                AnalyticsService.shared.logScreenViewed(.caregiverAuthChoice)
+            }
         }
     }
 

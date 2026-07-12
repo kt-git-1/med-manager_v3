@@ -43,7 +43,16 @@ struct HistoryRetentionLockView: View {
         .background(AppTheme.screenBackground)
         .accessibilityIdentifier("HistoryRetentionLockView")
         .sheet(isPresented: $showPaywall) {
-            PaywallView(entitlementStore: entitlementStore)
+            PaywallView(
+                entitlementStore: entitlementStore,
+                feature: .unlimitedHistory,
+                surface: .history
+            )
+        }
+        .onAppear {
+            guard mode == .caregiver else { return }
+            AnalyticsService.shared.logFeatureInterest(.unlimitedHistory, surface: .history)
+            AnalyticsService.shared.logPremiumNeed(.unlimitedHistory, surface: .history)
         }
     }
 

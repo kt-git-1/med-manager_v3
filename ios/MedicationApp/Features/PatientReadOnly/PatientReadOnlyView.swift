@@ -56,9 +56,14 @@ struct PatientReadOnlyView: View {
                                     ? NSLocalizedString("tutorial.notification.enable", comment: "Enable notification tutorial action")
                                     : nil,
                                 finalPrimarySystemImage: isCurrentTutorialNotificationStep ? "bell.badge.fill" : nil,
+                                onSkip: {
+                                    finishTutorial(skipped: true)
+                                },
                                 onPrevious: { moveTutorial(by: -1) },
                                 onNext: { handleTutorialNext() },
-                                onFinish: { finishTutorial() }
+                                onFinish: {
+                                    finishTutorial(skipped: false)
+                                }
                             )
                             .zIndex(10)
                         }
@@ -97,7 +102,11 @@ struct PatientReadOnlyView: View {
             }
         }
         .onAppear {
+            AnalyticsService.shared.logPatientTabViewed(analyticsTab(for: selectedTab))
             startTutorialIfNeeded()
+        }
+        .onChange(of: selectedTab) { _, tab in
+            AnalyticsService.shared.logPatientTabViewed(analyticsTab(for: tab))
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active && !isMarketingScreenshotPreview {
@@ -106,6 +115,7 @@ struct PatientReadOnlyView: View {
         }
         .onChange(of: tutorialStepIndex) { _, index in
             guard let index else { return }
+            AnalyticsService.shared.logTutorialStepViewed(mode: .patient, step: index + 1)
             selectedTab = patientTutorialSteps[index].tab
         }
         .accessibilityIdentifier("PatientReadOnlyView")
@@ -210,6 +220,7 @@ struct PatientReadOnlyView: View {
         guard sessionStore.shouldShowModeTutorial(for: .patient)
             || sessionStore.shouldForceModeTutorial(for: .patient) else { return }
         tutorialStepIndex = 0
+        AnalyticsService.shared.logTutorialStarted(mode: .patient)
         selectedTab = patientTutorialSteps[0].tab
     }
 
@@ -242,10 +253,19 @@ struct PatientReadOnlyView: View {
         finishTutorial()
     }
 
-    private func finishTutorial() {
+    private func finishTutorial(skipped: Bool = false) {
+        AnalyticsService.shared.logTutorialFinished(mode: .patient, skipped: skipped)
         sessionStore.markModeTutorialSeen(for: .patient)
         withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
             tutorialStepIndex = nil
+        }
+    }
+
+    private func analyticsTab(for tab: PatientTab) -> AnalyticsPatientTab {
+        switch tab {
+        case .today: return .today
+        case .history: return .history
+        case .settings: return .settings
         }
     }
 
@@ -815,6 +835,7 @@ struct PatientSettingsView: View {
     @ObservedObject private var schedulingCoordinator: SchedulingRefreshCoordinator
     @StateObject private var permissionManager = NotificationPermissionManager()
     @ObservedObject private var preferencesStore: NotificationPreferencesStore
+    @ObservedObject private var analyticsService = AnalyticsService.shared
     @State private var showingLogoutConfirm = false
     @State private var selectedLegalDestination: PatientLegalWebDestination?
     let onLogout: () -> Void
@@ -873,6 +894,27 @@ struct PatientSettingsView: View {
                         systemImage: "person.2.fill",
                         color: PatientUI.teal
                     )
+                }
+
+                PatientCard {
+                    VStack(alignment: .leading, spacing: 18) {
+                        settingsSectionTitle(
+                            NSLocalizedString("analytics.settings.title", comment: "Analytics setting title"),
+                            systemImage: "chart.bar.xaxis",
+                            color: PatientUI.teal
+                        )
+
+                        largeToggle(
+                            title: NSLocalizedString("analytics.settings.toggle", comment: "Analytics opt-in toggle"),
+                            subtitle: NSLocalizedString("analytics.settings.detail", comment: "Analytics privacy detail"),
+                            systemImage: "hand.raised.fill",
+                            isOn: Binding(
+                                get: { analyticsService.isEnabled },
+                                set: { analyticsService.setCollectionEnabled($0) }
+                            )
+                        )
+                        .accessibilityIdentifier("PatientAnalyticsCollectionToggle")
+                    }
                 }
 
                 PatientCard {

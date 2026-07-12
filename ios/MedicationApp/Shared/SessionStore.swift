@@ -263,6 +263,7 @@ final class SessionStore: ObservableObject {
     @discardableResult
     func handleIncomingURL(_ url: URL) -> Bool {
         guard Self.isCaregiverLoginURL(url) else { return false }
+        AnalyticsService.shared.logAuth(.emailConfirmationCompleted, method: .email)
         clearCaregiverToken()
         setMode(.caregiver)
         shouldNavigateToCaregiverLogin = true

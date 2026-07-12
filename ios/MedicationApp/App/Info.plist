@@ -39,6 +39,14 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>EMAIL_CONFIRMATION_REDIRECT_URL</key>
 	<string>https://www.okusuri-mimamori.com/auth/confirmed</string>
+	<key>FIREBASE_ANALYTICS_COLLECTION_ENABLED</key>
+	<false/>
+	<key>FirebaseAutomaticScreenReportingEnabled</key>
+	<false/>
+	<key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS</key>
+	<false/>
+	<key>GOOGLE_ANALYTICS_IDFV_COLLECTION_ENABLED</key>
+	<false/>
 	<key>SUPABASE_ANON_KEY</key>
 	<string>sb_publishable_7hGwwBAmU55gsNVbMw8IAg_KgS2GyaM</string>
 	<key>SUPABASE_URL</key>

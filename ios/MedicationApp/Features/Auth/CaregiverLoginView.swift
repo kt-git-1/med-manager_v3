@@ -88,16 +88,26 @@ struct CaregiverLoginView: View {
         }
         .scrollIndicators(.hidden)
         .accessibilityIdentifier("CaregiverLoginView")
+        .onAppear {
+            AnalyticsService.shared.logScreenViewed(.caregiverLogin)
+        }
     }
 
     @MainActor
     private func login() async {
+        AnalyticsService.shared.logAuth(.loginStarted, method: .email)
         isLoading = true
         defer { isLoading = false }
         do {
             let session = try await authService.login(email: email, password: password)
+            AnalyticsService.shared.logAuth(.loginCompleted, method: .email)
             sessionStore.saveCaregiverSession(session)
         } catch {
+            AnalyticsService.shared.logAuth(
+                .loginFailed,
+                method: .email,
+                reason: AnalyticsService.failureReason(for: error)
+            )
             if let apiError = error as? LocalizedError, let message = apiError.errorDescription {
                 errorMessage = message
             } else {

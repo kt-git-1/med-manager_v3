@@ -602,6 +602,9 @@ struct MedicationFormView: View {
             Task {
                 let saved = await viewModel.submit()
                 if saved {
+                    if !viewModel.isEditing {
+                        AnalyticsService.shared.logCoreActionCompleted(.medicationCreated)
+                    }
                     let messageKey = viewModel.isEditing
                         ? "medication.toast.updated"
                         : "medication.toast.created"

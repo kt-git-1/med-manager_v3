@@ -113,6 +113,7 @@ struct CaregiverHomeView: View {
             .padding(.bottom, 4)
         }
         .onAppear {
+            AnalyticsService.shared.logCaregiverTabViewed(analyticsTab(for: selectedTab))
             loadCurrentPatientName()
             checkLowStock()
             startTutorialIfNeeded()
@@ -127,12 +128,14 @@ struct CaregiverHomeView: View {
             checkLowStock()
         }
         .onChange(of: selectedTab) { _, newTab in
+            AnalyticsService.shared.logCaregiverTabViewed(analyticsTab(for: newTab))
             if newTab == .inventory || newTab == .medications || newTab == .today {
                 checkLowStock()
             }
         }
         .onChange(of: tutorialStepIndex) { _, index in
             guard let index else { return }
+            AnalyticsService.shared.logTutorialStepViewed(mode: .caregiver, step: index + 1)
             selectedTab = caregiverTutorialSteps[index].tab
         }
         .onReceive(NotificationCenter.default.publisher(for: .medicationUpdated)) { _ in
@@ -385,6 +388,7 @@ struct CaregiverHomeView: View {
         guard sessionStore.shouldShowModeTutorial(for: .caregiver)
             || sessionStore.shouldForceModeTutorial(for: .caregiver) else { return }
         tutorialStepIndex = 0
+        AnalyticsService.shared.logTutorialStarted(mode: .caregiver)
         selectedTab = caregiverTutorialSteps[0].tab
     }
 
@@ -456,6 +460,7 @@ struct CaregiverHomeView: View {
     }
 
     private func finishTutorial(openRegistration: Bool = false) {
+        AnalyticsService.shared.logTutorialFinished(mode: .caregiver, skipped: !openRegistration)
         sessionStore.markModeTutorialSeen(for: .caregiver)
         withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
             tutorialStepIndex = nil
@@ -463,6 +468,16 @@ struct CaregiverHomeView: View {
         if openRegistration {
             selectedTab = .patients
             shouldOpenCreatePatient = true
+        }
+    }
+
+    private func analyticsTab(for tab: CaregiverTab) -> AnalyticsCaregiverTab {
+        switch tab {
+        case .today: return .today
+        case .medications: return .medications
+        case .history: return .history
+        case .inventory: return .inventory
+        case .patients: return .settings
         }
     }
 }

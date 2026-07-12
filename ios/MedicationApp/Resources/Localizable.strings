@@ -771,3 +771,13 @@
 "caregiver.settings.push.error" = "エラーが発生しました。もう一度お試しください。";
 "caregiver.settings.push.enabled" = "本人が服薬を記録したときに、この端末へ通知します";
 "caregiver.settings.push.disabled" = "本人が服薬を記録したときに、この端末へ通知します";
+
+/* Privacy-first Analytics */
+"analytics.settings.title" = "利用状況データ";
+"analytics.settings.message" = "機能改善と有料機能の検討に、個人・医療情報を含まない利用状況を役立てます";
+"analytics.settings.toggle" = "利用状況データを送信する";
+"analytics.settings.detail" = "患者名、薬名、服薬内容、メールアドレスなどの個人・医療情報は送信しません。いつでもオフにできます。";
+"analytics.consent.title" = "アプリ改善へのご協力";
+"analytics.consent.message" = "機能改善と使いやすさの分析のため、個人・医療情報を含まない利用状況データを送信してもよいですか？患者名、薬名、服薬内容、メールアドレスは送信しません。設定からいつでも変更できます。";
+"analytics.consent.allow" = "許可する";
+"analytics.consent.decline" = "今はしない";

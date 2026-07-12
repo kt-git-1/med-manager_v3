@@ -4,11 +4,24 @@ import StoreKit
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     let entitlementStore: EntitlementStore
+    let feature: PremiumFeature
+    let surface: AnalyticsSurface
     @State private var viewModel: PaywallViewModel
+    @State private var hasLoggedView = false
 
-    init(entitlementStore: EntitlementStore) {
+    init(
+        entitlementStore: EntitlementStore,
+        feature: PremiumFeature = .multiplePatients,
+        surface: AnalyticsSurface = .settings
+    ) {
         self.entitlementStore = entitlementStore
-        self._viewModel = State(wrappedValue: PaywallViewModel(entitlementStore: entitlementStore))
+        self.feature = feature
+        self.surface = surface
+        self._viewModel = State(wrappedValue: PaywallViewModel(
+            entitlementStore: entitlementStore,
+            feature: feature,
+            surface: surface
+        ))
     }
 
     var body: some View {
@@ -20,6 +33,7 @@ struct PaywallView: View {
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
                             Button(NSLocalizedString("billing.paywall.close", comment: "Close")) {
+                                AnalyticsService.shared.logPaywallDismissed(feature: feature, surface: surface)
                                 dismiss()
                             }
                             .accessibilityIdentifier("billing.paywall.close")
@@ -32,6 +46,10 @@ struct PaywallView: View {
             }
         }
         .task {
+            if !hasLoggedView {
+                hasLoggedView = true
+                AnalyticsService.shared.logPaywallViewed(feature: feature, surface: surface)
+            }
             await viewModel.loadProduct()
         }
         .interactiveDismissDisabled(entitlementStore.isRefreshing)

@@ -89,6 +89,7 @@ final class PatientManagementViewModel: ObservableObject {
             let created = try await apiClient.createPatient(displayName: displayName)
             patients.insert(created, at: 0)
             setSelectedPatientId(created.id)
+            AnalyticsService.shared.logCoreActionCompleted(.caregiverPatientCreated)
             return true
         } catch let error as APIError {
             if case .patientLimitExceeded = error {
@@ -106,6 +107,7 @@ final class PatientManagementViewModel: ObservableObject {
     func issueLinkingCode(patientId: String) async {
         do {
             issuedCode = try await apiClient.issueLinkingCode(patientId: patientId)
+            AnalyticsService.shared.logCoreActionCompleted(.linkCodeIssued)
         } catch {
             errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
         }
@@ -161,6 +163,7 @@ struct PatientManagementView: View {
     @StateObject private var viewModel: PatientManagementViewModel
     @StateObject private var preferencesStore = NotificationPreferencesStore()
     @StateObject private var schedulingCoordinator = SchedulingRefreshCoordinator()
+    @ObservedObject private var analyticsService = AnalyticsService.shared
     @State private var showingCreate = false
     @State private var deleteTarget: PatientDTO?
     @State private var showingLogoutConfirm = false
@@ -314,6 +317,8 @@ struct PatientManagementView: View {
         }
         .onChange(of: viewModel.isPatientLimitExceeded) { _, exceeded in
             if exceeded {
+                AnalyticsService.shared.logFeatureInterest(.multiplePatients, surface: .patientManagement)
+                AnalyticsService.shared.logPremiumNeed(.multiplePatients, surface: .patientManagement)
                 showingCreate = false
                 showToast(NSLocalizedString("caregiver.patients.limit.initialRelease", comment: "Initial release patient limit"), kind: .warning)
                 viewModel.isPatientLimitExceeded = false
@@ -345,6 +350,7 @@ struct PatientManagementView: View {
                     CaregiverNoPatientEmptyStateView {
                         showingCreate = true
                     }
+                    analyticsPrivacySection
                     legalSupportSection
                     logoutSection
                 }
@@ -367,6 +373,7 @@ struct PatientManagementView: View {
                     selectedPatientSection
                     detailSettingsSection
                     pushSettingsSection
+                    analyticsPrivacySection
                     legalSupportSection
                     logoutSection
                 }
@@ -707,6 +714,31 @@ struct PatientManagementView: View {
                 } message: {
                     Text(NSLocalizedString("caregiver.account.delete.confirm.message", comment: "Delete account message"))
                 }
+            }
+        }
+    }
+
+    private var analyticsPrivacySection: some View {
+        CaregiverCard {
+            VStack(alignment: .leading, spacing: 12) {
+                settingsGroupHeader(
+                    title: NSLocalizedString("analytics.settings.title", comment: "Analytics setting title"),
+                    message: NSLocalizedString("analytics.settings.message", comment: "Analytics setting explanation"),
+                    systemImage: "chart.bar.xaxis"
+                )
+
+                Toggle(
+                    NSLocalizedString("analytics.settings.toggle", comment: "Analytics opt-in toggle"),
+                    isOn: Binding(
+                        get: { analyticsService.isEnabled },
+                        set: { analyticsService.setCollectionEnabled($0) }
+                    )
+                )
+                .accessibilityIdentifier("AnalyticsCollectionToggle")
+
+                Text(NSLocalizedString("analytics.settings.detail", comment: "Analytics privacy detail"))
+                    .font(.caption)
+                    .foregroundStyle(Color.readableSecondaryText)
             }
         }
     }

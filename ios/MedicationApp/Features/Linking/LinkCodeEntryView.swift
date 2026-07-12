@@ -118,6 +118,9 @@ struct LinkCodeEntryView: View {
             }
         }
         .accessibilityIdentifier("LinkCodeEntryView")
+        .onAppear {
+            AnalyticsService.shared.logScreenViewed(.patientLink)
+        }
     }
 
     private func inlineError(message: String) -> some View {
@@ -137,9 +140,11 @@ struct LinkCodeEntryView: View {
     @MainActor
     private func link() async {
         guard isCodeReady else {
+            AnalyticsService.shared.logPatientLinkFailed(reason: .invalidInput)
             errorMessage = NSLocalizedString("link.code.error.invalid", comment: "Invalid code")
             return
         }
+        AnalyticsService.shared.logPatientLinkStarted()
         isLoading = true
         defer { isLoading = false }
         do {
@@ -148,8 +153,12 @@ struct LinkCodeEntryView: View {
                 session.patientSessionToken,
                 expiresAt: session.expiresAt
             )
+            AnalyticsService.shared.logPatientLinkCompleted()
             code = ""
         } catch {
+            AnalyticsService.shared.logPatientLinkFailed(
+                reason: AnalyticsService.failureReason(for: error)
+            )
             print("LinkCodeEntryView: link failed \(error)")
             if let apiError = error as? APIError {
                 switch apiError {

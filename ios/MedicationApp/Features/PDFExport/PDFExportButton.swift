@@ -46,6 +46,7 @@ struct PDFExportButton: View {
     }
 
     private func handleTap() {
+        AnalyticsService.shared.logFeatureInterest(.pdfExport, surface: .history)
         if FeatureGate.isUnlocked(.pdfExport, for: entitlementStore.state) {
             // Premium — show period picker
             viewModel = PeriodPickerViewModel()
@@ -60,11 +61,13 @@ struct PDFExportButton: View {
                     viewModel = PeriodPickerViewModel()
                     showPicker = true
                 } else {
+                    AnalyticsService.shared.logPremiumNeed(.pdfExport, surface: .history)
                     showLock = true
                 }
             }
         } else {
             // Free — show lock view
+            AnalyticsService.shared.logPremiumNeed(.pdfExport, surface: .history)
             showLock = true
         }
     }

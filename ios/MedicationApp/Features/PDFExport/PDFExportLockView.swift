@@ -86,7 +86,11 @@ struct PDFExportLockView: View {
         .background(AppTheme.screenBackground)
         .accessibilityIdentifier("PDFExportLockView")
         .sheet(isPresented: $showPaywall) {
-            PaywallView(entitlementStore: entitlementStore)
+            PaywallView(
+                entitlementStore: entitlementStore,
+                feature: .pdfExport,
+                surface: .history
+            )
         }
     }
 }

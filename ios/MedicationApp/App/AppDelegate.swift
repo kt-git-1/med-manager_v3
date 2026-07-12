@@ -19,6 +19,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate, @preconcurrency Messag
         if let _ = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") {
             FirebaseApp.configure()
             Messaging.messaging().delegate = self
+            Task { @MainActor in
+                AnalyticsService.shared.configure()
+                #if DEBUG
+                AnalyticsService.shared.logDebugVerificationIfRequested()
+                #endif
+            }
         } else {
             print("AppDelegate: GoogleService-Info.plist not found — Firebase not configured. Push notifications will be unavailable.")
         }
