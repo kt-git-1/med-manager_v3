@@ -1,5 +1,9 @@
 # Android Phase 0: Foundation
 
+**Status: COMPLETE under the master-plan gate.**
+
+For all later work, follow `android-port-master-plan.md` and `parity-requirements.md`.
+
 ## Goal
 
 Create a buildable native Android foundation without changing the existing iOS or API behavior. Android uses Kotlin and Jetpack Compose and reuses the current Next.js API, Supabase Auth/Postgres, and FCM infrastructure.
@@ -36,7 +40,9 @@ The following require Android implementations:
 - PDF download/share UX
 - Google Play policy metadata and, only if enabled later, Play Billing
 
-## Phase plan
+## Historical phase plan
+
+This original coarse plan is retained as history and is superseded by the revised phases in `android-port-master-plan.md`.
 
 1. **Phase 0 — Foundation:** build system, package identity, minimal Compose UI, architecture and scope.
 2. **Phase 1 — Session and API core:** HTTP client, DTOs, secure token storage, mode restoration, error mapping.
