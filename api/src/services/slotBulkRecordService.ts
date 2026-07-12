@@ -34,6 +34,8 @@ export type SlotBulkRecordInput = {
   date: string;
   slot: HistorySlot;
   customSlotTimes?: Partial<Record<HistorySlot, string>>;
+  recordedByType?: "PATIENT" | "CAREGIVER";
+  recordedById?: string | null;
 };
 
 export type SlotBulkRecordResult = {
@@ -80,6 +82,8 @@ function scheduleDoseKey(dose: { patientId: string; medicationId: string; schedu
 export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBulkRecordResult> {
   const tz = DEFAULT_TIMEZONE;
   const now = new Date();
+  const recordedByType = input.recordedByType ?? "PATIENT";
+  const recordedById = input.recordedById ?? null;
 
   // 1. Parse date to day range
   const dateObj = new Date(`${input.date}T00:00:00`);
@@ -212,8 +216,8 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
       medicationId: dose.medicationId,
       scheduledAt: new Date(dose.scheduledAt),
       takenAt,
-      recordedByType: "PATIENT" as const,
-      recordedById: null,
+      recordedByType,
+      recordedById,
       recordingGroupId
     })),
     skipDuplicates: true
@@ -262,6 +266,8 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
         date: input.date,
         slot: input.slot,
         recordingGroupId,
+        excludeCaregiverId:
+          recordedByType === "CAREGIVER" ? (recordedById ?? undefined) : undefined,
         withinTime: anyWithinTime,
         isPrn: false
       });

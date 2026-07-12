@@ -322,6 +322,25 @@ final class APIClient {
         return try decoder.decode(SlotBulkRecordResponseDTO.self, from: data)
     }
 
+    func bulkRecordCaregiverSlot(
+        patientId: String? = nil,
+        date: String,
+        slot: String
+    ) async throws -> SlotBulkRecordResponseDTO {
+        await refreshCaregiverAuthenticationIfNeeded()
+        let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
+        let url = baseURL.appendingPathComponent("api/patients/\(resolvedPatientId)/dose-records/slot")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        request.httpBody = try JSONEncoder().encode(SlotBulkRecordRequestDTO(date: date, slot: slot))
+        let data = try await send(request)
+        return try JSONDecoder().decode(SlotBulkRecordResponseDTO.self, from: data)
+    }
+
     func createPrnDoseRecord(
         patientId: String,
         input: PrnDoseRecordCreateRequestDTO

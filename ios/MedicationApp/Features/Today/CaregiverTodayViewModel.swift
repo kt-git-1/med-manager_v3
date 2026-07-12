@@ -13,10 +13,13 @@ final class CaregiverTodayViewModel: ObservableObject {
     private let apiClient: APIClient
     private let dateFormatter: DateFormatter
     private let timeFormatter: DateFormatter
+    private let dateKeyFormatter: DateFormatter
     private let calendar: Calendar
     var toastPresenter: ToastPresenter?
 
     init(apiClient: APIClient) {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = AppConstants.defaultTimeZone
         self.apiClient = apiClient
         self.dateFormatter = DateFormatter()
         self.dateFormatter.locale = AppConstants.japaneseLocale
@@ -26,8 +29,11 @@ final class CaregiverTodayViewModel: ObservableObject {
         self.timeFormatter.locale = AppConstants.japaneseLocale
         self.timeFormatter.dateStyle = .none
         self.timeFormatter.timeStyle = .short
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = AppConstants.defaultTimeZone
+        self.dateKeyFormatter = DateFormatter()
+        self.dateKeyFormatter.locale = Locale(identifier: "en_US_POSIX")
+        self.dateKeyFormatter.calendar = calendar
+        self.dateKeyFormatter.timeZone = AppConstants.defaultTimeZone
+        self.dateKeyFormatter.dateFormat = "yyyy-MM-dd"
         self.calendar = calendar
     }
 
@@ -95,23 +101,26 @@ final class CaregiverTodayViewModel: ObservableObject {
         }
     }
 
-    func recordDoses(_ doses: [ScheduleDoseDTO]) {
+    func recordDoses(_ doses: [ScheduleDoseDTO], slot: NotificationSlot) {
         let recordableDoses = doses.filter { $0.effectiveStatus != .taken }
         guard !recordableDoses.isEmpty else { return }
         isUpdating = true
         Task {
             defer { isUpdating = false }
             do {
-                for dose in recordableDoses {
-                    _ = try await apiClient.createCaregiverDoseRecord(
-                        input: DoseRecordCreateRequestDTO(
-                            medicationId: dose.medicationId,
-                            scheduledAt: dose.scheduledAt
-                        )
+                let result = try await apiClient.bulkRecordCaregiverSlot(
+                    date: dateKeyFormatter.string(from: recordableDoses[0].scheduledAt),
+                    slot: slot.rawValue
+                )
+                if result.insufficientCount > 0 {
+                    showToast(
+                        NSLocalizedString("patient.today.slot.bulk.partialSuccess", comment: "Bulk partially recorded"),
+                        kind: .warning
                     )
+                } else {
+                    let format = NSLocalizedString("caregiver.today.recorded.bulk", comment: "Bulk recorded")
+                    showToast(String(format: format, result.updatedCount))
                 }
-                let format = NSLocalizedString("caregiver.today.recorded.bulk", comment: "Bulk recorded")
-                showToast(String(format: format, recordableDoses.count))
                 load(showLoading: false)
             } catch {
                 showToastMessage(for: error)

@@ -67,7 +67,7 @@ struct CaregiverTodayView: View {
             ) {
                 Button(NSLocalizedString("caregiver.today.confirm.record", comment: "Confirm record")) {
                     if let confirmation = slotToConfirm {
-                        viewModel.recordDoses(confirmation.doses)
+                        viewModel.recordDoses(confirmation.doses, slot: confirmation.slot)
                         slotToConfirm = nil
                     }
                 }
@@ -378,8 +378,9 @@ struct CaregiverTodayView: View {
             systemImage: "pills.fill",
             color: canRecordNextSlot ? CaregiverUI.teal : .gray
         ) {
-            if let nextSlotRow, !nextSlotRow.recordableDoses.isEmpty {
+            if let nextSlotRow, let slot = nextSlotRow.slot, !nextSlotRow.recordableDoses.isEmpty {
                 slotToConfirm = SlotRecordConfirmation(
+                    slot: slot,
                     slotTitle: slotTitle(for: nextSlotRow.slot),
                     doses: nextSlotRow.recordableDoses
                 )
@@ -442,8 +443,9 @@ struct CaregiverTodayView: View {
                     row: row,
                     isOutOfStock: row.hasOutOfStock,
                     onRecordSlot: {
-                        guard !row.recordableDoses.isEmpty else { return }
+                        guard let slot = row.slot, !row.recordableDoses.isEmpty else { return }
                         slotToConfirm = SlotRecordConfirmation(
+                            slot: slot,
                             slotTitle: slotTitle(for: row.slot),
                             doses: row.recordableDoses
                         )
@@ -808,6 +810,7 @@ struct CaregiverTodayView: View {
 }
 
 private struct SlotRecordConfirmation {
+    let slot: NotificationSlot
     let slotTitle: String
     let doses: [ScheduleDoseDTO]
 }

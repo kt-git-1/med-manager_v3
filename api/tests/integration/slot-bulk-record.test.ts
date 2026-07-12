@@ -466,6 +466,39 @@ describe("slot bulk record integration", () => {
       );
     });
 
+    it("bulk-records caregiver proxy doses with actor metadata and excludes the actor from push", async () => {
+      mockScheduleDoses = makeMorningDoses("pending");
+      const { bulkRecordSlot } = await import("../../src/services/slotBulkRecordService");
+      const { notifyCaregiversOfDoseTaken } =
+        await import("../../src/services/pushNotificationService");
+      const notifyMock = vi.mocked(notifyCaregiversOfDoseTaken);
+
+      const result = await bulkRecordSlot({
+        patientId: "patient-1",
+        date: "2026-02-11",
+        slot: "morning",
+        recordedByType: "CAREGIVER",
+        recordedById: "caregiver-1"
+      });
+
+      expect(result.updatedCount).toBe(3);
+      expect([...store.values()]).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            recordedByType: "CAREGIVER",
+            recordedById: "caregiver-1",
+            recordingGroupId: result.recordingGroupId
+          })
+        ])
+      );
+      expect(notifyMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recordingGroupId: result.recordingGroupId,
+          excludeCaregiverId: "caregiver-1"
+        })
+      );
+    });
+
     it("records available medications and leaves insufficient medications unrecorded", async () => {
       medications["med-1"].inventoryEnabled = true;
       medications["med-1"].inventoryQuantity = 1;
