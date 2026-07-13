@@ -101,24 +101,7 @@ class ApiClient(
     }
 
     private fun parse(response: HttpResponse): JSONObject {
-        if (response.status !in 200..299) throw mapError(response.status, response.body)
+        if (response.status !in 200..299) throw ApiErrorMapper.map(response.status, response.body)
         return if (response.body.isBlank()) JSONObject() else JSONObject(response.body)
-    }
-
-    private fun mapError(status: Int, text: String): ApiException {
-        val payload = runCatching { JSONObject(text) }.getOrNull()
-        val message = payload?.optString("message")?.takeIf(String::isNotBlank)
-            ?: payload?.optJSONArray("messages")?.optString(0)?.takeIf(String::isNotBlank)
-            ?: payload?.optString("error")?.takeIf(String::isNotBlank)
-            ?: "リクエストに失敗しました。"
-        return when (status) {
-            400, 422 -> ApiException.Validation(message)
-            401 -> ApiException.Unauthorized()
-            403 -> ApiException.Forbidden()
-            404 -> ApiException.NotFound()
-            409 -> ApiException.Conflict(message)
-            in 500..599 -> ApiException.Server()
-            else -> ApiException.Network(message)
-        }
     }
 }

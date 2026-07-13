@@ -50,10 +50,14 @@ class ReminderReceiver : BroadcastReceiver() {
         if (android.os.Build.VERSION.SDK_INT >= 33 &&
             context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) return
-        val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+        val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
+            putExtra("notification_date", intent.getStringExtra("notification_date"))
+            putExtra("notification_slot", intent.getStringExtra("notification_slot"))
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
         val contentIntent = PendingIntent.getActivity(
             context,
-            0,
+            "${intent.getStringExtra("notification_date")}:${intent.getStringExtra("notification_slot")}".hashCode(),
             launchIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
