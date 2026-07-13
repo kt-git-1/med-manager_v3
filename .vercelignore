@@ -1,5 +1,7 @@
 .env
 .env.*
+api/.env
+api/.env.*
 .DS_Store
 node_modules
 api/node_modules
