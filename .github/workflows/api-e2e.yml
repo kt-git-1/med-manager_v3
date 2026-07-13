@@ -2,12 +2,12 @@ name: API E2E
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, staging, android-dev]
     paths:
       - "api/**"
       - ".github/workflows/api-e2e.yml"
   pull_request:
-    branches: [main, dev]
+    branches: [main, staging, android-dev]
     paths:
       - "api/**"
       - ".github/workflows/api-e2e.yml"

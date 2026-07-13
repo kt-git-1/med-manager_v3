@@ -2,12 +2,12 @@ name: iOS CI
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, staging, android-dev]
     paths:
       - "ios/**"
       - ".github/workflows/ios-ci.yml"
   pull_request:
-    branches: [main, dev]
+    branches: [main, staging, android-dev]
     paths:
       - "ios/**"
       - ".github/workflows/ios-ci.yml"
