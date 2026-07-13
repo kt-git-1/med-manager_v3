@@ -209,7 +209,13 @@ const medications: Record<
 vi.mock("../../src/repositories/medicationRepo", () => ({
   getMedicationRecordForPatient: vi.fn(async (_patientId: string, medicationId: string) => {
     return medications[medicationId] ?? null;
-  })
+  }),
+  listMedicationRecordsForPatientByIds: vi.fn(async (_patientId: string, medicationIds: string[]) =>
+    medicationIds.flatMap((medicationId) => {
+      const medication = medications[medicationId];
+      return medication ? [medication] : [];
+    })
+  )
 }));
 
 vi.mock("../../src/repositories/doseRecordEventRepo", () => ({
@@ -227,7 +233,8 @@ vi.mock("../../src/repositories/doseRecordEventRepo", () => ({
       ...input,
       createdAt: new Date()
     })
-  )
+  ),
+  createDoseRecordEvents: vi.fn(async () => {})
 }));
 
 vi.mock("../../src/services/pushNotificationService", () => ({
@@ -237,6 +244,7 @@ vi.mock("../../src/services/pushNotificationService", () => ({
 
 vi.mock("../../src/services/medicationService", () => ({
   applyInventoryDeltaForDoseRecord: vi.fn(async () => {}),
+  applyInventoryDeltasForDoseRecords: vi.fn(async () => {}),
   assertInventoryAvailableForMedication: vi.fn(
     (
       medication: { inventoryEnabled: boolean; inventoryQuantity: number },
@@ -443,6 +451,9 @@ describe("slot bulk record integration", () => {
   describe("T001: PENDING bulk -> TAKEN", () => {
     it("records 3 PENDING morning doses as TAKEN in a single bulk operation", async () => {
       mockScheduleDoses = makeMorningDoses("pending");
+      const { createDoseRecordEvents } = await import("../../src/repositories/doseRecordEventRepo");
+      const { applyInventoryDeltasForDoseRecords } =
+        await import("../../src/services/medicationService");
       const { notifyCaregiversOfDoseTaken } =
         await import("../../src/services/pushNotificationService");
       const notifyMock = vi.mocked(notifyCaregiversOfDoseTaken);
@@ -456,6 +467,9 @@ describe("slot bulk record integration", () => {
       expect(body.remainingCount).toBe(0);
       expect(body.recordingGroupId).toBeDefined();
       expect(typeof body.recordingGroupId).toBe("string");
+      expect(createDoseRecordEvents).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(createDoseRecordEvents).mock.calls[0]?.[0]).toHaveLength(3);
+      expect(applyInventoryDeltasForDoseRecords).toHaveBeenCalledTimes(1);
       expect(notifyMock).toHaveBeenCalledTimes(1);
       expect(notifyMock).toHaveBeenCalledWith(
         expect.objectContaining({

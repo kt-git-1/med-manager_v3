@@ -22,6 +22,21 @@ export async function getMedicationRecordForPatient(patientId: string, medicatio
   });
 }
 
+export async function listMedicationRecordsForPatientByIds(
+  patientId: string,
+  medicationIds: string[]
+) {
+  if (medicationIds.length === 0) {
+    return [];
+  }
+  return prisma.medication.findMany({
+    where: {
+      patientId,
+      id: { in: medicationIds }
+    }
+  });
+}
+
 export async function updateMedicationRecord(id: string, input: MedicationUpdateInput) {
   return prisma.medication.update({ where: { id }, data: input });
 }

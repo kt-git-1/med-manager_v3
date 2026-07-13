@@ -13,11 +13,11 @@ import {
   type HistorySlot,
   type SlotSummaryStatus
 } from "./scheduleResponse";
-import { createDoseRecordEvent } from "../repositories/doseRecordEventRepo";
+import { createDoseRecordEvents } from "../repositories/doseRecordEventRepo";
 import { getPatientRecordById } from "../repositories/patientRepo";
-import { getMedicationRecordForPatient } from "../repositories/medicationRepo";
+import { listMedicationRecordsForPatientByIds } from "../repositories/medicationRepo";
 import { notifyCaregiversOfDoseTaken } from "./pushNotificationService";
-import { applyInventoryDeltaForDoseRecord } from "./medicationService";
+import { applyInventoryDeltasForDoseRecords } from "./medicationService";
 import { DEFAULT_TIMEZONE, DOSE_MISSED_WINDOW_MS, INTL_PARSE_LOCALE } from "../constants";
 import { randomUUID } from "crypto";
 
@@ -158,19 +158,15 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
     };
   }
 
-  const medicationById = new Map<
-    string,
-    Awaited<ReturnType<typeof getMedicationRecordForPatient>>
-  >();
+  const medications = await listMedicationRecordsForPatientByIds(input.patientId, [
+    ...new Set(recordable.map((dose) => dose.medicationId))
+  ]);
+  const medicationById = new Map(medications.map((medication) => [medication.id, medication]));
   const availableQuantityByMedicationId = new Map<string, number>();
   const recordableWithInventory: typeof recordable = [];
   const insufficientDoses: typeof recordable = [];
   for (const dose of recordable) {
-    let medication = medicationById.get(dose.medicationId);
-    if (medication === undefined) {
-      medication = await getMedicationRecordForPatient(input.patientId, dose.medicationId);
-    }
-    medicationById.set(dose.medicationId, medication);
+    const medication = medicationById.get(dose.medicationId);
     if (!medication || !medication.inventoryEnabled) {
       recordableWithInventory.push(dose);
       continue;
@@ -227,17 +223,14 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
   const patient = await getPatientRecordById(input.patientId);
   let anyWithinTime = false;
   if (patient) {
-    for (const record of records) {
+    const eventInputs = records.map((record) => {
       const withinTime =
         record.takenAt.getTime() <= record.scheduledAt.getTime() + DOSE_MISSED_WINDOW_MS;
 
       if (withinTime) anyWithinTime = true;
 
-      const medication =
-        medicationById.get(record.medicationId) ??
-        (await getMedicationRecordForPatient(record.patientId, record.medicationId));
-
-      await createDoseRecordEvent({
+      const medication = medicationById.get(record.medicationId);
+      return {
         patientId: record.patientId,
         scheduledAt: record.scheduledAt,
         takenAt: record.takenAt,
@@ -245,18 +238,19 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
         displayName: patient.displayName,
         medicationName: medication?.name,
         isPrn: false
-      });
+      };
+    });
+    await createDoseRecordEvents(eventInputs);
 
-      // Inventory delta
-      if (medication) {
-        await applyInventoryDeltaForDoseRecord({
-          patientId: record.patientId,
-          medicationId: record.medicationId,
-          delta: -medication.doseCountPerIntake,
-          reason: "TAKEN_CREATE"
-        });
-      }
-    }
+    await applyInventoryDeltasForDoseRecords({
+      patientId: input.patientId,
+      patientDisplayName: patient.displayName,
+      deltas: records.flatMap((record) => {
+        const medication = medicationById.get(record.medicationId);
+        if (!medication?.inventoryEnabled) return [];
+        return [{ medicationId: medication.id, quantity: medication.doseCountPerIntake }];
+      })
+    });
 
     if (records.length > 0) {
       // Await notification work so serverless runtimes do not stop before FCM send completes.
