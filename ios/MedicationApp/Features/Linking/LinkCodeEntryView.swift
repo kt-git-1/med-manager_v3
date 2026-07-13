@@ -27,18 +27,12 @@ struct LinkCodeEntryView: View {
     @State private var errorMessage: String?
     @State private var isLoading = false
 
-    private let linkingService: LinkingService
     private var normalizedCode: String {
         code.filter(\.isNumber)
     }
 
     private var isCodeReady: Bool {
         normalizedCode.count == 6
-    }
-
-    init(sessionStore: SessionStore? = nil) {
-        let store = sessionStore ?? SessionStore()
-        self.linkingService = LinkingService(sessionStore: store)
     }
 
     var body: some View {
@@ -169,6 +163,7 @@ struct LinkCodeEntryView: View {
         isLoading = true
         defer { isLoading = false }
         do {
+            let linkingService = LinkingService(sessionStore: sessionStore)
             let session = try await linkingService.link(code: normalizedCode)
             sessionStore.savePatientToken(
                 session.patientSessionToken,

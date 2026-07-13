@@ -35,6 +35,7 @@ final class SessionStore: ObservableObject {
     static let caregiverExpiresAtStorageKey = "caregiverSessionExpiresAt"
     static let patientTokenStorageKey = "patientToken"
     static let patientExpiresAtStorageKey = "patientSessionExpiresAt"
+    static let installationIdStorageKey = "sessionInstallationId"
     static let lastModeStorageKey = "lastAppMode"
     static let modeTutorialSeenStorageKeyPrefix = "modeTutorialSeen."
     static let patientTutorialPreviewStorageKey = "debug.patientTutorialPreview"
@@ -51,6 +52,9 @@ final class SessionStore: ObservableObject {
         self.now = now
         self.baseURL = SessionStore.resolveBaseURL()
         self.currentPatientId = userDefaults.string(forKey: SessionStore.currentPatientIdStorageKey)
+        self.caregiverToken = nil
+        self.patientToken = nil
+        preparePatientSessionForCurrentInstallation()
         migrateLegacyTokensIfNeeded()
         self.caregiverToken = restoredCaregiverToken(
             tokenKey: SessionStore.caregiverTokenStorageKey,
@@ -497,6 +501,49 @@ final class SessionStore: ObservableObject {
     private func removePatientSession() {
         secureStorage.removeString(forKey: SessionStore.patientTokenStorageKey)
         secureStorage.removeString(forKey: SessionStore.patientExpiresAtStorageKey)
+    }
+
+    private func preparePatientSessionForCurrentInstallation() {
+        let localInstallationId = userDefaults.string(forKey: Self.installationIdStorageKey)
+        let secureInstallationId = secureStorage.string(forKey: Self.installationIdStorageKey)
+
+        switch (localInstallationId, secureInstallationId) {
+        case let (localId?, secureId?):
+            if localId != secureId {
+                removePatientSession()
+                secureStorage.setString(localId, forKey: Self.installationIdStorageKey)
+            }
+        case (nil, .some):
+            // UserDefaults is removed on uninstall while Keychain survives. A token
+            // from the previous installation must never silently relink a patient.
+            removePatientSession()
+            establishInstallationIdentity()
+        case let (localId?, nil):
+            secureStorage.setString(localId, forKey: Self.installationIdStorageKey)
+        case (nil, nil):
+            // Upgrade from a pre-marker build: preserve an active installation, but
+            // discard a Keychain-only token left behind by an earlier uninstall.
+            if secureStorage.string(forKey: Self.patientTokenStorageKey) != nil,
+               !hasExistingInstallationState() {
+                removePatientSession()
+            }
+            establishInstallationIdentity()
+        }
+    }
+
+    private func establishInstallationIdentity() {
+        let installationId = UUID().uuidString
+        userDefaults.set(installationId, forKey: Self.installationIdStorageKey)
+        secureStorage.setString(installationId, forKey: Self.installationIdStorageKey)
+    }
+
+    private func hasExistingInstallationState() -> Bool {
+        userDefaults.object(forKey: Self.lastModeStorageKey) != nil
+            || userDefaults.object(forKey: Self.currentPatientIdStorageKey) != nil
+            || userDefaults.object(forKey: Self.modeTutorialSeenStorageKey(for: .patient)) != nil
+            || userDefaults.object(forKey: Self.modeTutorialSeenStorageKey(for: .caregiver)) != nil
+            || userDefaults.object(forKey: Self.patientTokenStorageKey) != nil
+            || userDefaults.object(forKey: Self.caregiverTokenStorageKey) != nil
     }
 
     private func migrateLegacyTokensIfNeeded() {

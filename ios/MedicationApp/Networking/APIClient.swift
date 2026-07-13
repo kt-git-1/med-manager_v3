@@ -4,10 +4,12 @@ import Foundation
 final class APIClient {
     let baseURL: URL
     let sessionStore: SessionStore
+    private let urlSession: URLSession
 
-    init(baseURL: URL, sessionStore: SessionStore) {
+    init(baseURL: URL, sessionStore: SessionStore, urlSession: URLSession = .shared) {
         self.baseURL = baseURL
         self.sessionStore = sessionStore
+        self.urlSession = urlSession
     }
 
     func request(path: String, method: String = "GET") async throws -> Data {
@@ -198,7 +200,7 @@ final class APIClient {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         let payload = ["code": code]
         request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
-        let data = try await send(request)
+        let data = try await send(request, usesCurrentAuthorization: false)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         do {
@@ -516,10 +518,13 @@ final class APIClient {
 
     func send(
         _ request: URLRequest,
-        allowsPatientRefreshRetry: Bool = true
+        allowsPatientRefreshRetry: Bool = true,
+        usesCurrentAuthorization: Bool = true
     ) async throws -> Data {
-        await refreshCaregiverAuthenticationIfNeeded()
-        if allowsPatientRefreshRetry {
+        if usesCurrentAuthorization {
+            await refreshCaregiverAuthenticationIfNeeded()
+        }
+        if allowsPatientRefreshRetry, usesCurrentAuthorization {
             do {
                 try await refreshPatientAuthenticationIfNeeded()
             } catch {
@@ -529,11 +534,13 @@ final class APIClient {
                 throw error
             }
         }
-        let authorizedRequest = requestWithCurrentAuthorization(request)
-        let (data, response) = try await URLSession.shared.data(for: authorizedRequest)
+        let authorizedRequest = usesCurrentAuthorization
+            ? requestWithCurrentAuthorization(request)
+            : requestWithoutAuthorization(request)
+        let (data, response) = try await urlSession.data(for: authorizedRequest)
         if shouldRefreshPatientSession(
             response: response,
-            allowsPatientRefreshRetry: allowsPatientRefreshRetry
+            allowsPatientRefreshRetry: allowsPatientRefreshRetry && usesCurrentAuthorization
         ) {
             do {
                 let refreshedSession = try await refreshPatientSessionToken()
@@ -542,7 +549,7 @@ final class APIClient {
                     expiresAt: refreshedSession.expiresAt
                 )
                 let retryRequest = requestWithCurrentAuthorization(request)
-                let (retryData, retryResponse) = try await URLSession.shared.data(for: retryRequest)
+                let (retryData, retryResponse) = try await urlSession.data(for: retryRequest)
                 try mapErrorIfNeeded(response: retryResponse, data: retryData)
                 return retryData
             } catch {
@@ -552,8 +559,18 @@ final class APIClient {
                 throw error
             }
         }
-        try mapErrorIfNeeded(response: response, data: data)
+        try mapErrorIfNeeded(
+            response: response,
+            data: data,
+            handlesAuthFailure: usesCurrentAuthorization
+        )
         return data
+    }
+
+    private func requestWithoutAuthorization(_ request: URLRequest) -> URLRequest {
+        var request = request
+        request.setValue(nil, forHTTPHeaderField: "Authorization")
+        return request
     }
 
     private func requestWithCurrentAuthorization(_ request: URLRequest) -> URLRequest {
@@ -592,7 +609,11 @@ final class APIClient {
     }
 
     @MainActor
-    func mapErrorIfNeeded(response: URLResponse, data: Data) throws {
+    func mapErrorIfNeeded(
+        response: URLResponse,
+        data: Data,
+        handlesAuthFailure: Bool = true
+    ) throws {
         guard let httpResponse = response as? HTTPURLResponse else {
             return
         }
@@ -601,7 +622,7 @@ final class APIClient {
         case 200...299:
             return
         case 401:
-            if !sessionStore.isPatientTutorialPreviewActive {
+            if handlesAuthFailure, !sessionStore.isPatientTutorialPreviewActive {
                 sessionStore.handleAuthFailure(for: sessionStore.mode)
             }
             throw APIError.unauthorized
