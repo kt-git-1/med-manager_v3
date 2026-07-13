@@ -45,6 +45,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://med_manager:med_manager@localhost:54329/med_manager_test
       DIRECT_URL: postgresql://med_manager:med_manager@localhost:54329/med_manager_test
+      SHADOW_DATABASE_URL: postgresql://med_manager:med_manager@localhost:54329/med_manager_test
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       SUPABASE_TEST_EMAIL: ${{ secrets.SUPABASE_TEST_EMAIL }}

@@ -63,8 +63,7 @@ export async function getPatientSlotTimeTimeline(
     }
   ];
   const revisionDelegate = prisma.patientSlotTimeRevision as
-    | { findMany?: typeof prisma.patientSlotTimeRevision.findMany }
-    | undefined;
+    { findMany?: typeof prisma.patientSlotTimeRevision.findMany } | undefined;
   if (!revisionDelegate?.findMany) {
     return baseline;
   }

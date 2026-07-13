@@ -51,7 +51,8 @@ const caregiverTimeline = [
   { time: "20:30", slot: "夜", summary: "1件の薬", status: "まだです" }
 ];
 
-const appStoreUrl = "https://apps.apple.com/jp/app/%E3%81%8A%E8%96%AC%E8%A6%8B%E5%AE%88%E3%82%8A/id6787427428";
+const appStoreUrl =
+  "https://apps.apple.com/jp/app/%E3%81%8A%E8%96%AC%E8%A6%8B%E5%AE%88%E3%82%8A/id6787427428";
 
 function AppStoreBadge() {
   const content = (
@@ -82,7 +83,11 @@ function AppStoreBadge() {
 
 function AndroidComingSoonBadge() {
   return (
-    <span className="app-store-badge android-badge app-store-badge-disabled" aria-disabled="true" role="link">
+    <span
+      className="app-store-badge android-badge app-store-badge-disabled"
+      aria-disabled="true"
+      role="link"
+    >
       <span className="android-store-icon" aria-hidden="true" />
       <span className="app-store-text">
         <span>Androidアプリ</span>
@@ -96,7 +101,12 @@ function AndroidComingSoonBadge() {
 function AppStoreQRCode() {
   return (
     <a className="app-store-qr" href={appStoreUrl} rel="noreferrer" target="_blank">
-      <img alt="iPhone版のApp Storeページを開くQRコード" height="132" src="/app-store-qr.svg" width="132" />
+      <img
+        alt="iPhone版のApp Storeページを開くQRコード"
+        height="132"
+        src="/app-store-qr.svg"
+        width="132"
+      />
       <span>
         <strong>iPhone版QR</strong>
         <small>スマートフォンのカメラで読み取れます</small>
