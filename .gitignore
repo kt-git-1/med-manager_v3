@@ -71,16 +71,5 @@ Packages/
 # other
 marketing/
 docs/
-!docs/
-docs/*
-!docs/android/
-!docs/android/**
 tmp/
 output/
-
-# Android
-android/.gradle/
-android/local.properties
-android/**/build/
-*.jks
-*.keystore
