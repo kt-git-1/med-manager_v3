@@ -1,6 +1,7 @@
 package com.afterlifearchive.medmanager
 
 import android.os.Bundle
+import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -13,7 +14,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val repository = (application as MedicationApplication).sessionRepository
+        intent.dataString?.let(repository::handleAuthCallback)
         val patientRepository = (application as MedicationApplication).patientRepository
+        handlePatientNotificationIntent(intent, patientRepository)
         setContent {
             MedicationAppTheme {
                 if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_PATIENT", false)) {
@@ -23,5 +26,19 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent.dataString?.let { (application as MedicationApplication).sessionRepository.handleAuthCallback(it) }
+        handlePatientNotificationIntent(intent, (application as MedicationApplication).patientRepository)
+    }
+
+    private fun handlePatientNotificationIntent(intent: Intent, repository: com.afterlifearchive.medmanager.data.patient.PatientRepository) {
+        repository.handleNotificationTarget(
+            intent.getStringExtra("notification_date"),
+            intent.getStringExtra("notification_slot"),
+        )
     }
 }
