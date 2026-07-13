@@ -130,6 +130,8 @@
 "link.code.back" = "モードを選び直す";
 "link.code.error.invalid" = "6桁の数字コードを入力してください";
 "link.code.error.not_found" = "コードが見つからないか期限切れです";
+"link.code.error.authorization" = "連携できませんでした。コードを確認して、もう一度お試しください";
+"link.code.error.network" = "通信に失敗しました。接続を確認して、もう一度お試しください";
 
 /* Medication list */
 "medication.list.empty.title" = "薬がありません";
