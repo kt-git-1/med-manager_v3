@@ -100,6 +100,9 @@ async function deleteCaregiverAppData(caregiverId: string) {
     const pushDeviceIds = pushDevices.map((device) => device.id);
 
     if (patientIds.length > 0) {
+      await tx.patientSlotTimeRevision.deleteMany({
+        where: { patientId: { in: patientIds } }
+      });
       await tx.inventoryAlertEvent.deleteMany({ where: { patientId: { in: patientIds } } });
       await tx.medicationInventoryAdjustment.deleteMany({
         where: { patientId: { in: patientIds } }

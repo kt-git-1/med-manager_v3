@@ -6,6 +6,7 @@ vi.mock("../../src/auth/supabaseJwt", () => ({
 
 const patientFindManyMock = vi.fn();
 const deleteMocks = {
+  patientSlotTimeRevision: vi.fn(),
   inventoryAlertEvent: vi.fn(),
   medicationInventoryAdjustment: vi.fn(),
   prnDoseRecord: vi.fn(),
@@ -30,6 +31,7 @@ const txClient = {
     findMany: patientFindManyMock,
     deleteMany: deleteMocks.patient
   },
+  patientSlotTimeRevision: { deleteMany: deleteMocks.patientSlotTimeRevision },
   inventoryAlertEvent: { deleteMany: deleteMocks.inventoryAlertEvent },
   medicationInventoryAdjustment: { deleteMany: deleteMocks.medicationInventoryAdjustment },
   prnDoseRecord: { deleteMany: deleteMocks.prnDoseRecord },
@@ -117,6 +119,12 @@ describe("DELETE /api/me", () => {
     expect(deleteMocks.patient).toHaveBeenCalledWith({
       where: { id: { in: ["patient-1", "patient-2"] } }
     });
+    expect(deleteMocks.patientSlotTimeRevision).toHaveBeenCalledWith({
+      where: { patientId: { in: ["patient-1", "patient-2"] } }
+    });
+    expect(deleteMocks.patientSlotTimeRevision.mock.invocationCallOrder[0]).toBeLessThan(
+      deleteMocks.patient.mock.invocationCallOrder[0]
+    );
     expect(deleteMocks.pushDelivery).toHaveBeenCalledWith({
       where: { pushDeviceId: { in: ["push-device-1"] } }
     });
