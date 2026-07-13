@@ -7,6 +7,8 @@ struct PatientTodayView: View {
 
     init(
         sessionStore: SessionStore? = nil,
+        preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore(),
+        onScheduledDoseRecorded: @escaping @MainActor () async -> Void = {},
         deepLinkTarget: Binding<NotificationDeepLinkTarget?> = .constant(nil)
     ) {
         let store = sessionStore ?? SessionStore()
@@ -14,7 +16,11 @@ struct PatientTodayView: View {
         _deepLinkTarget = deepLinkTarget
         let baseURL = SessionStore.resolveBaseURL()
         let apiClient = APIClient(baseURL: baseURL, sessionStore: store)
-        let viewModel = PatientTodayViewModel(apiClient: apiClient)
+        let viewModel = PatientTodayViewModel(
+            apiClient: apiClient,
+            preferencesStore: preferencesStore,
+            onScheduledDoseRecorded: onScheduledDoseRecorded
+        )
         _viewModel = StateObject(wrappedValue: viewModel)
     }
 
@@ -45,8 +51,6 @@ private struct PatientTodayRootView: View {
     @State private var detailMedication: MedicationDTO?
     @State private var isDetailLoading = false
     @State private var detailErrorMessage: String?
-
-    private let preferencesStore = NotificationPreferencesStore()
 
     var body: some View {
         PatientTodayBaseView(
@@ -228,7 +232,10 @@ private struct PatientTodayRootView: View {
     }
 
     private func slot(for dose: ScheduleDoseDTO) -> NotificationSlot? {
-        NotificationSlot.from(date: dose.scheduledAt, slotTimes: preferencesStore.slotTimesMap())
+        NotificationSlot.from(
+            date: dose.scheduledAt,
+            slotTimes: viewModel.preferencesStore.slotTimesMap()
+        )
     }
 
     private func shouldHighlight(dose: ScheduleDoseDTO) -> Bool {

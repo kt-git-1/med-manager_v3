@@ -18,6 +18,7 @@ final class PatientTodayViewModel: ObservableObject {
     @Published var confirmSlot: NotificationSlot?
 
     private let apiClient: APIClient
+    private let onScheduledDoseRecorded: @MainActor () async -> Void
     let preferencesStore: NotificationPreferencesStore
     private let dateFormatter: DateFormatter
     private let timeFormatter: DateFormatter
@@ -29,10 +30,12 @@ final class PatientTodayViewModel: ObservableObject {
 
     init(
         apiClient: APIClient,
-        preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore()
+        preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore(),
+        onScheduledDoseRecorded: @escaping @MainActor () async -> Void = {}
     ) {
         self.apiClient = apiClient
         self.preferencesStore = preferencesStore
+        self.onScheduledDoseRecorded = onScheduledDoseRecorded
         self.dateFormatter = DateFormatter()
         self.dateFormatter.locale = AppConstants.japaneseLocale
         self.dateFormatter.dateStyle = .medium
@@ -110,6 +113,7 @@ final class PatientTodayViewModel: ObservableObject {
                 )
                 AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
                 showToast(NSLocalizedString("patient.today.recorded", comment: "Recorded"))
+                await onScheduledDoseRecorded()
                 load(showLoading: false)
             } catch {
                 showToastMessage(for: error)
@@ -310,6 +314,7 @@ final class PatientTodayViewModel: ObservableObject {
                 )
                 if result.updatedCount > 0 {
                     AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
+                    await onScheduledDoseRecorded()
                 }
                 if result.insufficientCount > 0 && result.updatedCount > 0 {
                     showToast(NSLocalizedString("patient.today.slot.bulk.partialSuccess", comment: "Bulk partially recorded"), kind: .warning)
