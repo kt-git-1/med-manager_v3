@@ -25,6 +25,8 @@ jobs:
   lint:
     name: Lint & Typecheck
     runs-on: ubuntu-latest
+    env:
+      DIRECT_URL: postgresql://dummy:dummy@localhost:5432/dummy
     steps:
       - uses: actions/checkout@v4
 
@@ -35,6 +37,9 @@ jobs:
           cache-dependency-path: api/package-lock.json
 
       - run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
 
       - name: ESLint
         run: npm run lint
@@ -68,7 +73,6 @@ jobs:
     env:
       DATABASE_URL: postgresql://med_manager:med_manager@localhost:54329/med_manager_test
       DIRECT_URL: postgresql://med_manager:med_manager@localhost:54329/med_manager_test
-      SHADOW_DATABASE_URL: postgresql://med_manager:med_manager@localhost:54329/med_manager_test
 
     steps:
       - uses: actions/checkout@v4
@@ -84,6 +88,9 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
+      - name: Bootstrap Supabase PostgreSQL objects
+        run: npx prisma db execute --file scripts/ci-bootstrap-postgres.sql
+
       - name: Run Migrations
         run: npx prisma migrate deploy
 
@@ -98,7 +105,6 @@ jobs:
     env:
       DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
       DIRECT_URL: postgresql://dummy:dummy@localhost:5432/dummy
-      SHADOW_DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
     steps:
       - uses: actions/checkout@v4
