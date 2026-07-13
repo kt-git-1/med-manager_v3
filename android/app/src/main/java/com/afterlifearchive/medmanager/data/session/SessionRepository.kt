@@ -20,9 +20,6 @@ data class SessionState(
     val currentPatientId: String? = null,
     val loading: Boolean = false,
     val errorMessage: String? = null,
-    val infoMessage: String? = null,
-    val canResendConfirmation: Boolean = false,
-    val caregiverLoginRequested: Boolean = false,
 )
 
 class SessionRepository(
@@ -60,64 +57,12 @@ class SessionRepository(
         saveCaregiver(authService.login(email, password))
     }
 
-    suspend fun signupCaregiver(email: String, password: String, confirmation: String) {
-        mutableState.value = mutableState.value.copy(loading = false, errorMessage = null, infoMessage = null, canResendConfirmation = false)
-        val trimmed = email.trim()
-        val error = when {
-            !EMAIL_REGEX.matches(trimmed) -> "メールアドレスの形式を確認してください。"
-            password.length < 6 -> "パスワードは6文字以上で入力してください。"
-            password != confirmation -> "確認用のパスワードが一致していません。"
-            else -> null
-        }
-        if (error != null) {
-            mutableState.value = mutableState.value.copy(errorMessage = error)
-            return
-        }
-        mutableState.value = mutableState.value.copy(loading = true)
-        try {
-            val session = authService.signup(trimmed, password)
-            if (session.accessToken.isNullOrBlank()) {
-                mutableState.value = mutableState.value.copy(
-                    loading = false,
-                    infoMessage = "確認メールを送信しました。メール内のリンクを開いて、登録を完了してください。見つからない場合は、迷惑メールフォルダも確認してください。",
-                    canResendConfirmation = true,
-                )
-            } else {
-                saveCaregiver(session)
-                restore()
-            }
-        } catch (error: Exception) {
-            mutableState.value = mutableState.value.copy(loading = false, errorMessage = error.message)
-        }
-    }
-
-    suspend fun resendSignupConfirmation(email: String) {
-        mutableState.value = mutableState.value.copy(errorMessage = null, infoMessage = null)
-        try {
-            authService.resendSignupConfirmation(email.trim())
-            mutableState.value = mutableState.value.copy(infoMessage = "確認メールを再送しました。迷惑メールフォルダも確認してください。")
-        } catch (error: Exception) {
-            mutableState.value = mutableState.value.copy(errorMessage = error.message)
-        }
-    }
-
-    suspend fun linkPatient(code: String) {
-        mutableState.value = mutableState.value.copy(loading = true, errorMessage = null)
-        try {
-            val normalized = code.filter(Char::isDigit)
-            if (normalized.length != 6) throw ApiException.Validation("invalid link code")
-            val response = apiClient.post("api/patient/link", JSONObject().put("code", normalized))
-            savePatientSession(PatientSessionToken.fromJson(response))
-            storage.mode = AppMode.PATIENT
-            restore()
-        } catch (error: Exception) {
-            val message = when (error) {
-                is ApiException.Validation -> "6桁の数字コードを入力してください"
-                is ApiException.NotFound -> "コードが見つからないか期限切れです"
-                else -> error.message ?: "連携できませんでした。もう一度お試しください。"
-            }
-            mutableState.value = mutableState.value.copy(loading = false, errorMessage = message)
-        }
+    suspend fun linkPatient(code: String) = runOperation {
+        val normalized = code.filter(Char::isDigit)
+        if (normalized.length != 6) throw ApiException.Validation("6桁の連携コードを入力してください。")
+        val response = apiClient.post("api/patient/link", JSONObject().put("code", normalized))
+        savePatientSession(PatientSessionToken.fromJson(response))
+        storage.mode = AppMode.PATIENT
     }
 
     suspend fun refreshPatientIfNeeded(): Boolean = refreshPatientSession(force = false)
@@ -174,29 +119,6 @@ class SessionRepository(
         mutableState.value = mutableState.value.copy(errorMessage = null)
     }
 
-    fun clearMessages() {
-        mutableState.value = mutableState.value.copy(errorMessage = null, infoMessage = null)
-    }
-
-    fun handleAuthCallback(url: String): Boolean {
-        val uri = runCatching { java.net.URI(url) }.getOrNull() ?: return false
-        val accepted = when {
-            uri.scheme.equals("okusurimimamori", true) && uri.host.equals("auth", true) && uri.path == "/login" -> true
-            uri.scheme.equals("https", true) && uri.host?.lowercase() in setOf("okusuri-mimamori.com", "www.okusuri-mimamori.com") && uri.path in setOf("/auth/confirmed", "/auth/login") -> true
-            else -> false
-        }
-        if (!accepted) return false
-        logoutCaregiver()
-        storage.mode = AppMode.CAREGIVER
-        restore()
-        mutableState.value = mutableState.value.copy(caregiverLoginRequested = true)
-        return true
-    }
-
-    fun consumeCaregiverLoginRequest() {
-        mutableState.value = mutableState.value.copy(caregiverLoginRequested = false)
-    }
-
     private suspend fun runOperation(block: suspend () -> Unit) {
         mutableState.value = mutableState.value.copy(loading = true, errorMessage = null)
         try {
@@ -211,8 +133,7 @@ class SessionRepository(
     }
 
     private fun saveCaregiver(session: AuthSession, preserveCurrentPatientId: Boolean = false) {
-        val accessToken = session.accessToken?.takeIf(String::isNotBlank) ?: return
-        storage.putSecret(CAREGIVER_ACCESS, normalizeCaregiverToken(accessToken))
+        storage.putSecret(CAREGIVER_ACCESS, normalizeCaregiverToken(session.accessToken))
         session.refreshToken?.let { storage.putSecret(CAREGIVER_REFRESH, it) }
         val duration = session.expiresInSeconds?.takeIf { it > 0 } ?: DEFAULT_SESSION_SECONDS
         storage.putSecret(CAREGIVER_EXPIRES, (nowEpochSeconds() + duration).toString())
@@ -264,7 +185,6 @@ class SessionRepository(
         private const val DEFAULT_SESSION_SECONDS = 30L * 24 * 60 * 60
         private const val CAREGIVER_REFRESH_BUFFER_SECONDS = 2L * 60
         private const val PATIENT_REFRESH_BUFFER_SECONDS = 30L * 24 * 60 * 60
-        private val EMAIL_REGEX = Regex("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$", RegexOption.IGNORE_CASE)
     }
 }
 

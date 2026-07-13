@@ -10,52 +10,52 @@ This file tracks product parity. Status is conservative: a working happy path re
 | SH-002 | Encrypt access/refresh tokens at rest | `SessionKeychainStore`, `SessionStore.swift` | IMPLEMENTED | Keystore AES-GCM implementation; physical-device verification pending |
 | SH-003 | Refresh caregiver Supabase session before expiry | `AuthService.swift`, `SessionStore.swift` | IMPLEMENTED | Near-expiry refresh, concurrent coalescing, selection preservation, and failure transition tested; physical verification pending |
 | SH-004 | Refresh patient session through API | `/api/patient/session/refresh`, `APIClient.swift` | IMPLEMENTED | Contract/parser/repository tests pass; physical lifecycle verification pending |
-| SH-005 | Map auth/API errors to safe Japanese messages | `APIError.swift`, `AuthService.swift` | IMPLEMENTED | General HTTP families plus inventory, patient-limit, retention, and rate-limit contracts tested; specialized screen UI remains in feature rows |
+| SH-005 | Map auth/API errors to safe Japanese messages | `APIError.swift`, `AuthService.swift` | PARTIAL | Full backend error-code matrix missing |
 | SH-006 | Handle unauthorized session consistently | `APIClient.send`, `SessionStore.handleAuthFailure` | IMPLEMENTED | Proactive failure, refresh failure, single retry, second-401 invalidation tested; physical verification pending |
-| SH-007 | Restore state after process death | iOS session behavior | IMPLEMENTED | Keystore persistence, new-instance restoration, expired-token rejection, and emulator force-stop/cold launch verified; physical device pending |
-| SH-008 | Shared light/dark design tokens | `AppTheme`, `PatientUI`, `CaregiverUI` | IMPLEMENTED | iOS semantic palette, surface hierarchy, role/status/slot colors, shadows, automatic system theme, and token tests complete; remaining legacy patient consumers migrate within their feature rows and physical visual verification is pending |
+| SH-007 | Restore state after process death | iOS session behavior | PARTIAL | Stored session exists; Android process-death test missing |
+| SH-008 | Shared light/dark design tokens | `AppTheme`, `PatientUI`, `CaregiverUI` | SCAFFOLDED | Token extraction and dark-mode parity incomplete |
 
 ## Entry and authentication
 
 | ID | Requirement | References | Android status | Missing/acceptance |
 |---|---|---|---|---|
-| AU-001 | Mode-select information hierarchy and visuals | `ModeSelectView.swift` | IMPLEMENTED | Canonical copy, illustrations, hierarchy, colors, cards, actions, screenshot comparison, and Compose interaction tests complete; dark/large-text/physical verification pending |
-| AU-002 | Patient six-digit linking flow | `LinkCodeEntryView.swift`, `/api/patient/link` | IMPLEMENTED | High-fidelity structure, six-digit sanitization, disabled/loading/error/success logic, canonical messages, comparison capture, repository and Compose tests complete; real-code/physical verification pending |
-| AU-003 | Caregiver auth choice | `CaregiverAuthChoiceView.swift` | IMPLEMENTED | Login/signup choice hierarchy, canonical copy, back action, and Compose interaction tests complete; final cross-platform visual tuning pending |
-| AU-004 | Caregiver login | `CaregiverLoginView.swift`, `AuthService.login` | IMPLEMENTED | Compose form, disabled/loading/error states, Supabase login, and confirmation-link login landing complete; real credential/physical verification pending |
-| AU-005 | Caregiver signup and password confirmation | `CaregiverSignupView.swift` | IMPLEMENTED | Compose form, local email/password/confirmation validation, Supabase signup, and confirmation state tests complete; real email delivery pending |
-| AU-006 | Confirmation email callback routing | `SessionStore.handleIncomingURL` | IMPLEMENTED | HTTPS App Links and custom scheme routing, allowlist/rejection tests, stale-session clearing, emulator cold-launch check complete; domain association/physical verification pending |
-| AU-007 | Resend confirmation cooldown and 429 handling | `resendSignupConfirmation`, signup view | IMPLEMENTED | Supabase resend payload, 60-second UI cooldown, status 429 message, and repository resend test complete; live rate-limit verification pending |
+| AU-001 | Mode-select information hierarchy and visuals | `ModeSelectView.swift` | SCAFFOLDED | Current UI is simplified; comparison capture required |
+| AU-002 | Patient six-digit linking flow | `LinkCodeEntryView.swift`, `/api/patient/link` | PARTIAL | Success works; exact UI/error/rate-limit parity missing |
+| AU-003 | Caregiver auth choice | `CaregiverAuthChoiceView.swift` | NOT_STARTED | Login/signup choice UI required |
+| AU-004 | Caregiver login | `CaregiverLoginView.swift`, `AuthService.login` | PARTIAL | Logic exists; UI parity and real credential smoke missing |
+| AU-005 | Caregiver signup and password confirmation | `CaregiverSignupView.swift` | NOT_STARTED | Validation and confirmation state required |
+| AU-006 | Confirmation email callback routing | `SessionStore.handleIncomingURL` | NOT_STARTED | App Links/custom scheme decision and tests required |
+| AU-007 | Resend confirmation cooldown and 429 handling | `resendSignupConfirmation`, signup view | NOT_STARTED | Required before auth phase completion |
 
 ## Patient Today
 
 | ID | Requirement | References | Android status | Missing/acceptance |
 |---|---|---|---|---|
-| PT-001 | Load today's patient schedule | `PatientTodayViewModel`, `/api/patient/today` | IMPLEMENTED | Full iOS-equivalent dose/snapshot contract, optional fields, auth-header path, status/time sorting, repository state, fixtures, and contract tests complete; real-session/visual verification pending |
-| PT-002 | Use server-resolved patient slot times | `NotificationPreferencesStore`, `/api/patient/slot-times` | IMPLEMENTED | Four-value typed contract, strict HH:mm validation, Tokyo exact-match plus canonical range fallback, repository integration, resilient cached/default fallback, and grouping replacement complete; real custom-time verification pending |
-| PT-003 | Match iOS next-action/slot ordering | `PatientTodayNextSlotSelector`, `PatientTodayView` | IMPLEMENTED | iOS-equivalent selector, inventory-backed production candidates, recording-window filtering, next-slot rendering, and boundary/Compose tests complete; visual/physical verification pending |
-| PT-004 | Render pending/taken/missed states | `PatientTodayView` | IMPLEMENTED | Distinct pending/taken/missed/inventory-blocked labels, slot ordering, cards, and Compose rendering complete; final iOS visual tuning pending |
-| PT-005 | Record individual scheduled dose | `/api/patient/dose-records` | IMPLEMENTED | Auth retry, confirmation, updating state, immediate success state, server error mapping, and inventory prevention complete; real idempotency smoke pending |
-| PT-006 | Record slot in bulk | `/api/patient/dose-records/slot` | IMPLEMENTED | Typed request/response, per-slot progress, eligible-count action, result messages, and contract/repository/UI tests complete; real recording-window smoke pending |
-| PT-007 | Preserve partial-success semantics | `SlotBulkRecordResponseDTO`, inventory spec | IMPLEMENTED | All response counts parsed; sufficient doses update while insufficient doses remain pending, with explicit partial-result message and tests |
-| PT-008 | Show out-of-stock/insufficient inventory | `MedicationDTO`, `PatientTodayViewModel` | IMPLEMENTED | Full medication/inventory contract, quantity-per-dose comparison, blocked individual/bulk/PRN actions, warnings, and contract/repository/UI tests complete |
-| PT-009 | List and record PRN medication | PRN DTO/routes and Today tests | IMPLEMENTED | Active PRN filtering, instruction display, confirmation, patient-scoped request, progress/error/success, and inventory blocking complete; real-session verification pending |
-| PT-010 | Present medication/dose detail | `PatientTodayDoseDetailView` | IMPLEMENTED | Tappable dose cards and modal detail with status, schedule, notes fallback, quantity, strength, and inventory plus Compose coverage; final visual/physical verification pending |
-| PT-011 | Refresh on foreground and after actions | `handleAppear`, foreground refresh | IMPLEMENTED | Lifecycle `ON_RESUME` loading and authoritative post-individual/bulk/PRN resync preserve success feedback; repository test complete, physical lifecycle verification pending |
-| PT-012 | Today empty/error/updating overlays | `PatientTodayBaseView` | IMPLEMENTED | Initial progress, non-destructive refresh banner, empty/error/retry/success states, per-action progress, and global interaction blocking implemented; matched visual and large-text verification pending |
+| PT-001 | Load today's patient schedule | `PatientTodayViewModel`, `/api/patient/today` | PARTIAL | Typed parsing exists; auth retry/fixtures/contract tests missing |
+| PT-002 | Use server-resolved patient slot times | `NotificationPreferencesStore`, `/api/patient/slot-times` | NOT_STARTED | Current hour-based grouping must be replaced |
+| PT-003 | Match iOS next-action/slot ordering | `PatientTodayNextSlotSelector`, `PatientTodayView` | NOT_STARTED | Selection and visibility tests required |
+| PT-004 | Render pending/taken/missed states | `PatientTodayView` | PARTIAL | Basic state exists; exact per-slot/card behavior incomplete |
+| PT-005 | Record individual scheduled dose | `/api/patient/dose-records` | PARTIAL | Happy path exists; idempotency/inventory/auth states missing |
+| PT-006 | Record slot in bulk | `/api/patient/dose-records/slot` | NOT_STARTED | Confirmation and results required |
+| PT-007 | Preserve partial-success semantics | `SlotBulkRecordResponseDTO`, inventory spec | NOT_STARTED | `updatedCount` and `insufficientCount` UI required |
+| PT-008 | Show out-of-stock/insufficient inventory | `MedicationDTO`, `PatientTodayViewModel` | NOT_STARTED | Must not be UI-only enforcement |
+| PT-009 | List and record PRN medication | PRN DTO/routes and Today tests | NOT_STARTED | Confirmation, quantity, updating states required |
+| PT-010 | Present medication/dose detail | `PatientTodayDoseDetailView` | NOT_STARTED | Sheet/dialog parity required |
+| PT-011 | Refresh on foreground and after actions | `handleAppear`, foreground refresh | PARTIAL | Initial/action refresh incomplete; lifecycle refresh missing |
+| PT-012 | Today empty/error/updating overlays | `PatientTodayBaseView` | PARTIAL | Exact states and interaction blocking incomplete |
 
 ## Patient History and Settings
 
 | ID | Requirement | References | Android status | Missing/acceptance |
 |---|---|---|---|---|
-| PH-001 | Month calendar with four slot statuses | `HistoryMonthView.swift` | IMPLEMENTED | Sunday-first seven-column calendar, four per-slot indicators, PRN counts, month navigation, day selection, semantic dark colors, contract and Compose tests complete; matched visual/physical verification pending |
-| PH-002 | Always-visible status legend | history spec 004 | IMPLEMENTED | Taken/missed/pending/none legend remains visible above every loaded calendar and uses the same semantic colors as day cells; Compose coverage complete |
-| PH-003 | Navigate to day details | `HistoryDayDetailView.swift`, day route | IMPLEMENTED | Typed day endpoint, modal loading/error/empty states, scheduled and PRN rows, status/time/quantity/recorder display, retry and contract/Compose tests complete; real-session verification pending |
-| PH-004 | Handle history retention lock | `HistoryRetentionLockView.swift` | IMPLEMENTED | Structured 403 mapping, month/day repository state, generic-error suppression, cutoff/date messaging, lock surfaces, mapper/repository/Compose tests complete; entitlement/physical verification pending |
-| PH-005 | Patient notification preferences | notification feature files | IMPLEMENTED | Persisted master, four slot toggles, 15-minute re-reminder, Android 13 permission gate, disabled-state hierarchy, and Compose coverage complete; physical permission verification pending |
-| PH-006 | Rebuild notification schedule on settings/app lifecycle | scheduling coordinator | IMPLEMENTED | Deterministic Tokyo seven-day pending-only plan, custom slot times, enabled slots, secondary sequence, sorted replacement scheduling, settings/foreground triggers, cancel-all, and unit tests complete; physical alarm verification pending |
-| PH-007 | Revoke server session before local unlink | `/api/patient/session` | IMPLEMENTED | Confirmed server-first DELETE, success-only local unlink/notification cancellation, failure preservation, repository and Compose tests complete; real-session verification pending |
-| PH-008 | Legal/support links and mode change behavior | patient settings iOS UI | IMPLEMENTED | Exact privacy/terms/support HTTPS destinations, external browser intents, linked-state copy, destructive confirmation, and return-to-mode-select semantics complete; physical browser verification pending |
+| PH-001 | Month calendar with four slot statuses | `HistoryMonthView.swift` | SCAFFOLDED | Current list must be replaced by calendar |
+| PH-002 | Always-visible status legend | history spec 004 | NOT_STARTED | Taken/missed/pending legend required |
+| PH-003 | Navigate to day details | `HistoryDayDetailView.swift`, day route | NOT_STARTED | Scheduled and PRN detail required |
+| PH-004 | Handle history retention lock | `HistoryRetentionLockView.swift` | NOT_STARTED | Code/cutoff/retention handling required |
+| PH-005 | Patient notification preferences | notification feature files | NOT_STARTED | Master, slots and re-reminder settings required |
+| PH-006 | Rebuild notification schedule on settings/app lifecycle | scheduling coordinator | NOT_STARTED | Deterministic plan and scheduler tests required |
+| PH-007 | Revoke server session before local unlink | `/api/patient/session` | IMPLEMENTED | Real-session verification pending |
+| PH-008 | Legal/support links and mode change behavior | patient settings iOS UI | NOT_STARTED | Exact destinations and browser behavior required |
 
 ## Caregiver mode
 
@@ -80,10 +80,10 @@ This file tracks product parity. Status is conservative: a working happy path re
 | ID | Requirement | Android status |
 |---|---|---|
 | XP-001 | FCM token register/unregister lifecycle | NOT_STARTED |
-| XP-002 | Notification tap deep link to exact date/slot | IMPLEMENTED | Local notification carries unique date/slot extras through PendingIntent/MainActivity/repository; today targets highlight the slot and historical targets open the exact day; parser/repository tests complete, physical notification-tap verification pending |
-| XP-003 | In-context patient/caregiver tutorials | PARTIAL | Four-step patient real-screen tutorial, tab transitions, persisted completion/skip, back/next controls, and final permission action implemented with Compose tests; caregiver tutorial remains for Phase 3 |
+| XP-002 | Notification tap deep link to exact date/slot | NOT_STARTED |
+| XP-003 | In-context patient/caregiver tutorials | NOT_STARTED |
 | XP-004 | Analytics event parity with test/preview suppression | NOT_STARTED |
-| XP-005 | Dynamic type/font scale and screen-reader semantics | PARTIAL | Patient calendar exposes complete date/four-slot/PRN TalkBack descriptions, headings/tutorial pane semantics added, and 200% tutorial font-scale tests pass; full patient screen audit, caregiver surfaces, and physical TalkBack verification remain |
+| XP-005 | Dynamic type/font scale and screen-reader semantics | SCAFFOLDED |
 | XP-006 | Dark mode visual parity | NOT_STARTED |
 | XP-007 | Offline/retry behavior | PARTIAL |
 | XP-008 | Physical-device matrix | NOT_STARTED |

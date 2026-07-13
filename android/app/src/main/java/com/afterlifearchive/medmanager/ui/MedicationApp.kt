@@ -51,7 +51,7 @@ fun MedicationApp(repository: SessionRepository, patientRepository: PatientRepos
             AppMode.CAREGIVER -> if (state.caregiverAuthenticated) {
                 SessionReadyScreen("家族モード", "ログイン状態を安全に復元しました。", repository::logoutCaregiver)
             } else {
-                CaregiverAuthFlow(state, repository)
+                CaregiverLoginScreen(state, repository)
             }
             AppMode.PATIENT -> if (state.patientAuthenticated) {
                 PatientHomeScreen(patientRepository, repository::unlinkPatient)
@@ -70,6 +70,73 @@ private fun ScreenColumn(content: @Composable ColumnScope.() -> Unit) {
         verticalArrangement = Arrangement.Center,
         content = content,
     )
+}
+
+@Composable
+private fun ModeSelectScreen(onModeSelected: (AppMode) -> Unit) = ScreenColumn {
+    Text("お薬見守り", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+    Spacer(Modifier.height(12.dp))
+    Text("どのように使いますか？", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+    Spacer(Modifier.height(40.dp))
+    Button(modifier = Modifier.fillMaxWidth(), onClick = { onModeSelected(AppMode.PATIENT) }) { Text("本人として使う") }
+    Spacer(Modifier.height(16.dp))
+    OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = { onModeSelected(AppMode.CAREGIVER) }) { Text("家族として手伝う") }
+}
+
+@Composable
+private fun CaregiverLoginScreen(state: SessionState, repository: SessionRepository) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+    AuthScreen(title = "家族としてログイン", state = state, onBack = repository::resetMode) {
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it; repository.clearError() },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("メールアドレス") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            singleLine = true,
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it; repository.clearError() },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("パスワード") },
+            visualTransformation = PasswordVisualTransformation(),
+            singleLine = true,
+        )
+        Spacer(Modifier.height(20.dp))
+        Button(
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.loading,
+            onClick = { scope.launch { repository.loginCaregiver(email, password) } },
+        ) { Text("ログイン") }
+    }
+}
+
+@Composable
+private fun PatientLinkScreen(state: SessionState, repository: SessionRepository) {
+    var code by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+    AuthScreen(title = "本人端末を連携", state = state, onBack = repository::resetMode) {
+        Text("家族の端末に表示された6桁のコードを入力してください。", textAlign = TextAlign.Center)
+        Spacer(Modifier.height(16.dp))
+        OutlinedTextField(
+            value = code,
+            onValueChange = { code = it.filter(Char::isDigit).take(6); repository.clearError() },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("連携コード") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            singleLine = true,
+        )
+        Spacer(Modifier.height(20.dp))
+        Button(
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.loading,
+            onClick = { scope.launch { repository.linkPatient(code) } },
+        ) { Text("連携する") }
+    }
 }
 
 @Composable

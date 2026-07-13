@@ -24,36 +24,10 @@ class SupabaseAuthService(private val config: AppConfig) : AuthService {
         return authenticate("refresh_token", JSONObject().put("refresh_token", refreshToken))
     }
 
-    override suspend fun signup(email: String, password: String): AuthSession {
-        val trimmedEmail = email.trim()
-        if (trimmedEmail.isEmpty() || password.isEmpty()) throw ApiException.Validation("入力内容を確認してください。")
-        return send(
-            path = "auth/v1/signup?redirect_to=${URLEncoder.encode(config.emailConfirmationRedirectUrl, Charsets.UTF_8.name())}",
-            payload = JSONObject().put("email", trimmedEmail).put("password", password),
-            allowMissingAccessToken = true,
-        )
-    }
-
-    override suspend fun resendSignupConfirmation(email: String) {
-        val trimmedEmail = email.trim()
-        if (trimmedEmail.isEmpty()) throw ApiException.Validation("メールアドレスの形式を確認してください。")
-        send(
-            path = "auth/v1/resend",
-            payload = JSONObject().put("type", "signup").put("email", trimmedEmail)
-                .put("options", JSONObject().put("email_redirect_to", config.emailConfirmationRedirectUrl)),
-            allowMissingAccessToken = true,
-        )
-    }
-
     private suspend fun authenticate(grantType: String, payload: JSONObject): AuthSession = withContext(Dispatchers.IO) {
         if (!config.hasSupabaseConfiguration) throw ApiException.Validation("Supabaseの設定がありません。")
         val grant = URLEncoder.encode(grantType, Charsets.UTF_8.name())
-        send("auth/v1/token?grant_type=$grant", payload, allowMissingAccessToken = false)
-    }
-
-    private suspend fun send(path: String, payload: JSONObject, allowMissingAccessToken: Boolean): AuthSession = withContext(Dispatchers.IO) {
-        if (!config.hasSupabaseConfiguration) throw ApiException.Validation("Supabaseの設定がありません。")
-        val connection = (URL("${config.supabaseUrl}$path").openConnection() as HttpURLConnection).apply {
+        val connection = (URL("${config.supabaseUrl}auth/v1/token?grant_type=$grant").openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             connectTimeout = 15_000
             readTimeout = 20_000
@@ -70,9 +44,9 @@ class SupabaseAuthService(private val config: AppConfig) : AuthService {
             if (status !in 200..299) throw authError(status, response)
             val json = JSONObject(response)
             val accessToken = json.optString("access_token")
-            if (accessToken.isBlank() && !allowMissingAccessToken) throw ApiException.Validation("認証トークンを取得できませんでした。")
+            if (accessToken.isBlank()) throw ApiException.Validation("認証トークンを取得できませんでした。")
             AuthSession(
-                accessToken = accessToken.takeIf(String::isNotBlank),
+                accessToken = accessToken,
                 refreshToken = json.optString("refresh_token").takeIf(String::isNotBlank),
                 expiresInSeconds = json.optLong("expires_in").takeIf { it > 0 },
             )

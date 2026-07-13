@@ -5,7 +5,6 @@ import com.afterlifearchive.medmanager.data.auth.AuthSession
 import com.afterlifearchive.medmanager.data.network.ApiClient
 import com.afterlifearchive.medmanager.data.network.HttpResponse
 import com.afterlifearchive.medmanager.data.network.HttpTransport
-import com.afterlifearchive.medmanager.data.network.HttpRequest
 import com.afterlifearchive.medmanager.ui.AppMode
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.async
@@ -152,144 +151,6 @@ class SessionRepositoryTest {
         assertNull(storage.getSecret(SessionRepository.CAREGIVER_REFRESH))
     }
 
-    @Test
-    fun invalidLinkCodeUsesCanonicalJapaneseMessageWithoutNetwork() = runTest {
-        val storage = FakeStorage().apply { mode = AppMode.PATIENT }
-        var requestCount = 0
-        val client = ApiClient(
-            baseUrl = "https://example.test/",
-            tokenProvider = { null },
-            transport = HttpTransport { requestCount += 1; HttpResponse(200, "{}") },
-        )
-        val repository = SessionRepository(storage, FakeAuthService(), client, { 1_000 })
-
-        repository.linkPatient("12-3")
-
-        assertEquals(0, requestCount)
-        assertEquals("6桁の数字コードを入力してください", repository.state.value.errorMessage)
-    }
-
-    @Test
-    fun missingLinkCodeUsesCanonicalExpiredMessage() = runTest {
-        val storage = FakeStorage().apply { mode = AppMode.PATIENT }
-        val client = ApiClient(
-            baseUrl = "https://example.test/",
-            tokenProvider = { null },
-            transport = HttpTransport { HttpResponse(404, "{\"error\":\"not_found\"}") },
-        )
-        val repository = SessionRepository(storage, FakeAuthService(), client, { 1_000 })
-
-        repository.linkPatient("123456")
-
-        assertEquals("コードが見つからないか期限切れです", repository.state.value.errorMessage)
-        assertFalse(repository.state.value.patientAuthenticated)
-    }
-
-    @Test
-    fun successfulLinkPersistsSessionAndClearsLoadingState() = runTest {
-        val storage = FakeStorage().apply { mode = AppMode.PATIENT }
-        var sentBody: String? = null
-        val client = ApiClient(
-            baseUrl = "https://example.test/",
-            tokenProvider = { null },
-            transport = HttpTransport { request: HttpRequest ->
-                sentBody = request.body
-                HttpResponse(200, "{\"data\":{\"patientSessionToken\":\"patient-linked\",\"expiresAt\":\"2026-08-12T00:00:00Z\"}}")
-            },
-        )
-        val repository = SessionRepository(storage, FakeAuthService(), client, { 1_000 })
-
-        repository.linkPatient("12-34-56")
-
-        assertTrue(sentBody.orEmpty().contains("123456"))
-        assertTrue(repository.state.value.patientAuthenticated)
-        assertFalse(repository.state.value.loading)
-        assertNull(repository.state.value.errorMessage)
-    }
-
-    @Test
-    fun signupValidatesEmailPasswordAndConfirmationBeforeNetwork() = runTest {
-        val auth = SignupAuthService(AuthSession(null, null, null))
-        val repository = SessionRepository(
-            FakeStorage().apply { mode = AppMode.CAREGIVER }, auth,
-            ApiClient(baseUrl = "https://example.invalid/", tokenProvider = { null }), { 1_000 },
-        )
-
-        repository.signupCaregiver("invalid", "123", "456")
-        assertEquals("メールアドレスの形式を確認してください。", repository.state.value.errorMessage)
-        assertEquals(0, auth.signupCount)
-
-        repository.signupCaregiver("care@example.com", "123", "123")
-        assertEquals("パスワードは6文字以上で入力してください。", repository.state.value.errorMessage)
-
-        repository.signupCaregiver("care@example.com", "123456", "654321")
-        assertEquals("確認用のパスワードが一致していません。", repository.state.value.errorMessage)
-        assertEquals(0, auth.signupCount)
-    }
-
-    @Test
-    fun signupWithoutAccessTokenShowsConfirmationAndAllowsResend() = runTest {
-        val auth = SignupAuthService(AuthSession(null, null, null))
-        val repository = SessionRepository(
-            FakeStorage().apply { mode = AppMode.CAREGIVER }, auth,
-            ApiClient(baseUrl = "https://example.invalid/", tokenProvider = { null }), { 1_000 },
-        )
-
-        repository.signupCaregiver(" care@example.com ", "123456", "123456")
-
-        assertTrue(repository.state.value.canResendConfirmation)
-        assertTrue(repository.state.value.infoMessage.orEmpty().contains("確認メールを送信しました"))
-        assertEquals("care@example.com", auth.signupEmail)
-
-        repository.resendSignupConfirmation("care@example.com")
-        assertEquals(1, auth.resendCount)
-        assertTrue(repository.state.value.infoMessage.orEmpty().contains("再送しました"))
-    }
-
-    @Test
-    fun authCallbacksClearStaleCredentialsAndRequestCaregiverLogin() {
-        val acceptedUrls = listOf(
-            "okusurimimamori://auth/login",
-            "https://okusuri-mimamori.com/auth/confirmed",
-            "https://www.okusuri-mimamori.com/auth/login",
-        )
-
-        acceptedUrls.forEach { url ->
-            val storage = FakeStorage().apply {
-                mode = AppMode.CAREGIVER
-                currentPatientId = "patient-1"
-                putSecret(SessionRepository.CAREGIVER_ACCESS, "stale-access")
-                putSecret(SessionRepository.CAREGIVER_REFRESH, "stale-refresh")
-                putSecret(SessionRepository.CAREGIVER_EXPIRES, "9999")
-            }
-            val repository = repository(storage)
-
-            assertTrue(repository.handleAuthCallback(url))
-            assertEquals(AppMode.CAREGIVER, repository.state.value.mode)
-            assertFalse(repository.state.value.caregiverAuthenticated)
-            assertTrue(repository.state.value.caregiverLoginRequested)
-            assertNull(storage.getSecret(SessionRepository.CAREGIVER_ACCESS))
-            assertNull(storage.currentPatientId)
-
-            repository.consumeCaregiverLoginRequest()
-            assertFalse(repository.state.value.caregiverLoginRequested)
-        }
-    }
-
-    @Test
-    fun unrelatedAuthCallbackIsRejectedWithoutChangingSession() {
-        val storage = FakeStorage().apply {
-            mode = AppMode.PATIENT
-            putSecret(SessionRepository.PATIENT_ACCESS, "patient-token")
-        }
-        val repository = repository(storage)
-
-        assertFalse(repository.handleAuthCallback("https://example.com/auth/confirmed"))
-        assertEquals(AppMode.PATIENT, storage.mode)
-        assertEquals("patient-token", storage.getSecret(SessionRepository.PATIENT_ACCESS))
-        assertFalse(repository.state.value.caregiverLoginRequested)
-    }
-
     private fun repository(storage: FakeStorage, now: Long = 1_000): SessionRepository {
         val auth = FakeAuthService()
         return SessionRepository(
@@ -317,20 +178,6 @@ private class CountingAuthService : AuthService {
         delay(10)
         return AuthSession("new-access", "new-refresh", 3_600)
     }
-}
-
-private class SignupAuthService(private val signupSession: AuthSession) : AuthService {
-    var signupCount = 0
-    var signupEmail: String? = null
-    var resendCount = 0
-    override suspend fun login(email: String, password: String) = error("unused")
-    override suspend fun refresh(refreshToken: String) = error("unused")
-    override suspend fun signup(email: String, password: String): AuthSession {
-        signupCount += 1
-        signupEmail = email
-        return signupSession
-    }
-    override suspend fun resendSignupConfirmation(email: String) { resendCount += 1 }
 }
 
 private class FakeStorage : SessionStorage {
