@@ -3,7 +3,7 @@
 ## Baseline and environment
 
 - iOS/API source baseline: `main@1d9d19e5376752d2e224560a9f2c7e950645e22b`
-- Android work branch: `android-dev@6d50fa8` before the current consent-evidence slice
+- Android work branch: `android-dev@296a59e` before the current iOS tutorial-reference slice
 - Rebaseline check: `git diff android-dev..main -- ios api package.json` returned no runtime differences.
 - iOS build: `MedicationApp`, Debug, iOS Simulator, `BUILD SUCCEEDED`
 - iOS device: iPhone 17 Pro, iOS 26.5, 1206 x 2622 pixels
@@ -38,6 +38,9 @@
 | UI-005 | Android caregiver signup empty | [`c01-20260714/android-ui-005-caregiver-signup-empty-light.png`](c01-20260714/android-ui-005-caregiver-signup-empty-light.png) | Production mode-select-to-family-to-signup navigation, no credentials entered |
 | UI-005 | Android confirmation required, 200% font | [`c01-20260714/android-ui-005-caregiver-signup-confirmation-font-2.0.png`](c01-20260714/android-ui-005-caregiver-signup-confirmation-font-2.0.png) | Production signup flow with deterministic no-access-token response; scrolled component fixture shows full notice and resend cooldown |
 | UI-100 | Patient Today tutorial step 1/4 | [`c01-20260714/ui-100-patient-tutorial-today-light.png`](c01-20260714/ui-100-patient-tutorial-today-light.png) | `-ForceModeTutorial.patient`; production tutorial overlay and sample view |
+| UI-100 | Patient History tutorial step 2/4 | [`c01-20260714/ui-100-patient-tutorial-history-light.png`](c01-20260714/ui-100-patient-tutorial-history-light.png) | Current `main@1d9d19e`; temporary detached capture worktree; XCUITest tapped the production `次へ` action |
+| UI-100 | Patient Settings tutorial step 3/4 | [`c01-20260714/ui-100-patient-tutorial-settings-light.png`](c01-20260714/ui-100-patient-tutorial-settings-light.png) | Same run; production settings state verified after a 15-second idle and captured directly from the simulator display |
+| UI-100 | Patient notification tutorial step 4/4 | [`c01-20260714/ui-100-patient-tutorial-notifications-light.png`](c01-20260714/ui-100-patient-tutorial-notifications-light.png) | Same run; XCUITest asserted `4/4` after traversing the real tutorial sequence |
 | UI-101 | Patient Today typical content | [`c01-20260714/ui-101-patient-today-light.png`](c01-20260714/ui-101-patient-today-light.png) | `-ForceModeTutorial.patient -PatientMarketingScreenshot.today`; production shell with deterministic sample data and no overlay |
 | UI-101 | Android inventory-partial Today | [`c01-20260714/android-ui-101-patient-inventory-partial-light.png`](c01-20260714/android-ui-101-patient-inventory-partial-light.png) | Production `TodayContent`; two scheduled medicines, one inventory shortage, partial bulk action and PRN entry |
 | UI-102 | Android dose detail | [`c01-20260714/android-ui-102-patient-dose-detail-light.png`](c01-20260714/android-ui-102-patient-dose-detail-light.png) | Production bottom-sheet content with taken state, notes, 1.5-tablet dose, strength and tracked inventory |
@@ -58,12 +61,13 @@
 - UI-004/UI-005 error auditing found Android was collapsing multiple Supabase message/status failures into login-generic copy. `AuthFailure` and `SessionUserMessage` now reproduce current iOS message-first and HTTP-status classification for invalid credentials, confirmation delivery/required, duplicate email, weak password, invalid email, credential check, forbidden, not-found, rate-limit, network and unavailable states; displayed strings are exact current-iOS Japanese copy. Resend keeps its operation-specific 429 and unknown-failure states. Loading regressions also prove Patient link and Caregiver signup disable duplicate submission while their progress indicators replace the primary action content. Leaving login/signup now clears transient error, confirmation and resend state, so re-entering a form cannot restore a stale success notice.
 - Remaining UI-001 differences are platform typography/icon rendering and viewport-class height. Android standard/compact/large/200%-font Analytics consent evidence is complete; matched iOS compact/large variants, full TalkBack traversal and physical verification remain required before UI-001 can be marked `VERIFIED`.
 - UI-100 and UI-101 use the iOS production component tree and deterministic in-app sample data; no API response, identity, medication record or auth token from a real user was captured.
+- UI-100 default-size steps 1–4 are now captured from the current iOS implementation. Steps 2–4 were driven by a temporary XCUITest in a detached `origin/main` worktree; the test passed 1/1 with zero failures. The temporary harness is not part of `android-dev`, so only immutable PNG evidence and this capture record cross the branch boundary.
 - Android UI-101/UI-102/UI-104/UI-106 exceptional-state captures are emitted by their existing production-component assertions, so visual evidence and behavior cannot silently diverge. `ScreenshotFixtures.kt` writes to app cache during ordinary regression runs and, only when `persistScreenshotFixtures=true`, publishes API 29+ evidence through MediaStore under `Download/med-manager-screenshot-fixtures` for collection after Gradle uninstalls the test app.
 
 ## Remaining C01 reference work
 
 - UI-001 matched iOS compact/large variants and physical/TalkBack verification; UI-002 valid/loading/additional failure captures and UI-005 matched iOS signup plus validation/loading/resend-result captures.
-- UI-100 tutorial steps 2–4, completion/skip and 200% text.
+- UI-100 completion/skip and 200% text.
 - UI-101 remaining exceptional Today variants and matched iOS inventory-partial capture; UI-102 empty-notes/inventory variants and matched iOS detail capture; UI-103 PRN error/submitting variants.
 - UI-104 remaining progress/retry/retention variants and matched iOS no-plan capture; UI-105 History day variants; UI-106 remaining settings/error states and matched iOS notification-denied capture.
 - Compact/large viewport pairs and dark/large-text variants required by `ui-screen-contracts.md`.
