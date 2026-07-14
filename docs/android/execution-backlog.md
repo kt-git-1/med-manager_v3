@@ -179,7 +179,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [ ] Physical-device matrix.
 - [ ] Notification Doze/delivery/tap/process-death tests.
 - [ ] TalkBack, font 2.0, dark mode, compact/large phone and rotation/configuration tests.
-- [ ] Security, dependency, privacy and performance reviews.
+- [x] Security, dependency, privacy and initial performance reviews; external dependency upgrades and signed-release profiling remain recorded residuals.
 - [ ] Signed internal then closed Play test.
 - [ ] Production Firebase, app links, signing, Data safety and health declarations.
 - [ ] Merge Android work into main without overwriting newer iOS/API files.
