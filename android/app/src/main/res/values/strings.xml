@@ -257,6 +257,8 @@
     <string name="caregiver_today_recorded_by_caregiver">介護者が記録</string>
     <string name="caregiver_today_record_individual">この薬を服用済みにする</string>
     <string name="caregiver_today_delete_individual">服用記録を取り消す</string>
+    <string name="caregiver_today_record_individual_accessibility">%1$sを服用済みにする</string>
+    <string name="caregiver_today_delete_individual_accessibility">%1$sの服用記録を取り消す</string>
     <string name="caregiver_today_recorded">服用を記録しました</string>
     <string name="caregiver_today_deleted">服用記録を取り消しました</string>
     <string name="caregiver_today_mutation_failed">更新できませんでした。通信状態を確認して、もう一度お試しください。</string>
@@ -294,6 +296,7 @@
     <string name="caregiver_inventory_empty_message">薬を登録すると、残数や補充目安をここで管理できます。</string>
     <string name="caregiver_inventory_empty_action">薬を登録する</string>
     <string name="caregiver_inventory_open_detail">詳細を開く</string>
+    <string name="caregiver_inventory_open_detail_accessibility">%1$sの在庫詳細を開く</string>
     <string name="caregiver_inventory_detail_title">在庫の詳細</string>
     <string name="caregiver_inventory_enabled">在庫管理を使用する</string>
     <string name="caregiver_inventory_save_settings">設定を保存</string>
@@ -410,6 +413,7 @@
     <string name="caregiver_medication_inventory_unit">錠</string>
     <string name="caregiver_medication_add">薬を追加する</string>
     <string name="caregiver_medication_edit">薬を編集</string>
+    <string name="caregiver_medication_edit_accessibility">%1$sを編集</string>
     <string name="caregiver_medication_add_title">薬を追加</string>
     <string name="caregiver_medication_form_hero_new">新しい薬を追加</string>
     <string name="caregiver_medication_form_hero_edit">薬の情報を編集</string>

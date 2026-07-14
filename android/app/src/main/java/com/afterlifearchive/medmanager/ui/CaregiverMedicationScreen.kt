@@ -330,7 +330,11 @@ private fun CaregiverMedicationCard(
             }
             }
             IconButton(onClick = onEdit, enabled = enabled, modifier = Modifier.testTag("caregiver-medication-edit-${item.id}")) {
-                Icon(Icons.Rounded.Edit, contentDescription = stringResource(R.string.caregiver_medication_edit), tint = MaterialTheme.colorScheme.primary)
+                Icon(
+                    Icons.Rounded.Edit,
+                    contentDescription = stringResource(R.string.caregiver_medication_edit_accessibility, item.name),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
             }
         }
     }

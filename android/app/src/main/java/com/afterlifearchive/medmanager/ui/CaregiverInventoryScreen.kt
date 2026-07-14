@@ -59,6 +59,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -227,6 +229,7 @@ private fun CaregiverInventoryList(
 
 @Composable
 private fun InventoryRow(item: CaregiverInventoryItem, onSelect: (CaregiverInventoryItem) -> Unit, enabled: Boolean) {
+    val detailDescription = stringResource(R.string.caregiver_inventory_open_detail_accessibility, item.name)
     val tint = when {
         item.out -> MaterialTheme.colorScheme.error
         item.low -> MedicationTheme.colors.orange
@@ -244,7 +247,14 @@ private fun InventoryRow(item: CaregiverInventoryItem, onSelect: (CaregiverInven
         }
         if (item.daysRemaining != null && !item.isPrn) Text(stringResource(R.string.caregiver_inventory_days, item.daysRemaining), color = MaterialTheme.colorScheme.onSurfaceVariant)
         item.refillDueDate?.let { Text(stringResource(R.string.caregiver_inventory_refill_due, it), color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        OutlinedButton(onClick = { onSelect(item) }, enabled = enabled, modifier = Modifier.fillMaxWidth().testTag("caregiver-inventory-item-${item.medicationId}")) {
+        OutlinedButton(
+            onClick = { onSelect(item) },
+            enabled = enabled,
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = detailDescription }
+                .testTag("caregiver-inventory-item-${item.medicationId}"),
+        ) {
             Text(stringResource(R.string.caregiver_inventory_open_detail))
         }
     }

@@ -458,7 +458,11 @@ private fun CaregiverTimelineCard(
                     ) {
                         Icon(
                             if (dose.status == DoseStatus.TAKEN) Icons.AutoMirrored.Rounded.Undo else Icons.Rounded.CheckCircle,
-                            contentDescription = stringResource(if (dose.status == DoseStatus.TAKEN) R.string.caregiver_today_delete_individual else R.string.caregiver_today_record_individual),
+                            contentDescription = stringResource(
+                                if (dose.status == DoseStatus.TAKEN) R.string.caregiver_today_delete_individual_accessibility
+                                else R.string.caregiver_today_record_individual_accessibility,
+                                dose.medicationName,
+                            ),
                             tint = if (dose.status == DoseStatus.TAKEN) MaterialTheme.colorScheme.onSurfaceVariant else if (canRecord) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                         )
                     }
