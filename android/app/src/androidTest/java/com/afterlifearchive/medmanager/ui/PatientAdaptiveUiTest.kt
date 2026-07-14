@@ -18,20 +18,23 @@ import com.afterlifearchive.medmanager.data.patient.PatientDose
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 import java.time.Instant
 import java.time.LocalDate
 
-class PatientAdaptiveUiTest {
+@RunWith(Parameterized::class)
+class PatientAdaptiveUiTest(private val fontScale: Float) {
     @get:Rule
     val composeRule = createComposeRule()
 
     @Test
-    fun todayPrimaryAndPrnEntryRemainReachableAtTwoHundredPercent() {
+    fun todayPrimaryAndPrnEntryRemainReachableAtAdaptiveFontScale() {
         val now = Instant.parse("2026-07-14T03:00:00Z")
         composeRule.setContent {
             MedicationAppTheme {
                 val density = LocalDensity.current
-                CompositionLocalProvider(LocalDensity provides Density(density.density, 2f)) {
+                CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
                     TodayContent(
                         doses = listOf(PatientDose("dose", "med", now.plusSeconds(1800), DoseStatus.PENDING, "血圧の薬 5 mg", "1回1錠", 1.0, slot = MedicationSlot.NOON)),
                         loading = false, updatingKey = null, error = null, message = null, maintenanceWarning = null,
@@ -49,11 +52,11 @@ class PatientAdaptiveUiTest {
     }
 
     @Test
-    fun historyRecentRecordsRemainReachableAtTwoHundredPercent() {
+    fun historyRecentRecordsRemainReachableAtAdaptiveFontScale() {
         composeRule.setContent {
             MedicationAppTheme {
                 val density = LocalDensity.current
-                CompositionLocalProvider(LocalDensity provides Density(density.density, 2f)) {
+                CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
                     HistoryContent(
                         days = listOf(HistoryDay("2026-07-14", HistoryStatus.TAKEN, HistoryStatus.PENDING, HistoryStatus.NONE, HistoryStatus.NONE, 0)),
                         loading = false, error = null, retentionCutoffDate = null, retentionDays = null, onRetry = {},
@@ -70,11 +73,11 @@ class PatientAdaptiveUiTest {
     }
 
     @Test
-    fun settingsConsentAndLogoutRemainReachableAtTwoHundredPercent() {
+    fun settingsConsentAndLogoutRemainReachableAtAdaptiveFontScale() {
         composeRule.setContent {
             MedicationAppTheme {
                 val density = LocalDensity.current
-                CompositionLocalProvider(LocalDensity provides Density(density.density, 2f)) {
+                CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
                     SettingsContent(
                         loading = false, error = null, notificationSettings = PatientNotificationSettings(),
                         onNotificationSettingsChange = {}, notificationPermissionDenied = false,
@@ -87,5 +90,11 @@ class PatientAdaptiveUiTest {
         composeRule.onNodeWithTag("patient-analytics-toggle").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("patient-settings-list").performScrollToIndex(5)
         composeRule.onNodeWithTag("patient-unlink-button").assertIsDisplayed()
+    }
+
+    companion object {
+        @JvmStatic
+        @Parameterized.Parameters(name = "fontScale={0}")
+        fun fontScales() = listOf(1.3f, 2f)
     }
 }

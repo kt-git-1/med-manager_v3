@@ -2,6 +2,7 @@ package com.afterlifearchive.medmanager.ui
 
 import android.content.Intent
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -101,7 +102,10 @@ internal fun CaregiverReportAction(
     }
     if (showPicker) {
         ModalBottomSheet(onDismissRequest = { showPicker = false }, modifier = Modifier.testTag("caregiver-pdf-picker")) {
-            Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Column(
+                Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
                 Text(stringResource(R.string.caregiver_pdf_title), style = androidx.compose.material3.MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ReportPeriodPreset.entries.forEach { candidate ->

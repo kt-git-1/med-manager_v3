@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.core.app.ApplicationProvider
 import com.afterlifearchive.medmanager.CaregiverPdfReportGenerator
@@ -44,8 +45,9 @@ class CaregiverReportUiTest {
         composeRule.onNodeWithTag("caregiver-pdf-picker").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-pdf-preset-custom").performClick()
         composeRule.onNodeWithTag("caregiver-pdf-to").performTextReplacement(LocalDate.now(TOKYO).plusDays(1).toString())
+        composeRule.onNodeWithTag("caregiver-pdf-validation").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("終了日は今日以前にしてください。").assertIsDisplayed()
-        composeRule.onNodeWithTag("caregiver-pdf-generate").assertIsNotEnabled()
+        composeRule.onNodeWithTag("caregiver-pdf-generate").performScrollTo().assertIsNotEnabled()
     }
 
     @Test
