@@ -103,7 +103,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 ## Gate C — Current patient parity
 
 - [ ] C01 Re-capture entry/auth and patient iOS states at `main@1d9d19e`.
-- [ ] C02 Reverify Mode Select, auth choice/login/signup/callback/resend.
+- [x] C02 Reverify Mode Select, auth choice/login/signup/callback/resend.
 - [ ] C03 Reverify Patient Today states/actions/recording-window/inventory/PRN/detail.
 - [ ] C04 Reverify History month/day/retention/freshness.
 - [ ] C05 Reverify Settings/reminders/tutorial/deep links/legal/unlink.
@@ -185,4 +185,4 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Immediate next item
 
-Continue **C01 current-iOS reference capture** in `ui-screen-contracts.md` order. Current-baseline UI-001 consent/default/dark/large-text, UI-100 tutorial Today and UI-101 typical Today references are recorded in `evidence/c01-reference-captures-20260714.md`; UI-001 safe-area and dark primary-content drift were fixed and recaptured on Android, and both actions remain reachable at font scale 2.0. Gate B's functional suite and caregiver-ready ownership boundary pass, while its final visual-regression checkbox remains open until the required C01 pairs are complete. The retained A03 item remains physical-device/OEM-transfer evidence assigned to V1.
+Continue **C01 current-iOS reference capture**, then C03, in `ui-screen-contracts.md` order. Current-baseline UI-001, UI-003, UI-004, UI-100 tutorial Today and UI-101 typical Today references are recorded in `evidence/c01-reference-captures-20260714.md`. C02 behavior is reverified through production-flow Compose tests plus repository callback/resend tests; visual comparison also closed login back-navigation drift. Gate B's final visual-regression checkbox remains open until the remaining C01 pairs are complete. The retained A03 item remains physical-device/OEM-transfer evidence assigned to V1.

@@ -24,6 +24,10 @@
 | UI-001 | iOS largest accessibility content size | [`c01-20260714/ui-001-mode-select-large-text.png`](c01-20260714/ui-001-mode-select-large-text.png) | `accessibility-extra-extra-extra-large`; this source screen's fixed-size text remains visually fixed |
 | UI-001 | Android font scale 2.0, initial viewport | [`c01-20260714/android-ui-001-mode-select-font-2.0.png`](c01-20260714/android-ui-001-mode-select-font-2.0.png) | Android `font_scale=2.0`; production scroll container |
 | UI-001 | Android font scale 2.0, family action reached | [`c01-20260714/android-ui-001-mode-select-font-2.0-scrolled.png`](c01-20260714/android-ui-001-mode-select-font-2.0-scrolled.png) | Same state after scrolling; family primary action is fully reachable |
+| UI-003 | Caregiver auth choice | [`c01-20260714/ui-003-caregiver-auth-choice-light.png`](c01-20260714/ui-003-caregiver-auth-choice-light.png) | UI-test bootstrap with caregiver mode and no session |
+| UI-003 | Android caregiver auth choice | [`c01-20260714/android-ui-003-caregiver-auth-choice-light.png`](c01-20260714/android-ui-003-caregiver-auth-choice-light.png) | Fresh app data; family mode selected from production UI |
+| UI-004 | Caregiver login empty | [`c01-20260714/ui-004-caregiver-login-light.png`](c01-20260714/ui-004-caregiver-login-light.png) | Current universal-link login landing, no credentials |
+| UI-004 | Android caregiver login empty | [`c01-20260714/android-ui-004-caregiver-login-light.png`](c01-20260714/android-ui-004-caregiver-login-light.png) | Production choice-to-login navigation, no credentials |
 | UI-100 | Patient Today tutorial step 1/4 | [`c01-20260714/ui-100-patient-tutorial-today-light.png`](c01-20260714/ui-100-patient-tutorial-today-light.png) | `-ForceModeTutorial.patient`; production tutorial overlay and sample view |
 | UI-101 | Patient Today typical content | [`c01-20260714/ui-101-patient-today-light.png`](c01-20260714/ui-101-patient-today-light.png) | `-ForceModeTutorial.patient -PatientMarketingScreenshot.today`; production shell with deterministic sample data and no overlay |
 
@@ -33,12 +37,14 @@
 - Dark comparison exposed black Android content on teal role-action circles while iOS keeps white content. The dark `onPrimary` token now follows the iOS white-on-teal contract; the repaired dark capture confirms both actions.
 - The repaired Android capture matches the iOS section order, safe-area origin, 22-unit horizontal rhythm, 24-unit section rhythm, card structure, role imagery, semantic teal/orange treatment and action placement.
 - At Android font scale 2.0 both cards reflow, remain scrollable and expose their primary actions. `ModeSelectScreenTest.familyActionRemainsReachableAtTwoHundredPercentFontScale` protects this behavior.
+- UI-003 matches current iOS section order, card geometry, role colors, safe area and back action. System-symbol artwork remains platform-native.
+- UI-004 comparison found Android's form back action was a full-width button while current iOS uses a circular navigation action. Android now uses a 52 dp circular control and preserves the iOS-equivalent 147-unit form-card origin.
 - Remaining UI-001 differences are platform typography/icon rendering and viewport-class height. Android analytics-consent UI, compact/large matched captures and physical verification remain required before UI-001 can be marked `VERIFIED`.
 - UI-100 and UI-101 use the iOS production component tree and deterministic in-app sample data; no API response, identity, medication record or auth token from a real user was captured.
 
 ## Remaining C01 reference work
 
-- UI-001 compact/large viewport and Android analytics consent; patient link and caregiver auth entry states.
+- UI-001 compact/large viewport and Android analytics consent; patient link and caregiver signup/confirmation states.
 - UI-100 tutorial steps 2–4, completion/skip and 200% text.
 - UI-101 exceptional Today states plus UI-102 dose detail and UI-103 PRN states.
 - UI-104 History month, UI-105 History day and UI-106 Settings states.
@@ -46,4 +52,4 @@
 
 C01 remains in progress until the full scoped state inventory is captured. These files are the first current-baseline references and replace older evidence only for the states listed above.
 
-Post-fix verification: `./gradlew test assembleDebug assembleRelease lint connectedDebugAndroidTest` completed successfully with 32/32 API 35 emulator tests, and `git diff --check` passed.
+Post-fix verification: `./gradlew test assembleDebug assembleRelease lint connectedDebugAndroidTest` completed successfully with 34/34 API 35 emulator tests after adding production caregiver-auth flow coverage, and `git diff --check` passed.

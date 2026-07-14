@@ -130,7 +130,7 @@ This selector foundation is connected to inventory-backed production candidates 
 - All Compose UI, patient repository, session/auth/network fallback and local notification copy is resource-backed through typed presentation messages. Safe backend validation detail remains explicit raw data by contract.
 - Patient UI is physically split into Shell, navigation state, Today, History, Settings, Tutorial and shared component files.
 - Deterministic Today, History and Settings capture fixtures render the production components rather than screenshot-only duplicates.
-- `./gradlew test assembleDebug assembleRelease lint connectedDebugAndroidTest` passed with 32 emulator tests on API 35 after adding UI-001 200% font-scale action reachability coverage.
+- `./gradlew test assembleDebug assembleRelease lint connectedDebugAndroidTest` passed with 34 emulator tests on API 35 after adding UI-001 200% font-scale action reachability and production caregiver-auth flow coverage.
 
 ## Phase 2B Today completion slice
 

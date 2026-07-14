@@ -1,0 +1,90 @@
+package com.afterlifearchive.medmanager.ui
+
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.afterlifearchive.medmanager.data.auth.AuthService
+import com.afterlifearchive.medmanager.data.auth.AuthSession
+import com.afterlifearchive.medmanager.data.network.ApiClient
+import com.afterlifearchive.medmanager.data.network.HttpResponse
+import com.afterlifearchive.medmanager.data.session.SessionRepository
+import com.afterlifearchive.medmanager.data.session.SessionStorage
+import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
+import org.junit.Rule
+import org.junit.Test
+import kotlinx.coroutines.runBlocking
+
+class CaregiverAuthFlowScreenTest {
+    @get:Rule
+    val composeRule = createComposeRule()
+
+    @Test
+    fun loginAndSignupDestinationsRenderCanonicalForms() {
+        val repository = authRepository()
+        render(repository)
+
+        composeRule.onNodeWithText("ログイン").performClick()
+        composeRule.onNodeWithText("家族ログイン").assertIsDisplayed()
+        composeRule.onNodeWithText("Email").assertIsDisplayed()
+        composeRule.onNodeWithText("Password").assertIsDisplayed()
+
+        composeRule.onNodeWithContentDescription("戻る").performClick()
+        composeRule.onNodeWithText("新規登録").performClick()
+        composeRule.onNodeWithText("家族アカウント作成").assertIsDisplayed()
+        composeRule.onNodeWithText("メールアドレス").assertIsDisplayed()
+        composeRule.onNodeWithText("パスワード（6文字以上）").assertIsDisplayed()
+        composeRule.onNodeWithText("パスワードをもう一度入力").assertIsDisplayed()
+    }
+
+    @Test
+    fun signupValidationErrorIsRenderedFromTypedRepositoryState() {
+        val repository = authRepository()
+        render(repository)
+
+        composeRule.onNodeWithText("新規登録").performClick()
+        runBlocking { repository.signupCaregiver("invalid", "123456", "123456") }
+
+        composeRule.onNodeWithText("メールアドレスの形式を確認してください。")
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    private fun render(repository: SessionRepository) {
+        composeRule.setContent {
+            val state by repository.state.collectAsStateWithLifecycle()
+            MedicationAppTheme { CaregiverAuthFlow(state, repository) }
+        }
+    }
+}
+
+private fun authRepository(): SessionRepository {
+    val storage = AuthFlowStorage()
+    val auth = object : AuthService {
+        override suspend fun login(email: String, password: String) = AuthSession("access", "refresh", 3600)
+        override suspend fun refresh(refreshToken: String) = AuthSession("access-2", "refresh-2", 3600)
+        override suspend fun signup(email: String, password: String) = AuthSession(null, null, null)
+        override suspend fun resendSignupConfirmation(email: String) = Unit
+    }
+    val api = ApiClient(
+        baseUrl = "https://example.invalid",
+        transport = { HttpResponse(500, "{}") },
+    )
+    return SessionRepository(storage, auth, api).also { it.restore() }
+}
+
+private class AuthFlowStorage : SessionStorage {
+    override var mode: AppMode? = AppMode.CAREGIVER
+    override var currentPatientId: String? = null
+    private val secrets = mutableMapOf<String, String>()
+
+    override fun getSecret(key: String): String? = secrets[key]
+
+    override fun putSecret(key: String, value: String?) {
+        if (value == null) secrets.remove(key) else secrets[key] = value
+    }
+}

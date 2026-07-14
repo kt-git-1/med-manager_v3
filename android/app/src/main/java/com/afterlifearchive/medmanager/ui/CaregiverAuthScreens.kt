@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -68,6 +69,11 @@ private val AuthOrange: Color @Composable get() = MedicationTheme.colors.orange
 private val AuthBackground: Color @Composable get() = MaterialTheme.colorScheme.background
 
 private enum class AuthPage { CHOICE, LOGIN, SIGNUP }
+
+const val AUTH_EMAIL_TAG = "caregiver-auth-email"
+const val AUTH_PASSWORD_TAG = "caregiver-auth-password"
+const val AUTH_CONFIRMATION_TAG = "caregiver-auth-confirmation"
+const val AUTH_SUBMIT_TAG = "caregiver-auth-submit"
 
 @Composable
 fun CaregiverAuthFlow(state: SessionState, repository: SessionRepository) {
@@ -133,8 +139,8 @@ private fun CaregiverLoginScreen(state: SessionState, repository: SessionReposit
     val scope = rememberCoroutineScope()
     AuthFormShell(onBack) {
         FormTitle(Icons.Rounded.AccountCircle, stringResource(R.string.caregiver_login_title))
-        AuthField(email, { email = it; repository.clearMessages() }, stringResource(R.string.caregiver_auth_email), false)
-        AuthField(password, { password = it; repository.clearMessages() }, stringResource(R.string.caregiver_auth_password), true)
+        AuthField(email, { email = it; repository.clearMessages() }, stringResource(R.string.caregiver_auth_email), false, AUTH_EMAIL_TAG)
+        AuthField(password, { password = it; repository.clearMessages() }, stringResource(R.string.caregiver_auth_password), true, AUTH_PASSWORD_TAG)
         state.errorMessage?.let { AuthError(sessionUserMessageText(it)) }
         AuthPrimaryButton(stringResource(R.string.caregiver_auth_login), state.loading, email.isNotBlank() && password.isNotBlank()) {
             scope.launch { repository.loginCaregiver(email, password) }
@@ -155,9 +161,9 @@ private fun CaregiverSignupScreen(state: SessionState, repository: SessionReposi
     LaunchedEffect(state.canResendConfirmation) { if (state.canResendConfirmation && cooldown == 0) cooldown = 60 }
     AuthFormShell(onBack) {
         FormTitle(Icons.Rounded.AddCircle, stringResource(R.string.caregiver_signup_title), stringResource(R.string.caregiver_signup_subtitle))
-        AuthField(email, { email = it; repository.clearMessages() }, stringResource(R.string.caregiver_signup_email), false)
-        AuthField(password, { password = it; repository.clearMessages() }, stringResource(R.string.caregiver_signup_password), true)
-        AuthField(confirmation, { confirmation = it; repository.clearMessages() }, stringResource(R.string.caregiver_signup_password_confirmation), true)
+        AuthField(email, { email = it; repository.clearMessages() }, stringResource(R.string.caregiver_signup_email), false, AUTH_EMAIL_TAG)
+        AuthField(password, { password = it; repository.clearMessages() }, stringResource(R.string.caregiver_signup_password), true, AUTH_PASSWORD_TAG)
+        AuthField(confirmation, { confirmation = it; repository.clearMessages() }, stringResource(R.string.caregiver_signup_password_confirmation), true, AUTH_CONFIRMATION_TAG)
         state.errorMessage?.let { AuthError(sessionUserMessageText(it)) }
         state.infoMessage?.let { AuthInfo(sessionUserMessageText(it)) }
         if (state.canResendConfirmation) {
@@ -177,12 +183,32 @@ private fun CaregiverSignupScreen(state: SessionState, repository: SessionReposi
 private fun AuthFormShell(onBack: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(AuthBackground).safeDrawingPadding(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(24.dp, 52.dp, 24.dp, 52.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(24.dp, 16.dp, 24.dp, 52.dp),
+        verticalArrangement = Arrangement.spacedBy(52.dp),
     ) {
-        item { AuthBackButton(stringResource(R.string.common_back), onBack) }
+        item { AuthNavigationBackButton(onBack) }
         item {
             Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f), RoundedCornerShape(24.dp)).padding(28.dp), verticalArrangement = Arrangement.spacedBy(18.dp), content = content)
+        }
+    }
+}
+
+@Composable
+private fun AuthNavigationBackButton(onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.size(52.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.86f),
+        shape = CircleShape,
+        shadowElevation = 10.dp,
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                Icons.AutoMirrored.Rounded.ArrowBack,
+                contentDescription = stringResource(R.string.common_back),
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(30.dp),
+            )
         }
     }
 }
@@ -197,9 +223,9 @@ private fun FormTitle(icon: androidx.compose.ui.graphics.vector.ImageVector, tit
 }
 
 @Composable
-private fun AuthField(value: String, onChange: (String) -> Unit, placeholder: String, secure: Boolean) {
+private fun AuthField(value: String, onChange: (String) -> Unit, placeholder: String, secure: Boolean, testTag: String) {
     OutlinedTextField(
-        value = value, onValueChange = onChange, placeholder = { Text(placeholder) }, modifier = Modifier.fillMaxWidth(),
+        value = value, onValueChange = onChange, placeholder = { Text(placeholder) }, modifier = Modifier.fillMaxWidth().testTag(testTag),
         leadingIcon = { Icon(if (secure) Icons.Rounded.Lock else Icons.Rounded.Email, null) },
         visualTransformation = if (secure) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
         keyboardOptions = KeyboardOptions(keyboardType = if (secure) KeyboardType.Password else KeyboardType.Email),
@@ -209,7 +235,7 @@ private fun AuthField(value: String, onChange: (String) -> Unit, placeholder: St
 
 @Composable
 private fun AuthPrimaryButton(text: String, loading: Boolean, ready: Boolean, onClick: () -> Unit) {
-    Button(onClick, enabled = ready && !loading, modifier = Modifier.fillMaxWidth().height(50.dp).alpha(if (ready) 1f else 0.5f), shape = RoundedCornerShape(14.dp), colors = ButtonDefaults.buttonColors(containerColor = AuthTeal)) {
+    Button(onClick, enabled = ready && !loading, modifier = Modifier.fillMaxWidth().height(50.dp).alpha(if (ready) 1f else 0.5f).testTag(AUTH_SUBMIT_TAG), shape = RoundedCornerShape(14.dp), colors = ButtonDefaults.buttonColors(containerColor = AuthTeal)) {
         if (loading) CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(22.dp), strokeWidth = 3.dp)
         else Text(text, fontWeight = FontWeight.Bold)
     }
