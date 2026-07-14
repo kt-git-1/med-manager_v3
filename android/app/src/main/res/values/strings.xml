@@ -436,6 +436,18 @@
     <string name="caregiver_medication_delete_confirm_action">削除する</string>
     <string name="caregiver_medication_delete_error">薬を削除できませんでした。通信状態を確認して、もう一度お試しください。</string>
 
+    <!-- Caregiver history -->
+    <string name="caregiver_history_title">服薬履歴</string>
+    <string name="caregiver_history_patient">%1$sさんの記録</string>
+    <string name="caregiver_history_previous_month">前の月</string>
+    <string name="caregiver_history_next_month">次の月</string>
+    <string name="caregiver_history_prn">頓服</string>
+    <string name="caregiver_history_backfill_action">服用済みにする</string>
+    <string name="caregiver_history_backfill_confirm_title">過去の服薬を記録しますか？</string>
+    <string name="caregiver_history_backfill_confirm_message">%1$sを服用済みとして記録します。</string>
+    <string name="caregiver_history_backfill_success">服薬を記録しました</string>
+    <string name="caregiver_history_backfill_failed">服薬を記録できませんでした。通信状態を確認して、もう一度お試しください。</string>
+
     <!-- Local notifications -->
     <string name="notification_channel_patient_reminders">服薬リマインダー</string>
     <string name="notification_channel_patient_reminders_description">あとで知らせる服薬通知</string>

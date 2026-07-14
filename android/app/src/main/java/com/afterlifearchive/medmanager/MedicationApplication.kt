@@ -10,6 +10,8 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayApi
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverInventoryApi
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverInventoryRepository
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryApi
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryRepository
 import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
 import com.afterlifearchive.medmanager.data.freshness.FreshnessConsumer
 import com.afterlifearchive.medmanager.data.network.ApiClient
@@ -39,6 +41,8 @@ class MedicationApplication : Application() {
     lateinit var caregiverTodayRepository: CaregiverTodayRepository
         private set
     lateinit var caregiverInventoryRepository: CaregiverInventoryRepository
+        private set
+    lateinit var caregiverHistoryRepository: CaregiverHistoryRepository
         private set
     lateinit var mutationFreshnessStore: MutationFreshnessStore
         private set
@@ -83,6 +87,10 @@ class MedicationApplication : Application() {
         )
         caregiverInventoryRepository = CaregiverInventoryRepository(
             CaregiverInventoryApi(apiClient),
+            mutationFreshnessStore,
+        )
+        caregiverHistoryRepository = CaregiverHistoryRepository(
+            CaregiverHistoryApi(apiClient),
             mutationFreshnessStore,
         )
         repository.restore()

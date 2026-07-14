@@ -52,6 +52,7 @@ import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.HistoryDayDetail
 import com.afterlifearchive.medmanager.data.patient.HistoryScheduledDose
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
+import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.PrnActorType
 import com.afterlifearchive.medmanager.data.patient.PrnHistoryItem
 import com.afterlifearchive.medmanager.data.patient.RecordedByType
@@ -457,9 +458,11 @@ internal fun HistoryDayDetailContent(
     retentionCutoffDate: String?,
     retentionDays: Int?,
     onRetry: () -> Unit,
+    highlightedSlot: MedicationSlot? = null,
+    onRecordMissed: ((HistoryScheduledDose) -> Unit)? = null,
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().testTag("history-day-detail-list"),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp, 8.dp, 20.dp, 40.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -472,7 +475,9 @@ internal fun HistoryDayDetailContent(
                 item { PatientDetailCard(stringResource(R.string.patient_history_day_empty_title), stringResource(R.string.patient_history_day_empty_message)) }
             }
             if (detail.doses.isNotEmpty()) item { Text(stringResource(R.string.patient_history_scheduled_section), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
-            items(detail.doses, key = { "${it.medicationId}:${it.scheduledAt}" }) { HistoryScheduledDoseRow(it) }
+            items(detail.doses, key = { "${it.medicationId}:${it.scheduledAt}" }) {
+                HistoryScheduledDoseRow(it, highlightedSlot == it.slot, onRecordMissed)
+            }
             if (detail.prnItems.isNotEmpty()) item { Text(stringResource(R.string.patient_history_prn_section), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
             items(detail.prnItems, key = { "${it.medicationId}:${it.takenAt}" }) { PrnHistoryRow(it) }
         }
@@ -480,8 +485,19 @@ internal fun HistoryDayDetailContent(
 }
 
 @Composable
-private fun HistoryScheduledDoseRow(dose: HistoryScheduledDose) {
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+private fun HistoryScheduledDoseRow(
+    dose: HistoryScheduledDose,
+    highlighted: Boolean = false,
+    onRecordMissed: ((HistoryScheduledDose) -> Unit)? = null,
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = if (highlighted) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface),
+        border = if (highlighted) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+        modifier = Modifier.testTag(
+            if (highlighted) "history-dose-highlighted-${dose.slot.name.lowercase()}"
+            else "history-dose-${dose.slot.name.lowercase()}",
+        ),
+    ) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(dose.medicationName, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
@@ -491,6 +507,12 @@ private fun HistoryScheduledDoseRow(dose: HistoryScheduledDose) {
                 }
             }
             Text(patientDoseStatusText(dose.status), color = historyDoseColor(dose.status), fontWeight = FontWeight.Bold)
+        }
+        if (dose.status == DoseStatus.MISSED && onRecordMissed != null) {
+            TextButton(
+                onClick = { onRecordMissed(dose) },
+                modifier = Modifier.align(Alignment.End).padding(end = 8.dp).testTag("history-backfill-${dose.medicationId}"),
+            ) { Text(stringResource(R.string.caregiver_history_backfill_action)) }
         }
     }
 }

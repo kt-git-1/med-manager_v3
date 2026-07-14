@@ -73,6 +73,7 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverLinkingCode
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverInventoryRepository
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryRepository
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -94,6 +95,7 @@ fun CaregiverHomeScreen(
     medicationRepository: CaregiverMedicationRepository? = null,
     todayRepository: CaregiverTodayRepository? = null,
     inventoryRepository: CaregiverInventoryRepository? = null,
+    historyRepository: CaregiverHistoryRepository? = null,
     onLogout: () -> Unit = {},
     onAccountDeleted: () -> Unit = {},
     tutorialEnabled: Boolean = true,
@@ -110,6 +112,7 @@ fun CaregiverHomeScreen(
     var postTutorialFocusTag by rememberSaveable { mutableStateOf<String?>(null) }
     val selectedTab = CaregiverTab.valueOf(selectedTabName)
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val historyState = historyRepository?.state?.collectAsStateWithLifecycle()?.value
 
     fun selectTab(tab: CaregiverTab) {
         selectedTabName = tab.name
@@ -126,6 +129,13 @@ fun CaregiverHomeScreen(
     }
 
     LaunchedEffect(Unit) { repository.refresh() }
+    LaunchedEffect(historyState?.navigationRequestId, state.patients) {
+        val targetPatientId = historyState?.notificationPatientId
+        if ((historyState?.navigationRequestId ?: 0) > 0 && targetPatientId != null && state.patients.any { it.id == targetPatientId }) {
+            repository.selectPatient(targetPatientId)
+            selectTab(CaregiverTab.HISTORY)
+        }
+    }
     LaunchedEffect(tutorialStep) {
         if (tutorialStep >= 0) selectTab(caregiverTutorialTab(tutorialStep))
     }
@@ -151,6 +161,7 @@ fun CaregiverHomeScreen(
                                 medicationRepository,
                                 todayRepository,
                                 inventoryRepository,
+                                historyRepository,
                                 visible,
                                 onLogout,
                                 onAccountDeleted,
@@ -200,6 +211,7 @@ private fun CaregiverTabContent(
     medicationRepository: CaregiverMedicationRepository?,
     todayRepository: CaregiverTodayRepository?,
     inventoryRepository: CaregiverInventoryRepository?,
+    historyRepository: CaregiverHistoryRepository?,
     visible: Boolean,
     onLogout: () -> Unit,
     onAccountDeleted: () -> Unit,
@@ -221,7 +233,9 @@ private fun CaregiverTabContent(
         CaregiverTab.INVENTORY -> if (inventoryRepository != null) {
             CaregiverInventoryScreen(inventoryRepository, state, visible, onOpenMedications)
         } else CaregiverFeatureLanding(tab, state, repository, visible)
-        else -> CaregiverFeatureLanding(tab, state, repository, visible)
+        CaregiverTab.HISTORY -> if (historyRepository != null) {
+            CaregiverHistoryScreen(historyRepository, state, visible)
+        } else CaregiverFeatureLanding(tab, state, repository, visible)
     }
 }
 

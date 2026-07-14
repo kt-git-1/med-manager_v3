@@ -126,6 +126,8 @@ Slot-bulk response is top-level:
 
 History month accepts current `days` and legacy `monthSummary`; day accepts current `doses` and legacy `dayDetails`. Android may support both for compatibility but tests must prefer the current response. Retention uses `[todayTokyo-29d, todayTokyo]` for free access, with the server deciding entitlement.
 
+The production caregiver repository uses API-042/API-043 with caregiver auth and selected-patient isolation. A missed scheduled item may be backfilled only through confirmation-protected `POST /api/patients/{id}/dose-records`; local history and freshness change only after a successful response. Remote caregiver navigation accepts only `type=DOSE_TAKEN` plus a linked `patientId`, ISO local `date` and canonical `slot`.
+
 PDF generation is on-device. Patient mode renders no PDF action. Android uses the system share sheet and a content URI, never a publicly writable raw file path.
 
 ## 7. Inventory

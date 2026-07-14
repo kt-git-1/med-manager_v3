@@ -11,12 +11,20 @@ import androidx.compose.ui.test.hasTestTag
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatient
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryDataSource
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryRepository
+import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
+import com.afterlifearchive.medmanager.data.patient.HistoryDay
+import com.afterlifearchive.medmanager.data.patient.HistoryDayDetail
+import com.afterlifearchive.medmanager.data.patient.HistoryScheduledDose
 import com.afterlifearchive.medmanager.data.session.CaregiverSelectionRepository
 import com.afterlifearchive.medmanager.data.session.SessionStorage
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import java.time.LocalDate
+import java.time.YearMonth
 
 class CaregiverHomeScreenTest {
     @get:Rule
@@ -71,6 +79,32 @@ class CaregiverHomeScreenTest {
         composeRule.onNodeWithTag("caregiver-create-name").performTextInput("x".repeat(51))
         composeRule.onNodeWithTag("caregiver-create-submit").performClick()
         composeRule.onNodeWithText("表示名は50文字以内で入力してください").assertIsDisplayed()
+    }
+
+    @Test
+    fun remotePushSelectsTargetPatientAndHistoryTab() {
+        val storage = TestSelectionStorage()
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val patientRepository = CaregiverPatientRepository(
+            CaregiverPatientDataSource { listOf(CaregiverPatient("p1", "さくら"), CaregiverPatient("p2", "ゆうき")) },
+            selection,
+        )
+        val historyRepository = CaregiverHistoryRepository(object : CaregiverHistoryDataSource {
+            override suspend fun month(patientId: String, yearMonth: YearMonth) = emptyList<HistoryDay>()
+            override suspend fun day(patientId: String, date: LocalDate) = HistoryDayDetail(date.toString(), emptyList(), emptyList())
+            override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
+        }, MutationFreshnessStore())
+        historyRepository.handleNotificationTarget("DOSE_TAKEN", "p2", "2026-07-15", "noon")
+
+        composeRule.setContent {
+            MedicationAppTheme {
+                CaregiverHomeScreen(patientRepository, historyRepository = historyRepository, tutorialEnabled = false)
+            }
+        }
+        composeRule.waitUntil(5_000) { patientRepository.state.value.selectedPatientId == "p2" }
+
+        composeRule.onNodeWithTag("caregiver-content-history").assertIsDisplayed()
+        assertEquals("p2", storage.currentPatientId)
     }
 
     private fun setContent(patients: List<CaregiverPatient>): Pair<CaregiverPatientRepository, TestSelectionStorage> {

@@ -21,7 +21,9 @@ class MainActivity : ComponentActivity() {
         val caregiverMedicationRepository = (application as MedicationApplication).caregiverMedicationRepository
         val caregiverTodayRepository = (application as MedicationApplication).caregiverTodayRepository
         val caregiverInventoryRepository = (application as MedicationApplication).caregiverInventoryRepository
+        val caregiverHistoryRepository = (application as MedicationApplication).caregiverHistoryRepository
         handlePatientNotificationIntent(intent, patientRepository)
+        handleCaregiverNotificationIntent(intent, caregiverHistoryRepository)
         setContent {
             MedicationAppTheme {
                 if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_PATIENT_SETTINGS", false)) {
@@ -31,7 +33,7 @@ class MainActivity : ComponentActivity() {
                 } else if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_PATIENT", false)) {
                     PatientModePreview(PatientTab.TODAY)
                 } else {
-                    MedicationApp(repository, patientRepository, caregiverPatientRepository, caregiverMedicationRepository, caregiverTodayRepository, caregiverInventoryRepository)
+                    MedicationApp(repository, patientRepository, caregiverPatientRepository, caregiverMedicationRepository, caregiverTodayRepository, caregiverInventoryRepository, caregiverHistoryRepository)
                 }
             }
         }
@@ -42,12 +44,25 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         intent.dataString?.let { (application as MedicationApplication).sessionRepository.handleAuthCallback(it) }
         handlePatientNotificationIntent(intent, (application as MedicationApplication).patientRepository)
+        handleCaregiverNotificationIntent(intent, (application as MedicationApplication).caregiverHistoryRepository)
     }
 
     private fun handlePatientNotificationIntent(intent: Intent, repository: com.afterlifearchive.medmanager.data.patient.PatientRepository) {
         repository.handleNotificationTarget(
             intent.getStringExtra("notification_date"),
             intent.getStringExtra("notification_slot"),
+        )
+    }
+
+    private fun handleCaregiverNotificationIntent(
+        intent: Intent,
+        repository: com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryRepository,
+    ) {
+        repository.handleNotificationTarget(
+            intent.getStringExtra("type"),
+            intent.getStringExtra("patientId"),
+            intent.getStringExtra("date"),
+            intent.getStringExtra("slot"),
         )
     }
 }

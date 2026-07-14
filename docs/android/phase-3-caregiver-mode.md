@@ -194,3 +194,15 @@ F06 and `CG-009` are `IMPLEMENTED`. F07 owns the explicit cross-tab revision mat
 - Each expected consumer refreshes exactly once per revision. Hidden consumers keep the revision pending until revisited, concurrent collectors cannot duplicate a fetch and failed refreshes do not consume pending work.
 
 F07 and `CG-017` are `IMPLEMENTED`. Gate F is complete with the 66/66 API-35 instrumentation, JVM, Debug/Release and Lint gate passing; Gate G now owns caregiver History, PDF, push and settings completion.
+
+## G01 caregiver History and notification destination — 2026-07-15
+
+- The production History tab uses caregiver-authenticated `GET /api/patients/{patientId}/history/month?year&month` and `GET /api/patients/{patientId}/history/day?date` for only the selected patient. Patient and month switches clear incompatible snapshots before loading, while same-month refresh keeps visible content.
+- The month surface mirrors the current iOS hierarchy with patient identity, previous/current-month navigation, Sunday-first calendar, four scheduled-slot status dots, PRN marker and semantic legend. Day detail includes scheduled and PRN items, recorder attribution, empty/loading/retry states and exact Tokyo date/time presentation.
+- Structured `HISTORY_RETENTION_LIMIT` responses show the server-owned cutoff and retention days separately from generic load failure. Older locked months never mix data from the previously displayed month.
+- A caregiver can backfill only a missed scheduled item after an explicit medication-name confirmation. Android sends the exact caregiver dose-record body, replaces the day from authoritative month/day responses and publishes dose, inventory and notification-plan revisions only after 2xx success.
+- MainActivity accepts only the server's privacy-minimal `DOSE_TAKEN` data payload (`patientId`, ISO date and canonical slot). A valid target survives cold composition, selects the linked patient and retained History tab, opens the exact day and highlights only the requested slot for four seconds; invalid type/date/slot payloads are ignored.
+- Exact paths/auth/bodies, response aliases, patient isolation, retention separation, backfill success/failure revisions and strict push parsing have JVM/API coverage. Production Compose tests cover calendar-to-day/backfill, exact remote slot highlight and cross-patient History-tab navigation.
+- The full gate passes with 69/69 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
+
+G01, `CG-010` and `XP-002` are `IMPLEMENTED`. Physical notification-tap/process-death evidence remains in release verification; G02 now owns on-device PDF export and sharing.

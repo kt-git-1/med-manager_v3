@@ -154,7 +154,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Gate G — History, PDF, push and settings
 
-- [ ] G01 Caregiver month/day history, retention and exact push target/highlight.
+- [x] G01 Caregiver month/day history, retention and exact push target/highlight.
 - [ ] G02 PDF free lock, presets/custom validation, on-device generation and content-URI share.
 - [ ] G03 FCM permission/token register/unregister/retry/disable lifecycle using `platform=android`.
 - [ ] G04 Push privacy and dedup behavior; account deletion cleanup.
