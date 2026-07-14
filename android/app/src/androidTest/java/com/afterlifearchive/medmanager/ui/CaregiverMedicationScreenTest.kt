@@ -84,6 +84,19 @@ class CaregiverMedicationScreenTest {
         composeRule.onNodeWithTag("medication-frequency-weekly").assertDoesNotExist()
     }
 
+    @Test
+    fun editFormRequiresExplicitDestructiveDeleteConfirmation() {
+        setContent(listOf(scheduled()))
+        composeRule.onNodeWithTag("caregiver-medication-edit-scheduled").performClick()
+
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-delete"))
+        composeRule.onNodeWithTag("medication-delete").performClick()
+
+        composeRule.onNodeWithTag("medication-delete-dialog").assertIsDisplayed()
+        composeRule.onNodeWithText("薬を削除しますか？").assertIsDisplayed()
+        composeRule.onNodeWithText("この操作は取り消せません。").assertIsDisplayed()
+    }
+
     private fun setContent(items: List<PatientMedication>) {
         val repository = CaregiverMedicationRepository(CaregiverMedicationDataSource { items }, MutationFreshnessStore())
         val patient = CaregiverPatient("patient-1", "さくら", CaregiverSlotTimes("08:00", "12:00", "18:00", "21:00"))

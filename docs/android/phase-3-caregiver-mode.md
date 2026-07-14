@@ -126,3 +126,14 @@ E02 and `CG-006` are `IMPLEMENTED`. E03 owns regular-medication daily/weekday sl
 - The full gate passes with 53/53 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
 
 E03 and `CG-007` are `IMPLEMENTED`. Physical notification timing, matched iOS captures, large-text and TalkBack verification remain before `VERIFIED`.
+
+## E04 inventory fields and medication lifecycle — 2026-07-15
+
+- Create and edit share the iOS medication lifecycle fields: start date, optional end date, optional initial inventory, fixed tablet inventory unit and notes. Reversed dates, negative/non-numeric inventory and all other form errors are rejected together before any request.
+- Ended medications remain derived from an end date before the Tokyo calendar day and continue to participate in the All/Ended metrics and filters. Archived medication is excluded by the authoritative backend list contract.
+- Existing medication edit exposes the current iOS destructive action and exact confirmation intent. Confirmation sends caregiver-authenticated `DELETE /api/medications/{id}?patientId=...`; the backend archives the medication and marks it inactive.
+- The local item is removed and medication, inventory and notification-plan freshness is published only after a 2xx response. Failure keeps the medication, current draft and every revision unchanged, then shows an inline retryable error.
+- API/repository tests cover the exact DELETE method/path/auth, request without body, success-only removal and revision changes, and failure preservation. Compose coverage proves deletion is unavailable during create and requires the explicit irreversible-action dialog during edit.
+- The full gate passes with 54/54 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
+
+E04 and the medication lifecycle portion of `CG-006` are `IMPLEMENTED`. Full inventory enable/adjust/refill behavior remains deliberately owned by F06/`CG-009`; E05 now owns cross-feature invalidation and current-iOS visual comparison.

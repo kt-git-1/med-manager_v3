@@ -40,6 +40,7 @@ fun interface CaregiverMedicationDataSource {
     suspend fun createRegimen(medicationId: String, draft: CaregiverMedicationDraft): CaregiverRegimen = error("createRegimen is not implemented")
     suspend fun updateRegimen(regimenId: String, draft: CaregiverMedicationDraft, enabled: Boolean): CaregiverRegimen =
         error("updateRegimen is not implemented")
+    suspend fun deleteMedication(patientId: String, medicationId: String): Unit = error("deleteMedication is not implemented")
 }
 
 class CaregiverMedicationApi(private val client: ApiClient) : CaregiverMedicationDataSource {
@@ -103,6 +104,13 @@ class CaregiverMedicationApi(private val client: ApiClient) : CaregiverMedicatio
             RequestAuthPolicy.CAREGIVER,
         )
         return PatientWireJson.decodeFromString<CaregiverRegimenEnvelopeDto>(body).data.toDomain()
+    }
+
+    override suspend fun deleteMedication(patientId: String, medicationId: String) {
+        client.deleteBody(
+            "api/medications/$medicationId?patientId=$patientId",
+            RequestAuthPolicy.CAREGIVER,
+        )
     }
 }
 
@@ -180,6 +188,19 @@ class CaregiverMedicationRepository(
         val existing = regimens.firstOrNull { it.enabled } ?: regimens.firstOrNull()
         if (existing == null) dataSource.createRegimen(medicationId, draft)
         else dataSource.updateRegimen(existing.id, draft, enabled = true)
+    }
+
+    suspend fun delete(patientId: String, medicationId: String): Boolean = try {
+        dataSource.deleteMedication(patientId, medicationId)
+        val current = mutableState.value
+        if (current.patientId == patientId) {
+            mutableState.value = current.copy(items = current.items.filterNot { it.id == medicationId })
+        }
+        freshnessStore.markMedicationChanged(inventoryChanged = true, notificationPlanChanged = true)
+        true
+    } catch (error: Exception) {
+        if (error is CancellationException) throw error
+        false
     }
 
     fun clear() {

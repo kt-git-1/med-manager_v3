@@ -52,6 +52,7 @@ class CaregiverMedicationRepositoryTest {
 
         api.createMedication("patient-1", draft)
         api.updateMedication("patient-1", "med-1", draft.copy(name = "更新薬"))
+        api.deleteMedication("patient-1", "med-1")
 
         val create = requests[0]
         assertEquals("POST", create.method)
@@ -63,6 +64,10 @@ class CaregiverMedicationRepositoryTest {
         assertEquals("https://example.test/api/medications/med-1?patientId=patient-1", update.url)
         assertFalse(JSONObject(update.body!!).has("patientId"))
         assertEquals("更新薬", JSONObject(update.body!!).getString("name"))
+        val delete = requests[2]
+        assertEquals("DELETE", delete.method)
+        assertEquals("https://example.test/api/medications/med-1?patientId=patient-1", delete.url)
+        assertEquals(null, delete.body)
     }
 
     @Test
@@ -181,6 +186,32 @@ class CaregiverMedicationRepositoryTest {
         assertTrue(result.isFailure)
         assertEquals(listOf("med-saved"), repository.state.value.items.map { it.id })
         assertEquals(1L, freshness.revisions.value.medication)
+        assertEquals(1L, freshness.revisions.value.notificationPlan)
+    }
+
+    @Test
+    fun deleteRemovesMedicationAndPublishesFreshnessOnlyAfterServerSuccess() = runTest {
+        val freshness = MutationFreshnessStore()
+        var shouldFail = false
+        val dataSource = object : CaregiverMedicationDataSource {
+            override suspend fun listMedications(patientId: String) = listOf(medication("med-1", patientId))
+            override suspend fun deleteMedication(patientId: String, medicationId: String) {
+                if (shouldFail) error("offline")
+            }
+        }
+        val repository = CaregiverMedicationRepository(dataSource, freshness)
+        repository.load("patient-1")
+
+        shouldFail = true
+        assertFalse(repository.delete("patient-1", "med-1"))
+        assertEquals(listOf("med-1"), repository.state.value.items.map { it.id })
+        assertEquals(0L, freshness.revisions.value.medication)
+
+        shouldFail = false
+        assertTrue(repository.delete("patient-1", "med-1"))
+        assertTrue(repository.state.value.items.isEmpty())
+        assertEquals(1L, freshness.revisions.value.medication)
+        assertEquals(1L, freshness.revisions.value.inventory)
         assertEquals(1L, freshness.revisions.value.notificationPlan)
     }
 

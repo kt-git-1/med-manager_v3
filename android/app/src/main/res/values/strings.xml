@@ -344,6 +344,11 @@
     <string name="caregiver_medication_form_slot_noon">昼</string>
     <string name="caregiver_medication_form_slot_evening">夕</string>
     <string name="caregiver_medication_form_slot_bedtime">寝る前</string>
+    <string name="caregiver_medication_delete">薬を削除する</string>
+    <string name="caregiver_medication_delete_confirm_title">薬を削除しますか？</string>
+    <string name="caregiver_medication_delete_confirm_message">この操作は取り消せません。</string>
+    <string name="caregiver_medication_delete_confirm_action">削除する</string>
+    <string name="caregiver_medication_delete_error">薬を削除できませんでした。通信状態を確認して、もう一度お試しください。</string>
 
     <!-- Local notifications -->
     <string name="notification_channel_patient_reminders">服薬リマインダー</string>

@@ -15,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
@@ -272,6 +273,9 @@ private fun CaregiverMedicationEditor(
     var submitted by rememberSaveable(medication?.id) { mutableStateOf(false) }
     var submitting by rememberSaveable(medication?.id) { mutableStateOf(false) }
     var saveFailed by rememberSaveable(medication?.id) { mutableStateOf(false) }
+    var showingDeleteConfirm by rememberSaveable(medication?.id) { mutableStateOf(false) }
+    var deleting by rememberSaveable(medication?.id) { mutableStateOf(false) }
+    var deleteFailed by rememberSaveable(medication?.id) { mutableStateOf(false) }
     val errors = if (submitted) draft.validate() else emptyList()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -470,6 +474,9 @@ private fun CaregiverMedicationEditor(
         if (saveFailed) item {
             Text(stringResource(R.string.caregiver_medication_form_error), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("medication-save-error"))
         }
+        if (deleteFailed) item {
+            Text(stringResource(R.string.caregiver_medication_delete_error), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("medication-delete-error"))
+        }
         item {
             Button(
                 onClick = {
@@ -489,8 +496,50 @@ private fun CaregiverMedicationEditor(
             ) {
                 Text(stringResource(if (submitting) R.string.caregiver_medication_form_saving else R.string.caregiver_medication_form_save))
             }
+            if (medication != null) {
+                Spacer(Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = { showingDeleteConfirm = true },
+                    enabled = enabled && !submitting && !deleting,
+                    modifier = Modifier.fillMaxWidth().testTag("medication-delete"),
+                ) {
+                    Text(stringResource(R.string.caregiver_medication_delete), color = MaterialTheme.colorScheme.error)
+                }
+            }
             Spacer(Modifier.height(24.dp))
         }
+    }
+
+    if (showingDeleteConfirm && medication != null) {
+        AlertDialog(
+            onDismissRequest = { if (!deleting) showingDeleteConfirm = false },
+            title = { Text(stringResource(R.string.caregiver_medication_delete_confirm_title)) },
+            text = { Text(stringResource(R.string.caregiver_medication_delete_confirm_message)) },
+            dismissButton = {
+                TextButton(onClick = { showingDeleteConfirm = false }, enabled = !deleting) {
+                    Text(stringResource(R.string.caregiver_medication_form_cancel))
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        deleting = true
+                        deleteFailed = false
+                        scope.launch {
+                            val deleted = repository.delete(patientId, medication.id)
+                            deleting = false
+                            showingDeleteConfirm = false
+                            if (deleted) onClose() else deleteFailed = true
+                        }
+                    },
+                    enabled = !deleting,
+                    modifier = Modifier.testTag("medication-delete-confirm"),
+                ) {
+                    Text(stringResource(R.string.caregiver_medication_delete_confirm_action), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            modifier = Modifier.testTag("medication-delete-dialog"),
+        )
     }
 }
 
