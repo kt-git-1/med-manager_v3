@@ -513,6 +513,47 @@ describe("slot bulk record integration", () => {
       );
     });
 
+    it("allows a caregiver to proxy-record missed doses after the patient recording window", async () => {
+      vi.setSystemTime(new Date("2026-02-11T01:00:00.000Z"));
+      mockScheduleDoses = makeMorningDoses("missed");
+      const { bulkRecordSlot } = await import("../../src/services/slotBulkRecordService");
+
+      try {
+        const result = await bulkRecordSlot({
+          patientId: "patient-1",
+          date: "2026-02-11",
+          slot: "morning",
+          recordedByType: "CAREGIVER",
+          recordedById: "caregiver-1"
+        });
+
+        expect(result.updatedCount).toBe(3);
+        expect(result.remainingCount).toBe(0);
+      } finally {
+        vi.setSystemTime(new Date("2026-02-10T22:30:00.000Z"));
+      }
+    });
+
+    it("keeps the recording window restriction for patient recordings", async () => {
+      vi.setSystemTime(new Date("2026-02-11T01:00:00.000Z"));
+      mockScheduleDoses = makeMorningDoses("missed");
+      const { bulkRecordSlot } = await import("../../src/services/slotBulkRecordService");
+
+      try {
+        const result = await bulkRecordSlot({
+          patientId: "patient-1",
+          date: "2026-02-11",
+          slot: "morning",
+          recordedByType: "PATIENT"
+        });
+
+        expect(result.updatedCount).toBe(0);
+        expect(result.remainingCount).toBe(3);
+      } finally {
+        vi.setSystemTime(new Date("2026-02-10T22:30:00.000Z"));
+      }
+    });
+
     it("records available medications and leaves insufficient medications unrecorded", async () => {
       medications["med-1"].inventoryEnabled = true;
       medications["med-1"].inventoryQuantity = 1;
