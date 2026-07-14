@@ -49,6 +49,7 @@
 		462DE5559B9EA777DC2697EC /* DoseRecordDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 678945D795A346CA7EB08C5F /* DoseRecordDTO.swift */; };
 		48CB1ABF9F105E0E095F3EA4 /* MedicationFormViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F793F0C9A8BBA67CA9C46326 /* MedicationFormViewModelTests.swift */; };
 		4C61DCB405E3ED7065950C8C /* SchedulingRefreshCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DCBDC43794CD9B567EE94CB /* SchedulingRefreshCoordinator.swift */; };
+		4EA504F302FA29DF1B8FF90D /* LinkCodeErrorMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E8719E81A7A2F1E42E06B7E /* LinkCodeErrorMessageTests.swift */; };
 		4F526488F12A24E98DF6A584 /* NotificationSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE09CCA2A275B0AA41324F09 /* NotificationSettingsTests.swift */; };
 		548B7EC3C9577EA879E95B8B /* CaregiverSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559F7D05EAC2932241E20F4E /* CaregiverSessionController.swift */; };
 		592951FFB17246BCDE0947BC /* NotificationPermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 721F43D1AEC682D6A39D47D3 /* NotificationPermissionManager.swift */; };
@@ -125,6 +126,7 @@
 		E0EBB42848864A7DF863F91C /* TodaySlotHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BDEB4E8F09261CF7B8B25FC /* TodaySlotHighlight.swift */; };
 		E57191284924C8022CD75D8D /* InventoryEmptyStateUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D04923965D53D9B61AF9C20 /* InventoryEmptyStateUITests.swift */; };
 		E61BA8EC38CB8CA2BAE40A24 /* DeviceTokenManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BE7F361C82942BC778FFCA8 /* DeviceTokenManager.swift */; };
+		E65AE3C774C2866746EC07E7 /* PatientTodayViewModelPerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA6F94CB13A527CBF16D5854 /* PatientTodayViewModelPerformanceTests.swift */; };
 		E778ED1907B9FAF8C59C150C /* InventoryDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76275337362331D328DD0663 /* InventoryDTO.swift */; };
 		E865934EDE6E1079E23D6398 /* ModeSelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ED0295C35ADCA8CCEB59000 /* ModeSelectView.swift */; };
 		E95ABB18FB2ED1D681671070 /* InventoryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E0C4E7DC46536FA717DCB8A /* InventoryListView.swift */; };
@@ -194,6 +196,7 @@
 		2E02C37A6DD54B4D396E3BF1 /* CaregiverBannerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverBannerUITests.swift; sourceTree = "<group>"; };
 		2E594C35EA698D01A962CE27 /* NotificationSchedulerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSchedulerTests.swift; sourceTree = "<group>"; };
 		2E622F067BAC7E3083CFB39A /* CaregiverHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverHistoryView.swift; sourceTree = "<group>"; };
+		2E8719E81A7A2F1E42E06B7E /* LinkCodeErrorMessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkCodeErrorMessageTests.swift; sourceTree = "<group>"; };
 		2F14389A25B5B1AFDD3C4518 /* PrnConfirmTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrnConfirmTests.swift; sourceTree = "<group>"; };
 		2F3B3EC234D1D71D44BC2C6E /* LinkingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkingService.swift; sourceTree = "<group>"; };
 		30F0665AE9C17BFB7BD43D41 /* MedicationApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MedicationApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -268,6 +271,7 @@
 		C478A1F0A87BA5A6933C496E /* SessionStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStoreTests.swift; sourceTree = "<group>"; };
 		C864E2CD124754159C571F26 /* APIClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClientTests.swift; sourceTree = "<group>"; };
 		C9B95C565516F1191D20C297 /* CaregiverTodayViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverTodayViewModel.swift; sourceTree = "<group>"; };
+		CA6F94CB13A527CBF16D5854 /* PatientTodayViewModelPerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientTodayViewModelPerformanceTests.swift; sourceTree = "<group>"; };
 		CE69B91B4906C7A17F081989 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
 		D28A063A709CA9505F5504F9 /* InventoryEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryEmptyStateView.swift; sourceTree = "<group>"; };
 		D8FD22A7D92D4A09A9DFFF29 /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
@@ -639,10 +643,12 @@
 				D9ADE3B816AD8CA592B9B529 /* ExploratoryUITapCoverageUITests.swift */,
 				50CC3E300E058B7C790B9BD6 /* HistoryOverlayTests.swift */,
 				08D4DBCBF2CE5522633BB90C /* Info.plist */,
+				2E8719E81A7A2F1E42E06B7E /* LinkCodeErrorMessageTests.swift */,
 				1936DBB41CFB0907EE79DBF6 /* MedicationFormValidationTests.swift */,
 				F793F0C9A8BBA67CA9C46326 /* MedicationFormViewModelTests.swift */,
 				EB55437B073B6E2D5D88F3AE /* MedicationListViewModelTests.swift */,
 				7A42ADC235670AD205259290 /* PatientManagementViewModelTests.swift */,
+				CA6F94CB13A527CBF16D5854 /* PatientTodayViewModelPerformanceTests.swift */,
 				B4FA16D48A97D298701D0C75 /* ReminderSchedulingTests.swift */,
 				C478A1F0A87BA5A6933C496E /* SessionStoreTests.swift */,
 				0CEC8F0CD10FAA9C276E6B82 /* TodayCaregiverFlowTests.swift */,
@@ -981,6 +987,7 @@
 				AE5360FCEE21DB28BEAF3CD4 /* EntitlementStoreTests.swift in Sources */,
 				D86536F626E516A3F76E9257 /* FeatureGateTests.swift in Sources */,
 				C6BA67D9849095E39EBC05DF /* HistoryRetentionTests.swift in Sources */,
+				4EA504F302FA29DF1B8FF90D /* LinkCodeErrorMessageTests.swift in Sources */,
 				5DFE8FD36CAEB373DF8D79D7 /* MedicationFormValidationTests.swift in Sources */,
 				48CB1ABF9F105E0E095F3EA4 /* MedicationFormViewModelTests.swift in Sources */,
 				403B60DF0710DEE297E332E7 /* MedicationListViewModelTests.swift in Sources */,
@@ -991,6 +998,7 @@
 				7E2A8438C8648B75FC37420F /* PDFExportPatientTests.swift in Sources */,
 				82A0A96BAE16821A52B0B585 /* PatientManagementViewModelTests.swift in Sources */,
 				96A8D5CB099539069782B001 /* PatientTodayNextSlotSelectorTests.swift in Sources */,
+				E65AE3C774C2866746EC07E7 /* PatientTodayViewModelPerformanceTests.swift in Sources */,
 				7DAC14085E8DD8685FC3355D /* PeriodPresetTests.swift in Sources */,
 				15B585257945D86F53307989 /* PrnConfirmTests.swift in Sources */,
 				FCE120E4D0D8CAE4A17E3089 /* PrnMedicationUiTests.swift in Sources */,
@@ -1089,7 +1097,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = QSZR732YXD;
 				EMAIL_CONFIRMATION_REDIRECT_URL = "https://www.okusuri-mimamori.com/auth/confirmed";
 				INFOPLIST_FILE = App/Info.plist;
@@ -1097,7 +1105,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.afterlifearchive.medmanager;
 				SDKROOT = iphoneos;
 				SUPABASE_ANON_KEY = sb_publishable_7hGwwBAmU55gsNVbMw8IAg_KgS2GyaM;
@@ -1230,7 +1238,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = QSZR732YXD;
 				EMAIL_CONFIRMATION_REDIRECT_URL = "https://www.okusuri-mimamori.com/auth/confirmed";
 				ENABLE_TESTABILITY = YES;
@@ -1239,7 +1247,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.afterlifearchive.medmanager;
 				SDKROOT = iphoneos;
 				SUPABASE_ANON_KEY = sb_publishable_nVf6RMV1tUkg8ew7BJLVnw_YDnUMRra;
@@ -1365,7 +1373,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = QSZR732YXD;
 				EMAIL_CONFIRMATION_REDIRECT_URL = "https://www.okusuri-mimamori.com/auth/confirmed";
 				INFOPLIST_FILE = App/Info.plist;
@@ -1373,7 +1381,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.afterlifearchive.medmanager;
 				SDKROOT = iphoneos;
 				SUPABASE_ANON_KEY = sb_publishable_7hGwwBAmU55gsNVbMw8IAg_KgS2GyaM;

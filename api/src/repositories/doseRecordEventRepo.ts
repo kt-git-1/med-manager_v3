@@ -19,6 +19,13 @@ export async function createDoseRecordEvent(
   });
 }
 
+export async function createDoseRecordEvents(inputs: DoseRecordEventCreateInput[]): Promise<void> {
+  if (inputs.length === 0) {
+    return;
+  }
+  await prisma.doseRecordEvent.createMany({ data: inputs });
+}
+
 export async function listDoseRecordEventsByPatient(input: {
   patientId: string;
   limit?: number;

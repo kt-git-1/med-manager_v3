@@ -209,7 +209,13 @@ const medications: Record<
 vi.mock("../../src/repositories/medicationRepo", () => ({
   getMedicationRecordForPatient: vi.fn(async (_patientId: string, medicationId: string) => {
     return medications[medicationId] ?? null;
-  })
+  }),
+  listMedicationRecordsForPatientByIds: vi.fn(async (_patientId: string, medicationIds: string[]) =>
+    medicationIds.flatMap((medicationId) => {
+      const medication = medications[medicationId];
+      return medication ? [medication] : [];
+    })
+  )
 }));
 
 vi.mock("../../src/repositories/doseRecordEventRepo", () => ({
@@ -227,7 +233,8 @@ vi.mock("../../src/repositories/doseRecordEventRepo", () => ({
       ...input,
       createdAt: new Date()
     })
-  )
+  ),
+  createDoseRecordEvents: vi.fn(async () => {})
 }));
 
 vi.mock("../../src/services/pushNotificationService", () => ({
@@ -237,6 +244,7 @@ vi.mock("../../src/services/pushNotificationService", () => ({
 
 vi.mock("../../src/services/medicationService", () => ({
   applyInventoryDeltaForDoseRecord: vi.fn(async () => {}),
+  applyInventoryDeltasForDoseRecords: vi.fn(async () => {}),
   assertInventoryAvailableForMedication: vi.fn(
     (
       medication: { inventoryEnabled: boolean; inventoryQuantity: number },
@@ -443,6 +451,9 @@ describe("slot bulk record integration", () => {
   describe("T001: PENDING bulk -> TAKEN", () => {
     it("records 3 PENDING morning doses as TAKEN in a single bulk operation", async () => {
       mockScheduleDoses = makeMorningDoses("pending");
+      const { createDoseRecordEvents } = await import("../../src/repositories/doseRecordEventRepo");
+      const { applyInventoryDeltasForDoseRecords } =
+        await import("../../src/services/medicationService");
       const { notifyCaregiversOfDoseTaken } =
         await import("../../src/services/pushNotificationService");
       const notifyMock = vi.mocked(notifyCaregiversOfDoseTaken);
@@ -456,6 +467,9 @@ describe("slot bulk record integration", () => {
       expect(body.remainingCount).toBe(0);
       expect(body.recordingGroupId).toBeDefined();
       expect(typeof body.recordingGroupId).toBe("string");
+      expect(createDoseRecordEvents).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(createDoseRecordEvents).mock.calls[0]?.[0]).toHaveLength(3);
+      expect(applyInventoryDeltasForDoseRecords).toHaveBeenCalledTimes(1);
       expect(notifyMock).toHaveBeenCalledTimes(1);
       expect(notifyMock).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -497,6 +511,47 @@ describe("slot bulk record integration", () => {
           excludeCaregiverId: "caregiver-1"
         })
       );
+    });
+
+    it("allows a caregiver to proxy-record missed doses after the patient recording window", async () => {
+      vi.setSystemTime(new Date("2026-02-11T01:00:00.000Z"));
+      mockScheduleDoses = makeMorningDoses("missed");
+      const { bulkRecordSlot } = await import("../../src/services/slotBulkRecordService");
+
+      try {
+        const result = await bulkRecordSlot({
+          patientId: "patient-1",
+          date: "2026-02-11",
+          slot: "morning",
+          recordedByType: "CAREGIVER",
+          recordedById: "caregiver-1"
+        });
+
+        expect(result.updatedCount).toBe(3);
+        expect(result.remainingCount).toBe(0);
+      } finally {
+        vi.setSystemTime(new Date("2026-02-10T22:30:00.000Z"));
+      }
+    });
+
+    it("keeps the recording window restriction for patient recordings", async () => {
+      vi.setSystemTime(new Date("2026-02-11T01:00:00.000Z"));
+      mockScheduleDoses = makeMorningDoses("missed");
+      const { bulkRecordSlot } = await import("../../src/services/slotBulkRecordService");
+
+      try {
+        const result = await bulkRecordSlot({
+          patientId: "patient-1",
+          date: "2026-02-11",
+          slot: "morning",
+          recordedByType: "PATIENT"
+        });
+
+        expect(result.updatedCount).toBe(0);
+        expect(result.remainingCount).toBe(3);
+      } finally {
+        vi.setSystemTime(new Date("2026-02-10T22:30:00.000Z"));
+      }
     });
 
     it("records available medications and leaves insufficient medications unrecorded", async () => {

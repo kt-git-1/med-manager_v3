@@ -11,6 +11,15 @@ enum CaregiverTab: Hashable {
     case patients
 }
 
+private extension View {
+    func caregiverTabVisibility(_ isVisible: Bool) -> some View {
+        opacity(isVisible ? 1 : 0)
+            .allowsHitTesting(isVisible)
+            .accessibilityHidden(!isVisible)
+            .zIndex(isVisible ? 1 : 0)
+    }
+}
+
 struct CaregiverHomeView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var notificationRouter: NotificationDeepLinkRouter
@@ -22,26 +31,38 @@ struct CaregiverHomeView: View {
     @State private var deepLinkTarget: NotificationDeepLinkTarget?
     @State private var shouldOpenCreatePatient = false
     @State private var tutorialStepIndex: Int?
+    @State private var loadedTabs: Set<CaregiverTab> = [.today]
     var entitlementStore: EntitlementStore?
 
     var body: some View {
         ZStack {
-            switch selectedTab {
-            case .today:
+            if loadedTabs.contains(.today) {
                 CaregiverTodayTabView(
                     sessionStore: sessionStore,
                     patientName: currentPatientName,
+                    hasAnyPatient: hasAnyPatient,
+                    patientListErrorMessage: patientListErrorMessage,
+                    onRetryPatients: { loadCurrentPatientName() },
                     onOpenPatients: { openPatientSettings() },
                     onOpenMedications: { selectedTab = .medications },
-                    onCreatePatient: { openPatientCreate() }
+                    onCreatePatient: { openPatientCreate() },
+                    onLowStockChange: { hasLowStock = $0 }
                 )
-            case .medications:
+                .caregiverTabVisibility(selectedTab == .today)
+            }
+            if loadedTabs.contains(.medications) {
                 CaregiverMedicationView(
                     sessionStore: sessionStore,
+                    patientName: currentPatientName,
+                    hasAnyPatient: hasAnyPatient,
+                    patientListErrorMessage: patientListErrorMessage,
+                    onRetryPatients: { loadCurrentPatientName() },
                     onOpenPatients: { openPatientSettings() },
                     onCreatePatient: { openPatientCreate() }
                 )
-            case .history:
+                .caregiverTabVisibility(selectedTab == .medications)
+            }
+            if loadedTabs.contains(.history) {
                 NavigationStack {
                     CaregiverHistoryView(
                         sessionStore: sessionStore,
@@ -55,7 +76,9 @@ struct CaregiverHomeView: View {
                         onCreatePatient: { openPatientCreate() }
                     )
                 }
-            case .inventory:
+                .caregiverTabVisibility(selectedTab == .history)
+            }
+            if loadedTabs.contains(.inventory) {
                 NavigationStack {
                     InventoryListView(
                         sessionStore: sessionStore,
@@ -68,12 +91,15 @@ struct CaregiverHomeView: View {
                         patientName: currentPatientName
                     )
                 }
-            case .patients:
+                .caregiverTabVisibility(selectedTab == .inventory)
+            }
+            if loadedTabs.contains(.patients) {
                 PatientManagementView(
                     sessionStore: sessionStore,
                     entitlementStore: entitlementStore,
                     shouldOpenCreate: $shouldOpenCreatePatient
                 )
+                .caregiverTabVisibility(selectedTab == .patients)
             }
 
             if let tutorialStepIndex {
@@ -115,23 +141,20 @@ struct CaregiverHomeView: View {
         .onAppear {
             AnalyticsService.shared.logCaregiverTabViewed(analyticsTab(for: selectedTab))
             loadCurrentPatientName()
-            checkLowStock()
             startTutorialIfNeeded()
             routeUITestRemotePushIfNeeded()
         }
         .onChange(of: sessionStore.currentPatientId) { _, _ in
+            hasLowStock = false
             loadCurrentPatientName()
-            checkLowStock()
         }
         .onChange(of: sessionStore.mode) { _, _ in
+            hasLowStock = false
             loadCurrentPatientName()
-            checkLowStock()
         }
         .onChange(of: selectedTab) { _, newTab in
+            loadedTabs.insert(newTab)
             AnalyticsService.shared.logCaregiverTabViewed(analyticsTab(for: newTab))
-            if newTab == .inventory || newTab == .medications || newTab == .today {
-                checkLowStock()
-            }
         }
         .onChange(of: tutorialStepIndex) { _, index in
             guard let index else { return }
@@ -1781,78 +1804,43 @@ struct CaregiverPrimaryButton: View {
     }
 }
 
-@MainActor
-final class CaregiverMedicationViewModel: ObservableObject {
-    @Published var patients: [PatientDTO] = []
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-
-    private let apiClient: APIClient
-    private let sessionStore: SessionStore
-
-    init(apiClient: APIClient, sessionStore: SessionStore) {
-        self.apiClient = apiClient
-        self.sessionStore = sessionStore
-    }
-
-    func loadPatients() {
-        guard !isLoading else { return }
-        isLoading = true
-        errorMessage = nil
-        Task {
-            defer { isLoading = false }
-            do {
-                patients = try await apiClient.listPatients()
-                let selectedPatient = patients.first { $0.id == sessionStore.currentPatientId }
-                if selectedPatient == nil, sessionStore.currentPatientId != nil {
-                    sessionStore.clearCurrentPatientId()
-                }
-                if sessionStore.currentPatientId == nil, patients.count == 1, let onlyPatient = patients.first {
-                    sessionStore.setCurrentPatientId(onlyPatient.id)
-                }
-            } catch {
-                errorMessage = NSLocalizedString("caregiver.dataUnavailable.message", comment: "Caregiver data unavailable message")
-            }
-        }
-    }
-}
-
 struct CaregiverMedicationView: View {
     private let sessionStore: SessionStore
+    private let patientName: String?
+    private let hasAnyPatient: Bool?
+    private let patientListErrorMessage: String?
+    private let onRetryPatients: () -> Void
     private let onOpenPatients: () -> Void
     private let onCreatePatient: () -> Void
-    @StateObject private var viewModel: CaregiverMedicationViewModel
 
     init(
         sessionStore: SessionStore,
+        patientName: String?,
+        hasAnyPatient: Bool?,
+        patientListErrorMessage: String?,
+        onRetryPatients: @escaping () -> Void,
         onOpenPatients: @escaping () -> Void,
         onCreatePatient: @escaping () -> Void
     ) {
         self.sessionStore = sessionStore
+        self.patientName = patientName
+        self.hasAnyPatient = hasAnyPatient
+        self.patientListErrorMessage = patientListErrorMessage
+        self.onRetryPatients = onRetryPatients
         self.onOpenPatients = onOpenPatients
         self.onCreatePatient = onCreatePatient
-        let baseURL = SessionStore.resolveBaseURL()
-        _viewModel = StateObject(
-            wrappedValue: CaregiverMedicationViewModel(
-                apiClient: APIClient(baseURL: baseURL, sessionStore: sessionStore),
-                sessionStore: sessionStore
-            )
-        )
     }
 
     var body: some View {
         NavigationStack {
             Group {
-                if viewModel.isLoading {
-                    LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                } else if let errorMessage = viewModel.errorMessage {
+                if sessionStore.currentPatientId == nil, let patientListErrorMessage {
                     CaregiverDataUnavailableView(
-                        message: errorMessage,
-                        onRetry: { viewModel.loadPatients() },
+                        message: patientListErrorMessage,
+                        onRetry: onRetryPatients,
                         onReturnToLogin: { sessionStore.returnToCaregiverLogin() }
                     )
-                } else if viewModel.patients.isEmpty {
+                } else if sessionStore.currentPatientId == nil, hasAnyPatient == false {
                     CaregiverNoPatientEmptyStateView(onCreatePatient: onCreatePatient)
                 } else if sessionStore.currentPatientId == nil {
                     CaregiverPatientSelectionRequiredView(
@@ -1863,17 +1851,14 @@ struct CaregiverMedicationView: View {
                     MedicationListView(
                         sessionStore: sessionStore,
                         onOpenPatients: onOpenPatients,
-                        patientName: viewModel.patients.first { $0.id == sessionStore.currentPatientId }?.displayName
+                        patientName: patientName
                     )
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: viewModel.isLoading ? .center : .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(AppTheme.screenBackground.ignoresSafeArea())
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-        }
-        .onAppear {
-            viewModel.loadPatients()
         }
         .accessibilityIdentifier("CaregiverMedicationView")
     }
@@ -1884,45 +1869,46 @@ struct CaregiverMedicationView: View {
 struct CaregiverTodayTabView: View {
     private let sessionStore: SessionStore
     private let patientName: String?
+    private let hasAnyPatient: Bool?
+    private let patientListErrorMessage: String?
+    private let onRetryPatients: () -> Void
     private let onOpenPatients: () -> Void
     private let onOpenMedications: () -> Void
     private let onCreatePatient: () -> Void
-    @StateObject private var viewModel: CaregiverMedicationViewModel
+    private let onLowStockChange: (Bool) -> Void
 
     init(
         sessionStore: SessionStore,
         patientName: String?,
+        hasAnyPatient: Bool?,
+        patientListErrorMessage: String?,
+        onRetryPatients: @escaping () -> Void,
         onOpenPatients: @escaping () -> Void,
         onOpenMedications: @escaping () -> Void,
-        onCreatePatient: @escaping () -> Void
+        onCreatePatient: @escaping () -> Void,
+        onLowStockChange: @escaping (Bool) -> Void
     ) {
         self.sessionStore = sessionStore
         self.patientName = patientName
+        self.hasAnyPatient = hasAnyPatient
+        self.patientListErrorMessage = patientListErrorMessage
+        self.onRetryPatients = onRetryPatients
         self.onOpenPatients = onOpenPatients
         self.onOpenMedications = onOpenMedications
         self.onCreatePatient = onCreatePatient
-        let baseURL = SessionStore.resolveBaseURL()
-        _viewModel = StateObject(
-            wrappedValue: CaregiverMedicationViewModel(
-                apiClient: APIClient(baseURL: baseURL, sessionStore: sessionStore),
-                sessionStore: sessionStore
-            )
-        )
+        self.onLowStockChange = onLowStockChange
     }
 
     var body: some View {
         NavigationStack {
             Group {
-                if viewModel.isLoading {
-                    LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                } else if let errorMessage = viewModel.errorMessage {
+                if sessionStore.currentPatientId == nil, let patientListErrorMessage {
                     CaregiverDataUnavailableView(
-                        message: errorMessage,
-                        onRetry: { viewModel.loadPatients() },
+                        message: patientListErrorMessage,
+                        onRetry: onRetryPatients,
                         onReturnToLogin: { sessionStore.returnToCaregiverLogin() }
                     )
-                } else if viewModel.patients.isEmpty {
+                } else if sessionStore.currentPatientId == nil, hasAnyPatient == false {
                     CaregiverNoPatientEmptyStateView(onCreatePatient: onCreatePatient)
                 } else if sessionStore.currentPatientId == nil {
                     CaregiverPatientSelectionRequiredView(
@@ -1934,17 +1920,15 @@ struct CaregiverTodayTabView: View {
                         sessionStore: sessionStore,
                         onOpenPatients: onOpenPatients,
                         onOpenMedications: onOpenMedications,
-                        patientName: patientName
+                        patientName: patientName,
+                        onLowStockChange: onLowStockChange
                     )
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: viewModel.isLoading ? .center : .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(CaregiverUI.background.ignoresSafeArea())
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-        }
-        .onAppear {
-            viewModel.loadPatients()
         }
         .accessibilityIdentifier("CaregiverTodayTabView")
     }

@@ -15,12 +15,14 @@ final class CaregiverTodayViewModel: ObservableObject {
     private let timeFormatter: DateFormatter
     private let dateKeyFormatter: DateFormatter
     private let calendar: Calendar
+    private let onLowStockChange: (Bool) -> Void
     var toastPresenter: ToastPresenter?
 
-    init(apiClient: APIClient) {
+    init(apiClient: APIClient, onLowStockChange: @escaping (Bool) -> Void = { _ in }) {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = AppConstants.defaultTimeZone
         self.apiClient = apiClient
+        self.onLowStockChange = onLowStockChange
         self.dateFormatter = DateFormatter()
         self.dateFormatter.locale = AppConstants.japaneseLocale
         self.dateFormatter.dateStyle = .medium
@@ -48,17 +50,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                 isUpdating = false
             }
             do {
-                async let dosesTask = apiClient.fetchCaregiverToday(slotTimeItems: [])
-                async let medicationsTask = apiClient.fetchMedications(patientId: nil)
-                async let inventoryTask = apiClient.fetchInventory()
-                let (doses, medications, inventory) = try await (dosesTask, medicationsTask, inventoryTask)
-                items = doses.sorted(by: sortDose)
-                prnMedications = medications
-                    .filter { $0.isPrn && $0.isActive && !$0.isArchived }
-                    .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-                outOfStockMedicationIds = Set(
-                    inventory.filter { $0.isInsufficientForDose }.map { $0.medicationId }
-                )
+                try await refreshData()
             } catch {
                 items = []
                 prnMedications = []
@@ -93,8 +85,9 @@ final class CaregiverTodayViewModel: ObservableObject {
                         scheduledAt: dose.scheduledAt
                     )
                 )
+                notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("caregiver.today.recorded", comment: "Recorded"))
-                load(showLoading: false)
+                await refreshAfterMutation()
             } catch {
                 showToastMessage(for: error)
             }
@@ -112,6 +105,9 @@ final class CaregiverTodayViewModel: ObservableObject {
                     date: dateKeyFormatter.string(from: recordableDoses[0].scheduledAt),
                     slot: slot.rawValue
                 )
+                if result.updatedCount > 0 {
+                    notifyDoseRecordsUpdated()
+                }
                 if result.insufficientCount > 0 {
                     showToast(
                         NSLocalizedString("patient.today.slot.bulk.partialSuccess", comment: "Bulk partially recorded"),
@@ -121,7 +117,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                     let format = NSLocalizedString("caregiver.today.recorded.bulk", comment: "Bulk recorded")
                     showToast(String(format: format, result.updatedCount))
                 }
-                load(showLoading: false)
+                await refreshAfterMutation()
             } catch {
                 showToastMessage(for: error)
             }
@@ -142,8 +138,9 @@ final class CaregiverTodayViewModel: ObservableObject {
                         quantityTaken: nil
                     )
                 )
+                notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("caregiver.today.prn.recorded", comment: "Caregiver PRN recorded"))
-                load(showLoading: false)
+                await refreshAfterMutation()
                 onSuccess()
             } catch {
                 showToastMessage(for: error)
@@ -161,8 +158,9 @@ final class CaregiverTodayViewModel: ObservableObject {
                     medicationId: dose.medicationId,
                     scheduledAt: dose.scheduledAt
                 )
+                notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("caregiver.today.deleted", comment: "Deleted"))
-                load(showLoading: false)
+                await refreshAfterMutation()
             } catch {
                 showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
             }
@@ -181,6 +179,10 @@ final class CaregiverTodayViewModel: ObservableObject {
         toastPresenter?.show(message, kind: kind)
     }
 
+    private func notifyDoseRecordsUpdated() {
+        NotificationCenter.default.post(name: .doseRecordsUpdated, object: nil)
+    }
+
     private func showToastMessage(for error: Error) {
         if let apiError = error as? APIError, case .insufficientInventory = apiError {
             showToast(NSLocalizedString("patient.today.inventory.insufficient", comment: "Insufficient inventory"), kind: .warning)
@@ -188,6 +190,34 @@ final class CaregiverTodayViewModel: ObservableObject {
         } else {
             showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
         }
+    }
+
+    private func refreshAfterMutation() async {
+        do {
+            try await refreshData()
+        } catch {
+            // The mutation already succeeded. Preserve the currently rendered data instead of
+            // replacing the whole screen with an empty/error state on a transient refresh failure.
+            showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
+        }
+    }
+
+    private func refreshData() async throws {
+        async let dosesTask = apiClient.fetchCaregiverToday(slotTimeItems: [])
+        async let medicationsTask = apiClient.fetchMedications(patientId: nil)
+        async let inventoryTask = apiClient.fetchInventory()
+        let (doses, medications, inventory) = try await (dosesTask, medicationsTask, inventoryTask)
+
+        items = doses.sorted(by: sortDose)
+        prnMedications = medications
+            .filter { $0.isPrn && $0.isActive && !$0.isArchived }
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        outOfStockMedicationIds = Set(
+            inventory.filter { $0.isInsufficientForDose }.map { $0.medicationId }
+        )
+        onLowStockChange(
+            inventory.contains { $0.inventoryEnabled && ($0.low || $0.out) }
+        )
     }
 
     private func sortDose(_ lhs: ScheduleDoseDTO, _ rhs: ScheduleDoseDTO) -> Bool {

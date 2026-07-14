@@ -1,6 +1,15 @@
 import SafariServices
 import SwiftUI
 
+private extension View {
+    func patientTabVisibility(_ isVisible: Bool) -> some View {
+        opacity(isVisible ? 1 : 0)
+            .allowsHitTesting(isVisible)
+            .accessibilityHidden(!isVisible)
+            .zIndex(isVisible ? 1 : 0)
+    }
+}
+
 struct PatientReadOnlyView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var notificationRouter: NotificationDeepLinkRouter
@@ -12,6 +21,7 @@ struct PatientReadOnlyView: View {
     @StateObject private var permissionManager = NotificationPermissionManager()
     @State private var deepLinkTarget: NotificationDeepLinkTarget?
     @State private var tutorialStepIndex: Int?
+    @State private var loadedTabs: Set<PatientTab> = [.today]
 
     var body: some View {
         FullScreenContainer(content: {
@@ -19,21 +29,29 @@ struct PatientReadOnlyView: View {
                 ZStack {
                     PatientScreenBackground()
 
-                    switch selectedTab {
-                    case .today:
+                    if loadedTabs.contains(.today) {
                         PatientTodayView(
                             sessionStore: sessionStore,
+                            preferencesStore: preferencesStore,
+                            onScheduledDoseRecorded: {
+                                await refreshNotificationSchedule(trigger: .doseRecorded)
+                            },
                             deepLinkTarget: $deepLinkTarget
                         )
-                    case .history:
+                        .patientTabVisibility(selectedTab == .today)
+                    }
+                    if loadedTabs.contains(.history) {
                         HistoryMonthView(sessionStore: sessionStore)
-                case .settings:
-                    PatientSettingsView(
-                        sessionStore: sessionStore,
-                        schedulingCoordinator: schedulingCoordinator,
-                        preferencesStore: preferencesStore,
-                        onLogout: { logoutPatient() }
-                    )
+                            .patientTabVisibility(selectedTab == .history)
+                    }
+                    if loadedTabs.contains(.settings) {
+                        PatientSettingsView(
+                            sessionStore: sessionStore,
+                            schedulingCoordinator: schedulingCoordinator,
+                            preferencesStore: preferencesStore,
+                            onLogout: { logoutPatient() }
+                        )
+                        .patientTabVisibility(selectedTab == .settings)
                     }
 
                     if let tutorialStepIndex {
@@ -72,7 +90,6 @@ struct PatientReadOnlyView: View {
                 .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)
             }
-            .id(selectedTab)
             .safeAreaInset(edge: .bottom) {
                 PatientBottomTabBar(
                     selectedTab: $selectedTab,
@@ -106,6 +123,7 @@ struct PatientReadOnlyView: View {
             startTutorialIfNeeded()
         }
         .onChange(of: selectedTab) { _, tab in
+            loadedTabs.insert(tab)
             AnalyticsService.shared.logPatientTabViewed(analyticsTab(for: tab))
         }
         .onChange(of: scenePhase) { _, phase in

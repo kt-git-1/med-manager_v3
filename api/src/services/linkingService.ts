@@ -186,6 +186,7 @@ export async function deletePatientForCaregiver(caregiverUserId: string, patient
 
   await prisma.$transaction(async (tx) => {
     // Delete all related records in dependency order
+    await tx.patientSlotTimeRevision.deleteMany({ where: { patientId } });
     await tx.inventoryAlertEvent.deleteMany({ where: { patientId } });
     await tx.medicationInventoryAdjustment.deleteMany({ where: { patientId } });
     await tx.prnDoseRecord.deleteMany({ where: { patientId } });
