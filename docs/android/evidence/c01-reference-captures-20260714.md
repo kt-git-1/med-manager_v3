@@ -32,6 +32,8 @@
 | UI-003 | Android caregiver auth choice | [`c01-20260714/android-ui-003-caregiver-auth-choice-light.png`](c01-20260714/android-ui-003-caregiver-auth-choice-light.png) | Fresh app data; family mode selected from production UI |
 | UI-004 | Caregiver login empty | [`c01-20260714/ui-004-caregiver-login-light.png`](c01-20260714/ui-004-caregiver-login-light.png) | Current universal-link login landing, no credentials |
 | UI-004 | Android caregiver login empty | [`c01-20260714/android-ui-004-caregiver-login-light.png`](c01-20260714/android-ui-004-caregiver-login-light.png) | Production choice-to-login navigation, no credentials |
+| UI-002 | Android patient link empty | [`c01-20260714/android-ui-002-patient-link-empty-light.png`](c01-20260714/android-ui-002-patient-link-empty-light.png) | Production mode-select-to-patient navigation, no code entered |
+| UI-005 | Android caregiver signup empty | [`c01-20260714/android-ui-005-caregiver-signup-empty-light.png`](c01-20260714/android-ui-005-caregiver-signup-empty-light.png) | Production mode-select-to-family-to-signup navigation, no credentials entered |
 | UI-100 | Patient Today tutorial step 1/4 | [`c01-20260714/ui-100-patient-tutorial-today-light.png`](c01-20260714/ui-100-patient-tutorial-today-light.png) | `-ForceModeTutorial.patient`; production tutorial overlay and sample view |
 | UI-101 | Patient Today typical content | [`c01-20260714/ui-101-patient-today-light.png`](c01-20260714/ui-101-patient-today-light.png) | `-ForceModeTutorial.patient -PatientMarketingScreenshot.today`; production shell with deterministic sample data and no overlay |
 
@@ -44,12 +46,13 @@
 - The production first-run Analytics dialog now has Android captures at standard, compact, large-phone and 200% font configurations. Its full privacy copy and both explicit actions fit every captured viewport; Material 3 stacks the actions vertically at 200% without hiding either action. `ModeSelectScreenTest.analyticsDecisionActionsRemainReachableAtTwoHundredPercentFontScaleAndDeclineKeepsCollectionOff` protects the large-text decline path and confirms collection remains disabled.
 - UI-003 matches current iOS section order, card geometry, role colors, safe area and back action. System-symbol artwork remains platform-native.
 - UI-004 comparison found Android's form back action was a full-width button while current iOS uses a circular navigation action. Android now uses a 52 dp circular control and preserves the iOS-equivalent 147-unit form-card origin.
+- UI-002 and UI-005 empty states are now captured from the production `MainActivity` navigation path. `PatientLinkScreenTest.errorSubmitAndBackRemainReachableAtTwoHundredPercentFontScale` protects the long network error, enabled submit action and mode-reset action at 200% font scale. `CaregiverAuthFlowScreenTest.confirmationRequiredAndResendCooldownRemainReachableAtTwoHundredPercentFontScale` drives the real typed repository transition to confirmation-required state and protects both the confirmation notice and resend countdown at 200%.
 - Remaining UI-001 differences are platform typography/icon rendering and viewport-class height. Android standard/compact/large/200%-font Analytics consent evidence is complete; matched iOS compact/large variants, full TalkBack traversal and physical verification remain required before UI-001 can be marked `VERIFIED`.
 - UI-100 and UI-101 use the iOS production component tree and deterministic in-app sample data; no API response, identity, medication record or auth token from a real user was captured.
 
 ## Remaining C01 reference work
 
-- UI-001 matched iOS compact/large variants and physical/TalkBack verification; patient link and caregiver signup/confirmation states.
+- UI-001 matched iOS compact/large variants and physical/TalkBack verification; UI-002 non-empty/error/loading captures and UI-005 validation/loading/confirmation/resend captures plus their matched iOS references.
 - UI-100 tutorial steps 2–4, completion/skip and 200% text.
 - UI-101 exceptional Today states plus UI-102 dose detail and UI-103 PRN states.
 - UI-104 History month, UI-105 History day and UI-106 Settings states.
@@ -59,4 +62,4 @@ Android dark captures for UI-101/UI-104/UI-106 and an Android UI-101 200% font c
 
 C01 remains in progress until the full scoped state inventory is captured. These files are the first current-baseline references and replace older evidence only for the states listed above.
 
-Latest post-fix verification: JVM tests, Debug/Release assembly and Lint pass; the final instrumentation suite passes 102/102 on API 26, API 33 and API 35 (306/306), plus 102/102 on the separate API-35 448 x 997 dp large-phone override. `git diff --check` also passes.
+Latest post-fix verification: JVM tests, Debug/Release assembly and Lint pass; the final instrumentation suite passes 104/104 on API 26, API 33 and API 35 (312/312), plus 104/104 on the separate API-35 448 x 997 dp large-phone override. `git diff --check` also passes.

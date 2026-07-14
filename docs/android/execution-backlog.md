@@ -175,7 +175,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 - [x] Final rebaseline check: `origin/main@1d9d19e` has zero unique commits and is already an ancestor of `android-dev` (2026-07-15); no merge required.
 - [x] Resolve all `RECHECK_REQUIRED` rows; remaining `PARTIAL` rows are explicitly external/visual/device release gates.
-- [x] Full API 26/33/35 emulator matrix (102 tests each, 306/306 total), plus a separate API-35 448 x 997 dp large-phone override pass (102/102), including light/dark 200% Caregiver reachability, Patient/Caregiver Activity recreation and rotation, medication-specific Caregiver TalkBack actions, the compact PDF sheet fix, caregiver stale/retry states and 200%-font Analytics consent opt-out reachability.
+- [x] Full API 26/33/35 emulator matrix (104 tests each, 312/312 total), plus a separate API-35 448 x 997 dp large-phone override pass (104/104), including light/dark 200% Caregiver reachability, Patient/Caregiver Activity recreation and rotation, medication-specific Caregiver TalkBack actions, the compact PDF sheet fix, caregiver stale/retry states, 200%-font Analytics consent opt-out, Patient-link error/actions and Caregiver confirmation/resend reachability.
 - [ ] Physical-device matrix.
 - [ ] Notification Doze/delivery/tap/process-death tests.
 - [ ] TalkBack, font 2.0, dark mode, compact/large phone and rotation/configuration tests.

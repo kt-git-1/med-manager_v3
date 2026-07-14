@@ -1,12 +1,17 @@
 package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.unit.Density
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.data.auth.AuthService
 import com.afterlifearchive.medmanager.data.auth.AuthSession
@@ -54,10 +59,34 @@ class CaregiverAuthFlowScreenTest {
             .assertIsDisplayed()
     }
 
-    private fun render(repository: SessionRepository) {
+    @Test
+    fun confirmationRequiredAndResendCooldownRemainReachableAtTwoHundredPercentFontScale() {
+        val repository = authRepository()
+        render(repository, fontScale = 2f)
+
+        composeRule.onNodeWithText("新規登録").performClick()
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performScrollTo().performTextInput("care@example.com")
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performScrollTo().performTextInput("123456")
+        composeRule.onNodeWithTag(AUTH_CONFIRMATION_TAG).performScrollTo().performTextInput("123456")
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).performScrollTo().performClick()
+
+        composeRule.onNodeWithText("確認メールを送信しました。", substring = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("秒で再送", substring = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    private fun render(repository: SessionRepository, fontScale: Float = 1f) {
         composeRule.setContent {
-            val state by repository.state.collectAsStateWithLifecycle()
-            MedicationAppTheme { CaregiverAuthFlow(state, repository) }
+            val density = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(density.density, fontScale = fontScale),
+            ) {
+                val state by repository.state.collectAsStateWithLifecycle()
+                MedicationAppTheme { CaregiverAuthFlow(state, repository) }
+            }
         }
     }
 }

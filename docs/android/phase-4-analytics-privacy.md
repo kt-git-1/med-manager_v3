@@ -12,7 +12,7 @@ Production wiring currently records mode selection, safe screen/tab usage, tutor
 
 The public privacy policy now states that consent can be changed from both roles. `docs/firebase-analytics.md` contains Android runtime configuration, DebugView commands, Realtime/Events/Explore checks and a Play Data safety input basis.
 
-Automated coverage proves default-off behavior, explicit enable, disable/reset, environment suppression, enum event output and rejection of patient-ID/free-text/unknown/out-of-range payloads. Compose coverage proves first-decision UI, both decision actions at 200% font scale, opt-out persistence and the shared Caregiver Settings toggle. At the Gate H checkpoint the aggregate API suite passed 300/300 and Android API-35 passed 84/84; the later Gate I matrix is authoritative at 102/102 per API level. JVM, Debug/Release and Lint pass after correcting the Firebase reserved ad-personalization property usage.
+Automated coverage proves default-off behavior, explicit enable, disable/reset, environment suppression, enum event output and rejection of patient-ID/free-text/unknown/out-of-range payloads. Compose coverage proves first-decision UI, both decision actions at 200% font scale, opt-out persistence and the shared Caregiver Settings toggle. At the Gate H checkpoint the aggregate API suite passed 300/300 and Android API-35 passed 84/84; the later Gate I matrix is authoritative at 104/104 per API level. JVM, Debug/Release and Lint pass after correcting the Firebase reserved ad-personalization property usage.
 
 ## Remaining external verification
 

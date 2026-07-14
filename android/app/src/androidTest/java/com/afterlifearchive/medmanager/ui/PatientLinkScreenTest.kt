@@ -1,8 +1,10 @@
 package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -12,7 +14,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.unit.Density
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import com.afterlifearchive.medmanager.data.session.PatientLinkFailure
 import androidx.test.platform.app.InstrumentationRegistry
@@ -73,6 +77,38 @@ class PatientLinkScreenTest {
         }
 
         composeRule.onNodeWithText("コードが見つからないか期限切れです").assertIsDisplayed()
+    }
+
+    @Test
+    fun errorSubmitAndBackRemainReachableAtTwoHundredPercentFontScale() {
+        composeRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(density.density, fontScale = 2f),
+            ) {
+                MedicationAppTheme {
+                    PatientLinkContent(
+                        code = "123456",
+                        loading = false,
+                        errorMessage = "通信に失敗しました。接続を確認して、もう一度お試しください",
+                        onCodeChange = {},
+                        onSubmit = {},
+                        onBack = {},
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithText("通信に失敗しました。接続を確認して、もう一度お試しください")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag(LINK_CODE_SUBMIT_TAG)
+            .performScrollTo()
+            .assertIsDisplayed()
+            .assertIsEnabled()
+        composeRule.onNodeWithText("モードを選び直す")
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 
     @Test

@@ -34,6 +34,6 @@ PDF report generation is an explicit on-demand request rather than a retained sc
 - Repository JVM tests cover populated and authoritative-empty snapshots, refresh failure, scope preservation and stale mutation rejection; the final Debug and Release JVM suites pass 168/168 each.
 - Production Compose tests cover visible retained content, stale banners/retry actions, disabled mutation controls and the distinction between refresh failure and mutation failure.
 - The successful caregiver dose-record path keeps its success result visible when the automatic follow-up read fails, while rendering the shared stale state instead of a false mutation error.
-- The complete API-level instrumentation matrix is recorded in `i01-api-matrix-20260715.md`: API 26, 33 and 35 each pass 102/102 (306/306 total), alongside Debug/Release assembly and Lint.
+- The complete API-level instrumentation matrix is recorded in `i01-api-matrix-20260715.md`: API 26, 33 and 35 each pass 104/104 (312/312 total), alongside Debug/Release assembly and Lint.
 
 Physical airplane-mode, captive-portal and network-transition checks remain part of the Gate I device runbook. They verify the implemented contract; they do not imply a persistent health-data cache or offline write queue.
