@@ -318,6 +318,7 @@
     <string name="caregiver_inventory_corrected">残数を修正しました</string>
     <string name="caregiver_inventory_failed">在庫を更新できませんでした。もう一度お試しください。</string>
     <string name="caregiver_selected_patient">%1$sさんを見守り中</string>
+    <string name="caregiver_preview_patient_name">さくら</string>
     <string name="caregiver_patient_selected">選択中</string>
     <string name="caregiver_patient_select">タップして対象患者を設定</string>
     <string name="caregiver_create_patient">患者作成</string>

@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.afterlifearchive.medmanager.ui.CaregiverModePreview
 import com.afterlifearchive.medmanager.ui.MedicationApp
 import com.afterlifearchive.medmanager.ui.PatientModePreview
 import com.afterlifearchive.medmanager.ui.PatientTab
@@ -25,14 +26,16 @@ class MainActivity : ComponentActivity() {
         val caregiverReportRepository = (application as MedicationApplication).caregiverReportRepository
         val caregiverPushRepository = (application as MedicationApplication).caregiverPushRepository
         val analyticsService = (application as MedicationApplication).analyticsService
-        if (BuildConfig.DEBUG && listOf("PREVIEW_PATIENT_SETTINGS", "PREVIEW_PATIENT_HISTORY", "PREVIEW_PATIENT").any { intent.getBooleanExtra(it, false) }) {
+        if (BuildConfig.DEBUG && listOf("PREVIEW_CAREGIVER", "PREVIEW_PATIENT_SETTINGS", "PREVIEW_PATIENT_HISTORY", "PREVIEW_PATIENT").any { intent.getBooleanExtra(it, false) }) {
             analyticsService.setSessionSuppressed(true)
         }
         handlePatientNotificationIntent(intent, patientRepository)
         handleCaregiverNotificationIntent(intent, caregiverHistoryRepository)
         setContent {
             MedicationAppTheme {
-                if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_PATIENT_SETTINGS", false)) {
+                if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_CAREGIVER", false)) {
+                    CaregiverModePreview()
+                } else if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_PATIENT_SETTINGS", false)) {
                     PatientModePreview(PatientTab.SETTINGS)
                 } else if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_PATIENT_HISTORY", false)) {
                     PatientModePreview(PatientTab.HISTORY)
