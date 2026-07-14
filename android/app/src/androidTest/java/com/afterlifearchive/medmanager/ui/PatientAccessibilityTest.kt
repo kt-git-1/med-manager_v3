@@ -1,9 +1,16 @@
 package com.afterlifearchive.medmanager.ui
 
+import android.app.Activity
+import android.os.SystemClock
+import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -14,6 +21,7 @@ import androidx.compose.ui.test.hasContentDescription
 import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
+import androidx.core.view.WindowCompat
 import org.junit.Rule
 import org.junit.Test
 import java.time.LocalDate
@@ -43,18 +51,35 @@ class PatientAccessibilityTest {
 
     @Test
     fun tutorialRemainsOperableAtTwoHundredPercentFontScale() {
+        lateinit var activity: Activity
         composeRule.setContent {
             MedicationAppTheme {
+                activity = checkNotNull(LocalActivity.current)
                 val current = LocalDensity.current
                 CompositionLocalProvider(LocalDensity provides Density(current.density, 2f)) {
-                    PatientTutorialOverlay(3, {}, {}, {})
+                    Box(Modifier.fillMaxSize()) {
+                        PatientModePreview(initialTab = PatientTab.TODAY)
+                        PatientTutorialOverlay(3, {}, {}, {})
+                    }
                 }
             }
         }
 
         composeRule.onNodeWithText("お薬の時間に通知しますか？").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-tutorial-content")
+            .performScrollToNode(hasTestTag("patient-tutorial-next"))
         composeRule.onNodeWithText("あとで設定する").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("戻る").assertIsDisplayed()
         composeRule.onNodeWithText("通知をオンにする").assertIsDisplayed()
+        composeRule.runOnIdle { normalizeStatusBar(activity) }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-100-patient-tutorial-notifications-font-2.0.png")
+    }
+
+    @Suppress("DEPRECATION")
+    private fun normalizeStatusBar(activity: Activity) {
+        WindowCompat.setDecorFitsSystemWindows(activity.window, false)
+        activity.window.statusBarColor = android.graphics.Color.TRANSPARENT
+        WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = true
     }
 }

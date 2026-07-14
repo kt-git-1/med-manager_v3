@@ -41,6 +41,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
@@ -59,7 +60,7 @@ internal fun PatientTutorialOverlay(step: Int, onSkip: () -> Unit, onPrevious: (
     val isFinalStep = step == steps.lastIndex
     val contextPaneTitle = stringResource(R.string.patient_tutorial_pane, step + 1, steps.size)
     Box(
-        Modifier.fillMaxSize().background(MedicationTheme.colors.tutorialScrim)
+        Modifier.fillMaxSize().background(MedicationTheme.colors.tutorialScrim).testTag("patient-tutorial")
             .semantics { paneTitle = contextPaneTitle },
         contentAlignment = Alignment.BottomCenter,
     ) {
@@ -71,7 +72,8 @@ internal fun PatientTutorialOverlay(step: Int, onSkip: () -> Unit, onPrevious: (
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         ) {
             Column(
-                Modifier.fillMaxWidth().heightIn(max = 520.dp).verticalScroll(rememberScrollState()).padding(16.dp),
+                Modifier.fillMaxWidth().heightIn(max = 520.dp).verticalScroll(rememberScrollState())
+                    .testTag("patient-tutorial-content").padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -101,7 +103,10 @@ internal fun PatientTutorialOverlay(step: Int, onSkip: () -> Unit, onPrevious: (
                     Text("${step + 1}/${steps.size}", fontWeight = FontWeight.Bold)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TextButton(onClick = onSkip, modifier = Modifier.weight(1f).heightIn(min = 50.dp)) {
+                    TextButton(
+                        onClick = onSkip,
+                        modifier = Modifier.weight(1f).heightIn(min = 50.dp).testTag("patient-tutorial-skip"),
+                    ) {
                         Text(
                             stringResource(if (isFinalStep) R.string.patient_tutorial_notifications_later else R.string.patient_tutorial_skip),
                             style = MaterialTheme.typography.titleMedium,
@@ -111,14 +116,17 @@ internal fun PatientTutorialOverlay(step: Int, onSkip: () -> Unit, onPrevious: (
                     }
                     if (step > 0) {
                         Surface(shape = RoundedCornerShape(50), color = PatientTeal.copy(alpha = 0.10f)) {
-                            IconButton(onClick = onPrevious, modifier = Modifier.size(50.dp)) {
+                            IconButton(
+                                onClick = onPrevious,
+                                modifier = Modifier.size(50.dp).testTag("patient-tutorial-back"),
+                            ) {
                                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.common_back), tint = PatientTeal)
                             }
                         }
                     }
                     Button(
                         onClick = onNext,
-                        modifier = Modifier.weight(1f).heightIn(min = 50.dp),
+                        modifier = Modifier.weight(1f).heightIn(min = 50.dp).testTag("patient-tutorial-next"),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = PatientTeal),
                         contentPadding = PaddingValues(horizontal = 8.dp),

@@ -258,16 +258,17 @@ This selector foundation is connected to inventory-backed production candidates 
 - Back, next, skip, progress indicators, and persisted one-time completion are implemented.
 - The final action requests Android notification permission and only enables notifications when permission is granted.
 - Compose tests cover canonical copy and all tutorial actions; caregiver tutorial coverage is recorded in Phase 3.
+- Production-shell integration tests drive the real tab sequence, persist both Skip and final completion, and verify the final action crosses the notification-permission boundary exactly once.
 - The overlay now follows the current iOS senior-friendly contract: exact copy, per-step icon, 18% scrim, 16 dp elevated card, 48 dp icon treatment, circular back action, icon-bearing primary action and 104 dp clearance above the persistent patient navigation bar.
 - Current-iOS and API-35 Android default-size captures for all four steps are paired under `evidence/c01-20260714/`. Android fixtures render each state independently over the production patient preview and capture the complete device display to prevent transition or alpha artifacts.
 
-`XP-002` and the patient portion of `XP-003` are `IMPLEMENTED`. Default-size matched tutorial evidence is complete; physical notification taps, process-death routing, matched large-text evidence and TalkBack remain before `VERIFIED`.
+`XP-002` and the patient portion of `XP-003` are `IMPLEMENTED`. Default-size, completion/skip and largest-text matched tutorial evidence is complete; physical notification taps, process-death routing and TalkBack remain before `VERIFIED`.
 
 ### XP-005 patient accessibility hardening
 
 - Current patient history exposes a semantic heading plus textual progress, encouragement, week and recent-record summaries without relying on color alone.
 - The tutorial overlay announces itself as a named pane with current progress.
-- A 200% font-scale instrumentation test verifies the final tutorial step keeps its title and skip/back/permission actions operable.
+- A 200% font-scale instrumentation test scrolls the production tutorial to the final controls, verifies skip/back/permission actions remain operable, and emits a direct device-display reference capture.
 - 200% font-scale instrumentation also verifies Today's primary bulk/planned content, History's recent/today content, and Settings' analytics/logout controls remain reachable through their production scroll containers.
 - Each History week cell merges weekday, date and status into a single localized TalkBack announcement instead of exposing decorative fragments.
 - API-35 dark captures for the three primary patient screens and a 200% Today capture are recorded under `evidence/c06-20260714/`.

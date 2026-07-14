@@ -217,7 +217,13 @@ internal fun PatientModePreview(initialTab: PatientTab = PatientTab.TODAY) {
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-fun PatientHomeScreen(repository: PatientRepository, onUnlink: () -> Unit, analyticsService: AnalyticsService? = null) {
+fun PatientHomeScreen(
+    repository: PatientRepository,
+    onUnlink: () -> Unit,
+    analyticsService: AnalyticsService? = null,
+    tutorialEnabled: Boolean = true,
+    requestTutorialNotificationPermission: (() -> Unit)? = null,
+) {
     val state by repository.state.collectAsStateWithLifecycle()
     val freshness by repository.freshness.collectAsStateWithLifecycle()
     val errorText = state.error?.let { patientUserMessageText(it) }
@@ -230,7 +236,9 @@ fun PatientHomeScreen(repository: PatientRepository, onUnlink: () -> Unit, analy
     var notificationHighlightedSlot by remember { mutableStateOf<MedicationSlot?>(null) }
     val context = LocalContext.current
     val tutorialPreferences = remember { context.getSharedPreferences("patient_tutorial", android.content.Context.MODE_PRIVATE) }
-    var tutorialStep by rememberSaveable { mutableStateOf(if (tutorialPreferences.getBoolean("seen", false)) -1 else 0) }
+    var tutorialStep by rememberSaveable {
+        mutableStateOf(if (tutorialEnabled && !tutorialPreferences.getBoolean("seen", false)) 0 else -1)
+    }
     val scope = rememberCoroutineScope()
     val notificationPreferences = remember { PatientNotificationPreferences(context) }
     var notificationSettings by remember { mutableStateOf(notificationPreferences.load()) }
@@ -481,8 +489,13 @@ fun PatientHomeScreen(repository: PatientRepository, onUnlink: () -> Unit, analy
                     tutorialPreferences.edit().putBoolean("seen", true).apply()
                     tutorialStep = -1
                     analyticsService?.logTutorialFinished(AnalyticsAppMode.PATIENT, skipped = false)
-                    if (Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    else applyNotificationSettings(notificationSettings.copy(masterEnabled = true))
+                    if (requestTutorialNotificationPermission != null) {
+                        requestTutorialNotificationPermission()
+                    } else if (Build.VERSION.SDK_INT >= 33) {
+                        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        applyNotificationSettings(notificationSettings.copy(masterEnabled = true))
+                    }
                 } else {
                     tutorialStep += 1
                     navigation.selectTab(when (tutorialStep) {
