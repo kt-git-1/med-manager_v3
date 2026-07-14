@@ -88,5 +88,21 @@ describe("history day status integration", () => {
     );
 
     expect(result[0]?.effectiveStatus).toBe("taken");
+    expect(result[0]?.recordedByType).toBe("patient");
+  });
+
+  it("removes both taken status and actor after the dose record is deleted", async () => {
+    mockData.listDoseRecordsByPatientRange.mockResolvedValue([]);
+
+    const result = await getScheduleWithStatus(
+      "patient-1",
+      new Date("2026-02-01T15:00:00.000Z"),
+      new Date("2026-02-02T15:00:00.000Z"),
+      "Asia/Tokyo",
+      new Date("2026-02-02T01:00:00.000Z")
+    );
+
+    expect(result[0]?.effectiveStatus).toBe("missed");
+    expect(result[0]?.recordedByType).toBeUndefined();
   });
 });

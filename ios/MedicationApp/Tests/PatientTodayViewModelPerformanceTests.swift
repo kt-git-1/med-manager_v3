@@ -23,7 +23,10 @@ final class PatientTodayViewModelPerformanceTests: XCTestCase {
         let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         let sessionStore = SessionStore(userDefaults: userDefaults)
         sessionStore.setMode(.patient)
-        sessionStore.savePatientToken("patient-token")
+        sessionStore.savePatientToken(
+            "patient-token",
+            expiresAt: Date().addingTimeInterval(60 * 24 * 60 * 60)
+        )
         let apiClient = APIClient(
             baseURL: try XCTUnwrap(URL(string: "http://localhost:3000")),
             sessionStore: sessionStore,

@@ -3,6 +3,7 @@ import Foundation
 extension Notification.Name {
     static let presetTimesUpdated = Notification.Name("presetTimesUpdated")
     static let medicationUpdated = Notification.Name("medicationUpdated")
+    static let doseRecordsUpdated = Notification.Name("doseRecordsUpdated")
     static let authFailure = Notification.Name("authFailure")
     static let caregiverDidLogin = Notification.Name("caregiverDidLogin")
 }

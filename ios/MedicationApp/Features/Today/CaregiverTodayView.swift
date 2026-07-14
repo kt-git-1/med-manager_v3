@@ -16,7 +16,8 @@ struct CaregiverTodayView: View {
         onOpenPatients: @escaping () -> Void = {},
         onOpenMedications: @escaping () -> Void = {},
         patientName: String? = nil,
-        headerView: AnyView? = nil
+        headerView: AnyView? = nil,
+        onLowStockChange: @escaping (Bool) -> Void = { _ in }
     ) {
         let store = sessionStore ?? SessionStore()
         self.sessionStore = store
@@ -29,7 +30,8 @@ struct CaregiverTodayView: View {
         self.preferencesStore = preferencesStore
         _viewModel = StateObject(
             wrappedValue: CaregiverTodayViewModel(
-                apiClient: APIClient(baseURL: baseURL, sessionStore: store)
+                apiClient: APIClient(baseURL: baseURL, sessionStore: store),
+                onLowStockChange: onLowStockChange
             )
         )
     }

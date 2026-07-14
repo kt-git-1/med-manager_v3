@@ -15,12 +15,14 @@ final class CaregiverTodayViewModel: ObservableObject {
     private let timeFormatter: DateFormatter
     private let dateKeyFormatter: DateFormatter
     private let calendar: Calendar
+    private let onLowStockChange: (Bool) -> Void
     var toastPresenter: ToastPresenter?
 
-    init(apiClient: APIClient) {
+    init(apiClient: APIClient, onLowStockChange: @escaping (Bool) -> Void = { _ in }) {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = AppConstants.defaultTimeZone
         self.apiClient = apiClient
+        self.onLowStockChange = onLowStockChange
         self.dateFormatter = DateFormatter()
         self.dateFormatter.locale = AppConstants.japaneseLocale
         self.dateFormatter.dateStyle = .medium
@@ -83,6 +85,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                         scheduledAt: dose.scheduledAt
                     )
                 )
+                notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("caregiver.today.recorded", comment: "Recorded"))
                 await refreshAfterMutation()
             } catch {
@@ -102,6 +105,9 @@ final class CaregiverTodayViewModel: ObservableObject {
                     date: dateKeyFormatter.string(from: recordableDoses[0].scheduledAt),
                     slot: slot.rawValue
                 )
+                if result.updatedCount > 0 {
+                    notifyDoseRecordsUpdated()
+                }
                 if result.insufficientCount > 0 {
                     showToast(
                         NSLocalizedString("patient.today.slot.bulk.partialSuccess", comment: "Bulk partially recorded"),
@@ -132,6 +138,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                         quantityTaken: nil
                     )
                 )
+                notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("caregiver.today.prn.recorded", comment: "Caregiver PRN recorded"))
                 await refreshAfterMutation()
                 onSuccess()
@@ -151,6 +158,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                     medicationId: dose.medicationId,
                     scheduledAt: dose.scheduledAt
                 )
+                notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("caregiver.today.deleted", comment: "Deleted"))
                 await refreshAfterMutation()
             } catch {
@@ -169,6 +177,10 @@ final class CaregiverTodayViewModel: ObservableObject {
 
     private func showToast(_ message: String, kind: ToastKind = .success) {
         toastPresenter?.show(message, kind: kind)
+    }
+
+    private func notifyDoseRecordsUpdated() {
+        NotificationCenter.default.post(name: .doseRecordsUpdated, object: nil)
     }
 
     private func showToastMessage(for error: Error) {
@@ -202,6 +214,9 @@ final class CaregiverTodayViewModel: ObservableObject {
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         outOfStockMedicationIds = Set(
             inventory.filter { $0.isInsufficientForDose }.map { $0.medicationId }
+        )
+        onLowStockChange(
+            inventory.contains { $0.inventoryEnabled && ($0.low || $0.out) }
         )
     }
 

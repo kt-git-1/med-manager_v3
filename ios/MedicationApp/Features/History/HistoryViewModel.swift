@@ -17,6 +17,8 @@ final class HistoryViewModel: ObservableObject {
     private let apiClient: APIClient
     private let sessionStore: SessionStore
     private var activeRequests = 0
+    private var pendingMonthRequest: (year: Int, month: Int)?
+    private var pendingDayRequest: String?
     var toastPresenter: ToastPresenter?
 
     init(
@@ -28,7 +30,10 @@ final class HistoryViewModel: ObservableObject {
     }
 
     func loadMonth(year: Int, month: Int) {
-        guard !isLoadingMonth else { return }
+        guard !isLoadingMonth else {
+            pendingMonthRequest = (year, month)
+            return
+        }
         monthErrorMessage = nil
         let shouldShowUpdatingOverlay = self.month != nil
         if shouldShowUpdatingOverlay {
@@ -41,6 +46,10 @@ final class HistoryViewModel: ObservableObject {
                     endRequest()
                 }
                 isLoadingMonth = false
+                if let pendingRequest = pendingMonthRequest {
+                    pendingMonthRequest = nil
+                    loadMonth(year: pendingRequest.year, month: pendingRequest.month)
+                }
             }
             do {
                 switch sessionStore.mode {
@@ -69,7 +78,10 @@ final class HistoryViewModel: ObservableObject {
     }
 
     func loadDay(date: String) {
-        guard !isLoadingDay else { return }
+        guard !isLoadingDay else {
+            pendingDayRequest = date
+            return
+        }
         dayErrorMessage = nil
         let shouldShowUpdatingOverlay = self.day != nil
         if shouldShowUpdatingOverlay {
@@ -82,6 +94,10 @@ final class HistoryViewModel: ObservableObject {
                     endRequest()
                 }
                 isLoadingDay = false
+                if let pendingRequest = pendingDayRequest {
+                    pendingDayRequest = nil
+                    loadDay(date: pendingRequest)
+                }
             }
             do {
                 switch sessionStore.mode {
@@ -128,6 +144,7 @@ final class HistoryViewModel: ObservableObject {
                         scheduledAt: dose.scheduledAt
                     )
                 )
+                NotificationCenter.default.post(name: .doseRecordsUpdated, object: nil)
                 showToast(NSLocalizedString("history.day.backfill.recorded", comment: "Backfill recorded"))
                 loadMonth(year: year, month: month)
                 loadDay(date: date)

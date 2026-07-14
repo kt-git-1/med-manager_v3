@@ -114,6 +114,7 @@ final class PatientTodayViewModel: ObservableObject {
                 AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
                 showToast(NSLocalizedString("patient.today.recorded", comment: "Recorded"))
                 refreshNotificationsAfterScheduledDoseRecord()
+                notifyDoseRecordsUpdated()
                 load(showLoading: false)
             } catch {
                 showToastMessage(for: error)
@@ -150,6 +151,7 @@ final class PatientTodayViewModel: ObservableObject {
                     )
                 )
                 AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
+                notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("patient.today.prn.recorded", comment: "PRN recorded"))
                 try await refreshTodayData()
                 onSuccess()
@@ -315,6 +317,7 @@ final class PatientTodayViewModel: ObservableObject {
                 if result.updatedCount > 0 {
                     AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
                     refreshNotificationsAfterScheduledDoseRecord()
+                    notifyDoseRecordsUpdated()
                 }
                 if result.insufficientCount > 0 && result.updatedCount > 0 {
                     showToast(NSLocalizedString("patient.today.slot.bulk.partialSuccess", comment: "Bulk partially recorded"), kind: .warning)
@@ -337,6 +340,10 @@ final class PatientTodayViewModel: ObservableObject {
         Task { @MainActor [onScheduledDoseRecorded] in
             await onScheduledDoseRecorded()
         }
+    }
+
+    private func notifyDoseRecordsUpdated() {
+        NotificationCenter.default.post(name: .doseRecordsUpdated, object: nil)
     }
 
     private func refreshTodayData() async throws {

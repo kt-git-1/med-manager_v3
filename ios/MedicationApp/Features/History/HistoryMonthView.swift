@@ -224,6 +224,10 @@ struct HistoryMonthView: View {
             updateSelectionForDisplayedMonth()
             loadSelectedDay()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .doseRecordsUpdated)) { _ in
+            loadMonth()
+            loadSelectedDay()
+        }
         .onChange(of: sessionStore.currentPatientId) { _, _ in
             syncPatientPreferences()
             if !clampDisplayedMonthIfNeeded(animated: false) {
