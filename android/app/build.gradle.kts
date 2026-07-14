@@ -46,6 +46,7 @@ android {
         buildConfigField("String", "API_BASE_URL", runtimeConfig("API_BASE_URL", "https://www.okusuri-mimamori.com/").asBuildConfigString())
         buildConfigField("String", "SUPABASE_URL", runtimeConfig("SUPABASE_URL").asBuildConfigString())
         buildConfigField("String", "SUPABASE_ANON_KEY", runtimeConfig("SUPABASE_ANON_KEY").asBuildConfigString())
+        buildConfigField("boolean", "BILLING_ENABLED", runtimeConfig("BILLING_ENABLED", "false"))
         buildConfigField(
             "String",
             "EMAIL_CONFIRMATION_REDIRECT_URL",

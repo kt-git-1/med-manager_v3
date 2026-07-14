@@ -74,6 +74,7 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationReposit
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverInventoryRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryRepository
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverReportRepository
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -96,6 +97,7 @@ fun CaregiverHomeScreen(
     todayRepository: CaregiverTodayRepository? = null,
     inventoryRepository: CaregiverInventoryRepository? = null,
     historyRepository: CaregiverHistoryRepository? = null,
+    reportRepository: CaregiverReportRepository? = null,
     onLogout: () -> Unit = {},
     onAccountDeleted: () -> Unit = {},
     tutorialEnabled: Boolean = true,
@@ -162,6 +164,7 @@ fun CaregiverHomeScreen(
                                 todayRepository,
                                 inventoryRepository,
                                 historyRepository,
+                                reportRepository,
                                 visible,
                                 onLogout,
                                 onAccountDeleted,
@@ -212,6 +215,7 @@ private fun CaregiverTabContent(
     todayRepository: CaregiverTodayRepository?,
     inventoryRepository: CaregiverInventoryRepository?,
     historyRepository: CaregiverHistoryRepository?,
+    reportRepository: CaregiverReportRepository?,
     visible: Boolean,
     onLogout: () -> Unit,
     onAccountDeleted: () -> Unit,
@@ -234,7 +238,7 @@ private fun CaregiverTabContent(
             CaregiverInventoryScreen(inventoryRepository, state, visible, onOpenMedications)
         } else CaregiverFeatureLanding(tab, state, repository, visible)
         CaregiverTab.HISTORY -> if (historyRepository != null) {
-            CaregiverHistoryScreen(historyRepository, state, visible)
+            CaregiverHistoryScreen(historyRepository, state, visible, reportRepository = reportRepository)
         } else CaregiverFeatureLanding(tab, state, repository, visible)
     }
 }

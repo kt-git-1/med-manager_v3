@@ -206,3 +206,16 @@ F07 and `CG-017` are `IMPLEMENTED`. Gate F is complete with the 66/66 API-35 ins
 - The full gate passes with 69/69 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
 
 G01, `CG-010` and `XP-002` are `IMPLEMENTED`. Physical notification-tap/process-death evidence remains in release verification; G02 now owns on-device PDF export and sharing.
+
+## G02 caregiver PDF report — 2026-07-15
+
+- Android mirrors the current iOS release gate: `BILLING_ENABLED=false` hides the PDF entry in production. The complete billing-enabled path is implemented and tested without sending Apple StoreKit claims or inventing an unapproved Google Play billing contract.
+- On tap, `GET /api/me/entitlements` is the source of truth. Free users see the PDF lock, premium users see This month/Last month/Last 30 days/Last 90 days/Custom presets, and unknown/network state remains safely locked with a retryable error.
+- All ranges use inclusive Asia/Tokyo dates and are recomputed on submission. Future end dates, reversed ranges, malformed custom dates and ranges over 90 days are rejected locally before `GET /api/patients/{patientId}/history/report?from&to`.
+- The typed response includes patient/range, daily four-slot scheduled items, PRN items, status and recorder. Structured retention failure remains distinct from generic generation failure.
+- Android generates an A4 multipage PDF entirely on-device with Japanese text, summary/adherence, daily rows, recorder attribution, continuation headers, explicit white page background and page numbers. Cache output replaces older reports.
+- Sharing uses `ACTION_SEND`, `application/pdf`, a non-exported FileProvider content URI and temporary read permission. No raw private/public file path is exposed.
+- JVM/API tests cover presets, validation, entitlement/report paths and typed failure state. API-35 tests cover free lock, premium custom validation, `%PDF` output and provider URI. The generated PDF was pulled from the emulator, checked with `pdfinfo`, rendered through Poppler and visually verified after fixing a device-theme-dependent black background.
+- The full gate passes with 72/72 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
+
+G02 and `CG-011` are `IMPLEMENTED`. G03 now owns Android FCM permission and token lifecycle.

@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryRepository
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverReportRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
 import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.HistoryScheduledDose
@@ -71,6 +72,8 @@ internal fun CaregiverHistoryScreen(
     patientState: CaregiverPatientState,
     enabled: Boolean,
     highlightDurationMillis: Long? = 4_000,
+    reportRepository: CaregiverReportRepository? = null,
+    billingEnabled: Boolean = com.afterlifearchive.medmanager.BuildConfig.BILLING_ENABLED,
 ) {
     val state by repository.state.collectAsStateWithLifecycle()
     val freshness by repository.freshness.collectAsStateWithLifecycle()
@@ -121,6 +124,9 @@ internal fun CaregiverHistoryScreen(
             retentionDays = state.retentionDays,
             onMonth = { scope.launch { repository.loadMonth(selectedPatient.id, it) } },
             onDate = { repository.selectDate(it); showDetail = true },
+            reportAction = if (reportRepository != null) {
+                { CaregiverReportAction(reportRepository, selectedPatient.id, billingEnabled) }
+            } else null,
         )
     }
 
@@ -170,6 +176,7 @@ private fun CaregiverHistoryMonth(
     retentionDays: Int?,
     onMonth: (YearMonth) -> Unit,
     onDate: (LocalDate) -> Unit,
+    reportAction: (@Composable () -> Unit)?,
 ) {
     val now = LocalDate.now(ZoneId.of("Asia/Tokyo"))
     val currentMonth = YearMonth.from(now)
@@ -211,6 +218,7 @@ private fun CaregiverHistoryMonth(
         }
         item { CaregiverCalendar(displayedMonth, days, selectedDate, onDate) }
         item { HistoryLegendRow() }
+        reportAction?.let { item { it() } }
         item { Spacer(Modifier.height(24.dp)) }
     }
 }

@@ -130,6 +130,8 @@ The production caregiver repository uses API-042/API-043 with caregiver auth and
 
 PDF generation is on-device. Patient mode renders no PDF action. Android uses the system share sheet and a content URI, never a publicly writable raw file path.
 
+When billing is enabled, Android first reads API-063 and treats unknown entitlement as locked. Premium generation calls API-044 only after inclusive Tokyo-date validation (`to <= today`, `from <= to`, maximum 90 days). The response is rendered into the app cache, prior report files are removed, and only `${applicationId}.fileprovider` grants temporary read access. The initial public release keeps `BILLING_ENABLED=false`, matching current iOS `billingEnabled=false`; therefore no PDF entry or unsupported Google Play purchase claim is exposed in production.
+
 ## 7. Inventory
 
 | ID | Method/path | Policy | Key contract |
