@@ -314,6 +314,27 @@
     <string name="caregiver_medication_inventory_out">在庫切れ</string>
     <string name="caregiver_medication_inventory_remaining">残り %1$s %2$s</string>
     <string name="caregiver_medication_inventory_unit">錠</string>
+    <string name="caregiver_medication_add">薬を追加する</string>
+    <string name="caregiver_medication_edit">薬を編集</string>
+    <string name="caregiver_medication_add_title">薬を追加</string>
+    <string name="caregiver_medication_form_kind">薬の種類</string>
+    <string name="caregiver_medication_form_name">薬の名前</string>
+    <string name="caregiver_medication_form_strength">規格</string>
+    <string name="caregiver_medication_form_strength_value">数値</string>
+    <string name="caregiver_medication_form_strength_unit">単位</string>
+    <string name="caregiver_medication_form_dose_count">1回に飲む量（錠）</string>
+    <string name="caregiver_medication_form_start_date">開始日</string>
+    <string name="caregiver_medication_form_end_date">終了日（任意）</string>
+    <string name="caregiver_medication_form_no_end_date">終了日を設定しない</string>
+    <string name="caregiver_medication_form_notes">メモ（任意）</string>
+    <string name="caregiver_medication_form_prn_instructions">頓服の説明（任意）</string>
+    <string name="caregiver_medication_form_inventory">現在の在庫数（任意）</string>
+    <string name="caregiver_medication_form_inventory_support">未入力の場合は在庫管理を開始しません。</string>
+    <string name="caregiver_medication_form_save">保存する</string>
+    <string name="caregiver_medication_form_saving">保存中…</string>
+    <string name="caregiver_medication_form_cancel">キャンセル</string>
+    <string name="caregiver_medication_form_error">保存できませんでした。通信状態を確認して、もう一度お試しください。</string>
+    <string name="caregiver_medication_form_required">必須</string>
 
     <!-- Local notifications -->
     <string name="notification_channel_patient_reminders">服薬リマインダー</string>

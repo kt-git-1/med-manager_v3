@@ -137,7 +137,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 ## Gate E — Medication and regimen
 
 - [x] E01 Medication list/no-patient/empty/filter/content/error states.
-- [ ] E02 Regular and PRN add/edit form with complete validation.
+- [x] E02 Regular and PRN add/edit form with complete validation.
 - [ ] E03 Daily/weekday slot regimen create/update/disable.
 - [ ] E04 Inventory fields and medication lifecycle state.
 - [ ] E05 Mutation invalidation and current iOS visual comparison.

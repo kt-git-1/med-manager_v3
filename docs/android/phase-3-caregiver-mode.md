@@ -101,4 +101,16 @@ D03 and the caregiver portion of `XP-003` are `IMPLEMENTED`. Matched iOS visual 
 - API/repository tests cover caregiver auth/path, strict mapping, patient-switch isolation and explicit failure. Compose tests cover populated/filter/schedule/inventory and canonical empty states.
 - The full gate passes with 50/50 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
 
-E01 and `CG-005` are `IMPLEMENTED`. Add/edit forms, paired iOS visuals, large text, TalkBack and physical verification remain.
+E01 and `CG-005` are `IMPLEMENTED`. Paired iOS visuals, large text, TalkBack and physical verification remain.
+
+## E02 caregiver medication form — 2026-07-15
+
+- The production medication list now exposes a selected-patient add action and a per-card edit action. Both open one typed `CaregiverMedicationDraft` surface, so create and update cannot drift in fields or validation.
+- The form mirrors the current iOS medication inputs: regular/PRN kind, name, strength value/unit including unknown strength, per-intake count, start/end dates, PRN instructions, notes and optional initial inventory.
+- Validation reports all applicable errors together for blank name/unit/value, non-positive strength or dose, reversed dates and negative/non-numeric inventory. Optional empty values retain the current iOS/API null-or-zero contract.
+- Create sends caregiver-authenticated `POST /api/medications` with the selected `patientId`; edit sends `PATCH /api/medications/{id}?patientId=...` without leaking `patientId` into the update body. Both decode the strict shared medication DTO.
+- A successful server response alone updates the selected-patient list and publishes medication, inventory and notification-plan freshness. Failure preserves the previous list and draft, and exposes a retryable inline error.
+- JVM tests cover aggregate validation, wire mapping, exact method/path/body/auth, successful create state/revisions and failed update preservation. Compose tests cover add navigation, regular-to-PRN conditional content, validation summary and edit prepopulation.
+- The full gate passes with 52/52 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
+
+E02 and `CG-006` are `IMPLEMENTED`. E03 owns regular-medication daily/weekday slot selection and regimen create/update/disable. Matched iOS visual captures, large-text/TalkBack and physical-device verification remain before `VERIFIED`.

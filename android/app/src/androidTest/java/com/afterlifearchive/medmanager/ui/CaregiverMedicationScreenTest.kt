@@ -5,6 +5,9 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.assertTextEquals
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatient
@@ -39,6 +42,31 @@ class CaregiverMedicationScreenTest {
 
         composeRule.onNodeWithText("薬がありません").assertIsDisplayed()
         composeRule.onNodeWithText("まず1つ目の薬を登録しましょう。", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun addFormShowsConditionalPrnFieldAndValidationSummary() {
+        setContent(emptyList())
+
+        composeRule.onNodeWithTag("caregiver-medication-add").performClick()
+        composeRule.onNodeWithTag("caregiver-medication-form").assertIsDisplayed()
+        composeRule.onNodeWithTag("medication-kind-prn").performClick()
+        composeRule.onNodeWithTag("medication-prn-instructions").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-save"))
+        composeRule.onNodeWithTag("medication-save").performClick()
+        composeRule.onNodeWithTag("medication-validation-errors").assertIsDisplayed()
+        composeRule.onNodeWithText("薬の名前を入力してください", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun editFormIsPrepopulatedFromSelectedMedication() {
+        setContent(listOf(scheduled()))
+
+        composeRule.onNodeWithTag("caregiver-medication-edit-scheduled").performClick()
+
+        composeRule.onNodeWithTag("caregiver-medication-form").assertIsDisplayed()
+        composeRule.onNodeWithTag("medication-name").assertTextEquals("薬の名前", "アムロジピン")
+        composeRule.onNodeWithTag("medication-strength-value").assertTextEquals("数値", "5")
     }
 
     private fun setContent(items: List<PatientMedication>) {
