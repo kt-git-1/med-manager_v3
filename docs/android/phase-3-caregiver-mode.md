@@ -36,3 +36,13 @@ After every successful patient-list load:
 - Implement D02 create/edit/link/revoke/delete/account lifecycle; the non-Settings feature tabs intentionally remain gated landing surfaces until their later vertical slices.
 
 `CG-001` and `CG-014` are `IMPLEMENTED`, not yet `VERIFIED`.
+
+## D02 patient creation increment — 2026-07-14
+
+- Settings exposes a production patient-creation form above the selection list.
+- Display names are trimmed and rejected locally when blank or longer than 50 characters; invalid input never reaches the API.
+- `POST /api/patients` uses a serialized `{displayName}` body with caregiver authentication and maps the typed created-patient envelope.
+- A successful create is prepended to the list and persisted as the active patient. A `PATIENT_LIMIT_EXCEEDED` response keeps the existing list/selection and renders the specific initial-release limit message.
+- Repository/API tests cover normalization, invalid short-circuiting, request body, success selection and patient-limit preservation. Compose tests cover the 51-character form error.
+
+`CG-002` and the first D02 checklist row are `IMPLEMENTED`. Slot-time edit, linking, revoke/delete and caregiver-account deletion remain.

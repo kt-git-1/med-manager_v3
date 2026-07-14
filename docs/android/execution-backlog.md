@@ -120,7 +120,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ### D02 Patient management contracts/UI
 
-- [ ] List/create/select with 50-character/nonblank validation and patient-limit response.
+- [x] List/create/select with 50-character/nonblank validation and patient-limit response.
 - [ ] Edit four slot preset times and propagate freshness.
 - [ ] Issue one-time 15-minute code; copy/share system sheet.
 - [ ] Revoke preserves data and clears current selection/redirect state.

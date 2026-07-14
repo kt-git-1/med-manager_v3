@@ -45,4 +45,23 @@ class CaregiverPatientApiTest {
 
         assertNull(CaregiverPatientApi(client).listPatients().single().slotTimes)
     }
+
+    @Test
+    fun createPatientPostsNormalizedContractBody() = runTest {
+        var captured: HttpRequest? = null
+        val client = ApiClient(
+            baseUrl = "https://example.test/",
+            caregiverTokenProvider = { "caregiver-token" },
+            transport = HttpTransport { request ->
+                captured = request
+                HttpResponse(201, """{"data":{"id":"p2","displayName":"さくら"}}""")
+            },
+        )
+
+        val created = CaregiverPatientApi(client).createPatient("さくら")
+
+        assertEquals("POST", captured?.method)
+        assertEquals("{\"displayName\":\"さくら\"}", captured?.body)
+        assertEquals("p2", created.id)
+    }
 }

@@ -26,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,6 +52,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverCreateError
 import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import kotlinx.coroutines.launch
 
@@ -181,6 +183,8 @@ private fun CaregiverPatientSelectionScreen(
     repository: CaregiverPatientRepository,
     enabled: Boolean,
 ) {
+    var displayName by rememberSaveable { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = 20.dp).testTag("caregiver-settings-list"),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -189,6 +193,36 @@ private fun CaregiverPatientSelectionScreen(
             Spacer(Modifier.height(20.dp))
             Text(stringResource(R.string.caregiver_settings_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.caregiver_settings_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        item {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(stringResource(R.string.caregiver_create_patient), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    OutlinedTextField(
+                        value = displayName,
+                        onValueChange = { displayName = it },
+                        enabled = enabled && !state.creating,
+                        label = { Text(stringResource(R.string.caregiver_patient_display_name)) },
+                        supportingText = {
+                            state.createError?.let { Text(caregiverCreateErrorText(it)) }
+                        },
+                        isError = state.createError != null,
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().testTag("caregiver-create-name"),
+                    )
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                if (repository.createPatient(displayName)) displayName = ""
+                            }
+                        },
+                        enabled = enabled && !state.creating,
+                        modifier = Modifier.fillMaxWidth().testTag("caregiver-create-submit"),
+                    ) {
+                        Text(stringResource(if (state.creating) R.string.caregiver_creating_patient else R.string.caregiver_create_patient_action))
+                    }
+                }
+            }
         }
         if (state.loading && state.patients.isEmpty()) item { CircularProgressIndicator() }
         if (state.loadFailed) item {
@@ -231,6 +265,16 @@ private fun CaregiverPatientSelectionScreen(
         item { Spacer(Modifier.height(20.dp)) }
     }
 }
+
+@Composable
+private fun caregiverCreateErrorText(error: CaregiverCreateError): String = stringResource(
+    when (error) {
+        CaregiverCreateError.REQUIRED -> R.string.caregiver_create_required
+        CaregiverCreateError.TOO_LONG -> R.string.caregiver_create_too_long
+        CaregiverCreateError.PATIENT_LIMIT -> R.string.caregiver_create_limit
+        CaregiverCreateError.FAILED -> R.string.common_error_generic
+    },
+)
 
 @Composable
 private fun CaregiverMessage(title: String, message: String, action: (@Composable () -> Unit)? = null) {

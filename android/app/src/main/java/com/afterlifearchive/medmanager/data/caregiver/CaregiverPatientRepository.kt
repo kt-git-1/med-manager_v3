@@ -1,6 +1,7 @@
 package com.afterlifearchive.medmanager.data.caregiver
 
 import com.afterlifearchive.medmanager.data.network.ApiClient
+import com.afterlifearchive.medmanager.data.network.ApiException
 import com.afterlifearchive.medmanager.data.network.RequestAuthPolicy
 import com.afterlifearchive.medmanager.data.session.CaregiverSelectionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 data class CaregiverPatient(
@@ -29,19 +31,33 @@ data class CaregiverPatientState(
     val selectedPatientId: String? = null,
     val loading: Boolean = false,
     val loadFailed: Boolean = false,
+    val creating: Boolean = false,
+    val createError: CaregiverCreateError? = null,
 ) {
     val selectedPatient: CaregiverPatient?
         get() = patients.firstOrNull { it.id == selectedPatientId }
 }
 
+enum class CaregiverCreateError { REQUIRED, TOO_LONG, PATIENT_LIMIT, FAILED }
+
 fun interface CaregiverPatientDataSource {
     suspend fun listPatients(): List<CaregiverPatient>
+    suspend fun createPatient(displayName: String): CaregiverPatient = error("createPatient not implemented")
 }
 
 class CaregiverPatientApi(private val client: ApiClient) : CaregiverPatientDataSource {
     override suspend fun listPatients(): List<CaregiverPatient> {
         val body = client.getBody("api/patients", RequestAuthPolicy.CAREGIVER)
         return caregiverJson.decodeFromString<CaregiverPatientListDto>(body).data.map { it.toDomain() }
+    }
+
+    override suspend fun createPatient(displayName: String): CaregiverPatient {
+        val body = client.postBody(
+            "api/patients",
+            caregiverJson.encodeToString(CaregiverPatientCreateDto(displayName)),
+            RequestAuthPolicy.CAREGIVER,
+        )
+        return caregiverJson.decodeFromString<CaregiverPatientEnvelopeDto>(body).data.toDomain()
     }
 }
 
@@ -71,6 +87,38 @@ class CaregiverPatientRepository(
         mutableState.value = mutableState.value.copy(selectedPatientId = validId)
     }
 
+    suspend fun createPatient(displayName: String): Boolean {
+        val normalized = displayName.trim()
+        val validation = when {
+            normalized.isEmpty() -> CaregiverCreateError.REQUIRED
+            normalized.length > 50 -> CaregiverCreateError.TOO_LONG
+            else -> null
+        }
+        if (validation != null) {
+            mutableState.value = mutableState.value.copy(createError = validation)
+            return false
+        }
+        mutableState.value = mutableState.value.copy(creating = true, createError = null)
+        return try {
+            val created = dataSource.createPatient(normalized)
+            val patients = listOf(created) + mutableState.value.patients.filterNot { it.id == created.id }
+            selectionRepository.select(created.id)
+            mutableState.value = mutableState.value.copy(
+                patients = patients,
+                selectedPatientId = created.id,
+                creating = false,
+            )
+            true
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            mutableState.value = mutableState.value.copy(
+                creating = false,
+                createError = if (error is ApiException.PatientLimitExceeded) CaregiverCreateError.PATIENT_LIMIT else CaregiverCreateError.FAILED,
+            )
+            false
+        }
+    }
+
     fun clear() {
         selectionRepository.clear()
         mutableState.value = CaregiverPatientState()
@@ -95,6 +143,12 @@ private val caregiverJson = Json { ignoreUnknownKeys = true }
 
 @Serializable
 private data class CaregiverPatientListDto(val data: List<CaregiverPatientDto>)
+
+@Serializable
+private data class CaregiverPatientEnvelopeDto(val data: CaregiverPatientDto)
+
+@Serializable
+private data class CaregiverPatientCreateDto(val displayName: String)
 
 @Serializable
 private data class CaregiverPatientDto(

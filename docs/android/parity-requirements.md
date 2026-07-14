@@ -66,7 +66,7 @@ This file tracks product parity against `main@1d9d19e`. Status is conservative: 
 | ID | Requirement group | References | Android status |
 |---|---|---|---|
 | CG-001 | Five-tab caregiver shell and selected-patient behavior | `CaregiverHomeView.swift` | IMPLEMENTED | Current iOS order, Today initial tab, typed patient loading, persisted valid selection, sole-patient auto-selection, invalid-ID clearing and shared empty/error gates have JVM/Compose coverage; visual/physical verification pending |
-| CG-002 | Patient list/create/select | `PatientManagementView`, `/api/patients` | NOT_STARTED |
+| CG-002 | Patient list/create/select | `PatientManagementView`, `/api/patients` | IMPLEMENTED | Typed list/create/select, trimmed nonblank/max-50 validation, immediate persisted selection and patient-limit-specific handling have JVM/API/Compose coverage; visual/physical verification pending |
 | CG-003 | Linking code issue/share | `PatientLinkCodeView`, linking-code route | NOT_STARTED |
 | CG-004 | Revoke/delete patient with correct semantics | revoke/delete views and routes | NOT_STARTED |
 | CG-005 | Medication list and empty state | `MedicationListView.swift` | NOT_STARTED |

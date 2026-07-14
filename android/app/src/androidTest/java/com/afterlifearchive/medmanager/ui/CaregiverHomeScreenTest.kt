@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatient
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
@@ -50,6 +51,16 @@ class CaregiverHomeScreenTest {
         composeRule.onNodeWithTag("caregiver-feature-state").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
         composeRule.onNodeWithTag("caregiver-settings-empty").assertIsDisplayed()
+    }
+
+    @Test
+    fun createFormRejectsNamesOverFiftyCharactersLocally() {
+        setContent(emptyList())
+
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-create-name").performTextInput("x".repeat(51))
+        composeRule.onNodeWithTag("caregiver-create-submit").performClick()
+        composeRule.onNodeWithText("表示名は50文字以内で入力してください").assertIsDisplayed()
     }
 
     private fun setContent(patients: List<CaregiverPatient>): Pair<CaregiverPatientRepository, TestSelectionStorage> {

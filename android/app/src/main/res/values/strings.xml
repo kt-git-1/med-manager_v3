@@ -37,6 +37,7 @@
     <string name="patient_record_bulk">まとめて記録</string>
     <string name="common_cancel">キャンセル</string>
     <string name="common_retry">もう一度試す</string>
+    <string name="common_error_generic">エラーが発生しました。もう一度お試しください。</string>
 
     <!-- Patient tutorial -->
     <string name="patient_tutorial_today_title">今日のお薬</string>
@@ -228,6 +229,13 @@
     <string name="caregiver_selected_patient">%1$sさんを見守り中</string>
     <string name="caregiver_patient_selected">選択中</string>
     <string name="caregiver_patient_select">タップして対象患者を設定</string>
+    <string name="caregiver_create_patient">患者作成</string>
+    <string name="caregiver_patient_display_name">表示名</string>
+    <string name="caregiver_create_patient_action">患者を登録する</string>
+    <string name="caregiver_creating_patient">登録中…</string>
+    <string name="caregiver_create_required">表示名は必須です</string>
+    <string name="caregiver_create_too_long">表示名は50文字以内で入力してください</string>
+    <string name="caregiver_create_limit">現在のバージョンでは登録できる患者は1人までです。</string>
 
     <!-- Local notifications -->
     <string name="notification_channel_patient_reminders">服薬リマインダー</string>
