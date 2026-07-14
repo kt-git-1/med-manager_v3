@@ -145,6 +145,15 @@ class CaregiverPushRepository(
         return register(token)
     }
 
+    fun clearAfterAccountDeletion() {
+        storage.enabled = false
+        storage.token = null
+        storage.registeredToken = null
+        storage.pendingUnregisterToken = null
+        tokenSource.setAutoInitEnabled(false)
+        mutableState.value = CaregiverPushState()
+    }
+
     private suspend fun synchronize(): Boolean {
         mutableState.value = mutableState.value.copy(
             syncing = true,

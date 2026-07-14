@@ -214,6 +214,47 @@ describe("notifyCaregiversOfDoseTaken — send trigger", () => {
     expect(notification.body).toBe("花子さんの夕のお薬を記録しました");
   });
 
+  it("uses data-only privacy-safe delivery for Android devices", async () => {
+    resetStores();
+    seedDevices([
+      {
+        id: "android-device",
+        ownerType: "CAREGIVER",
+        ownerId: "caregiver-1",
+        token: "android-fcm-token",
+        platform: "android",
+        environment: "DEV",
+        isEnabled: true
+      }
+    ]);
+    const { notifyCaregiversOfDoseTaken } =
+      await import("../../src/services/pushNotificationService");
+
+    await notifyCaregiversOfDoseTaken({
+      patientId: "patient-1",
+      displayName: "秘密の表示名",
+      date: "2026-02-11",
+      slot: "morning",
+      doseEventId: "dose-event-android",
+      withinTime: true,
+      isPrn: false
+    });
+
+    const call = sendFcmMessageMock.mock.calls[0];
+    expect(call[0]).toBe("android-fcm-token");
+    expect(call[1]).toBeUndefined();
+    expect(call[2]).toEqual({
+      type: "DOSE_TAKEN",
+      patientId: "patient-1",
+      date: "2026-02-11",
+      slot: "morning",
+      recordingGroupId: ""
+    });
+    expect(JSON.stringify(call[2])).not.toContain("秘密の表示名");
+    expect(call[3]).toBeUndefined();
+    expect(call[4]).toEqual({ priority: "high" });
+  });
+
   it("does not send push to the caregiver who recorded on behalf of the patient", async () => {
     seedDevices([
       {

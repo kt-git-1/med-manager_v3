@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -46,7 +47,11 @@ class FirebaseCaregiverPushTokenSource(private val context: Context) : Caregiver
     }
 
     override fun setAutoInitEnabled(enabled: Boolean) {
-        messaging()?.isAutoInitEnabled = enabled
+        if (enabled) {
+            messaging()?.isAutoInitEnabled = true
+        } else if (FirebaseApp.getApps(context).isNotEmpty()) {
+            FirebaseMessaging.getInstance().isAutoInitEnabled = false
+        }
     }
 
     override suspend fun token(): String {
@@ -63,6 +68,10 @@ class FirebaseCaregiverPushTokenSource(private val context: Context) : Caregiver
 }
 
 class CaregiverFirebaseMessagingService : FirebaseMessagingService() {
+    private val deduplicator by lazy {
+        PushMessageDeduplicator(AndroidPushMessageIdStorage(getSharedPreferences("caregiver_push_messages", MODE_PRIVATE)))
+    }
+
     override fun onNewToken(token: String) {
         (application as? MedicationApplication)?.handleCaregiverPushToken(token)
     }
@@ -75,6 +84,7 @@ class CaregiverFirebaseMessagingService : FirebaseMessagingService() {
         val patientId = data["patientId"]?.takeIf(String::isNotBlank) ?: return
         val date = data["date"]?.takeIf { DATE_PATTERN.matches(it) } ?: return
         val slot = data["slot"]?.takeIf { it in VALID_SLOTS } ?: return
+        if (!deduplicator.shouldDisplay(message.messageId)) return
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
 
         createChannel()
@@ -116,5 +126,35 @@ class CaregiverFirebaseMessagingService : FirebaseMessagingService() {
         const val CHANNEL_ID = "caregiver_updates"
         private val DATE_PATTERN = Regex("\\d{4}-\\d{2}-\\d{2}")
         private val VALID_SLOTS = setOf("morning", "noon", "evening", "bedtime")
+    }
+}
+
+interface PushMessageIdStorage {
+    fun read(): List<String>
+    fun write(ids: List<String>)
+}
+
+class AndroidPushMessageIdStorage(private val preferences: SharedPreferences) : PushMessageIdStorage {
+    override fun read(): List<String> = preferences.getString("recent_ids", null)
+        ?.split('\n')
+        ?.filter(String::isNotBlank)
+        .orEmpty()
+
+    override fun write(ids: List<String>) {
+        preferences.edit().putString("recent_ids", ids.joinToString("\n")).apply()
+    }
+}
+
+class PushMessageDeduplicator(
+    private val storage: PushMessageIdStorage,
+    private val capacity: Int = 100,
+) {
+    @Synchronized
+    fun shouldDisplay(messageId: String?): Boolean {
+        if (messageId.isNullOrBlank()) return true
+        val current = storage.read()
+        if (messageId in current) return false
+        storage.write((current + messageId).takeLast(capacity))
+        return true
     }
 }

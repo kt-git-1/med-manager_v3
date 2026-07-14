@@ -93,6 +93,25 @@ class CaregiverPushRepositoryTest {
         assertTrue(source.registered.isEmpty())
     }
 
+    @Test
+    fun accountDeletionCleanupErasesAllLocalPushMaterialWithoutNetwork() = runTest {
+        val source = FakeDataSource()
+        val tokens = FakeTokenSource(tokenValue = "token-1")
+        val storage = FakeStorage()
+        val repository = CaregiverPushRepository(source, tokens, storage)
+        repository.enable()
+
+        repository.clearAfterAccountDeletion()
+
+        assertFalse(storage.enabled)
+        assertNull(storage.token)
+        assertNull(storage.registeredToken)
+        assertNull(storage.pendingUnregisterToken)
+        assertFalse(tokens.autoInit)
+        assertEquals(0, source.unregistered.size)
+        assertEquals(CaregiverPushState(), repository.state.value)
+    }
+
     private class FakeDataSource : CaregiverPushDataSource {
         val registered = mutableListOf<String>()
         val unregistered = mutableListOf<String>()

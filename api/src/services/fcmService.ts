@@ -30,6 +30,10 @@ export type FcmApnsOverride = {
   };
 };
 
+export type FcmAndroidOverride = {
+  priority: "normal" | "high";
+};
+
 export type FcmSendResult = {
   success: boolean;
   errorCode?: "UNREGISTERED" | "UNKNOWN";
@@ -127,9 +131,10 @@ function isUnregisteredError(error: unknown): boolean {
  */
 export async function sendFcmMessage(
   token: string,
-  notification: FcmNotification,
+  notification: FcmNotification | undefined,
   data: FcmDataPayload,
-  apnsOverride?: FcmApnsOverride
+  apnsOverride?: FcmApnsOverride,
+  androidOverride?: FcmAndroidOverride
 ): Promise<FcmSendResult> {
   const config = getConfig();
   if (!config) {
@@ -141,13 +146,15 @@ export async function sendFcmMessage(
     const app = getFirebaseApp(config);
     const message: Message = {
       token,
-      notification,
       data
     };
+
+    if (notification) message.notification = notification;
 
     if (apnsOverride) {
       message.apns = apnsOverride as NonNullable<Message["apns"]>;
     }
+    if (androidOverride) message.android = androidOverride;
 
     await getMessaging(app).send(message);
     return { success: true };

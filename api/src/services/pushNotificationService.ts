@@ -218,7 +218,16 @@ export async function notifyCaregiversOfDoseTaken(
         continue;
       }
 
-      const result = await sendFcmMessage(device.token, notification, data, apns);
+      // Android is data-only so the app always renders the privacy-safe generic copy,
+      // including while backgrounded. iOS retains its current notification/APNs path.
+      const android = device.platform === "android";
+      const result = await sendFcmMessage(
+        device.token,
+        android ? undefined : notification,
+        data,
+        android ? undefined : apns,
+        android ? { priority: "high" } : undefined
+      );
 
       if (result.success) {
         sentCount += 1;

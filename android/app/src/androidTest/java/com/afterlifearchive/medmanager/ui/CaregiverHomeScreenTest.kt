@@ -115,6 +115,23 @@ class CaregiverHomeScreenTest {
     }
 
     @Test
+    fun settingsIncludesLegalDestinationsAndConfirmsLogout() {
+        setContent(emptyList())
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+
+        composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-legal-support"))
+        composeRule.onNodeWithTag("caregiver-privacy-link").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-terms-link").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-support-link").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-logout"))
+        composeRule.onNodeWithTag("caregiver-logout").performClick()
+        composeRule.onNodeWithText("ログアウトしますか？").assertIsDisplayed()
+        composeRule.onNodeWithText("家族モードからログアウトします。").assertIsDisplayed()
+        composeRule.onNodeWithText("キャンセル").performClick()
+    }
+
+    @Test
     fun remotePushSelectsTargetPatientAndHistoryTab() {
         val storage = TestSelectionStorage()
         val selection = CaregiverSelectionRepository(storage).also { it.restore() }

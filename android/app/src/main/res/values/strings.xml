@@ -339,11 +339,16 @@
     <string name="caregiver_patient_delete_confirm_title">患者を削除</string>
     <string name="caregiver_patient_delete_confirm_message">この患者とすべての関連データ（お薬・服薬記録・在庫など）を完全に削除します。この操作は取り消せません。</string>
     <string name="caregiver_patient_delete_confirm">削除する</string>
-    <string name="caregiver_account_title">家族アカウント</string>
+    <string name="caregiver_account_title">アカウント</string>
+    <string name="caregiver_account_message">ログアウトやアカウント削除を行えます</string>
     <string name="caregiver_account_logout">ログアウト</string>
     <string name="caregiver_account_delete">家族アカウントを削除</string>
     <string name="caregiver_account_delete_confirm_title">アカウントを完全に削除</string>
-    <string name="caregiver_account_delete_confirm_message">家族アカウントと管理する患者データをサーバーから削除します。この操作は取り消せません。</string>
+    <string name="caregiver_account_delete_confirm_message">家族アカウントと、登録した患者・お薬・服薬記録・在庫などの関連データを完全に削除します。この操作は取り消せません。</string>
+    <string name="caregiver_logout_confirm_title">ログアウトしますか？</string>
+    <string name="caregiver_logout_confirm_message">家族モードからログアウトします。</string>
+    <string name="caregiver_legal_title">法務・サポート</string>
+    <string name="caregiver_legal_message">アプリのデータ取り扱い、ご利用条件、問い合わせ先を確認できます</string>
     <string name="caregiver_destructive_failed">操作を完了できませんでした。データとログイン状態は変更されていません。</string>
 
     <!-- Caregiver tutorial -->

@@ -231,3 +231,24 @@ G02 and `CG-011` are `IMPLEMENTED`. G03 now owns Android FCM permission and toke
 - API contract and repository tests cover exact auth/path/body, enable, token refresh, disable failure, pending retry and missing configuration. Production Compose coverage confirms the explicit Settings control; the full gate passes with 73/73 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint. The backend push suite passes 14/14.
 
 G03 is complete. `CG-012` and `XP-001` remain `PARTIAL` until G04 adds account-delete defense-in-depth cleanup and closes background-payload privacy/dedup behavior; physical FCM delivery remains a release-matrix item.
+
+## G04 push privacy, deduplication and deletion cleanup — 2026-07-15
+
+- The server now branches by registered device platform. iOS retains its current notification/APNs envelope, while Android receives high-priority data-only FCM so Android never lets a background system notification expose the server's patient-specific display text.
+- Android accepts only `DOSE_TAKEN`, non-empty patient ID, strict ISO date and one canonical slot. The displayed title/body are fixed generic resources with no patient name, medication, dosage, result detail, email, free text or token; navigation data remains limited to the documented target fields.
+- Server `PushDelivery` uniqueness remains the authoritative event/device deduplication. Android additionally persists a bounded 100-entry FCM message-ID window so redelivery across service recreation does not display the same message twice; the route-derived notification ID also updates rather than stacks an identical target.
+- Caregiver proxy recording continues to exclude the acting caregiver before device lookup. Unlinked, disabled and environment-mismatched devices remain outside delivery, and FCM `UNREGISTERED` disables stale devices.
+- `DELETE /api/me` already removes server PushDelivery/PushDevice records before the successful response. Only after that response, Android erases enabled/token/registered/pending-unregister state and disables auto-init before clearing the caregiver session. Ordinary logout first performs the soft-disable/unregister lifecycle.
+- API tests cover Android data-only content, privacy field exclusion, actor exclusion, event/device dedup and stale-device disable. JVM tests cover process-persistent bounded message dedup and deletion cleanup with no redundant post-deletion network call.
+
+G04, `CG-012` and `XP-001` are `IMPLEMENTED`; physical background/Doze/process-death delivery remains Gate I evidence. G05 now owns the remaining complete Settings flow.
+
+## G05 caregiver complete Settings flow — 2026-07-15
+
+- Settings now carries the current iOS legal/support hierarchy and Japanese copy. Privacy policy, terms and support open the canonical HTTPS destinations in an external browser and remain independent of patient selection state.
+- The account card uses the iOS account heading/explanation. Logout is no longer immediate: it presents the current family-mode confirmation, locally disables notification display, attempts authenticated push unregister and then clears the caregiver session.
+- Account deletion retains its stronger irreversible confirmation describing the family account and patient/medication/history/inventory data affected. The server operation must succeed before Android performs FCM and session cleanup; failure preserves the signed-in state, selection and production data for retry.
+- Production Compose coverage verifies all three legal destinations are reachable in the Settings list and logout requires confirmation. Existing API/JVM coverage verifies distinct server-first logout/account-delete behavior and failure preservation.
+- The final Gate G verification passes 74/74 API-35 instrumentation tests plus Android JVM, Debug/Release assembly and Lint. The complete API suite passes 300/300 tests and TypeScript typecheck; ESLint has no errors and retains one unrelated pre-existing E2E warning.
+
+G05 completes Gate G implementation. Physical browser, FCM, process-death and destructive production-account checks remain Gate I verification; Gate H now owns caregiver Analytics consent and the privacy-safe Firebase Analytics wrapper.

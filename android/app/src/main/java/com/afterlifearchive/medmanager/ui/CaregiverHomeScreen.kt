@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -511,10 +512,34 @@ private fun CaregiverPatientSelectionScreen(
             }
         }
         item {
+            Card(Modifier.fillMaxWidth().testTag("caregiver-legal-support")) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.caregiver_legal_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.caregiver_legal_message), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    CaregiverLegalRow(
+                        stringResource(R.string.patient_settings_privacy),
+                        stringResource(R.string.patient_settings_privacy_detail),
+                        "caregiver-privacy-link",
+                    ) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.okusuri-mimamori.com/privacy"))) }
+                    CaregiverLegalRow(
+                        stringResource(R.string.patient_settings_terms),
+                        stringResource(R.string.patient_settings_terms_detail),
+                        "caregiver-terms-link",
+                    ) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.okusuri-mimamori.com/terms"))) }
+                    CaregiverLegalRow(
+                        stringResource(R.string.patient_settings_support),
+                        stringResource(R.string.patient_settings_support_detail),
+                        "caregiver-support-link",
+                    ) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.okusuri-mimamori.com/support"))) }
+                }
+            }
+        }
+        item {
             Card(Modifier.fillMaxWidth().testTag("caregiver-account-actions")) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.caregiver_account_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    OutlinedButton(onClick = onLogout, enabled = enabled, modifier = Modifier.fillMaxWidth().testTag("caregiver-logout")) {
+                    Text(stringResource(R.string.caregiver_account_message), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedButton(onClick = { confirmation = "logout" }, enabled = enabled, modifier = Modifier.fillMaxWidth().testTag("caregiver-logout")) {
                         Text(stringResource(R.string.caregiver_account_logout))
                     }
                     OutlinedButton(
@@ -531,14 +556,15 @@ private fun CaregiverPatientSelectionScreen(
     confirmation?.let { action ->
         val account = action == "account"
         val revoke = action == "revoke"
+        val logout = action == "logout"
         AlertDialog(
             onDismissRequest = { confirmation = null },
-            title = { Text(stringResource(if (account) R.string.caregiver_account_delete_confirm_title else if (revoke) R.string.caregiver_patient_revoke_confirm_title else R.string.caregiver_patient_delete_confirm_title)) },
-            text = { Text(stringResource(if (account) R.string.caregiver_account_delete_confirm_message else if (revoke) R.string.caregiver_patient_revoke_confirm_message else R.string.caregiver_patient_delete_confirm_message)) },
+            title = { Text(stringResource(if (logout) R.string.caregiver_logout_confirm_title else if (account) R.string.caregiver_account_delete_confirm_title else if (revoke) R.string.caregiver_patient_revoke_confirm_title else R.string.caregiver_patient_delete_confirm_title)) },
+            text = { Text(stringResource(if (logout) R.string.caregiver_logout_confirm_message else if (account) R.string.caregiver_account_delete_confirm_message else if (revoke) R.string.caregiver_patient_revoke_confirm_message else R.string.caregiver_patient_delete_confirm_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmation = null
-                    scope.launch {
+                    if (logout) onLogout() else scope.launch {
                         val success = when (action) {
                             "revoke" -> repository.revokeSelectedPatient()
                             "delete" -> repository.deleteSelectedPatient()
@@ -546,10 +572,21 @@ private fun CaregiverPatientSelectionScreen(
                         }
                         if (account && success) onAccountDeleted()
                     }
-                }) { Text(stringResource(if (account) R.string.caregiver_account_delete else if (revoke) R.string.caregiver_patient_revoke_confirm else R.string.caregiver_patient_delete_confirm)) }
+                }) { Text(stringResource(if (logout) R.string.caregiver_account_logout else if (account) R.string.caregiver_account_delete else if (revoke) R.string.caregiver_patient_revoke_confirm else R.string.caregiver_patient_delete_confirm)) }
             },
             dismissButton = { TextButton(onClick = { confirmation = null }) { Text(stringResource(R.string.common_cancel)) } },
         )
+    }
+}
+
+@Composable
+private fun CaregiverLegalRow(title: String, message: String, testTag: String, onClick: () -> Unit) {
+    TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth().testTag(testTag)) {
+        Column(Modifier.weight(1f), horizontalAlignment = Alignment.Start) {
+            Text(title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+            Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+        }
+        Text("›", style = MaterialTheme.typography.titleLarge)
     }
 }
 

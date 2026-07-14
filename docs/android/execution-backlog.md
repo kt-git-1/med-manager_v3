@@ -157,8 +157,8 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] G01 Caregiver month/day history, retention and exact push target/highlight.
 - [x] G02 PDF free lock, presets/custom validation, on-device generation and content-URI share.
 - [x] G03 FCM permission/token register/unregister/retry/disable lifecycle using `platform=android`.
-- [ ] G04 Push privacy and dedup behavior; account deletion cleanup.
-- [ ] G05 Legal/support/logout/account deletion complete settings flow.
+- [x] G04 Push privacy and dedup behavior; account deletion cleanup.
+- [x] G05 Legal/support/logout/account deletion complete settings flow.
 
 ## Gate H — Analytics and privacy
 
@@ -185,4 +185,4 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Immediate next item
 
-Begin **Gate E medication and regimen** on the completed Gate D caregiver shell/patient-management/tutorial foundation. The ten-step tutorial drives the real five tabs, scrolls to production registration/time/code surfaces, persists skip/finish, requests notification permission at the final primary action and remains operable at 200% font with pane semantics. C01/C06 visual/physical residuals, FCM transport and Gate H Firebase Analytics remain tracked.
+Begin **Gate H analytics and privacy** on the completed Gate G caregiver History/PDF/push/settings foundation. Firebase is runtime-configurable and collection remains manifest-disabled; next add the shared privacy-rejecting analytics wrapper, both-role consent/reset flow and fixed safe event schema before any DebugView verification. Physical FCM, C01/C06 visual residuals and release-device evidence remain Gate I items.

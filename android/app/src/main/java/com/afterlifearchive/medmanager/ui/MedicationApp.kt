@@ -5,6 +5,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
@@ -16,6 +17,7 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverReportRepository
 import com.afterlifearchive.medmanager.data.patient.PatientRepository
 import com.afterlifearchive.medmanager.data.push.CaregiverPushRepository
 import com.afterlifearchive.medmanager.data.session.SessionRepository
+import kotlinx.coroutines.launch
 
 @Composable
 fun MedicationApp(
@@ -30,6 +32,7 @@ fun MedicationApp(
     caregiverPushRepository: CaregiverPushRepository,
 ) {
     val state by repository.state.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
     LaunchedEffect(state.mode, state.caregiverAuthenticated) {
         if (state.mode == AppMode.CAREGIVER && state.caregiverAuthenticated) {
             repository.refreshCaregiverIfNeeded()
@@ -55,8 +58,16 @@ fun MedicationApp(
                     caregiverHistoryRepository,
                     caregiverReportRepository,
                     caregiverPushRepository,
-                    onLogout = repository::logoutCaregiver,
-                    onAccountDeleted = repository::logoutCaregiver,
+                    onLogout = {
+                        scope.launch {
+                            caregiverPushRepository.disable()
+                            repository.logoutCaregiver()
+                        }
+                    },
+                    onAccountDeleted = {
+                        caregiverPushRepository.clearAfterAccountDeletion()
+                        repository.logoutCaregiver()
+                    },
                 )
             } else {
                 CaregiverAuthFlow(state, repository)
