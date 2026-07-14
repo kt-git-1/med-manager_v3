@@ -107,7 +107,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C03 Reverify Patient Today states/actions/recording-window/inventory/PRN/detail.
 - [x] C04 Reverify current Patient History progress/week/recent summaries, retention and freshness.
 - [x] C05 Reverify Settings/reminders/tutorial/deep links/legal/logout and patient analytics-consent UI.
-- [ ] C06 Complete patient TalkBack, font 1.0/1.3/2.0, light/dark and physical-device checks. API-35 emulator dark captures for Patient Today/History/Settings, explicit 130%/200% reachability for all three Patient and Caregiver primary screens, Caregiver primary-screen reachability at dark plus 200%, Settings/tutorial 200%, merged Patient week and Caregiver calendar-day semantics, medication-named Caregiver primary actions, and production Patient/Caregiver Activity recreation plus portrait/landscape transitions are complete; full TalkBack traversal, remaining matched dark/large-text captures and physical-device verification remain.
+- [ ] C06 Complete patient TalkBack, font 1.0/1.3/2.0, light/dark and physical-device checks. API-35 emulator dark captures for Patient Today/History/Settings and all four Caregiver primary surfaces, explicit 130%/200% reachability for both roles, Caregiver primary-screen reachability at dark plus 200%, Settings/tutorial 200%, merged Patient week and Caregiver calendar-day semantics, medication-named Caregiver primary actions, and production Patient/Caregiver Activity recreation plus portrait/landscape transitions are complete; full TalkBack traversal, matched iOS dark/large-text variants, additional viewport classes and physical-device verification remain.
 
 ## Gate D — Caregiver patient-management vertical slice
 
