@@ -53,8 +53,8 @@ class PatientAccessibilityTest {
         }
 
         composeRule.onNodeWithText("お薬の時間に通知しますか？").assertIsDisplayed()
-        composeRule.onNodeWithText("スキップ").assertIsDisplayed()
-        composeRule.onNodeWithText("戻る").assertIsDisplayed()
-        composeRule.onNodeWithText("通知を設定").assertIsDisplayed()
+        composeRule.onNodeWithText("あとで設定する").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("戻る").assertIsDisplayed()
+        composeRule.onNodeWithText("通知をオンにする").assertIsDisplayed()
     }
 }

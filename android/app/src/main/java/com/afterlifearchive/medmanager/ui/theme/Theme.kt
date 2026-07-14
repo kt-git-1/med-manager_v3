@@ -94,7 +94,7 @@ private val LightExtendedColors = MedicationExtendedColors(
     slotBedtime = Color(0xFF5856D6),
     authInfoContainer = Color(0xFFEAF4FF),
     authInfoIcon = Color(0xFF1976D2),
-    tutorialScrim = Color(0x57000000),
+    tutorialScrim = Color(0x2E000000),
 )
 
 private val DarkExtendedColors = LightExtendedColors.copy(

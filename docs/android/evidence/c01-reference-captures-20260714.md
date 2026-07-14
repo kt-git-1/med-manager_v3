@@ -41,6 +41,10 @@
 | UI-100 | Patient History tutorial step 2/4 | [`c01-20260714/ui-100-patient-tutorial-history-light.png`](c01-20260714/ui-100-patient-tutorial-history-light.png) | Current `main@1d9d19e`; temporary detached capture worktree; XCUITest tapped the production `次へ` action |
 | UI-100 | Patient Settings tutorial step 3/4 | [`c01-20260714/ui-100-patient-tutorial-settings-light.png`](c01-20260714/ui-100-patient-tutorial-settings-light.png) | Same run; production settings state verified after a 15-second idle and captured directly from the simulator display |
 | UI-100 | Patient notification tutorial step 4/4 | [`c01-20260714/ui-100-patient-tutorial-notifications-light.png`](c01-20260714/ui-100-patient-tutorial-notifications-light.png) | Same run; XCUITest asserted `4/4` after traversing the real tutorial sequence |
+| UI-100 | Android Patient Today tutorial step 1/4 | [`c01-20260714/android-ui-100-patient-tutorial-today-light.png`](c01-20260714/android-ui-100-patient-tutorial-today-light.png) | Production Today preview and production tutorial overlay; direct API-35 device-display capture |
+| UI-100 | Android Patient History tutorial step 2/4 | [`c01-20260714/android-ui-100-patient-tutorial-history-light.png`](c01-20260714/android-ui-100-patient-tutorial-history-light.png) | Production History preview and production tutorial overlay; normalized light system-bar host |
+| UI-100 | Android Patient Settings tutorial step 3/4 | [`c01-20260714/android-ui-100-patient-tutorial-settings-light.png`](c01-20260714/android-ui-100-patient-tutorial-settings-light.png) | Production Settings preview and production tutorial overlay |
+| UI-100 | Android Patient notification tutorial step 4/4 | [`c01-20260714/android-ui-100-patient-tutorial-notifications-light.png`](c01-20260714/android-ui-100-patient-tutorial-notifications-light.png) | Production Today preview and final permission education overlay |
 | UI-101 | Patient Today typical content | [`c01-20260714/ui-101-patient-today-light.png`](c01-20260714/ui-101-patient-today-light.png) | `-ForceModeTutorial.patient -PatientMarketingScreenshot.today`; production shell with deterministic sample data and no overlay |
 | UI-101 | Android inventory-partial Today | [`c01-20260714/android-ui-101-patient-inventory-partial-light.png`](c01-20260714/android-ui-101-patient-inventory-partial-light.png) | Production `TodayContent`; two scheduled medicines, one inventory shortage, partial bulk action and PRN entry |
 | UI-102 | Android dose detail | [`c01-20260714/android-ui-102-patient-dose-detail-light.png`](c01-20260714/android-ui-102-patient-dose-detail-light.png) | Production bottom-sheet content with taken state, notes, 1.5-tablet dose, strength and tracked inventory |
@@ -62,12 +66,13 @@
 - Remaining UI-001 differences are platform typography/icon rendering and viewport-class height. Android standard/compact/large/200%-font Analytics consent evidence is complete; matched iOS compact/large variants, full TalkBack traversal and physical verification remain required before UI-001 can be marked `VERIFIED`.
 - UI-100 and UI-101 use the iOS production component tree and deterministic in-app sample data; no API response, identity, medication record or auth token from a real user was captured.
 - UI-100 default-size steps 1–4 are now captured from the current iOS implementation. Steps 2–4 were driven by a temporary XCUITest in a detached `origin/main` worktree; the test passed 1/1 with zero failures. The temporary harness is not part of `android-dev`, so only immutable PNG evidence and this capture record cross the branch boundary.
+- The matched Android UI-100 capture exposed stale copy and overlay geometry. Android now uses the exact current-iOS first/final messages and final actions, 18% scrim, 16 dp card radius, 16 dp inset, 104 dp bottom-bar clearance, 48 dp step icon, circular back action and icon-bearing primary action. All four production-shell fixtures are captured directly from the API-35 device display; the test host explicitly normalizes the light status bar so host state cannot contaminate evidence.
 - Android UI-101/UI-102/UI-104/UI-106 exceptional-state captures are emitted by their existing production-component assertions, so visual evidence and behavior cannot silently diverge. `ScreenshotFixtures.kt` writes to app cache during ordinary regression runs and, only when `persistScreenshotFixtures=true`, publishes API 29+ evidence through MediaStore under `Download/med-manager-screenshot-fixtures` for collection after Gradle uninstalls the test app.
 
 ## Remaining C01 reference work
 
 - UI-001 matched iOS compact/large variants and physical/TalkBack verification; UI-002 valid/loading/additional failure captures and UI-005 matched iOS signup plus validation/loading/resend-result captures.
-- UI-100 completion/skip and 200% text.
+- UI-100 matched iOS completion/skip and 200% text references; Android skip/final persistence and 200% action reachability are automated.
 - UI-101 remaining exceptional Today variants and matched iOS inventory-partial capture; UI-102 empty-notes/inventory variants and matched iOS detail capture; UI-103 PRN error/submitting variants.
 - UI-104 remaining progress/retry/retention variants and matched iOS no-plan capture; UI-105 History day variants; UI-106 remaining settings/error states and matched iOS notification-denied capture.
 - Compact/large viewport pairs and dark/large-text variants required by `ui-screen-contracts.md`.
@@ -76,7 +81,7 @@ Android dark captures for UI-101/UI-104/UI-106 and an Android UI-101 200% font c
 
 C01 remains in progress until the full scoped state inventory is captured. These files are the first current-baseline references and replace older evidence only for the states listed above.
 
-Latest post-fix verification: JVM tests, Debug/Release assembly and Lint pass; the final instrumentation suite passes 108/108 on API 26, API 33 and API 35 (324/324), plus 108/108 on the separate API-35 448 x 997 dp large-phone override. The current iOS Debug reference build also succeeds, and `git diff --check` passes.
+Latest post-fix verification: JVM tests, Debug/Release assembly and Lint pass; the expanded API-35 instrumentation suite passes 112/112, followed by 8/8 focused tutorial/accessibility tests and a final 6/6 persistent tutorial-fixture rerun. The earlier 108-test suite remains green on API 26, API 33 and API 35 (324/324), plus 108/108 on the separate API-35 448 x 997 dp large-phone override. The four newly added screenshot fixtures are evidence-only tests; the current iOS tutorial XCUITest and Debug reference build also succeed, and `git diff --check` passes.
 
 To regenerate persistent Android fixtures on API 29 or later:
 

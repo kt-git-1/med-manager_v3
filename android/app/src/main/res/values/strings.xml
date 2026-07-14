@@ -41,18 +41,19 @@
 
     <!-- Patient tutorial -->
     <string name="patient_tutorial_today_title">今日のお薬</string>
-    <string name="patient_tutorial_today_message">飲むお薬を確認します。飲んだら「飲みました」を押します。</string>
+    <string name="patient_tutorial_today_message">飲むお薬を確認します。飲んだら「飲んだ」を押します。</string>
     <string name="patient_tutorial_history_title">記録を見る</string>
     <string name="patient_tutorial_history_message">飲めた日や、まだ飲んでいないお薬を確認できます。</string>
     <string name="patient_tutorial_notification_title">通知を使う</string>
     <string name="patient_tutorial_notification_message">お薬の時間に、この端末へお知らせできます。</string>
     <string name="patient_tutorial_permission_title">お薬の時間に通知しますか？</string>
-    <string name="patient_tutorial_permission_message">朝・昼・夜など、設定した時間にお薬の通知を受け取れます。</string>
+    <string name="patient_tutorial_permission_message">朝・昼・夜など、設定した時間にお薬の通知を受け取れます。通知をオンにすると、飲み忘れに気づきやすくなります。</string>
     <string name="patient_tutorial_pane">患者モードの使い方 %1$d/%2$d</string>
     <string name="patient_tutorial_skip">スキップ</string>
     <string name="common_back">戻る</string>
     <string name="common_next">次へ</string>
-    <string name="patient_tutorial_enable_notifications">通知を設定</string>
+    <string name="patient_tutorial_enable_notifications">通知をオンにする</string>
+    <string name="patient_tutorial_notifications_later">あとで設定する</string>
 
     <!-- Patient Today and detail -->
     <string name="patient_today_title">今日のお薬</string>

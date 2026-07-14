@@ -257,9 +257,11 @@ This selector foundation is connected to inventory-backed production candidates 
 - Step progress changes the real selected tab rather than displaying disconnected mock screens.
 - Back, next, skip, progress indicators, and persisted one-time completion are implemented.
 - The final action requests Android notification permission and only enables notifications when permission is granted.
-- Compose tests cover canonical copy and all tutorial actions; the caregiver tutorial remains intentionally scoped to Phase 3.
+- Compose tests cover canonical copy and all tutorial actions; caregiver tutorial coverage is recorded in Phase 3.
+- The overlay now follows the current iOS senior-friendly contract: exact copy, per-step icon, 18% scrim, 16 dp elevated card, 48 dp icon treatment, circular back action, icon-bearing primary action and 104 dp clearance above the persistent patient navigation bar.
+- Current-iOS and API-35 Android default-size captures for all four steps are paired under `evidence/c01-20260714/`. Android fixtures render each state independently over the production patient preview and capture the complete device display to prevent transition or alpha artifacts.
 
-`XP-002` is `IMPLEMENTED`; the patient portion of `XP-003` is `IMPLEMENTED` while the matrix remains `PARTIAL` until caregiver parity. Physical notification taps, process-death routing, large text, TalkBack, and matched iOS tutorial captures remain before `VERIFIED`.
+`XP-002` and the patient portion of `XP-003` are `IMPLEMENTED`. Default-size matched tutorial evidence is complete; physical notification taps, process-death routing, matched large-text evidence and TalkBack remain before `VERIFIED`.
 
 ### XP-005 patient accessibility hardening
 

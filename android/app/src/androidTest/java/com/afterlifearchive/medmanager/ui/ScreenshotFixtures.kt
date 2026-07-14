@@ -7,7 +7,15 @@ import android.os.Environment
 import android.provider.MediaStore
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.test.platform.app.InstrumentationRegistry
+
+internal fun writeDeviceScreenshotFixture(name: String) {
+    val bitmap = checkNotNull(
+        InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot(),
+    ) { "Could not capture device display: $name" }
+    writeScreenshotFixture(bitmap.asImageBitmap(), name)
+}
 
 internal fun writeScreenshotFixture(image: ImageBitmap, name: String) {
     val instrumentation = InstrumentationRegistry.getInstrumentation()
