@@ -150,7 +150,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] F04 PRN record/delete and inventory errors.
 - [x] F05 Preserve successful mutation UI when follow-up refresh fails.
 - [x] F06 Inventory list/filter/detail/enable/adjust/refill and low-stock badge.
-- [ ] F07 Cross-tab Today/History/Inventory revision tests.
+- [x] F07 Cross-tab Today/History/Inventory revision tests.
 
 ## Gate G — History, PDF, push and settings
 

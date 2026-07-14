@@ -159,4 +159,92 @@ class MutationFreshnessStoreTest {
         }
         unaffected.forEach { assertFalse(it.refreshIfStale {}) }
     }
+
+    @Test
+    fun caregiverCrossTabRevisionMatrixMatchesFeatureDependencies() = runTest {
+        val cases = listOf(
+            RevisionCase(
+                name = "scheduled dose",
+                mutate = { markScheduledDoseChanged(inventoryChanged = true) },
+                affected = setOf(
+                    FreshnessConsumer.PATIENT_TODAY,
+                    FreshnessConsumer.PATIENT_HISTORY,
+                    FreshnessConsumer.CAREGIVER_TODAY,
+                    FreshnessConsumer.CAREGIVER_MEDICATIONS,
+                    FreshnessConsumer.CAREGIVER_HISTORY,
+                    FreshnessConsumer.CAREGIVER_INVENTORY,
+                    FreshnessConsumer.NOTIFICATION_SCHEDULER,
+                ),
+            ),
+            RevisionCase(
+                name = "PRN dose",
+                mutate = { markDoseChanged(inventoryChanged = true) },
+                affected = setOf(
+                    FreshnessConsumer.PATIENT_TODAY,
+                    FreshnessConsumer.PATIENT_HISTORY,
+                    FreshnessConsumer.CAREGIVER_TODAY,
+                    FreshnessConsumer.CAREGIVER_MEDICATIONS,
+                    FreshnessConsumer.CAREGIVER_HISTORY,
+                    FreshnessConsumer.CAREGIVER_INVENTORY,
+                ),
+            ),
+            RevisionCase(
+                name = "inventory adjustment",
+                mutate = { markInventoryChanged() },
+                affected = setOf(
+                    FreshnessConsumer.PATIENT_TODAY,
+                    FreshnessConsumer.CAREGIVER_TODAY,
+                    FreshnessConsumer.CAREGIVER_MEDICATIONS,
+                    FreshnessConsumer.CAREGIVER_INVENTORY,
+                ),
+            ),
+            RevisionCase(
+                name = "medication lifecycle",
+                mutate = { markMedicationChanged(inventoryChanged = true, notificationPlanChanged = true) },
+                affected = setOf(
+                    FreshnessConsumer.PATIENT_TODAY,
+                    FreshnessConsumer.CAREGIVER_TODAY,
+                    FreshnessConsumer.CAREGIVER_MEDICATIONS,
+                    FreshnessConsumer.CAREGIVER_INVENTORY,
+                    FreshnessConsumer.NOTIFICATION_SCHEDULER,
+                ),
+            ),
+            RevisionCase(
+                name = "patient slot times",
+                mutate = { markSlotTimesChanged() },
+                affected = setOf(
+                    FreshnessConsumer.PATIENT_TODAY,
+                    FreshnessConsumer.PATIENT_HISTORY,
+                    FreshnessConsumer.CAREGIVER_TODAY,
+                    FreshnessConsumer.CAREGIVER_MEDICATIONS,
+                    FreshnessConsumer.CAREGIVER_HISTORY,
+                    FreshnessConsumer.NOTIFICATION_SCHEDULER,
+                ),
+            ),
+        )
+
+        cases.forEach { case ->
+            val store = MutationFreshnessStore()
+            val cursors = FreshnessConsumer.entries.associateWith(store::newCursor)
+            cursors.values.forEach { it.refreshIfStale {} }
+
+            case.mutate(store)
+
+            cursors.forEach { (consumer, cursor) ->
+                val refreshed = cursor.refreshIfStale {}
+                assertEquals(
+                    "${case.name}: unexpected freshness result for $consumer",
+                    consumer in case.affected,
+                    refreshed,
+                )
+                assertFalse("${case.name}: $consumer consumed the same revision twice", cursor.refreshIfStale {})
+            }
+        }
+    }
+
+    private data class RevisionCase(
+        val name: String,
+        val mutate: MutationFreshnessStore.() -> Unit,
+        val affected: Set<FreshnessConsumer>,
+    )
 }

@@ -185,3 +185,12 @@ F02–F05 and `CG-008`, `CG-015`, `CG-016` are `IMPLEMENTED`. F06 now owns compl
 - The full gate passes with 66/66 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
 
 F06 and `CG-009` are `IMPLEMENTED`. F07 owns the explicit cross-tab revision matrix before Gate F closes.
+
+## F07 cross-tab freshness matrix — 2026-07-15
+
+- The shared cursor matrix now proves all seven consumers against scheduled-dose, PRN-dose, inventory-adjustment, medication-lifecycle and patient-slot-time revisions.
+- Scheduled doses refresh both Today screens, both History consumers, caregiver Medications, caregiver Inventory and notification scheduling. PRN doses refresh the same data consumers but deliberately do not reschedule fixed notifications.
+- Inventory-only changes refresh patient/caregiver Today, caregiver Medications and caregiver Inventory, but not History or notification scheduling. Medication lifecycle changes additionally refresh notification scheduling, while slot-time changes refresh Today, History, caregiver Medications and scheduling without inventing an inventory revision.
+- Each expected consumer refreshes exactly once per revision. Hidden consumers keep the revision pending until revisited, concurrent collectors cannot duplicate a fetch and failed refreshes do not consume pending work.
+
+F07 and `CG-017` are `IMPLEMENTED`. Gate F is complete with the 66/66 API-35 instrumentation, JVM, Debug/Release and Lint gate passing; Gate G now owns caregiver History, PDF, push and settings completion.
