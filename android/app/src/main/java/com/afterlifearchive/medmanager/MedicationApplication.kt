@@ -59,6 +59,7 @@ class MedicationApplication : Application() {
         caregiverPatientRepository = CaregiverPatientRepository(
             CaregiverPatientApi(apiClient),
             caregiverSelectionRepository,
+            mutationFreshnessStore,
         )
         repository.restore()
         ReminderScheduler.createNotificationChannel(this)

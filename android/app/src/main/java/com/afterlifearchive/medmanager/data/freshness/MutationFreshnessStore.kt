@@ -12,16 +12,17 @@ enum class MutationDomain {
     MEDICATION,
     INVENTORY,
     NOTIFICATION_PLAN,
+    SLOT_TIMES,
 }
 
 enum class FreshnessConsumer(val domains: Set<MutationDomain>) {
-    PATIENT_TODAY(setOf(MutationDomain.DOSE, MutationDomain.MEDICATION, MutationDomain.INVENTORY)),
-    PATIENT_HISTORY(setOf(MutationDomain.DOSE)),
-    CAREGIVER_TODAY(setOf(MutationDomain.DOSE, MutationDomain.MEDICATION, MutationDomain.INVENTORY)),
-    CAREGIVER_MEDICATIONS(setOf(MutationDomain.MEDICATION, MutationDomain.INVENTORY)),
-    CAREGIVER_HISTORY(setOf(MutationDomain.DOSE)),
+    PATIENT_TODAY(setOf(MutationDomain.DOSE, MutationDomain.MEDICATION, MutationDomain.INVENTORY, MutationDomain.SLOT_TIMES)),
+    PATIENT_HISTORY(setOf(MutationDomain.DOSE, MutationDomain.SLOT_TIMES)),
+    CAREGIVER_TODAY(setOf(MutationDomain.DOSE, MutationDomain.MEDICATION, MutationDomain.INVENTORY, MutationDomain.SLOT_TIMES)),
+    CAREGIVER_MEDICATIONS(setOf(MutationDomain.MEDICATION, MutationDomain.INVENTORY, MutationDomain.SLOT_TIMES)),
+    CAREGIVER_HISTORY(setOf(MutationDomain.DOSE, MutationDomain.SLOT_TIMES)),
     CAREGIVER_INVENTORY(setOf(MutationDomain.DOSE, MutationDomain.MEDICATION, MutationDomain.INVENTORY)),
-    NOTIFICATION_SCHEDULER(setOf(MutationDomain.NOTIFICATION_PLAN)),
+    NOTIFICATION_SCHEDULER(setOf(MutationDomain.NOTIFICATION_PLAN, MutationDomain.SLOT_TIMES)),
 }
 
 data class MutationRevisions(
@@ -29,19 +30,22 @@ data class MutationRevisions(
     val medication: Long = 0,
     val inventory: Long = 0,
     val notificationPlan: Long = 0,
+    val slotTimes: Long = 0,
 ) {
     internal fun advanced(domains: Set<MutationDomain>): MutationRevisions = copy(
         dose = if (MutationDomain.DOSE in domains) dose + 1 else dose,
         medication = if (MutationDomain.MEDICATION in domains) medication + 1 else medication,
         inventory = if (MutationDomain.INVENTORY in domains) inventory + 1 else inventory,
         notificationPlan = if (MutationDomain.NOTIFICATION_PLAN in domains) notificationPlan + 1 else notificationPlan,
+        slotTimes = if (MutationDomain.SLOT_TIMES in domains) slotTimes + 1 else slotTimes,
     )
 
     internal fun isNewerThan(other: MutationRevisions, domains: Set<MutationDomain>): Boolean =
         (MutationDomain.DOSE in domains && dose > other.dose) ||
             (MutationDomain.MEDICATION in domains && medication > other.medication) ||
             (MutationDomain.INVENTORY in domains && inventory > other.inventory) ||
-            (MutationDomain.NOTIFICATION_PLAN in domains && notificationPlan > other.notificationPlan)
+            (MutationDomain.NOTIFICATION_PLAN in domains && notificationPlan > other.notificationPlan) ||
+            (MutationDomain.SLOT_TIMES in domains && slotTimes > other.slotTimes)
 }
 
 class MutationFreshnessStore {
@@ -77,6 +81,8 @@ class MutationFreshnessStore {
     }
 
     fun markInventoryChanged() = markChanged(MutationDomain.INVENTORY)
+
+    fun markSlotTimesChanged() = markChanged(MutationDomain.SLOT_TIMES)
 
     fun newCursor(consumer: FreshnessConsumer): FreshnessCursor = FreshnessCursor(this, consumer.domains)
 }

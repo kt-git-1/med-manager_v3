@@ -3,6 +3,7 @@ package com.afterlifearchive.medmanager.data.caregiver
 import com.afterlifearchive.medmanager.data.network.ApiClient
 import com.afterlifearchive.medmanager.data.network.ApiException
 import com.afterlifearchive.medmanager.data.network.RequestAuthPolicy
+import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
 import com.afterlifearchive.medmanager.data.session.CaregiverSelectionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +34,8 @@ data class CaregiverPatientState(
     val loadFailed: Boolean = false,
     val creating: Boolean = false,
     val createError: CaregiverCreateError? = null,
+    val savingSlotTimes: Boolean = false,
+    val slotTimesSaveFailed: Boolean = false,
 ) {
     val selectedPatient: CaregiverPatient?
         get() = patients.firstOrNull { it.id == selectedPatientId }
@@ -43,6 +46,8 @@ enum class CaregiverCreateError { REQUIRED, TOO_LONG, PATIENT_LIMIT, FAILED }
 fun interface CaregiverPatientDataSource {
     suspend fun listPatients(): List<CaregiverPatient>
     suspend fun createPatient(displayName: String): CaregiverPatient = error("createPatient not implemented")
+    suspend fun updateSlotTimes(patientId: String, slotTimes: CaregiverSlotTimes): CaregiverSlotTimes =
+        error("updateSlotTimes not implemented")
 }
 
 class CaregiverPatientApi(private val client: ApiClient) : CaregiverPatientDataSource {
@@ -59,11 +64,21 @@ class CaregiverPatientApi(private val client: ApiClient) : CaregiverPatientDataS
         )
         return caregiverJson.decodeFromString<CaregiverPatientEnvelopeDto>(body).data.toDomain()
     }
+
+    override suspend fun updateSlotTimes(patientId: String, slotTimes: CaregiverSlotTimes): CaregiverSlotTimes {
+        val body = client.patchBody(
+            "api/patients/$patientId",
+            caregiverJson.encodeToString(CaregiverSlotTimesUpdateDto(slotTimes.toDto())),
+            RequestAuthPolicy.CAREGIVER,
+        )
+        return caregiverJson.decodeFromString<CaregiverSlotTimesEnvelopeDto>(body).data.slotTimes.toDomain()
+    }
 }
 
 class CaregiverPatientRepository(
     private val dataSource: CaregiverPatientDataSource,
     private val selectionRepository: CaregiverSelectionRepository,
+    private val freshnessStore: MutationFreshnessStore = MutationFreshnessStore(),
 ) {
     private val mutableState = MutableStateFlow(
         CaregiverPatientState(selectedPatientId = selectionRepository.state.value.patientId),
@@ -119,6 +134,30 @@ class CaregiverPatientRepository(
         }
     }
 
+    suspend fun updateSelectedPatientSlotTimes(slotTimes: CaregiverSlotTimes): Boolean {
+        val patientId = mutableState.value.selectedPatientId ?: return false
+        if (!slotTimes.isValid()) {
+            mutableState.value = mutableState.value.copy(slotTimesSaveFailed = true)
+            return false
+        }
+        mutableState.value = mutableState.value.copy(savingSlotTimes = true, slotTimesSaveFailed = false)
+        return try {
+            val saved = dataSource.updateSlotTimes(patientId, slotTimes)
+            mutableState.value = mutableState.value.copy(
+                patients = mutableState.value.patients.map { patient ->
+                    if (patient.id == patientId) patient.copy(slotTimes = saved) else patient
+                },
+                savingSlotTimes = false,
+            )
+            freshnessStore.markSlotTimesChanged()
+            true
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            mutableState.value = mutableState.value.copy(savingSlotTimes = false, slotTimesSaveFailed = true)
+            false
+        }
+    }
+
     fun clear() {
         selectionRepository.clear()
         mutableState.value = CaregiverPatientState()
@@ -151,6 +190,15 @@ private data class CaregiverPatientEnvelopeDto(val data: CaregiverPatientDto)
 private data class CaregiverPatientCreateDto(val displayName: String)
 
 @Serializable
+private data class CaregiverSlotTimesUpdateDto(val slotTimes: CaregiverSlotTimesDto)
+
+@Serializable
+private data class CaregiverSlotTimesEnvelopeDto(val data: CaregiverSlotTimesDataDto)
+
+@Serializable
+private data class CaregiverSlotTimesDataDto(val slotTimes: CaregiverSlotTimesDto)
+
+@Serializable
 private data class CaregiverPatientDto(
     val id: String,
     val displayName: String,
@@ -168,3 +216,11 @@ private data class CaregiverSlotTimesDto(
 ) {
     fun toDomain() = CaregiverSlotTimes(morning, noon, evening, bedtime)
 }
+
+private fun CaregiverSlotTimes.toDto() = CaregiverSlotTimesDto(morning, noon, evening, bedtime)
+
+private fun CaregiverSlotTimes.isValid(): Boolean = listOf(morning, noon, evening, bedtime).all {
+    TIME_PATTERN.matches(it)
+}
+
+private val TIME_PATTERN = Regex("(?:[01]\\d|2[0-3]):[0-5]\\d")

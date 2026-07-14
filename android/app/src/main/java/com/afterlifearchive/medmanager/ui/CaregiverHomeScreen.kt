@@ -1,5 +1,6 @@
 package com.afterlifearchive.medmanager.ui
 
+import android.app.TimePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.semantics
@@ -53,6 +56,7 @@ import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverCreateError
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
 import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import kotlinx.coroutines.launch
 
@@ -185,6 +189,18 @@ private fun CaregiverPatientSelectionScreen(
 ) {
     var displayName by rememberSaveable { mutableStateOf("") }
     val scope = rememberCoroutineScope()
+    val selectedPatient = state.selectedPatient
+    var morning by rememberSaveable { mutableStateOf("08:00") }
+    var noon by rememberSaveable { mutableStateOf("12:00") }
+    var evening by rememberSaveable { mutableStateOf("18:00") }
+    var bedtime by rememberSaveable { mutableStateOf("21:00") }
+    LaunchedEffect(selectedPatient?.id, selectedPatient?.slotTimes) {
+        val times = selectedPatient?.slotTimes ?: CaregiverSlotTimes("08:00", "12:00", "18:00", "21:00")
+        morning = times.morning
+        noon = times.noon
+        evening = times.evening
+        bedtime = times.bedtime
+    }
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = 20.dp).testTag("caregiver-settings-list"),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -262,7 +278,78 @@ private fun CaregiverPatientSelectionScreen(
                 }
             }
         }
+        if (selectedPatient != null) item {
+            CaregiverSlotTimesCard(
+                morning = morning,
+                noon = noon,
+                evening = evening,
+                bedtime = bedtime,
+                enabled = enabled && !state.savingSlotTimes,
+                saveFailed = state.slotTimesSaveFailed,
+                onMorning = { morning = it },
+                onNoon = { noon = it },
+                onEvening = { evening = it },
+                onBedtime = { bedtime = it },
+                onSave = {
+                    scope.launch {
+                        repository.updateSelectedPatientSlotTimes(CaregiverSlotTimes(morning, noon, evening, bedtime))
+                    }
+                },
+            )
+        }
         item { Spacer(Modifier.height(20.dp)) }
+    }
+}
+
+@Composable
+private fun CaregiverSlotTimesCard(
+    morning: String,
+    noon: String,
+    evening: String,
+    bedtime: String,
+    enabled: Boolean,
+    saveFailed: Boolean,
+    onMorning: (String) -> Unit,
+    onNoon: (String) -> Unit,
+    onEvening: (String) -> Unit,
+    onBedtime: (String) -> Unit,
+    onSave: () -> Unit,
+) {
+    Card(Modifier.fillMaxWidth().testTag("caregiver-slot-times")) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.caregiver_slot_times_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.caregiver_slot_times_detail), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            CaregiverTimeRow(R.string.patient_slot_morning, morning, enabled, onMorning)
+            CaregiverTimeRow(R.string.patient_slot_noon, noon, enabled, onNoon)
+            CaregiverTimeRow(R.string.patient_slot_evening, evening, enabled, onEvening)
+            CaregiverTimeRow(R.string.patient_slot_bedtime, bedtime, enabled, onBedtime)
+            if (saveFailed) Text(stringResource(R.string.caregiver_slot_times_save_failed), color = MaterialTheme.colorScheme.error)
+            Button(onClick = onSave, enabled = enabled, modifier = Modifier.fillMaxWidth().testTag("caregiver-slot-times-save")) {
+                Text(stringResource(R.string.caregiver_slot_times_save))
+            }
+        }
+    }
+}
+
+@Composable
+private fun CaregiverTimeRow(label: Int, value: String, enabled: Boolean, onValue: (String) -> Unit) {
+    val context = LocalContext.current
+    val parts = value.split(':').mapNotNull(String::toIntOrNull)
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(label), modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+        OutlinedButton(
+            onClick = {
+                TimePickerDialog(
+                    context,
+                    { _, hour, minute -> onValue("%02d:%02d".format(hour, minute)) },
+                    parts.getOrElse(0) { 0 },
+                    parts.getOrElse(1) { 0 },
+                    true,
+                ).show()
+            },
+            enabled = enabled,
+            modifier = Modifier.testTag("caregiver-time-${stringResource(label)}"),
+        ) { Text(value) }
     }
 }
 

@@ -6,6 +6,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.hasTestTag
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatient
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
@@ -37,6 +39,8 @@ class CaregiverHomeScreenTest {
         composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
         composeRule.onNodeWithText("さくら").assertIsDisplayed()
         composeRule.onNodeWithText("選択中").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-slot-times"))
+        composeRule.onNodeWithTag("caregiver-slot-times").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-tab-today").performClick()
         composeRule.onNodeWithText("さくらさんを見守り中").assertIsDisplayed()
 

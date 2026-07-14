@@ -46,3 +46,14 @@ After every successful patient-list load:
 - Repository/API tests cover normalization, invalid short-circuiting, request body, success selection and patient-limit preservation. Compose tests cover the 51-character form error.
 
 `CG-002` and the first D02 checklist row are `IMPLEMENTED`. Slot-time edit, linking, revoke/delete and caregiver-account deletion remain.
+
+## D02 time-preset increment — 2026-07-14
+
+- The selected patient exposes four native 24-hour time pickers for morning, noon, evening and bedtime, initialized from the authoritative patient response.
+- Saving sends all four strict `HH:mm` values through `PATCH /api/patients/{patientId}` and replaces local values with the server response only after success.
+- Malformed values never reach the API. Failure retains the previous repository values and provides an inline retryable error.
+- `MutationDomain.SLOT_TIMES` invalidates patient/caregiver Today, patient/caregiver History, caregiver Medications and notification scheduling without inventing a dose or inventory mutation.
+- API/repository/freshness tests cover the exact PATCH body, response mapping, validation, success-only state change and revision behavior. The Compose test reaches the production preset card through the Settings lazy list.
+- The full gate passes with 44/44 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
+
+`CG-002A` and the second D02 checklist row are `IMPLEMENTED`. Physical notification rescheduling and matched iOS visual verification remain before `VERIFIED`.

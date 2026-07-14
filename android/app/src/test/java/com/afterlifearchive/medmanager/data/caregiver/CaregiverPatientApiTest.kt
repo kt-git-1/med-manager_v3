@@ -64,4 +64,25 @@ class CaregiverPatientApiTest {
         assertEquals("{\"displayName\":\"さくら\"}", captured?.body)
         assertEquals("p2", created.id)
     }
+
+    @Test
+    fun updateSlotTimesPatchesAllFourCanonicalValues() = runTest {
+        var captured: HttpRequest? = null
+        val client = ApiClient(
+            baseUrl = "https://example.test/",
+            caregiverTokenProvider = { "caregiver-token" },
+            transport = HttpTransport { request ->
+                captured = request
+                HttpResponse(200, """{"data":{"slotTimes":{"morning":"07:30","noon":"12:15","evening":"18:45","bedtime":"22:00"}}}""")
+            },
+        )
+        val times = CaregiverSlotTimes("07:30", "12:15", "18:45", "22:00")
+
+        val saved = CaregiverPatientApi(client).updateSlotTimes("p1", times)
+
+        assertEquals("PATCH", captured?.method)
+        assertEquals("https://example.test/api/patients/p1", captured?.url)
+        assertEquals("{\"slotTimes\":{\"morning\":\"07:30\",\"noon\":\"12:15\",\"evening\":\"18:45\",\"bedtime\":\"22:00\"}}", captured?.body)
+        assertEquals(times, saved)
+    }
 }

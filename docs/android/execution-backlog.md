@@ -121,7 +121,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 ### D02 Patient management contracts/UI
 
 - [x] List/create/select with 50-character/nonblank validation and patient-limit response.
-- [ ] Edit four slot preset times and propagate freshness.
+- [x] Edit four slot preset times and propagate freshness.
 - [ ] Issue one-time 15-minute code; copy/share system sheet.
 - [ ] Revoke preserves data and clears current selection/redirect state.
 - [ ] Delete waits for server cascade success, then invalidates dependent data.
@@ -185,4 +185,4 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Immediate next item
 
-Continue **D02 caregiver patient management** from the completed D01 shell: create/select validation and patient-limit mapping first, then slot presets, linking code, revoke/delete and account deletion in server-authoritative order. The authenticated placeholder has been replaced by the five-tab lazy shell, typed caregiver patient list, persisted selection reconciliation and shared empty/error states. Full gate passes with 43/43 API-35 tests. C01/C06 iOS-pair, 130%, full TalkBack and physical-device residuals remain tracked; Firebase transport remains Gate H.
+Continue **D02 caregiver patient management** with linking-code issue/copy/share next, then revoke/delete and account deletion in server-authoritative order. Typed list/create/select and four-slot time presets are implemented; time changes publish a dedicated freshness revision consumed by Today, Medications, History and notification scheduling. Full gate passes with 44/44 API-35 tests. C01/C06 visual/physical residuals and Gate H Firebase transport remain tracked.

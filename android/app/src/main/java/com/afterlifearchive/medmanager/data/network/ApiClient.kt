@@ -87,6 +87,13 @@ class ApiClient(
         allowsAuthRefresh: Boolean = true,
     ): String = request(path, "POST", body, authPolicy, allowsAuthRefresh)
 
+    suspend fun patchBody(
+        path: String,
+        body: String,
+        authPolicy: RequestAuthPolicy,
+        allowsAuthRefresh: Boolean = true,
+    ): String = request(path, "PATCH", body, authPolicy, allowsAuthRefresh)
+
     suspend fun delete(
         path: String,
         authPolicy: RequestAuthPolicy,

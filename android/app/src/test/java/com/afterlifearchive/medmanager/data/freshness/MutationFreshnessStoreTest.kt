@@ -23,6 +23,17 @@ class MutationFreshnessStoreTest {
     }
 
     @Test
+    fun slotTimeChangeDoesNotInventDoseOrMedicationMutation() {
+        val store = MutationFreshnessStore()
+
+        store.markSlotTimesChanged()
+
+        assertEquals(1L, store.revisions.value.slotTimes)
+        assertEquals(0L, store.revisions.value.dose)
+        assertEquals(0L, store.revisions.value.medication)
+    }
+
+    @Test
     fun scheduledDoseRevisionIsSeparateFromPrnDoseRevision() {
         val store = MutationFreshnessStore()
 
