@@ -72,6 +72,7 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverLinkingCode
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayRepository
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverInventoryRepository
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -92,6 +93,7 @@ fun CaregiverHomeScreen(
     repository: CaregiverPatientRepository,
     medicationRepository: CaregiverMedicationRepository? = null,
     todayRepository: CaregiverTodayRepository? = null,
+    inventoryRepository: CaregiverInventoryRepository? = null,
     onLogout: () -> Unit = {},
     onAccountDeleted: () -> Unit = {},
     tutorialEnabled: Boolean = true,
@@ -148,6 +150,7 @@ fun CaregiverHomeScreen(
                                 repository,
                                 medicationRepository,
                                 todayRepository,
+                                inventoryRepository,
                                 visible,
                                 onLogout,
                                 onAccountDeleted,
@@ -196,6 +199,7 @@ private fun CaregiverTabContent(
     repository: CaregiverPatientRepository,
     medicationRepository: CaregiverMedicationRepository?,
     todayRepository: CaregiverTodayRepository?,
+    inventoryRepository: CaregiverInventoryRepository?,
     visible: Boolean,
     onLogout: () -> Unit,
     onAccountDeleted: () -> Unit,
@@ -213,6 +217,9 @@ private fun CaregiverTabContent(
         } else CaregiverFeatureLanding(tab, state, repository, visible)
         CaregiverTab.TODAY -> if (todayRepository != null) {
             CaregiverTodayScreen(todayRepository, state, visible, onOpenMedications)
+        } else CaregiverFeatureLanding(tab, state, repository, visible)
+        CaregiverTab.INVENTORY -> if (inventoryRepository != null) {
+            CaregiverInventoryScreen(inventoryRepository, state, visible, onOpenMedications)
         } else CaregiverFeatureLanding(tab, state, repository, visible)
         else -> CaregiverFeatureLanding(tab, state, repository, visible)
     }

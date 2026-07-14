@@ -149,7 +149,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] F03 Bulk proxy record including older missed slots outside the patient window.
 - [x] F04 PRN record/delete and inventory errors.
 - [x] F05 Preserve successful mutation UI when follow-up refresh fails.
-- [ ] F06 Inventory list/filter/detail/enable/adjust/refill and low-stock badge.
+- [x] F06 Inventory list/filter/detail/enable/adjust/refill and low-stock badge.
 - [ ] F07 Cross-tab Today/History/Inventory revision tests.
 
 ## Gate G — History, PDF, push and settings

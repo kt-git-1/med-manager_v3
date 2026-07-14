@@ -172,3 +172,16 @@ F01 is `IMPLEMENTED`; F02–F04 add the individual, bulk and PRN proxy mutations
 - The full gate passes with 63/63 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
 
 F02–F05 and `CG-008`, `CG-015`, `CG-016` are `IMPLEMENTED`. F06 now owns complete inventory management.
+
+## F06 caregiver inventory management — 2026-07-15
+
+- The production Inventory tab now loads caregiver-authenticated `GET /api/patients/{patientId}/inventory` for only the selected patient and clears prior-patient state before switching. Empty, no-patient, no-selection, loading, retryable failure and populated states use the shared caregiver shell contract.
+- The list mirrors the current iOS information hierarchy with patient identity, action/managed/unconfigured/ended metrics, All/Low/Out filters, semantic status labels, remaining quantity, days remaining and refill due date. Empty inventory links directly to the selected patient's Medications tab.
+- Detail settings send `PATCH /api/patients/{patientId}/medications/{medicationId}/inventory`. Refill and correction send `POST .../inventory/adjust` with `REFILL` plus a positive delta or `SET` plus a non-negative absolute quantity.
+- Refill offers authoritative 7/14/21-day planned-unit presets with the dose-count fallback and also accepts a positive custom amount. Refill and correction require explicit quantity confirmation; invalid values never leave the device.
+- Only a successful 2xx response replaces the local item with the authoritative response and publishes inventory freshness. Failure preserves quantity, settings and revisions, while exposing an inline retryable error.
+- The Inventory freshness cursor observes dose, medication and inventory revisions only while the tab is visible, so Today recording and medication lifecycle changes refresh it without hidden-tab requests.
+- API/JVM tests cover exact caregiver auth, method/path/body, authoritative replacement, validation, failure preservation and inventory-only revisions. Production Compose tests cover metrics/filtering, refill/correction confirmation and enabling inventory management.
+- The full gate passes with 66/66 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
+
+F06 and `CG-009` are `IMPLEMENTED`. F07 owns the explicit cross-tab revision matrix before Gate F closes.
