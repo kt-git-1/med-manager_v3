@@ -21,6 +21,10 @@ data class PatientUiState(
     val historyMonth: Int? = null,
     val historyDayDetail: HistoryDayDetail? = null,
     val historyDayLoading: Boolean = false,
+    val detailMedicationId: String? = null,
+    val detailMedication: PatientMedication? = null,
+    val detailLoading: Boolean = false,
+    val detailError: Boolean = false,
     val retentionCutoffDate: String? = null,
     val retentionDays: Int? = null,
     val notificationTarget: PatientNotificationTarget? = null,
@@ -84,6 +88,56 @@ class PatientRepository(
                 message = previousMessage,
             )
         }
+    }
+
+    suspend fun loadDoseDetail(medicationId: String) {
+        if (mutableState.value.detailMedicationId == medicationId && mutableState.value.detailLoading) return
+        val cached = mutableState.value.medicationById[medicationId]
+        if (cached != null) {
+            mutableState.value = mutableState.value.copy(
+                detailMedicationId = medicationId,
+                detailMedication = cached,
+                detailLoading = false,
+                detailError = false,
+            )
+            return
+        }
+
+        mutableState.value = mutableState.value.copy(
+            detailMedicationId = medicationId,
+            detailMedication = null,
+            detailLoading = true,
+            detailError = false,
+        )
+        runCatching { api.medications() }
+            .onSuccess { medications ->
+                if (mutableState.value.detailMedicationId == medicationId) {
+                    mutableState.value = mutableState.value.copy(
+                        medications = medications,
+                        detailMedication = medications.firstOrNull { it.id == medicationId },
+                        detailLoading = false,
+                        detailError = false,
+                    )
+                }
+            }
+            .onFailure {
+                if (mutableState.value.detailMedicationId == medicationId) {
+                    mutableState.value = mutableState.value.copy(
+                        detailMedication = null,
+                        detailLoading = false,
+                        detailError = true,
+                    )
+                }
+            }
+    }
+
+    fun clearDoseDetail() {
+        mutableState.value = mutableState.value.copy(
+            detailMedicationId = null,
+            detailMedication = null,
+            detailLoading = false,
+            detailError = false,
+        )
     }
 
     suspend fun record(dose: PatientDose) {

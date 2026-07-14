@@ -123,6 +123,32 @@ class PatientTodayContentTest {
     }
 
     @Test
+    fun detailContentShowsCurrentIosLoadingOverlay() {
+        setDoseDetail(notes = "夕食後に服用", loading = true)
+
+        composeRule.onNodeWithTag("patient-dose-detail-loading").assertIsDisplayed()
+        composeRule.onNodeWithText("読み込み中...").assertIsDisplayed()
+        writeScreenshotFixture(
+            composeRule.onRoot().captureToImage(),
+            "android-ui-102-patient-dose-detail-loading-light.png",
+        )
+    }
+
+    @Test
+    fun detailContentShowsRetryableCurrentIosError() {
+        var retryCount = 0
+        setDoseDetail(notes = null, error = true, onRetry = { retryCount += 1 })
+
+        composeRule.onNodeWithText("取得に失敗しました").assertIsDisplayed()
+        composeRule.onNodeWithText("再試行").assertIsDisplayed().performClick()
+        composeRule.runOnIdle { assertEquals(1, retryCount) }
+        writeScreenshotFixture(
+            composeRule.onRoot().captureToImage(),
+            "android-ui-102-patient-dose-detail-error-light.png",
+        )
+    }
+
+    @Test
     fun reminderMaintenanceWarningDoesNotReplaceMutationSuccess() {
         val warning = "服薬記録は保存されましたが、通知予定を更新できませんでした。アプリを開いたときに再試行します。"
         composeRule.setContent {
@@ -175,6 +201,15 @@ class PatientTodayContentTest {
     }
 
     private fun showDoseDetail(notes: String?): Activity {
+        return setDoseDetail(notes = notes)
+    }
+
+    private fun setDoseDetail(
+        notes: String?,
+        loading: Boolean = false,
+        error: Boolean = false,
+        onRetry: () -> Unit = {},
+    ): Activity {
         lateinit var activity: Activity
         val medication = medication("med", 12.0).copy(
             notes = notes,
@@ -193,6 +228,9 @@ class PatientTodayContentTest {
                             scheduledAt = Instant.parse("2026-07-14T03:30:00Z"),
                         ),
                         medication,
+                        loading = loading,
+                        error = error,
+                        onRetry = onRetry,
                     )
                 }
             }

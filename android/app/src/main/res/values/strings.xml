@@ -86,6 +86,9 @@
     <string name="patient_detail_status_pending">未記録</string>
     <string name="patient_detail_status_taken">記録済み</string>
     <string name="patient_detail_status_missed">飲み忘れ</string>
+    <string name="patient_detail_loading">読み込み中...</string>
+    <string name="patient_detail_error">取得に失敗しました</string>
+    <string name="patient_detail_retry">再試行</string>
     <string name="patient_detail_strength">薬の強さ</string>
     <string name="patient_detail_inventory">現在の在庫</string>
     <string name="patient_tablet_amount">%1$s錠</string>

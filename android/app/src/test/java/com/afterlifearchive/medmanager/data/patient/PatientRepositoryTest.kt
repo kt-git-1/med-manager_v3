@@ -149,6 +149,55 @@ class PatientRepositoryTest {
     }
 
     @Test
+    fun doseDetailUsesTodayMedicationCacheWithoutAnotherRequest() = runTest {
+        var medicationCalls = 0
+        val expected = testMedication("med", 10.0).copy(notes = "夕食後に服用")
+        val source = object : PatientDataSource by FakePatientDataSource() {
+            override suspend fun medications(): List<PatientMedication> {
+                medicationCalls += 1
+                return listOf(expected)
+            }
+        }
+        val repository = PatientRepository(source)
+        repository.loadToday()
+
+        repository.loadDoseDetail("med")
+
+        assertEquals(1, medicationCalls)
+        assertEquals(expected, repository.state.value.detailMedication)
+        assertFalse(repository.state.value.detailLoading)
+        assertFalse(repository.state.value.detailError)
+    }
+
+    @Test
+    fun doseDetailFailureCanRetryAndDismissWithoutLeakingState() = runTest {
+        var medicationCalls = 0
+        val expected = testMedication("med", 10.0)
+        val source = object : PatientDataSource by FakePatientDataSource() {
+            override suspend fun medications(): List<PatientMedication> {
+                medicationCalls += 1
+                if (medicationCalls == 1) error("detail unavailable")
+                return listOf(expected)
+            }
+        }
+        val repository = PatientRepository(source)
+
+        repository.loadDoseDetail("med")
+        assertTrue(repository.state.value.detailError)
+        assertFalse(repository.state.value.detailLoading)
+
+        repository.loadDoseDetail("med")
+        assertEquals(expected, repository.state.value.detailMedication)
+        assertFalse(repository.state.value.detailError)
+
+        repository.clearDoseDetail()
+        assertNull(repository.state.value.detailMedicationId)
+        assertNull(repository.state.value.detailMedication)
+        assertFalse(repository.state.value.detailLoading)
+        assertFalse(repository.state.value.detailError)
+    }
+
+    @Test
     fun historyRetentionPublishesLockMetadataWithoutGenericError() = runTest {
         val source = object : PatientDataSource by FakePatientDataSource() {
             override suspend fun history(year: Int, month: Int): List<HistoryDay> =

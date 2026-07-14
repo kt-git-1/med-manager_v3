@@ -365,7 +365,10 @@ fun PatientHomeScreen(
                     updatingPrnMedicationId = state.updatingPrnMedicationId,
                     onRetry = { scope.launch { repository.loadToday() } },
                     onRecord = { confirmDose = it },
-                    onDetail = { navigation.showDose(it.key) },
+                    onDetail = { dose ->
+                        navigation.showDose(dose.key)
+                        scope.launch { repository.loadDoseDetail(dose.medicationId) }
+                    },
                     onRecordSlot = { confirmSlot = it },
                     onRecordPrn = { confirmPrn = it },
                     onRemind = { dose ->
@@ -458,8 +461,17 @@ fun PatientHomeScreen(
         )
     }
     navigation.selectedDoseKey?.let { key -> state.doses.firstOrNull { it.key == key } }?.let { dose ->
-        ModalBottomSheet(onDismissRequest = navigation::dismissDose) {
-            PatientDoseDetailContent(dose, state.medicationById[dose.medicationId])
+        ModalBottomSheet(onDismissRequest = {
+            navigation.dismissDose()
+            repository.clearDoseDetail()
+        }) {
+            PatientDoseDetailContent(
+                dose = dose,
+                medication = state.detailMedication,
+                loading = state.detailLoading,
+                error = state.detailError,
+                onRetry = { scope.launch { repository.loadDoseDetail(dose.medicationId) } },
+            )
         }
     }
     navigation.selectedHistoryDate?.let { date ->

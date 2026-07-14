@@ -148,6 +148,7 @@ This selector foundation is connected to inventory-backed production candidates 
 - Every scheduled-dose card opens a modal detail surface built from the already loaded schedule and medication contracts.
 - The surface mirrors the current iOS production hierarchy: centered navigation-equivalent title, medication/dosage/Tokyo schedule/status header, memo with an explicit empty fallback, and per-intake quantity.
 - Current iOS no longer renders separate strength or inventory cards on this patient surface. A paired iOS XCUITest and API-35 Compose test verify the exact Japanese copy, date/status treatment, fractional quantity and absence of those stale cards.
+- Opening a detail uses the already loaded medication cache when possible and falls back to the patient-scoped medication list request when the item is absent. Loading and error state are detail-local, retryable, duplicate-safe, and cleared when the sheet closes, matching the current iOS state machine without replacing Today content or its messages.
 
 ### PT-011 authoritative refresh
 

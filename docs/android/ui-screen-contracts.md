@@ -70,7 +70,7 @@ Each screen ID maps to parity requirements. Every listed state needs a determini
 |---|---|---|
 | UI-100 Patient shell/tutorial | `PatientReadOnlyView.swift`, `GuidedTutorialOverlay` | three live tabs; four tutorial steps; skip/back/next/final permission; persisted completion; 200% font |
 | UI-101 Today | `PatientTodayView.swift`, view model | initial load, empty, typical, long names, pending/taken/missed, insufficient, updating, retry, success/partial, notification highlight |
-| UI-102 Dose detail | current `PatientTodayDoseDetailView` | navigation title; medication, dosage, time and status header; notes/empty notes; per-intake quantity; loading and retryable medication-detail error. Current iOS does not render separate strength or inventory cards here. |
+| UI-102 Dose detail | current `PatientTodayDoseDetailView` | navigation title; medication, dosage, time and status header; notes/empty notes; per-intake quantity; cache-first loading overlay and isolated retryable medication-detail error; dismiss resets transient detail state. Current iOS does not render separate strength or inventory cards here. |
 | UI-103 PRN | patient PRN section/screen | empty, active list, instructions, confirmation, insufficient, submitting, success/error |
 | UI-104 Patient history | current `HistoryMonthView.patientSimpleHistory` | title/subtitle, today progress ring and pills, no-plan/partial/complete/missed encouragement, Monday-first current week, recent today/yesterday summaries, loading/retry/retention |
 | UI-105 Retained history detail contract | `HistoryDayDetailView.swift`, day API | no longer reachable from current patient UI; keep scheduled/PRN/recorder/empty/retry/retention behavior as caregiver UI-206 foundation |
