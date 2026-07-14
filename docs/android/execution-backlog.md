@@ -107,7 +107,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C03 Reverify Patient Today states/actions/recording-window/inventory/PRN/detail.
 - [x] C04 Reverify current Patient History progress/week/recent summaries, retention and freshness.
 - [x] C05 Reverify Settings/reminders/tutorial/deep links/legal/logout and patient analytics-consent UI.
-- [ ] C06 Complete patient TalkBack, font 1.0/1.3/2.0, light/dark and physical-device checks. API-35 emulator dark captures for Patient Today/History/Settings and all four Caregiver primary surfaces, explicit 130%/200% reachability for both roles, Caregiver primary-screen reachability at dark plus 200%, Settings/tutorial 200%, merged Patient week and Caregiver calendar-day semantics, medication-named Caregiver primary actions, and production Patient/Caregiver Activity recreation plus portrait/landscape transitions are complete; full TalkBack traversal, matched iOS dark/large-text variants, additional viewport classes and physical-device verification remain.
+- [ ] C06 Complete patient TalkBack, font 1.0/1.3/2.0, light/dark and physical-device checks. API-35 emulator dark captures for Patient Today/History/Settings and all four Caregiver primary surfaces, standard/compact/large-phone viewport passes, explicit 130%/200% reachability for both roles, Caregiver primary-screen reachability at dark plus 200%, Settings/tutorial 200%, merged Patient week and Caregiver calendar-day semantics, medication-named Caregiver primary actions, and production Patient/Caregiver Activity recreation plus portrait/landscape transitions are complete; full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification remain.
 
 ## Gate D — Caregiver patient-management vertical slice
 
@@ -175,7 +175,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 - [x] Final rebaseline check: `origin/main@1d9d19e` has zero unique commits and is already an ancestor of `android-dev` (2026-07-15); no merge required.
 - [x] Resolve all `RECHECK_REQUIRED` rows; remaining `PARTIAL` rows are explicitly external/visual/device release gates.
-- [x] Full API 26/33/35 emulator matrix (101 tests each, 303/303 total), including light/dark 200% Caregiver reachability, Patient/Caregiver Activity recreation and rotation, medication-specific Caregiver TalkBack actions, the compact PDF sheet fix and caregiver stale/retry states.
+- [x] Full API 26/33/35 emulator matrix (101 tests each, 303/303 total), plus a separate API-35 448 x 997 dp large-phone override pass (101/101), including light/dark 200% Caregiver reachability, Patient/Caregiver Activity recreation and rotation, medication-specific Caregiver TalkBack actions, the compact PDF sheet fix and caregiver stale/retry states.
 - [ ] Physical-device matrix.
 - [ ] Notification Doze/delivery/tap/process-death tests.
 - [ ] TalkBack, font 2.0, dark mode, compact/large phone and rotation/configuration tests.
