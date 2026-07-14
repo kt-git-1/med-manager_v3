@@ -17,8 +17,12 @@ enum class AuthFailure {
     EMAIL_NOT_CONFIRMED,
     CONFIRMATION_EMAIL_FAILED,
     EMAIL_ALREADY_REGISTERED,
+    WEAK_PASSWORD,
+    FORBIDDEN,
+    NOT_FOUND,
     RATE_LIMITED,
     LOGIN_FAILED,
+    UNAVAILABLE,
 }
 
 class AuthException(val failure: AuthFailure) : Exception(failure.name)

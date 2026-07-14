@@ -44,6 +44,9 @@ sealed interface SessionUserMessage {
     data object EmailNotConfirmed : SessionUserMessage
     data object ConfirmationEmailFailed : SessionUserMessage
     data object EmailAlreadyRegistered : SessionUserMessage
+    data object AuthForbidden : SessionUserMessage
+    data object AuthNotFound : SessionUserMessage
+    data object AuthUnavailable : SessionUserMessage
     data object ConfirmationResendRateLimited : SessionUserMessage
     data object ConfirmationResendFailed : SessionUserMessage
     data object RateLimited : SessionUserMessage
@@ -146,7 +149,7 @@ class SessionRepository(
         } catch (error: Exception) {
             val message = when (val mapped = error.toSessionUserMessage()) {
                 SessionUserMessage.RateLimited -> SessionUserMessage.ConfirmationResendRateLimited
-                SessionUserMessage.LoginFailed -> SessionUserMessage.ConfirmationResendFailed
+                is SessionUserMessage.Raw, SessionUserMessage.Unexpected -> SessionUserMessage.ConfirmationResendFailed
                 else -> mapped
             }
             mutableState.value = mutableState.value.copy(errorMessage = message)
@@ -359,8 +362,12 @@ private fun Throwable.toSessionUserMessage(): SessionUserMessage = when (this) {
         AuthFailure.EMAIL_NOT_CONFIRMED -> SessionUserMessage.EmailNotConfirmed
         AuthFailure.CONFIRMATION_EMAIL_FAILED -> SessionUserMessage.ConfirmationEmailFailed
         AuthFailure.EMAIL_ALREADY_REGISTERED -> SessionUserMessage.EmailAlreadyRegistered
+        AuthFailure.WEAK_PASSWORD -> SessionUserMessage.PasswordTooShort
+        AuthFailure.FORBIDDEN -> SessionUserMessage.AuthForbidden
+        AuthFailure.NOT_FOUND -> SessionUserMessage.AuthNotFound
         AuthFailure.RATE_LIMITED -> SessionUserMessage.RateLimited
         AuthFailure.LOGIN_FAILED -> SessionUserMessage.LoginFailed
+        AuthFailure.UNAVAILABLE -> SessionUserMessage.AuthUnavailable
     }
     is ApiException.Network -> SessionUserMessage.Network
     else -> message?.takeIf(String::isNotBlank)?.let(SessionUserMessage::Raw) ?: SessionUserMessage.Unexpected

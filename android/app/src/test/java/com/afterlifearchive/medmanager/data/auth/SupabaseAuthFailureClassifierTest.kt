@@ -12,8 +12,14 @@ class SupabaseAuthFailureClassifierTest {
             Triple(422, "User already registered", AuthFailure.EMAIL_ALREADY_REGISTERED),
             Triple(422, "user_already_exists", AuthFailure.EMAIL_ALREADY_REGISTERED),
             Triple(400, "Email not confirmed", AuthFailure.EMAIL_NOT_CONFIRMED),
+            Triple(422, "Password should be at least 6 characters", AuthFailure.WEAK_PASSWORD),
+            Triple(422, "Email format is invalid", AuthFailure.INVALID_EMAIL),
+            Triple(400, "Malformed request", AuthFailure.LOGIN_FAILED),
+            Triple(403, "Access denied", AuthFailure.FORBIDDEN),
+            Triple(404, "Endpoint missing", AuthFailure.NOT_FOUND),
+            Triple(409, "Conflict", AuthFailure.EMAIL_ALREADY_REGISTERED),
             Triple(429, "Too many requests", AuthFailure.RATE_LIMITED),
-            Triple(500, "Unexpected server failure", AuthFailure.LOGIN_FAILED),
+            Triple(500, "Unexpected server failure", AuthFailure.UNAVAILABLE),
         )
 
         cases.forEach { (status, message, expected) ->

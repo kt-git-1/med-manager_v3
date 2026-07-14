@@ -104,12 +104,27 @@ internal fun classifyAuthFailure(status: Int, serverMessage: String): AuthFailur
         "sending confirmation email" in normalized ||
             "send confirmation email" in normalized ||
             ("confirmation email" in normalized && "failed" in normalized) -> AuthFailure.CONFIRMATION_EMAIL_FAILED
+        "email not confirmed" in normalized ||
+            "email_not_confirmed" in normalized ||
+            "confirm" in normalized -> AuthFailure.EMAIL_NOT_CONFIRMED
         "already registered" in normalized ||
             "already exists" in normalized ||
             "user_already_exists" in normalized -> AuthFailure.EMAIL_ALREADY_REGISTERED
-        "email not confirmed" in normalized ||
-            "email_not_confirmed" in normalized -> AuthFailure.EMAIL_NOT_CONFIRMED
+        "password" in normalized && (
+            "at least" in normalized ||
+                "weak" in normalized ||
+                "length" in normalized ||
+                "short" in normalized
+            ) -> AuthFailure.WEAK_PASSWORD
+        "email" in normalized && (
+            "invalid" in normalized ||
+                "format" in normalized
+            ) -> AuthFailure.INVALID_EMAIL
+        status == 400 || status == 401 || status == 422 -> AuthFailure.LOGIN_FAILED
+        status == 403 -> AuthFailure.FORBIDDEN
+        status == 404 -> AuthFailure.NOT_FOUND
+        status == 409 -> AuthFailure.EMAIL_ALREADY_REGISTERED
         status == 429 -> AuthFailure.RATE_LIMITED
-        else -> AuthFailure.LOGIN_FAILED
+        else -> AuthFailure.UNAVAILABLE
     }
 }

@@ -307,6 +307,11 @@ class SessionRepositoryTest {
         val cases = mapOf(
             AuthFailure.EMAIL_ALREADY_REGISTERED to SessionUserMessage.EmailAlreadyRegistered,
             AuthFailure.CONFIRMATION_EMAIL_FAILED to SessionUserMessage.ConfirmationEmailFailed,
+            AuthFailure.WEAK_PASSWORD to SessionUserMessage.PasswordTooShort,
+            AuthFailure.INVALID_EMAIL to SessionUserMessage.InvalidEmail,
+            AuthFailure.FORBIDDEN to SessionUserMessage.AuthForbidden,
+            AuthFailure.NOT_FOUND to SessionUserMessage.AuthNotFound,
+            AuthFailure.UNAVAILABLE to SessionUserMessage.AuthUnavailable,
         )
 
         cases.forEach { (failure, expected) ->
@@ -330,7 +335,8 @@ class SessionRepositoryTest {
     fun resendUsesConfirmationSpecificRateLimitAndFailureStates() = runTest {
         val cases = mapOf(
             AuthFailure.RATE_LIMITED to SessionUserMessage.ConfirmationResendRateLimited,
-            AuthFailure.LOGIN_FAILED to SessionUserMessage.ConfirmationResendFailed,
+            AuthFailure.LOGIN_FAILED to SessionUserMessage.LoginFailed,
+            AuthFailure.UNAVAILABLE to SessionUserMessage.AuthUnavailable,
         )
 
         cases.forEach { (failure, expected) ->
@@ -347,6 +353,23 @@ class SessionRepositoryTest {
 
             assertEquals(expected, repository.state.value.errorMessage)
         }
+
+        val unknownFailureRepository = SessionRepository(
+            FakeStorage().apply { mode = AppMode.CAREGIVER },
+            SignupAuthService(
+                signupSession = AuthSession(null, null, null),
+                resendError = IllegalStateException(),
+            ),
+            ApiClient(baseUrl = "https://example.invalid/", patientTokenProvider = { null }),
+            { 1_000 },
+        )
+
+        unknownFailureRepository.resendSignupConfirmation("care@example.com")
+
+        assertEquals(
+            SessionUserMessage.ConfirmationResendFailed,
+            unknownFailureRepository.state.value.errorMessage,
+        )
     }
 
     @Test

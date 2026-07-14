@@ -139,8 +139,17 @@ class CaregiverAuthFlowScreenTest {
     fun signupAndResendFailureCopyMatchesCurrentIos() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val expected = mapOf(
+            R.string.session_error_email_not_confirmed to "メール確認が完了していません。受信メールを確認してください。",
             R.string.session_error_confirmation_email_failed to "確認メールを送信できませんでした。しばらくしてからもう一度お試しください。",
             R.string.session_error_email_already_registered to "このメールアドレスはすでに登録されています。ログインしてください。",
+            R.string.session_error_password_too_short to "パスワードは6文字以上で入力してください。",
+            R.string.session_error_invalid_email to "メールアドレスの形式を確認してください。",
+            R.string.session_error_login_failed to "メールアドレスとパスワードを確認してください。",
+            R.string.session_error_auth_forbidden to "このアカウントではログインできません。",
+            R.string.session_error_auth_not_found to "ログイン機能に接続できません。しばらくしてからもう一度お試しください。",
+            R.string.session_error_rate_limited to "ログイン試行が続いたため、少し時間をおいてからもう一度お試しください。",
+            R.string.session_error_auth_unavailable to "ログイン機能が一時的に利用できません。しばらくしてからもう一度お試しください。",
+            R.string.session_error_network to "通信に失敗しました。インターネット接続を確認して、もう一度お試しください。",
             R.string.session_error_confirmation_resend_rate_limited to "確認メールの送信上限に達しました。少し時間をおいてからもう一度お試しください。",
             R.string.session_error_confirmation_resend_failed to "確認メールの再送に失敗しました。しばらくしてからもう一度お試しください。",
         )
