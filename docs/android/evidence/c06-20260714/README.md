@@ -28,7 +28,7 @@ The 200% capture records the initial viewport only. Automated scrolling assertio
 
 `PatientAccessibilityTest` verifies each History week cell exposes one localized weekday/date/status announcement, for example `月 7月13日 忘れ`, alongside the existing heading and summary semantics.
 
-The 2026-07-15 extension runs the three Patient reachability scenarios at both 1.3 and 2.0 font scale. `CaregiverAdaptiveUiTest` additionally verifies at 1.3 that Today's medication entry, the medication form save action, inventory detail settings and exact History day sheet remain reachable. At 2.0, caregiver Analytics consent and logout remain reachable through the production Settings list. The targeted caregiver run passed 5/5 and the C06 checkpoint API-35 suite passed 84/84; the later Gate I matrix is authoritative at 89/89 per API level.
+The 2026-07-15 extension runs the three Patient reachability scenarios at both 1.3 and 2.0 font scale. `CaregiverAdaptiveUiTest` verifies at 1.3 that Today's medication entry, the medication form save action, inventory detail settings and exact History day sheet remain reachable, while Caregiver Analytics consent and logout remain reachable at 2.0. `CaregiverLargeTextUiTest` closes the remaining primary-surface 2.0 gap by exercising the real scroll path to Today medication entry, medication save, inventory correction and History day detail. The four new scenarios pass on the compact API-26 viewport and the complete API 26/33/35 matrix passes 279/279.
 
 The targeted adaptive/accessibility run passed 5/5 tests. The complete command below subsequently passed with 40/40 API-35 instrumentation tests, all JVM tests, Debug/Release assembly and Android Lint:
 
@@ -38,4 +38,4 @@ The targeted adaptive/accessibility run passed 5/5 tests. The complete command b
 
 ## Residual before C06 verification
 
-C06 remains open. Primary Patient screens now have explicit 1.3/2.0 reachability coverage and primary Caregiver surfaces have 1.3 coverage plus 2.0 Settings/tutorial coverage. Full TalkBack traversal on every state, remaining caregiver 2.0 actions, dark/large-text state captures, matched iOS variants, compact/large device classes and physical-device verification remain. Those residuals are intentionally not inferred from emulator automation.
+C06 remains open. Primary Patient and Caregiver screens now have explicit 1.3/2.0 action reachability coverage, including Caregiver Settings/tutorial. Full TalkBack traversal on every state, dark/large-text state captures, matched iOS variants, rotation/configuration, additional compact/large device-class evidence and physical-device verification remain. Those residuals are intentionally not inferred from emulator automation.
