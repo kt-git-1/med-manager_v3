@@ -48,17 +48,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                 isUpdating = false
             }
             do {
-                async let dosesTask = apiClient.fetchCaregiverToday(slotTimeItems: [])
-                async let medicationsTask = apiClient.fetchMedications(patientId: nil)
-                async let inventoryTask = apiClient.fetchInventory()
-                let (doses, medications, inventory) = try await (dosesTask, medicationsTask, inventoryTask)
-                items = doses.sorted(by: sortDose)
-                prnMedications = medications
-                    .filter { $0.isPrn && $0.isActive && !$0.isArchived }
-                    .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-                outOfStockMedicationIds = Set(
-                    inventory.filter { $0.isInsufficientForDose }.map { $0.medicationId }
-                )
+                try await refreshData()
             } catch {
                 items = []
                 prnMedications = []
@@ -94,7 +84,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                     )
                 )
                 showToast(NSLocalizedString("caregiver.today.recorded", comment: "Recorded"))
-                load(showLoading: false)
+                await refreshAfterMutation()
             } catch {
                 showToastMessage(for: error)
             }
@@ -121,7 +111,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                     let format = NSLocalizedString("caregiver.today.recorded.bulk", comment: "Bulk recorded")
                     showToast(String(format: format, result.updatedCount))
                 }
-                load(showLoading: false)
+                await refreshAfterMutation()
             } catch {
                 showToastMessage(for: error)
             }
@@ -143,7 +133,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                     )
                 )
                 showToast(NSLocalizedString("caregiver.today.prn.recorded", comment: "Caregiver PRN recorded"))
-                load(showLoading: false)
+                await refreshAfterMutation()
                 onSuccess()
             } catch {
                 showToastMessage(for: error)
@@ -162,7 +152,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                     scheduledAt: dose.scheduledAt
                 )
                 showToast(NSLocalizedString("caregiver.today.deleted", comment: "Deleted"))
-                load(showLoading: false)
+                await refreshAfterMutation()
             } catch {
                 showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
             }
@@ -188,6 +178,31 @@ final class CaregiverTodayViewModel: ObservableObject {
         } else {
             showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
         }
+    }
+
+    private func refreshAfterMutation() async {
+        do {
+            try await refreshData()
+        } catch {
+            // The mutation already succeeded. Preserve the currently rendered data instead of
+            // replacing the whole screen with an empty/error state on a transient refresh failure.
+            showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
+        }
+    }
+
+    private func refreshData() async throws {
+        async let dosesTask = apiClient.fetchCaregiverToday(slotTimeItems: [])
+        async let medicationsTask = apiClient.fetchMedications(patientId: nil)
+        async let inventoryTask = apiClient.fetchInventory()
+        let (doses, medications, inventory) = try await (dosesTask, medicationsTask, inventoryTask)
+
+        items = doses.sorted(by: sortDose)
+        prnMedications = medications
+            .filter { $0.isPrn && $0.isActive && !$0.isArchived }
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        outOfStockMedicationIds = Set(
+            inventory.filter { $0.isInsufficientForDose }.map { $0.medicationId }
+        )
     }
 
     private func sortDose(_ lhs: ScheduleDoseDTO, _ rhs: ScheduleDoseDTO) -> Bool {
