@@ -6,6 +6,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
@@ -31,6 +32,7 @@ class PatientAccessibilityTest {
         composeRule.onNodeWithText("飲んだ記録を確認できます").assertIsDisplayed()
         composeRule.onNodeWithText("昨日 7月13日（月）").assertIsDisplayed()
         composeRule.onNodeWithText("朝・昼・夕のお薬").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("月 7月13日 忘れ").assertIsDisplayed()
     }
 
     @Test

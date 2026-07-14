@@ -128,6 +128,7 @@
     <string name="patient_history_simple_scheduled">予定</string>
     <string name="patient_history_simple_missed">忘れ</string>
     <string name="patient_history_simple_none">予定なし</string>
+    <string name="patient_history_week_day_accessibility">%1$s %2$s %3$s</string>
     <string name="patient_history_previous_month">‹ 前月</string>
     <string name="patient_history_month">%1$d年%2$d月</string>
     <string name="patient_history_next_month">翌月 ›</string>

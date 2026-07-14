@@ -266,6 +266,9 @@ This selector foundation is connected to inventory-backed production candidates 
 - Current patient history exposes a semantic heading plus textual progress, encouragement, week and recent-record summaries without relying on color alone.
 - The tutorial overlay announces itself as a named pane with current progress.
 - A 200% font-scale instrumentation test verifies the final tutorial step keeps its title and skip/back/permission actions operable.
-- TalkBack semantics and font scaling are covered for the highest-risk patient surfaces; the matrix remains `PARTIAL` pending the complete screen audit, caregiver UI, and physical-device screen-reader verification.
+- 200% font-scale instrumentation also verifies Today's primary bulk/planned content, History's recent/today content, and Settings' analytics/logout controls remain reachable through their production scroll containers.
+- Each History week cell merges weekday, date and status into a single localized TalkBack announcement instead of exposing decorative fragments.
+- API-35 dark captures for the three primary patient screens and a 200% Today capture are recorded under `evidence/c06-20260714/`.
+- TalkBack semantics and font scaling are covered for the highest-risk patient surfaces; the matrix remains `PARTIAL` pending 130%, complete screen traversal, caregiver UI, matched iOS variants and physical-device screen-reader verification.
 
-Additional known gaps are the remaining current-iOS paired captures, dark mode, full large-text/TalkBack audits and physical-device evidence.
+Additional known gaps are the remaining current-iOS paired captures, complete dark-state comparison, full large-text/TalkBack audits and physical-device evidence.

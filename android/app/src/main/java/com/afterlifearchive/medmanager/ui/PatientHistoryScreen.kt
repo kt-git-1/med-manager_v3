@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -79,7 +80,7 @@ internal fun HistoryContent(
     val consecutiveTaken = patientHistoryConsecutiveTaken(weekDates, now, byDate)
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().testTag("patient-history-list"),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -224,8 +225,15 @@ private fun PatientWeekDay(date: LocalDate, day: HistoryDay?, now: LocalDate, mo
         PatientSimpleHistoryStatus.MISSED -> Icons.Rounded.Warning
         PatientSimpleHistoryStatus.NONE -> Icons.Rounded.Remove
     }
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(date.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, Locale.JAPANESE), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
+    val weekday = date.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, Locale.JAPANESE)
+    val dateText = "${date.monthValue}月${date.dayOfMonth}日"
+    val accessibilityText = stringResource(R.string.patient_history_week_day_accessibility, weekday, dateText, patientSimpleStatusText(status))
+    Column(
+        modifier.semantics(mergeDescendants = true) { contentDescription = accessibilityText },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(weekday, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
         Box(Modifier.size(34.dp).background(if (status == PatientSimpleHistoryStatus.NONE || isUpcoming) accent.copy(alpha = 0.14f) else accent, CircleShape), contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = null, modifier = Modifier.size(17.dp), tint = if (status == PatientSimpleHistoryStatus.NONE || isUpcoming) accent else Color.White)
         }

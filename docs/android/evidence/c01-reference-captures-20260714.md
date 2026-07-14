@@ -50,6 +50,8 @@
 - UI-104 History month, UI-105 History day and UI-106 Settings states.
 - Compact/large viewport pairs and dark/large-text variants required by `ui-screen-contracts.md`.
 
+Android dark captures for UI-101/UI-104/UI-106 and an Android UI-101 200% font capture are now recorded separately under `c06-20260714/`. They reduce the Android adaptive-matrix residual but do not replace the missing matched iOS pairs above.
+
 C01 remains in progress until the full scoped state inventory is captured. These files are the first current-baseline references and replace older evidence only for the states listed above.
 
-Post-fix verification: `./gradlew test assembleDebug assembleRelease lint connectedDebugAndroidTest` completed successfully with 34/34 API 35 emulator tests after adding production caregiver-auth flow coverage, and `git diff --check` passed.
+Latest post-fix verification: `./gradlew test assembleDebug assembleRelease lint connectedDebugAndroidTest` completed successfully with 40/40 API 35 emulator tests after adding patient adaptive-screen and accessibility coverage, and `git diff --check` passed.

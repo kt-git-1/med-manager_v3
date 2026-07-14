@@ -107,7 +107,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C03 Reverify Patient Today states/actions/recording-window/inventory/PRN/detail.
 - [x] C04 Reverify current Patient History progress/week/recent summaries, retention and freshness.
 - [x] C05 Reverify Settings/reminders/tutorial/deep links/legal/logout and patient analytics-consent UI.
-- [ ] C06 Complete patient TalkBack, font 1.0/1.3/2.0, light/dark and physical-device checks.
+- [ ] C06 Complete patient TalkBack, font 1.0/1.3/2.0, light/dark and physical-device checks. API-35 emulator dark captures for Today/History/Settings, 200% reachability for all three primary screens, and merged History day semantics are complete; 130%, full TalkBack traversal, remaining state captures and physical-device verification remain.
 
 ## Gate D — Caregiver patient-management vertical slice
 
@@ -185,4 +185,4 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Immediate next item
 
-Continue the remaining **C01 current-iOS reference capture**, then C06, in `ui-screen-contracts.md` order. C03–C05 now mirror current patient Today, simplified History and Settings. Settings uses the current master-notification-only card, linked status, privacy-first analytics consent, explained legal/support destinations, denied-permission guidance and server-first logout. Consent is stored off by default; Firebase transport, reset-on-disable and DebugView verification intentionally remain Gate H. Deterministic light evidence is under `evidence/c03-20260714/` through `c05-20260714/`. Gate B's final visual-regression checkbox remains open until the remaining C01 pairs are complete; physical device, dark/large text and TalkBack remain assigned to C06/V1.
+Begin **Gate D caregiver patient-management** while keeping the C01/C06 verification residuals explicit. C03–C05 mirror current patient Today, simplified History and Settings. The API-35 adaptive matrix now covers dark Today/History/Settings, 200% reachability on all three screens and merged History-day TalkBack labels; evidence is under `evidence/c06-20260714/`. C01 still requires the remaining iOS pairs and exceptional states, and C06 still requires 130%, full TalkBack traversal and physical-device checks. Consent remains off by default; Firebase transport, reset-on-disable and DebugView verification remain Gate H.
