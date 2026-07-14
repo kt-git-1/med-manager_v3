@@ -23,6 +23,7 @@ class MainActivity : ComponentActivity() {
         val caregiverInventoryRepository = (application as MedicationApplication).caregiverInventoryRepository
         val caregiverHistoryRepository = (application as MedicationApplication).caregiverHistoryRepository
         val caregiverReportRepository = (application as MedicationApplication).caregiverReportRepository
+        val caregiverPushRepository = (application as MedicationApplication).caregiverPushRepository
         handlePatientNotificationIntent(intent, patientRepository)
         handleCaregiverNotificationIntent(intent, caregiverHistoryRepository)
         setContent {
@@ -34,7 +35,7 @@ class MainActivity : ComponentActivity() {
                 } else if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_PATIENT", false)) {
                     PatientModePreview(PatientTab.TODAY)
                 } else {
-                    MedicationApp(repository, patientRepository, caregiverPatientRepository, caregiverMedicationRepository, caregiverTodayRepository, caregiverInventoryRepository, caregiverHistoryRepository, caregiverReportRepository)
+                    MedicationApp(repository, patientRepository, caregiverPatientRepository, caregiverMedicationRepository, caregiverTodayRepository, caregiverInventoryRepository, caregiverHistoryRepository, caregiverReportRepository, caregiverPushRepository)
                 }
             }
         }

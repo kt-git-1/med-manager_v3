@@ -475,6 +475,16 @@
     <string name="notification_default_medication_name">お薬</string>
     <string name="notification_patient_title">お薬の時間です</string>
     <string name="notification_patient_body">%1$sを確認しましょう。</string>
+    <string name="notification_channel_caregiver">見守り通知</string>
+    <string name="notification_channel_caregiver_description">見守っている方の服薬状況に関する通知</string>
+    <string name="notification_caregiver_title">服薬状況が更新されました</string>
+    <string name="notification_caregiver_body">アプリを開いて最新の状況をご確認ください。</string>
+    <string name="caregiver_push_title">見守り通知</string>
+    <string name="caregiver_push_description">服薬状況の更新をこの端末で受け取ります。</string>
+    <string name="caregiver_push_syncing">通知設定を反映しています…</string>
+    <string name="caregiver_push_enabled">この端末への通知は有効です。</string>
+    <string name="caregiver_push_sync_failed">通知設定をサーバーへ反映できませんでした。端末側の設定は保存されています。</string>
+    <string name="caregiver_push_configuration_missing">このビルドには通知サービスの設定がありません。</string>
 
     <!-- Patient repository messages -->
     <string name="patient_message_inventory_insufficient">在庫が不足しているため記録できません。</string>

@@ -14,6 +14,7 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverInventoryReposito
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverReportRepository
 import com.afterlifearchive.medmanager.data.patient.PatientRepository
+import com.afterlifearchive.medmanager.data.push.CaregiverPushRepository
 import com.afterlifearchive.medmanager.data.session.SessionRepository
 
 @Composable
@@ -26,11 +27,13 @@ fun MedicationApp(
     caregiverInventoryRepository: CaregiverInventoryRepository,
     caregiverHistoryRepository: CaregiverHistoryRepository,
     caregiverReportRepository: CaregiverReportRepository,
+    caregiverPushRepository: CaregiverPushRepository,
 ) {
     val state by repository.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.mode, state.caregiverAuthenticated) {
         if (state.mode == AppMode.CAREGIVER && state.caregiverAuthenticated) {
             repository.refreshCaregiverIfNeeded()
+            caregiverPushRepository.restoreIfEnabled()
         } else {
             caregiverPatientRepository.clear()
             caregiverMedicationRepository.clear()
@@ -51,6 +54,7 @@ fun MedicationApp(
                     caregiverInventoryRepository,
                     caregiverHistoryRepository,
                     caregiverReportRepository,
+                    caregiverPushRepository,
                     onLogout = repository::logoutCaregiver,
                     onAccountDeleted = repository::logoutCaregiver,
                 )

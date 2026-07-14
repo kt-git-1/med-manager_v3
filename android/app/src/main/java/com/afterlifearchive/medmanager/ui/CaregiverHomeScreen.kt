@@ -6,6 +6,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -42,6 +43,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -63,6 +65,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
@@ -75,6 +78,7 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverInventoryRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverReportRepository
+import com.afterlifearchive.medmanager.data.push.CaregiverPushRepository
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -98,6 +102,7 @@ fun CaregiverHomeScreen(
     inventoryRepository: CaregiverInventoryRepository? = null,
     historyRepository: CaregiverHistoryRepository? = null,
     reportRepository: CaregiverReportRepository? = null,
+    pushRepository: CaregiverPushRepository? = null,
     onLogout: () -> Unit = {},
     onAccountDeleted: () -> Unit = {},
     tutorialEnabled: Boolean = true,
@@ -165,6 +170,7 @@ fun CaregiverHomeScreen(
                                 inventoryRepository,
                                 historyRepository,
                                 reportRepository,
+                                pushRepository,
                                 visible,
                                 onLogout,
                                 onAccountDeleted,
@@ -216,6 +222,7 @@ private fun CaregiverTabContent(
     inventoryRepository: CaregiverInventoryRepository?,
     historyRepository: CaregiverHistoryRepository?,
     reportRepository: CaregiverReportRepository?,
+    pushRepository: CaregiverPushRepository?,
     visible: Boolean,
     onLogout: () -> Unit,
     onAccountDeleted: () -> Unit,
@@ -223,7 +230,7 @@ private fun CaregiverTabContent(
     onOpenMedications: () -> Unit,
 ) {
     when (tab) {
-        CaregiverTab.SETTINGS -> CaregiverPatientSelectionScreen(state, repository, visible, onLogout, onAccountDeleted, tutorialFocusTag)
+        CaregiverTab.SETTINGS -> CaregiverPatientSelectionScreen(state, repository, pushRepository, visible, onLogout, onAccountDeleted, tutorialFocusTag)
         CaregiverTab.MEDICATIONS -> if (medicationRepository != null) {
             CaregiverMedicationScreen(
                 repository = medicationRepository,
@@ -303,6 +310,7 @@ private fun CaregiverPatientGate(
 private fun CaregiverPatientSelectionScreen(
     state: CaregiverPatientState,
     repository: CaregiverPatientRepository,
+    pushRepository: CaregiverPushRepository?,
     enabled: Boolean,
     onLogout: () -> Unit,
     onAccountDeleted: () -> Unit,
@@ -310,6 +318,11 @@ private fun CaregiverPatientSelectionScreen(
 ) {
     var displayName by rememberSaveable { mutableStateOf("") }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val pushState = pushRepository?.state?.collectAsStateWithLifecycle()?.value
+    val pushPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) scope.launch { pushRepository?.enable() }
+    }
     val selectedPatient = state.selectedPatient
     var morning by rememberSaveable { mutableStateOf("08:00") }
     var noon by rememberSaveable { mutableStateOf("12:00") }
@@ -455,6 +468,45 @@ private fun CaregiverPatientSelectionScreen(
                         enabled = enabled && !state.destructiveActionInProgress,
                         modifier = Modifier.fillMaxWidth().testTag("caregiver-patient-delete"),
                     ) { Text(stringResource(R.string.caregiver_patient_delete), color = MaterialTheme.colorScheme.error) }
+                }
+            }
+        }
+        if (pushRepository != null && pushState != null) item {
+            Card(Modifier.fillMaxWidth().testTag("caregiver-push-settings")) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(R.string.caregiver_push_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.caregiver_push_description), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(
+                            checked = pushState.enabled,
+                            enabled = enabled && !pushState.syncing,
+                            onCheckedChange = { checked ->
+                                if (!checked) {
+                                    scope.launch { pushRepository.disable() }
+                                } else if (Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                                    scope.launch { pushRepository.enable() }
+                                } else {
+                                    pushPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            },
+                            modifier = Modifier.testTag("caregiver-push-switch"),
+                        )
+                    }
+                    when {
+                        pushState.syncing -> Text(stringResource(R.string.caregiver_push_syncing), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        pushState.configurationMissing -> Text(stringResource(R.string.caregiver_push_configuration_missing), color = MaterialTheme.colorScheme.error)
+                        pushState.syncFailed -> {
+                            Text(stringResource(R.string.caregiver_push_sync_failed), color = MaterialTheme.colorScheme.error)
+                            OutlinedButton(
+                                onClick = { scope.launch { pushRepository.retry() } },
+                                enabled = enabled,
+                                modifier = Modifier.testTag("caregiver-push-retry"),
+                            ) { Text(stringResource(R.string.common_retry)) }
+                        }
+                        pushState.registered -> Text(stringResource(R.string.caregiver_push_enabled), color = MaterialTheme.colorScheme.primary)
+                    }
                 }
             }
         }

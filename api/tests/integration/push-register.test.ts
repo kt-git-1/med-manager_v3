@@ -409,12 +409,31 @@ describe("POST /api/push/register — auth & validation errors", () => {
     expect(res.status).toBe(422);
   });
 
-  it("returns 422 for invalid platform value", async () => {
+  it("accepts Android FCM registration", async () => {
     const { POST } = await import("../../app/api/push/register/route");
     const req = new Request("http://localhost/api/push/register", {
       method: "POST",
       headers: caregiverHeaders(),
       body: JSON.stringify({ token: "fcm-token-1", platform: "android", environment: "DEV" })
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(upsertPushDeviceMock).toHaveBeenCalledWith({
+      ownerType: "CAREGIVER",
+      ownerId: "caregiver-1",
+      token: "fcm-token-1",
+      platform: "android",
+      environment: "DEV"
+    });
+  });
+
+  it("returns 422 for unsupported platform value", async () => {
+    const { POST } = await import("../../app/api/push/register/route");
+    const req = new Request("http://localhost/api/push/register", {
+      method: "POST",
+      headers: caregiverHeaders(),
+      body: JSON.stringify({ token: "fcm-token-1", platform: "web", environment: "DEV" })
     });
 
     const res = await POST(req);

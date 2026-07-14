@@ -47,6 +47,10 @@ android {
         buildConfigField("String", "SUPABASE_URL", runtimeConfig("SUPABASE_URL").asBuildConfigString())
         buildConfigField("String", "SUPABASE_ANON_KEY", runtimeConfig("SUPABASE_ANON_KEY").asBuildConfigString())
         buildConfigField("boolean", "BILLING_ENABLED", runtimeConfig("BILLING_ENABLED", "false"))
+        buildConfigField("String", "FIREBASE_APP_ID", runtimeConfig("FIREBASE_APP_ID").asBuildConfigString())
+        buildConfigField("String", "FIREBASE_API_KEY", runtimeConfig("FIREBASE_API_KEY").asBuildConfigString())
+        buildConfigField("String", "FIREBASE_PROJECT_ID", runtimeConfig("FIREBASE_PROJECT_ID").asBuildConfigString())
+        buildConfigField("String", "FIREBASE_SENDER_ID", runtimeConfig("FIREBASE_SENDER_ID").asBuildConfigString())
         buildConfigField(
             "String",
             "EMAIL_CONFIRMATION_REDIRECT_URL",
@@ -105,6 +109,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
+    implementation(libs.firebase.analytics)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 

@@ -17,6 +17,10 @@ import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
 import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.HistoryDayDetail
 import com.afterlifearchive.medmanager.data.patient.HistoryScheduledDose
+import com.afterlifearchive.medmanager.data.push.CaregiverPushDataSource
+import com.afterlifearchive.medmanager.data.push.CaregiverPushRepository
+import com.afterlifearchive.medmanager.data.push.CaregiverPushStorage
+import com.afterlifearchive.medmanager.data.push.CaregiverPushTokenSource
 import com.afterlifearchive.medmanager.data.session.CaregiverSelectionRepository
 import com.afterlifearchive.medmanager.data.session.SessionStorage
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
@@ -82,6 +86,35 @@ class CaregiverHomeScreenTest {
     }
 
     @Test
+    fun settingsExposesExplicitPushControlAndConfigurationState() {
+        val storage = TestSelectionStorage()
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val patientRepository = CaregiverPatientRepository(CaregiverPatientDataSource { emptyList() }, selection)
+        val pushRepository = CaregiverPushRepository(
+            dataSource = object : CaregiverPushDataSource {
+                override suspend fun register(token: String) = Unit
+                override suspend fun unregister(token: String) = Unit
+            },
+            tokenSource = object : CaregiverPushTokenSource {
+                override val configured = false
+                override fun setAutoInitEnabled(enabled: Boolean) = Unit
+                override suspend fun token() = "token"
+            },
+            storage = TestPushStorage(),
+        )
+        composeRule.setContent {
+            MedicationAppTheme {
+                CaregiverHomeScreen(patientRepository, pushRepository = pushRepository, tutorialEnabled = false)
+            }
+        }
+
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-push-settings"))
+        composeRule.onNodeWithTag("caregiver-push-settings").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-push-switch").assertIsDisplayed()
+    }
+
+    @Test
     fun remotePushSelectsTargetPatientAndHistoryTab() {
         val storage = TestSelectionStorage()
         val selection = CaregiverSelectionRepository(storage).also { it.restore() }
@@ -115,6 +148,13 @@ class CaregiverHomeScreenTest {
         composeRule.waitForIdle()
         return repository to storage
     }
+}
+
+private class TestPushStorage : CaregiverPushStorage {
+    override var enabled = false
+    override var token: String? = null
+    override var registeredToken: String? = null
+    override var pendingUnregisterToken: String? = null
 }
 
 private class TestSelectionStorage : SessionStorage {

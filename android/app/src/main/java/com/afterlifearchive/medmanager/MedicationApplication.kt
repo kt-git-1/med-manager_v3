@@ -19,6 +19,9 @@ import com.afterlifearchive.medmanager.data.freshness.FreshnessConsumer
 import com.afterlifearchive.medmanager.data.network.ApiClient
 import com.afterlifearchive.medmanager.data.patient.PatientApi
 import com.afterlifearchive.medmanager.data.patient.PatientRepository
+import com.afterlifearchive.medmanager.data.push.AndroidCaregiverPushStorage
+import com.afterlifearchive.medmanager.data.push.CaregiverPushApi
+import com.afterlifearchive.medmanager.data.push.CaregiverPushRepository
 import com.afterlifearchive.medmanager.data.session.AndroidSessionStorage
 import com.afterlifearchive.medmanager.data.session.CaregiverSelectionRepository
 import com.afterlifearchive.medmanager.data.session.SessionRepository
@@ -47,6 +50,8 @@ class MedicationApplication : Application() {
     lateinit var caregiverHistoryRepository: CaregiverHistoryRepository
         private set
     lateinit var caregiverReportRepository: CaregiverReportRepository
+        private set
+    lateinit var caregiverPushRepository: CaregiverPushRepository
         private set
     lateinit var mutationFreshnessStore: MutationFreshnessStore
         private set
@@ -98,6 +103,11 @@ class MedicationApplication : Application() {
             mutationFreshnessStore,
         )
         caregiverReportRepository = CaregiverReportRepository(CaregiverReportApi(apiClient))
+        caregiverPushRepository = CaregiverPushRepository(
+            dataSource = CaregiverPushApi(apiClient, if (BuildConfig.DEBUG) "DEV" else "PROD"),
+            tokenSource = FirebaseCaregiverPushTokenSource(this),
+            storage = AndroidCaregiverPushStorage(this),
+        )
         repository.restore()
         ReminderScheduler.createNotificationChannel(this)
 
@@ -115,5 +125,9 @@ class MedicationApplication : Application() {
                 schedulerCursor.refreshIfStale { reminderMaintenance.rebuildIfEnabled() }
             }
         }
+    }
+
+    fun handleCaregiverPushToken(token: String) {
+        applicationScope.launch { caregiverPushRepository.onNewToken(token) }
     }
 }

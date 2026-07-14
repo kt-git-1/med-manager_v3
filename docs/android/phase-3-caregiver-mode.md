@@ -219,3 +219,15 @@ G01, `CG-010` and `XP-002` are `IMPLEMENTED`. Physical notification-tap/process-
 - The full gate passes with 72/72 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
 
 G02 and `CG-011` are `IMPLEMENTED`. G03 now owns Android FCM permission and token lifecycle.
+
+## G03 caregiver FCM permission and token lifecycle — 2026-07-15
+
+- Firebase Messaging is included without a checked-in `google-services.json`. Runtime values use `FIREBASE_APP_ID`, `FIREBASE_API_KEY`, `FIREBASE_PROJECT_ID` and `FIREBASE_SENDER_ID`; a build with missing values remains runnable and reports the unavailable notification configuration in Settings.
+- Analytics collection and Messaging auto-init both remain manifest-disabled. FCM initializes only after the caregiver explicitly enables notifications and, on Android 13+, grants `POST_NOTIFICATIONS`.
+- The caregiver Settings switch persists device intent, registers the current token through caregiver-authenticated `POST /api/push/register` with `platform=android` and build-correct `DEV`/`PROD`, re-registers refreshed tokens and shows syncing/configuration/failure states.
+- Disabling takes effect locally before network work, disables FCM auto-init and calls `POST /api/push/unregister`. A failed unregister is persisted and retried later without re-enabling local notification display.
+- The backend validator now accepts the documented `android` platform while continuing to reject unsupported platforms. Its Android upsert is covered by the existing push integration suite.
+- The messaging service ignores locally disabled or invalid events. Valid privacy-minimal `DOSE_TAKEN` data builds a generic notification and preserves the strict patient/date/slot History destination already implemented by G01.
+- API contract and repository tests cover exact auth/path/body, enable, token refresh, disable failure, pending retry and missing configuration. Production Compose coverage confirms the explicit Settings control; the full gate passes with 73/73 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint. The backend push suite passes 14/14.
+
+G03 is complete. `CG-012` and `XP-001` remain `PARTIAL` until G04 adds account-delete defense-in-depth cleanup and closes background-payload privacy/dedup behavior; physical FCM delivery remains a release-matrix item.
