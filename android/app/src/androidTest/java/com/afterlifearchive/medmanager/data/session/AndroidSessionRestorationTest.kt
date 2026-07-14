@@ -81,6 +81,25 @@ class AndroidSessionRestorationTest {
         assertNull(repository.authorizationToken())
     }
 
+    @Test
+    fun missingNoBackupInstallationMarkerClearsRestoredSessionData() {
+        AndroidSessionStorage(context).apply {
+            mode = AppMode.CAREGIVER
+            currentPatientId = "restored-patient"
+            putSecret(SessionRepository.CAREGIVER_ACCESS, "restored-access")
+            putSecret(SessionRepository.CAREGIVER_REFRESH, "restored-refresh")
+        }
+        assertTrue(context.noBackupFilesDir.resolve(INSTALLATION_MARKER).delete())
+
+        val restoredWithoutMarker = AndroidSessionStorage(context)
+
+        assertNull(restoredWithoutMarker.mode)
+        assertNull(restoredWithoutMarker.currentPatientId)
+        assertNull(restoredWithoutMarker.getSecret(SessionRepository.CAREGIVER_ACCESS))
+        assertNull(restoredWithoutMarker.getSecret(SessionRepository.CAREGIVER_REFRESH))
+        assertTrue(context.noBackupFilesDir.resolve(INSTALLATION_MARKER).exists())
+    }
+
     private fun newRepository(now: Long): SessionRepository {
         val storage = AndroidSessionStorage(context)
         val auth = object : AuthService {
@@ -90,7 +109,7 @@ class AndroidSessionRestorationTest {
         return SessionRepository(
             storage = storage,
             authService = auth,
-            apiClient = ApiClient(baseUrl = "https://example.invalid/", tokenProvider = { null }),
+            apiClient = ApiClient(baseUrl = "https://example.invalid/", patientTokenProvider = { null }),
             nowEpochSeconds = { now },
         )
     }
@@ -103,5 +122,6 @@ class AndroidSessionRestorationTest {
     private companion object {
         const val SESSION_PREFS = "session_preferences"
         const val SECURE_PREFS = "secure_session"
+        const val INSTALLATION_MARKER = "medication_app_installation_v1"
     }
 }

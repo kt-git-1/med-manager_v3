@@ -38,6 +38,7 @@ class PatientTodayContentTest {
                     updatingKey = null,
                     error = null,
                     message = null,
+                    maintenanceWarning = null,
                     medications = medications,
                     nextSlot = MedicationSlot.MORNING,
                     updatingSlot = null,
@@ -87,6 +88,37 @@ class PatientTodayContentTest {
         composeRule.onNodeWithText("1.5錠").assertIsDisplayed()
         composeRule.onNodeWithText("5 mg").assertIsDisplayed()
         composeRule.onNodeWithText("12 錠").assertIsDisplayed()
+    }
+
+    @Test
+    fun reminderMaintenanceWarningDoesNotReplaceMutationSuccess() {
+        val warning = "服薬記録は保存されましたが、通知予定を更新できませんでした。アプリを開いたときに再試行します。"
+        composeRule.setContent {
+            MedicationAppTheme {
+                TodayContent(
+                    doses = listOf(dose("med", DoseStatus.TAKEN)),
+                    loading = false,
+                    updatingKey = null,
+                    error = null,
+                    message = "服薬を記録しました。",
+                    maintenanceWarning = warning,
+                    medications = emptyMap(),
+                    nextSlot = null,
+                    updatingSlot = null,
+                    prnMedications = emptyList(),
+                    updatingPrnMedicationId = null,
+                    onRetry = {},
+                    onRecord = {},
+                    onDetail = {},
+                    onRecordSlot = {},
+                    onRecordPrn = {},
+                    onRemind = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("服薬を記録しました。").assertIsDisplayed()
+        composeRule.onNodeWithText(warning).assertIsDisplayed()
     }
 
     private fun dose(id: String, status: DoseStatus) = PatientDose(

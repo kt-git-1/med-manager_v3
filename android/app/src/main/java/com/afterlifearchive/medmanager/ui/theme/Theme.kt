@@ -37,7 +37,8 @@ private val LightColorScheme = lightColorScheme(
 
 private val DarkColorScheme = darkColorScheme(
     primary = TealDark,
-    onPrimary = Color(0xFF00201E),
+    // iOS keeps primary teal actions white-on-teal in both appearances.
+    onPrimary = Color.White,
     primaryContainer = Color(0xFF164D49),
     onPrimaryContainer = TealTextDark,
     secondary = Color(0xFFFFA05C),
@@ -69,6 +70,9 @@ data class MedicationExtendedColors(
     val slotNoon: Color,
     val slotEvening: Color,
     val slotBedtime: Color,
+    val authInfoContainer: Color,
+    val authInfoIcon: Color,
+    val tutorialScrim: Color,
 )
 
 private val LightExtendedColors = MedicationExtendedColors(
@@ -87,6 +91,9 @@ private val LightExtendedColors = MedicationExtendedColors(
     slotNoon = Color(0xFF007AFF),
     slotEvening = Color(0xFFAF52DE),
     slotBedtime = Color(0xFF5856D6),
+    authInfoContainer = Color(0xFFEAF4FF),
+    authInfoIcon = Color(0xFF1976D2),
+    tutorialScrim = Color(0x57000000),
 )
 
 private val DarkExtendedColors = LightExtendedColors.copy(
@@ -94,6 +101,8 @@ private val DarkExtendedColors = LightExtendedColors.copy(
     elevatedBackground = ElevatedDark,
     readableSecondaryText = Color(0xFFD1D9DE),
     cardStroke = Color(0x1AFFFFFF),
+    authInfoContainer = Color(0xFF243B4F),
+    authInfoIcon = Color(0xFF8FC1FF),
 )
 
 private val LocalMedicationExtendedColors = staticCompositionLocalOf { LightExtendedColors }

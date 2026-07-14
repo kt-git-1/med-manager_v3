@@ -26,11 +26,11 @@ object ApiErrorMapper {
         }
 
         return when (status) {
-            400, 422 -> ApiException.Validation(message ?: "入力内容を確認してください。")
+            400, 422 -> ApiException.Validation(message)
             401 -> ApiException.Unauthorized()
             403 -> ApiException.Forbidden()
             404 -> ApiException.NotFound()
-            409 -> ApiException.Conflict(message ?: "操作が競合しました。最新の状態を確認してください。")
+            409 -> ApiException.Conflict(message)
             429 -> ApiException.RateLimited()
             in 500..599 -> ApiException.Server()
             else -> ApiException.Network()

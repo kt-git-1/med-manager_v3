@@ -47,6 +47,51 @@ class PatientNotificationPlanBuilderTest {
         assertEquals(15 * 60, plan[1].scheduledAt.epochSecond - plan[0].scheduledAt.epochSecond)
     }
 
+    @Test
+    fun retainsTomorrowAcrossMonthBoundary() {
+        val boundaryNow = Instant.parse("2026-07-31T14:30:00Z") // 23:30 JST
+        val plan = PatientNotificationPlanBuilder.build(
+            listOf(day("2026-08-01", morning = HistoryStatus.PENDING)),
+            slotTimes,
+            PatientNotificationSettings(masterEnabled = true, enabledSlots = setOf(MedicationSlot.MORNING)),
+            boundaryNow,
+        )
+
+        assertEquals(listOf("2026-07-31T23:00:00Z"), plan.map { it.scheduledAt.toString() })
+    }
+
+    @Test
+    fun retainsTomorrowAcrossYearBoundary() {
+        val boundaryNow = Instant.parse("2026-12-31T14:30:00Z") // 23:30 JST
+        val plan = PatientNotificationPlanBuilder.build(
+            listOf(day("2027-01-01", morning = HistoryStatus.PENDING)),
+            slotTimes,
+            PatientNotificationSettings(masterEnabled = true, enabledSlots = setOf(MedicationSlot.MORNING)),
+            boundaryNow,
+        )
+
+        assertEquals(1, plan.size)
+        assertEquals("2027-01-01", plan.single().date.toString())
+    }
+
+    @Test
+    fun keepsFutureSecondaryWhenPrimaryHasJustPassed() {
+        val afterPrimary = Instant.parse("2026-07-13T04:05:00Z") // 13:05 JST
+        val plan = PatientNotificationPlanBuilder.build(
+            listOf(day("2026-07-13", noon = HistoryStatus.PENDING)),
+            slotTimes,
+            PatientNotificationSettings(
+                masterEnabled = true,
+                rereminderEnabled = true,
+                enabledSlots = setOf(MedicationSlot.NOON),
+            ),
+            afterPrimary,
+        )
+
+        assertEquals(listOf(2), plan.map(PatientNotificationPlanEntry::sequence))
+        assertEquals("2026-07-13T04:15:00Z", plan.single().scheduledAt.toString())
+    }
+
     private fun day(
         date: String,
         morning: HistoryStatus = HistoryStatus.NONE,

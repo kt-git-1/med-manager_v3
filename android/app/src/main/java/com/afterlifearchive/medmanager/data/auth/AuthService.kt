@@ -6,6 +6,21 @@ data class AuthSession(
     val expiresInSeconds: Long?,
 )
 
+enum class AuthFailure {
+    MISSING_CREDENTIALS,
+    MISSING_REFRESH_TOKEN,
+    INVALID_INPUT,
+    INVALID_EMAIL,
+    MISSING_CONFIGURATION,
+    MISSING_ACCESS_TOKEN,
+    INVALID_CREDENTIALS,
+    EMAIL_NOT_CONFIRMED,
+    RATE_LIMITED,
+    LOGIN_FAILED,
+}
+
+class AuthException(val failure: AuthFailure) : Exception(failure.name)
+
 interface AuthService {
     suspend fun login(email: String, password: String): AuthSession
     suspend fun refresh(refreshToken: String): AuthSession

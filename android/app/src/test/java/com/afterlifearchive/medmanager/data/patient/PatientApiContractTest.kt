@@ -5,6 +5,7 @@ import com.afterlifearchive.medmanager.data.network.HttpRequest
 import com.afterlifearchive.medmanager.data.network.HttpResponse
 import com.afterlifearchive.medmanager.data.network.HttpTransport
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.SerializationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -49,6 +50,31 @@ class PatientApiContractTest {
         assertEquals(DoseStatus.PENDING, dose.status)
         assertNull(dose.recordedByType)
         assertNull(dose.notes)
+    }
+
+    @Test
+    fun todayIgnoresForwardCompatibleUnknownFields() = runTest {
+        val fixture = TODAY_FIXTURE
+            .replace("{\"data\"", "{\"futureTopLevel\":true,\"data\"")
+            .replace("\"name\":\"血圧のお薬\"", "\"futureSnapshotField\":{\"version\":2},\"name\":\"血圧のお薬\"")
+        val api = PatientApi(ApiClient("https://example.test/", { null }, transport = ContractTransport(HttpResponse(200, fixture))))
+
+        assertEquals("dose-1", api.today().single().key)
+    }
+
+    @Test
+    fun todayRejectsMissingRequiredWireField() = runTest {
+        val fixture = TODAY_FIXTURE.replace("\"patientId\":\"patient-1\",", "")
+        val api = PatientApi(ApiClient("https://example.test/", { null }, transport = ContractTransport(HttpResponse(200, fixture))))
+
+        var error: Throwable? = null
+        try {
+            api.today()
+        } catch (caught: Throwable) {
+            error = caught
+        }
+
+        assertTrue(error is SerializationException)
     }
 
     @Test
@@ -130,6 +156,14 @@ class PatientApiContractTest {
     }
 
     @Test
+    fun monthHistoryAcceptsDocumentedLegacyTopLevelKey() = runTest {
+        val fixture = HISTORY_MONTH_FIXTURE.replace("\"days\"", "\"monthSummary\"")
+        val api = PatientApi(ApiClient("https://example.test/", { null }, transport = ContractTransport(HttpResponse(200, fixture))))
+
+        assertEquals("2026-07-13", api.history(2026, 7).single().date)
+    }
+
+    @Test
     fun dayHistoryParsesScheduledRecorderAndPrnActor() = runTest {
         val transport = ContractTransport(HttpResponse(200, HISTORY_DAY_FIXTURE))
         val api = PatientApi(ApiClient("https://example.test/", { null }, transport = transport))
@@ -143,6 +177,14 @@ class PatientApiContractTest {
         assertEquals(PrnActorType.PATIENT, detail.prnItems.single().actorType)
         assertEquals(1.5, detail.prnItems.single().quantityTaken, 0.0)
         assertTrue(transport.requests.single().url.endsWith("/api/patient/history/day?date=2026-07-13"))
+    }
+
+    @Test
+    fun dayHistoryAcceptsDocumentedLegacyTopLevelKey() = runTest {
+        val fixture = HISTORY_DAY_FIXTURE.replace("\"doses\"", "\"dayDetails\"")
+        val api = PatientApi(ApiClient("https://example.test/", { null }, transport = ContractTransport(HttpResponse(200, fixture))))
+
+        assertEquals("med-1", api.historyDay("2026-07-13").doses.single().medicationId)
     }
 
     private companion object {

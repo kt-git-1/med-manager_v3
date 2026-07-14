@@ -1,5 +1,7 @@
 # Android UI Fidelity Specification
 
+**Pinned screen reference:** `main@1d9d19e`. Use this together with `ui-screen-contracts.md`; older captures are historical evidence until recaptured from this baseline.
+
 ## 1. Fidelity target
 
 Android must reproduce the iOS app's identity, hierarchy, density, content grouping, state emphasis, and accessibility intent at high fidelity. It must not blindly copy iOS system chrome where Android conventions improve usability.
@@ -24,6 +26,8 @@ Android must reproduce the iOS app's identity, hierarchy, density, content group
 - Navigation-bar/system-inset treatment
 
 Any difference outside this list requires a recorded rationale in `parity-requirements.md`.
+
+The Android implementation branch is `android-dev`. Visual parity work must not modify iOS on this branch to manufacture a match.
 
 ## 2. Canonical design tokens
 

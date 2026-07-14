@@ -49,12 +49,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.data.session.SessionRepository
 import com.afterlifearchive.medmanager.data.session.SessionState
 import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
@@ -94,14 +96,14 @@ fun CaregiverAuthChoiceScreen(onLogin: () -> Unit, onSignup: () -> Unit, onBack:
         contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp, 48.dp, 20.dp, 32.dp),
         verticalArrangement = Arrangement.spacedBy(22.dp),
     ) {
-        item { CaregiverHeader("家族アカウント", "アカウントをお持ちの方はログイン、\nはじめての方は新規登録してください") }
+        item { CaregiverHeader(stringResource(R.string.caregiver_auth_title), stringResource(R.string.caregiver_auth_subtitle)) }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                AuthChoiceCard(Icons.Rounded.AccountCircle, "ログイン", "既にアカウントをお持ちの方", AuthTeal, onLogin)
-                AuthChoiceCard(Icons.Rounded.AddCircle, "新規登録", "家族アカウントを作成する", AuthOrange, onSignup)
+                AuthChoiceCard(Icons.Rounded.AccountCircle, stringResource(R.string.caregiver_auth_login), stringResource(R.string.caregiver_auth_login_subtitle), AuthTeal, onLogin)
+                AuthChoiceCard(Icons.Rounded.AddCircle, stringResource(R.string.caregiver_auth_signup), stringResource(R.string.caregiver_auth_signup_subtitle), AuthOrange, onSignup)
             }
         }
-        item { AuthBackButton("モードを選び直す", onBack) }
+        item { AuthBackButton(stringResource(R.string.caregiver_auth_reselect_mode), onBack) }
     }
 }
 
@@ -130,11 +132,11 @@ private fun CaregiverLoginScreen(state: SessionState, repository: SessionReposit
     var password by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     AuthFormShell(onBack) {
-        FormTitle(Icons.Rounded.AccountCircle, "家族ログイン")
-        AuthField(email, { email = it; repository.clearMessages() }, "Email", false)
-        AuthField(password, { password = it; repository.clearMessages() }, "Password", true)
-        state.errorMessage?.let { AuthError(it) }
-        AuthPrimaryButton("ログイン", state.loading, email.isNotBlank() && password.isNotBlank()) {
+        FormTitle(Icons.Rounded.AccountCircle, stringResource(R.string.caregiver_login_title))
+        AuthField(email, { email = it; repository.clearMessages() }, stringResource(R.string.caregiver_auth_email), false)
+        AuthField(password, { password = it; repository.clearMessages() }, stringResource(R.string.caregiver_auth_password), true)
+        state.errorMessage?.let { AuthError(sessionUserMessageText(it)) }
+        AuthPrimaryButton(stringResource(R.string.caregiver_auth_login), state.loading, email.isNotBlank() && password.isNotBlank()) {
             scope.launch { repository.loginCaregiver(email, password) }
         }
     }
@@ -152,20 +154,20 @@ private fun CaregiverSignupScreen(state: SessionState, repository: SessionReposi
     }
     LaunchedEffect(state.canResendConfirmation) { if (state.canResendConfirmation && cooldown == 0) cooldown = 60 }
     AuthFormShell(onBack) {
-        FormTitle(Icons.Rounded.AddCircle, "家族アカウント作成", "服薬を見守る家族用のアカウントを作成します")
-        AuthField(email, { email = it; repository.clearMessages() }, "メールアドレス", false)
-        AuthField(password, { password = it; repository.clearMessages() }, "パスワード（6文字以上）", true)
-        AuthField(confirmation, { confirmation = it; repository.clearMessages() }, "パスワードをもう一度入力", true)
-        state.errorMessage?.let { AuthError(it) }
-        state.infoMessage?.let { AuthInfo(it) }
+        FormTitle(Icons.Rounded.AddCircle, stringResource(R.string.caregiver_signup_title), stringResource(R.string.caregiver_signup_subtitle))
+        AuthField(email, { email = it; repository.clearMessages() }, stringResource(R.string.caregiver_signup_email), false)
+        AuthField(password, { password = it; repository.clearMessages() }, stringResource(R.string.caregiver_signup_password), true)
+        AuthField(confirmation, { confirmation = it; repository.clearMessages() }, stringResource(R.string.caregiver_signup_password_confirmation), true)
+        state.errorMessage?.let { AuthError(sessionUserMessageText(it)) }
+        state.infoMessage?.let { AuthInfo(sessionUserMessageText(it)) }
         if (state.canResendConfirmation) {
             TextButton(
                 enabled = cooldown == 0 && !state.loading,
                 onClick = { cooldown = 60; scope.launch { repository.resendSignupConfirmation(email) } },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
-            ) { Text(if (cooldown > 0) "あと${cooldown}秒で再送" else "確認メールを再送", fontWeight = FontWeight.SemiBold) }
+            ) { Text(if (cooldown > 0) stringResource(R.string.caregiver_signup_resend_countdown, cooldown) else stringResource(R.string.caregiver_signup_resend), fontWeight = FontWeight.SemiBold) }
         }
-        AuthPrimaryButton("新規登録", state.loading, email.isNotBlank() && password.isNotBlank() && confirmation.isNotBlank()) {
+        AuthPrimaryButton(stringResource(R.string.caregiver_auth_signup), state.loading, email.isNotBlank() && password.isNotBlank() && confirmation.isNotBlank()) {
             scope.launch { repository.signupCaregiver(email, password, confirmation) }
         }
     }
@@ -178,7 +180,7 @@ private fun AuthFormShell(onBack: () -> Unit, content: @Composable ColumnScope.(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(24.dp, 52.dp, 24.dp, 52.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        item { AuthBackButton("戻る", onBack) }
+        item { AuthBackButton(stringResource(R.string.common_back), onBack) }
         item {
             Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f), RoundedCornerShape(24.dp)).padding(28.dp), verticalArrangement = Arrangement.spacedBy(18.dp), content = content)
         }
@@ -208,7 +210,7 @@ private fun AuthField(value: String, onChange: (String) -> Unit, placeholder: St
 @Composable
 private fun AuthPrimaryButton(text: String, loading: Boolean, ready: Boolean, onClick: () -> Unit) {
     Button(onClick, enabled = ready && !loading, modifier = Modifier.fillMaxWidth().height(50.dp).alpha(if (ready) 1f else 0.5f), shape = RoundedCornerShape(14.dp), colors = ButtonDefaults.buttonColors(containerColor = AuthTeal)) {
-        if (loading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 3.dp)
+        if (loading) CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(22.dp), strokeWidth = 3.dp)
         else Text(text, fontWeight = FontWeight.Bold)
     }
 }
@@ -217,8 +219,8 @@ private fun AuthPrimaryButton(text: String, loading: Boolean, ready: Boolean, on
 
 @Composable
 private fun AuthInfo(message: String) {
-    Column(Modifier.fillMaxWidth().background(Color(0xFFEAF4FF), RoundedCornerShape(18.dp)).padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(Icons.Rounded.MarkEmailRead, null, tint = Color(0xFF1976D2), modifier = Modifier.size(34.dp))
+    Column(Modifier.fillMaxWidth().background(MedicationTheme.colors.authInfoContainer, RoundedCornerShape(18.dp)).padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(Icons.Rounded.MarkEmailRead, null, tint = MedicationTheme.colors.authInfoIcon, modifier = Modifier.size(34.dp))
         Text(message, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
     }
 }
@@ -226,8 +228,8 @@ private fun AuthInfo(message: String) {
 @Composable
 private fun CaregiverHeader(title: String, subtitle: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Box(Modifier.size(62.dp).background(AuthOrange, CircleShape).border(5.dp, Color.White, CircleShape), contentAlignment = Alignment.Center) {
-            Icon(Icons.Rounded.Shield, null, tint = Color.White, modifier = Modifier.size(32.dp))
+        Box(Modifier.size(62.dp).background(AuthOrange, CircleShape).border(5.dp, MaterialTheme.colorScheme.surface, CircleShape), contentAlignment = Alignment.Center) {
+            Icon(Icons.Rounded.Shield, null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(32.dp))
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(title, fontSize = 32.sp, fontWeight = FontWeight.Bold)

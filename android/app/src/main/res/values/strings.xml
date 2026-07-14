@@ -1,4 +1,202 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">お薬見守り</string>
+    <string name="patient_link_title">連携コード</string>
+    <string name="patient_link_subtitle">家族から受け取った6桁のコードを入力</string>
+    <string name="patient_link_placeholder">コードを入力</string>
+    <string name="patient_link_submit">送信</string>
+    <string name="patient_link_back">モードを選び直す</string>
+    <string name="patient_link_error_invalid">6桁の数字コードを入力してください</string>
+    <string name="patient_link_error_not_found">コードが見つからないか期限切れです</string>
+    <string name="patient_link_error_authorization">連携できませんでした。コードを確認して、もう一度お試しください</string>
+    <string name="patient_link_error_network">通信に失敗しました。接続を確認して、もう一度お試しください</string>
+    <string name="patient_link_error_generic">連携に失敗しました</string>
+    <string name="patient_link_a11y_code">連携コード</string>
+    <string name="patient_link_a11y_submit">連携コード送信</string>
+    <string name="patient_reminder_refresh_failed">服薬記録は保存されましたが、通知予定を更新できませんでした。アプリを開いたときに再試行します。</string>
+
+    <!-- Patient shell and recording -->
+    <string name="patient_tab_today">きょう</string>
+    <string name="patient_tab_history">履歴</string>
+    <string name="patient_tab_settings">設定</string>
+    <string name="patient_preview_morning_name">朝のお薬</string>
+    <string name="patient_preview_blood_pressure_name">血圧のお薬</string>
+    <string name="patient_preview_evening_name">夕方のお薬</string>
+    <string name="patient_preview_one_tablet">1回1錠</string>
+    <string name="patient_preview_two_tablets">1回2錠</string>
+    <string name="patient_record_confirm_title">服薬を記録しますか？</string>
+    <string name="patient_record_confirm_message">%1$sを「飲みました」として記録します。</string>
+    <string name="patient_prn_confirm_title">頓服を記録しますか？</string>
+    <string name="patient_prn_confirm_message">%1$sを服用した記録を追加します。</string>
+    <string name="patient_slot_confirm_title">%1$sをまとめて記録しますか？</string>
+    <string name="patient_slot_confirm_message">%1$d 種類、合計%2$s錠を「飲みました」として記録します。</string>
+    <string name="patient_record">記録する</string>
+    <string name="patient_record_bulk">まとめて記録</string>
+    <string name="common_cancel">キャンセル</string>
+    <string name="common_retry">もう一度試す</string>
+
+    <!-- Patient tutorial -->
+    <string name="patient_tutorial_today_title">今日のお薬</string>
+    <string name="patient_tutorial_today_message">飲むお薬を確認します。飲んだら「飲みました」を押します。</string>
+    <string name="patient_tutorial_history_title">記録を見る</string>
+    <string name="patient_tutorial_history_message">飲めた日や、まだ飲んでいないお薬を確認できます。</string>
+    <string name="patient_tutorial_notification_title">通知を使う</string>
+    <string name="patient_tutorial_notification_message">お薬の時間に、この端末へお知らせできます。</string>
+    <string name="patient_tutorial_permission_title">お薬の時間に通知しますか？</string>
+    <string name="patient_tutorial_permission_message">朝・昼・夜など、設定した時間にお薬の通知を受け取れます。</string>
+    <string name="patient_tutorial_pane">患者モードの使い方 %1$d/%2$d</string>
+    <string name="patient_tutorial_skip">スキップ</string>
+    <string name="common_back">戻る</string>
+    <string name="common_next">次へ</string>
+    <string name="patient_tutorial_enable_notifications">通知を設定</string>
+
+    <!-- Patient Today and detail -->
+    <string name="patient_today_title">今日のお薬</string>
+    <string name="patient_today_date_pattern">M月d日（E）</string>
+    <string name="patient_today_refreshing">最新の情報に更新しています…</string>
+    <string name="patient_prn_section">必要なときのお薬</string>
+    <string name="patient_inventory_insufficient">在庫不足</string>
+    <string name="patient_recording">記録中…</string>
+    <string name="patient_taken_action">飲みました</string>
+    <string name="patient_today_empty_title">今日のお薬はありません</string>
+    <string name="patient_today_empty_message">ゆっくりお過ごしください</string>
+    <string name="patient_status_taken">服用済み</string>
+    <string name="patient_status_missed">未達</string>
+    <string name="patient_status_pending">未服用</string>
+    <string name="patient_inventory_check">在庫を確認してください</string>
+    <string name="patient_remind_ten_minutes">10分後に知らせる</string>
+    <string name="patient_detail_notes">備考</string>
+    <string name="patient_detail_no_notes">備考はありません</string>
+    <string name="patient_detail_dose_amount">1回の服用量</string>
+    <string name="patient_detail_strength">薬の強さ</string>
+    <string name="patient_detail_inventory">現在の在庫</string>
+    <string name="patient_tablet_amount">%1$s錠</string>
+    <string name="patient_detail_date_pattern">M月d日 H:mm</string>
+    <string name="patient_next_slot">次のお薬</string>
+    <string name="patient_slot_insufficient_count">在庫不足のお薬が%1$d件あります</string>
+    <string name="patient_slot_wait_for_window">記録できる時間になるまでお待ちください</string>
+    <string name="patient_slot_recording">まとめて記録中…</string>
+    <string name="patient_slot_record_count">この時間帯をまとめて記録（%1$d件）</string>
+    <string name="patient_slot_morning">朝のお薬</string>
+    <string name="patient_slot_noon">昼のお薬</string>
+    <string name="patient_slot_evening">夕方のお薬</string>
+    <string name="patient_slot_bedtime">寝る前のお薬</string>
+
+    <!-- Patient History -->
+    <string name="patient_history_title">服薬履歴</string>
+    <string name="patient_history_previous_month">‹ 前月</string>
+    <string name="patient_history_month">%1$d年%2$d月</string>
+    <string name="patient_history_next_month">翌月 ›</string>
+    <string name="patient_history_no_schedule">予定なし</string>
+    <string name="patient_history_weekdays">日,月,火,水,木,金,土</string>
+    <string name="patient_history_prn_count">頓%1$d</string>
+    <string name="patient_history_accessibility_date_pattern">M月d日 E曜日</string>
+    <string name="patient_history_accessibility_slot_morning">朝</string>
+    <string name="patient_history_accessibility_slot_noon">昼</string>
+    <string name="patient_history_accessibility_slot_evening">夕</string>
+    <string name="patient_history_accessibility_slot_bedtime">寝る前</string>
+    <string name="patient_history_accessibility_prn">頓服%1$d回</string>
+    <string name="patient_history_locked_title">この履歴は表示できません</string>
+    <string name="patient_history_locked_message">無料版では直近%1$d日間の履歴を確認できます。\n閲覧可能な最初の日：%2$s</string>
+    <string name="patient_history_day_empty_title">この日の記録</string>
+    <string name="patient_history_day_empty_message">予定されたお薬や頓服の記録はありません</string>
+    <string name="patient_history_scheduled_section">予定されたお薬</string>
+    <string name="patient_history_prn_section">頓服</string>
+    <string name="patient_history_recorded_by_patient">本人が記録</string>
+    <string name="patient_history_recorded_by_caregiver">家族が記録</string>
+    <string name="patient_actor_patient">本人</string>
+    <string name="patient_actor_caregiver">家族</string>
+
+    <!-- Patient Settings -->
+    <string name="patient_settings_title">設定</string>
+    <string name="patient_settings_subtitle">通知とこの端末の連携を管理します</string>
+    <string name="patient_settings_notifications">服薬通知</string>
+    <string name="patient_settings_notification_master">通知を受け取る</string>
+    <string name="patient_settings_notification_master_detail">予定時刻にお薬をお知らせします</string>
+    <string name="patient_settings_slot_notification">%1$sの通知</string>
+    <string name="patient_settings_rereminder">15分後にもう一度通知</string>
+    <string name="patient_settings_rereminder_detail">飲み忘れ防止の再通知です</string>
+    <string name="patient_settings_link_status">連携状態</string>
+    <string name="patient_settings_link_status_detail">この端末は本人モードとして家族と連携されています。</string>
+    <string name="patient_settings_legal_support">法務・サポート</string>
+    <string name="patient_settings_privacy">プライバシーポリシー</string>
+    <string name="patient_settings_terms">利用規約</string>
+    <string name="patient_settings_support">サポート</string>
+    <string name="patient_settings_unlink">この端末の連携を解除</string>
+    <string name="patient_settings_unlinking">解除中…</string>
+    <string name="patient_settings_unlink_confirm_title">連携を解除しますか？</string>
+    <string name="patient_settings_unlink_confirm_message">サーバー上のこの端末のセッションを無効にして、利用方法の選択画面へ戻ります。</string>
+    <string name="patient_settings_unlink_confirm">解除する</string>
+
+    <!-- Mode selection -->
+    <string name="mode_select_patient_badge">本人モード</string>
+    <string name="mode_select_patient_title">本人として使う</string>
+    <string name="mode_select_patient_subtitle">今日のお薬を確認します</string>
+    <string name="mode_select_caregiver_badge">家族モード</string>
+    <string name="mode_select_caregiver_title">家族として使う</string>
+    <string name="mode_select_caregiver_subtitle">薬と在庫を管理します</string>
+    <string name="mode_select_heading">どちらで\n使いますか？</string>
+    <string name="mode_select_start">このモードで始める</string>
+
+    <!-- Caregiver authentication -->
+    <string name="caregiver_auth_title">家族アカウント</string>
+    <string name="caregiver_auth_subtitle">アカウントをお持ちの方はログイン、\nはじめての方は新規登録してください</string>
+    <string name="caregiver_auth_login">ログイン</string>
+    <string name="caregiver_auth_login_subtitle">既にアカウントをお持ちの方</string>
+    <string name="caregiver_auth_signup">新規登録</string>
+    <string name="caregiver_auth_signup_subtitle">家族アカウントを作成する</string>
+    <string name="caregiver_auth_reselect_mode">モードを選び直す</string>
+    <string name="caregiver_login_title">家族ログイン</string>
+    <string name="caregiver_auth_email">Email</string>
+    <string name="caregiver_auth_password">Password</string>
+    <string name="caregiver_signup_title">家族アカウント作成</string>
+    <string name="caregiver_signup_subtitle">服薬を見守る家族用のアカウントを作成します</string>
+    <string name="caregiver_signup_email">メールアドレス</string>
+    <string name="caregiver_signup_password">パスワード（6文字以上）</string>
+    <string name="caregiver_signup_password_confirmation">パスワードをもう一度入力</string>
+    <string name="caregiver_signup_resend_countdown">あと%1$d秒で再送</string>
+    <string name="caregiver_signup_resend">確認メールを再送</string>
+    <string name="caregiver_session_ready_message">ログイン状態を安全に復元しました。</string>
+    <string name="caregiver_session_logout_device">この端末のセッションを解除</string>
+
+    <!-- Local notifications -->
+    <string name="notification_channel_patient_reminders">服薬リマインダー</string>
+    <string name="notification_channel_patient_reminders_description">あとで知らせる服薬通知</string>
+    <string name="notification_default_medication_name">お薬</string>
+    <string name="notification_patient_title">お薬の時間です</string>
+    <string name="notification_patient_body">%1$sを確認しましょう。</string>
+
+    <!-- Patient repository messages -->
+    <string name="patient_message_inventory_insufficient">在庫が不足しているため記録できません。</string>
+    <string name="patient_message_dose_recorded">服薬を記録しました。</string>
+    <string name="patient_message_slot_partial">%1$d件を記録しました。在庫不足の%2$d件は記録されていません。</string>
+    <string name="patient_message_slot_recorded">%1$d件の服薬を記録しました。</string>
+    <string name="patient_message_no_recordable_medication">記録できるお薬はありません。</string>
+    <string name="patient_message_prn_recorded">頓服の服用を記録しました。</string>
+
+    <!-- Session presentation messages -->
+    <string name="session_error_invalid_email">メールアドレスの形式を確認してください。</string>
+    <string name="session_error_password_too_short">パスワードは6文字以上で入力してください。</string>
+    <string name="session_error_password_mismatch">確認用のパスワードが一致していません。</string>
+    <string name="session_info_confirmation_sent">確認メールを送信しました。メール内のリンクを開いて、登録を完了してください。見つからない場合は、迷惑メールフォルダも確認してください。</string>
+    <string name="session_info_confirmation_resent">確認メールを再送しました。迷惑メールフォルダも確認してください。</string>
+    <string name="session_error_unexpected">予期しない問題が発生しました。</string>
+    <string name="session_error_missing_credentials">メールアドレスとパスワードを入力してください。</string>
+    <string name="session_error_invalid_input">入力内容を確認してください。</string>
+    <string name="session_error_missing_auth_configuration">認証サービスの設定がありません。</string>
+    <string name="session_error_missing_auth_token">認証トークンを取得できませんでした。</string>
+    <string name="session_error_invalid_credentials">メールアドレスまたはパスワードが正しくありません。</string>
+    <string name="session_error_email_not_confirmed">メールアドレスの確認が完了していません。</string>
+    <string name="session_error_rate_limited">しばらく待ってから、もう一度お試しください。</string>
+    <string name="session_error_login_failed">ログインできませんでした。入力内容を確認してください。</string>
+    <string name="session_error_network">通信できませんでした。接続を確認してください。</string>
+    <string name="api_error_validation">入力内容を確認してください。</string>
+    <string name="api_error_unauthorized">認証の有効期限が切れました。</string>
+    <string name="api_error_forbidden">この操作を行う権限がありません。</string>
+    <string name="api_error_not_found">対象が見つかりません。</string>
+    <string name="api_error_conflict">操作が競合しました。最新の状態を確認してください。</string>
+    <string name="api_error_inventory">お薬の在庫が不足しています。</string>
+    <string name="api_error_patient_limit">現在のバージョンで登録できる本人は%1$d人までです。</string>
+    <string name="api_error_rate_limited">操作が続きました。しばらく待ってから、もう一度お試しください。</string>
+    <string name="api_error_server">サーバーで問題が発生しました。</string>
 </resources>

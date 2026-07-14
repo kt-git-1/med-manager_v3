@@ -1,5 +1,6 @@
 package com.afterlifearchive.medmanager.data.patient
 
+import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -26,14 +27,18 @@ class PatientRepositoryTest {
     @Test
     fun recordingDoseUpdatesVisibleStatusWithoutWaitingForReload() = runTest {
         val source = FakePatientDataSource()
-        val repository = PatientRepository(source)
+        val freshness = MutationFreshnessStore()
+        val repository = PatientRepository(source, freshness)
         repository.loadToday()
 
         repository.record(repository.state.value.doses.single())
 
         assertEquals(DoseStatus.TAKEN, repository.state.value.doses.single().status)
-        assertEquals("服薬を記録しました。", repository.state.value.message)
+        assertEquals(PatientUserMessage.DoseRecorded, repository.state.value.message)
         assertEquals(1, source.recordCount)
+        assertEquals(1, freshness.revisions.value.dose)
+        assertEquals(1, freshness.revisions.value.inventory)
+        assertEquals(1, freshness.revisions.value.notificationPlan)
     }
 
     @Test
@@ -61,35 +66,58 @@ class PatientRepositoryTest {
 
         assertEquals(0, source.recordCount)
         assertEquals(DoseStatus.PENDING, repository.state.value.doses.single().status)
-        assertEquals("在庫が不足しているため記録できません。", repository.state.value.error)
+        assertEquals(PatientUserMessage.InventoryInsufficient, repository.state.value.error)
     }
 
     @Test
     fun partialBulkSuccessOnlyMarksRecordableMedicationTaken() = runTest {
         val source = PartialBulkPatientDataSource()
-        val repository = PatientRepository(source)
+        val freshness = MutationFreshnessStore()
+        val repository = PatientRepository(source, freshness)
         repository.loadToday()
 
         repository.recordSlot(MedicationSlot.MORNING, java.time.LocalDate.parse("2026-07-13"))
 
         assertEquals(DoseStatus.TAKEN, repository.state.value.doses.first { it.medicationId == "enough" }.status)
         assertEquals(DoseStatus.PENDING, repository.state.value.doses.first { it.medicationId == "short" }.status)
-        assertEquals("1件を記録しました。在庫不足の1件は記録されていません。", repository.state.value.message)
+        assertEquals(PatientUserMessage.SlotPartial(1, 1), repository.state.value.message)
         assertNull(repository.state.value.updatingSlot)
+        assertEquals(1, freshness.revisions.value.dose)
+        assertEquals(1, freshness.revisions.value.inventory)
+        assertEquals(1, freshness.revisions.value.notificationPlan)
+    }
+
+    @Test
+    fun zeroUpdateBulkDoesNotPublishMutationRevision() = runTest {
+        val source = ZeroBulkPatientDataSource()
+        val freshness = MutationFreshnessStore()
+        val repository = PatientRepository(source, freshness)
+        repository.loadToday()
+
+        repository.recordSlot(MedicationSlot.MORNING, java.time.LocalDate.parse("2026-07-13"))
+
+        assertEquals(0, freshness.revisions.value.dose)
+        assertEquals(0, freshness.revisions.value.inventory)
+        assertEquals(0, freshness.revisions.value.notificationPlan)
+        assertEquals(PatientUserMessage.NoRecordableMedication, repository.state.value.message)
     }
 
     @Test
     fun prnRecordPublishesSuccessAndClearsSubmittingState() = runTest {
         val source = PrnPatientDataSource()
-        val repository = PatientRepository(source)
+        val freshness = MutationFreshnessStore()
+        val repository = PatientRepository(source, freshness)
         repository.loadToday()
         val medication = repository.state.value.prnMedications.single()
 
         repository.recordPrn(medication)
 
         assertEquals(1, source.prnRecordCount)
-        assertEquals("頓服の服用を記録しました。", repository.state.value.message)
+        assertEquals(PatientUserMessage.PrnRecorded, repository.state.value.message)
         assertNull(repository.state.value.updatingPrnMedicationId)
+        assertEquals(1, freshness.revisions.value.dose)
+        assertEquals(1, freshness.revisions.value.inventory)
+        assertEquals(0, freshness.revisions.value.notificationPlan)
     }
 
     @Test
@@ -103,7 +131,21 @@ class PatientRepositoryTest {
 
         assertEquals(2, source.todayCount)
         assertEquals(DoseStatus.TAKEN, repository.state.value.doses.single().status)
-        assertEquals("服薬を記録しました。", repository.state.value.message)
+        assertEquals(PatientUserMessage.DoseRecorded, repository.state.value.message)
+    }
+
+    @Test
+    fun failedPostActionRefreshPreservesSuccessfulMutationState() = runTest {
+        val source = FailingPostActionRefreshDataSource()
+        val repository = PatientRepository(source)
+        repository.loadToday()
+        repository.record(repository.state.value.doses.single())
+
+        repository.refreshTodayAfterAction()
+
+        assertEquals(DoseStatus.TAKEN, repository.state.value.doses.single().status)
+        assertEquals(PatientUserMessage.DoseRecorded, repository.state.value.message)
+        assertNull(repository.state.value.updatingDoseKey)
     }
 
     @Test
@@ -160,7 +202,7 @@ class PatientRepositoryTest {
         val repository = PatientRepository(source)
 
         assertFalse(repository.revokeSession())
-        assertEquals("解除に失敗しました", repository.state.value.error)
+        assertEquals(PatientUserMessage.Raw("解除に失敗しました"), repository.state.value.error)
         assertFalse(repository.state.value.loading)
     }
 
@@ -223,6 +265,14 @@ private class PartialBulkPatientDataSource : InventoryPatientDataSource() {
     )
 }
 
+private class ZeroBulkPatientDataSource : InventoryPatientDataSource() {
+    override suspend fun medications() = listOf(testMedication("short", 10.0))
+    override suspend fun recordSlot(date: String, slot: MedicationSlot) = SlotBulkRecordResult(
+        updatedCount = 0, remainingCount = 1, insufficientCount = 0, totalPills = 0.0,
+        medCount = 1, slotTime = "08:00", slotSummary = emptyMap(), recordingGroupId = null,
+    )
+}
+
 private class PrnPatientDataSource : InventoryPatientDataSource() {
     var prnRecordCount = 0
     override suspend fun medications() = listOf(testMedication("prn", 10.0).copy(isPrn = true, prnInstructions = "痛い時"))
@@ -239,6 +289,20 @@ private class RefreshingPatientDataSource : PatientDataSource {
     override suspend fun slotTimes() = PatientSlotTimes.DEFAULT
     override suspend fun medications() = listOf(testMedication("med", 10.0))
     override suspend fun recordDose(dose: PatientDose) { taken = true }
+    override suspend fun history(year: Int, month: Int) = emptyList<HistoryDay>()
+    override suspend fun revokeSession() = Unit
+}
+
+private class FailingPostActionRefreshDataSource : PatientDataSource {
+    private var todayCount = 0
+    override suspend fun today(): List<PatientDose> {
+        todayCount += 1
+        if (todayCount > 1) error("refresh unavailable")
+        return listOf(testDose("med"))
+    }
+    override suspend fun slotTimes() = PatientSlotTimes.DEFAULT
+    override suspend fun medications() = listOf(testMedication("med", 10.0))
+    override suspend fun recordDose(dose: PatientDose) = Unit
     override suspend fun history(year: Int, month: Int) = emptyList<HistoryDay>()
     override suspend fun revokeSession() = Unit
 }

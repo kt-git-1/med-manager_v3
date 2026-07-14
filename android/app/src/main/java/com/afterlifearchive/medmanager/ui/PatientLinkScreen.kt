@@ -42,9 +42,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -52,6 +56,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.afterlifearchive.medmanager.data.session.SessionRepository
 import com.afterlifearchive.medmanager.data.session.SessionState
+import com.afterlifearchive.medmanager.data.session.PatientLinkFailure
+import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import kotlinx.coroutines.launch
 
@@ -62,10 +68,12 @@ const val LINK_CODE_SUBMIT_TAG = "link-code-submit"
 fun PatientLinkScreen(state: SessionState, repository: SessionRepository) {
     var code by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
+    val errorMessage = state.patientLinkFailure?.let { stringResource(it.messageResource()) }
+        ?: state.errorMessage?.let { sessionUserMessageText(it) }
     PatientLinkContent(
         code = code,
         loading = state.loading,
-        errorMessage = state.errorMessage,
+        errorMessage = errorMessage,
         onCodeChange = {
             code = it.filter(Char::isDigit).take(6)
             repository.clearError()
@@ -87,6 +95,9 @@ fun PatientLinkContent(
     val ready = code.length == 6
     val colors = MaterialTheme.colorScheme
     val extended = MedicationTheme.colors
+    val placeholder = stringResource(R.string.patient_link_placeholder)
+    val codeA11yLabel = stringResource(R.string.patient_link_a11y_code)
+    val submitA11yLabel = stringResource(R.string.patient_link_a11y_submit)
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(colors.background).safeDrawingPadding(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, top = 48.dp, end = 20.dp, bottom = 32.dp),
@@ -95,12 +106,14 @@ fun PatientLinkContent(
         item { LinkHeader() }
         item {
             LinkCard {
-                Text("コードを入力", color = colors.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(placeholder, color = colors.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 OutlinedTextField(
                     value = code,
                     onValueChange = onCodeChange,
-                    modifier = Modifier.fillMaxWidth().testTag(LINK_CODE_INPUT_TAG),
-                    placeholder = { Text("コードを入力", color = extended.readableSecondaryText.copy(alpha = 0.48f)) },
+                    modifier = Modifier.fillMaxWidth()
+                        .semantics { contentDescription = codeA11yLabel }
+                        .testTag(LINK_CODE_INPUT_TAG),
+                    placeholder = { Text(placeholder, color = extended.readableSecondaryText.copy(alpha = 0.48f)) },
                     leadingIcon = { Icon(Icons.Rounded.Numbers, contentDescription = null, tint = colors.primary) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                     textStyle = androidx.compose.ui.text.TextStyle(
@@ -122,20 +135,24 @@ fun PatientLinkContent(
                 Button(
                     onClick = onSubmit,
                     enabled = ready && !loading,
-                    modifier = Modifier.fillMaxWidth().height(58.dp).alpha(if (ready) 1f else 0.55f).testTag(LINK_CODE_SUBMIT_TAG),
+                    modifier = Modifier.fillMaxWidth()
+                        .height(58.dp)
+                        .alpha(if (ready) 1f else 0.55f)
+                        .semantics { contentDescription = submitA11yLabel }
+                        .testTag(LINK_CODE_SUBMIT_TAG),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colors.primary,
                         disabledContainerColor = colors.primary,
-                        disabledContentColor = Color.White,
+                        disabledContentColor = MaterialTheme.colorScheme.onPrimary,
                     ),
                 ) {
                     if (loading) {
-                        CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp, modifier = Modifier.size(24.dp))
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 3.dp, modifier = Modifier.size(24.dp))
                     } else {
                         Icon(Icons.Rounded.CheckCircle, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text("送信", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.patient_link_submit), fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -149,7 +166,12 @@ fun PatientLinkContent(
             ) {
                 Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = null, tint = colors.primary)
-                    Text("モードを選び直す", color = colors.primary, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        stringResource(R.string.patient_link_back),
+                        color = colors.primary,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 }
             }
         }
@@ -165,11 +187,28 @@ private fun LinkHeader() {
             modifier = Modifier.size(62.dp).shadow(8.dp, CircleShape).background(colors.primary, CircleShape).border(5.dp, colors.surface, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Rounded.Link, contentDescription = null, tint = Color.White, modifier = Modifier.size(34.dp))
+            Icon(
+                Icons.Rounded.Link,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(34.dp).rotate(-45f),
+            )
         }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("連携コード", color = colors.onBackground, fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold)
-            Text("家族から受け取った6桁のコード\nを入力", color = extended.readableSecondaryText, fontSize = 17.sp, lineHeight = 23.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                stringResource(R.string.patient_link_title),
+                color = colors.onBackground,
+                fontSize = 34.sp,
+                lineHeight = 40.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                stringResource(R.string.patient_link_subtitle),
+                color = extended.readableSecondaryText,
+                fontSize = 17.sp,
+                lineHeight = 23.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
         }
     }
 }
@@ -197,4 +236,13 @@ private fun InlineLinkError(message: String) {
         Icon(Icons.Rounded.Warning, contentDescription = null, tint = error)
         Text(message, color = error, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
     }
+}
+
+@androidx.annotation.StringRes
+internal fun PatientLinkFailure.messageResource(): Int = when (this) {
+    PatientLinkFailure.INVALID -> R.string.patient_link_error_invalid
+    PatientLinkFailure.NOT_FOUND -> R.string.patient_link_error_not_found
+    PatientLinkFailure.AUTHORIZATION -> R.string.patient_link_error_authorization
+    PatientLinkFailure.NETWORK -> R.string.patient_link_error_network
+    PatientLinkFailure.GENERIC -> R.string.patient_link_error_generic
 }

@@ -12,6 +12,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 data class PatientNotificationSettings(
     val masterEnabled: Boolean = false,
@@ -112,4 +114,29 @@ object PatientNotificationScheduler {
     }
 
     private fun requestCode(entry: PatientNotificationPlanEntry) = "${entry.date}:${entry.slot}:${entry.sequence}".hashCode()
+}
+
+class PatientReminderMaintenanceCoordinator(
+    private val isPatientSessionActive: () -> Boolean,
+    private val settingsProvider: () -> PatientNotificationSettings,
+    private val historyProvider: suspend () -> Pair<List<HistoryDay>, PatientSlotTimes>,
+    private val replacePlan: (List<PatientNotificationPlanEntry>) -> Unit,
+    private val nowProvider: () -> Instant = Instant::now,
+    private val onSuccess: () -> Unit = {},
+    private val onFailure: (Throwable) -> Unit,
+) {
+    private val mutex = Mutex()
+
+    suspend fun rebuildIfEnabled() = mutex.withLock {
+        if (!isPatientSessionActive()) return@withLock
+        val settings = settingsProvider()
+        if (!settings.masterEnabled) return@withLock
+
+        runCatching {
+            val (days, slotTimes) = historyProvider()
+            replacePlan(PatientNotificationPlanBuilder.build(days, slotTimes, settings, nowProvider()))
+        }.onSuccess {
+            onSuccess()
+        }.onFailure(onFailure)
+    }
 }

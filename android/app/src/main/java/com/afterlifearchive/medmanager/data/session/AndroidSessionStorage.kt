@@ -5,6 +5,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import com.afterlifearchive.medmanager.ui.AppMode
+import java.io.File
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -14,6 +15,10 @@ import javax.crypto.spec.GCMParameterSpec
 class AndroidSessionStorage(context: Context) : SessionStorage {
     private val preferences = context.getSharedPreferences("session_preferences", Context.MODE_PRIVATE)
     private val secrets = context.getSharedPreferences("secure_session", Context.MODE_PRIVATE)
+
+    init {
+        prepareForCurrentInstallation(context)
+    }
 
     override var mode: AppMode?
         get() = preferences.getString(MODE, null)?.let { runCatching { AppMode.valueOf(it) }.getOrNull() }
@@ -68,10 +73,28 @@ class AndroidSessionStorage(context: Context) : SessionStorage {
         }
     }
 
+    private fun prepareForCurrentInstallation(context: Context) {
+        synchronized(INSTALLATION_LOCK) {
+            val marker = File(context.noBackupFilesDir, INSTALLATION_MARKER)
+            if (marker.exists()) return
+
+            // A no-backup marker cannot legitimately survive uninstall or device transfer.
+            // If regular preferences were restored without it, fail closed before reading them.
+            preferences.edit().clear().commit()
+            secrets.edit().clear().commit()
+            runCatching {
+                marker.parentFile?.mkdirs()
+                marker.createNewFile()
+            }
+        }
+    }
+
     private companion object {
         const val MODE = "lastAppMode"
         const val PATIENT_ID = "currentPatientId"
         const val KEY_ALIAS = "medication_app_session_key_v1"
         const val TRANSFORMATION = "AES/GCM/NoPadding"
+        const val INSTALLATION_MARKER = "medication_app_installation_v1"
+        val INSTALLATION_LOCK = Any()
     }
 }

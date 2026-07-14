@@ -19,9 +19,9 @@ object ReminderScheduler {
     fun createNotificationChannel(context: Context) {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "服薬リマインダー",
+            context.getString(R.string.notification_channel_patient_reminders),
             NotificationManager.IMPORTANCE_HIGH,
-        ).apply { description = "あとで知らせる服薬通知" }
+        ).apply { description = context.getString(R.string.notification_channel_patient_reminders_description) }
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
@@ -42,7 +42,8 @@ object ReminderScheduler {
         )
     }
 
-    fun medicationName(intent: Intent): String = intent.getStringExtra(EXTRA_MEDICATION) ?: "お薬"
+    fun medicationName(context: Context, intent: Intent): String =
+        intent.getStringExtra(EXTRA_MEDICATION) ?: context.getString(R.string.notification_default_medication_name)
 }
 
 class ReminderReceiver : BroadcastReceiver() {
@@ -63,8 +64,8 @@ class ReminderReceiver : BroadcastReceiver() {
         )
         val notification = NotificationCompat.Builder(context, ReminderScheduler.CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_popup_reminder)
-            .setContentTitle("お薬の時間です")
-            .setContentText("${ReminderScheduler.medicationName(intent)}を確認しましょう。")
+            .setContentTitle(context.getString(R.string.notification_patient_title))
+            .setContentText(context.getString(R.string.notification_patient_body, ReminderScheduler.medicationName(context, intent)))
             .setContentIntent(contentIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

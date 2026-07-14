@@ -3,6 +3,7 @@ package com.afterlifearchive.medmanager.data.session
 import com.afterlifearchive.medmanager.data.auth.AuthService
 import com.afterlifearchive.medmanager.data.auth.AuthSession
 import com.afterlifearchive.medmanager.data.network.ApiClient
+import com.afterlifearchive.medmanager.data.network.ApiException
 import com.afterlifearchive.medmanager.data.network.HttpResponse
 import com.afterlifearchive.medmanager.data.network.HttpTransport
 import com.afterlifearchive.medmanager.data.network.HttpRequest
@@ -73,7 +74,7 @@ class SessionRepositoryTest {
         val auth = FakeAuthService()
         val apiClient = ApiClient(
             baseUrl = "https://example.test/",
-            tokenProvider = { storage.getSecret(SessionRepository.PATIENT_ACCESS) },
+            patientTokenProvider = { storage.getSecret(SessionRepository.PATIENT_ACCESS) },
             transport = transport,
         )
         val repository = SessionRepository(storage, auth, apiClient, { 1_000 })
@@ -112,7 +113,7 @@ class SessionRepositoryTest {
         val repository = SessionRepository(
             storage,
             auth,
-            ApiClient(baseUrl = "https://example.invalid/", tokenProvider = { null }),
+            ApiClient(baseUrl = "https://example.invalid/", patientTokenProvider = { null }),
             { 1_000 },
         )
 
@@ -141,7 +142,7 @@ class SessionRepositoryTest {
         val repository = SessionRepository(
             storage,
             auth,
-            ApiClient(baseUrl = "https://example.invalid/", tokenProvider = { null }),
+            ApiClient(baseUrl = "https://example.invalid/", patientTokenProvider = { null }),
             { 1_000 },
         )
 
@@ -158,7 +159,7 @@ class SessionRepositoryTest {
         var requestCount = 0
         val client = ApiClient(
             baseUrl = "https://example.test/",
-            tokenProvider = { null },
+            patientTokenProvider = { null },
             transport = HttpTransport { requestCount += 1; HttpResponse(200, "{}") },
         )
         val repository = SessionRepository(storage, FakeAuthService(), client, { 1_000 })
@@ -166,7 +167,8 @@ class SessionRepositoryTest {
         repository.linkPatient("12-3")
 
         assertEquals(0, requestCount)
-        assertEquals("6桁の数字コードを入力してください", repository.state.value.errorMessage)
+        assertEquals(PatientLinkFailure.INVALID, repository.state.value.patientLinkFailure)
+        assertNull(repository.state.value.errorMessage)
     }
 
     @Test
@@ -174,15 +176,67 @@ class SessionRepositoryTest {
         val storage = FakeStorage().apply { mode = AppMode.PATIENT }
         val client = ApiClient(
             baseUrl = "https://example.test/",
-            tokenProvider = { null },
+            patientTokenProvider = { null },
             transport = HttpTransport { HttpResponse(404, "{\"error\":\"not_found\"}") },
         )
         val repository = SessionRepository(storage, FakeAuthService(), client, { 1_000 })
 
         repository.linkPatient("123456")
 
-        assertEquals("コードが見つからないか期限切れです", repository.state.value.errorMessage)
+        assertEquals(PatientLinkFailure.NOT_FOUND, repository.state.value.patientLinkFailure)
+        assertNull(repository.state.value.errorMessage)
         assertFalse(repository.state.value.patientAuthenticated)
+    }
+
+    @Test
+    fun failedPublicLinkExchangeDoesNotSendOrDeleteExistingSessions() = runTest {
+        val storage = FakeStorage().apply {
+            mode = AppMode.PATIENT
+            putSecret(SessionRepository.PATIENT_ACCESS, "existing-patient-token")
+            putSecret(SessionRepository.PATIENT_EXPIRES, "9999")
+            putSecret(SessionRepository.CAREGIVER_ACCESS, "caregiver-access-token")
+            putSecret(SessionRepository.CAREGIVER_REFRESH, "caregiver-refresh-token")
+            putSecret(SessionRepository.CAREGIVER_EXPIRES, "9999")
+        }
+        var request: HttpRequest? = null
+        val client = ApiClient(
+            baseUrl = "https://example.test/",
+            patientTokenProvider = { storage.getSecret(SessionRepository.PATIENT_ACCESS) },
+            caregiverTokenProvider = { storage.getSecret(SessionRepository.CAREGIVER_ACCESS) },
+            transport = HttpTransport {
+                request = it
+                HttpResponse(401, "{\"error\":\"Unauthorized\"}")
+            },
+        )
+        val repository = SessionRepository(storage, FakeAuthService(), client, { 1_000 })
+        repository.restore()
+
+        repository.linkPatient("123456")
+
+        assertNull(request?.headers?.get("Authorization"))
+        assertEquals("existing-patient-token", storage.getSecret(SessionRepository.PATIENT_ACCESS))
+        assertEquals("caregiver-access-token", storage.getSecret(SessionRepository.CAREGIVER_ACCESS))
+        assertTrue(repository.state.value.patientAuthenticated)
+        assertEquals(PatientLinkFailure.AUTHORIZATION, repository.state.value.patientLinkFailure)
+    }
+
+    @Test
+    fun linkFailuresMapToPinnedIosCategoriesWithoutRawServerMessages() {
+        val cases = mapOf(
+            ApiException.Validation("raw validation") to PatientLinkFailure.INVALID,
+            ApiException.NotFound() to PatientLinkFailure.NOT_FOUND,
+            ApiException.Conflict("raw conflict") to PatientLinkFailure.NOT_FOUND,
+            ApiException.Unauthorized() to PatientLinkFailure.AUTHORIZATION,
+            ApiException.Forbidden() to PatientLinkFailure.AUTHORIZATION,
+            ApiException.Network("raw server response") to PatientLinkFailure.NETWORK,
+            ApiException.RateLimited() to PatientLinkFailure.GENERIC,
+            ApiException.Server() to PatientLinkFailure.GENERIC,
+            IllegalStateException("raw unexpected error") to PatientLinkFailure.GENERIC,
+        )
+
+        cases.forEach { (error, expected) ->
+            assertEquals(expected, error.toPatientLinkFailure())
+        }
     }
 
     @Test
@@ -191,7 +245,7 @@ class SessionRepositoryTest {
         var sentBody: String? = null
         val client = ApiClient(
             baseUrl = "https://example.test/",
-            tokenProvider = { null },
+            patientTokenProvider = { null },
             transport = HttpTransport { request: HttpRequest ->
                 sentBody = request.body
                 HttpResponse(200, "{\"data\":{\"patientSessionToken\":\"patient-linked\",\"expiresAt\":\"2026-08-12T00:00:00Z\"}}")
@@ -212,18 +266,18 @@ class SessionRepositoryTest {
         val auth = SignupAuthService(AuthSession(null, null, null))
         val repository = SessionRepository(
             FakeStorage().apply { mode = AppMode.CAREGIVER }, auth,
-            ApiClient(baseUrl = "https://example.invalid/", tokenProvider = { null }), { 1_000 },
+            ApiClient(baseUrl = "https://example.invalid/", patientTokenProvider = { null }), { 1_000 },
         )
 
         repository.signupCaregiver("invalid", "123", "456")
-        assertEquals("メールアドレスの形式を確認してください。", repository.state.value.errorMessage)
+        assertEquals(SessionUserMessage.InvalidEmail, repository.state.value.errorMessage)
         assertEquals(0, auth.signupCount)
 
         repository.signupCaregiver("care@example.com", "123", "123")
-        assertEquals("パスワードは6文字以上で入力してください。", repository.state.value.errorMessage)
+        assertEquals(SessionUserMessage.PasswordTooShort, repository.state.value.errorMessage)
 
         repository.signupCaregiver("care@example.com", "123456", "654321")
-        assertEquals("確認用のパスワードが一致していません。", repository.state.value.errorMessage)
+        assertEquals(SessionUserMessage.PasswordMismatch, repository.state.value.errorMessage)
         assertEquals(0, auth.signupCount)
     }
 
@@ -232,18 +286,18 @@ class SessionRepositoryTest {
         val auth = SignupAuthService(AuthSession(null, null, null))
         val repository = SessionRepository(
             FakeStorage().apply { mode = AppMode.CAREGIVER }, auth,
-            ApiClient(baseUrl = "https://example.invalid/", tokenProvider = { null }), { 1_000 },
+            ApiClient(baseUrl = "https://example.invalid/", patientTokenProvider = { null }), { 1_000 },
         )
 
         repository.signupCaregiver(" care@example.com ", "123456", "123456")
 
         assertTrue(repository.state.value.canResendConfirmation)
-        assertTrue(repository.state.value.infoMessage.orEmpty().contains("確認メールを送信しました"))
+        assertEquals(SessionUserMessage.ConfirmationSent, repository.state.value.infoMessage)
         assertEquals("care@example.com", auth.signupEmail)
 
         repository.resendSignupConfirmation("care@example.com")
         assertEquals(1, auth.resendCount)
-        assertTrue(repository.state.value.infoMessage.orEmpty().contains("再送しました"))
+        assertEquals(SessionUserMessage.ConfirmationResent, repository.state.value.infoMessage)
     }
 
     @Test
@@ -295,7 +349,7 @@ class SessionRepositoryTest {
         return SessionRepository(
             storage,
             auth,
-            ApiClient(baseUrl = "https://example.invalid/", tokenProvider = { null }),
+            ApiClient(baseUrl = "https://example.invalid/", patientTokenProvider = { null }),
             { now },
         )
     }

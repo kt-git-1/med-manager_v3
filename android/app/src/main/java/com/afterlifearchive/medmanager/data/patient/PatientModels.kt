@@ -146,3 +146,23 @@ data class HistoryDayDetail(
 )
 
 data class PatientNotificationTarget(val date: LocalDate, val slot: MedicationSlot)
+
+sealed interface PatientUserMessage {
+    data class Raw(val value: String) : PatientUserMessage
+    data object InventoryInsufficient : PatientUserMessage
+    data object DoseRecorded : PatientUserMessage
+    data class SlotPartial(val updatedCount: Int, val insufficientCount: Int) : PatientUserMessage
+    data class SlotRecorded(val updatedCount: Int) : PatientUserMessage
+    data object NoRecordableMedication : PatientUserMessage
+    data object PrnRecorded : PatientUserMessage
+    data class Validation(val safeMessage: String?) : PatientUserMessage
+    data object Unauthorized : PatientUserMessage
+    data object Forbidden : PatientUserMessage
+    data object NotFound : PatientUserMessage
+    data class Conflict(val safeMessage: String?) : PatientUserMessage
+    data object InsufficientInventory : PatientUserMessage
+    data class PatientLimit(val limit: Int) : PatientUserMessage
+    data object RateLimited : PatientUserMessage
+    data object Network : PatientUserMessage
+    data object Server : PatientUserMessage
+}

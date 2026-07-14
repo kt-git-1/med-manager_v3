@@ -9,10 +9,13 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
+import com.afterlifearchive.medmanager.data.session.PatientLinkFailure
+import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -30,7 +33,9 @@ class PatientLinkScreenTest {
         }
 
         composeRule.onNodeWithText("連携コード").assertIsDisplayed()
-        composeRule.onNodeWithText("家族から受け取った6桁のコード\nを入力").assertIsDisplayed()
+        composeRule.onNodeWithText("家族から受け取った6桁のコードを入力").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("連携コード").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("連携コード送信").assertIsDisplayed()
         composeRule.onNodeWithTag(LINK_CODE_SUBMIT_TAG).assertIsNotEnabled()
         composeRule.onNodeWithText("モードを選び直す").assertIsDisplayed()
     }
@@ -68,5 +73,21 @@ class PatientLinkScreenTest {
         }
 
         composeRule.onNodeWithText("コードが見つからないか期限切れです").assertIsDisplayed()
+    }
+
+    @Test
+    fun linkFailureResourcesMatchPinnedIosCopy() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val expected = mapOf(
+            PatientLinkFailure.INVALID to "6桁の数字コードを入力してください",
+            PatientLinkFailure.NOT_FOUND to "コードが見つからないか期限切れです",
+            PatientLinkFailure.AUTHORIZATION to "連携できませんでした。コードを確認して、もう一度お試しください",
+            PatientLinkFailure.NETWORK to "通信に失敗しました。接続を確認して、もう一度お試しください",
+            PatientLinkFailure.GENERIC to "連携に失敗しました",
+        )
+
+        expected.forEach { (failure, copy) ->
+            assertEquals(copy, context.getString(failure.messageResource()))
+        }
     }
 }

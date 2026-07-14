@@ -24,7 +24,6 @@ class ApiErrorMapperTest {
         )
 
         assertTrue(error is ApiException.InsufficientInventory)
-        assertEquals("お薬の在庫が不足しています。", error.message)
     }
 
     @Test
@@ -58,7 +57,6 @@ class ApiErrorMapperTest {
         val error = ApiErrorMapper.map(429, """{"error":"rate_limited","message":"Too many requests"}""")
 
         assertTrue(error is ApiException.RateLimited)
-        assertEquals("操作が続きました。しばらく待ってから、もう一度お試しください。", error.message)
     }
 
     @Test

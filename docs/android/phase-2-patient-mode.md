@@ -1,8 +1,43 @@
 # Android Phase 2: Patient Mode
 
+> **Rebaseline notice (2026-07-14):** Historical implementation evidence below predates `main@1d9d19e`. `PT-005`, `PT-006`, `PT-011`, `PT-013`, `PT-014`, `PH-006` and `XP-002` must be rechecked for post-record reminder rebuilding, next-day retention, cross-tab history freshness, persistent lazy tabs and role-correct notification routing before this phase is treated as current.
+
 **Status: PARTIAL / SCAFFOLDED. This is not iOS parity completion.**
 
 This file records the first working path. Completion is governed by the `PT-*`, `PH-*`, and relevant `XP-*` rows in `parity-requirements.md`.
+
+## 2026-07-14 A04 mutation-freshness evidence
+
+- `MutationFreshnessStore` owns monotonic dose, medication and inventory revisions independently of any screen or tab.
+- Explicit consumer mappings cover patient/caregiver Today, caregiver Medications, patient/caregiver History, caregiver Inventory and notification scheduling.
+- `FreshnessCursor` serializes refreshes and consumes a revision only after a successful refresh. New cursors intentionally require a first authoritative load; mutations published during a refresh remain pending.
+- Successful patient individual, positive-count bulk and PRN recordings advance dose/inventory revisions. Blocked/failed and zero-update paths do not.
+- Patient History now refreshes on first visit and on the next visible visit after a dose mutation, without refreshing merely because a cached tab is reselected.
+- JVM tests cover domain increments, relevant-domain filtering, first visit, hidden destination, destination created after mutation, process recreation, concurrent collectors, refresh failure and mutation-during-refresh.
+
+A04 establishes the shared contract. A05 binds reminder maintenance; A06 supplies persistent lazy patient tabs; caregiver bindings remain part of C1–C4.
+
+## 2026-07-14 A05 post-record reminder evidence
+
+- Scheduled individual success and bulk success with `updatedCount > 0` advance a dedicated notification-plan revision only after visible success state is committed and mutation progress is cleared.
+- PRN success advances dose/inventory freshness but not notification-plan freshness. Zero-update bulk and failed writes advance neither scheduled nor notification-plan state.
+- An application-scope `FreshnessCursor` invokes `PatientReminderMaintenanceCoordinator` outside the UI mutation coroutine. The coordinator is mutex-serialized and guarded by active patient session plus enabled notification settings.
+- History/plan fetch or AlarmManager replacement failure produces a separate maintenance warning while retaining the successful dose status and success message. A later successful rebuild clears the warning.
+- Deterministic tests cover master/session guards, success/failure callbacks, duplicate-safe revisions, tomorrow, month boundary, year boundary, disabled slots and a future secondary reminder after its primary time has passed.
+- A failed quiet Today refresh after a successful record preserves the optimistic/server-accepted status and success message.
+
+`PT-005`, `PT-006`, `PT-011`, `PT-013` and `PH-006` return to `IMPLEMENTED`. Live API recording and physical AlarmManager delivery remain before `VERIFIED`.
+
+## 2026-07-14 A06 retained-tab and local-route evidence
+
+- Patient Today is composed initially. History and Settings are composed only on first selection and then remain mounted under stable `key(PatientTab)` identities.
+- The visible tab is z-ordered and opaque. Hidden visited tabs are transparent, lower-z, pointer-intercepted and `clearAndSetSemantics`, matching iOS `opacity`/`allowsHitTesting`/`accessibilityHidden` behavior.
+- Compose tests prove a destination is absent before first visit, each tab is created once, local remembered state survives repeated switching, lazy-list scroll position is retained, and hidden actions are absent from the merged semantics tree.
+- History's duplicate-safe freshness cursor runs on first visible visit and after a dose revision only when visible or next selected.
+- Patient local notification payloads always select Today and preserve the exact slot highlight for four seconds. The payload date no longer incorrectly routes patient reminders to History.
+- Existing tutorial navigation still selects/loads its required retained tab; the 200% font-scale tutorial test remains green.
+
+`PT-014` is `IMPLEMENTED`. `XP-002` is `PARTIAL` until caregiver remote push routing and process-death/physical notification taps are verified.
 
 ## Implemented foundation
 
@@ -85,6 +120,18 @@ This selector foundation is connected to inventory-backed production candidates 
 
 `PT-003` through `PT-009` are `IMPLEMENTED`. Matched iOS screenshots, real patient inventory concurrency, live recording-window behavior, lifecycle refresh, and physical-device verification remain before `VERIFIED`.
 
+## Gate B rebaseline evidence (2026-07-14)
+
+- Patient endpoints now decode with Kotlin serialization wire DTOs and map into domain models; raw `JSONObject` parsing no longer exists in `PatientApi`.
+- Contract tests cover complete and optional payloads, unknown-field tolerance, required-field failure, and both current/legacy history top-level keys.
+- App session state, caregiver patient selection, patient feature data, notification preferences, and patient navigation now have distinct owners.
+- Patient tab/detail/history navigation survives saved-instance-state recreation; mutation confirmation dialogs intentionally do not survive recreation.
+- Compose UI reads neither credentials nor `RequestAuthPolicy`; endpoint policy remains in data sources.
+- All Compose UI, patient repository, session/auth/network fallback and local notification copy is resource-backed through typed presentation messages. Safe backend validation detail remains explicit raw data by contract.
+- Patient UI is physically split into Shell, navigation state, Today, History, Settings, Tutorial and shared component files.
+- Deterministic Today, History and Settings capture fixtures render the production components rather than screenshot-only duplicates.
+- `./gradlew test assembleDebug assembleRelease lint connectedDebugAndroidTest` passed with 32 emulator tests on API 35 after adding UI-001 200% font-scale action reachability coverage.
+
 ## Phase 2B Today completion slice
 
 ### PT-010 dose detail
@@ -153,6 +200,8 @@ This selector foundation is connected to inventory-backed production candidates 
 - Past entries, taken/missed/none slots, disabled slots, dates beyond seven days, and all entries when master is off are excluded deterministically.
 - Rebuild replaces the complete AlarmManager plan so removed slots and disabled re-reminders do not leave stale alarms.
 - Settings changes and app foreground trigger a rebuild; disabling master or unlinking cancels all stored request codes.
+- Successful scheduled individual/positive bulk recording advances a notification-plan revision after immediate UI success; application-scope maintenance rebuilds asynchronously.
+- PRN and zero-update bulk do not rebuild scheduled alarms. Maintenance failure is reported separately without reversing the accepted medication record.
 
 ### PH-007 server-first unlink and PH-008 support routes
 

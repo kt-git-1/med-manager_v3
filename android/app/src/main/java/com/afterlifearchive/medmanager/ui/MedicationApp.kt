@@ -26,12 +26,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.data.session.SessionRepository
 import com.afterlifearchive.medmanager.data.session.SessionState
 import com.afterlifearchive.medmanager.data.patient.PatientRepository
@@ -49,7 +51,11 @@ fun MedicationApp(repository: SessionRepository, patientRepository: PatientRepos
         when (state.mode) {
             null -> ModeSelectScreen(repository::selectMode)
             AppMode.CAREGIVER -> if (state.caregiverAuthenticated) {
-                SessionReadyScreen("家族モード", "ログイン状態を安全に復元しました。", repository::logoutCaregiver)
+                SessionReadyScreen(
+                    stringResource(R.string.mode_select_caregiver_badge),
+                    stringResource(R.string.caregiver_session_ready_message),
+                    repository::logoutCaregiver,
+                )
             } else {
                 CaregiverAuthFlow(state, repository)
             }
@@ -88,10 +94,10 @@ private fun AuthScreen(
     }
     state.errorMessage?.let {
         Spacer(Modifier.height(16.dp))
-        Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+        Text(sessionUserMessageText(it), color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
     }
     Spacer(Modifier.height(20.dp))
-    OutlinedButton(onClick = onBack, enabled = !state.loading) { Text("利用方法の選択へ戻る") }
+    OutlinedButton(onClick = onBack, enabled = !state.loading) { Text(stringResource(R.string.caregiver_auth_reselect_mode)) }
 }
 
 @Composable
@@ -100,5 +106,5 @@ private fun SessionReadyScreen(title: String, message: String, onLogout: () -> U
     Spacer(Modifier.height(16.dp))
     Text(message, textAlign = TextAlign.Center)
     Spacer(Modifier.height(28.dp))
-    OutlinedButton(onClick = onLogout) { Text("この端末のセッションを解除") }
+    OutlinedButton(onClick = onLogout) { Text(stringResource(R.string.caregiver_session_logout_device)) }
 }

@@ -1,9 +1,12 @@
 package com.afterlifearchive.medmanager.data.session
 
 import com.afterlifearchive.medmanager.data.auth.AuthService
+import com.afterlifearchive.medmanager.data.auth.AuthException
+import com.afterlifearchive.medmanager.data.auth.AuthFailure
 import com.afterlifearchive.medmanager.data.auth.AuthSession
 import com.afterlifearchive.medmanager.data.network.ApiClient
 import com.afterlifearchive.medmanager.data.network.ApiException
+import com.afterlifearchive.medmanager.data.network.RequestAuthPolicy
 import com.afterlifearchive.medmanager.ui.AppMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,19 +20,47 @@ data class SessionState(
     val mode: AppMode? = null,
     val caregiverAuthenticated: Boolean = false,
     val patientAuthenticated: Boolean = false,
-    val currentPatientId: String? = null,
     val loading: Boolean = false,
-    val errorMessage: String? = null,
-    val infoMessage: String? = null,
+    val errorMessage: SessionUserMessage? = null,
+    val patientLinkFailure: PatientLinkFailure? = null,
+    val infoMessage: SessionUserMessage? = null,
     val canResendConfirmation: Boolean = false,
     val caregiverLoginRequested: Boolean = false,
 )
+
+sealed interface SessionUserMessage {
+    data class Raw(val value: String) : SessionUserMessage
+    data object InvalidEmail : SessionUserMessage
+    data object PasswordTooShort : SessionUserMessage
+    data object PasswordMismatch : SessionUserMessage
+    data object ConfirmationSent : SessionUserMessage
+    data object ConfirmationResent : SessionUserMessage
+    data object Unexpected : SessionUserMessage
+    data object MissingCredentials : SessionUserMessage
+    data object InvalidInput : SessionUserMessage
+    data object MissingAuthConfiguration : SessionUserMessage
+    data object MissingAuthToken : SessionUserMessage
+    data object InvalidCredentials : SessionUserMessage
+    data object EmailNotConfirmed : SessionUserMessage
+    data object RateLimited : SessionUserMessage
+    data object LoginFailed : SessionUserMessage
+    data object Network : SessionUserMessage
+}
+
+enum class PatientLinkFailure {
+    INVALID,
+    NOT_FOUND,
+    AUTHORIZATION,
+    NETWORK,
+    GENERIC,
+}
 
 class SessionRepository(
     private val storage: SessionStorage,
     private val authService: AuthService,
     private val apiClient: ApiClient,
     private val nowEpochSeconds: () -> Long = { Instant.now().epochSecond },
+    private val caregiverSelection: CaregiverSelectionRepository = CaregiverSelectionRepository(storage),
 ) {
     private val patientRefreshMutex = Mutex()
     private val caregiverRefreshMutex = Mutex()
@@ -38,22 +69,30 @@ class SessionRepository(
 
     fun restore() {
         expireInvalidSessions()
+        caregiverSelection.restore()
         mutableState.value = SessionState(
             mode = storage.mode,
             caregiverAuthenticated = storage.getSecret(CAREGIVER_ACCESS) != null,
             patientAuthenticated = storage.getSecret(PATIENT_ACCESS) != null,
-            currentPatientId = storage.currentPatientId,
         )
     }
 
     fun selectMode(mode: AppMode) {
         storage.mode = mode
-        mutableState.value = mutableState.value.copy(mode = mode, errorMessage = null)
+        mutableState.value = mutableState.value.copy(
+            mode = mode,
+            errorMessage = null,
+            patientLinkFailure = null,
+        )
     }
 
     fun resetMode() {
         storage.mode = null
-        mutableState.value = mutableState.value.copy(mode = null, errorMessage = null)
+        mutableState.value = mutableState.value.copy(
+            mode = null,
+            errorMessage = null,
+            patientLinkFailure = null,
+        )
     }
 
     suspend fun loginCaregiver(email: String, password: String) = runOperation {
@@ -64,9 +103,9 @@ class SessionRepository(
         mutableState.value = mutableState.value.copy(loading = false, errorMessage = null, infoMessage = null, canResendConfirmation = false)
         val trimmed = email.trim()
         val error = when {
-            !EMAIL_REGEX.matches(trimmed) -> "メールアドレスの形式を確認してください。"
-            password.length < 6 -> "パスワードは6文字以上で入力してください。"
-            password != confirmation -> "確認用のパスワードが一致していません。"
+            !EMAIL_REGEX.matches(trimmed) -> SessionUserMessage.InvalidEmail
+            password.length < 6 -> SessionUserMessage.PasswordTooShort
+            password != confirmation -> SessionUserMessage.PasswordMismatch
             else -> null
         }
         if (error != null) {
@@ -79,7 +118,7 @@ class SessionRepository(
             if (session.accessToken.isNullOrBlank()) {
                 mutableState.value = mutableState.value.copy(
                     loading = false,
-                    infoMessage = "確認メールを送信しました。メール内のリンクを開いて、登録を完了してください。見つからない場合は、迷惑メールフォルダも確認してください。",
+                    infoMessage = SessionUserMessage.ConfirmationSent,
                     canResendConfirmation = true,
                 )
             } else {
@@ -87,7 +126,7 @@ class SessionRepository(
                 restore()
             }
         } catch (error: Exception) {
-            mutableState.value = mutableState.value.copy(loading = false, errorMessage = error.message)
+            mutableState.value = mutableState.value.copy(loading = false, errorMessage = error.toSessionUserMessage())
         }
     }
 
@@ -95,28 +134,36 @@ class SessionRepository(
         mutableState.value = mutableState.value.copy(errorMessage = null, infoMessage = null)
         try {
             authService.resendSignupConfirmation(email.trim())
-            mutableState.value = mutableState.value.copy(infoMessage = "確認メールを再送しました。迷惑メールフォルダも確認してください。")
+            mutableState.value = mutableState.value.copy(infoMessage = SessionUserMessage.ConfirmationResent)
         } catch (error: Exception) {
-            mutableState.value = mutableState.value.copy(errorMessage = error.message)
+            mutableState.value = mutableState.value.copy(errorMessage = error.toSessionUserMessage())
         }
     }
 
     suspend fun linkPatient(code: String) {
-        mutableState.value = mutableState.value.copy(loading = true, errorMessage = null)
+        mutableState.value = mutableState.value.copy(
+            loading = true,
+            errorMessage = null,
+            patientLinkFailure = null,
+        )
         try {
             val normalized = code.filter(Char::isDigit)
             if (normalized.length != 6) throw ApiException.Validation("invalid link code")
-            val response = apiClient.post("api/patient/link", JSONObject().put("code", normalized))
+            val response = apiClient.post(
+                "api/patient/link",
+                JSONObject().put("code", normalized),
+                RequestAuthPolicy.PUBLIC,
+                allowsAuthRefresh = false,
+            )
             savePatientSession(PatientSessionToken.fromJson(response))
             storage.mode = AppMode.PATIENT
             restore()
         } catch (error: Exception) {
-            val message = when (error) {
-                is ApiException.Validation -> "6桁の数字コードを入力してください"
-                is ApiException.NotFound -> "コードが見つからないか期限切れです"
-                else -> error.message ?: "連携できませんでした。もう一度お試しください。"
-            }
-            mutableState.value = mutableState.value.copy(loading = false, errorMessage = message)
+            mutableState.value = mutableState.value.copy(
+                loading = false,
+                errorMessage = null,
+                patientLinkFailure = error.toPatientLinkFailure(),
+            )
         }
     }
 
@@ -124,37 +171,38 @@ class SessionRepository(
 
     suspend fun forceRefreshPatientSession(): Boolean = refreshPatientSession(force = true)
 
-    fun isPatientSession(): Boolean = storage.mode == AppMode.PATIENT && storage.getSecret(PATIENT_ACCESS) != null
-
     fun invalidatePatientSession() {
         storage.clearSecrets(listOf(PATIENT_ACCESS, PATIENT_EXPIRES))
         restore()
     }
 
-    suspend fun refreshCaregiverIfNeeded() = caregiverRefreshMutex.withLock {
-        if (storage.mode != AppMode.CAREGIVER || storage.getSecret(CAREGIVER_ACCESS) == null) return@withLock
-        val expiry = storage.getSecret(CAREGIVER_EXPIRES)?.toLongOrNull() ?: return@withLock
-        if (expiry - nowEpochSeconds() > CAREGIVER_REFRESH_BUFFER_SECONDS) return@withLock
+    suspend fun refreshCaregiverIfNeeded(): Boolean = caregiverRefreshMutex.withLock {
+        if (storage.mode != AppMode.CAREGIVER || storage.getSecret(CAREGIVER_ACCESS) == null) {
+            return@withLock false
+        }
+        val expiry = storage.getSecret(CAREGIVER_EXPIRES)?.toLongOrNull() ?: return@withLock true
+        if (expiry - nowEpochSeconds() > CAREGIVER_REFRESH_BUFFER_SECONDS) return@withLock true
         val refreshToken = storage.getSecret(CAREGIVER_REFRESH)
         if (refreshToken == null) {
-            invalidateCaregiverSession()
-            return@withLock
+            if (expiry <= nowEpochSeconds()) invalidateCaregiverSession()
+            return@withLock storage.getSecret(CAREGIVER_ACCESS) != null
         }
         runCatching { saveCaregiver(authService.refresh(refreshToken), preserveCurrentPatientId = true) }
             .onFailure { invalidateCaregiverSession() }
         restore()
+        storage.getSecret(CAREGIVER_ACCESS) != null
     }
 
     fun logoutCaregiver() {
         storage.clearSecrets(listOf(CAREGIVER_ACCESS, CAREGIVER_REFRESH, CAREGIVER_EXPIRES))
-        storage.currentPatientId = null
+        caregiverSelection.clear()
         if (storage.mode == AppMode.CAREGIVER) storage.mode = null
         restore()
     }
 
-    private fun invalidateCaregiverSession() {
+    fun invalidateCaregiverSession() {
         storage.clearSecrets(listOf(CAREGIVER_ACCESS, CAREGIVER_REFRESH, CAREGIVER_EXPIRES))
-        storage.currentPatientId = null
+        caregiverSelection.clear()
         restore()
     }
 
@@ -164,6 +212,12 @@ class SessionRepository(
         restore()
     }
 
+    fun patientAuthorizationToken(): String? = storage.getSecret(PATIENT_ACCESS)
+
+    fun caregiverAuthorizationToken(): String? = storage.getSecret(CAREGIVER_ACCESS)
+
+    fun isCaregiverSession(): Boolean = storage.mode == AppMode.CAREGIVER && caregiverAuthorizationToken() != null
+
     fun authorizationToken(): String? = when (storage.mode) {
         AppMode.CAREGIVER -> storage.getSecret(CAREGIVER_ACCESS)
         AppMode.PATIENT -> storage.getSecret(PATIENT_ACCESS)
@@ -171,11 +225,15 @@ class SessionRepository(
     }
 
     fun clearError() {
-        mutableState.value = mutableState.value.copy(errorMessage = null)
+        mutableState.value = mutableState.value.copy(errorMessage = null, patientLinkFailure = null)
     }
 
     fun clearMessages() {
-        mutableState.value = mutableState.value.copy(errorMessage = null, infoMessage = null)
+        mutableState.value = mutableState.value.copy(
+            errorMessage = null,
+            patientLinkFailure = null,
+            infoMessage = null,
+        )
     }
 
     fun handleAuthCallback(url: String): Boolean {
@@ -205,7 +263,7 @@ class SessionRepository(
         } catch (error: Exception) {
             mutableState.value = mutableState.value.copy(
                 loading = false,
-                errorMessage = error.message ?: "予期しない問題が発生しました。",
+                errorMessage = error.toSessionUserMessage(),
             )
         }
     }
@@ -217,7 +275,7 @@ class SessionRepository(
         val duration = session.expiresInSeconds?.takeIf { it > 0 } ?: DEFAULT_SESSION_SECONDS
         storage.putSecret(CAREGIVER_EXPIRES, (nowEpochSeconds() + duration).toString())
         storage.mode = AppMode.CAREGIVER
-        if (!preserveCurrentPatientId) storage.currentPatientId = null
+        if (!preserveCurrentPatientId) caregiverSelection.clear()
     }
 
     private suspend fun refreshPatientSession(force: Boolean): Boolean = patientRefreshMutex.withLock {
@@ -230,7 +288,8 @@ class SessionRepository(
             val response = apiClient.post(
                 "api/patient/session/refresh",
                 JSONObject(),
-                allowsPatientRefreshRetry = false,
+                RequestAuthPolicy.PATIENT,
+                allowsAuthRefresh = false,
             )
             savePatientSession(PatientSessionToken.fromJson(response))
         }.isSuccess
@@ -268,12 +327,36 @@ class SessionRepository(
     }
 }
 
+private fun Throwable.toSessionUserMessage(): SessionUserMessage = when (this) {
+    is AuthException -> when (failure) {
+        AuthFailure.MISSING_CREDENTIALS -> SessionUserMessage.MissingCredentials
+        AuthFailure.MISSING_REFRESH_TOKEN, AuthFailure.MISSING_ACCESS_TOKEN -> SessionUserMessage.MissingAuthToken
+        AuthFailure.INVALID_INPUT -> SessionUserMessage.InvalidInput
+        AuthFailure.INVALID_EMAIL -> SessionUserMessage.InvalidEmail
+        AuthFailure.MISSING_CONFIGURATION -> SessionUserMessage.MissingAuthConfiguration
+        AuthFailure.INVALID_CREDENTIALS -> SessionUserMessage.InvalidCredentials
+        AuthFailure.EMAIL_NOT_CONFIRMED -> SessionUserMessage.EmailNotConfirmed
+        AuthFailure.RATE_LIMITED -> SessionUserMessage.RateLimited
+        AuthFailure.LOGIN_FAILED -> SessionUserMessage.LoginFailed
+    }
+    is ApiException.Network -> SessionUserMessage.Network
+    else -> message?.takeIf(String::isNotBlank)?.let(SessionUserMessage::Raw) ?: SessionUserMessage.Unexpected
+}
+
+internal fun Throwable.toPatientLinkFailure(): PatientLinkFailure = when (this) {
+    is ApiException.Validation -> PatientLinkFailure.INVALID
+    is ApiException.NotFound, is ApiException.Conflict -> PatientLinkFailure.NOT_FOUND
+    is ApiException.Unauthorized, is ApiException.Forbidden -> PatientLinkFailure.AUTHORIZATION
+    is ApiException.Network -> PatientLinkFailure.NETWORK
+    else -> PatientLinkFailure.GENERIC
+}
+
 data class PatientSessionToken(val token: String, val expiresAtEpochSeconds: Long?) {
     companion object {
         fun fromJson(response: JSONObject): PatientSessionToken {
             val data = response.getJSONObject("data")
             val token = data.getString("patientSessionToken")
-            require(token.isNotBlank()) { "患者セッショントークンがありません。" }
+            require(token.isNotBlank()) { "missing_patient_session_token" }
             val expiresAt = data.optString("expiresAt")
                 .takeIf(String::isNotBlank)
                 ?.let { Instant.parse(it).epochSecond }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -51,7 +53,10 @@ fun ModeSelectScreen(onModeSelected: (AppMode) -> Unit) {
     val colors = MaterialTheme.colorScheme
     val extended = MedicationTheme.colors
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(colors.background),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(colors.background)
+            .safeDrawingPadding(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = 22.dp,
             top = 52.dp,
@@ -66,18 +71,18 @@ fun ModeSelectScreen(onModeSelected: (AppMode) -> Unit) {
                 RoleModeCard(
                     image = R.drawable.role_patient,
                     badgeIcon = Icons.Rounded.CheckCircle,
-                    badge = "本人モード",
-                    title = "本人として使う",
-                    subtitle = "今日のお薬を確認します",
+                    badge = stringResource(R.string.mode_select_patient_badge),
+                    title = stringResource(R.string.mode_select_patient_title),
+                    subtitle = stringResource(R.string.mode_select_patient_subtitle),
                     tint = colors.primary,
                     onClick = { onModeSelected(AppMode.PATIENT) },
                 )
                 RoleModeCard(
                     image = R.drawable.role_family,
                     badgeIcon = Icons.Rounded.Groups,
-                    badge = "家族モード",
-                    title = "家族として使う",
-                    subtitle = "薬と在庫を管理します",
+                    badge = stringResource(R.string.mode_select_caregiver_badge),
+                    title = stringResource(R.string.mode_select_caregiver_title),
+                    subtitle = stringResource(R.string.mode_select_caregiver_subtitle),
                     tint = extended.orange,
                     onClick = { onModeSelected(AppMode.CAREGIVER) },
                 )
@@ -104,14 +109,14 @@ private fun ModeHeader() {
                 )
             }
             Text(
-                text = "お薬見守り",
+                text = stringResource(R.string.app_name),
                 color = extended.readableSecondaryText,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
             )
         }
         Text(
-            text = "どちらで\n使いますか？",
+            text = stringResource(R.string.mode_select_heading),
             color = colors.onBackground,
             fontSize = 38.sp,
             lineHeight = 45.sp,
@@ -166,13 +171,13 @@ private fun RoleModeCard(
                 }
             }
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("このモードで始める", color = tint, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.mode_select_start), color = tint, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
                 Box(
                     modifier = Modifier.size(38.dp).background(tint, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
                 }
             }
         }

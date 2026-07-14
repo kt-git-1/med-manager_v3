@@ -1,5 +1,15 @@
 # Android Vertical Slice Template
 
+## Baseline and scope
+
+- Reference main SHA:
+- Android branch/build SHA:
+- Parity IDs:
+- iOS view/view-model/DTO/test references:
+- Backend route/service/test references:
+- Localization key groups:
+- Intentional Android differences:
+
 Copy this section into the active phase document for each screen or tightly related behavior group.
 
 ## `<Requirement IDs>` — `<Feature name>`

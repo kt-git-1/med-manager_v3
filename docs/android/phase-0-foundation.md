@@ -1,6 +1,6 @@
 # Android Phase 0: Foundation
 
-**Status: COMPLETE under the master-plan gate.**
+**Status: IMPLEMENTED. Rebaseline build passes; release/device verification remains.**
 
 For all later work, follow `android-port-master-plan.md` and `parity-requirements.md`.
 

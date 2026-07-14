@@ -1,166 +1,197 @@
 # Android Port Master Development Plan
 
-**Status:** Active
+**Status:** Rebaselined; implementation recheck required
+**Development branch:** `android-dev`
+**Reference:** `main@1d9d19e`
+**Stack:** Kotlin, Jetpack Compose, Material 3
 
-**Product:** お薬見守り
+## 1. Outcome
 
-**Android stack:** Kotlin, Jetpack Compose, Material 3
+Build a native Android app that reproduces the pinned iOS product's behavior, business rules, information architecture, Japanese copy, accessibility intent and visual identity. Android-native system interaction is used only where the platform requires it.
 
-**Reference client:** Current SwiftUI iOS app
-**Backend:** Existing Next.js API, Supabase Auth/Postgres, Firebase Cloud Messaging
+Completion means evidence-backed parity, not the presence of similar screens.
 
-## 1. Objective
+## 2. Non-negotiable rules
 
-Build a native Android app that reproduces the current iOS product's user-visible behavior, business rules, information architecture, Japanese copy, accessibility intent, and visual identity. Android platform conventions may differ only where the operating system requires or strongly expects a different interaction.
-
-The goal is not a screen-shaped approximation. The goal is behavioral and visual parity backed by traceable requirements and repeatable verification.
-
-## 2. Non-negotiable principles
-
-1. **The iOS app is inspected before the Android equivalent is designed.** File names, screenshots, live states, DTOs, tests, and API calls must be traced.
-2. **The backend remains the source of truth.** Authorization, inventory, entitlement, retention, linking, and dose-recording rules are never recreated as Android-only policy.
-3. **Contracts are modeled before UI code.** A feature begins with endpoint, request, response, error, and session behavior.
-4. **All states are first-class requirements.** Loading, empty, content, stale, retry, offline, unauthorized, forbidden, validation, conflict, inventory shortage, partial success, and retention lock are considered where applicable.
-5. **A phase is not complete because its happy path renders.** It is complete only when every requirement in the parity matrix reaches `VERIFIED`.
-6. **No speculative simplification.** Any deliberate Android difference is recorded in the parity matrix with a reason and approval status.
-7. **No new product behavior during porting.** Product changes must be separated from parity work and confirmed before implementation.
-8. **Fixtures and previews use the same UI components as production.** Screenshot-only duplicate layouts are prohibited.
-9. **Visual comparison is continuous.** Each screen is compared before moving to the next screen group.
-10. **Documentation changes with code.** A pull request or work unit that changes behavior must update its requirement status and evidence.
+1. Android work stays on `android-dev` until the release gates pass.
+2. Backend routes/tests are the business-rule authority; current iOS behavior/tests are the client authority.
+3. Pin a source SHA. Never chase a moving `main` implicitly.
+4. Define auth, request, response, error, time-zone and idempotency contracts before UI.
+5. Model loading, cached/updating, empty, content, validation, offline, retry, auth, forbidden, conflict, rate-limit, partial success and retention states where applicable.
+6. A successful write is not rolled back visually by a failed follow-up read.
+7. Product copy comes from localization resources; no production UI hardcodes Japanese in Kotlin.
+8. Production components power fixtures and screenshot tests. Screenshot-only duplicate UI is prohibited.
+9. Visual and accessibility verification occurs per vertical slice, not at the end.
+10. Any intentional Android difference is recorded with rationale and acceptance criteria.
+11. New product ideas are separated from parity work and require explicit approval.
+12. A requirement is complete only at `VERIFIED`, with physical-device evidence where required.
 
 ## 3. Architecture boundaries
 
-### Reused
+Dependency direction:
 
-- Next.js API routes and server business rules
-- Supabase Auth and Postgres
-- Firebase server push transport
-- Existing Japanese terminology, privacy/support URLs, and product role model
-- Existing API schemas expressed by iOS DTOs and backend validators
+`Compose route -> state holder -> use case/repository -> typed data source -> API/platform`
 
-### Android-native
+- Compose does not construct URLs, parse JSON, inspect tokens or encode backend policy.
+- Every endpoint uses an explicit `PUBLIC`, `PATIENT` or `CAREGIVER` auth policy.
+- DTOs mirror wire shape. Domain models express app meaning. UI models contain formatted display state.
+- Session, selected patient, preferences, freshness revisions and navigation targets have distinct storage/state owners.
+- The backend owns authorization, inventory, entitlement, retention, linking and record idempotency.
+- Android owns Keystore-backed secrets, runtime permissions, local alarms, FCM token lifecycle, content URI sharing, system back and process recreation.
 
-- Compose UI and navigation
-- State holders/repositories
-- Android Keystore session encryption
-- Runtime permission flows
-- AlarmManager/WorkManager notification scheduling as appropriate
-- FCM client token lifecycle and notification tap routing
-- Android PDF download/share behavior
-- Google Play metadata, signing, testing, and release process
+## 4. Required documents
 
-### Dependency direction
+- `source-baseline.md`: pinned truth and change control
+- `api-contracts.md`: auth/HTTP/domain contracts
+- `ui-screen-contracts.md`: information architecture and screen-state requirements
+- `ui-fidelity-spec.md`: visual comparison process
+- `parity-requirements.md`: status and evidence ledger
+- `current-gap-audit.md`: current implementation delta
+- Phase notes: implementation evidence, not higher authority than the files above
 
-`Compose screen -> state holder -> repository -> API/data source -> backend`
+## 5. Vertical-slice procedure
 
-Compose code must not construct URLs, parse JSON, decide authorization, or directly mutate stored tokens. Repositories must expose typed states rather than raw `JSONObject` values.
+Every slice follows this order:
 
-## 4. Development sequence for every vertical slice
+1. **Pin references**: list iOS views/view models/DTOs/tests, API routes/services/tests and relevant localization key groups.
+2. **Capture current iOS**: deterministic screenshots for content and exceptional states before writing Compose.
+3. **Write contract tests**: method/path/auth/body/response/error/time-zone fixtures.
+4. **Define state machine**: events, state transitions, cancellation, retries, optimistic behavior and invalidation consumers.
+5. **Implement data/domain layer**: no UI until contracts pass.
+6. **Build shared components**: tokens, accessibility semantics and deterministic fixtures.
+7. **Implement navigation/interaction**: back, permission, keyboard, lifecycle, process recreation and deep links.
+8. **Run automated gates**: unit, contract, Compose, lint, debug/release builds.
+9. **Compare visuals**: matched screenshots, side-by-side and overlay/diff; fix material deltas immediately.
+10. **Verify real behavior**: emulator, safe live API smoke, then physical device.
+11. **Update evidence**: change matrix status only after recording results.
 
-Every feature is implemented in this order. Skipping a step requires a recorded blocker.
+## 6. Rebaselined execution phases
 
-1. **Reference capture**
-   - Identify iOS screen/view model/DTO/test files.
-   - Capture iOS screenshots for required states.
-   - Record navigation entry and exit behavior.
-2. **Contract definition**
-   - Record endpoints, methods, request fields, response fields, date/time zone behavior, and error codes.
-   - Add typed Android models and parser/contract tests.
-3. **State definition**
-   - Enumerate loading, empty, content, error, confirmation, success, disabled, and exceptional states.
-   - Define state transitions and idempotency expectations.
-4. **Logic implementation**
-   - Implement repository/data source behavior.
-   - Add unit tests for success and meaningful failure paths.
-5. **UI implementation**
-   - Build production Compose components using shared tokens.
-   - Add deterministic fixtures that render those exact components.
-6. **Behavior verification**
-   - Exercise navigation and actions on an emulator.
-   - Verify actual API calls when safe test data is available.
-7. **Visual verification**
-   - Capture iOS and Android at matched content, locale, text size, theme, and viewport class.
-   - Compare side by side and with an overlay/diff.
-8. **Physical-device verification**
-   - Verify keyboard, back gesture, notifications, lifecycle restoration, and touch targets.
-9. **Documentation gate**
-   - Update the parity matrix status and link evidence.
+### R0 — Baseline integrity and regression repair
 
-## 5. Revised phases
+Goal: make the existing Android foundation conform to `main@1d9d19e` before adding caregiver breadth.
 
-### Phase 0 — Build foundation
+1. Add explicit per-request auth policies; make link exchange public/no-auth and non-invalidating.
+2. Add link-error localization fixtures and canonical UI mapping.
+3. Prove uninstall/reinstall and restore cannot resurrect a patient token.
+4. Add a shared data-freshness revision/event model for Today, History and Inventory.
+5. Move scheduled-dose reminder rebuilding off the record critical path; rebuild only after actual scheduled changes.
+6. Test next-day and month-boundary reminder retention.
+7. Preserve lazy tab instances/state and block hidden-tab input/accessibility.
+8. Recapture changed patient iOS states and recheck affected patient matrix rows.
 
-Gradle, package identity, SDK range, Compose theme foundation, repeatable debug build.
+**Exit:** all recheck rows return to at least `IMPLEMENTED`; build/test/lint pass; no new caregiver UI yet.
 
-### Phase 1 — Shared platform core
+### R1 — Shared production architecture
 
-Configuration, typed networking, Supabase authentication, encrypted sessions, token refresh, common errors, navigation shell, test fixtures.
+1. Replace feature-boundary `JSONObject` handling with typed serialization.
+2. Introduce role-aware repositories/state holders and selected-patient persistence API.
+3. Move every user-visible Kotlin literal into resources.
+4. Split oversized patient UI into routes/components/state owners without changing behavior.
+5. Establish screenshot fixtures, fake clock, deterministic Tokyo calendar and fake permission/push adapters.
 
-### Phase 2A — Patient contracts and shared components
+**Exit:** shared architecture supports both roles without auth or policy branching in Compose.
 
-Typed patient endpoints, slot-time rules, dose/history models, patient design tokens, reusable header/card/status/tab components, deterministic fixtures.
+### P1 — Entry/auth and patient parity verification
 
-### Phase 2B — Patient Today parity
+Reverify existing entry/auth and patient features against current iOS:
 
-Today schedule, actual slot grouping, next-action behavior, individual record, slot bulk record, inventory shortage, partial success, PRN, medication detail, empty/error/updating states, refresh behavior.
+- Mode select and caregiver auth flows
+- Patient linking/session restoration
+- Patient Today individual/bulk/PRN/detail
+- Patient history month/day/retention
+- Patient notification settings, tutorial, deep links, accessibility and dark theme
 
-### Phase 2C — Patient History and Settings parity
+This is a verification/repair phase, not a declaration that earlier code is automatically accepted.
 
-Month calendar, legend, day detail, history retention behavior, notification preferences, primary/secondary reminders, session revoke, legal/support routes.
+### C1 — Caregiver shell and patient management
 
-### Phase 2D — Patient notification and tutorial parity
+1. Five-tab persistent shell and lazy tab lifetime
+2. Patient list/create/select and sole-patient auto-selection
+3. Time presets and selected-patient propagation
+4. Linking-code issue/copy/share
+5. Revoke versus permanent delete semantics
+6. Caregiver tutorial steps that operate on the real flow
+7. No-patient and data-unavailable states shared across tabs
 
-Permission education, schedule refresh, foreground behavior, deep links, highlight/scroll, real-screen tutorial, accessibility and large-text verification.
+### C2 — Medication and regimen
 
-### Phase 3A — Caregiver authentication and patient management parity
+1. Medication list filters/empty states
+2. Add/edit regular and PRN medication forms
+3. Date, dose, strength, notes and inventory validation
+4. Daily/weekday regimen CRUD using patient slot presets
+5. Mutation invalidation of Today, Inventory, History and notification schedule
 
-Auth choice, login, signup, email confirmation/resend, patient list/create/delete/revoke, linking-code issue/share, selected-patient restoration.
+### C3 — Caregiver Today and inventory
 
-### Phase 3B — Caregiver medication and schedule parity
+1. Today monitoring and status aggregation
+2. Individual proxy record/delete
+3. Caregiver bulk recording of older missed slots without patient window restriction
+4. PRN recording/deletion
+5. Mutation-success/follow-up-refresh-failure preservation
+6. Inventory list/filter/detail/enable/quantity/adjust/refill
+7. Low-stock badge propagation
 
-Medication list, add/edit/stop, regular/PRN forms, regimen scheduling, validation and empty/error states.
+### C4 — Caregiver history, PDF, settings and account lifecycle
 
-### Phase 3C — Caregiver Today, inventory, history, settings parity
+1. Month/day history and mutation freshness
+2. Remote push exact date/slot navigation/highlight
+3. Retention role differences
+4. PDF presets/custom validation/on-device generation/share
+5. Push enable/disable and token lifecycle
+6. Legal/support, logout and server-first account deletion
 
-Today monitoring and proxy record, inventory list/detail/adjustment, calendar/day history, PDF report, push settings, account deletion.
+### X1 — Analytics, privacy and cross-platform hardening
 
-### Phase 4 — Cross-platform integrations
+1. Firebase Analytics with collection off by default
+2. Explicit consent and reset-on-disable
+3. Exact fixed-enum event parity; no identity, patient, medication, dose, inventory, date/time, free-text or token parameters
+4. Preview/test/`disableAnalytics` suppression
+5. DebugView, Realtime, Events and Explore verification procedure
+6. FCM process-death routing, offline behavior, app links and Android backup/data extraction rules
+7. Google Play billing remains out of scope until a Play-specific backend claim contract is approved; do not send StoreKit payloads from Android
 
-FCM registration/unregistration, push tap routing, analytics parity, PDF sharing, universal/app links, process-death restoration.
+### V1 — Release verification
 
-### Phase 5 — Release verification
+1. Full automated regression for debug and release variants
+2. Physical device matrix, TalkBack, 2.0 font, dark mode, notification delivery/taps, Doze and lifecycle
+3. Performance and network-failure runs
+4. Security/privacy review and dependency scan
+5. Data safety and health-app declarations
+6. Signed internal/closed test, feedback repair and rollout plan
 
-Full regression, accessibility, performance, supported-device matrix, Data safety/health declarations, closed test, production signing and rollout.
+## 7. Automated quality gates
 
-## 6. Phase exit gate
+Run from `android/` unless noted:
 
-A phase may be marked complete only when:
+- Unit/contract tests for debug and release variants
+- Compose instrumentation tests on the supported emulator API range
+- `lint`
+- `assembleDebug` and release-like assembly
+- `git diff --check`
+- Backend contract/integration tests when Android depends on changed server semantics
 
-- Every scoped parity-matrix item is `VERIFIED`.
-- Unit/contract tests pass for debug and release variants.
-- Android lint passes without newly accepted warnings.
-- A release-like build installs and launches.
-- Required iOS/Android comparison captures exist.
-- No unresolved P0/P1 defect remains.
-- Deferred items are outside the phase by master-plan definition, not deferred ad hoc.
-- Documentation identifies the exact verification evidence.
+High-risk flows additionally require tests for process death, concurrent refresh, double tap/idempotency, stale follow-up response, Tokyo date boundary, permission denial and accessibility tree state.
 
-## 7. Change control
+## 8. Phase exit gate
 
-When the iOS app or backend changes during the port:
+A phase exits only when:
 
-1. Mark affected matrix rows `RECHECK_REQUIRED`.
-2. Update contract fixtures and screenshots.
-3. Re-run the vertical-slice gates.
-4. Do not silently preserve old Android behavior.
+- Every scoped row has current automated evidence.
+- No scoped row remains `RECHECK_REQUIRED`, `PARTIAL` or `BLOCKED` without an approved phase boundary.
+- Required screen states have matched current iOS captures.
+- Debug and release-like build/test/lint pass.
+- Safe live API smokes pass for the phase's mutations and error families.
+- Emulator and required physical-device checks pass.
+- No P0/P1 defect remains.
+- Documentation names exact evidence and source/build SHAs.
 
-When Android intentionally differs:
+## 9. Merge-to-main gate
 
-1. Record the difference.
-2. State whether it is OS-required, accessibility-driven, or product-approved.
-3. Add Android-specific acceptance criteria.
-4. Keep terminology, data, and business outcome equivalent.
+Android is ready to merge only when:
 
-## 8. Current checkpoint
-
-The repository has a functioning foundation and partial patient-mode paths. Phase 0 is complete. Phase 1 and Phase 2 are not yet parity-complete under this plan. See `current-gap-audit.md` for the reset status.
+- All release-scope rows are `VERIFIED`.
+- The final rebaseline against then-current `main` produces no unresolved contract/UI drift.
+- Release signing, Firebase Android app configuration and Play Console declarations are production-ready.
+- Closed testing meets the agreed stability threshold.
+- Main merge contains Android files/docs only plus intentionally shared changes already present on main; it does not backflow stale iOS/API files.

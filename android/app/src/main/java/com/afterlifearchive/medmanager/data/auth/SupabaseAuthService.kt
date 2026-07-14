@@ -14,19 +14,19 @@ class SupabaseAuthService(private val config: AppConfig) : AuthService {
     override suspend fun login(email: String, password: String): AuthSession {
         val trimmedEmail = email.trim()
         if (trimmedEmail.isEmpty() || password.isEmpty()) {
-            throw ApiException.Validation("メールアドレスとパスワードを入力してください。")
+            throw AuthException(AuthFailure.MISSING_CREDENTIALS)
         }
         return authenticate("password", JSONObject().put("email", trimmedEmail).put("password", password))
     }
 
     override suspend fun refresh(refreshToken: String): AuthSession {
-        if (refreshToken.isBlank()) throw ApiException.Validation("更新トークンがありません。")
+        if (refreshToken.isBlank()) throw AuthException(AuthFailure.MISSING_REFRESH_TOKEN)
         return authenticate("refresh_token", JSONObject().put("refresh_token", refreshToken))
     }
 
     override suspend fun signup(email: String, password: String): AuthSession {
         val trimmedEmail = email.trim()
-        if (trimmedEmail.isEmpty() || password.isEmpty()) throw ApiException.Validation("入力内容を確認してください。")
+        if (trimmedEmail.isEmpty() || password.isEmpty()) throw AuthException(AuthFailure.INVALID_INPUT)
         return send(
             path = "auth/v1/signup?redirect_to=${URLEncoder.encode(config.emailConfirmationRedirectUrl, Charsets.UTF_8.name())}",
             payload = JSONObject().put("email", trimmedEmail).put("password", password),
@@ -36,7 +36,7 @@ class SupabaseAuthService(private val config: AppConfig) : AuthService {
 
     override suspend fun resendSignupConfirmation(email: String) {
         val trimmedEmail = email.trim()
-        if (trimmedEmail.isEmpty()) throw ApiException.Validation("メールアドレスの形式を確認してください。")
+        if (trimmedEmail.isEmpty()) throw AuthException(AuthFailure.INVALID_EMAIL)
         send(
             path = "auth/v1/resend",
             payload = JSONObject().put("type", "signup").put("email", trimmedEmail)
@@ -46,13 +46,13 @@ class SupabaseAuthService(private val config: AppConfig) : AuthService {
     }
 
     private suspend fun authenticate(grantType: String, payload: JSONObject): AuthSession = withContext(Dispatchers.IO) {
-        if (!config.hasSupabaseConfiguration) throw ApiException.Validation("Supabaseの設定がありません。")
+        if (!config.hasSupabaseConfiguration) throw AuthException(AuthFailure.MISSING_CONFIGURATION)
         val grant = URLEncoder.encode(grantType, Charsets.UTF_8.name())
         send("auth/v1/token?grant_type=$grant", payload, allowMissingAccessToken = false)
     }
 
     private suspend fun send(path: String, payload: JSONObject, allowMissingAccessToken: Boolean): AuthSession = withContext(Dispatchers.IO) {
-        if (!config.hasSupabaseConfiguration) throw ApiException.Validation("Supabaseの設定がありません。")
+        if (!config.hasSupabaseConfiguration) throw AuthException(AuthFailure.MISSING_CONFIGURATION)
         val connection = (URL("${config.supabaseUrl}$path").openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             connectTimeout = 15_000
@@ -70,7 +70,7 @@ class SupabaseAuthService(private val config: AppConfig) : AuthService {
             if (status !in 200..299) throw authError(status, response)
             val json = JSONObject(response)
             val accessToken = json.optString("access_token")
-            if (accessToken.isBlank() && !allowMissingAccessToken) throw ApiException.Validation("認証トークンを取得できませんでした。")
+            if (accessToken.isBlank() && !allowMissingAccessToken) throw AuthException(AuthFailure.MISSING_ACCESS_TOKEN)
             AuthSession(
                 accessToken = accessToken.takeIf(String::isNotBlank),
                 refreshToken = json.optString("refresh_token").takeIf(String::isNotBlank),
@@ -85,19 +85,19 @@ class SupabaseAuthService(private val config: AppConfig) : AuthService {
         }
     }
 
-    private fun authError(status: Int, response: String): ApiException {
+    private fun authError(status: Int, response: String): AuthException {
         val json = runCatching { JSONObject(response) }.getOrNull()
         val raw = json?.optString("error_description")?.takeIf(String::isNotBlank)
             ?: json?.optString("message")?.takeIf(String::isNotBlank)
             ?: json?.optString("error")?.takeIf(String::isNotBlank)
-            ?: "認証に失敗しました。"
+            ?: "authentication_failed"
         val normalized = raw.lowercase()
-        val message = when {
-            "invalid login credentials" in normalized || "invalid credentials" in normalized -> "メールアドレスまたはパスワードが正しくありません。"
-            "email not confirmed" in normalized -> "メールアドレスの確認が完了していません。"
-            status == 429 -> "しばらく待ってから、もう一度お試しください。"
-            else -> "ログインできませんでした。入力内容を確認してください。"
+        val failure = when {
+            "invalid login credentials" in normalized || "invalid credentials" in normalized -> AuthFailure.INVALID_CREDENTIALS
+            "email not confirmed" in normalized -> AuthFailure.EMAIL_NOT_CONFIRMED
+            status == 429 -> AuthFailure.RATE_LIMITED
+            else -> AuthFailure.LOGIN_FAILED
         }
-        return if (status == 429) ApiException.Network(message) else ApiException.Validation(message)
+        return AuthException(failure)
     }
 }

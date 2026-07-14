@@ -1,6 +1,45 @@
 # Android Phase 1: Session and API Core
 
-**Status: PARTIAL. This document previously overstated completion.**
+**Status: RECHECK REQUIRED against `main@1d9d19e`.**
+
+The historical evidence below remains useful, but the current baseline introduced endpoint-specific public auth behavior for `POST /api/patient/link`. Phase R0 must prove that Android sends no Authorization, performs no refresh, and does not invalidate a stored session when that public request fails. See `source-baseline.md` and `api-contracts.md`.
+
+## 2026-07-14 A01 rebaseline evidence
+
+- `ApiClient` requires an explicit `PUBLIC`, `PATIENT`, or `CAREGIVER` policy for every request.
+- `PUBLIC` never queries either token provider and never invokes refresh/invalidation callbacks.
+- `SessionRepository.linkPatient` declares `PUBLIC` and disables auth refresh explicitly.
+- Tests cover stored patient and caregiver tokens, public 401/403/404/422/429, no Authorization, no retry, and no local credential deletion.
+- Existing patient proactive refresh, forced refresh, one retry and second-401 invalidation remain covered.
+- Caregiver requests select only the caregiver token, invalidate on 401 without retry, and preserve the session on 403.
+
+`SH-006` returns to `IMPLEMENTED`. A02 below restores `AU-002` to `IMPLEMENTED`; live-code and physical-device evidence are still required before `VERIFIED`.
+
+## 2026-07-14 A02 rebaseline evidence
+
+- `PatientLinkFailure` is an explicit UI contract: validation -> invalid, not-found/conflict -> expired/not-found, unauthorized/forbidden -> authorization, network -> network, and all remaining failures including 429/server -> generic.
+- Link-screen production copy is sourced from `strings.xml` and pinned to the current iOS `Localizable.strings`; backend exception text is not rendered.
+- Compose tests assert canonical copy, six-digit behavior and TalkBack labels. Repository/JVM tests assert every error family and public-session preservation.
+- The Android header link symbol is rotated to match the diagonal iOS SF Symbol; spacing, semantic colors, card hierarchy and disabled treatment were compared against the pinned iOS build.
+- Current reference captures (`main@1d9d19e` iOS, current `android-dev` working tree):
+  - iOS light: `/Users/kaito/.codex/visualizations/2026/07/12/019f54b5-867d-7a21-8c6c-0827f3167ce6/rebaseline-20260714/ios-link-code-light.png`
+  - iOS dark: `/Users/kaito/.codex/visualizations/2026/07/12/019f54b5-867d-7a21-8c6c-0827f3167ce6/rebaseline-20260714/ios-link-code-dark.png`
+  - iOS accessibility-large: `/Users/kaito/.codex/visualizations/2026/07/12/019f54b5-867d-7a21-8c6c-0827f3167ce6/rebaseline-20260714/ios-link-code-accessibility-large.png`
+  - Android light: `/Users/kaito/.codex/visualizations/2026/07/12/019f54b5-867d-7a21-8c6c-0827f3167ce6/rebaseline-20260714/android-link-code-light.png`
+  - Android dark: `/Users/kaito/.codex/visualizations/2026/07/12/019f54b5-867d-7a21-8c6c-0827f3167ce6/rebaseline-20260714/android-link-code-dark.png`
+  - Android font 2.0: `/Users/kaito/.codex/visualizations/2026/07/12/019f54b5-867d-7a21-8c6c-0827f3167ce6/rebaseline-20260714/android-link-code-font-2x.png`
+
+`AU-002` is `IMPLEMENTED`. A real linking-code exchange, live rate-limit response and physical-device comparison remain before `VERIFIED`.
+
+## 2026-07-14 A03 installation-safety evidence
+
+- `android:allowBackup="false"` is reinforced with `fullBackupContent` exclusions for API 26–30 and `dataExtractionRules` exclusions for API 31+ cloud backup and device transfer.
+- `AndroidSessionStorage` creates an installation marker in `noBackupFilesDir`. If ordinary or secure preferences appear without that marker, it clears mode, selected patient and all encrypted session values before any read.
+- The marker-loss instrumentation test simulates an OEM/restore path that restores shared preferences but cannot restore the no-backup marker.
+- API 35 emulator evidence verifies active-session restoration after force-stop, Backup Manager refusal, and clean mode selection after uninstall/reinstall.
+- Full commands and outputs are retained in `evidence/a03-installation-safety-20260714.md`.
+
+`SH-007` and `SH-009` are `IMPLEMENTED`. Physical-device/OEM transfer evidence remains before `VERIFIED`.
 
 The implemented foundation is retained, but Phase 1 is complete only when the `SH-*` and scoped `AU-*` rows in `parity-requirements.md` reach `VERIFIED`.
 
@@ -117,15 +156,13 @@ Verification command: `./gradlew test assembleDebug lint connectedDebugAndroidTe
 
 - Matches the iOS `PatientHeader`, 62dp link emblem, title/subtitle hierarchy, 20dp page inset, 18dp patient card, teal outlined numeric field, 58dp submit button, inline red error, and mode-reset action.
 - Input is restricted to six numeric characters; the submit action remains disabled until exactly six digits are present.
-- Validation and not-found responses use the canonical iOS Japanese messages.
+- Invalid, expired/not-found, authorization, network and generic responses use the canonical iOS Japanese messages; rate-limit/server failures intentionally use the iOS generic message.
 - Success persists the returned patient token/expiry and transitions through the real session state.
 - Repository tests cover local validation without network access, 404/expired handling, normalized submission, and successful persistence.
 - Compose tests cover canonical content, disabled/enabled state, sanitization, submission, and inline error rendering.
-- Reference captures:
-  - iOS: `/Users/kaito/.codex/visualizations/2026/07/12/019f54b5-867d-7a21-8c6c-0827f3167ce6/ios-link-code-reference.png`
-  - Android: `/Users/kaito/.codex/visualizations/2026/07/12/019f54b5-867d-7a21-8c6c-0827f3167ce6/android-link-code.png`
+- Current reference captures are recorded in the A02 rebaseline evidence above; older reference captures are retained only as history.
 
-`AU-002` is `IMPLEMENTED`. A real linking-code exchange, rate-limit response, large text, dark mode, and physical-device comparison remain before `VERIFIED`.
+`AU-002` is `IMPLEMENTED`. A real linking-code exchange, live rate-limit response, and physical-device comparison remain before `VERIFIED`.
 
 ## AU-003 through AU-007 caregiver-auth implementation evidence
 
