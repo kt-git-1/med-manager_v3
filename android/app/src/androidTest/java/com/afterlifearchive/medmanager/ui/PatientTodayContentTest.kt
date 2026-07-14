@@ -1,5 +1,13 @@
 package com.afterlifearchive.medmanager.ui
 
+import android.app.Activity
+import android.os.SystemClock
+import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -15,6 +23,7 @@ import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.PatientDose
 import com.afterlifearchive.medmanager.data.patient.PatientMedication
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
+import androidx.core.view.WindowCompat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -27,6 +36,7 @@ class PatientTodayContentTest {
 
     @Test
     fun rendersNextSlotInventoryPartialActionAndPrn() {
+        lateinit var activity: Activity
         val medications = listOf(
             medication("enough", 10.0),
             medication("short", 0.5),
@@ -37,35 +47,39 @@ class PatientTodayContentTest {
 
         composeRule.setContent {
             MedicationAppTheme {
-                TodayContent(
-                    doses = listOf(dose("enough", DoseStatus.PENDING), dose("short", DoseStatus.MISSED)),
-                    loading = false,
-                    updatingKey = null,
-                    error = null,
-                    message = null,
-                    maintenanceWarning = null,
-                    medications = medications,
-                    nextSlot = MedicationSlot.MORNING,
-                    updatingSlot = null,
-                    prnMedications = listOf(medications.getValue("prn")),
-                    updatingPrnMedicationId = null,
-                    onRetry = {},
-                    onRecord = {},
-                    onDetail = {},
-                    onRecordSlot = { bulkSlot = it },
-                    onRecordPrn = { prnId = it.id },
-                    onRemind = {},
-                    now = Instant.parse("2026-07-12T23:15:00Z"),
-                )
+                activity = checkNotNull(LocalActivity.current)
+                Box(
+                    Modifier.fillMaxSize().background(PatientBackground).safeDrawingPadding(),
+                ) {
+                    TodayContent(
+                        doses = listOf(dose("enough", DoseStatus.PENDING), dose("short", DoseStatus.MISSED)),
+                        loading = false,
+                        updatingKey = null,
+                        error = null,
+                        message = null,
+                        maintenanceWarning = null,
+                        medications = medications,
+                        nextSlot = MedicationSlot.MORNING,
+                        updatingSlot = null,
+                        prnMedications = listOf(medications.getValue("prn")),
+                        updatingPrnMedicationId = null,
+                        onRetry = {},
+                        onRecord = {},
+                        onDetail = {},
+                        onRecordSlot = { bulkSlot = it },
+                        onRecordPrn = { prnId = it.id },
+                        onRemind = {},
+                        now = Instant.parse("2026-07-13T23:15:00Z"),
+                    )
+                }
             }
         }
 
         composeRule.onNodeWithText("次に飲むお薬").assertIsDisplayed()
         composeRule.onAllNodesWithText("在庫不足のお薬が1件あります").onFirst().assertIsDisplayed()
-        writeScreenshotFixture(
-            composeRule.onRoot().captureToImage(),
-            "android-ui-101-patient-inventory-partial-light.png",
-        )
+        composeRule.runOnIdle { normalizeStatusBar(activity) }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-101-patient-inventory-partial-light.png")
         composeRule.onNodeWithText("この時間のお薬を飲んだ").performClick()
         composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().assertIsDisplayed().performClick()
         composeRule.onNodeWithText("痛い時").assertIsDisplayed()
@@ -134,16 +148,30 @@ class PatientTodayContentTest {
     }
 
     private fun dose(id: String, status: DoseStatus) = PatientDose(
-        key = "dose-$id", medicationId = id, scheduledAt = Instant.parse("2026-07-12T23:00:00Z"),
-        status = status, medicationName = id, dosageText = "1錠", doseCount = 1.0, slot = MedicationSlot.MORNING,
+        key = "dose-$id", medicationId = id, scheduledAt = Instant.parse("2026-07-13T23:00:00Z"),
+        status = status, medicationName = medicationName(id), dosageText = "1錠", doseCount = 1.0, slot = MedicationSlot.MORNING,
     )
 
     private fun medication(id: String, quantity: Double, isPrn: Boolean = false) = PatientMedication(
-        id = id, patientId = "patient", name = id, dosageText = "1錠", doseCountPerIntake = 1.0,
+        id = id, patientId = "patient", name = medicationName(id), dosageText = "1錠", doseCountPerIntake = 1.0,
         dosageStrengthValue = 1.0, dosageStrengthUnit = "mg", notes = null, isPrn = isPrn,
         prnInstructions = if (isPrn) "痛い時" else null, startDate = Instant.EPOCH, endDate = null,
         inventoryCount = quantity, inventoryUnit = "錠", inventoryEnabled = true, inventoryQuantity = quantity,
         inventoryOut = quantity <= 0, isActive = true, isArchived = false, nextScheduledAt = null,
         regimenTimes = null, regimenDaysOfWeek = null,
     )
+
+    private fun medicationName(id: String) = when (id) {
+        "enough" -> "血圧の薬 5 mg"
+        "short" -> "胃薬"
+        "prn" -> "頭痛薬"
+        else -> id
+    }
+
+    @Suppress("DEPRECATION")
+    private fun normalizeStatusBar(activity: Activity) {
+        WindowCompat.setDecorFitsSystemWindows(activity.window, false)
+        activity.window.statusBarColor = android.graphics.Color.TRANSPARENT
+        WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = true
+    }
 }
