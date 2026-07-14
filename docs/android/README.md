@@ -38,6 +38,7 @@ An Android shortcut never overrides a backend rule or an intentional iOS product
 - [Phase 3 caregiver-mode notes](./phase-3-caregiver-mode.md)
 - [Phase 4 analytics and privacy notes](./phase-4-analytics-privacy.md)
 - [Play release runbook](./play-release-runbook.md)
+- [Play Console declaration worksheet](./play-console-declarations.md)
 
 ## Status vocabulary
 

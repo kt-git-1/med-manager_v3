@@ -181,6 +181,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [ ] TalkBack, font 2.0, dark mode, compact/large phone and rotation/configuration tests.
 - [x] Security, dependency, privacy and initial performance reviews; external dependency upgrades and signed-release profiling remain recorded residuals.
 - [x] Add a secret-free, fail-closed production signing configuration and Play release runbook.
+- [x] Map implementation data flows to a draft Play Data safety and Health apps declaration worksheet; final signed-AAB/Console submission remains pending.
 - [ ] Signed internal then closed Play test.
 - [ ] Production Firebase, app links, signing, Data safety and health declarations.
 - [ ] Merge Android work into main without overwriting newer iOS/API files.
