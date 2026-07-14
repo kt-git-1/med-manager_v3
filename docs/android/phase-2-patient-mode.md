@@ -2,7 +2,7 @@
 
 > **Rebaseline notice (2026-07-14):** Historical implementation evidence below predates `main@1d9d19e`. `PT-005`, `PT-006`, `PT-011`, `PT-013`, `PT-014`, `PH-006` and `XP-002` must be rechecked for post-record reminder rebuilding, next-day retention, cross-tab history freshness, persistent lazy tabs and role-correct notification routing before this phase is treated as current.
 
-**Status: PARTIAL / SCAFFOLDED. This is not iOS parity completion.**
+**Status: IMPLEMENTED / VERIFICATION IN PROGRESS. This is not final iOS parity completion.**
 
 This file records the first working path. Completion is governed by the `PT-*`, `PH-*`, and relevant `XP-*` rows in `parity-requirements.md`.
 
@@ -50,17 +50,26 @@ A04 establishes the shared contract. A05 binds reminder maintenance; A06 supplie
 - Patient session unlink from Settings
 - Loading, empty, success, and API error states
 
-The UI establishes the patient tab structure and a preliminary teal identity. It has not passed the high-fidelity process in `ui-fidelity-spec.md`.
+The UI establishes the patient tab structure and shared teal identity. Patient Today's typical light state has passed the current-main paired high-fidelity comparison; the remaining state matrix and device/accessibility checks are still governed by Gate C.
 
-## Missing parity requirements
+## Residual verification requirements
 
-- PRN medication recording
-- Slot-level bulk recording and partial inventory messaging
-- Detailed history-day screen
-- Configurable recurring notification schedule
-- Patient tutorial/coachmarks
+- Live API recording and concurrent inventory behavior
+- Dark mode, 130%/200% font, TalkBack and compact/large devices
+- Physical AlarmManager delivery, process death and notification taps
+- The remaining current-main paired screen captures in C01/C04/C05
 
-These remain part of later parity work because they depend on medication detail, slot-time, and notification scheduling surfaces beyond the Phase 2 core flow.
+PRN recording, slot bulk/partial inventory, history-day detail, recurring notification settings and tutorial coachmarks are implemented and covered by automated tests; they are no longer missing implementation items.
+
+## 2026-07-14 C03 current Patient Today parity evidence
+
+- `TodayContent` now follows the current iOS information hierarchy: icon/date header, next-dose hero, orange PRN entry, planned section progress, then canonical slot/dose cards.
+- The next-dose hero shows slot/time, pill and medication totals, medication rows with status icons, the primary bulk action, recording-window state and inventory warnings. Completed schedules render the iOS-equivalent all-done card.
+- PRN medications moved from an always-expanded block to a scrollable modal list opened by the iOS-equivalent entry card; existing single-flight, inventory and confirmation contracts remain intact.
+- `PatientModePreview` is deterministic at 2026-07-14 12:00 JST and mirrors the UI-101 sample data. It no longer depends on wall-clock timing, so reference captures are repeatable.
+- Patient bottom navigation now uses calendar/history/settings icons and the current `今日` label. Teal and orange card borders match the iOS emphasis system while retaining Material touch behavior.
+- API-35 Compose coverage asserts next/PRN/planned order, bulk recording, partial inventory warning, PRN sheet/action, canonical details, success/warning coexistence and the existing empty/updating states.
+- Paired evidence is recorded in `evidence/c03-20260714/`; `./gradlew test assembleDebug assembleRelease lint connectedDebugAndroidTest` passes with all 34 instrumentation tests.
 
 ## Phase 2A contract hardening evidence
 

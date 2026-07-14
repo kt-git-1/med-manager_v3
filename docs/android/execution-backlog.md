@@ -104,7 +104,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 - [ ] C01 Re-capture entry/auth and patient iOS states at `main@1d9d19e`.
 - [x] C02 Reverify Mode Select, auth choice/login/signup/callback/resend.
-- [ ] C03 Reverify Patient Today states/actions/recording-window/inventory/PRN/detail.
+- [x] C03 Reverify Patient Today states/actions/recording-window/inventory/PRN/detail.
 - [ ] C04 Reverify History month/day/retention/freshness.
 - [ ] C05 Reverify Settings/reminders/tutorial/deep links/legal/unlink.
 - [ ] C06 Complete patient TalkBack, font 1.0/1.3/2.0, light/dark and physical-device checks.
@@ -185,4 +185,4 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Immediate next item
 
-Continue **C01 current-iOS reference capture**, then C03, in `ui-screen-contracts.md` order. Current-baseline UI-001, UI-003, UI-004, UI-100 tutorial Today and UI-101 typical Today references are recorded in `evidence/c01-reference-captures-20260714.md`. C02 behavior is reverified through production-flow Compose tests plus repository callback/resend tests; visual comparison also closed login back-navigation drift. Gate B's final visual-regression checkbox remains open until the remaining C01 pairs are complete. The retained A03 item remains physical-device/OEM-transfer evidence assigned to V1.
+Continue the remaining **C01 current-iOS reference capture**, then C04, in `ui-screen-contracts.md` order. C03 now mirrors the current UI-101 hierarchy (header, next-dose hero, PRN entry/list, planned progress and slot cards), uses a deterministic production preview, and has paired light evidence plus action/order/inventory/recording-window/PRN/detail Compose coverage under `evidence/c03-20260714/`. C02 behavior remains reverified through production-flow Compose tests plus repository callback/resend tests. Gate B's final visual-regression checkbox remains open until the remaining C01 pairs are complete; physical device, dark/large text and TalkBack remain assigned to C06/V1.

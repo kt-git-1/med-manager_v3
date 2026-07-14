@@ -29,12 +29,17 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
@@ -59,6 +64,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -102,24 +108,39 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-internal enum class PatientTab(val titleResource: Int, val symbol: String) {
-    TODAY(R.string.patient_tab_today, "●"),
-    HISTORY(R.string.patient_tab_history, "◷"),
-    SETTINGS(R.string.patient_tab_settings, "⚙"),
+internal enum class PatientTab(val titleResource: Int, val icon: ImageVector) {
+    TODAY(R.string.patient_tab_today, Icons.Rounded.CalendarMonth),
+    HISTORY(R.string.patient_tab_history, Icons.Rounded.History),
+    SETTINGS(R.string.patient_tab_settings, Icons.Rounded.Settings),
 }
 
 @Composable
 fun PatientModePreview() {
     val morningName = stringResource(R.string.patient_preview_morning_name)
     val bloodPressureName = stringResource(R.string.patient_preview_blood_pressure_name)
+    val stomachName = stringResource(R.string.patient_preview_stomach_name)
     val eveningName = stringResource(R.string.patient_preview_evening_name)
+    val prnName = stringResource(R.string.patient_preview_prn_name)
+    val prnInstructions = stringResource(R.string.patient_preview_prn_instructions)
     val oneTablet = stringResource(R.string.patient_preview_one_tablet)
     val twoTablets = stringResource(R.string.patient_preview_two_tablets)
-    val previewDoses = remember(morningName, bloodPressureName, eveningName, oneTablet, twoTablets) {
+    val previewNow = remember { Instant.parse("2026-07-14T03:00:00Z") }
+    val previewDoses = remember(morningName, bloodPressureName, stomachName, eveningName, oneTablet, twoTablets) {
         listOf(
-            PatientDose("preview-1", "med-1", Instant.now().minusSeconds(600), DoseStatus.PENDING, morningName, oneTablet, 1.0),
-            PatientDose("preview-2", "med-2", Instant.now().plusSeconds(300), DoseStatus.PENDING, bloodPressureName, oneTablet, 1.0),
-            PatientDose("preview-3", "med-3", Instant.now().plusSeconds(14_400), DoseStatus.TAKEN, eveningName, twoTablets, 2.0),
+            PatientDose("preview-1", "med-1", Instant.parse("2026-07-13T23:00:00Z"), DoseStatus.TAKEN, morningName, oneTablet, 1.0, slot = MedicationSlot.MORNING),
+            PatientDose("preview-2", "med-2", Instant.parse("2026-07-14T03:30:00Z"), DoseStatus.PENDING, "$bloodPressureName 5 mg", oneTablet, 1.0, slot = MedicationSlot.NOON),
+            PatientDose("preview-3", "med-3", Instant.parse("2026-07-14T03:30:00Z"), DoseStatus.PENDING, stomachName, oneTablet, 1.0, slot = MedicationSlot.NOON),
+            PatientDose("preview-4", "med-4", Instant.parse("2026-07-14T10:00:00Z"), DoseStatus.PENDING, eveningName, twoTablets, 2.0, slot = MedicationSlot.EVENING),
+        )
+    }
+    val prnMedication = remember(prnName, prnInstructions, oneTablet) {
+        PatientMedication(
+            id = "preview-prn", patientId = "preview-patient", name = prnName, dosageText = oneTablet,
+            doseCountPerIntake = 1.0, dosageStrengthValue = 200.0, dosageStrengthUnit = "mg", notes = null,
+            isPrn = true, prnInstructions = prnInstructions, startDate = Instant.EPOCH, endDate = null,
+            inventoryCount = 12.0, inventoryUnit = "錠", inventoryEnabled = true, inventoryQuantity = 12.0,
+            inventoryOut = false, isActive = true, isArchived = false, nextScheduledAt = null,
+            regimenTimes = null, regimenDaysOfWeek = null,
         )
     }
     Scaffold(
@@ -130,7 +151,7 @@ fun PatientModePreview() {
                     NavigationBarItem(
                         selected = item == PatientTab.TODAY,
                         onClick = {},
-                        icon = { Text(item.symbol, color = if (item == PatientTab.TODAY) PatientTeal else MaterialTheme.colorScheme.onSurfaceVariant) },
+                        icon = { Icon(item.icon, contentDescription = null) },
                         label = { Text(stringResource(item.titleResource)) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = PatientTeal,
@@ -150,10 +171,10 @@ fun PatientModePreview() {
                 error = null,
                 message = null,
                 maintenanceWarning = null,
-                medications = emptyMap(),
-                nextSlot = MedicationSlot.MORNING,
+                medications = mapOf(prnMedication.id to prnMedication),
+                nextSlot = MedicationSlot.NOON,
                 updatingSlot = null,
-                prnMedications = emptyList(),
+                prnMedications = listOf(prnMedication),
                 updatingPrnMedicationId = null,
                 onRetry = {},
                 onRecord = {},
@@ -161,6 +182,7 @@ fun PatientModePreview() {
                 onRecordSlot = {},
                 onRecordPrn = {},
                 onRemind = {},
+                now = previewNow,
             )
         }
     }
@@ -244,7 +266,7 @@ fun PatientHomeScreen(repository: PatientRepository, onUnlink: () -> Unit) {
                     NavigationBarItem(
                         selected = tab == item,
                         onClick = { navigation.selectTab(item) },
-                        icon = { Text(item.symbol, color = if (tab == item) PatientTeal else MaterialTheme.colorScheme.onSurfaceVariant) },
+                        icon = { Icon(item.icon, contentDescription = null) },
                         label = { Text(stringResource(item.titleResource)) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = PatientTeal,

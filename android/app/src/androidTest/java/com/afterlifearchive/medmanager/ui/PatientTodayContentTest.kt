@@ -1,8 +1,9 @@
 package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -12,6 +13,7 @@ import com.afterlifearchive.medmanager.data.patient.PatientDose
 import com.afterlifearchive.medmanager.data.patient.PatientMedication
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import java.time.Instant
@@ -55,11 +57,15 @@ class PatientTodayContentTest {
             }
         }
 
-        composeRule.onNodeWithText("次のお薬").assertIsDisplayed()
-        composeRule.onNodeWithText("在庫不足のお薬が1件あります").assertIsDisplayed()
-        composeRule.onNodeWithText("在庫を確認してください").assertIsNotEnabled()
-        composeRule.onNodeWithText("この時間帯をまとめて記録（1件）").performClick()
-        composeRule.onNodeWithText("必要なときのお薬").assertIsDisplayed()
+        composeRule.onNodeWithText("次に飲むお薬").assertIsDisplayed()
+        composeRule.onAllNodesWithText("在庫不足のお薬が1件あります").assertCountEquals(2)
+        composeRule.onNodeWithText("この時間のお薬を飲んだ").performClick()
+        val nextTop = composeRule.onNodeWithTag("patient-today-next").fetchSemanticsNode().boundsInRoot.top
+        val prnTop = composeRule.onNodeWithTag("patient-today-prn-entry").fetchSemanticsNode().boundsInRoot.top
+        val plannedTop = composeRule.onNodeWithTag("patient-today-planned").fetchSemanticsNode().boundsInRoot.top
+        assertTrue(nextTop < prnTop)
+        assertTrue(prnTop < plannedTop)
+        composeRule.onNodeWithTag("patient-today-prn-entry").performClick()
         composeRule.onNodeWithText("痛い時").assertIsDisplayed()
         composeRule.onNodeWithTag("prn-record-prn").performClick()
 

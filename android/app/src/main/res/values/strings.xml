@@ -16,12 +16,15 @@
     <string name="patient_reminder_refresh_failed">服薬記録は保存されましたが、通知予定を更新できませんでした。アプリを開いたときに再試行します。</string>
 
     <!-- Patient shell and recording -->
-    <string name="patient_tab_today">きょう</string>
+    <string name="patient_tab_today">今日</string>
     <string name="patient_tab_history">履歴</string>
     <string name="patient_tab_settings">設定</string>
-    <string name="patient_preview_morning_name">朝のお薬</string>
-    <string name="patient_preview_blood_pressure_name">血圧のお薬</string>
-    <string name="patient_preview_evening_name">夕方のお薬</string>
+    <string name="patient_preview_morning_name">朝のビタミン</string>
+    <string name="patient_preview_blood_pressure_name">血圧の薬</string>
+    <string name="patient_preview_stomach_name">胃薬</string>
+    <string name="patient_preview_evening_name">コレステロールの薬</string>
+    <string name="patient_preview_prn_name">頭痛薬</string>
+    <string name="patient_preview_prn_instructions">頭痛・発熱時</string>
     <string name="patient_preview_one_tablet">1回1錠</string>
     <string name="patient_preview_two_tablets">1回2錠</string>
     <string name="patient_record_confirm_title">服薬を記録しますか？</string>
@@ -54,7 +57,16 @@
     <string name="patient_today_title">今日のお薬</string>
     <string name="patient_today_date_pattern">M月d日（E）</string>
     <string name="patient_today_refreshing">最新の情報に更新しています…</string>
-    <string name="patient_prn_section">必要なときのお薬</string>
+    <string name="patient_today_next_title">次に飲むお薬</string>
+    <string name="patient_today_next_done_title">今日のお薬は記録済みです</string>
+    <string name="patient_today_next_done_message">必要な記録は完了しています</string>
+    <string name="patient_today_planned_title">今日のお薬</string>
+    <string name="patient_today_progress">%1$d/%2$d</string>
+    <string name="patient_today_bulk_summary">合計%1$s錠（%2$d種類）</string>
+    <string name="patient_today_bulk_action">この時間のお薬を飲んだ</string>
+    <string name="patient_prn_section">必要な時のお薬</string>
+    <string name="patient_prn_entry_message">痛い時・つらい時などに飲む薬が%1$d件あります</string>
+    <string name="patient_prn_sheet_title">必要な時のお薬</string>
     <string name="patient_inventory_insufficient">在庫不足</string>
     <string name="patient_recording">記録中…</string>
     <string name="patient_taken_action">飲みました</string>
