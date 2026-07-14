@@ -180,10 +180,11 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [ ] Notification Doze/delivery/tap/process-death tests.
 - [ ] TalkBack, font 2.0, dark mode, compact/large phone and rotation/configuration tests.
 - [x] Security, dependency, privacy and initial performance reviews; external dependency upgrades and signed-release profiling remain recorded residuals.
+- [x] Add a secret-free, fail-closed production signing configuration and Play release runbook.
 - [ ] Signed internal then closed Play test.
 - [ ] Production Firebase, app links, signing, Data safety and health declarations.
 - [ ] Merge Android work into main without overwriting newer iOS/API files.
 
 ## Immediate next item
 
-Begin **Gate H analytics and privacy** on the completed Gate G caregiver History/PDF/push/settings foundation. Firebase is runtime-configurable and collection remains manifest-disabled; next add the shared privacy-rejecting analytics wrapper, both-role consent/reset flow and fixed safe event schema before any DebugView verification. Physical FCM, C01/C06 visual residuals and release-device evidence remain Gate I items.
+Execute the **Gate I physical-device and Play release matrix** using `play-release-runbook.md`. Production Firebase values, a release-owner-managed upload key, Play Console access and physical devices are required for the remaining external evidence. Until those are available, continue closing emulator-verifiable C01/C06 visual and accessibility residuals without marking device-only rows verified.

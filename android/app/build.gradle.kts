@@ -13,6 +13,16 @@ fun runtimeConfig(name: String, default: String = ""): String =
     providers.environmentVariable(name).orNull ?: localProperties.getProperty(name) ?: default
 
 val generatedRoleAssets = layout.buildDirectory.dir("generated/role-assets/res")
+val releaseStoreFilePath = runtimeConfig("RELEASE_STORE_FILE")
+val releaseStorePassword = runtimeConfig("RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = runtimeConfig("RELEASE_KEY_ALIAS")
+val releaseKeyPassword = runtimeConfig("RELEASE_KEY_PASSWORD")
+val releaseSigningConfigured = listOf(
+    releaseStoreFilePath,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+).all(String::isNotBlank)
 val syncRoleAssets by tasks.registering(Sync::class) {
     into(generatedRoleAssets)
     from(rootProject.file("../ios/MedicationApp/Assets.xcassets/RolePatient.imageset/role-patient.png")) {
@@ -60,9 +70,21 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            create("release") {
+                storeFile = rootProject.file(releaseStoreFilePath)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            if (releaseSigningConfigured) signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -81,6 +103,28 @@ android {
     }
 
     sourceSets["main"].res.srcDir(generatedRoleAssets)
+}
+
+val verifyProductionSigning by tasks.registering {
+    group = "verification"
+    description = "Fails unless all production upload-signing values and the keystore are available."
+    doLast {
+        require(releaseSigningConfigured) {
+            "Set RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS and RELEASE_KEY_PASSWORD in Git-ignored local.properties or CI secrets."
+        }
+        require(rootProject.file(releaseStoreFilePath).isFile) {
+            "RELEASE_STORE_FILE does not exist: ${rootProject.file(releaseStoreFilePath)}"
+        }
+    }
+}
+
+tasks.register("bundleSignedRelease") {
+    group = "build"
+    description = "Builds the Play upload AAB only after production signing configuration is verified."
+    dependsOn(verifyProductionSigning, "bundleRelease")
+}
+tasks.matching { it.name == "bundleRelease" }.configureEach {
+    mustRunAfter(verifyProductionSigning)
 }
 
 tasks.named("preBuild").configure { dependsOn(syncRoleAssets) }

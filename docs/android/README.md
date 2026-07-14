@@ -7,7 +7,7 @@ This directory is the source of truth for the Android port. Android work is isol
 - Reference product: `main@1d9d19e`
 - Android baseline merge: `android-dev@1b38208`
 - Baseline date: 2026-07-14
-- Current action: complete Gate H live Firebase Analytics verification, then begin Gate I release/device hardening
+- Current action: execute the Gate I physical-device and Play Internal/Closed release runbook; live Firebase and release-owner signing inputs remain external prerequisites
 
 ## Authority order
 
@@ -37,6 +37,7 @@ An Android shortcut never overrides a backend rule or an intentional iOS product
 - [Phase 2 patient-mode notes](./phase-2-patient-mode.md)
 - [Phase 3 caregiver-mode notes](./phase-3-caregiver-mode.md)
 - [Phase 4 analytics and privacy notes](./phase-4-analytics-privacy.md)
+- [Play release runbook](./play-release-runbook.md)
 
 ## Status vocabulary
 
