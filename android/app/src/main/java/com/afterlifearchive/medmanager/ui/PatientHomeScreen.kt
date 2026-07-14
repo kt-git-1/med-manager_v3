@@ -375,6 +375,9 @@ fun PatientHomeScreen(
                         if (Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                         ReminderScheduler.schedule(context, dose.key, dose.medicationName)
                     },
+                    prnError = state.prnError?.let { patientUserMessageText(it) },
+                    prnSuccessRevision = state.prnRecordSuccessRevision,
+                    onClearPrnFeedback = repository::clearPrnFeedback,
                 )
                 PatientTab.HISTORY -> HistoryContent(
                     days = state.history,
@@ -437,8 +440,10 @@ fun PatientHomeScreen(
             confirmButton = {
                 Button(onClick = {
                     confirmPrn = null
-                    scope.launch { repository.recordPrn(medication); repository.refreshTodayAfterAction() }
-                }) { Text(stringResource(R.string.patient_record)) }
+                    scope.launch {
+                        if (repository.recordPrn(medication)) repository.refreshTodayAfterAction()
+                    }
+                }) { Text(stringResource(R.string.patient_prn_confirm_action)) }
             },
             dismissButton = { TextButton(onClick = { confirmPrn = null }) { Text(stringResource(R.string.common_cancel)) } },
         )

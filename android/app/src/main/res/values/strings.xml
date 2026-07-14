@@ -29,8 +29,9 @@
     <string name="patient_preview_two_tablets">1回2錠</string>
     <string name="patient_record_confirm_title">服薬を記録しますか？</string>
     <string name="patient_record_confirm_message">%1$sを「飲みました」として記録します。</string>
-    <string name="patient_prn_confirm_title">頓服を記録しますか？</string>
-    <string name="patient_prn_confirm_message">%1$sを服用した記録を追加します。</string>
+    <string name="patient_prn_confirm_title">飲みましたか？</string>
+    <string name="patient_prn_confirm_message">%1$sを今飲みましたか？</string>
+    <string name="patient_prn_confirm_action">飲んだ</string>
     <string name="patient_slot_confirm_title">%1$sをまとめて記録しますか？</string>
     <string name="patient_slot_confirm_message">%1$d 種類、合計%2$s錠を「飲みました」として記録します。</string>
     <string name="patient_record">記録する</string>
@@ -69,6 +70,11 @@
     <string name="patient_prn_section">必要な時のお薬</string>
     <string name="patient_prn_entry_message">痛い時・つらい時などに飲む薬が%1$d件あります</string>
     <string name="patient_prn_sheet_title">必要な時のお薬</string>
+    <string name="patient_prn_list_title">飲んだ薬を選んでください</string>
+    <string name="patient_prn_record_action">この薬を飲んだ</string>
+    <string name="patient_prn_dose_count">1回%1$s錠</string>
+    <string name="patient_prn_updating">更新中...</string>
+    <string name="patient_prn_error">取得に失敗しました</string>
     <string name="patient_inventory_insufficient">在庫不足</string>
     <string name="patient_recording">記録中…</string>
     <string name="patient_taken_action">飲みました</string>

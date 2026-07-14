@@ -119,13 +119,15 @@ This selector foundation is connected to inventory-backed production candidates 
 
 - Active, unarchived PRN medications appear in their own Today section with instructions.
 - Recording requires confirmation and calls the patient-scoped `/api/patients/{patientId}/prn-dose-records` route with server-default time and quantity.
-- Submission is single-flight and inventory insufficient PRN medications are disabled locally while remaining server-authoritative.
+- The current iOS flow is mirrored end to end: orange entry card, bounded list, medication plus dosage, per-intake count, instruction/notes fallback, full-width action, exact confirmation copy, and a blocking `更新中...` overlay.
+- Submission is single-flight and inventory-insufficient PRN medications are disabled locally while remaining server-authoritative. Failure remains visible inside the PRN flow with generic iOS copy; it neither closes the sheet nor refreshes Today.
+- A monotonic success revision closes the sheet only after the server write succeeds, publishes the success message/freshness revisions, and then performs the quiet authoritative Today refresh. Dismissal/opening clears only stale PRN-local feedback.
 
 ### Verification
 
 - Contract fixtures cover medication inventory/regimen data, slot-bulk partial response, request bodies, and patient-scoped PRN routing.
-- Repository tests cover local inventory prevention, partial bulk state transitions, success messages, and PRN progress cleanup.
-- A production-component Compose test covers next-slot presentation, insufficient warning, disabled individual action, eligible bulk count/action, PRN instructions, and PRN action.
+- Repository tests cover local inventory prevention, partial bulk state transitions, success revisions, PRN-local failure and progress cleanup.
+- API-35 component tests cover list fidelity, progress overlay, visible failure and success dismissal; a real `PatientHomeScreen` test traverses confirmation, repository mutation and server-success-only closure.
 
 `PT-003` through `PT-009` are `IMPLEMENTED`. Matched iOS screenshots, real patient inventory concurrency, live recording-window behavior, lifecycle refresh, and physical-device verification remain before `VERIFIED`.
 

@@ -155,6 +155,7 @@ sealed interface PatientUserMessage {
     data class SlotRecorded(val updatedCount: Int) : PatientUserMessage
     data object NoRecordableMedication : PatientUserMessage
     data object PrnRecorded : PatientUserMessage
+    data object PrnRecordFailed : PatientUserMessage
     data class Validation(val safeMessage: String?) : PatientUserMessage
     data object Unauthorized : PatientUserMessage
     data object Forbidden : PatientUserMessage

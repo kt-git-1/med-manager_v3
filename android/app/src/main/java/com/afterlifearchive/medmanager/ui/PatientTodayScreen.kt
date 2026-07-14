@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -35,6 +36,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -77,6 +79,9 @@ internal fun TodayContent(
     onRecordSlot: (MedicationSlot) -> Unit,
     onRecordPrn: (PatientMedication) -> Unit,
     onRemind: (PatientDose) -> Unit,
+    prnError: String? = null,
+    prnSuccessRevision: Long = 0,
+    onClearPrnFeedback: () -> Unit = {},
     now: Instant = Instant.now(),
 ) {
     val today = now.atZone(ZoneId.of("Asia/Tokyo")).toLocalDate()
@@ -85,6 +90,15 @@ internal fun TodayContent(
     val nextDoses = nextSlot?.let { grouped[it] }.orEmpty()
     val takenCount = doses.count { it.status == DoseStatus.TAKEN }
     var showPrnSheet by rememberSaveable { mutableStateOf(false) }
+    var observedPrnSuccessRevision by rememberSaveable { mutableStateOf(prnSuccessRevision) }
+
+    LaunchedEffect(prnSuccessRevision) {
+        if (prnSuccessRevision > observedPrnSuccessRevision && showPrnSheet) {
+            showPrnSheet = false
+            onClearPrnFeedback()
+        }
+        observedPrnSuccessRevision = prnSuccessRevision
+    }
 
     Box(Modifier.fillMaxSize()) {
         LazyColumn(
@@ -114,7 +128,10 @@ internal fun TodayContent(
 
             if (prnMedications.isNotEmpty()) {
                 item {
-                    PrnEntryCard(prnMedications.size) { showPrnSheet = true }
+                    PrnEntryCard(prnMedications.size) {
+                        onClearPrnFeedback()
+                        showPrnSheet = true
+                    }
                 }
             }
 
@@ -180,22 +197,35 @@ internal fun TodayContent(
         }
 
         if (showPrnSheet) {
-            ModalBottomSheet(onDismissRequest = { showPrnSheet = false }) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Text(stringResource(R.string.patient_prn_sheet_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 560.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(prnMedications, key = PatientMedication::id) { medication ->
-                            PrnMedicationCard(
-                                medication = medication,
-                                loading = loading,
-                                updatingPrnMedicationId = updatingPrnMedicationId,
-                                onRecordPrn = onRecordPrn,
-                            )
+            ModalBottomSheet(onDismissRequest = {
+                showPrnSheet = false
+                onClearPrnFeedback()
+            }) {
+                Box(Modifier.fillMaxWidth().fillMaxHeight(0.85f).testTag("patient-prn-sheet")) {
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp).padding(bottom = 32.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        Text(
+                            stringResource(R.string.patient_prn_sheet_title),
+                            modifier = Modifier.fillMaxWidth(),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
+                        Text(stringResource(R.string.patient_prn_list_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        prnError?.let { PatientNoticeCard(it, MaterialTheme.colorScheme.errorContainer, null) }
+                        LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            items(prnMedications, key = PatientMedication::id) { medication ->
+                                PrnMedicationCard(
+                                    medication = medication,
+                                    disabled = loading || updatingPrnMedicationId != null,
+                                    onRecordPrn = onRecordPrn,
+                                )
+                            }
                         }
                     }
+                    if (updatingPrnMedicationId != null) PatientPrnUpdatingOverlay()
                 }
             }
         }
@@ -337,22 +367,77 @@ private fun PrnEntryCard(count: Int, onClick: () -> Unit) {
 @Composable
 private fun PrnMedicationCard(
     medication: PatientMedication,
-    loading: Boolean,
-    updatingPrnMedicationId: String?,
+    disabled: Boolean,
     onRecordPrn: (PatientMedication) -> Unit,
 ) {
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(medication.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                Text(medication.prnInstructions ?: medication.dosageText, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (medication.isInsufficientForDose) Text(stringResource(R.string.patient_inventory_insufficient), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+    val orange = Color(0xFFF36A00)
+    val dosage = medication.dosageText.trim()
+    val displayName = if (dosage.isEmpty() || dosage == "不明") medication.name else "${medication.name} $dosage"
+    val note = medication.prnInstructions?.trim().takeUnless { it.isNullOrEmpty() }
+        ?: medication.notes?.trim().takeUnless { it.isNullOrEmpty() }
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, orange.copy(alpha = 0.32f)),
+        shape = RoundedCornerShape(18.dp),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Box(
+                    Modifier.size(50.dp).background(orange.copy(alpha = 0.12f), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Rounded.LocalHospital, contentDescription = null, tint = orange, modifier = Modifier.size(28.dp))
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(displayName, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.headlineSmall)
+                    Text(
+                        stringResource(R.string.patient_prn_dose_count, formatPatientAmount(medication.doseCountPerIntake)),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    note?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold) }
+                    if (medication.isInsufficientForDose) {
+                        Text(
+                            stringResource(R.string.patient_inventory_insufficient),
+                            modifier = Modifier.background(MaterialTheme.colorScheme.error, RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 4.dp),
+                            color = MaterialTheme.colorScheme.onError,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
             }
             Button(
                 onClick = { onRecordPrn(medication) },
-                enabled = !loading && !medication.isInsufficientForDose && updatingPrnMedicationId == null,
-                modifier = Modifier.testTag("prn-record-${medication.id}"),
-            ) { Text(stringResource(if (updatingPrnMedicationId == medication.id) R.string.patient_recording else R.string.patient_taken_action)) }
+                enabled = !disabled && !medication.isInsufficientForDose,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp).testTag("prn-record-${medication.id}"),
+                shape = RoundedCornerShape(18.dp),
+            ) {
+                Icon(Icons.Rounded.CheckCircle, contentDescription = null)
+                Spacer(Modifier.size(8.dp))
+                Text(stringResource(R.string.patient_prn_record_action), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PatientPrnUpdatingOverlay() {
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.2f)).testTag("patient-prn-updating"),
+    ) {
+        Card(
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 160.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)),
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(44.dp), color = PatientTeal)
+                Text(stringResource(R.string.patient_prn_updating), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            }
         }
     }
 }

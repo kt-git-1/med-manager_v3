@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.ui.Modifier
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.captureToImage
@@ -21,9 +24,13 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onRoot
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
+import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
+import com.afterlifearchive.medmanager.data.patient.PatientDataSource
 import com.afterlifearchive.medmanager.data.patient.PatientDose
 import com.afterlifearchive.medmanager.data.patient.PatientMedication
+import com.afterlifearchive.medmanager.data.patient.PatientRepository
+import com.afterlifearchive.medmanager.data.patient.PatientSlotTimes
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import androidx.core.view.WindowCompat
 import org.junit.Assert.assertEquals
@@ -83,13 +90,95 @@ class PatientTodayContentTest {
         writeDeviceScreenshotFixture("android-ui-101-patient-inventory-partial-light.png")
         composeRule.onNodeWithText("この時間のお薬を飲んだ").performClick()
         composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("飲んだ薬を選んでください").assertIsDisplayed()
+        composeRule.onNodeWithText("頭痛薬 1錠").assertIsDisplayed()
+        composeRule.onNodeWithText("1回1錠").assertIsDisplayed()
         composeRule.onNodeWithText("痛い時").assertIsDisplayed()
+        writeScreenshotFixture(
+            composeRule.onNodeWithTag("patient-prn-sheet").captureToImage(),
+            "android-ui-103-prn-list-light.png",
+        )
         composeRule.onNodeWithTag("prn-record-prn").performClick()
 
         composeRule.runOnIdle {
             assertEquals(MedicationSlot.MORNING, bulkSlot)
             assertEquals("prn", prnId)
         }
+    }
+
+    @Test
+    fun prnSheetShowsCurrentIosUpdatingOverlay() {
+        showPrnSheet(updatingPrnMedicationId = "prn")
+
+        composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
+        composeRule.onNodeWithTag("patient-prn-updating").assertIsDisplayed()
+        composeRule.onAllNodesWithText("更新中...").assertCountEquals(1)
+        writeScreenshotFixture(
+            composeRule.onNodeWithTag("patient-prn-sheet").captureToImage(),
+            "android-ui-103-prn-updating-light.png",
+        )
+    }
+
+    @Test
+    fun prnSheetKeepsRetryableFailureVisible() {
+        showPrnSheet(prnError = "取得に失敗しました")
+
+        composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
+        composeRule.onNodeWithText("取得に失敗しました").assertIsDisplayed()
+        composeRule.onNodeWithText("この薬を飲んだ").assertIsDisplayed()
+        writeScreenshotFixture(
+            composeRule.onNodeWithTag("patient-prn-sheet").captureToImage(),
+            "android-ui-103-prn-error-light.png",
+        )
+    }
+
+    @Test
+    fun prnSheetClosesOnlyAfterSuccessfulRecordRevision() {
+        var successRevision by mutableStateOf(0L)
+        var clearCount = 0
+        showPrnSheet(
+            successRevision = { successRevision },
+            onClearFeedback = { clearCount += 1 },
+        )
+        composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
+        composeRule.onNodeWithText("飲んだ薬を選んでください").assertIsDisplayed()
+
+        composeRule.runOnIdle { successRevision = 1 }
+
+        composeRule.onAllNodesWithText("飲んだ薬を選んでください").assertCountEquals(0)
+        composeRule.runOnIdle { assertEquals(2, clearCount) }
+    }
+
+    @Test
+    fun productionPatientHomeConfirmsRecordsAndClosesPrnFlow() {
+        val prn = medication("prn", 10.0, isPrn = true)
+        var recordCount = 0
+        val repository = PatientRepository(object : PatientDataSource {
+            override suspend fun today() = emptyList<PatientDose>()
+            override suspend fun slotTimes() = PatientSlotTimes.DEFAULT
+            override suspend fun medications() = listOf(prn)
+            override suspend fun recordDose(dose: PatientDose) = Unit
+            override suspend fun recordPrn(medication: PatientMedication) { recordCount += 1 }
+            override suspend fun history(year: Int, month: Int) = emptyList<HistoryDay>()
+            override suspend fun revokeSession() = Unit
+        })
+        composeRule.setContent {
+            MedicationAppTheme {
+                PatientHomeScreen(repository = repository, onUnlink = {}, tutorialEnabled = false)
+            }
+        }
+        composeRule.waitUntil(timeoutMillis = 5_000) { repository.state.value.prnMedications.isNotEmpty() }
+
+        composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
+        composeRule.onNodeWithTag("prn-record-prn").performClick()
+        composeRule.onNodeWithText("飲みましたか？").assertIsDisplayed()
+        composeRule.onNodeWithText("頭痛薬を今飲みましたか？").assertIsDisplayed()
+        composeRule.onNodeWithText("飲んだ").performClick()
+
+        composeRule.waitUntil(timeoutMillis = 5_000) { repository.state.value.prnRecordSuccessRevision == 1L }
+        composeRule.waitForIdle()
+        composeRule.onAllNodesWithText("飲んだ薬を選んでください").assertCountEquals(0)
+        composeRule.runOnIdle { assertEquals(1, recordCount) }
     }
 
     @Test
@@ -231,6 +320,47 @@ class PatientTodayContentTest {
                         loading = loading,
                         error = error,
                         onRetry = onRetry,
+                    )
+                }
+            }
+        }
+        return activity
+    }
+
+    private fun showPrnSheet(
+        prnError: String? = null,
+        updatingPrnMedicationId: String? = null,
+        successRevision: () -> Long = { 0L },
+        onClearFeedback: () -> Unit = {},
+    ): Activity {
+        lateinit var activity: Activity
+        val prn = medication("prn", 10.0, isPrn = true)
+        composeRule.setContent {
+            MedicationAppTheme {
+                activity = checkNotNull(LocalActivity.current)
+                Box(Modifier.fillMaxSize().background(PatientBackground).safeDrawingPadding()) {
+                    TodayContent(
+                        doses = emptyList(),
+                        loading = false,
+                        updatingKey = null,
+                        error = null,
+                        message = null,
+                        maintenanceWarning = null,
+                        medications = mapOf(prn.id to prn),
+                        nextSlot = null,
+                        updatingSlot = null,
+                        prnMedications = listOf(prn),
+                        updatingPrnMedicationId = updatingPrnMedicationId,
+                        onRetry = {},
+                        onRecord = {},
+                        onDetail = {},
+                        onRecordSlot = {},
+                        onRecordPrn = {},
+                        onRemind = {},
+                        prnError = prnError,
+                        prnSuccessRevision = successRevision(),
+                        onClearPrnFeedback = onClearFeedback,
+                        now = Instant.parse("2026-07-14T03:00:00Z"),
                     )
                 }
             }

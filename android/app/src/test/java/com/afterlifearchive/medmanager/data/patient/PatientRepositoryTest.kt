@@ -110,14 +110,35 @@ class PatientRepositoryTest {
         repository.loadToday()
         val medication = repository.state.value.prnMedications.single()
 
-        repository.recordPrn(medication)
+        assertTrue(repository.recordPrn(medication))
 
         assertEquals(1, source.prnRecordCount)
         assertEquals(PatientUserMessage.PrnRecorded, repository.state.value.message)
         assertNull(repository.state.value.updatingPrnMedicationId)
+        assertNull(repository.state.value.prnError)
+        assertEquals(1, repository.state.value.prnRecordSuccessRevision)
         assertEquals(1, freshness.revisions.value.dose)
         assertEquals(1, freshness.revisions.value.inventory)
         assertEquals(0, freshness.revisions.value.notificationPlan)
+    }
+
+    @Test
+    fun failedPrnRecordStaysLocalToPrnFlowAndCanBeCleared() = runTest {
+        val medication = testMedication("prn", 10.0).copy(isPrn = true)
+        val source = object : PatientDataSource by FakePatientDataSource() {
+            override suspend fun recordPrn(medication: PatientMedication): Unit = error("record unavailable")
+        }
+        val repository = PatientRepository(source)
+
+        assertFalse(repository.recordPrn(medication))
+
+        assertEquals(PatientUserMessage.PrnRecordFailed, repository.state.value.prnError)
+        assertNull(repository.state.value.error)
+        assertNull(repository.state.value.updatingPrnMedicationId)
+        assertEquals(0, repository.state.value.prnRecordSuccessRevision)
+
+        repository.clearPrnFeedback()
+        assertNull(repository.state.value.prnError)
     }
 
     @Test

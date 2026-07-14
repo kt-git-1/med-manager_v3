@@ -32,6 +32,8 @@ data class PatientUiState(
     val updatingDoseKey: String? = null,
     val updatingSlot: MedicationSlot? = null,
     val updatingPrnMedicationId: String? = null,
+    val prnError: PatientUserMessage? = null,
+    val prnRecordSuccessRevision: Long = 0,
     val error: PatientUserMessage? = null,
     val message: PatientUserMessage? = null,
     val maintenanceWarning: PatientMaintenanceWarning? = null,
@@ -186,19 +188,41 @@ class PatientRepository(
             .onFailure { error -> mutableState.value = mutableState.value.copy(updatingSlot = null, error = error.toPatientUserMessage()) }
     }
 
-    suspend fun recordPrn(medication: PatientMedication) {
-        if (!medication.isPrn || mutableState.value.updatingPrnMedicationId != null) return
+    suspend fun recordPrn(medication: PatientMedication): Boolean {
+        if (!medication.isPrn || mutableState.value.updatingPrnMedicationId != null) return false
         if (medication.isInsufficientForDose) {
-            mutableState.value = mutableState.value.copy(error = PatientUserMessage.InventoryInsufficient)
-            return
+            mutableState.value = mutableState.value.copy(prnError = PatientUserMessage.InventoryInsufficient)
+            return false
         }
-        mutableState.value = mutableState.value.copy(updatingPrnMedicationId = medication.id, error = null, message = null)
-        runCatching { api.recordPrn(medication) }
-            .onSuccess {
-                mutableState.value = mutableState.value.copy(updatingPrnMedicationId = null, message = PatientUserMessage.PrnRecorded)
-                freshnessStore.markDoseChanged()
-            }
-            .onFailure { error -> mutableState.value = mutableState.value.copy(updatingPrnMedicationId = null, error = error.toPatientUserMessage()) }
+        mutableState.value = mutableState.value.copy(updatingPrnMedicationId = medication.id, prnError = null, message = null)
+        return runCatching { api.recordPrn(medication) }
+            .fold(
+                onSuccess = {
+                    mutableState.value = mutableState.value.copy(
+                        updatingPrnMedicationId = null,
+                        message = PatientUserMessage.PrnRecorded,
+                        prnRecordSuccessRevision = mutableState.value.prnRecordSuccessRevision + 1,
+                    )
+                    freshnessStore.markDoseChanged()
+                    true
+                },
+                onFailure = { error ->
+                    val mapped = error.toPatientUserMessage()
+                    mutableState.value = mutableState.value.copy(
+                        updatingPrnMedicationId = null,
+                        prnError = if (mapped == PatientUserMessage.InsufficientInventory) {
+                            mapped
+                        } else {
+                            PatientUserMessage.PrnRecordFailed
+                        },
+                    )
+                    false
+                },
+            )
+    }
+
+    fun clearPrnFeedback() {
+        mutableState.value = mutableState.value.copy(prnError = null)
     }
 
     fun nextActionSlot(now: Instant = Instant.now()): MedicationSlot? {
