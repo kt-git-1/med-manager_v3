@@ -1,0 +1,46 @@
+name: Android CI
+
+on:
+  push:
+    branches: [android-dev]
+    paths:
+      - "android/**"
+      - "ios/MedicationApp/Assets.xcassets/RolePatient.imageset/**"
+      - "ios/MedicationApp/Assets.xcassets/RoleFamily.imageset/**"
+      - ".github/workflows/android-ci.yml"
+  pull_request:
+    branches: [main, staging]
+    paths:
+      - "android/**"
+      - "ios/MedicationApp/Assets.xcassets/RolePatient.imageset/**"
+      - "ios/MedicationApp/Assets.xcassets/RoleFamily.imageset/**"
+      - ".github/workflows/android-ci.yml"
+
+concurrency:
+  group: android-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: android
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest
+
+      - name: Debug build
+        run: ./gradlew assembleDebug

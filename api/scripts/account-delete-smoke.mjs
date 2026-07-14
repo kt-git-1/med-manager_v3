@@ -120,7 +120,11 @@ try {
   result.push({ step: "patient_create", status: patient.status });
 
   const deleted = await api("DELETE", "/api/me", accessToken);
-  result.push({ step: "account_delete", status: deleted.status, deleted: deleted.payload?.data?.deleted });
+  result.push({
+    step: "account_delete",
+    status: deleted.status,
+    deleted: deleted.payload?.data?.deleted
+  });
 
   const leftovers = await pool.query(
     `select

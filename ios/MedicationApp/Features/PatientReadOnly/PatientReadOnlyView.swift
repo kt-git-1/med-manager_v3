@@ -23,6 +23,10 @@ struct PatientReadOnlyView: View {
                     case .today:
                         PatientTodayView(
                             sessionStore: sessionStore,
+                            preferencesStore: preferencesStore,
+                            onScheduledDoseRecorded: {
+                                await refreshNotificationSchedule(trigger: .doseRecorded)
+                            },
                             deepLinkTarget: $deepLinkTarget
                         )
                     case .history:

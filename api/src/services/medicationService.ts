@@ -14,6 +14,7 @@ import type {
   Medication,
   Regimen
 } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../repositories/prisma";
 import { getPatientRecordById } from "../repositories/patientRepo";
 import { computeRefillPlan } from "../lib/computeRefillPlan";
@@ -439,6 +440,155 @@ export async function applyInventoryDeltaForDoseRecord(input: {
     actorType: "SYSTEM",
     actorId: null
   });
+}
+
+type DoseRecordInventoryDelta = {
+  medicationId: string;
+  quantity: number;
+};
+
+type BulkInventoryUpdateRow = {
+  id: string;
+  patientId: string;
+  name: string;
+  doseCountPerIntake: number;
+  inventoryQuantity: number;
+  inventoryLastAlertState: InventoryAlertState | null;
+};
+
+/**
+ * Applies inventory side effects for a slot-bulk recording in a bounded number
+ * of database round trips. Single-dose and PRN paths intentionally keep using
+ * applyInventoryDeltaForDoseRecord so their behavior is unchanged.
+ */
+export async function applyInventoryDeltasForDoseRecords(input: {
+  patientId: string;
+  patientDisplayName: string;
+  deltas: DoseRecordInventoryDelta[];
+}): Promise<void> {
+  const quantityByMedicationId = new Map<string, number>();
+  for (const delta of input.deltas) {
+    if (delta.quantity <= 0) continue;
+    quantityByMedicationId.set(
+      delta.medicationId,
+      (quantityByMedicationId.get(delta.medicationId) ?? 0) + delta.quantity
+    );
+  }
+  if (quantityByMedicationId.size === 0) {
+    return;
+  }
+
+  const medicationIds = [...quantityByMedicationId.keys()];
+  const regimens = await prisma.regimen.findMany({
+    where: { medicationId: { in: medicationIds } }
+  });
+  const regimenMap = new Map<string, Regimen[]>();
+  for (const regimen of regimens) {
+    const existing = regimenMap.get(regimen.medicationId) ?? [];
+    existing.push(regimen);
+    regimenMap.set(regimen.medicationId, existing);
+  }
+
+  const now = new Date();
+  const values = Prisma.join(
+    [...quantityByMedicationId].map(
+      ([medicationId, quantity]) =>
+        Prisma.sql`(${medicationId}::text, ${quantity}::double precision)`
+    )
+  );
+
+  await prisma.$transaction(
+    async (tx) => {
+      const updated = await tx.$queryRaw<BulkInventoryUpdateRow[]>(Prisma.sql`
+        UPDATE "Medication" AS medication
+        SET
+          "inventoryQuantity" = medication."inventoryQuantity" - delta.quantity,
+          "inventoryUpdatedAt" = ${now}
+        FROM (VALUES ${values}) AS delta(id, quantity)
+        WHERE medication.id = delta.id
+          AND medication."patientId" = ${input.patientId}
+          AND medication."inventoryEnabled" = TRUE
+          AND medication."inventoryQuantity" >= delta.quantity
+        RETURNING
+          medication.id,
+          medication."patientId",
+          medication.name,
+          medication."doseCountPerIntake",
+          medication."inventoryQuantity",
+          medication."inventoryLastAlertState"
+      `);
+
+      if (updated.length !== quantityByMedicationId.size) {
+        throw new InsufficientInventoryError();
+      }
+
+      const stateGroups = new Map<InventoryAlertState, string[]>();
+      const alerts: Array<{
+        patientId: string;
+        medicationId: string;
+        type: InventoryAlertType;
+        remaining: number;
+        threshold: number;
+        patientDisplayName: string;
+        medicationName: string;
+      }> = [];
+
+      for (const medication of updated) {
+        const plan = computeRefillPlan({
+          inventoryEnabled: true,
+          inventoryQuantity: medication.inventoryQuantity,
+          doseCountPerIntake: medication.doseCountPerIntake,
+          regimens: mapRegimensForPlan(regimenMap.get(medication.id) ?? [])
+        });
+        const nextState = computeInventoryState(
+          medication.inventoryQuantity,
+          DEFAULT_INVENTORY_LOW_THRESHOLD_DAYS,
+          plan.daysRemaining
+        );
+        const ids = stateGroups.get(nextState) ?? [];
+        ids.push(medication.id);
+        stateGroups.set(nextState, ids);
+
+        const previousState = medication.inventoryLastAlertState ?? "NONE";
+        if (nextState !== previousState && nextState !== "NONE") {
+          alerts.push({
+            patientId: input.patientId,
+            medicationId: medication.id,
+            type: nextState,
+            remaining: medication.inventoryQuantity,
+            threshold: DEFAULT_INVENTORY_LOW_THRESHOLD_DAYS,
+            patientDisplayName: input.patientDisplayName,
+            medicationName: medication.name
+          });
+        }
+      }
+
+      for (const [state, ids] of stateGroups) {
+        await tx.medication.updateMany({
+          where: { id: { in: ids }, patientId: input.patientId },
+          data: {
+            inventoryLowThreshold: DEFAULT_INVENTORY_LOW_THRESHOLD_DAYS,
+            inventoryLastAlertState: state
+          }
+        });
+      }
+
+      await tx.medicationInventoryAdjustment.createMany({
+        data: [...quantityByMedicationId].map(([medicationId, quantity]) => ({
+          patientId: input.patientId,
+          medicationId,
+          delta: -quantity,
+          reason: "TAKEN_CREATE" as const,
+          actorType: "SYSTEM" as const,
+          actorId: null
+        }))
+      });
+      if (alerts.length > 0) {
+        await tx.inventoryAlertEvent.createMany({ data: alerts });
+      }
+    },
+    { timeout: 10_000 }
+  );
 }
 
 export function assertInventoryAvailableForMedication(

@@ -4,10 +4,9 @@ import Foundation
 final class LinkingService {
     private let apiClient: APIClient
 
-    init(sessionStore: SessionStore? = nil) {
-        let store = sessionStore ?? SessionStore()
+    init(sessionStore: SessionStore) {
         let baseURL = SessionStore.resolveBaseURL()
-        self.apiClient = APIClient(baseURL: baseURL, sessionStore: store)
+        self.apiClient = APIClient(baseURL: baseURL, sessionStore: sessionStore)
     }
 
     func link(code: String) async throws -> PatientSessionTokenDTO {

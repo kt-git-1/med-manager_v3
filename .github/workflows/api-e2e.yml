@@ -2,12 +2,12 @@ name: API E2E
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, staging, android-dev]
     paths:
       - "api/**"
       - ".github/workflows/api-e2e.yml"
   pull_request:
-    branches: [main, dev]
+    branches: [main, staging, android-dev]
     paths:
       - "api/**"
       - ".github/workflows/api-e2e.yml"
@@ -67,6 +67,9 @@ jobs:
 
       - name: Generate Prisma Client
         run: npx prisma generate
+
+      - name: Bootstrap Supabase PostgreSQL objects
+        run: npx prisma db execute --file scripts/ci-bootstrap-postgres.sql
 
       - name: Run Migrations
         run: npx prisma migrate deploy

@@ -2,6 +2,10 @@ name: MedicationApp
 options:
   bundleIdPrefix: com.afterlifearchive
   developmentLanguage: ja
+configs:
+  Debug: debug
+  Staging: release
+  Release: release
 settings:
   base:
     SWIFT_VERSION: 6.2
@@ -32,17 +36,17 @@ targets:
     info:
       path: App/Info.plist
       properties:
-        API_BASE_URL: "https://www.okusuri-mimamori.com/"
-        EMAIL_CONFIRMATION_REDIRECT_URL: "https://www.okusuri-mimamori.com/auth/confirmed"
+        API_BASE_URL: "$(API_BASE_URL)"
+        EMAIL_CONFIRMATION_REDIRECT_URL: "$(EMAIL_CONFIRMATION_REDIRECT_URL)"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
-        SUPABASE_URL: "https://gnsnasheyrncfbbnbomh.supabase.co"
-        SUPABASE_ANON_KEY: "sb_publishable_7hGwwBAmU55gsNVbMw8IAg_KgS2GyaM"
+        SUPABASE_URL: "$(SUPABASE_URL)"
+        SUPABASE_ANON_KEY: "$(SUPABASE_ANON_KEY)"
         FIREBASE_ANALYTICS_COLLECTION_ENABLED: false
         GOOGLE_ANALYTICS_IDFV_COLLECTION_ENABLED: false
         GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS: false
         FirebaseAutomaticScreenReportingEnabled: false
-        CFBundleDisplayName: "お薬見守り"
+        CFBundleDisplayName: "$(APP_DISPLAY_NAME)"
         CFBundleDevelopmentRegion: ja
         CFBundleLocalizations:
           - ja
@@ -71,11 +75,23 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.afterlifearchive.medmanager
         DEVELOPMENT_TEAM: QSZR732YXD
-        CURRENT_PROJECT_VERSION: 29
-        MARKETING_VERSION: 1.0.2
+        CURRENT_PROJECT_VERSION: 30
+        MARKETING_VERSION: 1.0.3
+        APP_DISPLAY_NAME: "お薬見守り"
+        API_BASE_URL: "https://www.okusuri-mimamori.com/"
+        EMAIL_CONFIRMATION_REDIRECT_URL: "https://www.okusuri-mimamori.com/auth/confirmed"
+        SUPABASE_URL: "https://gnsnasheyrncfbbnbomh.supabase.co"
+        SUPABASE_ANON_KEY: "sb_publishable_7hGwwBAmU55gsNVbMw8IAg_KgS2GyaM"
       configs:
         Debug:
           APS_ENVIRONMENT: development
+        Staging:
+          APS_ENVIRONMENT: production
+          ENABLE_TESTABILITY: true
+          APP_DISPLAY_NAME: "お薬見守り Staging"
+          API_BASE_URL: "https://staging-api.okusuri-mimamori.com/"
+          SUPABASE_URL: "https://kairaeahklftpjfcaddh.supabase.co"
+          SUPABASE_ANON_KEY: "sb_publishable_nVf6RMV1tUkg8ew7BJLVnw_YDnUMRra"
         Release:
           APS_ENVIRONMENT: production
     scheme:
@@ -93,6 +109,8 @@ targets:
           - "**/*UITests.swift"
     info:
       path: Tests/Info.plist
+      properties:
+        CFBundleVersion: "18"
     dependencies:
       - target: MedicationApp
   MedicationAppUITests:
@@ -105,5 +123,26 @@ targets:
           - "**/*UITests.swift"
     info:
       path: Tests/Info.plist
+      properties:
+        CFBundleVersion: "18"
     dependencies:
       - target: MedicationApp
+schemes:
+  MedicationApp-Staging:
+    build:
+      targets:
+        MedicationApp: all
+    run:
+      config: Staging
+      storeKitConfiguration: App/Products.storekit
+    test:
+      config: Staging
+      targets:
+        - MedicationAppTests
+        - MedicationAppUITests
+    profile:
+      config: Staging
+    analyze:
+      config: Staging
+    archive:
+      config: Staging

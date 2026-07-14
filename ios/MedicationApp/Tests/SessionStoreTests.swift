@@ -271,6 +271,61 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertNil(secureStorage.string(forKey: SessionStore.patientExpiresAtStorageKey))
     }
 
+    func testReinstallClearsPatientSessionThatSurvivedInKeychain() {
+        let firstInstall = makeStore()
+        firstInstall.setMode(.patient)
+        firstInstall.savePatientToken("previous-install-patient-token")
+
+        let reinstalledDefaults = UserDefaults(suiteName: "SessionStoreTests.Reinstalled")!
+        reinstalledDefaults.removePersistentDomain(forName: "SessionStoreTests.Reinstalled")
+        defer {
+            reinstalledDefaults.removePersistentDomain(forName: "SessionStoreTests.Reinstalled")
+        }
+
+        let reinstalled = SessionStore(
+            userDefaults: reinstalledDefaults,
+            secureStorage: secureStorage,
+            now: { self.clock.now }
+        )
+
+        XCTAssertNil(reinstalled.patientToken)
+        XCTAssertNil(secureStorage.string(forKey: SessionStore.patientTokenStorageKey))
+        XCTAssertNil(secureStorage.string(forKey: SessionStore.patientExpiresAtStorageKey))
+        XCTAssertNotNil(reinstalledDefaults.string(forKey: SessionStore.installationIdStorageKey))
+    }
+
+    func testUpgradeFromPreMarkerBuildPreservesActivePatientSession() {
+        userDefaults.set(AppMode.patient.rawValue, forKey: SessionStore.lastModeStorageKey)
+        secureStorage.setString("active-patient-token", forKey: SessionStore.patientTokenStorageKey)
+        secureStorage.setString(
+            String(clock.now.addingTimeInterval(24 * 60 * 60).timeIntervalSince1970),
+            forKey: SessionStore.patientExpiresAtStorageKey
+        )
+
+        let upgraded = makeStore()
+
+        XCTAssertEqual(upgraded.patientToken, "active-patient-token")
+        XCTAssertEqual(upgraded.mode, .patient)
+        XCTAssertEqual(
+            userDefaults.string(forKey: SessionStore.installationIdStorageKey),
+            secureStorage.string(forKey: SessionStore.installationIdStorageKey)
+        )
+    }
+
+    func testPreMarkerKeychainOnlyPatientTokenIsTreatedAsStale() {
+        secureStorage.setString("stale-patient-token", forKey: SessionStore.patientTokenStorageKey)
+        secureStorage.setString(
+            String(clock.now.addingTimeInterval(24 * 60 * 60).timeIntervalSince1970),
+            forKey: SessionStore.patientExpiresAtStorageKey
+        )
+
+        let restored = makeStore()
+
+        XCTAssertNil(restored.patientToken)
+        XCTAssertNil(secureStorage.string(forKey: SessionStore.patientTokenStorageKey))
+        XCTAssertNil(secureStorage.string(forKey: SessionStore.patientExpiresAtStorageKey))
+    }
+
     func testRawCaregiverTokenInSecureStorageIsNormalizedOnRestore() {
         secureStorage.setString("raw-jwt-token", forKey: SessionStore.caregiverTokenStorageKey)
         secureStorage.setString(

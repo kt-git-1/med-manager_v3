@@ -1,23 +1,38 @@
 import SwiftUI
 
+enum LinkCodeErrorMessage {
+    static func message(for error: Error) -> String {
+        guard let apiError = error as? APIError else {
+            return NSLocalizedString("common.error.linking.generic", comment: "Linking failed")
+        }
+
+        switch apiError {
+        case .validation:
+            return NSLocalizedString("link.code.error.invalid", comment: "Invalid code")
+        case .notFound, .conflict:
+            return NSLocalizedString("link.code.error.not_found", comment: "Code not found")
+        case .unauthorized, .forbidden:
+            return NSLocalizedString("link.code.error.authorization", comment: "Link authorization failed")
+        case .network:
+            return NSLocalizedString("link.code.error.network", comment: "Link network error")
+        default:
+            return NSLocalizedString("common.error.linking.generic", comment: "Linking failed")
+        }
+    }
+}
+
 struct LinkCodeEntryView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @State private var code = ""
     @State private var errorMessage: String?
     @State private var isLoading = false
 
-    private let linkingService: LinkingService
     private var normalizedCode: String {
         code.filter(\.isNumber)
     }
 
     private var isCodeReady: Bool {
         normalizedCode.count == 6
-    }
-
-    init(sessionStore: SessionStore? = nil) {
-        let store = sessionStore ?? SessionStore()
-        self.linkingService = LinkingService(sessionStore: store)
     }
 
     var body: some View {
@@ -148,6 +163,7 @@ struct LinkCodeEntryView: View {
         isLoading = true
         defer { isLoading = false }
         do {
+            let linkingService = LinkingService(sessionStore: sessionStore)
             let session = try await linkingService.link(code: normalizedCode)
             sessionStore.savePatientToken(
                 session.patientSessionToken,
@@ -160,26 +176,7 @@ struct LinkCodeEntryView: View {
                 reason: AnalyticsService.failureReason(for: error)
             )
             print("LinkCodeEntryView: link failed \(error)")
-            if let apiError = error as? APIError {
-                switch apiError {
-                case .validation:
-                    errorMessage = NSLocalizedString("link.code.error.invalid", comment: "Invalid code")
-                case .notFound:
-                    errorMessage = NSLocalizedString("link.code.error.not_found", comment: "Code not found")
-                case .network(let message):
-                    errorMessage = message
-                default:
-                    if let message = apiError.errorDescription {
-                        errorMessage = message
-                    } else {
-                        errorMessage = NSLocalizedString("common.error.linking.generic", comment: "Linking failed")
-                    }
-                }
-            } else if let message = (error as? LocalizedError)?.errorDescription {
-                errorMessage = message
-            } else {
-                errorMessage = NSLocalizedString("common.error.linking.generic", comment: "Linking failed")
-            }
+            errorMessage = LinkCodeErrorMessage.message(for: error)
         }
     }
 
