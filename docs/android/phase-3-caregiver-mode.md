@@ -137,3 +137,13 @@ E03 and `CG-007` are `IMPLEMENTED`. Physical notification timing, matched iOS ca
 - The full gate passes with 54/54 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
 
 E04 and the medication lifecycle portion of `CG-006` are `IMPLEMENTED`. Full inventory enable/adjust/refill behavior remains deliberately owned by F06/`CG-009`; E05 now owns cross-feature invalidation and current-iOS visual comparison.
+
+## E05 cross-feature invalidation and current-iOS visual comparison — 2026-07-15
+
+- Medication create/edit/archive publishes medication, inventory and notification-plan revisions only after the medication server mutation succeeds. Patient Today, caregiver Today, caregiver medications, caregiver inventory and the notification scheduler consume the domains they depend on; patient/caregiver history correctly ignore medication-only changes.
+- A dedicated revision-matrix test initializes every consumer, publishes one medication mutation and proves each affected consumer refreshes exactly once while unrelated history consumers remain fresh.
+- Fresh current-iOS and Android API-35 captures compare the real production list and form components at Japanese/light/default font. The accepted files and capture conditions are recorded in `docs/android/evidence/e05-20260715/README.md`.
+- The Android list now mirrors the iOS visual hierarchy with a patient identity header, 2 x 2 semantic metric grid, colored filters, white medication cards, type/inventory emphasis and canonical-slot Japanese labels. The form uses the iOS order and hierarchy of hero/progress, basic information, medication kind and schedule while retaining native Android controls.
+- Physical-device rendering, dark/large-font captures and TalkBack traversal remain release verification work; they do not block E05 from reaching `IMPLEMENTED`.
+
+E05 and Gate E are `IMPLEMENTED`. Gate F now owns caregiver Today proxy actions and complete inventory management.

@@ -134,4 +134,29 @@ class MutationFreshnessStoreTest {
         history.second.markDoseChanged(inventoryChanged = false)
         assertTrue(history.first.refreshIfStale {})
     }
+
+    @Test
+    fun medicationMutationInvalidatesEveryMedicationDependentFeatureButNotHistory() = runTest {
+        val store = MutationFreshnessStore()
+        val affected = listOf(
+            FreshnessConsumer.PATIENT_TODAY,
+            FreshnessConsumer.CAREGIVER_TODAY,
+            FreshnessConsumer.CAREGIVER_MEDICATIONS,
+            FreshnessConsumer.CAREGIVER_INVENTORY,
+            FreshnessConsumer.NOTIFICATION_SCHEDULER,
+        ).associateWith { store.newCursor(it) }
+        val unaffected = listOf(
+            store.newCursor(FreshnessConsumer.PATIENT_HISTORY),
+            store.newCursor(FreshnessConsumer.CAREGIVER_HISTORY),
+        )
+        (affected.values + unaffected).forEach { it.refreshIfStale {} }
+
+        store.markMedicationChanged(inventoryChanged = true, notificationPlanChanged = true)
+
+        affected.forEach { (consumer, cursor) ->
+            assertTrue("$consumer must refresh after a medication mutation", cursor.refreshIfStale {})
+            assertFalse(cursor.refreshIfStale {})
+        }
+        unaffected.forEach { assertFalse(it.refreshIfStale {}) }
+    }
 }

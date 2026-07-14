@@ -1,6 +1,8 @@
 package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,10 +23,22 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.EventBusy
+import androidx.compose.material.icons.rounded.Inventory2
+import androidx.compose.material.icons.rounded.Medication
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,6 +49,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -52,6 +72,7 @@ import com.afterlifearchive.medmanager.data.caregiver.validate
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
 import com.afterlifearchive.medmanager.data.patient.PatientMedication
+import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
@@ -159,25 +180,41 @@ private fun CaregiverMedicationList(
             CaregiverMedicationFilter.ENDED -> ended(item)
         }
     }
+    val colors = MedicationTheme.colors
     LazyColumn(
-        Modifier.fillMaxSize().padding(horizontal = 16.dp).testTag("caregiver-medication-list"),
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 16.dp).testTag("caregiver-medication-list"),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
             Spacer(Modifier.height(12.dp))
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(stringResource(R.string.caregiver_medication_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(
+                    Modifier.size(54.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(patientName.trim().take(1), style = MaterialTheme.typography.headlineSmall, color = colors.primaryTealText, fontWeight = FontWeight.Bold)
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.caregiver_medication_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.caregiver_medication_patient, patientName), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 Button(onClick = onAdd, enabled = enabled, modifier = Modifier.testTag("caregiver-medication-add")) {
-                    Text(stringResource(R.string.caregiver_medication_add))
+                    Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.size(4.dp))
+                    Text(stringResource(R.string.caregiver_medication_add_title))
                 }
             }
-            Text(stringResource(R.string.caregiver_medication_patient, patientName), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                CaregiverMetric(stringResource(R.string.caregiver_medication_metric_scheduled), items.count { !it.isPrn && !ended(it) }, Modifier.weight(1f))
-                CaregiverMetric(stringResource(R.string.caregiver_medication_metric_prn), items.count { it.isPrn && !ended(it) }, Modifier.weight(1f))
-                CaregiverMetric(stringResource(R.string.caregiver_medication_metric_ended), items.count(::ended), Modifier.weight(1f))
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CaregiverMetric(stringResource(R.string.caregiver_medication_metric_active), items.count { !ended(it) }, Icons.Rounded.Medication, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+                    CaregiverMetric(stringResource(R.string.caregiver_medication_metric_scheduled), items.count { !it.isPrn && !ended(it) }, Icons.Rounded.Schedule, colors.caregiverBlue, Modifier.weight(1f))
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CaregiverMetric(stringResource(R.string.caregiver_medication_metric_prn), items.count { it.isPrn && !ended(it) }, Icons.Rounded.Inventory2, colors.orange, Modifier.weight(1f))
+                    CaregiverMetric(stringResource(R.string.caregiver_medication_metric_ended), items.count(::ended), Icons.Rounded.EventBusy, MaterialTheme.colorScheme.onSurfaceVariant, Modifier.weight(1f))
+                }
             }
         }
         item {
@@ -187,6 +224,17 @@ private fun CaregiverMedicationList(
                         selected = filter == item,
                         onClick = { onFilter(item) },
                         label = { Text(stringResource(item.label)) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = colors.primaryTealText,
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = filter == item,
+                            borderColor = MaterialTheme.colorScheme.outline,
+                            selectedBorderColor = MaterialTheme.colorScheme.primary,
+                        ),
                         modifier = Modifier.testTag("caregiver-medication-filter-${item.name.lowercase()}"),
                     )
                 }
@@ -211,11 +259,21 @@ private fun CaregiverMedicationList(
 }
 
 @Composable
-private fun CaregiverMetric(label: String, value: Int, modifier: Modifier = Modifier) {
-    Card(modifier) {
-        Column(Modifier.fillMaxWidth().padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(value.toString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun CaregiverMetric(label: String, value: Int, icon: ImageVector, tint: Color, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(Modifier.size(36.dp).clip(CircleShape).background(tint.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(21.dp))
+            }
+            Column {
+                Text(value.toString(), style = MaterialTheme.typography.titleLarge, color = tint, fontWeight = FontWeight.Bold)
+                Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }
@@ -228,12 +286,22 @@ private fun CaregiverMedicationCard(
     onEdit: () -> Unit,
     enabled: Boolean,
 ) {
-    Card(Modifier.fillMaxWidth().testTag("caregiver-medication-${item.id}")) {
-        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            Text(item.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+    val typeColor = if (item.isPrn) MedicationTheme.colors.orange else MedicationTheme.colors.caregiverBlue
+    Card(
+        modifier = Modifier.fillMaxWidth().testTag("caregiver-medication-${item.id}"),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+            Box(Modifier.size(44.dp).clip(CircleShape).background(typeColor.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+                Icon(Icons.Rounded.Medication, contentDescription = null, tint = typeColor, modifier = Modifier.size(25.dp))
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Text(item.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MedicationBadge(stringResource(if (item.isPrn) R.string.caregiver_medication_type_prn else R.string.caregiver_medication_type_scheduled))
-                if (ended) MedicationBadge(stringResource(R.string.caregiver_medication_type_ended))
+                MedicationBadge(stringResource(if (item.isPrn) R.string.caregiver_medication_type_prn else R.string.caregiver_medication_type_scheduled), typeColor)
+                if (ended) MedicationBadge(stringResource(R.string.caregiver_medication_type_ended), MaterialTheme.colorScheme.onSurfaceVariant)
             }
             item.dosageText.trim().takeUnless { it.isEmpty() || it == "不明" }?.let {
                 Text(stringResource(R.string.caregiver_medication_dosage, it))
@@ -251,8 +319,9 @@ private fun CaregiverMedicationCard(
                     color = if (item.inventoryOut || item.isInsufficientForDose) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            TextButton(onClick = onEdit, enabled = enabled, modifier = Modifier.testTag("caregiver-medication-edit-${item.id}")) {
-                Text(stringResource(R.string.caregiver_medication_edit))
+            }
+            IconButton(onClick = onEdit, enabled = enabled, modifier = Modifier.testTag("caregiver-medication-edit-${item.id}")) {
+                Icon(Icons.Rounded.Edit, contentDescription = stringResource(R.string.caregiver_medication_edit), tint = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -291,7 +360,7 @@ private fun CaregiverMedicationEditor(
     }
 
     LazyColumn(
-        Modifier.fillMaxSize().padding(horizontal = 16.dp).testTag("caregiver-medication-form"),
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 16.dp).testTag("caregiver-medication-form"),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
@@ -306,31 +375,7 @@ private fun CaregiverMedicationEditor(
                 )
             }
         }
-        item {
-            FormSection(stringResource(R.string.caregiver_medication_form_kind)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = !draft.isPrn,
-                        onClick = { draft = draft.copy(isPrn = false) },
-                        label = { Text(stringResource(R.string.caregiver_medication_type_scheduled)) },
-                        modifier = Modifier.testTag("medication-kind-scheduled"),
-                    )
-                    FilterChip(
-                        selected = draft.isPrn,
-                        onClick = {
-                            draft = draft.copy(
-                                isPrn = true,
-                                scheduleFrequency = CaregiverScheduleFrequency.DAILY,
-                                selectedDays = emptySet(),
-                                selectedSlots = emptySet(),
-                            )
-                        },
-                        label = { Text(stringResource(R.string.caregiver_medication_type_prn)) },
-                        modifier = Modifier.testTag("medication-kind-prn"),
-                    )
-                }
-            }
-        }
+        item { MedicationEditorHero(medication == null, draft) }
         item {
             FormSection(stringResource(R.string.caregiver_medication_form_name)) {
                 OutlinedTextField(
@@ -365,7 +410,7 @@ private fun CaregiverMedicationEditor(
                 }
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("mg", "μg", "g", "mL", "不明").forEach { unit ->
-                        FilterChip(selected = draft.dosageStrengthUnit == unit, onClick = { draft = draft.copy(dosageStrengthUnit = unit) }, label = { Text(unit) })
+                        MedicationChoiceChip(selected = draft.dosageStrengthUnit == unit, onClick = { draft = draft.copy(dosageStrengthUnit = unit) }, label = unit)
                     }
                 }
                 OutlinedTextField(
@@ -376,6 +421,32 @@ private fun CaregiverMedicationEditor(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     label = { Text(stringResource(R.string.caregiver_medication_form_dose_count)) },
                 )
+            }
+        }
+        item {
+            FormSection(stringResource(R.string.caregiver_medication_form_kind)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    MedicationChoiceChip(
+                        selected = !draft.isPrn,
+                        onClick = { draft = draft.copy(isPrn = false) },
+                        label = stringResource(R.string.caregiver_medication_type_scheduled),
+                        modifier = Modifier.testTag("medication-kind-scheduled"),
+                    )
+                    MedicationChoiceChip(
+                        selected = draft.isPrn,
+                        onClick = {
+                            draft = draft.copy(
+                                isPrn = true,
+                                scheduleFrequency = CaregiverScheduleFrequency.DAILY,
+                                selectedDays = emptySet(),
+                                selectedSlots = emptySet(),
+                            )
+                        },
+                        label = stringResource(R.string.caregiver_medication_type_prn),
+                        accent = MedicationTheme.colors.orange,
+                        modifier = Modifier.testTag("medication-kind-prn"),
+                    )
+                }
             }
         }
         if (draft.isPrn) item {
@@ -390,16 +461,16 @@ private fun CaregiverMedicationEditor(
         if (!draft.isPrn) item {
             FormSection(stringResource(R.string.caregiver_medication_form_schedule)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
+                    MedicationChoiceChip(
                         selected = draft.scheduleFrequency == CaregiverScheduleFrequency.DAILY,
                         onClick = { draft = draft.copy(scheduleFrequency = CaregiverScheduleFrequency.DAILY, selectedDays = emptySet()) },
-                        label = { Text(stringResource(R.string.caregiver_medication_form_daily)) },
+                        label = stringResource(R.string.caregiver_medication_form_daily),
                         modifier = Modifier.testTag("medication-frequency-daily"),
                     )
-                    FilterChip(
+                    MedicationChoiceChip(
                         selected = draft.scheduleFrequency == CaregiverScheduleFrequency.WEEKLY,
                         onClick = { draft = draft.copy(scheduleFrequency = CaregiverScheduleFrequency.WEEKLY) },
-                        label = { Text(stringResource(R.string.caregiver_medication_form_weekly)) },
+                        label = stringResource(R.string.caregiver_medication_form_weekly),
                         modifier = Modifier.testTag("medication-frequency-weekly"),
                     )
                 }
@@ -407,10 +478,10 @@ private fun CaregiverMedicationEditor(
                     Text(stringResource(R.string.caregiver_medication_form_schedule_days), style = MaterialTheme.typography.labelLarge)
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                         CaregiverScheduleDay.entries.forEach { day ->
-                            FilterChip(
+                            MedicationChoiceChip(
                                 selected = day in draft.selectedDays,
                                 onClick = { draft = draft.copy(selectedDays = draft.selectedDays.toggle(day)) },
-                                label = { Text(DAY_LABELS.getValue(day.apiValue)) },
+                                label = DAY_LABELS.getValue(day.apiValue),
                                 modifier = Modifier.testTag("medication-day-${day.apiValue.lowercase()}")
                             )
                         }
@@ -425,10 +496,10 @@ private fun CaregiverMedicationEditor(
                             CaregiverScheduleSlot.EVENING -> R.string.caregiver_medication_form_slot_evening
                             CaregiverScheduleSlot.BEDTIME -> R.string.caregiver_medication_form_slot_bedtime
                         }
-                        FilterChip(
+                        MedicationChoiceChip(
                             selected = slot in draft.selectedSlots,
                             onClick = { draft = draft.copy(selectedSlots = draft.selectedSlots.toggle(slot)) },
-                            label = { Text(stringResource(label)) },
+                            label = stringResource(label),
                             modifier = Modifier.testTag("medication-slot-${slot.apiValue}"),
                         )
                     }
@@ -545,7 +616,12 @@ private fun CaregiverMedicationEditor(
 
 @Composable
 private fun FormSection(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Card(Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             content()
@@ -554,9 +630,84 @@ private fun FormSection(title: String, content: @Composable ColumnScope.() -> Un
 }
 
 @Composable
+private fun MedicationEditorHero(isNew: Boolean, draft: CaregiverMedicationDraft) {
+    val accent = if (draft.isPrn) MedicationTheme.colors.orange else MaterialTheme.colorScheme.primary
+    val stepsDone = listOf(draft.name.isNotBlank(), draft.dosageStrengthValue.isNotBlank(), draft.isPrn || draft.selectedSlots.isNotEmpty())
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = 0.18f)),
+    ) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(accent.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.Medication, contentDescription = null, tint = accent, modifier = Modifier.size(28.dp))
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(if (isNew) R.string.caregiver_medication_form_hero_new else R.string.caregiver_medication_form_hero_edit), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(stringResource(if (draft.isPrn) R.string.caregiver_medication_form_hero_prn else R.string.caregiver_medication_form_hero_scheduled), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                val labels = listOf("薬名", "用量", "予定")
+                stepsDone.forEachIndexed { index, complete ->
+                    Row(
+                        Modifier.clip(CircleShape).background(if (complete) accent.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 9.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        if (complete) Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = accent, modifier = Modifier.size(15.dp))
+                        Text(labels[index], style = MaterialTheme.typography.labelMedium, color = if (complete) accent else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MedicationChoiceChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    accent: Color = MaterialTheme.colorScheme.primary,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        modifier = modifier,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            selectedContainerColor = accent.copy(alpha = 0.14f),
+            selectedLabelColor = accent,
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
+            borderColor = MaterialTheme.colorScheme.outline,
+            selectedBorderColor = accent.copy(alpha = 0.55f),
+        ),
+    )
+}
+
+@Composable
 private fun medicationSchedule(item: PatientMedication, slotTimes: CaregiverSlotTimes?): String? {
     if (item.isPrn || item.regimenTimes.isNullOrEmpty()) return null
-    val slots = slotTimes?.let { mapOf(it.morning to "朝", it.noon to "昼", it.evening to "夕", it.bedtime to "寝る前") }.orEmpty()
+    val slots = buildMap {
+        put("morning", "朝")
+        put("noon", "昼")
+        put("evening", "夕")
+        put("bedtime", "寝る前")
+        slotTimes?.let {
+            put(it.morning, "朝")
+            put(it.noon, "昼")
+            put(it.evening, "夕")
+            put(it.bedtime, "寝る前")
+        }
+    }
     val timeText = item.regimenTimes.joinToString("・") { slots[it] ?: it }
     val days = item.regimenDaysOfWeek.orEmpty()
     return if (days.isEmpty()) stringResource(R.string.caregiver_medication_schedule_daily, timeText)
@@ -583,9 +734,9 @@ private fun CaregiverMedicationCentered(content: @Composable ColumnScope.() -> U
 }
 
 @Composable
-private fun MedicationBadge(text: String) {
-    Card {
-        Text(text, modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+private fun MedicationBadge(text: String, tint: Color) {
+    Card(colors = CardDefaults.cardColors(containerColor = tint.copy(alpha = 0.12f))) {
+        Text(text, color = tint, modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
     }
 }
 

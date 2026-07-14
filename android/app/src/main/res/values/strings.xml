@@ -293,6 +293,7 @@
     <!-- Caregiver medications -->
     <string name="caregiver_medication_title">薬を管理</string>
     <string name="caregiver_medication_patient">対象患者：%1$s</string>
+    <string name="caregiver_medication_metric_active">使用中</string>
     <string name="caregiver_medication_metric_scheduled">定時薬</string>
     <string name="caregiver_medication_metric_prn">頓服</string>
     <string name="caregiver_medication_metric_ended">終了</string>
@@ -317,6 +318,10 @@
     <string name="caregiver_medication_add">薬を追加する</string>
     <string name="caregiver_medication_edit">薬を編集</string>
     <string name="caregiver_medication_add_title">薬を追加</string>
+    <string name="caregiver_medication_form_hero_new">新しい薬を追加</string>
+    <string name="caregiver_medication_form_hero_edit">薬の情報を編集</string>
+    <string name="caregiver_medication_form_hero_scheduled">定時薬の基本情報と服用スケジュールを登録します</string>
+    <string name="caregiver_medication_form_hero_prn">必要なときに服用する頓服薬を登録します</string>
     <string name="caregiver_medication_form_kind">薬の種類</string>
     <string name="caregiver_medication_form_name">薬の名前</string>
     <string name="caregiver_medication_form_strength">規格</string>

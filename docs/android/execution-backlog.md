@@ -140,7 +140,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] E02 Regular and PRN add/edit form with complete validation.
 - [x] E03 Daily/weekday slot regimen create/update/disable.
 - [x] E04 Inventory fields and medication lifecycle state.
-- [ ] E05 Mutation invalidation and current iOS visual comparison.
+- [x] E05 Mutation invalidation and current iOS visual comparison.
 
 ## Gate F — Caregiver Today and inventory
 
