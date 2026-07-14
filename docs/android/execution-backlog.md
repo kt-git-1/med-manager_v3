@@ -98,7 +98,7 @@ Patient Compose, repository, session/auth/network fallback and local notificatio
 - [ ] Patient functional and screenshot regressions pass before caregiver work.
 - [x] Architecture supports caregiver repositories without duplicating session/network logic.
 
-Functional/JVM/Compose/instrumentation gates pass, including production-component image capture. Current-baseline visual regression evidence is now being accumulated under C01; UI-001 comparison found and closed status-bar safe-area and dark primary-content drift, and its 2.0-font family action now has a reachability regression test.
+Functional/JVM/Compose/instrumentation gates pass, including production-component image capture. Current-baseline visual regression evidence is now being accumulated under C01; UI-001 comparison found and closed status-bar safe-area and dark primary-content drift, and its 2.0-font family action plus Analytics decision actions now have reachability regressions.
 
 ## Gate C — Current patient parity
 
@@ -175,7 +175,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 - [x] Final rebaseline check: `origin/main@1d9d19e` has zero unique commits and is already an ancestor of `android-dev` (2026-07-15); no merge required.
 - [x] Resolve all `RECHECK_REQUIRED` rows; remaining `PARTIAL` rows are explicitly external/visual/device release gates.
-- [x] Full API 26/33/35 emulator matrix (101 tests each, 303/303 total), plus a separate API-35 448 x 997 dp large-phone override pass (101/101), including light/dark 200% Caregiver reachability, Patient/Caregiver Activity recreation and rotation, medication-specific Caregiver TalkBack actions, the compact PDF sheet fix and caregiver stale/retry states.
+- [x] Full API 26/33/35 emulator matrix (102 tests each, 306/306 total), plus a separate API-35 448 x 997 dp large-phone override pass (102/102), including light/dark 200% Caregiver reachability, Patient/Caregiver Activity recreation and rotation, medication-specific Caregiver TalkBack actions, the compact PDF sheet fix, caregiver stale/retry states and 200%-font Analytics consent opt-out reachability.
 - [ ] Physical-device matrix.
 - [ ] Notification Doze/delivery/tap/process-death tests.
 - [ ] TalkBack, font 2.0, dark mode, compact/large phone and rotation/configuration tests.

@@ -81,6 +81,30 @@ class ModeSelectScreenTest {
             assertEquals(listOf(false, true), transport.collectionChanges)
         }
     }
+
+    @Test
+    fun analyticsDecisionActionsRemainReachableAtTwoHundredPercentFontScaleAndDeclineKeepsCollectionOff() {
+        val store = TestAnalyticsStore()
+        val transport = TestAnalyticsTransport()
+        val service = AnalyticsService(store, transport).also { it.configure() }
+        composeRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(density.density, fontScale = 2f),
+            ) {
+                MedicationAppTheme { ModeSelectScreen(service) {} }
+            }
+        }
+
+        composeRule.onNodeWithText("アプリ改善へのご協力").assertIsDisplayed()
+        composeRule.onNodeWithText("許可する").assertIsDisplayed()
+        composeRule.onNodeWithText("今はしない").assertIsDisplayed().performClick()
+
+        composeRule.runOnIdle {
+            assertEquals(AnalyticsConsentState(enabled = false, decided = true), service.state.value)
+            assertEquals(listOf(false, false), transport.collectionChanges)
+        }
+    }
 }
 
 private class TestAnalyticsStore : AnalyticsConsentStore {

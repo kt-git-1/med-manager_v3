@@ -3,7 +3,7 @@
 ## Baseline and environment
 
 - iOS/API source baseline: `main@1d9d19e5376752d2e224560a9f2c7e950645e22b`
-- Android work branch: `android-dev@1b38208c7178b35c49a33548b066eb0fce67a367` before the current uncommitted slice
+- Android work branch: `android-dev@6d50fa8` before the current consent-evidence slice
 - Rebaseline check: `git diff android-dev..main -- ios api package.json` returned no runtime differences.
 - iOS build: `MedicationApp`, Debug, iOS Simulator, `BUILD SUCCEEDED`
 - iOS device: iPhone 17 Pro, iOS 26.5, 1206 x 2622 pixels
@@ -17,6 +17,10 @@
 | Contract | State | Evidence | Deterministic setup |
 |---|---|---|---|
 | UI-001 | First-run analytics consent | [`c01-20260714/ui-001-analytics-consent-light.png`](c01-20260714/ui-001-analytics-consent-light.png) | Fresh install; no consent decision |
+| UI-001 | Android first-run analytics consent | [`c01-20260714/android-ui-001-analytics-consent-light.png`](c01-20260714/android-ui-001-analytics-consent-light.png) | Fresh app data; production `MainActivity`, 411 x 914 dp standard viewport |
+| UI-001 | Android analytics consent, compact | [`c01-20260714/android-ui-001-analytics-consent-light-compact.png`](c01-20260714/android-ui-001-analytics-consent-light-compact.png) | Fresh app data; 1080 x 1920 at 420 dpi, approximately 411 x 731 dp |
+| UI-001 | Android analytics consent, large phone | [`c01-20260714/android-ui-001-analytics-consent-light-large.png`](c01-20260714/android-ui-001-analytics-consent-light-large.png) | Fresh app data; 1344 x 2992 at 480 dpi, 448 x 997 dp emulator override |
+| UI-001 | Android analytics consent, 200% font | [`c01-20260714/android-ui-001-analytics-consent-font-2.0.png`](c01-20260714/android-ui-001-analytics-consent-font-2.0.png) | Fresh app data; production `MainActivity`, standard viewport, `font_scale=2.0` |
 | UI-001 | Mode select default | [`c01-20260714/ui-001-mode-select-light.png`](c01-20260714/ui-001-mode-select-light.png) | Consent decided=false for collection; no selected mode/session |
 | UI-001 | Android comparison after safe-area repair | [`c01-20260714/android-ui-001-mode-select-light.png`](c01-20260714/android-ui-001-mode-select-light.png) | Fresh Android app data, production `ModeSelectScreen` |
 | UI-001 | Mode select dark | [`c01-20260714/ui-001-mode-select-dark.png`](c01-20260714/ui-001-mode-select-dark.png) | iOS system dark appearance, default content size |
@@ -37,14 +41,15 @@
 - Dark comparison exposed black Android content on teal role-action circles while iOS keeps white content. The dark `onPrimary` token now follows the iOS white-on-teal contract; the repaired dark capture confirms both actions.
 - The repaired Android capture matches the iOS section order, safe-area origin, 22-unit horizontal rhythm, 24-unit section rhythm, card structure, role imagery, semantic teal/orange treatment and action placement.
 - At Android font scale 2.0 both cards reflow, remain scrollable and expose their primary actions. `ModeSelectScreenTest.familyActionRemainsReachableAtTwoHundredPercentFontScale` protects this behavior.
+- The production first-run Analytics dialog now has Android captures at standard, compact, large-phone and 200% font configurations. Its full privacy copy and both explicit actions fit every captured viewport; Material 3 stacks the actions vertically at 200% without hiding either action. `ModeSelectScreenTest.analyticsDecisionActionsRemainReachableAtTwoHundredPercentFontScaleAndDeclineKeepsCollectionOff` protects the large-text decline path and confirms collection remains disabled.
 - UI-003 matches current iOS section order, card geometry, role colors, safe area and back action. System-symbol artwork remains platform-native.
 - UI-004 comparison found Android's form back action was a full-width button while current iOS uses a circular navigation action. Android now uses a 52 dp circular control and preserves the iOS-equivalent 147-unit form-card origin.
-- Remaining UI-001 differences are platform typography/icon rendering and viewport-class height. Android analytics-consent UI, compact/large matched captures and physical verification remain required before UI-001 can be marked `VERIFIED`.
+- Remaining UI-001 differences are platform typography/icon rendering and viewport-class height. Android standard/compact/large/200%-font Analytics consent evidence is complete; matched iOS compact/large variants, full TalkBack traversal and physical verification remain required before UI-001 can be marked `VERIFIED`.
 - UI-100 and UI-101 use the iOS production component tree and deterministic in-app sample data; no API response, identity, medication record or auth token from a real user was captured.
 
 ## Remaining C01 reference work
 
-- UI-001 compact/large viewport and Android analytics consent; patient link and caregiver signup/confirmation states.
+- UI-001 matched iOS compact/large variants and physical/TalkBack verification; patient link and caregiver signup/confirmation states.
 - UI-100 tutorial steps 2–4, completion/skip and 200% text.
 - UI-101 exceptional Today states plus UI-102 dose detail and UI-103 PRN states.
 - UI-104 History month, UI-105 History day and UI-106 Settings states.
@@ -54,4 +59,4 @@ Android dark captures for UI-101/UI-104/UI-106 and an Android UI-101 200% font c
 
 C01 remains in progress until the full scoped state inventory is captured. These files are the first current-baseline references and replace older evidence only for the states listed above.
 
-Latest post-fix verification: `./gradlew test assembleDebug assembleRelease lint connectedDebugAndroidTest` completed successfully with 40/40 API 35 emulator tests after adding patient adaptive-screen and accessibility coverage, and `git diff --check` passed.
+Latest post-fix verification: JVM tests, Debug/Release assembly and Lint pass; the final instrumentation suite passes 102/102 on API 26, API 33 and API 35 (306/306), plus 102/102 on the separate API-35 448 x 997 dp large-phone override. `git diff --check` also passes.
