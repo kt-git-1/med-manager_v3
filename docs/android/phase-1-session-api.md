@@ -172,9 +172,9 @@ Verification command: `./gradlew test assembleDebug lint connectedDebugAndroidTe
 - Signup and resend both send the same configurable confirmation redirect as iOS: `https://www.okusuri-mimamori.com/auth/confirmed` by default.
 - The manifest accepts only the two production HTTPS hosts under `/auth/` plus `okusurimimamori://auth/login`.
 - Callback handling rejects unrelated hosts, clears stale caregiver credentials, preserves caregiver mode, and consumes a one-time navigation request to the login form.
-- The confirmation view enables resend with a 60-second countdown; Supabase status 429 maps to a stable Japanese retry-later message.
+- The confirmation view enables resend with a 60-second countdown. Signup preserves iOS-specific already-registered and confirmation-email-delivery failures; resend preserves its own iOS-specific 429 and generic-failure messages instead of collapsing them into login copy.
 - Repository tests cover validation, confirmation state, resend invocation, all accepted callback variants, callback rejection, and one-time navigation consumption.
-- Compose tests cover choice content, independent login/signup actions, production navigation to both forms, canonical form fields and typed signup-validation rendering. Stable field/submit semantics tags avoid placeholder-child ambiguity in UI automation.
+- Compose tests cover choice content, independent login/signup actions, production navigation to both forms, canonical form fields, typed signup-validation/confirmation rendering, 200% reachability, loading duplicate-submit locks and transient-state reset after leaving and re-entering an auth form. Stable field/submit/navigation semantics tags avoid placeholder-child ambiguity in UI automation.
 - Current-main UI-003 and UI-004 iOS/Android capture pairs are recorded in `docs/android/evidence/c01-reference-captures-20260714.md`; login comparison also replaced the Android full-width form back button with an iOS-equivalent circular navigation action.
 - An Android 15 cold-launch check opened the production HTTPS confirmation URL into `MainActivity` and landed on the login form.
 - Android callback capture: `/Users/kaito/.codex/visualizations/2026/07/12/019f54b5-867d-7a21-8c6c-0827f3167ce6/android-auth-link-login.png`

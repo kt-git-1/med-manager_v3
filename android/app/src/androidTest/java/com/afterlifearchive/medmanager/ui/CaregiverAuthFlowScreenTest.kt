@@ -1,17 +1,25 @@
 package com.afterlifearchive.medmanager.ui
 
+import android.graphics.Bitmap
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.unit.Density
+import androidx.test.platform.app.InstrumentationRegistry
+import com.afterlifearchive.medmanager.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.data.auth.AuthService
 import com.afterlifearchive.medmanager.data.auth.AuthSession
@@ -22,7 +30,9 @@ import com.afterlifearchive.medmanager.data.session.SessionStorage
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Assert.assertEquals
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CompletableDeferred
 
 class CaregiverAuthFlowScreenTest {
     @get:Rule
@@ -76,6 +86,66 @@ class CaregiverAuthFlowScreenTest {
         composeRule.onNodeWithText("秒で再送", substring = true)
             .performScrollTo()
             .assertIsDisplayed()
+        captureFixture("android-ui-005-caregiver-signup-confirmation-font-2.0.png")
+    }
+
+    @Test
+    fun signupLoadingDisablesSubmitUntilAuthenticationCompletes() {
+        val signupResult = CompletableDeferred<AuthSession>()
+        val auth = object : AuthService {
+            override suspend fun login(email: String, password: String) = error("unused")
+            override suspend fun refresh(refreshToken: String) = error("unused")
+            override suspend fun signup(email: String, password: String) = signupResult.await()
+        }
+        val repository = authRepository(auth)
+        render(repository)
+
+        composeRule.onNodeWithText("新規登録").performClick()
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performScrollTo().performTextInput("care@example.com")
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performScrollTo().performTextInput("123456")
+        composeRule.onNodeWithTag(AUTH_CONFIRMATION_TAG).performScrollTo().performTextInput("123456")
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).performScrollTo().performClick()
+
+        composeRule.waitUntil(5_000) { repository.state.value.loading }
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).assertIsDisplayed().assertIsNotEnabled()
+        signupResult.complete(AuthSession(null, null, null))
+    }
+
+    @Test
+    fun leavingAndReenteringSignupDoesNotRestoreStaleConfirmationState() {
+        val repository = authRepository()
+        render(repository)
+
+        composeRule.onNodeWithText("新規登録").performClick()
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performTextInput("care@example.com")
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performTextInput("123456")
+        composeRule.onNodeWithTag(AUTH_CONFIRMATION_TAG).performTextInput("123456")
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).performScrollTo().performClick()
+        composeRule.onNodeWithText("確認メールを送信しました。", substring = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+
+        composeRule.onNodeWithTag(AUTH_FORM_LIST_TAG, useUnmergedTree = true).performScrollToIndex(0)
+        composeRule.onNodeWithTag(AUTH_NAVIGATION_BACK_TAG, useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("新規登録").performClick()
+
+        composeRule.onNodeWithText("確認メールを送信しました。", substring = true).assertDoesNotExist()
+        composeRule.runOnIdle {
+            assertEquals(false, repository.state.value.canResendConfirmation)
+        }
+    }
+
+    @Test
+    fun signupAndResendFailureCopyMatchesCurrentIos() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val expected = mapOf(
+            R.string.session_error_confirmation_email_failed to "確認メールを送信できませんでした。しばらくしてからもう一度お試しください。",
+            R.string.session_error_email_already_registered to "このメールアドレスはすでに登録されています。ログインしてください。",
+            R.string.session_error_confirmation_resend_rate_limited to "確認メールの送信上限に達しました。少し時間をおいてからもう一度お試しください。",
+            R.string.session_error_confirmation_resend_failed to "確認メールの再送に失敗しました。しばらくしてからもう一度お試しください。",
+        )
+
+        expected.forEach { (resource, copy) -> assertEquals(copy, context.getString(resource)) }
     }
 
     private fun render(repository: SessionRepository, fontScale: Float = 1f) {
@@ -89,11 +159,22 @@ class CaregiverAuthFlowScreenTest {
             }
         }
     }
+
+    private fun captureFixture(name: String) {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val directory = java.io.File(context.externalCacheDir ?: context.cacheDir, "screenshot-fixtures").apply { mkdirs() }
+        val file = java.io.File(directory, name)
+        val image = composeRule.onRoot().captureToImage()
+        file.outputStream().use { stream ->
+            image.asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, stream)
+        }
+        check(file.length() > 0)
+    }
 }
 
-private fun authRepository(): SessionRepository {
+private fun authRepository(authOverride: AuthService? = null): SessionRepository {
     val storage = AuthFlowStorage()
-    val auth = object : AuthService {
+    val auth = authOverride ?: object : AuthService {
         override suspend fun login(email: String, password: String) = AuthSession("access", "refresh", 3600)
         override suspend fun refresh(refreshToken: String) = AuthSession("access-2", "refresh-2", 3600)
         override suspend fun signup(email: String, password: String) = AuthSession(null, null, null)

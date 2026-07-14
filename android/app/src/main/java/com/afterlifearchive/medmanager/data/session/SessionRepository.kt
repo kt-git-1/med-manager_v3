@@ -42,6 +42,10 @@ sealed interface SessionUserMessage {
     data object MissingAuthToken : SessionUserMessage
     data object InvalidCredentials : SessionUserMessage
     data object EmailNotConfirmed : SessionUserMessage
+    data object ConfirmationEmailFailed : SessionUserMessage
+    data object EmailAlreadyRegistered : SessionUserMessage
+    data object ConfirmationResendRateLimited : SessionUserMessage
+    data object ConfirmationResendFailed : SessionUserMessage
     data object RateLimited : SessionUserMessage
     data object LoginFailed : SessionUserMessage
     data object Network : SessionUserMessage
@@ -83,6 +87,8 @@ class SessionRepository(
             mode = mode,
             errorMessage = null,
             patientLinkFailure = null,
+            infoMessage = null,
+            canResendConfirmation = false,
         )
     }
 
@@ -92,6 +98,8 @@ class SessionRepository(
             mode = null,
             errorMessage = null,
             patientLinkFailure = null,
+            infoMessage = null,
+            canResendConfirmation = false,
         )
     }
 
@@ -136,7 +144,12 @@ class SessionRepository(
             authService.resendSignupConfirmation(email.trim())
             mutableState.value = mutableState.value.copy(infoMessage = SessionUserMessage.ConfirmationResent)
         } catch (error: Exception) {
-            mutableState.value = mutableState.value.copy(errorMessage = error.toSessionUserMessage())
+            val message = when (val mapped = error.toSessionUserMessage()) {
+                SessionUserMessage.RateLimited -> SessionUserMessage.ConfirmationResendRateLimited
+                SessionUserMessage.LoginFailed -> SessionUserMessage.ConfirmationResendFailed
+                else -> mapped
+            }
+            mutableState.value = mutableState.value.copy(errorMessage = message)
         }
     }
 
@@ -233,6 +246,14 @@ class SessionRepository(
             errorMessage = null,
             patientLinkFailure = null,
             infoMessage = null,
+        )
+    }
+
+    fun clearAuthFlowState() {
+        mutableState.value = mutableState.value.copy(
+            errorMessage = null,
+            infoMessage = null,
+            canResendConfirmation = false,
         )
     }
 
@@ -336,6 +357,8 @@ private fun Throwable.toSessionUserMessage(): SessionUserMessage = when (this) {
         AuthFailure.MISSING_CONFIGURATION -> SessionUserMessage.MissingAuthConfiguration
         AuthFailure.INVALID_CREDENTIALS -> SessionUserMessage.InvalidCredentials
         AuthFailure.EMAIL_NOT_CONFIRMED -> SessionUserMessage.EmailNotConfirmed
+        AuthFailure.CONFIRMATION_EMAIL_FAILED -> SessionUserMessage.ConfirmationEmailFailed
+        AuthFailure.EMAIL_ALREADY_REGISTERED -> SessionUserMessage.EmailAlreadyRegistered
         AuthFailure.RATE_LIMITED -> SessionUserMessage.RateLimited
         AuthFailure.LOGIN_FAILED -> SessionUserMessage.LoginFailed
     }

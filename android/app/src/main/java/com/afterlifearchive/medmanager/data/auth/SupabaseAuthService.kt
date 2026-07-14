@@ -91,13 +91,25 @@ class SupabaseAuthService(private val config: AppConfig) : AuthService {
             ?: json?.optString("message")?.takeIf(String::isNotBlank)
             ?: json?.optString("error")?.takeIf(String::isNotBlank)
             ?: "authentication_failed"
-        val normalized = raw.lowercase()
-        val failure = when {
-            "invalid login credentials" in normalized || "invalid credentials" in normalized -> AuthFailure.INVALID_CREDENTIALS
-            "email not confirmed" in normalized -> AuthFailure.EMAIL_NOT_CONFIRMED
-            status == 429 -> AuthFailure.RATE_LIMITED
-            else -> AuthFailure.LOGIN_FAILED
-        }
-        return AuthException(failure)
+        return AuthException(classifyAuthFailure(status, raw))
+    }
+}
+
+internal fun classifyAuthFailure(status: Int, serverMessage: String): AuthFailure {
+    val normalized = serverMessage.lowercase()
+    return when {
+        "invalid login credentials" in normalized ||
+            "invalid credentials" in normalized ||
+            "invalid_grant" in normalized -> AuthFailure.INVALID_CREDENTIALS
+        "sending confirmation email" in normalized ||
+            "send confirmation email" in normalized ||
+            ("confirmation email" in normalized && "failed" in normalized) -> AuthFailure.CONFIRMATION_EMAIL_FAILED
+        "already registered" in normalized ||
+            "already exists" in normalized ||
+            "user_already_exists" in normalized -> AuthFailure.EMAIL_ALREADY_REGISTERED
+        "email not confirmed" in normalized ||
+            "email_not_confirmed" in normalized -> AuthFailure.EMAIL_NOT_CONFIRMED
+        status == 429 -> AuthFailure.RATE_LIMITED
+        else -> AuthFailure.LOGIN_FAILED
     }
 }

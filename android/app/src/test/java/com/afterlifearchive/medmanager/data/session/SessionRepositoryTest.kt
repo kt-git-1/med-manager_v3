@@ -1,6 +1,8 @@
 package com.afterlifearchive.medmanager.data.session
 
 import com.afterlifearchive.medmanager.data.auth.AuthService
+import com.afterlifearchive.medmanager.data.auth.AuthException
+import com.afterlifearchive.medmanager.data.auth.AuthFailure
 import com.afterlifearchive.medmanager.data.auth.AuthSession
 import com.afterlifearchive.medmanager.data.network.ApiClient
 import com.afterlifearchive.medmanager.data.network.ApiException
@@ -301,6 +303,70 @@ class SessionRepositoryTest {
     }
 
     @Test
+    fun signupPreservesIosSpecificAlreadyRegisteredAndConfirmationEmailFailures() = runTest {
+        val cases = mapOf(
+            AuthFailure.EMAIL_ALREADY_REGISTERED to SessionUserMessage.EmailAlreadyRegistered,
+            AuthFailure.CONFIRMATION_EMAIL_FAILED to SessionUserMessage.ConfirmationEmailFailed,
+        )
+
+        cases.forEach { (failure, expected) ->
+            val auth = SignupAuthService(
+                signupSession = AuthSession(null, null, null),
+                signupError = AuthException(failure),
+            )
+            val repository = SessionRepository(
+                FakeStorage().apply { mode = AppMode.CAREGIVER }, auth,
+                ApiClient(baseUrl = "https://example.invalid/", patientTokenProvider = { null }), { 1_000 },
+            )
+
+            repository.signupCaregiver("care@example.com", "123456", "123456")
+
+            assertEquals(expected, repository.state.value.errorMessage)
+            assertFalse(repository.state.value.loading)
+        }
+    }
+
+    @Test
+    fun resendUsesConfirmationSpecificRateLimitAndFailureStates() = runTest {
+        val cases = mapOf(
+            AuthFailure.RATE_LIMITED to SessionUserMessage.ConfirmationResendRateLimited,
+            AuthFailure.LOGIN_FAILED to SessionUserMessage.ConfirmationResendFailed,
+        )
+
+        cases.forEach { (failure, expected) ->
+            val auth = SignupAuthService(
+                signupSession = AuthSession(null, null, null),
+                resendError = AuthException(failure),
+            )
+            val repository = SessionRepository(
+                FakeStorage().apply { mode = AppMode.CAREGIVER }, auth,
+                ApiClient(baseUrl = "https://example.invalid/", patientTokenProvider = { null }), { 1_000 },
+            )
+
+            repository.resendSignupConfirmation("care@example.com")
+
+            assertEquals(expected, repository.state.value.errorMessage)
+        }
+    }
+
+    @Test
+    fun leavingAuthFlowClearsTransientConfirmationState() = runTest {
+        val auth = SignupAuthService(AuthSession(null, null, null))
+        val repository = SessionRepository(
+            FakeStorage().apply { mode = AppMode.CAREGIVER }, auth,
+            ApiClient(baseUrl = "https://example.invalid/", patientTokenProvider = { null }), { 1_000 },
+        )
+        repository.signupCaregiver("care@example.com", "123456", "123456")
+        assertTrue(repository.state.value.canResendConfirmation)
+
+        repository.clearAuthFlowState()
+
+        assertNull(repository.state.value.infoMessage)
+        assertNull(repository.state.value.errorMessage)
+        assertFalse(repository.state.value.canResendConfirmation)
+    }
+
+    @Test
     fun authCallbacksClearStaleCredentialsAndRequestCaregiverLogin() {
         val acceptedUrls = listOf(
             "okusurimimamori://auth/login",
@@ -373,7 +439,11 @@ private class CountingAuthService : AuthService {
     }
 }
 
-private class SignupAuthService(private val signupSession: AuthSession) : AuthService {
+private class SignupAuthService(
+    private val signupSession: AuthSession,
+    private val signupError: Exception? = null,
+    private val resendError: Exception? = null,
+) : AuthService {
     var signupCount = 0
     var signupEmail: String? = null
     var resendCount = 0
@@ -382,9 +452,13 @@ private class SignupAuthService(private val signupSession: AuthSession) : AuthSe
     override suspend fun signup(email: String, password: String): AuthSession {
         signupCount += 1
         signupEmail = email
+        signupError?.let { throw it }
         return signupSession
     }
-    override suspend fun resendSignupConfirmation(email: String) { resendCount += 1 }
+    override suspend fun resendSignupConfirmation(email: String) {
+        resendCount += 1
+        resendError?.let { throw it }
+    }
 }
 
 private class FakeStorage : SessionStorage {

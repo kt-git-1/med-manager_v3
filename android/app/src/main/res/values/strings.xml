@@ -526,6 +526,10 @@
     <string name="session_error_missing_auth_token">認証トークンを取得できませんでした。</string>
     <string name="session_error_invalid_credentials">メールアドレスまたはパスワードが正しくありません。</string>
     <string name="session_error_email_not_confirmed">メールアドレスの確認が完了していません。</string>
+    <string name="session_error_confirmation_email_failed">確認メールを送信できませんでした。しばらくしてからもう一度お試しください。</string>
+    <string name="session_error_email_already_registered">このメールアドレスはすでに登録されています。ログインしてください。</string>
+    <string name="session_error_confirmation_resend_rate_limited">確認メールの送信上限に達しました。少し時間をおいてからもう一度お試しください。</string>
+    <string name="session_error_confirmation_resend_failed">確認メールの再送に失敗しました。しばらくしてからもう一度お試しください。</string>
     <string name="session_error_rate_limited">しばらく待ってから、もう一度お試しください。</string>
     <string name="session_error_login_failed">ログインできませんでした。入力内容を確認してください。</string>
     <string name="session_error_network">通信できませんでした。接続を確認してください。</string>

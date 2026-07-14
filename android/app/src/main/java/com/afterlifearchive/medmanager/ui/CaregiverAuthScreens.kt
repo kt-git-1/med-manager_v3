@@ -74,6 +74,8 @@ const val AUTH_EMAIL_TAG = "caregiver-auth-email"
 const val AUTH_PASSWORD_TAG = "caregiver-auth-password"
 const val AUTH_CONFIRMATION_TAG = "caregiver-auth-confirmation"
 const val AUTH_SUBMIT_TAG = "caregiver-auth-submit"
+const val AUTH_NAVIGATION_BACK_TAG = "caregiver-auth-navigation-back"
+const val AUTH_FORM_LIST_TAG = "caregiver-auth-form-list"
 
 @Composable
 fun CaregiverAuthFlow(state: SessionState, repository: SessionRepository) {
@@ -90,8 +92,14 @@ fun CaregiverAuthFlow(state: SessionState, repository: SessionRepository) {
             onSignup = { page = AuthPage.SIGNUP },
             onBack = repository::resetMode,
         )
-        AuthPage.LOGIN -> CaregiverLoginScreen(state, repository) { page = AuthPage.CHOICE }
-        AuthPage.SIGNUP -> CaregiverSignupScreen(state, repository) { page = AuthPage.CHOICE }
+        AuthPage.LOGIN -> CaregiverLoginScreen(state, repository) {
+            repository.clearAuthFlowState()
+            page = AuthPage.CHOICE
+        }
+        AuthPage.SIGNUP -> CaregiverSignupScreen(state, repository) {
+            repository.clearAuthFlowState()
+            page = AuthPage.CHOICE
+        }
     }
 }
 
@@ -182,7 +190,7 @@ private fun CaregiverSignupScreen(state: SessionState, repository: SessionReposi
 @Composable
 private fun AuthFormShell(onBack: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(AuthBackground).safeDrawingPadding(),
+        modifier = Modifier.fillMaxSize().background(AuthBackground).safeDrawingPadding().testTag(AUTH_FORM_LIST_TAG),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(24.dp, 16.dp, 24.dp, 52.dp),
         verticalArrangement = Arrangement.spacedBy(52.dp),
     ) {
@@ -197,7 +205,7 @@ private fun AuthFormShell(onBack: () -> Unit, content: @Composable ColumnScope.(
 private fun AuthNavigationBackButton(onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.size(52.dp),
+        modifier = Modifier.size(52.dp).testTag(AUTH_NAVIGATION_BACK_TAG),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.86f),
         shape = CircleShape,
         shadowElevation = 10.dp,

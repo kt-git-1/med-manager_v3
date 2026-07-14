@@ -1,10 +1,13 @@
 package com.afterlifearchive.medmanager.ui
 
+import android.graphics.Bitmap
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -13,6 +16,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
@@ -109,6 +113,21 @@ class PatientLinkScreenTest {
         composeRule.onNodeWithText("モードを選び直す")
             .performScrollTo()
             .assertIsDisplayed()
+        captureFixture("android-ui-002-patient-link-network-error-font-2.0.png")
+    }
+
+    @Test
+    fun loadingReplacesSubmitLabelAndPreventsDuplicateSubmission() {
+        composeRule.setContent {
+            MedicationAppTheme {
+                PatientLinkContent("123456", true, null, {}, {}, {})
+            }
+        }
+
+        composeRule.onNodeWithTag(LINK_CODE_SUBMIT_TAG)
+            .assertIsDisplayed()
+            .assertIsNotEnabled()
+        composeRule.onNodeWithText("送信").assertDoesNotExist()
     }
 
     @Test
@@ -125,5 +144,16 @@ class PatientLinkScreenTest {
         expected.forEach { (failure, copy) ->
             assertEquals(copy, context.getString(failure.messageResource()))
         }
+    }
+
+    private fun captureFixture(name: String) {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val directory = java.io.File(context.externalCacheDir ?: context.cacheDir, "screenshot-fixtures").apply { mkdirs() }
+        val file = java.io.File(directory, name)
+        val image = composeRule.onRoot().captureToImage()
+        file.outputStream().use { stream ->
+            image.asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, stream)
+        }
+        check(file.length() > 0)
     }
 }

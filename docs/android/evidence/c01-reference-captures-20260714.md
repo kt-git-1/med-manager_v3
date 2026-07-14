@@ -32,8 +32,11 @@
 | UI-003 | Android caregiver auth choice | [`c01-20260714/android-ui-003-caregiver-auth-choice-light.png`](c01-20260714/android-ui-003-caregiver-auth-choice-light.png) | Fresh app data; family mode selected from production UI |
 | UI-004 | Caregiver login empty | [`c01-20260714/ui-004-caregiver-login-light.png`](c01-20260714/ui-004-caregiver-login-light.png) | Current universal-link login landing, no credentials |
 | UI-004 | Android caregiver login empty | [`c01-20260714/android-ui-004-caregiver-login-light.png`](c01-20260714/android-ui-004-caregiver-login-light.png) | Production choice-to-login navigation, no credentials |
+| UI-002 | iOS patient link empty | [`c01-20260714/ui-002-patient-link-empty-light.png`](c01-20260714/ui-002-patient-link-empty-light.png) | Current iOS Debug build; deterministic patient mode with no patient session |
 | UI-002 | Android patient link empty | [`c01-20260714/android-ui-002-patient-link-empty-light.png`](c01-20260714/android-ui-002-patient-link-empty-light.png) | Production mode-select-to-patient navigation, no code entered |
+| UI-002 | Android network error, 200% font | [`c01-20260714/android-ui-002-patient-link-network-error-font-2.0.png`](c01-20260714/android-ui-002-patient-link-network-error-font-2.0.png) | Production `PatientLinkContent`; valid code, localized network error, all actions reached |
 | UI-005 | Android caregiver signup empty | [`c01-20260714/android-ui-005-caregiver-signup-empty-light.png`](c01-20260714/android-ui-005-caregiver-signup-empty-light.png) | Production mode-select-to-family-to-signup navigation, no credentials entered |
+| UI-005 | Android confirmation required, 200% font | [`c01-20260714/android-ui-005-caregiver-signup-confirmation-font-2.0.png`](c01-20260714/android-ui-005-caregiver-signup-confirmation-font-2.0.png) | Production signup flow with deterministic no-access-token response; scrolled component fixture shows full notice and resend cooldown |
 | UI-100 | Patient Today tutorial step 1/4 | [`c01-20260714/ui-100-patient-tutorial-today-light.png`](c01-20260714/ui-100-patient-tutorial-today-light.png) | `-ForceModeTutorial.patient`; production tutorial overlay and sample view |
 | UI-101 | Patient Today typical content | [`c01-20260714/ui-101-patient-today-light.png`](c01-20260714/ui-101-patient-today-light.png) | `-ForceModeTutorial.patient -PatientMarketingScreenshot.today`; production shell with deterministic sample data and no overlay |
 
@@ -47,12 +50,14 @@
 - UI-003 matches current iOS section order, card geometry, role colors, safe area and back action. System-symbol artwork remains platform-native.
 - UI-004 comparison found Android's form back action was a full-width button while current iOS uses a circular navigation action. Android now uses a 52 dp circular control and preserves the iOS-equivalent 147-unit form-card origin.
 - UI-002 and UI-005 empty states are now captured from the production `MainActivity` navigation path. `PatientLinkScreenTest.errorSubmitAndBackRemainReachableAtTwoHundredPercentFontScale` protects the long network error, enabled submit action and mode-reset action at 200% font scale. `CaregiverAuthFlowScreenTest.confirmationRequiredAndResendCooldownRemainReachableAtTwoHundredPercentFontScale` drives the real typed repository transition to confirmation-required state and protects both the confirmation notice and resend countdown at 200%.
+- The current iOS UI-002 empty state was rebuilt and captured on the same iPhone 17 Pro reference simulator. Android matches the 48-unit safe-area offset, header/card/action order, disabled treatment and Japanese copy; platform-native field and symbol rendering remain intentionally different.
+- UI-005 error auditing found Android was collapsing already-registered email, confirmation-email delivery failure, resend 429 and generic resend failure into login-generic copy. `AuthFailure` and `SessionUserMessage` now preserve those operation-specific states, and the displayed strings exactly match current iOS. Loading regressions also prove Patient link and Caregiver signup disable duplicate submission while their progress indicators replace the primary action content. Leaving login/signup now clears transient error, confirmation and resend state, so re-entering a form cannot restore a stale success notice.
 - Remaining UI-001 differences are platform typography/icon rendering and viewport-class height. Android standard/compact/large/200%-font Analytics consent evidence is complete; matched iOS compact/large variants, full TalkBack traversal and physical verification remain required before UI-001 can be marked `VERIFIED`.
 - UI-100 and UI-101 use the iOS production component tree and deterministic in-app sample data; no API response, identity, medication record or auth token from a real user was captured.
 
 ## Remaining C01 reference work
 
-- UI-001 matched iOS compact/large variants and physical/TalkBack verification; UI-002 non-empty/error/loading captures and UI-005 validation/loading/confirmation/resend captures plus their matched iOS references.
+- UI-001 matched iOS compact/large variants and physical/TalkBack verification; UI-002 valid/loading/additional failure captures and UI-005 matched iOS signup plus validation/loading/resend-result captures.
 - UI-100 tutorial steps 2–4, completion/skip and 200% text.
 - UI-101 exceptional Today states plus UI-102 dose detail and UI-103 PRN states.
 - UI-104 History month, UI-105 History day and UI-106 Settings states.
@@ -62,4 +67,4 @@ Android dark captures for UI-101/UI-104/UI-106 and an Android UI-101 200% font c
 
 C01 remains in progress until the full scoped state inventory is captured. These files are the first current-baseline references and replace older evidence only for the states listed above.
 
-Latest post-fix verification: JVM tests, Debug/Release assembly and Lint pass; the final instrumentation suite passes 104/104 on API 26, API 33 and API 35 (312/312), plus 104/104 on the separate API-35 448 x 997 dp large-phone override. `git diff --check` also passes.
+Latest post-fix verification: JVM tests, Debug/Release assembly and Lint pass; the final instrumentation suite passes 108/108 on API 26, API 33 and API 35 (324/324), plus 108/108 on the separate API-35 448 x 997 dp large-phone override. The current iOS Debug reference build also succeeds, and `git diff --check` passes.
