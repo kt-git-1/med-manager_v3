@@ -107,7 +107,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C03 Reverify Patient Today states/actions/recording-window/inventory/PRN/detail.
 - [x] C04 Reverify current Patient History progress/week/recent summaries, retention and freshness.
 - [x] C05 Reverify Settings/reminders/tutorial/deep links/legal/logout and patient analytics-consent UI.
-- [ ] C06 Complete patient TalkBack, font 1.0/1.3/2.0, light/dark and physical-device checks. API-35 emulator dark captures for Today/History/Settings, explicit 130%/200% reachability for all three Patient and Caregiver primary screens, Settings/tutorial 200%, and merged History day semantics are complete; full TalkBack traversal, dark/large-text state captures, rotation/configuration and physical-device verification remain.
+- [ ] C06 Complete patient TalkBack, font 1.0/1.3/2.0, light/dark and physical-device checks. API-35 emulator dark captures for Today/History/Settings, explicit 130%/200% reachability for all three Patient and Caregiver primary screens, Settings/tutorial 200%, merged History day semantics, and production Patient Activity recreation plus portrait/landscape transitions are complete; full TalkBack traversal, dark/large-text state captures, Caregiver configuration changes and physical-device verification remain.
 
 ## Gate D — Caregiver patient-management vertical slice
 
@@ -175,7 +175,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 - [x] Final rebaseline check: `origin/main@1d9d19e` has zero unique commits and is already an ancestor of `android-dev` (2026-07-15); no merge required.
 - [x] Resolve all `RECHECK_REQUIRED` rows; remaining `PARTIAL` rows are explicitly external/visual/device release gates.
-- [x] Full API 26/33/35 emulator matrix (93 tests each, 279/279 total), including 200% Patient/Caregiver reachability, the compact PDF sheet fix and caregiver stale/retry states.
+- [x] Full API 26/33/35 emulator matrix (94 tests each, 282/282 total), including 200% Patient/Caregiver reachability, Activity recreation/rotation, the compact PDF sheet fix and caregiver stale/retry states.
 - [ ] Physical-device matrix.
 - [ ] Notification Doze/delivery/tap/process-death tests.
 - [ ] TalkBack, font 2.0, dark mode, compact/large phone and rotation/configuration tests.
