@@ -23,26 +23,10 @@ import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
 
 class FirebaseCaregiverPushTokenSource(private val context: Context) : CaregiverPushTokenSource {
-    override val configured: Boolean = listOf(
-        BuildConfig.FIREBASE_APP_ID,
-        BuildConfig.FIREBASE_API_KEY,
-        BuildConfig.FIREBASE_PROJECT_ID,
-        BuildConfig.FIREBASE_SENDER_ID,
-    ).all(String::isNotBlank)
+    override val configured: Boolean get() = FirebaseRuntime.configured
 
     private fun messaging(): FirebaseMessaging? {
-        if (!configured) return null
-        if (FirebaseApp.getApps(context).isEmpty()) {
-            FirebaseApp.initializeApp(
-                context,
-                FirebaseOptions.Builder()
-                    .setApplicationId(BuildConfig.FIREBASE_APP_ID)
-                    .setApiKey(BuildConfig.FIREBASE_API_KEY)
-                    .setProjectId(BuildConfig.FIREBASE_PROJECT_ID)
-                    .setGcmSenderId(BuildConfig.FIREBASE_SENDER_ID)
-                    .build(),
-            ) ?: return null
-        }
+        if (!FirebaseRuntime.ensureInitialized(context)) return null
         return FirebaseMessaging.getInstance()
     }
 
@@ -64,6 +48,32 @@ class FirebaseCaregiverPushTokenSource(private val context: Context) : Caregiver
                 else continuation.resumeWithException(error ?: IllegalStateException("FCM token is unavailable"))
             }
         }
+    }
+}
+
+object FirebaseRuntime {
+    val configured: Boolean get() = listOf(
+        BuildConfig.FIREBASE_APP_ID,
+        BuildConfig.FIREBASE_API_KEY,
+        BuildConfig.FIREBASE_PROJECT_ID,
+        BuildConfig.FIREBASE_SENDER_ID,
+    ).all(String::isNotBlank)
+
+    fun ensureInitialized(context: Context): Boolean {
+        if (!configured) return false
+        if (FirebaseApp.getApps(context).isNotEmpty()) return true
+        return runCatching {
+            FirebaseApp.initializeApp(
+                context,
+                FirebaseOptions.Builder()
+                    .setApplicationId(BuildConfig.FIREBASE_APP_ID)
+                    .setApiKey(BuildConfig.FIREBASE_API_KEY)
+                    .setProjectId(BuildConfig.FIREBASE_PROJECT_ID)
+                    .setGcmSenderId(BuildConfig.FIREBASE_SENDER_ID)
+                    .build(),
+            )
+            true
+        }.getOrDefault(false)
     }
 }
 

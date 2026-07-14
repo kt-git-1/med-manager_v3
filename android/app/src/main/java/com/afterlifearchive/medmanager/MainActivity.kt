@@ -24,6 +24,10 @@ class MainActivity : ComponentActivity() {
         val caregiverHistoryRepository = (application as MedicationApplication).caregiverHistoryRepository
         val caregiverReportRepository = (application as MedicationApplication).caregiverReportRepository
         val caregiverPushRepository = (application as MedicationApplication).caregiverPushRepository
+        val analyticsService = (application as MedicationApplication).analyticsService
+        if (BuildConfig.DEBUG && listOf("PREVIEW_PATIENT_SETTINGS", "PREVIEW_PATIENT_HISTORY", "PREVIEW_PATIENT").any { intent.getBooleanExtra(it, false) }) {
+            analyticsService.setSessionSuppressed(true)
+        }
         handlePatientNotificationIntent(intent, patientRepository)
         handleCaregiverNotificationIntent(intent, caregiverHistoryRepository)
         setContent {
@@ -35,11 +39,12 @@ class MainActivity : ComponentActivity() {
                 } else if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_PATIENT", false)) {
                     PatientModePreview(PatientTab.TODAY)
                 } else {
-                    MedicationApp(repository, patientRepository, caregiverPatientRepository, caregiverMedicationRepository, caregiverTodayRepository, caregiverInventoryRepository, caregiverHistoryRepository, caregiverReportRepository, caregiverPushRepository)
+                    MedicationApp(repository, patientRepository, caregiverPatientRepository, caregiverMedicationRepository, caregiverTodayRepository, caregiverInventoryRepository, caregiverHistoryRepository, caregiverReportRepository, caregiverPushRepository, analyticsService)
                 }
             }
         }
     }
+
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)

@@ -21,6 +21,10 @@ import com.afterlifearchive.medmanager.data.push.CaregiverPushDataSource
 import com.afterlifearchive.medmanager.data.push.CaregiverPushRepository
 import com.afterlifearchive.medmanager.data.push.CaregiverPushStorage
 import com.afterlifearchive.medmanager.data.push.CaregiverPushTokenSource
+import com.afterlifearchive.medmanager.AnalyticsConsentState
+import com.afterlifearchive.medmanager.AnalyticsConsentStore
+import com.afterlifearchive.medmanager.AnalyticsService
+import com.afterlifearchive.medmanager.AnalyticsTransport
 import com.afterlifearchive.medmanager.data.session.CaregiverSelectionRepository
 import com.afterlifearchive.medmanager.data.session.SessionStorage
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
@@ -132,6 +136,26 @@ class CaregiverHomeScreenTest {
     }
 
     @Test
+    fun caregiverSettingsUsesSharedAnalyticsConsentState() {
+        val selectionStorage = TestSelectionStorage()
+        val selection = CaregiverSelectionRepository(selectionStorage).also { it.restore() }
+        val patientRepository = CaregiverPatientRepository(CaregiverPatientDataSource { emptyList() }, selection)
+        val consent = CaregiverTestAnalyticsStore(AnalyticsConsentState(enabled = true, decided = true))
+        val analytics = AnalyticsService(consent, CaregiverTestAnalyticsTransport()).also { it.configure() }
+        composeRule.setContent {
+            MedicationAppTheme {
+                CaregiverHomeScreen(patientRepository, analyticsService = analytics, tutorialEnabled = false)
+            }
+        }
+
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-analytics-settings"))
+        composeRule.onNodeWithTag("caregiver-analytics-settings").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-analytics-toggle").performClick()
+        composeRule.runOnIdle { assertEquals(AnalyticsConsentState(enabled = false, decided = true), analytics.state.value) }
+    }
+
+    @Test
     fun remotePushSelectsTargetPatientAndHistoryTab() {
         val storage = TestSelectionStorage()
         val selection = CaregiverSelectionRepository(storage).also { it.restore() }
@@ -172,6 +196,18 @@ private class TestPushStorage : CaregiverPushStorage {
     override var token: String? = null
     override var registeredToken: String? = null
     override var pendingUnregisterToken: String? = null
+}
+
+private class CaregiverTestAnalyticsStore(initial: AnalyticsConsentState) : AnalyticsConsentStore {
+    private var value = initial
+    override fun state() = value
+    override fun save(enabled: Boolean) { value = AnalyticsConsentState(enabled, decided = true) }
+}
+
+private class CaregiverTestAnalyticsTransport : AnalyticsTransport {
+    override fun setCollectionEnabled(enabled: Boolean) = Unit
+    override fun reset() = Unit
+    override fun log(name: String, parameters: Map<String, String>) = Unit
 }
 
 private class TestSelectionStorage : SessionStorage {

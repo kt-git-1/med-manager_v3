@@ -167,6 +167,11 @@
     <string name="patient_settings_analytics_title">利用状況データ</string>
     <string name="patient_settings_analytics_toggle">利用状況データを送信する</string>
     <string name="patient_settings_analytics_detail">患者名、薬名、服薬内容、メールアドレスなどの個人・医療情報は送信しません。いつでもオフにできます。</string>
+    <string name="analytics_consent_title">アプリ改善へのご協力</string>
+    <string name="analytics_consent_message">機能改善と使いやすさの分析のため、個人・医療情報を含まない利用状況データを送信してもよいですか？患者名、薬名、服薬内容、メールアドレスは送信しません。設定からいつでも変更できます。</string>
+    <string name="analytics_consent_allow">許可する</string>
+    <string name="analytics_consent_decline">今はしない</string>
+    <string name="analytics_settings_message">機能改善と有料機能の検討に、個人・医療情報を含まない利用状況を役立てます</string>
     <string name="patient_settings_legal_support">法務・サポート</string>
     <string name="patient_settings_privacy">プライバシーポリシー</string>
     <string name="patient_settings_privacy_detail">データの取り扱いと削除について確認できます</string>

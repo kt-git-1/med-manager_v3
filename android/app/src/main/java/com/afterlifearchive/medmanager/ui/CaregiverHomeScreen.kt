@@ -80,6 +80,10 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverInventoryReposito
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverReportRepository
 import com.afterlifearchive.medmanager.data.push.CaregiverPushRepository
+import com.afterlifearchive.medmanager.AnalyticsCaregiverTab
+import com.afterlifearchive.medmanager.AnalyticsService
+import com.afterlifearchive.medmanager.AnalyticsAppMode
+import com.afterlifearchive.medmanager.AnalyticsCoreAction
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -104,6 +108,7 @@ fun CaregiverHomeScreen(
     historyRepository: CaregiverHistoryRepository? = null,
     reportRepository: CaregiverReportRepository? = null,
     pushRepository: CaregiverPushRepository? = null,
+    analyticsService: AnalyticsService? = null,
     onLogout: () -> Unit = {},
     onAccountDeleted: () -> Unit = {},
     tutorialEnabled: Boolean = true,
@@ -123,20 +128,27 @@ fun CaregiverHomeScreen(
     val historyState = historyRepository?.state?.collectAsStateWithLifecycle()?.value
 
     fun selectTab(tab: CaregiverTab) {
+        val changed = selectedTabName != tab.name
         selectedTabName = tab.name
         loadedTabNames = loadedTabNames + tab.name
+        if (changed) analyticsService?.logCaregiverTabViewed(tab.analyticsValue())
     }
 
     fun finishTutorial(openRegistration: Boolean) {
         tutorialPreferences.edit().putBoolean("seen", true).apply()
         tutorialStep = -1
+        analyticsService?.logTutorialFinished(AnalyticsAppMode.CAREGIVER, skipped = !openRegistration)
         if (openRegistration) {
             selectTab(CaregiverTab.SETTINGS)
             postTutorialFocusTag = "caregiver-create-name"
         }
     }
 
-    LaunchedEffect(Unit) { repository.refresh() }
+    LaunchedEffect(Unit) {
+        repository.refresh()
+        analyticsService?.logCaregiverTabViewed(CaregiverTab.TODAY.analyticsValue())
+        if (tutorialStep >= 0) analyticsService?.logTutorialStarted(AnalyticsAppMode.CAREGIVER)
+    }
     LaunchedEffect(historyState?.navigationRequestId, state.patients) {
         val targetPatientId = historyState?.notificationPatientId
         if ((historyState?.navigationRequestId ?: 0) > 0 && targetPatientId != null && state.patients.any { it.id == targetPatientId }) {
@@ -145,7 +157,10 @@ fun CaregiverHomeScreen(
         }
     }
     LaunchedEffect(tutorialStep) {
-        if (tutorialStep >= 0) selectTab(caregiverTutorialTab(tutorialStep))
+        if (tutorialStep >= 0) {
+            selectTab(caregiverTutorialTab(tutorialStep))
+            analyticsService?.logTutorialStepViewed(AnalyticsAppMode.CAREGIVER, tutorialStep + 1)
+        }
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -172,6 +187,7 @@ fun CaregiverHomeScreen(
                                 historyRepository,
                                 reportRepository,
                                 pushRepository,
+                                analyticsService,
                                 visible,
                                 onLogout,
                                 onAccountDeleted,
@@ -224,6 +240,7 @@ private fun CaregiverTabContent(
     historyRepository: CaregiverHistoryRepository?,
     reportRepository: CaregiverReportRepository?,
     pushRepository: CaregiverPushRepository?,
+    analyticsService: AnalyticsService?,
     visible: Boolean,
     onLogout: () -> Unit,
     onAccountDeleted: () -> Unit,
@@ -231,7 +248,7 @@ private fun CaregiverTabContent(
     onOpenMedications: () -> Unit,
 ) {
     when (tab) {
-        CaregiverTab.SETTINGS -> CaregiverPatientSelectionScreen(state, repository, pushRepository, visible, onLogout, onAccountDeleted, tutorialFocusTag)
+        CaregiverTab.SETTINGS -> CaregiverPatientSelectionScreen(state, repository, pushRepository, analyticsService, visible, onLogout, onAccountDeleted, tutorialFocusTag)
         CaregiverTab.MEDICATIONS -> if (medicationRepository != null) {
             CaregiverMedicationScreen(
                 repository = medicationRepository,
@@ -312,6 +329,7 @@ private fun CaregiverPatientSelectionScreen(
     state: CaregiverPatientState,
     repository: CaregiverPatientRepository,
     pushRepository: CaregiverPushRepository?,
+    analyticsService: AnalyticsService?,
     enabled: Boolean,
     onLogout: () -> Unit,
     onAccountDeleted: () -> Unit,
@@ -321,6 +339,7 @@ private fun CaregiverPatientSelectionScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val pushState = pushRepository?.state?.collectAsStateWithLifecycle()?.value
+    val analyticsState = analyticsService?.state?.collectAsStateWithLifecycle()?.value
     val pushPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) scope.launch { pushRepository?.enable() }
     }
@@ -378,7 +397,10 @@ private fun CaregiverPatientSelectionScreen(
                     Button(
                         onClick = {
                             scope.launch {
-                                if (repository.createPatient(displayName)) displayName = ""
+                                if (repository.createPatient(displayName)) {
+                                    displayName = ""
+                                    analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.CAREGIVER_PATIENT_CREATED)
+                                }
                             }
                         },
                         enabled = enabled && !state.creating,
@@ -452,7 +474,9 @@ private fun CaregiverPatientSelectionScreen(
                 issuing = state.issuingLinkingCode,
                 failed = state.linkingCodeFailed,
                 enabled = enabled,
-                onIssue = { scope.launch { repository.issueLinkingCode() } },
+                onIssue = { scope.launch {
+                    if (repository.issueLinkingCode()) analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.LINK_CODE_ISSUED)
+                } },
             )
         }
         if (selectedPatient != null) item {
@@ -508,6 +532,24 @@ private fun CaregiverPatientSelectionScreen(
                         }
                         pushState.registered -> Text(stringResource(R.string.caregiver_push_enabled), color = MaterialTheme.colorScheme.primary)
                     }
+                }
+            }
+        }
+        if (analyticsService != null && analyticsState != null) item {
+            Card(Modifier.fillMaxWidth().testTag("caregiver-analytics-settings")) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.patient_settings_analytics_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.analytics_settings_message), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.patient_settings_analytics_toggle), modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                        Switch(
+                            checked = analyticsState.enabled,
+                            enabled = enabled,
+                            onCheckedChange = analyticsService::setCollectionEnabled,
+                            modifier = Modifier.testTag("caregiver-analytics-toggle"),
+                        )
+                    }
+                    Text(stringResource(R.string.patient_settings_analytics_detail), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -577,6 +619,14 @@ private fun CaregiverPatientSelectionScreen(
             dismissButton = { TextButton(onClick = { confirmation = null }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
+}
+
+private fun CaregiverTab.analyticsValue(): AnalyticsCaregiverTab = when (this) {
+    CaregiverTab.TODAY -> AnalyticsCaregiverTab.TODAY
+    CaregiverTab.MEDICATIONS -> AnalyticsCaregiverTab.MEDICATIONS
+    CaregiverTab.INVENTORY -> AnalyticsCaregiverTab.INVENTORY
+    CaregiverTab.HISTORY -> AnalyticsCaregiverTab.HISTORY
+    CaregiverTab.SETTINGS -> AnalyticsCaregiverTab.SETTINGS
 }
 
 @Composable

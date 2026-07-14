@@ -162,14 +162,14 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Gate H — Analytics and privacy
 
-- [ ] Add Firebase Android configuration through non-secret environment-aware setup.
-- [ ] Collection defaults off; no automatic collection before consent.
-- [ ] Consent can be changed in both roles; disabling resets analytics data.
-- [ ] Port only fixed event names/enum parameters from `AnalyticsService.swift`.
-- [ ] Reject patient/caregiver IDs, medication data, dose status/time/date, inventory, email, free text, notification content and tokens at the wrapper boundary.
-- [ ] Suppress in previews, screenshot fixtures and tests.
+- [x] Add Firebase Android configuration through non-secret environment-aware setup.
+- [x] Collection defaults off; no automatic collection before consent.
+- [x] Consent can be changed in both roles; disabling resets analytics data.
+- [x] Port only fixed event names/enum parameters from `AnalyticsService.swift`.
+- [x] Reject patient/caregiver IDs, medication data, dose status/time/date, inventory, email, free text, notification content and tokens at the wrapper boundary.
+- [x] Suppress in previews, screenshot fixtures and tests.
 - [ ] Verify DebugView, then Realtime/Events/Explore instructions in `docs/firebase-analytics.md`.
-- [ ] Align Play Data safety and privacy policy with actual collection.
+- [x] Align Play Data safety input basis and privacy policy with actual collection; final Console submission remains Gate I.
 
 ## Gate I — Release and merge
 

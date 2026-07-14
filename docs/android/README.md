@@ -7,7 +7,7 @@ This directory is the source of truth for the Android port. Android work is isol
 - Reference product: `main@1d9d19e`
 - Android baseline merge: `android-dev@1b38208`
 - Baseline date: 2026-07-14
-- Current action: repair/reverify the existing Android implementation against the new baseline before expanding caregiver UI
+- Current action: complete Gate H live Firebase Analytics verification, then begin Gate I release/device hardening
 
 ## Authority order
 
@@ -35,6 +35,8 @@ An Android shortcut never overrides a backend rule or an intentional iOS product
 - [Phase 0 foundation](./phase-0-foundation.md)
 - [Phase 1 session/API notes](./phase-1-session-api.md)
 - [Phase 2 patient-mode notes](./phase-2-patient-mode.md)
+- [Phase 3 caregiver-mode notes](./phase-3-caregiver-mode.md)
+- [Phase 4 analytics and privacy notes](./phase-4-analytics-privacy.md)
 
 ## Status vocabulary
 

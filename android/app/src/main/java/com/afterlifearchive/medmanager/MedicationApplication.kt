@@ -53,6 +53,8 @@ class MedicationApplication : Application() {
         private set
     lateinit var caregiverPushRepository: CaregiverPushRepository
         private set
+    lateinit var analyticsService: AnalyticsService
+        private set
     lateinit var mutationFreshnessStore: MutationFreshnessStore
         private set
 
@@ -108,6 +110,11 @@ class MedicationApplication : Application() {
             tokenSource = FirebaseCaregiverPushTokenSource(this),
             storage = AndroidCaregiverPushStorage(this),
         )
+        analyticsService = AnalyticsService(
+            AnalyticsConsentPreferences(this),
+            FirebaseAnalyticsTransport(this),
+            environmentSuppressed = { System.getProperty("robolectric") != null },
+        ).also { it.configure() }
         repository.restore()
         ReminderScheduler.createNotificationChannel(this)
 

@@ -29,7 +29,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,12 +53,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.afterlifearchive.medmanager.R
+import com.afterlifearchive.medmanager.AnalyticsAppMode
+import com.afterlifearchive.medmanager.AnalyticsScreen
+import com.afterlifearchive.medmanager.AnalyticsService
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 
 @Composable
-fun ModeSelectScreen(onModeSelected: (AppMode) -> Unit) {
+fun ModeSelectScreen(analyticsService: AnalyticsService? = null, onModeSelected: (AppMode) -> Unit) {
     val colors = MaterialTheme.colorScheme
     val extended = MedicationTheme.colors
+    val analyticsState = analyticsService?.state?.collectAsStateWithLifecycle()?.value
+    var showConsent by remember(analyticsState?.decided) { mutableStateOf(analyticsState?.decided == false) }
+    LaunchedEffect(Unit) { analyticsService?.logScreenViewed(AnalyticsScreen.MODE_SELECT) }
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -75,7 +89,10 @@ fun ModeSelectScreen(onModeSelected: (AppMode) -> Unit) {
                     title = stringResource(R.string.mode_select_patient_title),
                     subtitle = stringResource(R.string.mode_select_patient_subtitle),
                     tint = colors.primary,
-                    onClick = { onModeSelected(AppMode.PATIENT) },
+                    onClick = {
+                        analyticsService?.logModeSelected(AnalyticsAppMode.PATIENT)
+                        onModeSelected(AppMode.PATIENT)
+                    },
                 )
                 RoleModeCard(
                     image = R.drawable.role_family,
@@ -84,10 +101,33 @@ fun ModeSelectScreen(onModeSelected: (AppMode) -> Unit) {
                     title = stringResource(R.string.mode_select_caregiver_title),
                     subtitle = stringResource(R.string.mode_select_caregiver_subtitle),
                     tint = extended.orange,
-                    onClick = { onModeSelected(AppMode.CAREGIVER) },
+                    onClick = {
+                        analyticsService?.logModeSelected(AnalyticsAppMode.CAREGIVER)
+                        onModeSelected(AppMode.CAREGIVER)
+                    },
                 )
             }
         }
+    }
+    if (showConsent) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(stringResource(R.string.analytics_consent_title)) },
+            text = { Text(stringResource(R.string.analytics_consent_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    analyticsService?.setCollectionEnabled(true)
+                    showConsent = false
+                    analyticsService?.logScreenViewed(AnalyticsScreen.MODE_SELECT)
+                }) { Text(stringResource(R.string.analytics_consent_allow)) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    analyticsService?.setCollectionEnabled(false)
+                    showConsent = false
+                }) { Text(stringResource(R.string.analytics_consent_decline)) }
+            },
+        )
     }
 }
 

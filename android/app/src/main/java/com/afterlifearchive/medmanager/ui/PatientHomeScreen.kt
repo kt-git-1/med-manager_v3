@@ -84,6 +84,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.afterlifearchive.medmanager.ReminderScheduler
 import com.afterlifearchive.medmanager.AnalyticsConsentPreferences
+import com.afterlifearchive.medmanager.AnalyticsPatientTab
+import com.afterlifearchive.medmanager.AnalyticsService
+import com.afterlifearchive.medmanager.AnalyticsAppMode
 import com.afterlifearchive.medmanager.PatientNotificationPreferences
 import com.afterlifearchive.medmanager.PatientNotificationSettings
 import com.afterlifearchive.medmanager.PatientNotificationPlanBuilder
@@ -214,7 +217,7 @@ internal fun PatientModePreview(initialTab: PatientTab = PatientTab.TODAY) {
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-fun PatientHomeScreen(repository: PatientRepository, onUnlink: () -> Unit) {
+fun PatientHomeScreen(repository: PatientRepository, onUnlink: () -> Unit, analyticsService: AnalyticsService? = null) {
     val state by repository.state.collectAsStateWithLifecycle()
     val freshness by repository.freshness.collectAsStateWithLifecycle()
     val errorText = state.error?.let { patientUserMessageText(it) }
@@ -233,6 +236,7 @@ fun PatientHomeScreen(repository: PatientRepository, onUnlink: () -> Unit) {
     var notificationSettings by remember { mutableStateOf(notificationPreferences.load()) }
     val analyticsPreferences = remember { AnalyticsConsentPreferences(context) }
     var analyticsEnabled by remember { mutableStateOf(analyticsPreferences.isEnabled()) }
+    val analyticsState = analyticsService?.state?.collectAsStateWithLifecycle()?.value
     val permissionPreferences = remember { context.getSharedPreferences("notification_permission", android.content.Context.MODE_PRIVATE) }
     var notificationPermissionDenied by remember {
         mutableStateOf(permissionPreferences.getBoolean("requested", false) && !NotificationManagerCompat.from(context).areNotificationsEnabled())
@@ -262,10 +266,25 @@ fun PatientHomeScreen(repository: PatientRepository, onUnlink: () -> Unit) {
         applyNotificationSettings(notificationSettings.copy(masterEnabled = granted))
     }
 
+    LaunchedEffect(tab) {
+        analyticsService?.logPatientTabViewed(
+            when (tab) {
+                PatientTab.TODAY -> AnalyticsPatientTab.TODAY
+                PatientTab.HISTORY -> AnalyticsPatientTab.HISTORY
+                PatientTab.SETTINGS -> AnalyticsPatientTab.SETTINGS
+            },
+        )
+    }
     LaunchedEffect(tab, freshness.dose) {
         if (tab == PatientTab.HISTORY) {
             historyFreshnessCursor.refreshIfStale { repository.loadHistory() }
         }
+    }
+    LaunchedEffect(Unit) {
+        if (tutorialStep >= 0) analyticsService?.logTutorialStarted(AnalyticsAppMode.PATIENT)
+    }
+    LaunchedEffect(tutorialStep) {
+        if (tutorialStep >= 0) analyticsService?.logTutorialStepViewed(AnalyticsAppMode.PATIENT, tutorialStep + 1)
     }
 
     DisposableEffect(lifecycleOwner, tab) {
@@ -365,10 +384,11 @@ fun PatientHomeScreen(repository: PatientRepository, onUnlink: () -> Unit) {
                             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                         } else applyNotificationSettings(updated)
                     },
-                    analyticsEnabled = analyticsEnabled,
+                    analyticsEnabled = analyticsState?.enabled ?: analyticsEnabled,
                     onAnalyticsEnabledChange = { enabled ->
                         analyticsEnabled = enabled
-                        analyticsPreferences.setEnabled(enabled)
+                        if (analyticsService != null) analyticsService.setCollectionEnabled(enabled)
+                        else analyticsPreferences.setEnabled(enabled)
                     },
                     onOpenUrl = { url -> context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) },
                     onUnlink = {
@@ -450,12 +470,17 @@ fun PatientHomeScreen(repository: PatientRepository, onUnlink: () -> Unit) {
     if (tutorialStep >= 0) {
         PatientTutorialOverlay(
             step = tutorialStep,
-            onSkip = { tutorialPreferences.edit().putBoolean("seen", true).apply(); tutorialStep = -1 },
+            onSkip = {
+                tutorialPreferences.edit().putBoolean("seen", true).apply()
+                tutorialStep = -1
+                analyticsService?.logTutorialFinished(AnalyticsAppMode.PATIENT, skipped = true)
+            },
             onPrevious = { if (tutorialStep > 0) tutorialStep -= 1 },
             onNext = {
                 if (tutorialStep == 3) {
                     tutorialPreferences.edit().putBoolean("seen", true).apply()
                     tutorialStep = -1
+                    analyticsService?.logTutorialFinished(AnalyticsAppMode.PATIENT, skipped = false)
                     if (Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                     else applyNotificationSettings(notificationSettings.copy(masterEnabled = true))
                 } else {

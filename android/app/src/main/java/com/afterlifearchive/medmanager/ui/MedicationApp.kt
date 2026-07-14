@@ -17,6 +17,7 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverReportRepository
 import com.afterlifearchive.medmanager.data.patient.PatientRepository
 import com.afterlifearchive.medmanager.data.push.CaregiverPushRepository
 import com.afterlifearchive.medmanager.data.session.SessionRepository
+import com.afterlifearchive.medmanager.AnalyticsService
 import kotlinx.coroutines.launch
 
 @Composable
@@ -30,6 +31,7 @@ fun MedicationApp(
     caregiverHistoryRepository: CaregiverHistoryRepository,
     caregiverReportRepository: CaregiverReportRepository,
     caregiverPushRepository: CaregiverPushRepository,
+    analyticsService: AnalyticsService,
 ) {
     val state by repository.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -48,7 +50,7 @@ fun MedicationApp(
     }
     Surface(modifier = Modifier.fillMaxSize()) {
         when (state.mode) {
-            null -> ModeSelectScreen(repository::selectMode)
+            null -> ModeSelectScreen(analyticsService, repository::selectMode)
             AppMode.CAREGIVER -> if (state.caregiverAuthenticated) {
                 CaregiverHomeScreen(
                     caregiverPatientRepository,
@@ -58,6 +60,7 @@ fun MedicationApp(
                     caregiverHistoryRepository,
                     caregiverReportRepository,
                     caregiverPushRepository,
+                    analyticsService,
                     onLogout = {
                         scope.launch {
                             caregiverPushRepository.disable()
@@ -73,7 +76,7 @@ fun MedicationApp(
                 CaregiverAuthFlow(state, repository)
             }
             AppMode.PATIENT -> if (state.patientAuthenticated) {
-                PatientHomeScreen(patientRepository, repository::unlinkPatient)
+                PatientHomeScreen(patientRepository, repository::unlinkPatient, analyticsService)
             } else {
                 PatientLinkScreen(state, repository)
             }
