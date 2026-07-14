@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayRepository
 import com.afterlifearchive.medmanager.data.patient.PatientRepository
 import com.afterlifearchive.medmanager.data.session.SessionRepository
 
@@ -18,6 +19,7 @@ fun MedicationApp(
     patientRepository: PatientRepository,
     caregiverPatientRepository: CaregiverPatientRepository,
     caregiverMedicationRepository: CaregiverMedicationRepository,
+    caregiverTodayRepository: CaregiverTodayRepository,
 ) {
     val state by repository.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.mode, state.caregiverAuthenticated) {
@@ -26,6 +28,7 @@ fun MedicationApp(
         } else {
             caregiverPatientRepository.clear()
             caregiverMedicationRepository.clear()
+            caregiverTodayRepository.clear()
         }
     }
     Surface(modifier = Modifier.fillMaxSize()) {
@@ -35,6 +38,7 @@ fun MedicationApp(
                 CaregiverHomeScreen(
                     caregiverPatientRepository,
                     caregiverMedicationRepository,
+                    caregiverTodayRepository,
                     onLogout = repository::logoutCaregiver,
                     onAccountDeleted = repository::logoutCaregiver,
                 )

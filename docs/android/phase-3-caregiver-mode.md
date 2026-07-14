@@ -147,3 +147,15 @@ E04 and the medication lifecycle portion of `CG-006` are `IMPLEMENTED`. Full inv
 - Physical-device rendering, dark/large-font captures and TalkBack traversal remain release verification work; they do not block E05 from reaching `IMPLEMENTED`.
 
 E05 and Gate E are `IMPLEMENTED`. Gate F now owns caregiver Today proxy actions and complete inventory management.
+
+## F01 caregiver Today load and aggregation — 2026-07-15
+
+- Android now follows the current iOS `CaregiverTodayViewModel` read contract: caregiver-authenticated `GET /api/patients/{patientId}/today`, `GET /api/medications?patientId=...` and `GET /api/patients/{patientId}/inventory` load together for the selected patient.
+- A patient switch clears the previous patient's Today content before loading. Any failed member of the three-read snapshot produces the canonical retryable error rather than mixing stale and partial data.
+- Doses sort pending, missed and taken, then by scheduled time. Active non-archived PRN medication, insufficient-dose medication IDs and low-stock state are derived from authoritative medication/inventory responses.
+- The production Today tab now renders the iOS information hierarchy: patient header, missed warning, next action, slot-based progress, PRN entry and morning/noon/evening/bedtime timeline. Empty, no-patient, no-selection, loading and retry states use the shared caregiver copy.
+- Today binds the shared caregiver freshness cursor across dose, medication, inventory and slot-time domains. Hidden-tab isolation remains owned by the existing lazy caregiver shell.
+- API/JVM tests cover exact paths/auth, strict response mapping, sorting/filtering/inventory aggregation and failed patient-switch isolation. Compose tests cover populated aggregation, empty navigation, no-patient and retryable failure states.
+- The full gate passes with 59/59 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
+
+F01 is `IMPLEMENTED`; F02–F04 add the individual, bulk and PRN proxy mutations without changing this read-state contract.

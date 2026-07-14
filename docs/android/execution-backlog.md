@@ -144,7 +144,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Gate F — Caregiver Today and inventory
 
-- [ ] F01 Today load/status aggregation and no-patient/error states.
+- [x] F01 Today load/status aggregation and no-patient/error states.
 - [ ] F02 Individual proxy record/delete.
 - [ ] F03 Bulk proxy record including older missed slots outside the patient window.
 - [ ] F04 PRN record/delete and inventory errors.

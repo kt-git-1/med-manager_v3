@@ -71,6 +71,7 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverCreateError
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverLinkingCode
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayRepository
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -90,6 +91,7 @@ enum class CaregiverTab(val label: Int, val icon: ImageVector) {
 fun CaregiverHomeScreen(
     repository: CaregiverPatientRepository,
     medicationRepository: CaregiverMedicationRepository? = null,
+    todayRepository: CaregiverTodayRepository? = null,
     onLogout: () -> Unit = {},
     onAccountDeleted: () -> Unit = {},
     tutorialEnabled: Boolean = true,
@@ -145,10 +147,12 @@ fun CaregiverHomeScreen(
                                 state,
                                 repository,
                                 medicationRepository,
+                                todayRepository,
                                 visible,
                                 onLogout,
                                 onAccountDeleted,
                                 if (tutorialStep >= 0) caregiverTutorialFocusTag(tutorialStep) else postTutorialFocusTag,
+                                onOpenMedications = { selectTab(CaregiverTab.MEDICATIONS) },
                             )
                         }
                     }
@@ -191,10 +195,12 @@ private fun CaregiverTabContent(
     state: CaregiverPatientState,
     repository: CaregiverPatientRepository,
     medicationRepository: CaregiverMedicationRepository?,
+    todayRepository: CaregiverTodayRepository?,
     visible: Boolean,
     onLogout: () -> Unit,
     onAccountDeleted: () -> Unit,
     tutorialFocusTag: String?,
+    onOpenMedications: () -> Unit,
 ) {
     when (tab) {
         CaregiverTab.SETTINGS -> CaregiverPatientSelectionScreen(state, repository, visible, onLogout, onAccountDeleted, tutorialFocusTag)
@@ -204,6 +210,9 @@ private fun CaregiverTabContent(
                 patientState = state,
                 enabled = visible,
             )
+        } else CaregiverFeatureLanding(tab, state, repository, visible)
+        CaregiverTab.TODAY -> if (todayRepository != null) {
+            CaregiverTodayScreen(todayRepository, state, visible, onOpenMedications)
         } else CaregiverFeatureLanding(tab, state, repository, visible)
         else -> CaregiverFeatureLanding(tab, state, repository, visible)
     }

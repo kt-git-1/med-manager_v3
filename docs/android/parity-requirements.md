@@ -73,7 +73,7 @@ This file tracks product parity against `main@1d9d19e`. Status is conservative: 
 | CG-005 | Medication list and empty state | `MedicationListView.swift` | IMPLEMENTED | Caregiver-auth selected-patient query, strict shared DTO mapping, no-patient/no-selection/loading/error/empty/content states, Today/PRN/ended metrics, four filters, schedule-slot labels, inventory status and add/edit entry points have JVM/Compose coverage; visual/physical verification remains |
 | CG-006 | Regular/PRN medication form and validation | `MedicationFormView*` | IMPLEMENTED | Shared typed create/edit draft, iOS-equivalent regular/PRN, start/end, initial-inventory and notes fields, aggregate validation, exact POST/PATCH/DELETE contracts, confirmation-protected archive, server-first list/freshness mutation and retryable failures have JVM/Compose coverage; regimen persistence is tracked by CG-007/E03 |
 | CG-007 | Regimen schedule CRUD | regimen routes | IMPLEMENTED | Daily/weekday frequency, canonical MON-SUN and morning/noon/evening/bedtime slot selection, local conditional validation, caregiver-auth list/create/update calls, disabled-regimen re-enable and scheduled-to-PRN disable behavior have JVM/API/Compose coverage; physical notification timing remains |
-| CG-008 | Caregiver Today: individual/bulk/PRN proxy record and delete | `CaregiverTodayView*` | NOT_STARTED |
+| CG-008 | Caregiver Today: individual/bulk/PRN proxy record and delete | `CaregiverTodayView*` | PARTIAL | F01 implements the exact three-read load contract, selected-patient isolation, pending/missed/taken slot aggregation, next action, progress, PRN/inventory warnings and canonical loading/no-patient/no-selection/empty/error states; proxy mutations remain in F02–F04 |
 | CG-009 | Inventory list/detail/adjust | inventory views/routes | NOT_STARTED |
 | CG-010 | Caregiver month/day history | caregiver/history views | NOT_STARTED |
 | CG-011 | PDF period selection/report/share | PDF feature files/report route | NOT_STARTED |
@@ -82,7 +82,7 @@ This file tracks product parity against `main@1d9d19e`. Status is conservative: 
 | CG-014 | Lazy tab lifetime, hidden-tab isolation and state preservation | `CaregiverHomeView.loadedTabs`, tab visibility modifier | IMPLEMENTED | Today is the only initial tab; visited tabs remain composed, hidden tabs are transparent, non-selectable and removed from accessibility, and selected tab state is saveable; configuration/physical verification pending |
 | CG-015 | Preserve successful mutation state if follow-up refresh fails | `CaregiverTodayViewModel.refreshAfterMutation` | NOT_STARTED |
 | CG-016 | Allow caregiver proxy bulk for older missed slots | caregiver slot route, `slotBulkRecordService` | NOT_STARTED |
-| CG-017 | Cross-tab Today/History/Inventory freshness revisions | `.doseRecordsUpdated`, `.medicationUpdated` | PARTIAL | Shared monotonic dose/medication/inventory revisions, consumer matrix and duplicate-safe cursors are implemented/tested; caregiver screens must bind their Today/History/Inventory consumers in C1–C4 |
+| CG-017 | Cross-tab Today/History/Inventory freshness revisions | `.doseRecordsUpdated`, `.medicationUpdated` | PARTIAL | Shared monotonic revisions and duplicate-safe cursors are tested; caregiver Today and medications now bind their complete consumer domains, while History and Inventory binding remains in F06/F07 and G01 |
 
 ## Cross-platform and release
 
