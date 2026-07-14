@@ -113,7 +113,7 @@ final class PatientTodayViewModel: ObservableObject {
                 )
                 AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
                 showToast(NSLocalizedString("patient.today.recorded", comment: "Recorded"))
-                await onScheduledDoseRecorded()
+                refreshNotificationsAfterScheduledDoseRecord()
                 load(showLoading: false)
             } catch {
                 showToastMessage(for: error)
@@ -314,7 +314,7 @@ final class PatientTodayViewModel: ObservableObject {
                 )
                 if result.updatedCount > 0 {
                     AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
-                    await onScheduledDoseRecorded()
+                    refreshNotificationsAfterScheduledDoseRecord()
                 }
                 if result.insufficientCount > 0 && result.updatedCount > 0 {
                     showToast(NSLocalizedString("patient.today.slot.bulk.partialSuccess", comment: "Bulk partially recorded"), kind: .warning)
@@ -327,6 +327,15 @@ final class PatientTodayViewModel: ObservableObject {
             } catch {
                 showToastMessage(for: error)
             }
+        }
+    }
+
+    /// Notification rebuilding fetches slot times and seven days of history.
+    /// Keep it off the record button's loading path so a successful API write
+    /// is reflected immediately while notification maintenance continues.
+    private func refreshNotificationsAfterScheduledDoseRecord() {
+        Task { @MainActor [onScheduledDoseRecorded] in
+            await onScheduledDoseRecorded()
         }
     }
 

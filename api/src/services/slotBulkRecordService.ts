@@ -116,8 +116,9 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
   const slotTime =
     slotDoses.length > 0 ? getLocalTimeString(slotDoses[0].scheduledAt, tz) : "00:00";
 
-  // 5b. Check recording window: slotTime −30 min … slotTime +60 min
-  if (slotDoses.length > 0) {
+  // 5b. Patients can only record near the scheduled time. Caregivers must be
+  // able to proxy-record an older missed dose from the caregiver timeline.
+  if (recordedByType === "PATIENT" && slotDoses.length > 0) {
     const firstScheduledAt = new Date(slotDoses[0].scheduledAt).getTime();
     const windowOpen = firstScheduledAt - RECORDING_WINDOW_BEFORE_MS;
     const windowClose = firstScheduledAt + RECORDING_WINDOW_AFTER_MS;
