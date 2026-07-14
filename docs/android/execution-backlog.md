@@ -106,7 +106,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C02 Reverify Mode Select, auth choice/login/signup/callback/resend.
 - [x] C03 Reverify Patient Today states/actions/recording-window/inventory/PRN/detail.
 - [x] C04 Reverify current Patient History progress/week/recent summaries, retention and freshness.
-- [ ] C05 Reverify Settings/reminders/tutorial/deep links/legal/unlink.
+- [x] C05 Reverify Settings/reminders/tutorial/deep links/legal/logout and patient analytics-consent UI.
 - [ ] C06 Complete patient TalkBack, font 1.0/1.3/2.0, light/dark and physical-device checks.
 
 ## Gate D — Caregiver patient-management vertical slice
@@ -185,4 +185,4 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Immediate next item
 
-Continue the remaining **C01 current-iOS reference capture**, then C05, in `ui-screen-contracts.md` order. C03 mirrors UI-101 Today. C04 is rebaselined from the obsolete patient month-calendar UI to current-main's patient history hierarchy: today's progress ring, current-week summary/encouragement and recent today/yesterday cards. The month/day API and detail UI remain as caregiver-history foundation, while patient retention/error and mutation-freshness contracts remain tested. Deterministic Android light evidence is under `evidence/c04-20260714/`. Gate B's final visual-regression checkbox remains open until the remaining C01 pairs are complete; physical device, dark/large text and TalkBack remain assigned to C06/V1.
+Continue the remaining **C01 current-iOS reference capture**, then C06, in `ui-screen-contracts.md` order. C03–C05 now mirror current patient Today, simplified History and Settings. Settings uses the current master-notification-only card, linked status, privacy-first analytics consent, explained legal/support destinations, denied-permission guidance and server-first logout. Consent is stored off by default; Firebase transport, reset-on-disable and DebugView verification intentionally remain Gate H. Deterministic light evidence is under `evidence/c03-20260714/` through `c05-20260714/`. Gate B's final visual-regression checkbox remains open until the remaining C01 pairs are complete; physical device, dark/large text and TalkBack remain assigned to C06/V1.

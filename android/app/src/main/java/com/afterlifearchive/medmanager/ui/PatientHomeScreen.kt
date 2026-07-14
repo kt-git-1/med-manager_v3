@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.NotificationManagerCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -82,6 +83,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.afterlifearchive.medmanager.ReminderScheduler
+import com.afterlifearchive.medmanager.AnalyticsConsentPreferences
 import com.afterlifearchive.medmanager.PatientNotificationPreferences
 import com.afterlifearchive.medmanager.PatientNotificationSettings
 import com.afterlifearchive.medmanager.PatientNotificationPlanBuilder
@@ -174,18 +176,18 @@ internal fun PatientModePreview(initialTab: PatientTab = PatientTab.TODAY) {
         },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding).safeDrawingPadding()) {
-            if (initialTab == PatientTab.HISTORY) {
-                HistoryContent(
-                    days = previewHistory,
-                    loading = false,
-                    error = null,
-                    retentionCutoffDate = null,
-                    retentionDays = null,
-                    onRetry = {},
-                    now = previewDate,
+            when (initialTab) {
+                PatientTab.HISTORY -> HistoryContent(
+                    days = previewHistory, loading = false, error = null,
+                    retentionCutoffDate = null, retentionDays = null, onRetry = {}, now = previewDate,
                 )
-            } else {
-                TodayContent(
+                PatientTab.SETTINGS -> SettingsContent(
+                    loading = false, error = null,
+                    notificationSettings = PatientNotificationSettings(masterEnabled = true),
+                    onNotificationSettingsChange = {}, notificationPermissionDenied = false,
+                    analyticsEnabled = false, onAnalyticsEnabledChange = {}, onOpenUrl = {}, onUnlink = {},
+                )
+                PatientTab.TODAY -> TodayContent(
                     doses = previewDoses,
                     loading = false,
                     updatingKey = null,
@@ -229,6 +231,12 @@ fun PatientHomeScreen(repository: PatientRepository, onUnlink: () -> Unit) {
     val scope = rememberCoroutineScope()
     val notificationPreferences = remember { PatientNotificationPreferences(context) }
     var notificationSettings by remember { mutableStateOf(notificationPreferences.load()) }
+    val analyticsPreferences = remember { AnalyticsConsentPreferences(context) }
+    var analyticsEnabled by remember { mutableStateOf(analyticsPreferences.isEnabled()) }
+    val permissionPreferences = remember { context.getSharedPreferences("notification_permission", android.content.Context.MODE_PRIVATE) }
+    var notificationPermissionDenied by remember {
+        mutableStateOf(permissionPreferences.getBoolean("requested", false) && !NotificationManagerCompat.from(context).areNotificationsEnabled())
+    }
     val lifecycleOwner = LocalLifecycleOwner.current
     val historyFreshnessCursor = remember(repository) {
         repository.newFreshnessCursor(FreshnessConsumer.PATIENT_HISTORY)
@@ -249,7 +257,10 @@ fun PatientHomeScreen(repository: PatientRepository, onUnlink: () -> Unit) {
     }
     val notificationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
-    ) { granted -> applyNotificationSettings(notificationSettings.copy(masterEnabled = granted)) }
+    ) { granted ->
+        notificationPermissionDenied = !granted
+        applyNotificationSettings(notificationSettings.copy(masterEnabled = granted))
+    }
 
     LaunchedEffect(tab, freshness.dose) {
         if (tab == PatientTab.HISTORY) {
@@ -259,6 +270,9 @@ fun PatientHomeScreen(repository: PatientRepository, onUnlink: () -> Unit) {
 
     DisposableEffect(lifecycleOwner, tab) {
         val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                notificationPermissionDenied = permissionPreferences.getBoolean("requested", false) && !NotificationManagerCompat.from(context).areNotificationsEnabled()
+            }
             if (event == Lifecycle.Event.ON_RESUME && tab == PatientTab.TODAY) {
                 scope.launch { repository.loadToday() }
             }
@@ -344,10 +358,17 @@ fun PatientHomeScreen(repository: PatientRepository, onUnlink: () -> Unit) {
                     loading = state.loading,
                     error = errorText,
                     notificationSettings = notificationSettings,
+                    notificationPermissionDenied = notificationPermissionDenied,
                     onNotificationSettingsChange = { updated ->
                         if (updated.masterEnabled && !notificationSettings.masterEnabled && Build.VERSION.SDK_INT >= 33) {
+                            permissionPreferences.edit().putBoolean("requested", true).apply()
                             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                         } else applyNotificationSettings(updated)
+                    },
+                    analyticsEnabled = analyticsEnabled,
+                    onAnalyticsEnabledChange = { enabled ->
+                        analyticsEnabled = enabled
+                        analyticsPreferences.setEnabled(enabled)
                     },
                     onOpenUrl = { url -> context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) },
                     onUnlink = {

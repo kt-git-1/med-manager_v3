@@ -85,6 +85,9 @@ class PatientProductionScreenshotFixtureTest {
                     error = null,
                     notificationSettings = PatientNotificationSettings(masterEnabled = true),
                     onNotificationSettingsChange = {},
+                    notificationPermissionDenied = false,
+                    analyticsEnabled = false,
+                    onAnalyticsEnabledChange = {},
                     onOpenUrl = {},
                     onUnlink = {},
                 )

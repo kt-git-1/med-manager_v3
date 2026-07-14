@@ -36,7 +36,7 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Resolved B02 | Session, caregiver selection and patient navigation ownership were mixed or composition-local | Caregiver selection has an independent repository; patient tab/detail/history navigation is saveable; notification preferences and feature data remain separate; UI contains no token or auth-policy access | Reuse these owners in the caregiver shell |
 | Resolved B03 | Patient UI was one oversized screen file | Shell, navigation state, Today, History, Settings, Tutorial and shared components now live in separate files while retaining the A06 tab host | Production component capture fixtures and all prior interaction tests pass |
 | P1 | Existing patient screenshots predate current iOS behavior | Main added lazy tab lifetime, mutation/history refresh and UI adjustments | Recapture baseline and rerun visual acceptance |
-| P2 | Analytics parity is absent | No Android Firebase Analytics wrapper/consent event implementation | Implement privacy-first X1 requirements after core caregiver flows |
+| P2 | Analytics transport parity is absent | Patient off-by-default consent UI/persistence exists, but no Android Firebase wrapper/events or caregiver consent yet | Complete privacy-first Gate H after core caregiver flows |
 | P2 | Full dark/large-text/TalkBack coverage is incomplete | High-risk patient surfaces only | Complete per-screen audit, then caregiver and physical device |
 | P2 | Physical notification/Doze/process-death evidence is incomplete | Emulator tests do not prove delivery/tap on devices | Complete V1 device matrix |
 

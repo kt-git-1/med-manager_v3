@@ -231,6 +231,16 @@ This selector foundation is connected to inventory-backed production candidates 
 
 `PH-005` through `PH-008` are `IMPLEMENTED`. Physical notification permission, Doze/alarm delivery, external browser return, real server revocation, iOS comparison captures, large text, and TalkBack remain before `VERIFIED`.
 
+## 2026-07-14 C05 current Patient Settings parity
+
+- Settings now follows current iOS card order and copy: gear header, master notification toggle, linked status, analytics consent, explained legal/support links, permission-denied guidance and red logout action.
+- Obsolete visible slot/re-reminder toggles were removed from this screen; their persisted values and scheduler behavior remain intact for notification-plan generation.
+- Android records explicit analytics consent in a dedicated preference, defaults it to off and exposes no patient, medication, dose, email or free-text fields. This is consent readiness only: Firebase SDK configuration, wrapper enforcement, disabling/reset and console verification remain Gate H.
+- Notification denial is shown only after the app has requested permission; returning from system settings refreshes the state. Enabling the master toggle still gates Android 13 permission before saving the enabled state.
+- Privacy, terms and support retain the canonical HTTPS destinations and now show the current explanatory subtitles. Logout retains server-first revocation and only clears local mode/notifications after success.
+- `PatientSettingsContentTest` covers analytics toggle callback, three destinations, explicit logout confirmation and denied-permission disabling/guidance.
+- Full gate passes with 37/37 API-35 instrumentation tests; deterministic light evidence is under `evidence/c05-20260714/`.
+
 ## Phase 2D notification routing and patient tutorial
 
 ### XP-002 exact notification destination

@@ -153,24 +153,31 @@
 
     <!-- Patient Settings -->
     <string name="patient_settings_title">設定</string>
-    <string name="patient_settings_subtitle">通知とこの端末の連携を管理します</string>
-    <string name="patient_settings_notifications">服薬通知</string>
-    <string name="patient_settings_notification_master">通知を受け取る</string>
-    <string name="patient_settings_notification_master_detail">予定時刻にお薬をお知らせします</string>
+    <string name="patient_settings_subtitle">通知設定を変更できます</string>
+    <string name="patient_settings_notifications">お薬の通知</string>
+    <string name="patient_settings_notification_master">通知を有効にする</string>
+    <string name="patient_settings_notification_master_detail">飲む時間にこの端末へ通知します</string>
     <string name="patient_settings_slot_notification">%1$sの通知</string>
     <string name="patient_settings_rereminder">15分後にもう一度通知</string>
     <string name="patient_settings_rereminder_detail">飲み忘れ防止の再通知です</string>
-    <string name="patient_settings_link_status">連携状態</string>
-    <string name="patient_settings_link_status_detail">この端末は本人モードとして家族と連携されています。</string>
+    <string name="patient_settings_link_status">連携中</string>
+    <string name="patient_settings_link_status_detail">家族と服薬記録を共有しています</string>
+    <string name="patient_settings_analytics_title">利用状況データ</string>
+    <string name="patient_settings_analytics_toggle">利用状況データを送信する</string>
+    <string name="patient_settings_analytics_detail">患者名、薬名、服薬内容、メールアドレスなどの個人・医療情報は送信しません。いつでもオフにできます。</string>
     <string name="patient_settings_legal_support">法務・サポート</string>
     <string name="patient_settings_privacy">プライバシーポリシー</string>
+    <string name="patient_settings_privacy_detail">データの取り扱いと削除について確認できます</string>
     <string name="patient_settings_terms">利用規約</string>
+    <string name="patient_settings_terms_detail">ご利用条件と医療上の注意を確認できます</string>
     <string name="patient_settings_support">サポート</string>
-    <string name="patient_settings_unlink">この端末の連携を解除</string>
-    <string name="patient_settings_unlinking">解除中…</string>
-    <string name="patient_settings_unlink_confirm_title">連携を解除しますか？</string>
-    <string name="patient_settings_unlink_confirm_message">サーバー上のこの端末のセッションを無効にして、利用方法の選択画面へ戻ります。</string>
-    <string name="patient_settings_unlink_confirm">解除する</string>
+    <string name="patient_settings_support_detail">問い合わせとトラブル対応を確認できます</string>
+    <string name="patient_settings_permission_denied">通知が許可されていません。設定アプリで通知を許可してください。</string>
+    <string name="patient_settings_unlink">ログアウト</string>
+    <string name="patient_settings_unlinking">ログアウト中…</string>
+    <string name="patient_settings_unlink_confirm_title">ログアウトしますか？</string>
+    <string name="patient_settings_unlink_confirm_message">本人として使う画面からログアウトします。</string>
+    <string name="patient_settings_unlink_confirm">ログアウト</string>
 
     <!-- Mode selection -->
     <string name="mode_select_patient_badge">本人モード</string>

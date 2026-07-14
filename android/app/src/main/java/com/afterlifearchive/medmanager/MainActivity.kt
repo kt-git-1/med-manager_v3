@@ -20,7 +20,9 @@ class MainActivity : ComponentActivity() {
         handlePatientNotificationIntent(intent, patientRepository)
         setContent {
             MedicationAppTheme {
-                if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_PATIENT_HISTORY", false)) {
+                if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_PATIENT_SETTINGS", false)) {
+                    PatientModePreview(PatientTab.SETTINGS)
+                } else if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_PATIENT_HISTORY", false)) {
                     PatientModePreview(PatientTab.HISTORY)
                 } else if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_PATIENT", false)) {
                     PatientModePreview(PatientTab.TODAY)
