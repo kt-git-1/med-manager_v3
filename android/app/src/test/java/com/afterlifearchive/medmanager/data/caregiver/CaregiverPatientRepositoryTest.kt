@@ -167,6 +167,25 @@ class CaregiverPatientRepositoryTest {
         assertTrue(repository.state.value.slotTimesSaveFailed)
     }
 
+    @Test
+    fun issuedCodeBelongsToCurrentSelectionAndIsClearedWhenSelectionChanges() = runTest {
+        val storage = FakeStorage().apply { currentPatientId = "one" }
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val source = object : CaregiverPatientDataSource {
+            override suspend fun listPatients() = listOf(patient("one", "あおい"), patient("two", "さくら"))
+            override suspend fun issueLinkingCode(patientId: String) =
+                CaregiverLinkingCode(if (patientId == "one") "123456" else "654321", "2026-07-14T12:15:00Z")
+        }
+        val repository = CaregiverPatientRepository(source, selection)
+        repository.refresh()
+
+        assertTrue(repository.issueLinkingCode())
+        assertEquals("123456", repository.state.value.linkingCode?.code)
+
+        repository.selectPatient("two")
+        assertNull(repository.state.value.linkingCode)
+    }
+
     private fun repository(storage: FakeStorage, block: suspend () -> List<CaregiverPatient>): CaregiverPatientRepository {
         val selection = CaregiverSelectionRepository(storage).also { it.restore() }
         return CaregiverPatientRepository(CaregiverPatientDataSource { block() }, selection)

@@ -85,4 +85,24 @@ class CaregiverPatientApiTest {
         assertEquals("{\"slotTimes\":{\"morning\":\"07:30\",\"noon\":\"12:15\",\"evening\":\"18:45\",\"bedtime\":\"22:00\"}}", captured?.body)
         assertEquals(times, saved)
     }
+
+    @Test
+    fun issueLinkingCodePostsWithoutPayloadAndMapsExpiry() = runTest {
+        var captured: HttpRequest? = null
+        val client = ApiClient(
+            baseUrl = "https://example.test/",
+            caregiverTokenProvider = { "caregiver-token" },
+            transport = HttpTransport { request ->
+                captured = request
+                HttpResponse(201, """{"data":{"code":"123456","expiresAt":"2026-07-14T12:15:00.000Z"}}""")
+            },
+        )
+
+        val issued = CaregiverPatientApi(client).issueLinkingCode("p1")
+
+        assertEquals("POST", captured?.method)
+        assertNull(captured?.body)
+        assertEquals("123456", issued.code)
+        assertEquals("2026-07-14T12:15:00.000Z", issued.expiresAt)
+    }
 }

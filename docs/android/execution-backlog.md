@@ -122,7 +122,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 - [x] List/create/select with 50-character/nonblank validation and patient-limit response.
 - [x] Edit four slot preset times and propagate freshness.
-- [ ] Issue one-time 15-minute code; copy/share system sheet.
+- [x] Issue one-time 15-minute code; copy/share system sheet.
 - [ ] Revoke preserves data and clears current selection/redirect state.
 - [ ] Delete waits for server cascade success, then invalidates dependent data.
 - [ ] Server-first caregiver account deletion and local reset.
@@ -185,4 +185,4 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Immediate next item
 
-Continue **D02 caregiver patient management** with linking-code issue/copy/share next, then revoke/delete and account deletion in server-authoritative order. Typed list/create/select and four-slot time presets are implemented; time changes publish a dedicated freshness revision consumed by Today, Medications, History and notification scheduling. Full gate passes with 44/44 API-35 tests. C01/C06 visual/physical residuals and Gate H Firebase transport remain tracked.
+Continue **D02 caregiver patient management** with revoke/delete and account deletion in server-authoritative order. Typed list/create/select, four-slot time presets and one-time linking-code issue/copy/share are implemented. Linking codes remain scoped to the selected patient and are cleared on selection/account context changes. C01/C06 visual/physical residuals and Gate H Firebase transport remain tracked.

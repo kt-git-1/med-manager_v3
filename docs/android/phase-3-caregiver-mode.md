@@ -57,3 +57,13 @@ After every successful patient-list load:
 - The full gate passes with 44/44 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
 
 `CG-002A` and the second D02 checklist row are `IMPLEMENTED`. Physical notification rescheduling and matched iOS visual verification remain before `VERIFIED`.
+
+## D02 linking-code increment — 2026-07-14
+
+- The selected patient can issue a new code through payload-free `POST /api/patients/{patientId}/linking-codes` with caregiver authentication.
+- The typed response preserves the six-digit code and authoritative ISO expiry; UI renders the expiry in Tokyo time and explains the 15-minute validity contract.
+- Copy places only the code in the Android clipboard. Share opens the Android Sharesheet with the current iOS-equivalent onboarding message, code and expiry.
+- Issuing, issued and retryable failure states are explicit. A code is cleared whenever the selected patient changes or a new patient/account context replaces it, preventing cross-patient disclosure.
+- API/repository tests cover the payload-free request, response mapping and selection scoping. Compose coverage verifies the issue action remains reachable in the production Settings list.
+
+`CG-003` and the third D02 checklist row are `IMPLEMENTED`; physical clipboard/Sharesheet and matched iOS visual checks remain before `VERIFIED`.

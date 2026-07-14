@@ -27,6 +27,8 @@ data class CaregiverSlotTimes(
     val bedtime: String,
 )
 
+data class CaregiverLinkingCode(val code: String, val expiresAt: String)
+
 data class CaregiverPatientState(
     val patients: List<CaregiverPatient> = emptyList(),
     val selectedPatientId: String? = null,
@@ -36,6 +38,9 @@ data class CaregiverPatientState(
     val createError: CaregiverCreateError? = null,
     val savingSlotTimes: Boolean = false,
     val slotTimesSaveFailed: Boolean = false,
+    val linkingCode: CaregiverLinkingCode? = null,
+    val issuingLinkingCode: Boolean = false,
+    val linkingCodeFailed: Boolean = false,
 ) {
     val selectedPatient: CaregiverPatient?
         get() = patients.firstOrNull { it.id == selectedPatientId }
@@ -48,6 +53,7 @@ fun interface CaregiverPatientDataSource {
     suspend fun createPatient(displayName: String): CaregiverPatient = error("createPatient not implemented")
     suspend fun updateSlotTimes(patientId: String, slotTimes: CaregiverSlotTimes): CaregiverSlotTimes =
         error("updateSlotTimes not implemented")
+    suspend fun issueLinkingCode(patientId: String): CaregiverLinkingCode = error("issueLinkingCode not implemented")
 }
 
 class CaregiverPatientApi(private val client: ApiClient) : CaregiverPatientDataSource {
@@ -72,6 +78,11 @@ class CaregiverPatientApi(private val client: ApiClient) : CaregiverPatientDataS
             RequestAuthPolicy.CAREGIVER,
         )
         return caregiverJson.decodeFromString<CaregiverSlotTimesEnvelopeDto>(body).data.slotTimes.toDomain()
+    }
+
+    override suspend fun issueLinkingCode(patientId: String): CaregiverLinkingCode {
+        val body = client.postEmpty("api/patients/$patientId/linking-codes", RequestAuthPolicy.CAREGIVER)
+        return caregiverJson.decodeFromString<CaregiverLinkingCodeEnvelopeDto>(body).data.toDomain()
     }
 }
 
@@ -99,7 +110,11 @@ class CaregiverPatientRepository(
     fun selectPatient(patientId: String?) {
         val validId = patientId?.takeIf { candidate -> mutableState.value.patients.any { it.id == candidate } }
         selectionRepository.select(validId)
-        mutableState.value = mutableState.value.copy(selectedPatientId = validId)
+        mutableState.value = mutableState.value.copy(
+            selectedPatientId = validId,
+            linkingCode = null,
+            linkingCodeFailed = false,
+        )
     }
 
     suspend fun createPatient(displayName: String): Boolean {
@@ -122,6 +137,8 @@ class CaregiverPatientRepository(
                 patients = patients,
                 selectedPatientId = created.id,
                 creating = false,
+                linkingCode = null,
+                linkingCodeFailed = false,
             )
             true
         } catch (error: Exception) {
@@ -154,6 +171,23 @@ class CaregiverPatientRepository(
         } catch (error: Exception) {
             if (error is CancellationException) throw error
             mutableState.value = mutableState.value.copy(savingSlotTimes = false, slotTimesSaveFailed = true)
+            false
+        }
+    }
+
+    suspend fun issueLinkingCode(): Boolean {
+        val patientId = mutableState.value.selectedPatientId ?: return false
+        mutableState.value = mutableState.value.copy(issuingLinkingCode = true, linkingCodeFailed = false)
+        return try {
+            val issued = dataSource.issueLinkingCode(patientId)
+            mutableState.value = mutableState.value.copy(
+                linkingCode = issued,
+                issuingLinkingCode = false,
+            )
+            true
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            mutableState.value = mutableState.value.copy(issuingLinkingCode = false, linkingCodeFailed = true)
             false
         }
     }
@@ -197,6 +231,14 @@ private data class CaregiverSlotTimesEnvelopeDto(val data: CaregiverSlotTimesDat
 
 @Serializable
 private data class CaregiverSlotTimesDataDto(val slotTimes: CaregiverSlotTimesDto)
+
+@Serializable
+private data class CaregiverLinkingCodeEnvelopeDto(val data: CaregiverLinkingCodeDto)
+
+@Serializable
+private data class CaregiverLinkingCodeDto(val code: String, val expiresAt: String) {
+    fun toDomain() = CaregiverLinkingCode(code, expiresAt)
+}
 
 @Serializable
 private data class CaregiverPatientDto(

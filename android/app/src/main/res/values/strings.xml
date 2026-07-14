@@ -240,6 +240,15 @@
     <string name="caregiver_slot_times_detail">朝・昼・夕・寝る前の基準時刻を設定します</string>
     <string name="caregiver_slot_times_save">時間を保存</string>
     <string name="caregiver_slot_times_save_failed">時間を保存できませんでした。もう一度お試しください。</string>
+    <string name="caregiver_linking_code_title">連携コード</string>
+    <string name="caregiver_linking_code_detail">本人モードで入力する6桁コードを発行します。コードは15分間有効です。</string>
+    <string name="caregiver_linking_code_issue">コード発行</string>
+    <string name="caregiver_linking_code_issuing">発行中…</string>
+    <string name="caregiver_linking_code_expires">有効期限: %1$s</string>
+    <string name="caregiver_linking_code_copy">コピー</string>
+    <string name="caregiver_linking_code_share">共有</string>
+    <string name="caregiver_linking_code_failed">コードを発行できませんでした。もう一度お試しください。</string>
+    <string name="caregiver_linking_code_share_message">お薬見守りの本人モードで、次の連携コードを入力してください。\n\n連携コード: %1$s\n有効期限: %2$s\n\nアプリを開き、「本人モード」からコードを入力すると、服薬予定と記録を家族と共有できます。</string>
 
     <!-- Local notifications -->
     <string name="notification_channel_patient_reminders">服薬リマインダー</string>

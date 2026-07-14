@@ -41,6 +41,8 @@ class CaregiverHomeScreenTest {
         composeRule.onNodeWithText("選択中").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-slot-times"))
         composeRule.onNodeWithTag("caregiver-slot-times").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-linking-code-issue"))
+        composeRule.onNodeWithTag("caregiver-linking-code-issue").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-tab-today").performClick()
         composeRule.onNodeWithText("さくらさんを見守り中").assertIsDisplayed()
 

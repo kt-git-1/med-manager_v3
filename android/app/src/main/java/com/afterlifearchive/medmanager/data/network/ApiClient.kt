@@ -87,6 +87,12 @@ class ApiClient(
         allowsAuthRefresh: Boolean = true,
     ): String = request(path, "POST", body, authPolicy, allowsAuthRefresh)
 
+    suspend fun postEmpty(
+        path: String,
+        authPolicy: RequestAuthPolicy,
+        allowsAuthRefresh: Boolean = true,
+    ): String = request(path, "POST", null, authPolicy, allowsAuthRefresh)
+
     suspend fun patchBody(
         path: String,
         body: String,

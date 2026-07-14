@@ -1,6 +1,10 @@
 package com.afterlifearchive.medmanager.ui
 
 import android.app.TimePickerDialog
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,6 +61,11 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverCreateError
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverLinkingCode
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import kotlinx.coroutines.launch
 
@@ -297,8 +306,77 @@ private fun CaregiverPatientSelectionScreen(
                 },
             )
         }
+        if (selectedPatient != null) item {
+            CaregiverLinkingCodeCard(
+                code = state.linkingCode,
+                issuing = state.issuingLinkingCode,
+                failed = state.linkingCodeFailed,
+                enabled = enabled,
+                onIssue = { scope.launch { repository.issueLinkingCode() } },
+            )
+        }
         item { Spacer(Modifier.height(20.dp)) }
     }
+}
+
+@Composable
+private fun CaregiverLinkingCodeCard(
+    code: CaregiverLinkingCode?,
+    issuing: Boolean,
+    failed: Boolean,
+    enabled: Boolean,
+    onIssue: () -> Unit,
+) {
+    val context = LocalContext.current
+    val expiry = code?.let(::formatLinkingCodeExpiry).orEmpty()
+    Card(Modifier.fillMaxWidth().testTag("caregiver-linking-code")) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.caregiver_linking_code_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.caregiver_linking_code_detail), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (code != null) {
+                Text(code.code, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("caregiver-linking-code-value"))
+                Text(stringResource(R.string.caregiver_linking_code_expires, expiry), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = { copyLinkingCode(context, code.code) },
+                        modifier = Modifier.weight(1f).testTag("caregiver-linking-code-copy"),
+                    ) { Text(stringResource(R.string.caregiver_linking_code_copy)) }
+                    Button(
+                        onClick = { shareLinkingCode(context, code, expiry) },
+                        modifier = Modifier.weight(1f).testTag("caregiver-linking-code-share"),
+                    ) { Text(stringResource(R.string.caregiver_linking_code_share)) }
+                }
+            }
+            if (failed) Text(stringResource(R.string.caregiver_linking_code_failed), color = MaterialTheme.colorScheme.error)
+            OutlinedButton(
+                onClick = onIssue,
+                enabled = enabled && !issuing,
+                modifier = Modifier.fillMaxWidth().testTag("caregiver-linking-code-issue"),
+            ) {
+                Text(stringResource(if (issuing) R.string.caregiver_linking_code_issuing else R.string.caregiver_linking_code_issue))
+            }
+        }
+    }
+}
+
+private fun formatLinkingCodeExpiry(code: CaregiverLinkingCode): String = runCatching {
+    DateTimeFormatter.ofPattern("M/d HH:mm", Locale.JAPANESE)
+        .withZone(ZoneId.of("Asia/Tokyo"))
+        .format(Instant.parse(code.expiresAt))
+}.getOrDefault(code.expiresAt)
+
+private fun copyLinkingCode(context: Context, code: String) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    clipboard.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.caregiver_linking_code_title), code))
+}
+
+private fun shareLinkingCode(context: Context, code: CaregiverLinkingCode, expiry: String) {
+    val message = context.getString(R.string.caregiver_linking_code_share_message, code.code, expiry)
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, message)
+    }
+    context.startActivity(Intent.createChooser(intent, context.getString(R.string.caregiver_linking_code_share)))
 }
 
 @Composable
