@@ -37,10 +37,12 @@ data class CaregiverInventoryItem(
 
 data class CaregiverInventoryState(
     val patientId: String? = null,
+    val hasLoaded: Boolean = false,
     val items: List<CaregiverInventoryItem> = emptyList(),
     val loading: Boolean = false,
     val refreshing: Boolean = false,
     val loadFailed: Boolean = false,
+    val refreshFailed: Boolean = false,
     val updatingMedicationId: String? = null,
     val mutationFailed: Boolean = false,
     val mutationMessage: CaregiverInventoryMutationMessage? = null,
@@ -140,20 +142,30 @@ class CaregiverInventoryRepository(
     val freshness = freshnessStore.revisions
 
     suspend fun load(patientId: String) {
-        if (mutableState.value.loading || mutableState.value.refreshing) return
+        if ((mutableState.value.loading || mutableState.value.refreshing) && mutableState.value.patientId == patientId) return
         val samePatient = mutableState.value.patientId == patientId
-        val hasContent = samePatient && mutableState.value.items.isNotEmpty()
-        mutableState.value = if (samePatient) mutableState.value.copy(loading = !hasContent, refreshing = hasContent, loadFailed = false)
+        val hasContent = samePatient && mutableState.value.hasLoaded
+        mutableState.value = if (samePatient) mutableState.value.copy(
+            loading = !hasContent,
+            refreshing = hasContent,
+            loadFailed = false,
+            refreshFailed = false,
+        )
         else CaregiverInventoryState(patientId = patientId, loading = true)
         try {
             val items = sorted(dataSource.list(patientId))
             val previous = mutableState.value
-            mutableState.value = CaregiverInventoryState(patientId = patientId, items = items, mutationMessage = previous.mutationMessage)
+            mutableState.value = CaregiverInventoryState(
+                patientId = patientId,
+                hasLoaded = true,
+                items = items,
+                mutationMessage = previous.mutationMessage,
+            )
         } catch (error: Exception) {
             if (error is CancellationException) throw error
             val current = mutableState.value
-            mutableState.value = if (current.patientId == patientId && current.items.isNotEmpty()) {
-                current.copy(loading = false, refreshing = false, mutationFailed = true)
+            mutableState.value = if (current.patientId == patientId && current.hasLoaded) {
+                current.copy(loading = false, refreshing = false, loadFailed = false, refreshFailed = true)
             } else CaregiverInventoryState(patientId = patientId, loadFailed = true)
         }
     }
@@ -185,7 +197,7 @@ class CaregiverInventoryRepository(
         request: suspend () -> CaregiverInventoryItem,
     ): Boolean {
         val current = mutableState.value
-        if (current.patientId != patientId || current.updatingMedicationId != null) return false
+        if (current.patientId != patientId || current.refreshFailed || current.updatingMedicationId != null) return false
         mutableState.value = current.copy(updatingMedicationId = item.medicationId, mutationFailed = false, mutationMessage = null)
         return try {
             val updated = request()

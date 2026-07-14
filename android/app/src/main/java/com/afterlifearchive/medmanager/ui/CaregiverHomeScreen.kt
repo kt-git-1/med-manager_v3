@@ -116,6 +116,7 @@ fun CaregiverHomeScreen(
 ) {
     val state by repository.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val tutorialPreferences = remember { context.getSharedPreferences("caregiver_tutorial", Context.MODE_PRIVATE) }
     var selectedTabName by rememberSaveable { mutableStateOf(CaregiverTab.TODAY.name) }
     var loadedTabNames by rememberSaveable { mutableStateOf(setOf(CaregiverTab.TODAY.name)) }
@@ -165,6 +166,13 @@ fun CaregiverHomeScreen(
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().safeDrawingPadding().testTag("caregiver-home")) {
+            if (state.refreshFailed) {
+                CaregiverStaleDataCard(
+                    testTag = "caregiver-patient-stale",
+                    onRetry = { scope.launch { repository.refresh() } },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 CaregiverTab.entries.forEach { tab ->
                     if (tab.name in loadedTabNames) {
@@ -340,6 +348,7 @@ private fun CaregiverPatientSelectionScreen(
     val context = LocalContext.current
     val pushState = pushRepository?.state?.collectAsStateWithLifecycle()?.value
     val analyticsState = analyticsService?.state?.collectAsStateWithLifecycle()?.value
+    val patientActionsEnabled = enabled && !state.refreshFailed
     val pushPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) scope.launch { pushRepository?.enable() }
     }
@@ -385,7 +394,7 @@ private fun CaregiverPatientSelectionScreen(
                     OutlinedTextField(
                         value = displayName,
                         onValueChange = { displayName = it },
-                        enabled = enabled && !state.creating,
+                        enabled = patientActionsEnabled && !state.creating,
                         label = { Text(stringResource(R.string.caregiver_patient_display_name)) },
                         supportingText = {
                             state.createError?.let { Text(caregiverCreateErrorText(it)) }
@@ -403,7 +412,7 @@ private fun CaregiverPatientSelectionScreen(
                                 }
                             }
                         },
-                        enabled = enabled && !state.creating,
+                        enabled = patientActionsEnabled && !state.creating,
                         modifier = Modifier.fillMaxWidth().testTag("caregiver-create-submit"),
                     ) {
                         Text(stringResource(if (state.creating) R.string.caregiver_creating_patient else R.string.caregiver_create_patient_action))
@@ -431,7 +440,7 @@ private fun CaregiverPatientSelectionScreen(
             Card(
                 Modifier
                     .fillMaxWidth()
-                    .selectable(selected, enabled = enabled) { repository.selectPatient(patient.id) }
+                    .selectable(selected, enabled = patientActionsEnabled) { repository.selectPatient(patient.id) }
                     .testTag("caregiver-patient-${patient.id}"),
             ) {
                 Row(
@@ -455,7 +464,7 @@ private fun CaregiverPatientSelectionScreen(
                 noon = noon,
                 evening = evening,
                 bedtime = bedtime,
-                enabled = enabled && !state.savingSlotTimes,
+                enabled = patientActionsEnabled && !state.savingSlotTimes,
                 saveFailed = state.slotTimesSaveFailed,
                 onMorning = { morning = it },
                 onNoon = { noon = it },
@@ -473,7 +482,7 @@ private fun CaregiverPatientSelectionScreen(
                 code = state.linkingCode,
                 issuing = state.issuingLinkingCode,
                 failed = state.linkingCodeFailed,
-                enabled = enabled,
+                enabled = patientActionsEnabled,
                 onIssue = { scope.launch {
                     if (repository.issueLinkingCode()) analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.LINK_CODE_ISSUED)
                 } },
@@ -485,12 +494,12 @@ private fun CaregiverPatientSelectionScreen(
                     Text(stringResource(R.string.caregiver_patient_danger_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     OutlinedButton(
                         onClick = { confirmation = "revoke" },
-                        enabled = enabled && !state.destructiveActionInProgress,
+                        enabled = patientActionsEnabled && !state.destructiveActionInProgress,
                         modifier = Modifier.fillMaxWidth().testTag("caregiver-patient-revoke"),
                     ) { Text(stringResource(R.string.caregiver_patient_revoke)) }
                     OutlinedButton(
                         onClick = { confirmation = "delete" },
-                        enabled = enabled && !state.destructiveActionInProgress,
+                        enabled = patientActionsEnabled && !state.destructiveActionInProgress,
                         modifier = Modifier.fillMaxWidth().testTag("caregiver-patient-delete"),
                     ) { Text(stringResource(R.string.caregiver_patient_delete), color = MaterialTheme.colorScheme.error) }
                 }
@@ -604,17 +613,20 @@ private fun CaregiverPatientSelectionScreen(
             title = { Text(stringResource(if (logout) R.string.caregiver_logout_confirm_title else if (account) R.string.caregiver_account_delete_confirm_title else if (revoke) R.string.caregiver_patient_revoke_confirm_title else R.string.caregiver_patient_delete_confirm_title)) },
             text = { Text(stringResource(if (logout) R.string.caregiver_logout_confirm_message else if (account) R.string.caregiver_account_delete_confirm_message else if (revoke) R.string.caregiver_patient_revoke_confirm_message else R.string.caregiver_patient_delete_confirm_message)) },
             confirmButton = {
-                TextButton(onClick = {
-                    confirmation = null
-                    if (logout) onLogout() else scope.launch {
-                        val success = when (action) {
-                            "revoke" -> repository.revokeSelectedPatient()
-                            "delete" -> repository.deleteSelectedPatient()
-                            else -> repository.deleteCaregiverAccount()
+                TextButton(
+                    onClick = {
+                        confirmation = null
+                        if (logout) onLogout() else scope.launch {
+                            val success = when (action) {
+                                "revoke" -> repository.revokeSelectedPatient()
+                                "delete" -> repository.deleteSelectedPatient()
+                                else -> repository.deleteCaregiverAccount()
+                            }
+                            if (account && success) onAccountDeleted()
                         }
-                        if (account && success) onAccountDeleted()
-                    }
-                }) { Text(stringResource(if (logout) R.string.caregiver_account_logout else if (account) R.string.caregiver_account_delete else if (revoke) R.string.caregiver_patient_revoke_confirm else R.string.caregiver_patient_delete_confirm)) }
+                    },
+                    enabled = logout || account || patientActionsEnabled,
+                ) { Text(stringResource(if (logout) R.string.caregiver_account_logout else if (account) R.string.caregiver_account_delete else if (revoke) R.string.caregiver_patient_revoke_confirm else R.string.caregiver_patient_delete_confirm)) }
             },
             dismissButton = { TextButton(onClick = { confirmation = null }) { Text(stringResource(R.string.common_cancel)) } },
         )

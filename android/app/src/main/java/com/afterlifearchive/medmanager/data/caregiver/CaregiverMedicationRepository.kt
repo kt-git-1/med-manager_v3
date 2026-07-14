@@ -20,9 +20,12 @@ import org.json.JSONObject
 
 data class CaregiverMedicationState(
     val patientId: String? = null,
+    val hasLoaded: Boolean = false,
     val items: List<PatientMedication> = emptyList(),
     val loading: Boolean = false,
+    val refreshing: Boolean = false,
     val loadFailed: Boolean = false,
+    val refreshFailed: Boolean = false,
 )
 
 data class CaregiverRegimen(val id: String, val enabled: Boolean)
@@ -137,24 +140,39 @@ class CaregiverMedicationRepository(
     val freshness = freshnessStore.revisions
 
     suspend fun load(patientId: String) {
-        if (mutableState.value.loading && mutableState.value.patientId == patientId) return
+        if ((mutableState.value.loading || mutableState.value.refreshing) && mutableState.value.patientId == patientId) return
         if (mutableState.value.patientId != patientId) {
             mutableState.value = CaregiverMedicationState(patientId = patientId, loading = true)
         } else {
-            mutableState.value = mutableState.value.copy(loading = true, loadFailed = false)
+            val hasContent = mutableState.value.hasLoaded
+            mutableState.value = mutableState.value.copy(
+                loading = !hasContent,
+                refreshing = hasContent,
+                loadFailed = false,
+                refreshFailed = false,
+            )
         }
         try {
             mutableState.value = CaregiverMedicationState(
                 patientId = patientId,
+                hasLoaded = true,
                 items = dataSource.listMedications(patientId),
             )
         } catch (error: Exception) {
             if (error is CancellationException) throw error
-            mutableState.value = CaregiverMedicationState(patientId = patientId, loadFailed = true)
+            val current = mutableState.value
+            mutableState.value = if (current.patientId == patientId && current.hasLoaded) {
+                current.copy(loading = false, refreshing = false, loadFailed = false, refreshFailed = true)
+            } else {
+                CaregiverMedicationState(patientId = patientId, loadFailed = true)
+            }
         }
     }
 
     suspend fun save(patientId: String, medicationId: String?, draft: CaregiverMedicationDraft): Result<PatientMedication> {
+        if (mutableState.value.patientId != patientId || mutableState.value.refreshFailed) {
+            return Result.failure(IllegalStateException("fresh medication snapshot required"))
+        }
         if (draft.validate().isNotEmpty()) return Result.failure(IllegalArgumentException("invalid medication"))
         val saved = try {
             val saved = if (medicationId == null) dataSource.createMedication(patientId, draft)
@@ -162,7 +180,7 @@ class CaregiverMedicationRepository(
             val current = mutableState.value
             val items = if (medicationId == null) current.items + saved
             else current.items.map { if (it.id == saved.id) saved else it }
-            mutableState.value = CaregiverMedicationState(patientId = patientId, items = items)
+            mutableState.value = CaregiverMedicationState(patientId = patientId, hasLoaded = true, items = items)
             saved
         } catch (error: Exception) {
             if (error is CancellationException) throw error
@@ -190,17 +208,20 @@ class CaregiverMedicationRepository(
         else dataSource.updateRegimen(existing.id, draft, enabled = true)
     }
 
-    suspend fun delete(patientId: String, medicationId: String): Boolean = try {
-        dataSource.deleteMedication(patientId, medicationId)
+    suspend fun delete(patientId: String, medicationId: String): Boolean {
         val current = mutableState.value
-        if (current.patientId == patientId) {
-            mutableState.value = current.copy(items = current.items.filterNot { it.id == medicationId })
+        if (current.patientId != patientId || current.refreshFailed) return false
+        return try {
+            dataSource.deleteMedication(patientId, medicationId)
+            if (current.patientId == patientId) {
+                mutableState.value = mutableState.value.copy(items = mutableState.value.items.filterNot { it.id == medicationId })
+            }
+            freshnessStore.markMedicationChanged(inventoryChanged = true, notificationPlanChanged = true)
+            true
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            false
         }
-        freshnessStore.markMedicationChanged(inventoryChanged = true, notificationPlanChanged = true)
-        true
-    } catch (error: Exception) {
-        if (error is CancellationException) throw error
-        false
     }
 
     fun clear() {

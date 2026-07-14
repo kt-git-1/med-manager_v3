@@ -120,8 +120,10 @@ internal fun CaregiverHistoryScreen(
             days = state.days,
             selectedDate = state.selectedDate,
             refreshing = state.refreshingMonth,
+            refreshFailed = state.monthRefreshFailed,
             retentionCutoffDate = state.retentionCutoffDate,
             retentionDays = state.retentionDays,
+            onRetry = { scope.launch { repository.loadMonth(selectedPatient.id, state.displayedMonth) } },
             onMonth = { scope.launch { repository.loadMonth(selectedPatient.id, it) } },
             onDate = { repository.selectDate(it); showDetail = true },
             reportAction = if (reportRepository != null) {
@@ -133,6 +135,13 @@ internal fun CaregiverHistoryScreen(
     if (showDetail && selectedPatient != null && state.selectedDate != null) {
         ModalBottomSheet(onDismissRequest = { showDetail = false }, modifier = Modifier.testTag("caregiver-history-day-sheet")) {
             if (state.updating) LinearProgressIndicator(Modifier.fillMaxWidth())
+            if (state.dayRefreshFailed) {
+                CaregiverStaleDataCard(
+                    testTag = "caregiver-history-day-stale",
+                    onRetry = { scope.launch { repository.loadDay(selectedPatient.id, state.selectedDate!!) } },
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
+            }
             if (state.mutationFailed) Text(stringResource(R.string.caregiver_history_backfill_failed), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 20.dp))
             if (state.mutationSucceeded) Text(stringResource(R.string.caregiver_history_backfill_success), color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 20.dp), fontWeight = FontWeight.Bold)
             HistoryDayDetailContent(
@@ -172,8 +181,10 @@ private fun CaregiverHistoryMonth(
     days: List<HistoryDay>,
     selectedDate: LocalDate?,
     refreshing: Boolean,
+    refreshFailed: Boolean,
     retentionCutoffDate: String?,
     retentionDays: Int?,
+    onRetry: () -> Unit,
     onMonth: (YearMonth) -> Unit,
     onDate: (LocalDate) -> Unit,
     reportAction: (@Composable () -> Unit)?,
@@ -197,6 +208,7 @@ private fun CaregiverHistoryMonth(
             }
         }
         if (refreshing) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
+        if (refreshFailed) item { CaregiverStaleDataCard("caregiver-history-stale", onRetry) }
         item {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 IconButton(onClick = { onMonth(displayedMonth.minusMonths(1)) }, modifier = Modifier.testTag("caregiver-history-previous-month")) {

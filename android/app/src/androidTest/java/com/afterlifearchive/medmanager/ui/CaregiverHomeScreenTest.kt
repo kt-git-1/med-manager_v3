@@ -1,6 +1,8 @@
 package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -33,6 +35,7 @@ import org.junit.Rule
 import org.junit.Test
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlinx.coroutines.runBlocking
 
 class CaregiverHomeScreenTest {
     @get:Rule
@@ -77,6 +80,33 @@ class CaregiverHomeScreenTest {
         composeRule.onNodeWithTag("caregiver-feature-state").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
         composeRule.onNodeWithTag("caregiver-settings-empty").assertIsDisplayed()
+    }
+
+    @Test
+    fun failedPatientRefreshKeepsShellAndShowsGlobalStaleRetry() {
+        val storage = TestSelectionStorage()
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        var fail = false
+        val repository = CaregiverPatientRepository(
+            CaregiverPatientDataSource {
+                if (fail) error("offline") else listOf(CaregiverPatient("patient-1", "さくら"))
+            },
+            selection,
+        )
+        runBlocking { repository.refresh() }
+        fail = true
+        composeRule.setContent {
+            MedicationAppTheme { CaregiverHomeScreen(repository, tutorialEnabled = false) }
+        }
+        composeRule.waitUntil(5_000) { repository.state.value.refreshFailed }
+
+        composeRule.onNodeWithTag("caregiver-patient-stale").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-tab-today").assertIsDisplayed()
+        composeRule.onNodeWithText("さくらさんを見守り中").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-create-submit").assertIsNotEnabled()
+        composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-logout"))
+        composeRule.onNodeWithTag("caregiver-logout").assertIsEnabled()
     }
 
     @Test

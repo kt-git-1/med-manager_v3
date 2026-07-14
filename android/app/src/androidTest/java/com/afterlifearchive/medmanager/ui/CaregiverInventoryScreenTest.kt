@@ -1,6 +1,7 @@
 package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -19,6 +20,7 @@ import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import org.junit.Rule
 import org.junit.Test
+import kotlinx.coroutines.runBlocking
 
 class CaregiverInventoryScreenTest {
     @get:Rule
@@ -71,6 +73,31 @@ class CaregiverInventoryScreenTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("在庫設定を保存しました").assertIsDisplayed()
+    }
+
+    @Test
+    fun failedRefreshShowsStaleInventoryAndDisablesDetailAction() {
+        val original = item("low", "少ない薬", 2.0, low = true)
+        var fail = false
+        val source = object : CaregiverInventoryDataSource {
+            override suspend fun list(patientId: String) = if (fail) error("offline") else listOf(original)
+            override suspend fun update(patientId: String, medicationId: String, enabled: Boolean, quantity: Double?) = original
+            override suspend fun adjust(patientId: String, medicationId: String, reason: String, delta: Double?, absoluteQuantity: Double?) = original
+        }
+        val repository = CaregiverInventoryRepository(source, MutationFreshnessStore())
+        runBlocking { repository.load("p1") }
+        fail = true
+        runBlocking { repository.load("p1") }
+        val patient = CaregiverPatient("p1", "さくら")
+        composeRule.setContent {
+            MedicationAppTheme {
+                CaregiverInventoryScreen(repository, CaregiverPatientState(listOf(patient), patient.id), true, {})
+            }
+        }
+
+        composeRule.onNodeWithTag("caregiver-inventory-stale").assertIsDisplayed()
+        composeRule.onNodeWithText("少ない薬").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-inventory-item-low").assertIsNotEnabled()
     }
 
     private fun setContent(initial: MutableList<CaregiverInventoryItem>) {

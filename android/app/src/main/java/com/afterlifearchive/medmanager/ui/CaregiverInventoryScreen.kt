@@ -101,7 +101,9 @@ internal fun CaregiverInventoryScreen(
             updating = state.updatingMedicationId == selectedItem.medicationId,
             failed = state.mutationFailed,
             message = state.mutationMessage,
-            enabled = enabled,
+            refreshFailed = state.refreshFailed,
+            onRetry = { scope.launch { repository.load(selected.id) } },
+            enabled = enabled && !state.refreshFailed,
             onClose = { selectedItemId = null },
         )
         return
@@ -120,10 +122,13 @@ internal fun CaregiverInventoryScreen(
             patientName = selected.displayName,
             items = state.items,
             refreshing = state.refreshing,
+            refreshFailed = state.refreshFailed,
             failed = state.mutationFailed,
             message = state.mutationMessage,
+            onRetry = { scope.launch { repository.load(selected.id) } },
             onSelect = { selectedItemId = it.medicationId },
             onOpenMedications = onOpenMedications,
+            actionsEnabled = enabled && !state.refreshFailed,
         )
     }
 }
@@ -133,10 +138,13 @@ private fun CaregiverInventoryList(
     patientName: String,
     items: List<CaregiverInventoryItem>,
     refreshing: Boolean,
+    refreshFailed: Boolean,
     failed: Boolean,
     message: CaregiverInventoryMutationMessage?,
+    onRetry: () -> Unit,
     onSelect: (CaregiverInventoryItem) -> Unit,
     onOpenMedications: () -> Unit,
+    actionsEnabled: Boolean,
 ) {
     var filterName by rememberSaveable { mutableStateOf(InventoryFilter.ALL.name) }
     val filter = InventoryFilter.valueOf(filterName)
@@ -163,6 +171,7 @@ private fun CaregiverInventoryList(
             }
         }
         if (refreshing) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
+        if (refreshFailed) item { CaregiverStaleDataCard("caregiver-inventory-stale", onRetry) }
         if (failed) item { Text(stringResource(R.string.caregiver_inventory_failed), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) }
         message?.let { item { Text(inventoryMutationText(it), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) } }
         if (items.isEmpty()) {
@@ -170,7 +179,7 @@ private fun CaregiverInventoryList(
                 InventoryCard(MaterialTheme.colorScheme.primary) {
                     Text(stringResource(R.string.caregiver_inventory_empty_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Text(stringResource(R.string.caregiver_inventory_empty_message), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Button(onClick = onOpenMedications, modifier = Modifier.fillMaxWidth().testTag("caregiver-inventory-open-medications")) {
+                    Button(onClick = onOpenMedications, enabled = actionsEnabled, modifier = Modifier.fillMaxWidth().testTag("caregiver-inventory-open-medications")) {
                         Icon(Icons.Rounded.Medication, contentDescription = null)
                         Spacer(Modifier.size(6.dp))
                         Text(stringResource(R.string.caregiver_inventory_empty_action))
@@ -209,7 +218,7 @@ private fun CaregiverInventoryList(
                 }
             }
             items(visible, key = CaregiverInventoryItem::medicationId) { item ->
-                InventoryRow(item, onSelect)
+                InventoryRow(item, onSelect, actionsEnabled)
             }
         }
         item { Spacer(Modifier.height(24.dp)) }
@@ -217,7 +226,7 @@ private fun CaregiverInventoryList(
 }
 
 @Composable
-private fun InventoryRow(item: CaregiverInventoryItem, onSelect: (CaregiverInventoryItem) -> Unit) {
+private fun InventoryRow(item: CaregiverInventoryItem, onSelect: (CaregiverInventoryItem) -> Unit, enabled: Boolean) {
     val tint = when {
         item.out -> MaterialTheme.colorScheme.error
         item.low -> MedicationTheme.colors.orange
@@ -235,7 +244,7 @@ private fun InventoryRow(item: CaregiverInventoryItem, onSelect: (CaregiverInven
         }
         if (item.daysRemaining != null && !item.isPrn) Text(stringResource(R.string.caregiver_inventory_days, item.daysRemaining), color = MaterialTheme.colorScheme.onSurfaceVariant)
         item.refillDueDate?.let { Text(stringResource(R.string.caregiver_inventory_refill_due, it), color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        OutlinedButton(onClick = { onSelect(item) }, modifier = Modifier.fillMaxWidth().testTag("caregiver-inventory-item-${item.medicationId}")) {
+        OutlinedButton(onClick = { onSelect(item) }, enabled = enabled, modifier = Modifier.fillMaxWidth().testTag("caregiver-inventory-item-${item.medicationId}")) {
             Text(stringResource(R.string.caregiver_inventory_open_detail))
         }
     }
@@ -249,6 +258,8 @@ private fun CaregiverInventoryDetail(
     updating: Boolean,
     failed: Boolean,
     message: CaregiverInventoryMutationMessage?,
+    refreshFailed: Boolean,
+    onRetry: () -> Unit,
     enabled: Boolean,
     onClose: () -> Unit,
 ) {
@@ -286,6 +297,7 @@ private fun CaregiverInventoryDetail(
             }
         }
         if (updating) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
+        if (refreshFailed) item { CaregiverStaleDataCard("caregiver-inventory-detail-stale", onRetry) }
         if (failed) item { Text(stringResource(R.string.caregiver_inventory_failed), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) }
         message?.let { item { Text(inventoryMutationText(it), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) } }
         item {
@@ -306,7 +318,10 @@ private fun CaregiverInventoryDetail(
                 Text(stringResource(R.string.caregiver_inventory_refill_section), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(7 to R.string.caregiver_inventory_refill_week, 14 to R.string.caregiver_inventory_refill_two_weeks, 21 to R.string.caregiver_inventory_refill_three_weeks).forEach { (days, label) ->
-                        OutlinedButton(onClick = { refillText = formatInventoryNumber(plannedRefill(item, days)) }) { Text(stringResource(label)) }
+                        OutlinedButton(
+                            onClick = { refillText = formatInventoryNumber(plannedRefill(item, days)) },
+                            enabled = enabled && !updating,
+                        ) { Text(stringResource(label)) }
                     }
                 }
                 OutlinedTextField(
@@ -315,6 +330,7 @@ private fun CaregiverInventoryDetail(
                     label = { Text(stringResource(R.string.caregiver_inventory_refill_amount)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
+                    enabled = enabled && !updating,
                     modifier = Modifier.fillMaxWidth().testTag("inventory-refill-amount"),
                 )
                 Button(
@@ -333,6 +349,7 @@ private fun CaregiverInventoryDetail(
                     label = { Text(stringResource(R.string.caregiver_inventory_correction_quantity)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
+                    enabled = enabled && !updating,
                     modifier = Modifier.fillMaxWidth().testTag("inventory-correction-quantity"),
                 )
                 Button(
@@ -352,7 +369,11 @@ private fun CaregiverInventoryDetail(
             text = { Text(stringResource(R.string.caregiver_inventory_confirm_refill_message, item.name, formatInventoryNumber(amount), formatInventoryNumber(item.inventoryQuantity + amount))) },
             dismissButton = { TextButton(onClick = { confirmRefill = null }) { Text(stringResource(R.string.caregiver_medication_form_cancel)) } },
             confirmButton = {
-                TextButton(onClick = { confirmRefill = null; scope.launch { repository.refill(patientId, item, amount) } }, modifier = Modifier.testTag("inventory-refill-confirm")) {
+                TextButton(
+                    onClick = { confirmRefill = null; scope.launch { repository.refill(patientId, item, amount) } },
+                    enabled = enabled && !updating,
+                    modifier = Modifier.testTag("inventory-refill-confirm"),
+                ) {
                     Text(stringResource(R.string.caregiver_inventory_refill_action))
                 }
             },
@@ -365,7 +386,11 @@ private fun CaregiverInventoryDetail(
             text = { Text(stringResource(R.string.caregiver_inventory_confirm_correction_message, formatInventoryNumber(quantity))) },
             dismissButton = { TextButton(onClick = { confirmCorrection = null }) { Text(stringResource(R.string.caregiver_medication_form_cancel)) } },
             confirmButton = {
-                TextButton(onClick = { confirmCorrection = null; scope.launch { repository.correct(patientId, item, quantity) } }, modifier = Modifier.testTag("inventory-correction-confirm")) {
+                TextButton(
+                    onClick = { confirmCorrection = null; scope.launch { repository.correct(patientId, item, quantity) } },
+                    enabled = enabled && !updating,
+                    modifier = Modifier.testTag("inventory-correction-confirm"),
+                ) {
                     Text(stringResource(R.string.caregiver_inventory_correction_action))
                 }
             },

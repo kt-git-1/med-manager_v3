@@ -1,6 +1,7 @@
 package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -21,6 +22,7 @@ import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import org.junit.Rule
 import org.junit.Test
 import java.time.Instant
+import kotlinx.coroutines.runBlocking
 
 class CaregiverMedicationScreenTest {
     @get:Rule
@@ -44,6 +46,29 @@ class CaregiverMedicationScreenTest {
 
         composeRule.onNodeWithText("薬がありません").assertIsDisplayed()
         composeRule.onNodeWithText("まず1つ目の薬を登録しましょう。", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun failedRefreshKeepsMedicationVisibleAndDisablesEditing() {
+        var fail = false
+        val repository = CaregiverMedicationRepository(
+            CaregiverMedicationDataSource { if (fail) error("offline") else listOf(scheduled()) },
+            MutationFreshnessStore(),
+        )
+        runBlocking { repository.load("patient-1") }
+        fail = true
+        runBlocking { repository.load("patient-1") }
+        val patient = CaregiverPatient("patient-1", "さくら")
+        composeRule.setContent {
+            MedicationAppTheme {
+                CaregiverMedicationScreen(repository, CaregiverPatientState(listOf(patient), patient.id), enabled = true)
+            }
+        }
+
+        composeRule.onNodeWithTag("caregiver-medication-stale").assertIsDisplayed()
+        composeRule.onNodeWithText("アムロジピン").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-medication-add").assertIsNotEnabled()
+        composeRule.onNodeWithTag("caregiver-medication-edit-scheduled").assertIsNotEnabled()
     }
 
     @Test

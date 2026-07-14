@@ -67,6 +67,52 @@ class CaregiverPatientRepositoryTest {
     }
 
     @Test
+    fun failedRefreshKeepsSessionSnapshotAndBlocksPatientMutationUntilRetry() = runTest {
+        val storage = FakeStorage()
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        var fail = false
+        var createCalls = 0
+        val source = object : CaregiverPatientDataSource {
+            override suspend fun listPatients(): List<CaregiverPatient> =
+                if (fail) error("offline") else listOf(patient("one", "さくら"))
+
+            override suspend fun createPatient(displayName: String): CaregiverPatient {
+                createCalls += 1
+                return patient("new", displayName)
+            }
+        }
+        val repository = CaregiverPatientRepository(source, selection)
+        repository.refresh()
+        fail = true
+
+        repository.refresh()
+
+        assertEquals(listOf("one"), repository.state.value.patients.map { it.id })
+        assertEquals("one", repository.state.value.selectedPatientId)
+        assertTrue(repository.state.value.refreshFailed)
+        assertFalse(repository.state.value.loadFailed)
+        assertFalse(repository.createPatient("追加"))
+        assertEquals(0, createCalls)
+    }
+
+    @Test
+    fun failedRefreshPreservesPreviouslyLoadedEmptySnapshot() = runTest {
+        var fail = false
+        val repository = repository(FakeStorage()) {
+            if (fail) error("offline") else emptyList()
+        }
+        repository.refresh()
+        fail = true
+
+        repository.refresh()
+
+        assertTrue(repository.state.value.hasLoaded)
+        assertTrue(repository.state.value.refreshFailed)
+        assertFalse(repository.state.value.loadFailed)
+        assertTrue(repository.state.value.patients.isEmpty())
+    }
+
+    @Test
     fun createTrimsNamePrependsPatientAndSelectsIt() = runTest {
         val storage = FakeStorage()
         val selection = CaregiverSelectionRepository(storage).also { it.restore() }

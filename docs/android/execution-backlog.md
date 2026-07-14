@@ -175,7 +175,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 - [x] Final rebaseline check: `origin/main@1d9d19e` has zero unique commits and is already an ancestor of `android-dev` (2026-07-15); no merge required.
 - [x] Resolve all `RECHECK_REQUIRED` rows; remaining `PARTIAL` rows are explicitly external/visual/device release gates.
-- [x] Full API 26/33/35 emulator matrix (84 tests each, 252/252 total), including adaptive Patient/Caregiver reachability and the compact PDF sheet fix.
+- [x] Full API 26/33/35 emulator matrix (89 tests each, 267/267 total), including adaptive Patient/Caregiver reachability, the compact PDF sheet fix and caregiver stale/retry states.
 - [ ] Physical-device matrix.
 - [ ] Notification Doze/delivery/tap/process-death tests.
 - [ ] TalkBack, font 2.0, dark mode, compact/large phone and rotation/configuration tests.
@@ -183,6 +183,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] Add a secret-free, fail-closed production signing configuration and Play release runbook.
 - [x] Map implementation data flows to a draft Play Data safety and Health apps declaration worksheet; final signed-AAB/Console submission remains pending.
 - [x] Add a fail-closed Digital Asset Links endpoint after live production hosts returned 404; production Play signing fingerprint, deploy and Play-installed verification remain pending.
+- [x] Define and implement the cross-role offline contract: in-memory last-known snapshots, explicit stale/retry UI, empty-snapshot handling, scope isolation and no offline mutation queue.
 - [ ] Signed internal then closed Play test.
 - [ ] Production Firebase, app links, signing, Data safety and health declarations.
 - [ ] Merge Android work into main without overwriting newer iOS/API files.

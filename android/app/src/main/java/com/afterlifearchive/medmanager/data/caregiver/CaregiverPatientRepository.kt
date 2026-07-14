@@ -32,8 +32,11 @@ data class CaregiverLinkingCode(val code: String, val expiresAt: String)
 data class CaregiverPatientState(
     val patients: List<CaregiverPatient> = emptyList(),
     val selectedPatientId: String? = null,
+    val hasLoaded: Boolean = false,
     val loading: Boolean = false,
+    val refreshing: Boolean = false,
     val loadFailed: Boolean = false,
+    val refreshFailed: Boolean = false,
     val creating: Boolean = false,
     val createError: CaregiverCreateError? = null,
     val savingSlotTimes: Boolean = false,
@@ -114,13 +117,24 @@ class CaregiverPatientRepository(
     val state: StateFlow<CaregiverPatientState> = mutableState.asStateFlow()
 
     suspend fun refresh() {
-        if (mutableState.value.loading) return
-        mutableState.value = mutableState.value.copy(loading = true, loadFailed = false)
+        if (mutableState.value.loading || mutableState.value.refreshing) return
+        val hasContent = mutableState.value.hasLoaded
+        mutableState.value = mutableState.value.copy(
+            loading = !hasContent,
+            refreshing = hasContent,
+            loadFailed = false,
+            refreshFailed = false,
+        )
         try {
             acceptPatients(dataSource.listPatients())
         } catch (error: Exception) {
             if (error is CancellationException) throw error
-            mutableState.value = mutableState.value.copy(loading = false, loadFailed = true)
+            mutableState.value = mutableState.value.copy(
+                loading = false,
+                refreshing = false,
+                loadFailed = !hasContent,
+                refreshFailed = hasContent,
+            )
         }
     }
 
@@ -135,6 +149,10 @@ class CaregiverPatientRepository(
     }
 
     suspend fun createPatient(displayName: String): Boolean {
+        if (mutableState.value.refreshFailed) {
+            mutableState.value = mutableState.value.copy(createError = CaregiverCreateError.FAILED)
+            return false
+        }
         val normalized = displayName.trim()
         val validation = when {
             normalized.isEmpty() -> CaregiverCreateError.REQUIRED
@@ -169,6 +187,10 @@ class CaregiverPatientRepository(
     }
 
     suspend fun updateSelectedPatientSlotTimes(slotTimes: CaregiverSlotTimes): Boolean {
+        if (mutableState.value.refreshFailed) {
+            mutableState.value = mutableState.value.copy(slotTimesSaveFailed = true)
+            return false
+        }
         val patientId = mutableState.value.selectedPatientId ?: return false
         if (!slotTimes.isValid()) {
             mutableState.value = mutableState.value.copy(slotTimesSaveFailed = true)
@@ -193,6 +215,10 @@ class CaregiverPatientRepository(
     }
 
     suspend fun issueLinkingCode(): Boolean {
+        if (mutableState.value.refreshFailed) {
+            mutableState.value = mutableState.value.copy(linkingCodeFailed = true)
+            return false
+        }
         val patientId = mutableState.value.selectedPatientId ?: return false
         mutableState.value = mutableState.value.copy(issuingLinkingCode = true, linkingCodeFailed = false)
         return try {
@@ -244,10 +270,15 @@ class CaregiverPatientRepository(
         mutableState.value = CaregiverPatientState(
             patients = patients,
             selectedPatientId = resolvedId,
+            hasLoaded = true,
         )
     }
 
     private suspend fun mutateSelectedPatient(action: suspend (String) -> Unit): Boolean {
+        if (mutableState.value.refreshFailed) {
+            mutableState.value = mutableState.value.copy(destructiveActionFailed = true)
+            return false
+        }
         val patientId = mutableState.value.selectedPatientId ?: return false
         mutableState.value = mutableState.value.copy(destructiveActionInProgress = true, destructiveActionFailed = false)
         return try {

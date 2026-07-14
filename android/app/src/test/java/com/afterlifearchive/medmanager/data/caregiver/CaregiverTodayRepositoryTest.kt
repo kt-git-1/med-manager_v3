@@ -333,10 +333,32 @@ class CaregiverTodayRepositoryTest {
 
         assertEquals(DoseStatus.TAKEN, repository.state.value.doses.single().status)
         assertEquals(CaregiverTodayMutationMessage.RECORDED, repository.state.value.mutationMessage)
-        assertEquals(CaregiverTodayMutationError.FAILED, repository.state.value.mutationError)
+        assertEquals(null, repository.state.value.mutationError)
+        assertTrue(repository.state.value.refreshFailed)
         assertFalse(repository.state.value.loading)
         assertFalse(repository.state.value.refreshing)
         assertFalse(repository.state.value.loadFailed)
+        assertFalse(repository.recordDose("patient-1", repository.state.value.doses.single()))
+    }
+
+    @Test
+    fun failedRefreshPreservesLoadedEmptyTodaySnapshot() = runTest {
+        var fail = false
+        val source = object : CaregiverTodayDataSource {
+            override suspend fun today(patientId: String): List<PatientDose> = if (fail) error("offline") else emptyList()
+            override suspend fun medications(patientId: String) = emptyList<PatientMedication>()
+            override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
+        }
+        val repository = CaregiverTodayRepository(source, MutationFreshnessStore())
+        repository.load("patient-1")
+        fail = true
+
+        repository.load("patient-1")
+
+        assertTrue(repository.state.value.hasLoaded)
+        assertTrue(repository.state.value.refreshFailed)
+        assertFalse(repository.state.value.loadFailed)
+        assertTrue(repository.state.value.doses.isEmpty())
     }
 
     private fun dose(key: String, status: DoseStatus, at: String) = PatientDose(

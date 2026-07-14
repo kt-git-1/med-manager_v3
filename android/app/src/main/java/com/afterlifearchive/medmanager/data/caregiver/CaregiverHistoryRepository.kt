@@ -26,14 +26,17 @@ import kotlinx.serialization.encodeToString
 data class CaregiverHistoryState(
     val patientId: String? = null,
     val displayedMonth: YearMonth = YearMonth.now(TOKYO_ZONE),
+    val monthLoaded: Boolean = false,
     val days: List<HistoryDay> = emptyList(),
     val selectedDate: LocalDate? = null,
     val dayDetail: HistoryDayDetail? = null,
     val loadingMonth: Boolean = false,
     val refreshingMonth: Boolean = false,
     val monthFailed: Boolean = false,
+    val monthRefreshFailed: Boolean = false,
     val loadingDay: Boolean = false,
     val dayFailed: Boolean = false,
+    val dayRefreshFailed: Boolean = false,
     val updating: Boolean = false,
     val mutationFailed: Boolean = false,
     val mutationSucceeded: Boolean = false,
@@ -89,12 +92,13 @@ class CaregiverHistoryRepository(
 
     suspend fun loadMonth(patientId: String, yearMonth: YearMonth = mutableState.value.displayedMonth) {
         val current = mutableState.value
-        if (current.loadingMonth) return
-        val sameSnapshot = current.patientId == patientId && current.displayedMonth == yearMonth && current.days.isNotEmpty()
+        if ((current.loadingMonth || current.refreshingMonth) && current.patientId == patientId && current.displayedMonth == yearMonth) return
+        val sameSnapshot = current.patientId == patientId && current.displayedMonth == yearMonth && current.monthLoaded
         mutableState.value = when {
             current.patientId != patientId -> CaregiverHistoryState(
                 patientId = patientId,
                 displayedMonth = yearMonth,
+                monthLoaded = false,
                 selectedDate = current.selectedDate?.takeIf { current.notificationPatientId == patientId && YearMonth.from(it) == yearMonth },
                 highlightedSlot = current.highlightedSlot.takeIf { current.notificationPatientId == patientId },
                 notificationPatientId = current.notificationPatientId.takeIf { it == patientId },
@@ -103,12 +107,14 @@ class CaregiverHistoryRepository(
             )
             current.displayedMonth != yearMonth -> current.copy(
                 displayedMonth = yearMonth,
+                monthLoaded = false,
                 days = emptyList(),
                 selectedDate = null,
                 dayDetail = null,
                 loadingMonth = true,
                 refreshingMonth = false,
                 monthFailed = false,
+                monthRefreshFailed = false,
                 retentionCutoffDate = null,
                 retentionDays = null,
             )
@@ -116,6 +122,7 @@ class CaregiverHistoryRepository(
                 loadingMonth = !sameSnapshot,
                 refreshingMonth = sameSnapshot,
                 monthFailed = false,
+                monthRefreshFailed = false,
                 retentionCutoffDate = null,
                 retentionDays = null,
             )
@@ -128,12 +135,14 @@ class CaregiverHistoryRepository(
             mutableState.value = previous.copy(
                 patientId = patientId,
                 displayedMonth = yearMonth,
+                monthLoaded = true,
                 days = days,
                 selectedDate = selected,
                 dayDetail = previous.dayDetail?.takeIf { it.date == selected.toString() },
                 loadingMonth = false,
                 refreshingMonth = false,
                 monthFailed = false,
+                monthRefreshFailed = false,
             )
         } catch (error: Exception) {
             if (error is CancellationException) throw error
@@ -144,10 +153,22 @@ class CaregiverHistoryRepository(
     suspend fun loadDay(patientId: String, date: LocalDate) {
         val current = mutableState.value
         if (current.loadingDay || current.patientId != patientId) return
-        mutableState.value = current.copy(selectedDate = date, loadingDay = true, dayFailed = false, retentionCutoffDate = null, retentionDays = null)
+        mutableState.value = current.copy(
+            selectedDate = date,
+            loadingDay = true,
+            dayFailed = false,
+            dayRefreshFailed = false,
+            retentionCutoffDate = null,
+            retentionDays = null,
+        )
         try {
             val detail = dataSource.day(patientId, date)
-            mutableState.value = mutableState.value.copy(dayDetail = detail, loadingDay = false, dayFailed = false)
+            mutableState.value = mutableState.value.copy(
+                dayDetail = detail,
+                loadingDay = false,
+                dayFailed = false,
+                dayRefreshFailed = false,
+            )
         } catch (error: Exception) {
             if (error is CancellationException) throw error
             acceptLoadFailure(error, month = false)
@@ -155,12 +176,18 @@ class CaregiverHistoryRepository(
     }
 
     fun selectDate(date: LocalDate) {
-        mutableState.value = mutableState.value.copy(selectedDate = date, dayDetail = null, dayFailed = false, mutationSucceeded = false)
+        mutableState.value = mutableState.value.copy(
+            selectedDate = date,
+            dayDetail = null,
+            dayFailed = false,
+            dayRefreshFailed = false,
+            mutationSucceeded = false,
+        )
     }
 
     suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose): Boolean {
         val current = mutableState.value
-        if (current.patientId != patientId || current.updating || dose.status.name != "MISSED") return false
+        if (current.patientId != patientId || current.monthRefreshFailed || current.dayRefreshFailed || current.updating || dose.status.name != "MISSED") return false
         mutableState.value = current.copy(updating = true, mutationFailed = false, mutationSucceeded = false)
         return try {
             dataSource.recordMissed(patientId, dose)
@@ -198,12 +225,17 @@ class CaregiverHistoryRepository(
 
     private fun acceptLoadFailure(error: Exception, month: Boolean) {
         val retention = error as? ApiException.HistoryRetentionLimit
+        val current = mutableState.value
+        val hasMonthContent = current.monthLoaded
+        val hasDayContent = current.dayDetail?.date == current.selectedDate?.toString()
         mutableState.value = mutableState.value.copy(
             loadingMonth = false,
             refreshingMonth = false,
-            monthFailed = month && retention == null,
+            monthFailed = month && retention == null && !hasMonthContent,
+            monthRefreshFailed = month && retention == null && hasMonthContent,
             loadingDay = false,
-            dayFailed = !month && retention == null,
+            dayFailed = !month && retention == null && !hasDayContent,
+            dayRefreshFailed = !month && retention == null && hasDayContent,
             retentionCutoffDate = retention?.cutoffDate,
             retentionDays = retention?.retentionDays,
         )

@@ -28,7 +28,7 @@ The 200% capture records the initial viewport only. Automated scrolling assertio
 
 `PatientAccessibilityTest` verifies each History week cell exposes one localized weekday/date/status announcement, for example `月 7月13日 忘れ`, alongside the existing heading and summary semantics.
 
-The 2026-07-15 extension runs the three Patient reachability scenarios at both 1.3 and 2.0 font scale. `CaregiverAdaptiveUiTest` additionally verifies at 1.3 that Today's medication entry, the medication form save action, inventory detail settings and exact History day sheet remain reachable. At 2.0, caregiver Analytics consent and logout remain reachable through the production Settings list. The targeted caregiver run passed 5/5 and the final expanded API-35 suite passed 84/84.
+The 2026-07-15 extension runs the three Patient reachability scenarios at both 1.3 and 2.0 font scale. `CaregiverAdaptiveUiTest` additionally verifies at 1.3 that Today's medication entry, the medication form save action, inventory detail settings and exact History day sheet remain reachable. At 2.0, caregiver Analytics consent and logout remain reachable through the production Settings list. The targeted caregiver run passed 5/5 and the C06 checkpoint API-35 suite passed 84/84; the later Gate I matrix is authoritative at 89/89 per API level.
 
 The targeted adaptive/accessibility run passed 5/5 tests. The complete command below subsequently passed with 40/40 API-35 instrumentation tests, all JVM tests, Debug/Release assembly and Android Lint:
 

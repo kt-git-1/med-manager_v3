@@ -123,10 +123,12 @@ internal fun CaregiverTodayScreen(
             mutationError = state.mutationError,
             mutationMessage = state.mutationMessage,
             refreshing = state.refreshing,
+            refreshFailed = state.refreshFailed,
             lastUpdatedCount = state.lastUpdatedCount,
             lastInsufficientCount = state.lastInsufficientCount,
             updatingSlot = state.updatingSlot,
-            enabled = enabled,
+            enabled = enabled && !state.refreshFailed,
+            onRetry = { scope.launch { repository.load(selected.id) } },
             onRecordDose = { dose -> scope.launch { repository.recordDose(selected.id, dose) } },
             onDeleteDose = { dose -> scope.launch { repository.deleteDose(selected.id, dose) } },
             onRecordSlot = { slot, doses -> slotToConfirm = slot to doses },
@@ -231,10 +233,12 @@ private fun CaregiverTodayContent(
     mutationError: CaregiverTodayMutationError?,
     mutationMessage: CaregiverTodayMutationMessage?,
     refreshing: Boolean,
+    refreshFailed: Boolean,
     lastUpdatedCount: Int,
     lastInsufficientCount: Int,
     updatingSlot: MedicationSlot?,
     enabled: Boolean,
+    onRetry: () -> Unit,
     onRecordDose: (PatientDose) -> Unit,
     onDeleteDose: (PatientDose) -> Unit,
     onRecordSlot: (MedicationSlot, List<PatientDose>) -> Unit,
@@ -268,6 +272,9 @@ private fun CaregiverTodayContent(
         }
         if (refreshing) item {
             LinearProgressIndicator(Modifier.fillMaxWidth().testTag("caregiver-today-refreshing"))
+        }
+        if (refreshFailed) item {
+            CaregiverStaleDataCard("caregiver-today-stale", onRetry)
         }
         mutationError?.let { error ->
             item {

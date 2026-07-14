@@ -243,6 +243,48 @@ class CaregiverMedicationRepositoryTest {
         assertTrue(repository.state.value.items.isEmpty())
     }
 
+    @Test
+    fun failedSamePatientRefreshPreservesSnapshotAndBlocksMutations() = runTest {
+        var fail = false
+        var deleteCalls = 0
+        val source = object : CaregiverMedicationDataSource {
+            override suspend fun listMedications(patientId: String) =
+                if (fail) error("offline") else listOf(medication("med-1", patientId))
+
+            override suspend fun deleteMedication(patientId: String, medicationId: String) {
+                deleteCalls += 1
+            }
+        }
+        val repository = CaregiverMedicationRepository(source, MutationFreshnessStore())
+        repository.load("patient-1")
+        fail = true
+
+        repository.load("patient-1")
+
+        assertEquals(listOf("med-1"), repository.state.value.items.map { it.id })
+        assertTrue(repository.state.value.refreshFailed)
+        assertFalse(repository.state.value.loadFailed)
+        assertFalse(repository.delete("patient-1", "med-1"))
+        assertEquals(0, deleteCalls)
+    }
+
+    @Test
+    fun failedRefreshPreservesPreviouslyLoadedEmptyMedicationSnapshot() = runTest {
+        var fail = false
+        val repository = CaregiverMedicationRepository(
+            CaregiverMedicationDataSource { if (fail) error("offline") else emptyList() },
+            MutationFreshnessStore(),
+        )
+        repository.load("patient-1")
+        fail = true
+
+        repository.load("patient-1")
+
+        assertTrue(repository.state.value.hasLoaded)
+        assertTrue(repository.state.value.refreshFailed)
+        assertFalse(repository.state.value.loadFailed)
+    }
+
     private fun medication(id: String, patientId: String) = PatientMedication(
         id, patientId, "薬", "10mg", 1.0, 10.0, "mg", null, false, null,
         Instant.parse("2026-07-01T00:00:00Z"), null, null, null, false, 0.0, false,

@@ -91,6 +91,46 @@ class CaregiverHistoryRepositoryTest {
     }
 
     @Test
+    fun failedMonthRefreshKeepsSnapshotAndDoesNotBecomeInitialLoadFailure() = runTest {
+        var fail = false
+        val source = object : CaregiverHistoryDataSource {
+            override suspend fun month(patientId: String, yearMonth: YearMonth) =
+                if (fail) error("offline") else listOf(day("2026-07-15"))
+            override suspend fun day(patientId: String, date: LocalDate) = HistoryDayDetail(date.toString(), emptyList(), emptyList())
+            override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
+        }
+        val repository = CaregiverHistoryRepository(source, MutationFreshnessStore())
+        repository.loadMonth("p1", YearMonth.of(2026, 7))
+        fail = true
+
+        repository.loadMonth("p1", YearMonth.of(2026, 7))
+
+        assertEquals(listOf("2026-07-15"), repository.state.value.days.map { it.date })
+        assertTrue(repository.state.value.monthRefreshFailed)
+        assertFalse(repository.state.value.monthFailed)
+    }
+
+    @Test
+    fun failedRefreshPreservesLoadedEmptyHistoryMonth() = runTest {
+        var fail = false
+        val source = object : CaregiverHistoryDataSource {
+            override suspend fun month(patientId: String, yearMonth: YearMonth): List<HistoryDay> =
+                if (fail) error("offline") else emptyList()
+            override suspend fun day(patientId: String, date: LocalDate) = HistoryDayDetail(date.toString(), emptyList(), emptyList())
+            override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
+        }
+        val repository = CaregiverHistoryRepository(source, MutationFreshnessStore())
+        repository.loadMonth("p1", YearMonth.of(2026, 7))
+        fail = true
+
+        repository.loadMonth("p1", YearMonth.of(2026, 7))
+
+        assertTrue(repository.state.value.monthLoaded)
+        assertTrue(repository.state.value.monthRefreshFailed)
+        assertFalse(repository.state.value.monthFailed)
+    }
+
+    @Test
     fun backfillPublishesOnlyAfterSuccessAndRefreshesAuthoritativeDay() = runTest {
         val freshness = MutationFreshnessStore()
         var recorded = false

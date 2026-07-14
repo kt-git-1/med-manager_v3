@@ -29,6 +29,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
@@ -154,7 +155,10 @@ internal fun CaregiverMedicationScreen(
             onFilter = { filterName = it.name },
             onAdd = { addingMedication = true },
             onEdit = { editingMedicationId = it.id },
-            enabled = enabled,
+            refreshing = state.refreshing,
+            refreshFailed = state.refreshFailed,
+            onRetry = { scope.launch { repository.load(selected.id) } },
+            enabled = enabled && !state.refreshFailed,
         )
     }
 }
@@ -168,6 +172,9 @@ private fun CaregiverMedicationList(
     onFilter: (CaregiverMedicationFilter) -> Unit,
     onAdd: () -> Unit,
     onEdit: (PatientMedication) -> Unit,
+    refreshing: Boolean,
+    refreshFailed: Boolean,
+    onRetry: () -> Unit,
     enabled: Boolean,
 ) {
     val today = LocalDate.now(TOKYO)
@@ -205,6 +212,8 @@ private fun CaregiverMedicationList(
                 }
             }
         }
+        if (refreshing) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
+        if (refreshFailed) item { CaregiverStaleDataCard("caregiver-medication-stale", onRetry) }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

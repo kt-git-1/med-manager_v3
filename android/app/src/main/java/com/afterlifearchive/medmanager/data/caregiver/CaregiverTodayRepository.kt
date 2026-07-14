@@ -45,6 +45,7 @@ data class CaregiverInventorySummary(
 
 data class CaregiverTodayState(
     val patientId: String? = null,
+    val hasLoaded: Boolean = false,
     val doses: List<PatientDose> = emptyList(),
     val prnMedications: List<PatientMedication> = emptyList(),
     val outOfStockMedicationIds: Set<String> = emptySet(),
@@ -52,6 +53,7 @@ data class CaregiverTodayState(
     val loading: Boolean = false,
     val refreshing: Boolean = false,
     val loadFailed: Boolean = false,
+    val refreshFailed: Boolean = false,
     val updatingDoseKey: String? = null,
     val mutationError: CaregiverTodayMutationError? = null,
     val mutationMessage: CaregiverTodayMutationMessage? = null,
@@ -162,10 +164,15 @@ class CaregiverTodayRepository(
     val freshness = freshnessStore.revisions
 
     suspend fun load(patientId: String) {
-        if (mutableState.value.loading && mutableState.value.patientId == patientId) return
+        if ((mutableState.value.loading || mutableState.value.refreshing) && mutableState.value.patientId == patientId) return
         mutableState.value = if (mutableState.value.patientId == patientId) {
-            val hasContent = mutableState.value.doses.isNotEmpty() || mutableState.value.prnMedications.isNotEmpty()
-            mutableState.value.copy(loading = !hasContent, refreshing = hasContent, loadFailed = false)
+            val hasContent = mutableState.value.hasLoaded
+            mutableState.value.copy(
+                loading = !hasContent,
+                refreshing = hasContent,
+                loadFailed = false,
+                refreshFailed = false,
+            )
         } else {
             CaregiverTodayState(patientId = patientId, loading = true)
         }
@@ -180,6 +187,7 @@ class CaregiverTodayRepository(
             val previous = mutableState.value
             mutableState.value = CaregiverTodayState(
                 patientId = patientId,
+                hasLoaded = true,
                 doses = loaded.first.sortedWith(compareBy<PatientDose>({ statusRank(it.status) }, { it.scheduledAt })),
                 prnMedications = loaded.second
                     .filter { it.isPrn && it.isActive && !it.isArchived }
@@ -193,8 +201,13 @@ class CaregiverTodayRepository(
         } catch (error: Exception) {
             if (error is CancellationException) throw error
             val current = mutableState.value
-            mutableState.value = if (current.patientId == patientId && (current.doses.isNotEmpty() || current.prnMedications.isNotEmpty())) {
-                current.copy(loading = false, refreshing = false, loadFailed = false, mutationError = CaregiverTodayMutationError.FAILED)
+            mutableState.value = if (current.patientId == patientId && current.hasLoaded) {
+                current.copy(
+                    loading = false,
+                    refreshing = false,
+                    loadFailed = false,
+                    refreshFailed = true,
+                )
             } else {
                 CaregiverTodayState(patientId = patientId, loadFailed = true)
             }
@@ -203,7 +216,7 @@ class CaregiverTodayRepository(
 
     suspend fun recordDose(patientId: String, dose: PatientDose): Boolean {
         val current = mutableState.value
-        if (current.patientId != patientId || current.updatingDoseKey != null || dose.status == DoseStatus.TAKEN) return false
+        if (current.patientId != patientId || current.refreshFailed || current.updatingDoseKey != null || dose.status == DoseStatus.TAKEN) return false
         if (dose.medicationId in current.outOfStockMedicationIds) {
             mutableState.value = current.copy(mutationError = CaregiverTodayMutationError.INSUFFICIENT_INVENTORY, mutationMessage = null)
             return false
@@ -233,7 +246,7 @@ class CaregiverTodayRepository(
 
     suspend fun deleteDose(patientId: String, dose: PatientDose): Boolean {
         val current = mutableState.value
-        if (current.patientId != patientId || current.updatingDoseKey != null || dose.status != DoseStatus.TAKEN) return false
+        if (current.patientId != patientId || current.refreshFailed || current.updatingDoseKey != null || dose.status != DoseStatus.TAKEN) return false
         mutableState.value = current.copy(updatingDoseKey = dose.key, mutationError = null, mutationMessage = null)
         return try {
             dataSource.deleteDose(patientId, dose)
@@ -256,7 +269,7 @@ class CaregiverTodayRepository(
 
     suspend fun recordSlot(patientId: String, slot: MedicationSlot, doses: List<PatientDose>): Boolean {
         val current = mutableState.value
-        if (current.patientId != patientId || current.updatingDoseKey != null || current.updatingSlot != null) return false
+        if (current.patientId != patientId || current.refreshFailed || current.updatingDoseKey != null || current.updatingSlot != null) return false
         val candidates = doses.filter { it.status != DoseStatus.TAKEN }
         if (candidates.isEmpty()) {
             mutableState.value = current.copy(mutationMessage = CaregiverTodayMutationMessage.NOTHING_TO_RECORD)
@@ -303,7 +316,7 @@ class CaregiverTodayRepository(
 
     suspend fun recordPrn(patientId: String, medication: PatientMedication): Boolean {
         val current = mutableState.value
-        if (current.patientId != patientId || current.updatingDoseKey != null || current.updatingSlot != null || current.updatingPrnMedicationId != null || !medication.isPrn) return false
+        if (current.patientId != patientId || current.refreshFailed || current.updatingDoseKey != null || current.updatingSlot != null || current.updatingPrnMedicationId != null || !medication.isPrn) return false
         if (medication.id in current.outOfStockMedicationIds) {
             mutableState.value = current.copy(mutationError = CaregiverTodayMutationError.INSUFFICIENT_INVENTORY, mutationMessage = null)
             return false

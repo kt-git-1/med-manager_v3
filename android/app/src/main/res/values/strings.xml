@@ -227,6 +227,8 @@
     <string name="caregiver_settings_subtitle">見守る方と家族アカウントを管理します</string>
     <string name="caregiver_data_unavailable_title">情報を取得できませんでした</string>
     <string name="caregiver_data_unavailable_message">通信状況を確認して、もう一度お試しください。ログイン直後の場合は少し時間をおいて再試行してください。</string>
+    <string name="caregiver_stale_data_title">最新情報を取得できませんでした</string>
+    <string name="caregiver_stale_data_message">前回取得した情報を表示しています。再接続して更新するまで、この情報に関する変更操作はできません。</string>
     <string name="caregiver_no_patient_title">患者がいません</string>
     <string name="caregiver_no_patient_message">見守る方の名前を登録すると、薬や服薬予定を管理できるようになります。</string>
     <string name="caregiver_no_selection_title">患者が未選択です</string>

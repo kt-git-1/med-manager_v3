@@ -94,6 +94,32 @@ class CaregiverInventoryRepositoryTest {
         assertEquals(0L, freshness.revisions.value.inventory)
     }
 
+    @Test
+    fun failedRefreshKeepsInventorySnapshotSeparateFromMutationFailure() = runTest {
+        var fail = false
+        var updateCalls = 0
+        val original = item(quantity = 3.0)
+        val source = object : CaregiverInventoryDataSource {
+            override suspend fun list(patientId: String) = if (fail) error("offline") else listOf(original)
+            override suspend fun update(patientId: String, medicationId: String, enabled: Boolean, quantity: Double?): CaregiverInventoryItem {
+                updateCalls += 1
+                return original
+            }
+            override suspend fun adjust(patientId: String, medicationId: String, reason: String, delta: Double?, absoluteQuantity: Double?) = original
+        }
+        val repository = CaregiverInventoryRepository(source, MutationFreshnessStore())
+        repository.load("p1")
+        fail = true
+
+        repository.load("p1")
+
+        assertEquals(3.0, repository.state.value.items.single().inventoryQuantity, 0.0)
+        assertTrue(repository.state.value.refreshFailed)
+        assertFalse(repository.state.value.mutationFailed)
+        assertFalse(repository.updateSettings("p1", original, false))
+        assertEquals(0, updateCalls)
+    }
+
     private fun item(quantity: Double, enabled: Boolean = true) = CaregiverInventoryItem(
         medicationId = "med-1", name = "薬A", isPrn = false, doseCountPerIntake = 1.0,
         inventoryEnabled = enabled, inventoryQuantity = quantity, inventoryLowThreshold = 3,

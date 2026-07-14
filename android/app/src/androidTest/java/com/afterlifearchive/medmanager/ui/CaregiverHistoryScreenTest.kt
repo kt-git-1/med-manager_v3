@@ -25,6 +25,7 @@ import java.time.YearMonth
 import org.junit.Rule
 import org.junit.Test
 import org.junit.Assert.assertTrue
+import kotlinx.coroutines.runBlocking
 
 class CaregiverHistoryScreenTest {
     @get:Rule
@@ -63,6 +64,27 @@ class CaregiverHistoryScreenTest {
         composeRule.onNodeWithTag("caregiver-history-day-sheet").assertIsDisplayed()
         composeRule.onNodeWithTag("history-day-detail-list").performScrollToNode(hasTestTag("history-dose-highlighted-evening"))
         composeRule.onNodeWithTag("history-dose-highlighted-evening").assertIsDisplayed()
+    }
+
+    @Test
+    fun failedMonthRefreshKeepsCalendarAndShowsStaleRetryCard() {
+        val date = LocalDate.of(2026, 7, 15)
+        var fail = false
+        val source = object : CaregiverHistoryDataSource {
+            override suspend fun month(patientId: String, yearMonth: YearMonth) =
+                if (fail) error("offline") else listOf(HistoryDay(date.toString(), HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0))
+            override suspend fun day(patientId: String, date: LocalDate) = HistoryDayDetail(date.toString(), emptyList(), emptyList())
+            override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
+        }
+        val repository = CaregiverHistoryRepository(source, MutationFreshnessStore())
+        runBlocking { repository.loadMonth("p1", YearMonth.of(2026, 7)) }
+        fail = true
+        runBlocking { repository.loadMonth("p1", YearMonth.of(2026, 7)) }
+
+        setContent(repository)
+
+        composeRule.onNodeWithTag("caregiver-history-stale").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-history-day-$date").assertIsDisplayed()
     }
 
     private fun setContent(repository: CaregiverHistoryRepository) {

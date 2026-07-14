@@ -1,6 +1,7 @@
 package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -27,6 +28,7 @@ import java.time.Instant
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import kotlinx.coroutines.runBlocking
 
 class CaregiverTodayScreenTest {
     @get:Rule
@@ -96,6 +98,32 @@ class CaregiverTodayScreenTest {
 
         composeRule.onNodeWithText("情報を取得できませんでした").assertIsDisplayed()
         composeRule.onNodeWithText("もう一度試す").assertIsDisplayed()
+    }
+
+    @Test
+    fun failedRefreshShowsStaleSnapshotAndDisablesDoseMutation() {
+        val original = dose("stale", DoseStatus.PENDING, "2026-07-15T04:00:00Z")
+        var fail = false
+        val source = object : CaregiverTodayDataSource {
+            override suspend fun today(patientId: String) = if (fail) error("offline") else listOf(original)
+            override suspend fun medications(patientId: String) = emptyList<PatientMedication>()
+            override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
+        }
+        val repository = CaregiverTodayRepository(source, MutationFreshnessStore())
+        runBlocking { repository.load("patient-1") }
+        fail = true
+        runBlocking { repository.load("patient-1") }
+        val patient = CaregiverPatient("patient-1", "さくら")
+
+        composeRule.setContent {
+            MedicationAppTheme {
+                CaregiverTodayScreen(repository, CaregiverPatientState(listOf(patient), patient.id), true, {})
+            }
+        }
+
+        composeRule.onNodeWithTag("caregiver-today-stale").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-dose-action-stale"))
+        composeRule.onNodeWithTag("caregiver-today-dose-action-stale").assertIsNotEnabled()
     }
 
     @Test
@@ -218,7 +246,8 @@ class CaregiverTodayScreenTest {
 
         composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-mutation-message"))
         composeRule.onNodeWithText("服用を記録しました").assertIsDisplayed()
-        composeRule.onNodeWithTag("caregiver-today-mutation-error").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-stale").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-mutation-error").assertDoesNotExist()
         composeRule.onNodeWithText("情報を取得できませんでした").assertDoesNotExist()
     }
 
