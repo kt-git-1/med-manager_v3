@@ -186,6 +186,60 @@ class CaregiverPatientRepositoryTest {
         assertNull(repository.state.value.linkingCode)
     }
 
+    @Test
+    fun successfulPatientDeleteRemovesThenAutoSelectsSoleRemainingPatient() = runTest {
+        val storage = FakeStorage().apply { currentPatientId = "one" }
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val freshness = MutationFreshnessStore()
+        val source = object : CaregiverPatientDataSource {
+            override suspend fun listPatients() = listOf(patient("one", "あおい"), patient("two", "さくら"))
+            override suspend fun deletePatient(patientId: String) = Unit
+        }
+        val repository = CaregiverPatientRepository(source, selection, freshness)
+        repository.refresh()
+
+        assertTrue(repository.deleteSelectedPatient())
+
+        assertEquals(listOf("two"), repository.state.value.patients.map { it.id })
+        assertEquals("two", storage.currentPatientId)
+        assertEquals(1L, freshness.revisions.value.dose)
+    }
+
+    @Test
+    fun failedDestructiveActionPreservesPatientAndSelection() = runTest {
+        val storage = FakeStorage().apply { currentPatientId = "one" }
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val source = object : CaregiverPatientDataSource {
+            override suspend fun listPatients() = listOf(patient("one", "あおい"))
+            override suspend fun revokePatient(patientId: String) = error("offline")
+        }
+        val repository = CaregiverPatientRepository(source, selection)
+        repository.refresh()
+
+        assertFalse(repository.revokeSelectedPatient())
+
+        assertEquals("one", repository.state.value.selectedPatientId)
+        assertEquals("one", storage.currentPatientId)
+        assertTrue(repository.state.value.destructiveActionFailed)
+    }
+
+    @Test
+    fun failedAccountDeleteDoesNotClearLocalState() = runTest {
+        val storage = FakeStorage().apply { currentPatientId = "one" }
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val source = object : CaregiverPatientDataSource {
+            override suspend fun listPatients() = listOf(patient("one", "あおい"))
+            override suspend fun deleteCaregiverAccount() = error("server")
+        }
+        val repository = CaregiverPatientRepository(source, selection)
+        repository.refresh()
+
+        assertFalse(repository.deleteCaregiverAccount())
+
+        assertEquals("one", repository.state.value.selectedPatientId)
+        assertEquals("one", storage.currentPatientId)
+    }
+
     private fun repository(storage: FakeStorage, block: suspend () -> List<CaregiverPatient>): CaregiverPatientRepository {
         val selection = CaregiverSelectionRepository(storage).also { it.restore() }
         return CaregiverPatientRepository(CaregiverPatientDataSource { block() }, selection)

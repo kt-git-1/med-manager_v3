@@ -43,6 +43,10 @@ class CaregiverHomeScreenTest {
         composeRule.onNodeWithTag("caregiver-slot-times").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-linking-code-issue"))
         composeRule.onNodeWithTag("caregiver-linking-code-issue").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-patient-revoke"))
+        composeRule.onNodeWithTag("caregiver-patient-revoke").performClick()
+        composeRule.onNodeWithText("既存の本人セッションは失効しますが、データは保持されます。", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("キャンセル").performClick()
         composeRule.onNodeWithTag("caregiver-tab-today").performClick()
         composeRule.onNodeWithText("さくらさんを見守り中").assertIsDisplayed()
 

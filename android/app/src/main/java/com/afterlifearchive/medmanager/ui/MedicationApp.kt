@@ -29,7 +29,11 @@ fun MedicationApp(
         when (state.mode) {
             null -> ModeSelectScreen(repository::selectMode)
             AppMode.CAREGIVER -> if (state.caregiverAuthenticated) {
-                CaregiverHomeScreen(caregiverPatientRepository)
+                CaregiverHomeScreen(
+                    caregiverPatientRepository,
+                    onLogout = repository::logoutCaregiver,
+                    onAccountDeleted = repository::logoutCaregiver,
+                )
             } else {
                 CaregiverAuthFlow(state, repository)
             }

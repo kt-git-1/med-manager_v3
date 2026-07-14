@@ -123,9 +123,9 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] List/create/select with 50-character/nonblank validation and patient-limit response.
 - [x] Edit four slot preset times and propagate freshness.
 - [x] Issue one-time 15-minute code; copy/share system sheet.
-- [ ] Revoke preserves data and clears current selection/redirect state.
-- [ ] Delete waits for server cascade success, then invalidates dependent data.
-- [ ] Server-first caregiver account deletion and local reset.
+- [x] Revoke preserves data and clears current selection/redirect state.
+- [x] Delete waits for server cascade success, then invalidates dependent data.
+- [x] Server-first caregiver account deletion and local reset.
 
 ### D03 Caregiver tutorial
 
@@ -185,4 +185,4 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Immediate next item
 
-Continue **D02 caregiver patient management** with revoke/delete and account deletion in server-authoritative order. Typed list/create/select, four-slot time presets and one-time linking-code issue/copy/share are implemented. Linking codes remain scoped to the selected patient and are cleared on selection/account context changes. C01/C06 visual/physical residuals and Gate H Firebase transport remain tracked.
+Begin **D03 caregiver tutorial** on the completed D01/D02 production shell and patient-management flow. Revoke, permanent patient deletion and caregiver-account deletion now use distinct confirmations and server-first state changes; failures preserve patient selection and authenticated local state. C01/C06 visual/physical residuals and Gate H Firebase transport remain tracked.

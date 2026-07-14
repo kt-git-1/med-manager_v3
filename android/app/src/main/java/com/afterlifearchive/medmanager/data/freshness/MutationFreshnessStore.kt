@@ -84,6 +84,14 @@ class MutationFreshnessStore {
 
     fun markSlotTimesChanged() = markChanged(MutationDomain.SLOT_TIMES)
 
+    fun markPatientScopeChanged() = markChanged(
+        MutationDomain.DOSE,
+        MutationDomain.MEDICATION,
+        MutationDomain.INVENTORY,
+        MutationDomain.NOTIFICATION_PLAN,
+        MutationDomain.SLOT_TIMES,
+    )
+
     fun newCursor(consumer: FreshnessConsumer): FreshnessCursor = FreshnessCursor(this, consumer.domains)
 }
 

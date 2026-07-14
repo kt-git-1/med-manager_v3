@@ -67,3 +67,13 @@ After every successful patient-list load:
 - API/repository tests cover the payload-free request, response mapping and selection scoping. Compose coverage verifies the issue action remains reachable in the production Settings list.
 
 `CG-003` and the third D02 checklist row are `IMPLEMENTED`; physical clipboard/Sharesheet and matched iOS visual checks remain before `VERIFIED`.
+
+## D02 destructive lifecycle increment — 2026-07-14
+
+- Data-preserving link revoke, irreversible patient cascade deletion and caregiver-account deletion use separate routes, copy and confirmation dialogs.
+- Revoke and patient delete remove local patient state, clear the scoped linking code, reconcile sole/empty selection and publish dose/medication/inventory/notification/slot-time freshness only after a 2xx server response.
+- Caregiver-account deletion calls `DELETE /api/me` first. Only a successful response clears the caregiver feature repository and invokes local session logout; a failure explicitly preserves patients, selection and authentication.
+- Logout remains a separate local action and is not presented as account deletion.
+- API tests verify all three method/path pairs. Repository tests prove success-only mutation, sole-patient reconciliation, broad freshness invalidation and failure preservation. Compose coverage verifies the revoke confirmation states that patient sessions expire while data remains.
+
+`CG-004`, `CG-013` and the remaining D02 checklist rows are `IMPLEMENTED`. D02 is implementation-complete; matched iOS visuals and production/physical destructive-operation verification remain before `VERIFIED`.

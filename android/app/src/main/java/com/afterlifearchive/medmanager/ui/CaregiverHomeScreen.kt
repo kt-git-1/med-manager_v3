@@ -25,6 +25,7 @@ import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -35,6 +36,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -78,7 +80,11 @@ enum class CaregiverTab(val label: Int, val icon: ImageVector) {
 }
 
 @Composable
-fun CaregiverHomeScreen(repository: CaregiverPatientRepository) {
+fun CaregiverHomeScreen(
+    repository: CaregiverPatientRepository,
+    onLogout: () -> Unit = {},
+    onAccountDeleted: () -> Unit = {},
+) {
     val state by repository.state.collectAsStateWithLifecycle()
     var selectedTabName by rememberSaveable { mutableStateOf(CaregiverTab.TODAY.name) }
     var loadedTabNames by rememberSaveable { mutableStateOf(setOf(CaregiverTab.TODAY.name)) }
@@ -99,7 +105,7 @@ fun CaregiverHomeScreen(repository: CaregiverPatientRepository) {
                             .testTag("caregiver-content-${tab.name.lowercase()}")
                             .then(if (visible) Modifier else Modifier.semantics { hideFromAccessibility() }),
                     ) {
-                        CaregiverTabContent(tab, state, repository, visible)
+                        CaregiverTabContent(tab, state, repository, visible, onLogout, onAccountDeleted)
                     }
                 }
             }
@@ -127,9 +133,11 @@ private fun CaregiverTabContent(
     state: CaregiverPatientState,
     repository: CaregiverPatientRepository,
     visible: Boolean,
+    onLogout: () -> Unit,
+    onAccountDeleted: () -> Unit,
 ) {
     when (tab) {
-        CaregiverTab.SETTINGS -> CaregiverPatientSelectionScreen(state, repository, visible)
+        CaregiverTab.SETTINGS -> CaregiverPatientSelectionScreen(state, repository, visible, onLogout, onAccountDeleted)
         else -> CaregiverFeatureLanding(tab, state, repository, visible)
     }
 }
@@ -195,6 +203,8 @@ private fun CaregiverPatientSelectionScreen(
     state: CaregiverPatientState,
     repository: CaregiverPatientRepository,
     enabled: Boolean,
+    onLogout: () -> Unit,
+    onAccountDeleted: () -> Unit,
 ) {
     var displayName by rememberSaveable { mutableStateOf("") }
     val scope = rememberCoroutineScope()
@@ -203,6 +213,7 @@ private fun CaregiverPatientSelectionScreen(
     var noon by rememberSaveable { mutableStateOf("12:00") }
     var evening by rememberSaveable { mutableStateOf("18:00") }
     var bedtime by rememberSaveable { mutableStateOf("21:00") }
+    var confirmation by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(selectedPatient?.id, selectedPatient?.slotTimes) {
         val times = selectedPatient?.slotTimes ?: CaregiverSlotTimes("08:00", "12:00", "18:00", "21:00")
         morning = times.morning
@@ -315,7 +326,63 @@ private fun CaregiverPatientSelectionScreen(
                 onIssue = { scope.launch { repository.issueLinkingCode() } },
             )
         }
+        if (selectedPatient != null) item {
+            Card(Modifier.fillMaxWidth().testTag("caregiver-patient-danger")) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.caregiver_patient_danger_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    OutlinedButton(
+                        onClick = { confirmation = "revoke" },
+                        enabled = enabled && !state.destructiveActionInProgress,
+                        modifier = Modifier.fillMaxWidth().testTag("caregiver-patient-revoke"),
+                    ) { Text(stringResource(R.string.caregiver_patient_revoke)) }
+                    OutlinedButton(
+                        onClick = { confirmation = "delete" },
+                        enabled = enabled && !state.destructiveActionInProgress,
+                        modifier = Modifier.fillMaxWidth().testTag("caregiver-patient-delete"),
+                    ) { Text(stringResource(R.string.caregiver_patient_delete), color = MaterialTheme.colorScheme.error) }
+                }
+            }
+        }
+        item {
+            Card(Modifier.fillMaxWidth().testTag("caregiver-account-actions")) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.caregiver_account_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    OutlinedButton(onClick = onLogout, enabled = enabled, modifier = Modifier.fillMaxWidth().testTag("caregiver-logout")) {
+                        Text(stringResource(R.string.caregiver_account_logout))
+                    }
+                    OutlinedButton(
+                        onClick = { confirmation = "account" },
+                        enabled = enabled && !state.destructiveActionInProgress,
+                        modifier = Modifier.fillMaxWidth().testTag("caregiver-account-delete"),
+                    ) { Text(stringResource(R.string.caregiver_account_delete), color = MaterialTheme.colorScheme.error) }
+                    if (state.destructiveActionFailed) Text(stringResource(R.string.caregiver_destructive_failed), color = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
         item { Spacer(Modifier.height(20.dp)) }
+    }
+    confirmation?.let { action ->
+        val account = action == "account"
+        val revoke = action == "revoke"
+        AlertDialog(
+            onDismissRequest = { confirmation = null },
+            title = { Text(stringResource(if (account) R.string.caregiver_account_delete_confirm_title else if (revoke) R.string.caregiver_patient_revoke_confirm_title else R.string.caregiver_patient_delete_confirm_title)) },
+            text = { Text(stringResource(if (account) R.string.caregiver_account_delete_confirm_message else if (revoke) R.string.caregiver_patient_revoke_confirm_message else R.string.caregiver_patient_delete_confirm_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmation = null
+                    scope.launch {
+                        val success = when (action) {
+                            "revoke" -> repository.revokeSelectedPatient()
+                            "delete" -> repository.deleteSelectedPatient()
+                            else -> repository.deleteCaregiverAccount()
+                        }
+                        if (account && success) onAccountDeleted()
+                    }
+                }) { Text(stringResource(if (account) R.string.caregiver_account_delete else if (revoke) R.string.caregiver_patient_revoke_confirm else R.string.caregiver_patient_delete_confirm)) }
+            },
+            dismissButton = { TextButton(onClick = { confirmation = null }) { Text(stringResource(R.string.common_cancel)) } },
+        )
     }
 }
 

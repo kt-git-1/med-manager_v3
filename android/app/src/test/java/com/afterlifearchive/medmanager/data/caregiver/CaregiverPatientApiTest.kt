@@ -105,4 +105,32 @@ class CaregiverPatientApiTest {
         assertEquals("123456", issued.code)
         assertEquals("2026-07-14T12:15:00.000Z", issued.expiresAt)
     }
+
+    @Test
+    fun destructiveRoutesUseDistinctServerAuthoritativeEndpoints() = runTest {
+        val requests = mutableListOf<HttpRequest>()
+        val client = ApiClient(
+            baseUrl = "https://example.test/",
+            caregiverTokenProvider = { "caregiver-token" },
+            transport = HttpTransport { request ->
+                requests += request
+                HttpResponse(200, """{"data":{"ok":true}}""")
+            },
+        )
+        val api = CaregiverPatientApi(client)
+
+        api.revokePatient("p1")
+        api.deletePatient("p2")
+        api.deleteCaregiverAccount()
+
+        assertEquals(listOf("POST", "DELETE", "DELETE"), requests.map { it.method })
+        assertEquals(
+            listOf(
+                "https://example.test/api/patients/p1/revoke",
+                "https://example.test/api/patients/p2",
+                "https://example.test/api/me",
+            ),
+            requests.map { it.url },
+        )
+    }
 }

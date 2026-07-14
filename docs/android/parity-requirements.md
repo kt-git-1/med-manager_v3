@@ -69,7 +69,7 @@ This file tracks product parity against `main@1d9d19e`. Status is conservative: 
 | CG-002 | Patient list/create/select | `PatientManagementView`, `/api/patients` | IMPLEMENTED | Typed list/create/select, trimmed nonblank/max-50 validation, immediate persisted selection and patient-limit-specific handling have JVM/API/Compose coverage; visual/physical verification pending |
 | CG-002A | Four-slot patient time presets | `PatientManagementView.timePresetDetailSheet`, `PATCH /api/patients/{id}` | IMPLEMENTED | Native 24-hour pickers, strict four-field `HH:mm` PATCH, authoritative response mapping, selected-patient update and dedicated cross-feature freshness revision are tested; notification rescheduling/physical verification pending |
 | CG-003 | Linking code issue/share | `PatientLinkCodeView`, linking-code route | IMPLEMENTED | Payload-free authenticated issue, typed code/expiry mapping, Tokyo expiry display, clipboard copy and Android Sharesheet match the current contract; code is cleared on patient switch and API/repository/Compose coverage passes; physical Sharesheet verification pending |
-| CG-004 | Revoke/delete patient with correct semantics | revoke/delete views and routes | NOT_STARTED |
+| CG-004 | Revoke/delete patient with correct semantics | revoke/delete views and routes | IMPLEMENTED | Separate data-preserving revoke and irreversible cascade-delete confirmations/routes; local list, selection, code and cross-feature revisions change only after server success; failure preservation is tested; physical verification pending |
 | CG-005 | Medication list and empty state | `MedicationListView.swift` | NOT_STARTED |
 | CG-006 | Regular/PRN medication form and validation | `MedicationFormView*` | NOT_STARTED |
 | CG-007 | Regimen schedule CRUD | regimen routes | NOT_STARTED |
@@ -78,7 +78,7 @@ This file tracks product parity against `main@1d9d19e`. Status is conservative: 
 | CG-010 | Caregiver month/day history | caregiver/history views | NOT_STARTED |
 | CG-011 | PDF period selection/report/share | PDF feature files/report route | NOT_STARTED |
 | CG-012 | Push settings and self-exclusion behavior | push settings/routes | NOT_STARTED |
-| CG-013 | Account deletion and session reset | settings and `/api/me` | NOT_STARTED |
+| CG-013 | Account deletion and session reset | settings and `/api/me` | IMPLEMENTED | `DELETE /api/me` completes before repository reset and local caregiver logout; failure keeps patient data, selection and tokens, with repository/API coverage; production backend/physical verification pending |
 | CG-014 | Lazy tab lifetime, hidden-tab isolation and state preservation | `CaregiverHomeView.loadedTabs`, tab visibility modifier | IMPLEMENTED | Today is the only initial tab; visited tabs remain composed, hidden tabs are transparent, non-selectable and removed from accessibility, and selected tab state is saveable; configuration/physical verification pending |
 | CG-015 | Preserve successful mutation state if follow-up refresh fails | `CaregiverTodayViewModel.refreshAfterMutation` | NOT_STARTED |
 | CG-016 | Allow caregiver proxy bulk for older missed slots | caregiver slot route, `slotBulkRecordService` | NOT_STARTED |

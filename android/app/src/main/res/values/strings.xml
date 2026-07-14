@@ -249,6 +249,21 @@
     <string name="caregiver_linking_code_share">共有</string>
     <string name="caregiver_linking_code_failed">コードを発行できませんでした。もう一度お試しください。</string>
     <string name="caregiver_linking_code_share_message">お薬見守りの本人モードで、次の連携コードを入力してください。\n\n連携コード: %1$s\n有効期限: %2$s\n\nアプリを開き、「本人モード」からコードを入力すると、服薬予定と記録を家族と共有できます。</string>
+    <string name="caregiver_patient_danger_title">患者との連携</string>
+    <string name="caregiver_patient_revoke">リンク解除</string>
+    <string name="caregiver_patient_revoke_confirm_title">リンク解除</string>
+    <string name="caregiver_patient_revoke_confirm_message">この患者のリンクを解除します。既存の本人セッションは失効しますが、データは保持されます。</string>
+    <string name="caregiver_patient_revoke_confirm">解除する</string>
+    <string name="caregiver_patient_delete">患者を削除</string>
+    <string name="caregiver_patient_delete_confirm_title">患者を削除</string>
+    <string name="caregiver_patient_delete_confirm_message">この患者とすべての関連データ（お薬・服薬記録・在庫など）を完全に削除します。この操作は取り消せません。</string>
+    <string name="caregiver_patient_delete_confirm">削除する</string>
+    <string name="caregiver_account_title">家族アカウント</string>
+    <string name="caregiver_account_logout">ログアウト</string>
+    <string name="caregiver_account_delete">家族アカウントを削除</string>
+    <string name="caregiver_account_delete_confirm_title">アカウントを完全に削除</string>
+    <string name="caregiver_account_delete_confirm_message">家族アカウントと管理する患者データをサーバーから削除します。この操作は取り消せません。</string>
+    <string name="caregiver_destructive_failed">操作を完了できませんでした。データとログイン状態は変更されていません。</string>
 
     <!-- Local notifications -->
     <string name="notification_channel_patient_reminders">服薬リマインダー</string>
