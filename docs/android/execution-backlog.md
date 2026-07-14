@@ -113,10 +113,10 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ### D01 Shell and selection
 
-- [ ] Five tabs in current iOS order, Today initial.
-- [ ] Lazy persistent tab lifetime and hidden-tab isolation.
-- [ ] Load patients; auto-select sole patient; clear invalid stored selection.
-- [ ] Shared no-patient and data-unavailable states.
+- [x] Five tabs in current iOS order, Today initial.
+- [x] Lazy persistent tab lifetime and hidden-tab isolation.
+- [x] Load patients; auto-select sole patient; clear invalid stored selection.
+- [x] Shared no-patient and data-unavailable states.
 
 ### D02 Patient management contracts/UI
 
@@ -185,4 +185,4 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Immediate next item
 
-Begin **Gate D caregiver patient-management** while keeping the C01/C06 verification residuals explicit. C03–C05 mirror current patient Today, simplified History and Settings. The API-35 adaptive matrix now covers dark Today/History/Settings, 200% reachability on all three screens and merged History-day TalkBack labels; evidence is under `evidence/c06-20260714/`. C01 still requires the remaining iOS pairs and exceptional states, and C06 still requires 130%, full TalkBack traversal and physical-device checks. Consent remains off by default; Firebase transport, reset-on-disable and DebugView verification remain Gate H.
+Continue **D02 caregiver patient management** from the completed D01 shell: create/select validation and patient-limit mapping first, then slot presets, linking code, revoke/delete and account deletion in server-authoritative order. The authenticated placeholder has been replaced by the five-tab lazy shell, typed caregiver patient list, persisted selection reconciliation and shared empty/error states. Full gate passes with 43/43 API-35 tests. C01/C06 iOS-pair, 130%, full TalkBack and physical-device residuals remain tracked; Firebase transport remains Gate H.

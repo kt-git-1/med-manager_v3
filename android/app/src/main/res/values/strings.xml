@@ -211,6 +211,24 @@
     <string name="caregiver_session_ready_message">ログイン状態を安全に復元しました。</string>
     <string name="caregiver_session_logout_device">この端末のセッションを解除</string>
 
+    <!-- Caregiver shell -->
+    <string name="caregiver_tab_today">今日</string>
+    <string name="caregiver_tab_medications">薬</string>
+    <string name="caregiver_tab_inventory">在庫</string>
+    <string name="caregiver_tab_history">履歴</string>
+    <string name="caregiver_tab_settings">設定</string>
+    <string name="caregiver_settings_title">連携・設定</string>
+    <string name="caregiver_settings_subtitle">見守る方と家族アカウントを管理します</string>
+    <string name="caregiver_data_unavailable_title">情報を取得できませんでした</string>
+    <string name="caregiver_data_unavailable_message">通信状況を確認して、もう一度お試しください。ログイン直後の場合は少し時間をおいて再試行してください。</string>
+    <string name="caregiver_no_patient_title">患者がいません</string>
+    <string name="caregiver_no_patient_message">見守る方の名前を登録すると、薬や服薬予定を管理できるようになります。</string>
+    <string name="caregiver_no_selection_title">患者が未選択です</string>
+    <string name="caregiver_no_selection_message">設定から対象患者を選んでください。</string>
+    <string name="caregiver_selected_patient">%1$sさんを見守り中</string>
+    <string name="caregiver_patient_selected">選択中</string>
+    <string name="caregiver_patient_select">タップして対象患者を設定</string>
+
     <!-- Local notifications -->
     <string name="notification_channel_patient_reminders">服薬リマインダー</string>
     <string name="notification_channel_patient_reminders_description">あとで知らせる服薬通知</string>

@@ -65,7 +65,7 @@ This file tracks product parity against `main@1d9d19e`. Status is conservative: 
 
 | ID | Requirement group | References | Android status |
 |---|---|---|---|
-| CG-001 | Five-tab caregiver shell and selected-patient behavior | `CaregiverHomeView.swift` | NOT_STARTED |
+| CG-001 | Five-tab caregiver shell and selected-patient behavior | `CaregiverHomeView.swift` | IMPLEMENTED | Current iOS order, Today initial tab, typed patient loading, persisted valid selection, sole-patient auto-selection, invalid-ID clearing and shared empty/error gates have JVM/Compose coverage; visual/physical verification pending |
 | CG-002 | Patient list/create/select | `PatientManagementView`, `/api/patients` | NOT_STARTED |
 | CG-003 | Linking code issue/share | `PatientLinkCodeView`, linking-code route | NOT_STARTED |
 | CG-004 | Revoke/delete patient with correct semantics | revoke/delete views and routes | NOT_STARTED |
@@ -78,7 +78,7 @@ This file tracks product parity against `main@1d9d19e`. Status is conservative: 
 | CG-011 | PDF period selection/report/share | PDF feature files/report route | NOT_STARTED |
 | CG-012 | Push settings and self-exclusion behavior | push settings/routes | NOT_STARTED |
 | CG-013 | Account deletion and session reset | settings and `/api/me` | NOT_STARTED |
-| CG-014 | Lazy tab lifetime, hidden-tab isolation and state preservation | `CaregiverHomeView.loadedTabs`, tab visibility modifier | NOT_STARTED |
+| CG-014 | Lazy tab lifetime, hidden-tab isolation and state preservation | `CaregiverHomeView.loadedTabs`, tab visibility modifier | IMPLEMENTED | Today is the only initial tab; visited tabs remain composed, hidden tabs are transparent, non-selectable and removed from accessibility, and selected tab state is saveable; configuration/physical verification pending |
 | CG-015 | Preserve successful mutation state if follow-up refresh fails | `CaregiverTodayViewModel.refreshAfterMutation` | NOT_STARTED |
 | CG-016 | Allow caregiver proxy bulk for older missed slots | caregiver slot route, `slotBulkRecordService` | NOT_STARTED |
 | CG-017 | Cross-tab Today/History/Inventory freshness revisions | `.doseRecordsUpdated`, `.medicationUpdated` | PARTIAL | Shared monotonic dose/medication/inventory revisions, consumer matrix and duplicate-safe cursors are implemented/tested; caregiver screens must bind their Today/History/Inventory consumers in C1–C4 |

@@ -2,6 +2,8 @@ package com.afterlifearchive.medmanager
 
 import android.app.Application
 import com.afterlifearchive.medmanager.data.auth.SupabaseAuthService
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientApi
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
 import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
 import com.afterlifearchive.medmanager.data.freshness.FreshnessConsumer
 import com.afterlifearchive.medmanager.data.network.ApiClient
@@ -23,6 +25,8 @@ class MedicationApplication : Application() {
     lateinit var patientRepository: PatientRepository
         private set
     lateinit var caregiverSelectionRepository: CaregiverSelectionRepository
+        private set
+    lateinit var caregiverPatientRepository: CaregiverPatientRepository
         private set
     lateinit var mutationFreshnessStore: MutationFreshnessStore
         private set
@@ -52,6 +56,10 @@ class MedicationApplication : Application() {
         sessionRepository = repository
         mutationFreshnessStore = MutationFreshnessStore()
         patientRepository = PatientRepository(PatientApi(apiClient), mutationFreshnessStore)
+        caregiverPatientRepository = CaregiverPatientRepository(
+            CaregiverPatientApi(apiClient),
+            caregiverSelectionRepository,
+        )
         repository.restore()
         ReminderScheduler.createNotificationChannel(this)
 

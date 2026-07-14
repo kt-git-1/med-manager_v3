@@ -62,7 +62,7 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Patient Today | RECHECK_REQUIRED | Post-record reminder and history invalidation changed |
 | Patient History/Settings | IMPLEMENTED / re-visualize | Freshness/lazy-tab behavior changed |
 | Patient notification/tutorial | RECHECK_REQUIRED | Next-day rebuild and loaded-tab lifetime need current evidence |
-| Caregiver mode | NOT_STARTED | Only auth exists; authenticated product shell is a placeholder |
+| Caregiver mode | IN_PROGRESS | Auth plus D01 five-tab shell, typed patient list/selection reconciliation and shared no-patient/data-unavailable states are implemented; patient mutations and feature tabs remain |
 | Analytics/privacy parity | NOT_STARTED | Planned in X1 |
 | Physical release verification | NOT_STARTED | Emulator evidence is not release proof |
 

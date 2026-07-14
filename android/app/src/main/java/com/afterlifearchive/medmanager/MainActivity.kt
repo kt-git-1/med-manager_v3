@@ -17,6 +17,7 @@ class MainActivity : ComponentActivity() {
         val repository = (application as MedicationApplication).sessionRepository
         intent.dataString?.let(repository::handleAuthCallback)
         val patientRepository = (application as MedicationApplication).patientRepository
+        val caregiverPatientRepository = (application as MedicationApplication).caregiverPatientRepository
         handlePatientNotificationIntent(intent, patientRepository)
         setContent {
             MedicationAppTheme {
@@ -27,7 +28,7 @@ class MainActivity : ComponentActivity() {
                 } else if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_PATIENT", false)) {
                     PatientModePreview(PatientTab.TODAY)
                 } else {
-                    MedicationApp(repository, patientRepository)
+                    MedicationApp(repository, patientRepository, caregiverPatientRepository)
                 }
             }
         }
