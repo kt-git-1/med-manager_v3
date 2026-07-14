@@ -454,6 +454,8 @@
     <string name="caregiver_history_previous_month">前の月</string>
     <string name="caregiver_history_next_month">次の月</string>
     <string name="caregiver_history_prn">頓服</string>
+    <string name="caregiver_history_day_accessibility">%1$s、%2$s</string>
+    <string name="caregiver_history_prn_accessibility">頓服 %1$d回</string>
     <string name="caregiver_history_backfill_action">服用済みにする</string>
     <string name="caregiver_history_backfill_confirm_title">過去の服薬を記録しますか？</string>
     <string name="caregiver_history_backfill_confirm_message">%1$sを服用済みとして記録します。</string>

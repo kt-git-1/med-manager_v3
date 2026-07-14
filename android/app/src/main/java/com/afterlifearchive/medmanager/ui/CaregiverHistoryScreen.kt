@@ -46,6 +46,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -262,8 +265,33 @@ private fun CaregiverCalendar(yearMonth: YearMonth, days: List<HistoryDay>, sele
 @Composable
 private fun CaregiverCalendarDay(date: LocalDate, day: HistoryDay?, selected: Boolean, modifier: Modifier, onDate: (LocalDate) -> Unit) {
     val statuses = day?.let { listOf(it.morning, it.noon, it.evening, it.bedtime) }.orEmpty()
+    val slotStatuses = listOf(
+        R.string.patient_slot_morning to day?.morning,
+        R.string.patient_slot_noon to day?.noon,
+        R.string.patient_slot_evening to day?.evening,
+        R.string.patient_slot_bedtime to day?.bedtime,
+    ).mapNotNull { (slot, status) ->
+        status?.takeUnless { it == HistoryStatus.NONE }?.let {
+            "${stringResource(slot)} ${stringResource(historyStatusResource(it))}"
+        }
+    }.toMutableList()
+    if ((day?.prnCount ?: 0) > 0) {
+        slotStatuses += stringResource(R.string.caregiver_history_prn_accessibility, day!!.prnCount)
+    }
+    val summary = slotStatuses.joinToString("、").ifEmpty { stringResource(R.string.patient_history_no_schedule) }
+    val dateLabel = date.format(DateTimeFormatter.ofPattern("M月d日 EEEE", Locale.JAPANESE))
+    val accessibilityLabel = stringResource(R.string.caregiver_history_day_accessibility, dateLabel, summary)
     Column(
-        modifier.height(54.dp).padding(2.dp).background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent, RoundedCornerShape(10.dp)).clickable { onDate(date) }.testTag("caregiver-history-day-$date"),
+        modifier
+            .height(54.dp)
+            .padding(2.dp)
+            .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent, RoundedCornerShape(10.dp))
+            .clickable { onDate(date) }
+            .semantics(mergeDescendants = true) {
+                contentDescription = accessibilityLabel
+                this.selected = selected
+            }
+            .testTag("caregiver-history-day-$date"),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -281,6 +309,13 @@ private fun historyDotColor(status: HistoryStatus) = when (status) {
     HistoryStatus.MISSED -> MaterialTheme.colorScheme.error
     HistoryStatus.PENDING -> MaterialTheme.colorScheme.tertiary
     HistoryStatus.NONE -> Color.Transparent
+}
+
+private fun historyStatusResource(status: HistoryStatus) = when (status) {
+    HistoryStatus.TAKEN -> R.string.patient_status_taken
+    HistoryStatus.MISSED -> R.string.patient_status_missed
+    HistoryStatus.PENDING -> R.string.patient_status_pending
+    HistoryStatus.NONE -> R.string.patient_history_no_schedule
 }
 
 @Composable
