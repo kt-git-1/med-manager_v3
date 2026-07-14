@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -25,7 +27,6 @@ import com.afterlifearchive.medmanager.data.patient.PatientMedication
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import androidx.core.view.WindowCompat
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import java.time.Instant
@@ -93,26 +94,31 @@ class PatientTodayContentTest {
 
     @Test
     fun detailContentShowsCanonicalMedicationInformation() {
-        val medication = medication("med", 12.0).copy(
-            notes = "夕食後に服用",
-            dosageStrengthValue = 5.0,
-            dosageStrengthUnit = "mg",
-        )
-        composeRule.setContent {
-            MedicationAppTheme {
-                PatientDoseDetailContent(dose("med", DoseStatus.TAKEN).copy(doseCount = 1.5), medication)
-            }
-        }
+        val activity = showDoseDetail(notes = "夕食後に服用")
 
-        composeRule.onNodeWithText("med").assertIsDisplayed()
-        composeRule.onNodeWithText("服用済み", substring = true).assertIsDisplayed()
+        composeRule.onAllNodesWithText("血圧の薬 5 mg").assertCountEquals(2)
+        composeRule.onNodeWithText("2026/07/14 12:30").assertIsDisplayed()
+        composeRule.onNodeWithText("記録済み").assertIsDisplayed()
+        composeRule.onNodeWithText("メモ").assertIsDisplayed()
         composeRule.onNodeWithText("夕食後に服用").assertIsDisplayed()
-        composeRule.onNodeWithText("1.5錠").assertIsDisplayed()
-        composeRule.onNodeWithText("5 mg").assertIsDisplayed()
-        composeRule.onNodeWithText("12 錠").assertIsDisplayed()
+        composeRule.onNodeWithText("1回に飲む量").assertIsDisplayed()
+        composeRule.onNodeWithText("1回1.5錠").assertIsDisplayed()
+        composeRule.onAllNodesWithText("薬の強さ").assertCountEquals(0)
+        composeRule.onAllNodesWithText("現在の在庫").assertCountEquals(0)
+        composeRule.runOnIdle { normalizeStatusBar(activity) }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-102-patient-dose-detail-light.png")
+    }
+
+    @Test
+    fun detailContentShowsCurrentIosEmptyNotesFallback() {
+        showDoseDetail(notes = null)
+
+        composeRule.onNodeWithText("メモはありません").assertIsDisplayed()
+        composeRule.onNodeWithText("1回1.5錠").assertIsDisplayed()
         writeScreenshotFixture(
             composeRule.onRoot().captureToImage(),
-            "android-ui-102-patient-dose-detail-light.png",
+            "android-ui-102-patient-dose-detail-empty-notes-light.png",
         )
     }
 
@@ -166,6 +172,32 @@ class PatientTodayContentTest {
         "short" -> "胃薬"
         "prn" -> "頭痛薬"
         else -> id
+    }
+
+    private fun showDoseDetail(notes: String?): Activity {
+        lateinit var activity: Activity
+        val medication = medication("med", 12.0).copy(
+            notes = notes,
+            dosageStrengthValue = 5.0,
+            dosageStrengthUnit = "mg",
+        )
+        composeRule.setContent {
+            MedicationAppTheme {
+                activity = checkNotNull(LocalActivity.current)
+                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).safeDrawingPadding()) {
+                    PatientDoseDetailContent(
+                        dose("med", DoseStatus.TAKEN).copy(
+                            medicationName = "血圧の薬 5 mg",
+                            dosageText = "1回1錠",
+                            doseCount = 1.5,
+                            scheduledAt = Instant.parse("2026-07-14T03:30:00Z"),
+                        ),
+                        medication,
+                    )
+                }
+            }
+        }
+        return activity
     }
 
     @Suppress("DEPRECATION")

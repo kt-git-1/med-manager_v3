@@ -419,25 +419,85 @@ private fun DoseCard(
 internal fun PatientDoseDetailContent(dose: PatientDose, medication: PatientMedication?) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp, 8.dp, 20.dp, 40.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp, 8.dp, 16.dp, 40.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-                Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(dose.medicationName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Text(dose.dosageText, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("${dateTimeText(dose)} ・ ${patientDoseStatusText(dose.status)}", fontWeight = FontWeight.SemiBold)
+            Text(
+                dose.medicationName,
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+        }
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+            ) {
+                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(dose.medicationName, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Text(dose.dosageText, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(
+                            Icons.Rounded.AccessTime,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Text(dateTimeText(dose), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    }
+                    Text(
+                        patientDetailStatusText(dose.status),
+                        modifier = Modifier.background(patientDetailStatusColor(dose.status), RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 }
             }
         }
-        item { PatientDetailCard(stringResource(R.string.patient_detail_notes), medication?.notes?.trim().takeUnless { it.isNullOrEmpty() } ?: stringResource(R.string.patient_detail_no_notes)) }
-        item { PatientDetailCard(stringResource(R.string.patient_detail_dose_amount), stringResource(R.string.patient_tablet_amount, formatPatientAmount(dose.doseCount))) }
-        if (medication != null) {
-            item { PatientDetailCard(stringResource(R.string.patient_detail_strength), "${formatPatientAmount(medication.dosageStrengthValue)} ${medication.dosageStrengthUnit}") }
-            if (medication.inventoryEnabled) {
-                item { PatientDetailCard(stringResource(R.string.patient_detail_inventory), "${formatPatientAmount(medication.inventoryQuantity)} ${medication.inventoryUnit ?: ""}".trim()) }
-            }
+        item {
+            PatientDoseDetailCard(
+                stringResource(R.string.patient_detail_notes),
+                medication?.notes?.trim().takeUnless { it.isNullOrEmpty() } ?: stringResource(R.string.patient_detail_no_notes),
+                insetValue = true,
+            )
+        }
+        item {
+            PatientDoseDetailCard(
+                stringResource(R.string.patient_detail_dose_amount),
+                stringResource(R.string.patient_detail_dose_value, formatPatientAmount(dose.doseCount)),
+                emphasizeValue = true,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PatientDoseDetailCard(
+    title: String,
+    value: String,
+    emphasizeValue: Boolean = false,
+    insetValue: Boolean = false,
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+            Text(
+                value,
+                modifier = if (insetValue) {
+                    Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp)).padding(12.dp)
+                } else {
+                    Modifier
+                },
+                style = if (emphasizeValue) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge,
+                color = if (emphasizeValue) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = if (emphasizeValue) FontWeight.Bold else FontWeight.Normal,
+            )
         }
     }
 }
@@ -445,6 +505,22 @@ internal fun PatientDoseDetailContent(dose: PatientDose, medication: PatientMedi
 @Composable
 private fun dateTimeText(dose: PatientDose): String = dose.scheduledAt.atZone(ZoneId.of("Asia/Tokyo"))
     .format(DateTimeFormatter.ofPattern(stringResource(R.string.patient_detail_date_pattern), Locale.JAPANESE))
+
+@Composable
+private fun patientDetailStatusText(status: DoseStatus) = stringResource(
+    when (status) {
+        DoseStatus.PENDING -> R.string.patient_detail_status_pending
+        DoseStatus.TAKEN -> R.string.patient_detail_status_taken
+        DoseStatus.MISSED -> R.string.patient_detail_status_missed
+    },
+)
+
+@Composable
+private fun patientDetailStatusColor(status: DoseStatus) = when (status) {
+    DoseStatus.PENDING -> MaterialTheme.colorScheme.surfaceVariant
+    DoseStatus.TAKEN -> PatientTeal.copy(alpha = 0.14f)
+    DoseStatus.MISSED -> MaterialTheme.colorScheme.errorContainer
+}
 
 @Composable
 private fun SlotHeader(

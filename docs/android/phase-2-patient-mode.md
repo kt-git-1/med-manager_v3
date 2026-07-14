@@ -146,8 +146,8 @@ This selector foundation is connected to inventory-backed production candidates 
 ### PT-010 dose detail
 
 - Every scheduled-dose card opens a modal detail surface built from the already loaded schedule and medication contracts.
-- The surface includes medication name, dosage text, Tokyo schedule, effective status, notes with an explicit empty fallback, per-intake quantity, strength/unit, and inventory when tracking is enabled.
-- A Compose test verifies status, notes, fractional quantity formatting, strength, and inventory content.
+- The surface mirrors the current iOS production hierarchy: centered navigation-equivalent title, medication/dosage/Tokyo schedule/status header, memo with an explicit empty fallback, and per-intake quantity.
+- Current iOS no longer renders separate strength or inventory cards on this patient surface. A paired iOS XCUITest and API-35 Compose test verify the exact Japanese copy, date/status treatment, fractional quantity and absence of those stale cards.
 
 ### PT-011 authoritative refresh
 
