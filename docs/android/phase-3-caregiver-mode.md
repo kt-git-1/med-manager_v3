@@ -77,3 +77,15 @@ After every successful patient-list load:
 - API tests verify all three method/path pairs. Repository tests prove success-only mutation, sole-patient reconciliation, broad freshness invalidation and failure preservation. Compose coverage verifies the revoke confirmation states that patient sessions expire while data remains.
 
 `CG-004`, `CG-013` and the remaining D02 checklist rows are `IMPLEMENTED`. D02 is implementation-complete; matched iOS visuals and production/physical destructive-operation verification remain before `VERIFIED`.
+
+## D03 caregiver tutorial — 2026-07-14
+
+- The current iOS ten-step sequence and Japanese copy are reproduced: Today, Medications, Inventory, History, Settings, time presets, registration, code issue, code share and notification permission.
+- Each step selects the real persistent tab. Settings steps scroll the production lazy list toward the time, registration or linking-code surface when that surface exists; absent-patient steps fall back to the real registration field.
+- Back/next controls preserve step order. Skip and final completion persist a one-time caregiver tutorial decision independently from patient mode.
+- The final primary action marks completion, selects Settings, brings the real patient-name field into view and requests Android notification permission. The final secondary action uses the pinned “あとで設定する” path without requesting permission.
+- The overlay exposes a localized pane title and step count. Its content scrolls so skip/back/primary actions remain reachable at 200% font.
+- Compose tests cover canonical final copy/actions, real Today-to-Medications navigation, persisted skip, full ten-step completion, registration focus, permission invocation and 200% pane/action reachability.
+- The full gate passes with 48/48 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
+
+D03 and the caregiver portion of `XP-003` are `IMPLEMENTED`. Matched iOS visual captures and physical TalkBack/permission verification remain before `VERIFIED`.

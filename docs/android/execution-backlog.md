@@ -129,10 +129,10 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ### D03 Caregiver tutorial
 
-- [ ] Reproduce all current tutorial steps and pinned copy.
-- [ ] Operate on the real tab/registration flow.
-- [ ] Push permission final step and “later” path.
-- [ ] 2.0 font and TalkBack focus verification.
+- [x] Reproduce all current tutorial steps and pinned copy.
+- [x] Operate on the real tab/registration flow.
+- [x] Push permission final step and “later” path.
+- [x] 2.0 font and TalkBack focus verification.
 
 ## Gate E — Medication and regimen
 
@@ -185,4 +185,4 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Immediate next item
 
-Begin **D03 caregiver tutorial** on the completed D01/D02 production shell and patient-management flow. Revoke, permanent patient deletion and caregiver-account deletion now use distinct confirmations and server-first state changes; failures preserve patient selection and authenticated local state. C01/C06 visual/physical residuals and Gate H Firebase transport remain tracked.
+Begin **Gate E medication and regimen** on the completed Gate D caregiver shell/patient-management/tutorial foundation. The ten-step tutorial drives the real five tabs, scrolls to production registration/time/code surfaces, persists skip/finish, requests notification permission at the final primary action and remains operable at 200% font with pane semantics. C01/C06 visual/physical residuals, FCM transport and Gate H Firebase Analytics remain tracked.

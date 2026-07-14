@@ -265,6 +265,31 @@
     <string name="caregiver_account_delete_confirm_message">家族アカウントと管理する患者データをサーバーから削除します。この操作は取り消せません。</string>
     <string name="caregiver_destructive_failed">操作を完了できませんでした。データとログイン状態は変更されていません。</string>
 
+    <!-- Caregiver tutorial -->
+    <string name="caregiver_tutorial_pane">家族モードの使い方 %1$d/%2$d</string>
+    <string name="caregiver_tutorial_today_title">今日の予定を確認</string>
+    <string name="caregiver_tutorial_today_message">選択中の方が今日飲むお薬と、記録状況をここで確認できます。</string>
+    <string name="caregiver_tutorial_medications_title">薬を登録・編集</string>
+    <string name="caregiver_tutorial_medications_message">薬タブでは定時薬や頓服、飲む時間を管理します。登録内容は本人画面に反映されます。</string>
+    <string name="caregiver_tutorial_inventory_title">在庫を見守る</string>
+    <string name="caregiver_tutorial_inventory_message">在庫タブでは残数や補充目安を確認できます。少なくなった薬は目立つように表示されます。</string>
+    <string name="caregiver_tutorial_history_title">記録を振り返る</string>
+    <string name="caregiver_tutorial_history_message">履歴タブでは、飲めた日や飲み忘れた回を日付ごとに確認できます。</string>
+    <string name="caregiver_tutorial_settings_title">連携と対象を管理</string>
+    <string name="caregiver_tutorial_settings_message">連携・設定では見守る方の登録、選択、連携コードの発行、通知設定を行います。</string>
+    <string name="caregiver_tutorial_time_title">服用時間を調整</string>
+    <string name="caregiver_tutorial_time_message">時間プリセット設定から、朝・昼・夜・眠前の時刻を本人の生活リズムに合わせて変更できます。</string>
+    <string name="caregiver_tutorial_register_title">まず見守る方を登録</string>
+    <string name="caregiver_tutorial_register_message">本人の名前を登録します。チュートリアル完了後に登録欄を開きます。</string>
+    <string name="caregiver_tutorial_issue_title">連携コードを発行</string>
+    <string name="caregiver_tutorial_issue_message">登録した方を選び、「コード発行」から本人用の6桁コードを作ります。</string>
+    <string name="caregiver_tutorial_share_title">本人へコードを共有</string>
+    <string name="caregiver_tutorial_share_message">発行したコードをコピーまたは共有して、本人モードの端末で入力してもらいます。</string>
+    <string name="caregiver_tutorial_notification_title">家族の服薬状況を通知しますか？</string>
+    <string name="caregiver_tutorial_notification_message">本人がお薬を飲んだときや、飲み忘れがありそうなときに通知で確認できます。離れていても状況に気づきやすくなります。</string>
+    <string name="caregiver_tutorial_enable">通知をオンにする</string>
+    <string name="caregiver_tutorial_later">あとで設定する</string>
+
     <!-- Local notifications -->
     <string name="notification_channel_patient_reminders">服薬リマインダー</string>
     <string name="notification_channel_patient_reminders_description">あとで知らせる服薬通知</string>

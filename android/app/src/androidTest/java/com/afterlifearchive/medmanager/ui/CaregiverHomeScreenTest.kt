@@ -77,7 +77,7 @@ class CaregiverHomeScreenTest {
         val storage = TestSelectionStorage()
         val selection = CaregiverSelectionRepository(storage).also { it.restore() }
         val repository = CaregiverPatientRepository(CaregiverPatientDataSource { patients }, selection)
-        composeRule.setContent { MedicationAppTheme { CaregiverHomeScreen(repository) } }
+        composeRule.setContent { MedicationAppTheme { CaregiverHomeScreen(repository, tutorialEnabled = false) } }
         composeRule.waitForIdle()
         return repository to storage
     }

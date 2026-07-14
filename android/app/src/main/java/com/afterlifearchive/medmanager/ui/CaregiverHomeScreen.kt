@@ -1,10 +1,14 @@
 package com.afterlifearchive.medmanager.ui
 
+import android.Manifest
 import android.app.TimePickerDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.History
@@ -41,6 +46,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -84,45 +90,94 @@ fun CaregiverHomeScreen(
     repository: CaregiverPatientRepository,
     onLogout: () -> Unit = {},
     onAccountDeleted: () -> Unit = {},
+    tutorialEnabled: Boolean = true,
+    requestNotificationPermission: (() -> Unit)? = null,
 ) {
     val state by repository.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val tutorialPreferences = remember { context.getSharedPreferences("caregiver_tutorial", Context.MODE_PRIVATE) }
     var selectedTabName by rememberSaveable { mutableStateOf(CaregiverTab.TODAY.name) }
     var loadedTabNames by rememberSaveable { mutableStateOf(setOf(CaregiverTab.TODAY.name)) }
+    var tutorialStep by rememberSaveable {
+        mutableStateOf(if (tutorialEnabled && !tutorialPreferences.getBoolean("seen", false)) 0 else -1)
+    }
+    var postTutorialFocusTag by rememberSaveable { mutableStateOf<String?>(null) }
     val selectedTab = CaregiverTab.valueOf(selectedTabName)
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
+    fun selectTab(tab: CaregiverTab) {
+        selectedTabName = tab.name
+        loadedTabNames = loadedTabNames + tab.name
+    }
+
+    fun finishTutorial(openRegistration: Boolean) {
+        tutorialPreferences.edit().putBoolean("seen", true).apply()
+        tutorialStep = -1
+        if (openRegistration) {
+            selectTab(CaregiverTab.SETTINGS)
+            postTutorialFocusTag = "caregiver-create-name"
+        }
+    }
 
     LaunchedEffect(Unit) { repository.refresh() }
+    LaunchedEffect(tutorialStep) {
+        if (tutorialStep >= 0) selectTab(caregiverTutorialTab(tutorialStep))
+    }
 
-    Column(Modifier.fillMaxSize().safeDrawingPadding().testTag("caregiver-home")) {
-        Box(Modifier.weight(1f).fillMaxWidth()) {
-            CaregiverTab.entries.forEach { tab ->
-                if (tab.name in loadedTabNames) {
-                    val visible = tab == selectedTab
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .alpha(if (visible) 1f else 0f)
-                            .zIndex(if (visible) 1f else 0f)
-                            .testTag("caregiver-content-${tab.name.lowercase()}")
-                            .then(if (visible) Modifier else Modifier.semantics { hideFromAccessibility() }),
-                    ) {
-                        CaregiverTabContent(tab, state, repository, visible, onLogout, onAccountDeleted)
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().safeDrawingPadding().testTag("caregiver-home")) {
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                CaregiverTab.entries.forEach { tab ->
+                    if (tab.name in loadedTabNames) {
+                        val visible = tab == selectedTab
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .alpha(if (visible) 1f else 0f)
+                                .zIndex(if (visible) 1f else 0f)
+                                .testTag("caregiver-content-${tab.name.lowercase()}")
+                                .then(if (visible) Modifier else Modifier.semantics { hideFromAccessibility() }),
+                        ) {
+                            CaregiverTabContent(
+                                tab,
+                                state,
+                                repository,
+                                visible,
+                                onLogout,
+                                onAccountDeleted,
+                                if (tutorialStep >= 0) caregiverTutorialFocusTag(tutorialStep) else postTutorialFocusTag,
+                            )
+                        }
                     }
                 }
             }
-        }
-        NavigationBar {
-            CaregiverTab.entries.forEach { tab ->
-                NavigationBarItem(
-                    selected = tab == selectedTab,
-                    onClick = {
-                        selectedTabName = tab.name
-                        loadedTabNames = loadedTabNames + tab.name
-                    },
-                    icon = { Icon(tab.icon, contentDescription = null) },
-                    label = { Text(stringResource(tab.label)) },
-                    modifier = Modifier.testTag("caregiver-tab-${tab.name.lowercase()}"),
-                )
+            NavigationBar {
+                CaregiverTab.entries.forEach { tab ->
+                    NavigationBarItem(
+                        selected = tab == selectedTab,
+                        onClick = { selectTab(tab) },
+                        icon = { Icon(tab.icon, contentDescription = null) },
+                        label = { Text(stringResource(tab.label)) },
+                        modifier = Modifier.testTag("caregiver-tab-${tab.name.lowercase()}"),
+                    )
+                }
             }
+        }
+        if (tutorialStep >= 0) {
+            CaregiverTutorialOverlay(
+                step = tutorialStep,
+                onSkip = { finishTutorial(openRegistration = false) },
+                onPrevious = { if (tutorialStep > 0) tutorialStep -= 1 },
+                onNext = {
+                    if (tutorialStep == CAREGIVER_TUTORIAL_STEP_COUNT - 1) {
+                        finishTutorial(openRegistration = true)
+                        if (requestNotificationPermission != null) requestNotificationPermission()
+                        else if (Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        tutorialStep += 1
+                    }
+                },
+            )
         }
     }
 }
@@ -135,9 +190,10 @@ private fun CaregiverTabContent(
     visible: Boolean,
     onLogout: () -> Unit,
     onAccountDeleted: () -> Unit,
+    tutorialFocusTag: String?,
 ) {
     when (tab) {
-        CaregiverTab.SETTINGS -> CaregiverPatientSelectionScreen(state, repository, visible, onLogout, onAccountDeleted)
+        CaregiverTab.SETTINGS -> CaregiverPatientSelectionScreen(state, repository, visible, onLogout, onAccountDeleted, tutorialFocusTag)
         else -> CaregiverFeatureLanding(tab, state, repository, visible)
     }
 }
@@ -205,6 +261,7 @@ private fun CaregiverPatientSelectionScreen(
     enabled: Boolean,
     onLogout: () -> Unit,
     onAccountDeleted: () -> Unit,
+    tutorialFocusTag: String?,
 ) {
     var displayName by rememberSaveable { mutableStateOf("") }
     val scope = rememberCoroutineScope()
@@ -214,6 +271,7 @@ private fun CaregiverPatientSelectionScreen(
     var evening by rememberSaveable { mutableStateOf("18:00") }
     var bedtime by rememberSaveable { mutableStateOf("21:00") }
     var confirmation by rememberSaveable { mutableStateOf<String?>(null) }
+    val listState = rememberLazyListState()
     LaunchedEffect(selectedPatient?.id, selectedPatient?.slotTimes) {
         val times = selectedPatient?.slotTimes ?: CaregiverSlotTimes("08:00", "12:00", "18:00", "21:00")
         morning = times.morning
@@ -221,8 +279,20 @@ private fun CaregiverPatientSelectionScreen(
         evening = times.evening
         bedtime = times.bedtime
     }
+    LaunchedEffect(tutorialFocusTag, state.patients.size, selectedPatient?.id) {
+        val statusRows = if ((state.loading && state.patients.isEmpty()) || state.loadFailed || (!state.loading && state.patients.isEmpty())) 1 else 0
+        val slotIndex = 2 + statusRows + state.patients.size
+        val targetIndex = when (tutorialFocusTag) {
+            "caregiver-create-name" -> 1
+            "caregiver-slot-times" -> if (selectedPatient != null) slotIndex else 1
+            "caregiver-linking-code" -> if (selectedPatient != null) slotIndex + 1 else 1
+            else -> null
+        }
+        if (targetIndex != null) listState.animateScrollToItem(targetIndex)
+    }
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = 20.dp).testTag("caregiver-settings-list"),
+        state = listState,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
