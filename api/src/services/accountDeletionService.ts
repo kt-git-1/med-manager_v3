@@ -94,7 +94,7 @@ async function deleteCaregiverAppData(caregiverId: string) {
     });
     const patientIds = patients.map((patient) => patient.id);
     const pushDevices = await tx.pushDevice.findMany({
-      where: { ownerType: "caregiver", ownerId: caregiverId },
+      where: { ownerType: "CAREGIVER", ownerId: caregiverId },
       select: { id: true }
     });
     const pushDeviceIds = pushDevices.map((device) => device.id);
@@ -123,7 +123,7 @@ async function deleteCaregiverAppData(caregiverId: string) {
       await tx.pushDelivery.deleteMany({ where: { pushDeviceId: { in: pushDeviceIds } } });
     }
 
-    await tx.pushDevice.deleteMany({ where: { ownerType: "caregiver", ownerId: caregiverId } });
+    await tx.pushDevice.deleteMany({ where: { ownerType: "CAREGIVER", ownerId: caregiverId } });
     await tx.deviceToken.deleteMany({ where: { caregiverId } });
     await tx.caregiverEntitlement.deleteMany({ where: { caregiverId } });
   });

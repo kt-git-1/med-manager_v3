@@ -128,8 +128,12 @@ describe("DELETE /api/me", () => {
     expect(deleteMocks.pushDelivery).toHaveBeenCalledWith({
       where: { pushDeviceId: { in: ["push-device-1"] } }
     });
+    expect(pushDeviceFindManyMock).toHaveBeenCalledWith({
+      where: { ownerType: "CAREGIVER", ownerId: "caregiver-delete-1" },
+      select: { id: true }
+    });
     expect(deleteMocks.pushDevice).toHaveBeenCalledWith({
-      where: { ownerType: "caregiver", ownerId: "caregiver-delete-1" }
+      where: { ownerType: "CAREGIVER", ownerId: "caregiver-delete-1" }
     });
     expect(deleteMocks.deviceToken).toHaveBeenCalledWith({
       where: { caregiverId: "caregiver-delete-1" }
@@ -179,7 +183,7 @@ describe("DELETE /api/me", () => {
       deleteMocks.pushDevice.mock.invocationCallOrder[0]
     );
     expect(deleteMocks.pushDevice).toHaveBeenCalledWith({
-      where: { ownerType: "caregiver", ownerId: "caregiver-delete-1" }
+      where: { ownerType: "CAREGIVER", ownerId: "caregiver-delete-1" }
     });
   });
 
