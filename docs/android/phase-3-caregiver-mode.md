@@ -89,3 +89,16 @@ After every successful patient-list load:
 - The full gate passes with 48/48 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
 
 D03 and the caregiver portion of `XP-003` are `IMPLEMENTED`. Matched iOS visual captures and physical TalkBack/permission verification remain before `VERIFIED`.
+
+## E01 caregiver medication list — 2026-07-14
+
+- The Medications tab now uses `GET /api/medications?patientId=...` with caregiver authentication and the strict shared medication DTO/domain boundary.
+- Loading, patient-list failure, zero patients, no selection, medication-load failure, empty list, filtered empty and populated content are distinct states.
+- The current patient header, scheduled/PRN/ended metrics and All/Scheduled/PRN/Ended filters follow the current iOS information hierarchy.
+- Cards expose name, regular/PRN/ended status, dosage, per-intake count, daily/weekday slot schedule and inventory remaining/out/insufficient status without relying on color alone.
+- A patient switch clears old items before loading the new patient. Caregiver logout/account context loss clears the medication cache, preventing cross-account display.
+- The Medications freshness cursor observes medication, inventory and slot-time revisions only while the tab is visible.
+- API/repository tests cover caregiver auth/path, strict mapping, patient-switch isolation and explicit failure. Compose tests cover populated/filter/schedule/inventory and canonical empty states.
+- The full gate passes with 50/50 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
+
+E01 and `CG-005` are `IMPLEMENTED`. Add/edit forms, paired iOS visuals, large text, TalkBack and physical verification remain.

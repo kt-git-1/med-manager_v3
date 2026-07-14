@@ -290,6 +290,31 @@
     <string name="caregiver_tutorial_enable">通知をオンにする</string>
     <string name="caregiver_tutorial_later">あとで設定する</string>
 
+    <!-- Caregiver medications -->
+    <string name="caregiver_medication_title">薬を管理</string>
+    <string name="caregiver_medication_patient">対象患者：%1$s</string>
+    <string name="caregiver_medication_metric_scheduled">定時薬</string>
+    <string name="caregiver_medication_metric_prn">頓服</string>
+    <string name="caregiver_medication_metric_ended">終了</string>
+    <string name="caregiver_medication_filter_all">すべて</string>
+    <string name="caregiver_medication_filter_scheduled">定時</string>
+    <string name="caregiver_medication_filter_prn">頓服</string>
+    <string name="caregiver_medication_filter_ended">終了</string>
+    <string name="caregiver_medication_empty_title">薬がありません</string>
+    <string name="caregiver_medication_empty_message">まず1つ目の薬を登録しましょう。定時薬も、必要な時だけ飲む薬もここで管理できます。</string>
+    <string name="caregiver_medication_filter_empty_title">該当する薬はありません</string>
+    <string name="caregiver_medication_filter_empty_message">別のフィルターを選んでください。</string>
+    <string name="caregiver_medication_type_scheduled">定時薬</string>
+    <string name="caregiver_medication_type_prn">頓服</string>
+    <string name="caregiver_medication_type_ended">終了</string>
+    <string name="caregiver_medication_dosage">用量 %1$s</string>
+    <string name="caregiver_medication_dose">1回%1$s錠</string>
+    <string name="caregiver_medication_schedule_daily">毎日 %1$s</string>
+    <string name="caregiver_medication_schedule_weekly">%1$s %2$s</string>
+    <string name="caregiver_medication_inventory_out">在庫切れ</string>
+    <string name="caregiver_medication_inventory_remaining">残り %1$s %2$s</string>
+    <string name="caregiver_medication_inventory_unit">錠</string>
+
     <!-- Local notifications -->
     <string name="notification_channel_patient_reminders">服薬リマインダー</string>
     <string name="notification_channel_patient_reminders_description">あとで知らせる服薬通知</string>

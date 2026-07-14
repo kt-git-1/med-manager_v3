@@ -4,6 +4,8 @@ import android.app.Application
 import com.afterlifearchive.medmanager.data.auth.SupabaseAuthService
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientApi
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationApi
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
 import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
 import com.afterlifearchive.medmanager.data.freshness.FreshnessConsumer
 import com.afterlifearchive.medmanager.data.network.ApiClient
@@ -27,6 +29,8 @@ class MedicationApplication : Application() {
     lateinit var caregiverSelectionRepository: CaregiverSelectionRepository
         private set
     lateinit var caregiverPatientRepository: CaregiverPatientRepository
+        private set
+    lateinit var caregiverMedicationRepository: CaregiverMedicationRepository
         private set
     lateinit var mutationFreshnessStore: MutationFreshnessStore
         private set
@@ -59,6 +63,10 @@ class MedicationApplication : Application() {
         caregiverPatientRepository = CaregiverPatientRepository(
             CaregiverPatientApi(apiClient),
             caregiverSelectionRepository,
+            mutationFreshnessStore,
+        )
+        caregiverMedicationRepository = CaregiverMedicationRepository(
+            CaregiverMedicationApi(apiClient),
             mutationFreshnessStore,
         )
         repository.restore()
