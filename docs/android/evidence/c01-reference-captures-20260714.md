@@ -39,6 +39,10 @@
 | UI-005 | Android confirmation required, 200% font | [`c01-20260714/android-ui-005-caregiver-signup-confirmation-font-2.0.png`](c01-20260714/android-ui-005-caregiver-signup-confirmation-font-2.0.png) | Production signup flow with deterministic no-access-token response; scrolled component fixture shows full notice and resend cooldown |
 | UI-100 | Patient Today tutorial step 1/4 | [`c01-20260714/ui-100-patient-tutorial-today-light.png`](c01-20260714/ui-100-patient-tutorial-today-light.png) | `-ForceModeTutorial.patient`; production tutorial overlay and sample view |
 | UI-101 | Patient Today typical content | [`c01-20260714/ui-101-patient-today-light.png`](c01-20260714/ui-101-patient-today-light.png) | `-ForceModeTutorial.patient -PatientMarketingScreenshot.today`; production shell with deterministic sample data and no overlay |
+| UI-101 | Android inventory-partial Today | [`c01-20260714/android-ui-101-patient-inventory-partial-light.png`](c01-20260714/android-ui-101-patient-inventory-partial-light.png) | Production `TodayContent`; two scheduled medicines, one inventory shortage, partial bulk action and PRN entry |
+| UI-102 | Android dose detail | [`c01-20260714/android-ui-102-patient-dose-detail-light.png`](c01-20260714/android-ui-102-patient-dose-detail-light.png) | Production bottom-sheet content with taken state, notes, 1.5-tablet dose, strength and tracked inventory |
+| UI-104 | Android no-schedule history | [`c01-20260714/android-ui-104-patient-history-no-schedule-light.png`](c01-20260714/android-ui-104-patient-history-no-schedule-light.png) | Production `HistoryContent`; current-iOS no-plan progress, week and recent-record state |
+| UI-106 | Android notification-denied settings | [`c01-20260714/android-ui-106-patient-settings-notification-denied-light.png`](c01-20260714/android-ui-106-patient-settings-notification-denied-light.png) | Production `SettingsContent`; disabled notification control and settings-app guidance reached by scrolling |
 
 ## Review disposition
 
@@ -54,13 +58,14 @@
 - UI-004/UI-005 error auditing found Android was collapsing multiple Supabase message/status failures into login-generic copy. `AuthFailure` and `SessionUserMessage` now reproduce current iOS message-first and HTTP-status classification for invalid credentials, confirmation delivery/required, duplicate email, weak password, invalid email, credential check, forbidden, not-found, rate-limit, network and unavailable states; displayed strings are exact current-iOS Japanese copy. Resend keeps its operation-specific 429 and unknown-failure states. Loading regressions also prove Patient link and Caregiver signup disable duplicate submission while their progress indicators replace the primary action content. Leaving login/signup now clears transient error, confirmation and resend state, so re-entering a form cannot restore a stale success notice.
 - Remaining UI-001 differences are platform typography/icon rendering and viewport-class height. Android standard/compact/large/200%-font Analytics consent evidence is complete; matched iOS compact/large variants, full TalkBack traversal and physical verification remain required before UI-001 can be marked `VERIFIED`.
 - UI-100 and UI-101 use the iOS production component tree and deterministic in-app sample data; no API response, identity, medication record or auth token from a real user was captured.
+- Android UI-101/UI-102/UI-104/UI-106 exceptional-state captures are emitted by their existing production-component assertions, so visual evidence and behavior cannot silently diverge. `ScreenshotFixtures.kt` writes to app cache during ordinary regression runs and, only when `persistScreenshotFixtures=true`, publishes API 29+ evidence through MediaStore under `Download/med-manager-screenshot-fixtures` for collection after Gradle uninstalls the test app.
 
 ## Remaining C01 reference work
 
 - UI-001 matched iOS compact/large variants and physical/TalkBack verification; UI-002 valid/loading/additional failure captures and UI-005 matched iOS signup plus validation/loading/resend-result captures.
 - UI-100 tutorial steps 2–4, completion/skip and 200% text.
-- UI-101 exceptional Today states plus UI-102 dose detail and UI-103 PRN states.
-- UI-104 History month, UI-105 History day and UI-106 Settings states.
+- UI-101 remaining exceptional Today variants and matched iOS inventory-partial capture; UI-102 empty-notes/inventory variants and matched iOS detail capture; UI-103 PRN error/submitting variants.
+- UI-104 remaining progress/retry/retention variants and matched iOS no-plan capture; UI-105 History day variants; UI-106 remaining settings/error states and matched iOS notification-denied capture.
 - Compact/large viewport pairs and dark/large-text variants required by `ui-screen-contracts.md`.
 
 Android dark captures for UI-101/UI-104/UI-106 and an Android UI-101 200% font capture are now recorded separately under `c06-20260714/`. They reduce the Android adaptive-matrix residual but do not replace the missing matched iOS pairs above.
@@ -68,3 +73,11 @@ Android dark captures for UI-101/UI-104/UI-106 and an Android UI-101 200% font c
 C01 remains in progress until the full scoped state inventory is captured. These files are the first current-baseline references and replace older evidence only for the states listed above.
 
 Latest post-fix verification: JVM tests, Debug/Release assembly and Lint pass; the final instrumentation suite passes 108/108 on API 26, API 33 and API 35 (324/324), plus 108/108 on the separate API-35 448 x 997 dp large-phone override. The current iOS Debug reference build also succeeds, and `git diff --check` passes.
+
+To regenerate persistent Android fixtures on API 29 or later:
+
+```bash
+./gradlew connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.afterlifearchive.medmanager.ui.PatientTodayContentTest,com.afterlifearchive.medmanager.ui.PatientHistoryContentTest,com.afterlifearchive.medmanager.ui.PatientSettingsContentTest \
+  -Pandroid.testInstrumentationRunnerArguments.persistScreenshotFixtures=true
+```

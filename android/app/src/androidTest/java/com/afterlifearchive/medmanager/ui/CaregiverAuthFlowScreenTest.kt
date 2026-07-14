@@ -1,10 +1,8 @@
 package com.afterlifearchive.medmanager.ui
 
-import android.graphics.Bitmap
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.captureToImage
@@ -170,14 +168,7 @@ class CaregiverAuthFlowScreenTest {
     }
 
     private fun captureFixture(name: String) {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val directory = java.io.File(context.externalCacheDir ?: context.cacheDir, "screenshot-fixtures").apply { mkdirs() }
-        val file = java.io.File(directory, name)
-        val image = composeRule.onRoot().captureToImage()
-        file.outputStream().use { stream ->
-            image.asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, stream)
-        }
-        check(file.length() > 0)
+        writeScreenshotFixture(composeRule.onRoot().captureToImage(), name)
     }
 }
 

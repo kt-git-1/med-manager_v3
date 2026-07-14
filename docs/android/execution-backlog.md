@@ -95,7 +95,7 @@ Patient Compose, repository, session/auth/network fallback and local notificatio
 
 ### Gate B exit
 
-- [ ] Patient functional and screenshot regressions pass before caregiver work.
+- [x] Patient functional and production-component screenshot regressions pass before caregiver work.
 - [x] Architecture supports caregiver repositories without duplicating session/network logic.
 
 Functional/JVM/Compose/instrumentation gates pass, including production-component image capture. Current-baseline visual regression evidence is now being accumulated under C01; UI-001 comparison found and closed status-bar safe-area and dark primary-content drift, and its 2.0-font family action plus Analytics decision actions now have reachability regressions.
@@ -107,7 +107,8 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C03 Reverify Patient Today states/actions/recording-window/inventory/PRN/detail.
 - [x] C04 Reverify current Patient History progress/week/recent summaries, retention and freshness.
 - [x] C05 Reverify Settings/reminders/tutorial/deep links/legal/logout and patient analytics-consent UI.
-- [ ] C06 Complete patient TalkBack, font 1.0/1.3/2.0, light/dark and physical-device checks. API-35 emulator dark captures for Patient Today/History/Settings and all four Caregiver primary surfaces, standard/compact/large-phone viewport passes, explicit 130%/200% reachability for both roles, Caregiver primary-screen reachability at dark plus 200%, Settings/tutorial 200%, merged Patient week and Caregiver calendar-day semantics, medication-named Caregiver primary actions, and production Patient/Caregiver Activity recreation plus portrait/landscape transitions are complete; full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification remain.
+- [x] C06 Complete emulator-verifiable patient/caregiver font 1.0/1.3/2.0, light/dark, compact/standard/large-phone, semantics and rotation/configuration checks. This includes dark captures for Patient Today/History/Settings and all four Caregiver primary surfaces, Caregiver primary-screen action paths at dark plus 200%, Settings/tutorial 200%, merged Patient week and Caregiver calendar-day semantics, medication-named Caregiver primary actions, and production Patient/Caregiver Activity recreation.
+- [ ] C06 Complete full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification.
 
 ## Gate D — Caregiver patient-management vertical slice
 
@@ -178,7 +179,8 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] Full API 26/33/35 emulator matrix (108 tests each, 324/324 total), plus a separate API-35 448 x 997 dp large-phone override pass (108/108), including light/dark 200% Caregiver reachability, Patient/Caregiver Activity recreation and rotation, medication-specific Caregiver TalkBack actions, the compact PDF sheet fix, caregiver stale/retry states, 200%-font Analytics consent opt-out, Patient-link error/actions/loading and Caregiver confirmation/resend/loading/re-entry reachability.
 - [ ] Physical-device matrix.
 - [ ] Notification Doze/delivery/tap/process-death tests.
-- [ ] TalkBack, font 2.0, dark mode, compact/large phone and rotation/configuration tests.
+- [x] Automated font 2.0, dark mode, compact/standard/large phone, semantics and rotation/configuration tests.
+- [ ] Physical TalkBack traversal and OEM configuration/lifecycle tests.
 - [x] Security, dependency, privacy and initial performance reviews; external dependency upgrades and signed-release profiling remain recorded residuals.
 - [x] Add a secret-free, fail-closed production signing configuration and Play release runbook.
 - [x] Map implementation data flows to a draft Play Data safety and Health apps declaration worksheet; final signed-AAB/Console submission remains pending.

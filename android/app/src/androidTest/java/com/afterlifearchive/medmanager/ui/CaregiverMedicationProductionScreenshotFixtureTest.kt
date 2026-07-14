@@ -1,13 +1,10 @@
 package com.afterlifearchive.medmanager.ui
 
-import android.graphics.Bitmap
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
-import androidx.test.platform.app.InstrumentationRegistry
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatient
@@ -17,7 +14,6 @@ import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
 import com.afterlifearchive.medmanager.data.patient.PatientMedication
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import java.time.Instant
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -50,13 +46,7 @@ class CaregiverMedicationProductionScreenshotFixtureTest {
     }
 
     private fun saveCapture(name: String) {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val directory = java.io.File(context.cacheDir, "screenshot-fixtures").apply { mkdirs() }
-        val file = java.io.File(directory, name)
-        file.outputStream().use { stream ->
-            composeRule.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, stream)
-        }
-        assertTrue(file.length() > 0)
+        writeScreenshotFixture(composeRule.onRoot().captureToImage(), name)
     }
 
     private fun medication(

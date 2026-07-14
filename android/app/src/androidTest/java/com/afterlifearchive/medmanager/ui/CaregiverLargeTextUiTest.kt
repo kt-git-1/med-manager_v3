@@ -1,9 +1,7 @@
 package com.afterlifearchive.medmanager.ui
 
-import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
@@ -14,7 +12,6 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.Density
-import androidx.test.platform.app.InstrumentationRegistry
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverInventoryDataSource
@@ -37,7 +34,6 @@ import com.afterlifearchive.medmanager.data.patient.PatientMedication
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import java.time.LocalDate
 import java.time.YearMonth
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -162,14 +158,7 @@ class CaregiverLargeTextUiTest(private val darkTheme: Boolean) {
 
     private fun captureDarkFixture(name: String) {
         if (!darkTheme) return
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val directory = java.io.File(context.cacheDir, "screenshot-fixtures").apply { mkdirs() }
-        val file = java.io.File(directory, name)
-        val image = composeRule.onRoot().captureToImage()
-        file.outputStream().use { stream ->
-            image.asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, stream)
-        }
-        assertTrue(file.length() > 0)
+        writeScreenshotFixture(composeRule.onRoot().captureToImage(), name)
     }
 
     companion object {

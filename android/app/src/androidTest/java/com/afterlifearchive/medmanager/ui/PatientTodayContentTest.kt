@@ -1,6 +1,7 @@
 package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -8,6 +9,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onRoot
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.PatientDose
@@ -60,6 +62,10 @@ class PatientTodayContentTest {
 
         composeRule.onNodeWithText("次に飲むお薬").assertIsDisplayed()
         composeRule.onAllNodesWithText("在庫不足のお薬が1件あります").onFirst().assertIsDisplayed()
+        writeScreenshotFixture(
+            composeRule.onRoot().captureToImage(),
+            "android-ui-101-patient-inventory-partial-light.png",
+        )
         composeRule.onNodeWithText("この時間のお薬を飲んだ").performClick()
         composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().assertIsDisplayed().performClick()
         composeRule.onNodeWithText("痛い時").assertIsDisplayed()
@@ -90,6 +96,10 @@ class PatientTodayContentTest {
         composeRule.onNodeWithText("1.5錠").assertIsDisplayed()
         composeRule.onNodeWithText("5 mg").assertIsDisplayed()
         composeRule.onNodeWithText("12 錠").assertIsDisplayed()
+        writeScreenshotFixture(
+            composeRule.onRoot().captureToImage(),
+            "android-ui-102-patient-dose-detail-light.png",
+        )
     }
 
     @Test

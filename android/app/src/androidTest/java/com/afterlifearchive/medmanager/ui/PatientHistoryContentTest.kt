@@ -1,9 +1,11 @@
 package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.hasText
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
@@ -68,6 +70,10 @@ class PatientHistoryContentTest {
         composeRule.onNodeWithText("今日は予定がありません").assertIsDisplayed()
         composeRule.onNodeWithText("今日は定時薬の予定がありません。必要な時のお薬だけ記録できます。").assertIsDisplayed()
         composeRule.onNodeWithText("0/7日").assertIsDisplayed()
+        writeScreenshotFixture(
+            composeRule.onRoot().captureToImage(),
+            "android-ui-104-patient-history-no-schedule-light.png",
+        )
     }
 
     @Test

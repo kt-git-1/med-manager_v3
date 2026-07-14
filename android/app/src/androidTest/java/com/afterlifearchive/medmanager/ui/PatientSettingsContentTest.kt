@@ -2,9 +2,11 @@ package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
@@ -66,6 +68,10 @@ class PatientSettingsContentTest {
         composeRule.onNodeWithTag("patient-notification-toggle").assertIsNotEnabled()
         composeRule.onNodeWithTag("patient-settings-list").performScrollToNode(hasText("通知が許可されていません。設定アプリで通知を許可してください。"))
         composeRule.onNodeWithText("通知が許可されていません。設定アプリで通知を許可してください。").assertIsDisplayed()
+        writeScreenshotFixture(
+            composeRule.onRoot().captureToImage(),
+            "android-ui-106-patient-settings-notification-denied-light.png",
+        )
     }
 
     @Test
