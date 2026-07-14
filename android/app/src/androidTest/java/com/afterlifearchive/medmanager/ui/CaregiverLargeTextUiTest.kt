@@ -34,8 +34,11 @@ import java.time.LocalDate
 import java.time.YearMonth
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 
-class CaregiverLargeTextUiTest {
+@RunWith(Parameterized::class)
+class CaregiverLargeTextUiTest(private val darkTheme: Boolean) {
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -51,7 +54,9 @@ class CaregiverLargeTextUiTest {
         }, MutationFreshnessStore())
 
         composeRule.setContent {
-            CaregiverLargeText { CaregiverTodayScreen(repository, patientState, enabled = true, onOpenMedications = {}) }
+            CaregiverLargeText(darkTheme) {
+                CaregiverTodayScreen(repository, patientState, enabled = true, onOpenMedications = {})
+            }
         }
         composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
         composeRule.onNodeWithTag("caregiver-today-list")
@@ -67,7 +72,9 @@ class CaregiverLargeTextUiTest {
         )
 
         composeRule.setContent {
-            CaregiverLargeText { CaregiverMedicationScreen(repository, patientState, enabled = true) }
+            CaregiverLargeText(darkTheme) {
+                CaregiverMedicationScreen(repository, patientState, enabled = true)
+            }
         }
         composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
         composeRule.onNodeWithTag("caregiver-medication-list")
@@ -103,7 +110,9 @@ class CaregiverLargeTextUiTest {
         }, MutationFreshnessStore())
 
         composeRule.setContent {
-            CaregiverLargeText { CaregiverInventoryScreen(repository, patientState, enabled = true, onOpenMedications = {}) }
+            CaregiverLargeText(darkTheme) {
+                CaregiverInventoryScreen(repository, patientState, enabled = true, onOpenMedications = {})
+            }
         }
         composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
         composeRule.onNodeWithTag("caregiver-inventory-list")
@@ -129,7 +138,9 @@ class CaregiverLargeTextUiTest {
         }, MutationFreshnessStore())
 
         composeRule.setContent {
-            CaregiverLargeText { CaregiverHistoryScreen(repository, patientState, enabled = true) }
+            CaregiverLargeText(darkTheme) {
+                CaregiverHistoryScreen(repository, patientState, enabled = true)
+            }
         }
         composeRule.waitUntil(5_000) { repository.state.value.monthLoaded }
         composeRule.onNodeWithTag("caregiver-history-month")
@@ -138,11 +149,17 @@ class CaregiverLargeTextUiTest {
         composeRule.waitUntil(5_000) { repository.state.value.dayDetail != null }
         composeRule.onNodeWithTag("caregiver-history-day-sheet").assertIsDisplayed()
     }
+
+    companion object {
+        @JvmStatic
+        @Parameterized.Parameters(name = "darkTheme={0}")
+        fun themes() = listOf(false, true)
+    }
 }
 
 @Composable
-private fun CaregiverLargeText(content: @Composable () -> Unit) {
-    MedicationAppTheme {
+private fun CaregiverLargeText(darkTheme: Boolean, content: @Composable () -> Unit) {
+    MedicationAppTheme(darkTheme = darkTheme) {
         val density = LocalDensity.current
         CompositionLocalProvider(LocalDensity provides Density(density.density, 2f)) {
             content()
