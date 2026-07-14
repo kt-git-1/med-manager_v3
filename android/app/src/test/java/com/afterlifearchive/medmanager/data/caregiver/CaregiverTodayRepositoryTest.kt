@@ -8,6 +8,9 @@ import com.afterlifearchive.medmanager.data.network.HttpTransport
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.PatientDose
 import com.afterlifearchive.medmanager.data.patient.PatientMedication
+import com.afterlifearchive.medmanager.data.patient.HistoryStatus
+import com.afterlifearchive.medmanager.data.patient.MedicationSlot
+import com.afterlifearchive.medmanager.data.patient.SlotBulkRecordResult
 import java.time.Instant
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -46,6 +49,77 @@ class CaregiverTodayRepositoryTest {
             requests.map { it.url }.toSet(),
         )
         assertTrue(requests.all { it.headers["Authorization"] == "Bearer caregiver-token" })
+    }
+
+    @Test
+    fun individualRecordAndDeleteUseExactCaregiverContracts() = runTest {
+        val requests = mutableListOf<HttpRequest>()
+        val client = ApiClient(
+            baseUrl = "https://example.test/",
+            caregiverTokenProvider = { "caregiver-token" },
+            transport = HttpTransport { request ->
+                requests += request
+                if (request.method == "POST") HttpResponse(200, """{"data":{"ok":true}}""") else HttpResponse(204, "")
+            },
+        )
+        val api = CaregiverTodayApi(client)
+        val dose = dose("med / one", DoseStatus.PENDING, "2026-07-15T08:00:00Z")
+
+        api.recordDose("patient-1", dose)
+        api.deleteDose("patient-1", dose.copy(status = DoseStatus.TAKEN))
+
+        assertEquals(listOf("POST", "DELETE"), requests.map { it.method })
+        assertEquals("https://example.test/api/patients/patient-1/dose-records", requests[0].url)
+        assertEquals("{\"medicationId\":\"med / one\",\"scheduledAt\":\"2026-07-15T08:00:00Z\"}", requests[0].body)
+        assertEquals(
+            "https://example.test/api/patients/patient-1/dose-records?medicationId=med+%2F+one&scheduledAt=2026-07-15T08%3A00%3A00Z",
+            requests[1].url,
+        )
+        assertTrue(requests.all { it.headers["Authorization"] == "Bearer caregiver-token" })
+    }
+
+    @Test
+    fun bulkSlotUsesSelectedPatientRouteAndMapsPartialResult() = runTest {
+        var captured: HttpRequest? = null
+        val client = ApiClient(
+            baseUrl = "https://example.test/",
+            caregiverTokenProvider = { "caregiver-token" },
+            transport = HttpTransport { request ->
+                captured = request
+                HttpResponse(200, """{"updatedCount":1,"remainingCount":1,"insufficientCount":1,"totalPills":2.0,"medCount":2,"slotTime":"08:00","slotSummary":{"morning":"taken","noon":"pending","evening":"none","bedtime":"none"},"recordingGroupId":"group-1"}""")
+            },
+        )
+
+        val result = CaregiverTodayApi(client).recordSlot("patient-1", "2026-07-14", MedicationSlot.MORNING)
+
+        assertEquals("POST", captured?.method)
+        assertEquals("https://example.test/api/patients/patient-1/dose-records/slot", captured?.url)
+        assertEquals("{\"date\":\"2026-07-14\",\"slot\":\"morning\"}", captured?.body)
+        assertEquals("Bearer caregiver-token", captured?.headers?.get("Authorization"))
+        assertEquals(1, result.updatedCount)
+        assertEquals(1, result.insufficientCount)
+        assertEquals(HistoryStatus.TAKEN, result.slotSummary[MedicationSlot.MORNING])
+    }
+
+    @Test
+    fun prnRecordUsesSelectedPatientCaregiverContract() = runTest {
+        var captured: HttpRequest? = null
+        val client = ApiClient(
+            baseUrl = "https://example.test/",
+            caregiverTokenProvider = { "caregiver-token" },
+            transport = HttpTransport { request ->
+                captured = request
+                HttpResponse(200, """{"record":{"id":"prn-record-1"},"medicationInventory":null}""")
+            },
+        )
+        val medication = medication("prn-1", "痛み止め", isPrn = true, active = true)
+
+        CaregiverTodayApi(client).recordPrn("patient-1", medication)
+
+        assertEquals("POST", captured?.method)
+        assertEquals("https://example.test/api/patients/patient-1/prn-dose-records", captured?.url)
+        assertEquals("{\"medicationId\":\"prn-1\",\"takenAt\":null,\"quantityTaken\":null}", captured?.body)
+        assertEquals("Bearer caregiver-token", captured?.headers?.get("Authorization"))
     }
 
     @Test
@@ -96,6 +170,175 @@ class CaregiverTodayRepositoryTest {
         assertTrue(repository.state.value.loadFailed)
     }
 
+    @Test
+    fun successfulIndividualRecordAndDeleteUpdateLocalStateAndFreshness() = runTest {
+        val freshness = MutationFreshnessStore()
+        val calls = mutableListOf<String>()
+        val original = dose("dose-1", DoseStatus.PENDING, "2026-07-15T08:00:00Z")
+        val source = object : CaregiverTodayDataSource {
+            override suspend fun today(patientId: String) = listOf(original)
+            override suspend fun medications(patientId: String) = emptyList<PatientMedication>()
+            override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
+            override suspend fun recordDose(patientId: String, dose: PatientDose) { calls += "record:${dose.key}" }
+            override suspend fun deleteDose(patientId: String, dose: PatientDose) { calls += "delete:${dose.key}" }
+        }
+        val repository = CaregiverTodayRepository(source, freshness)
+        repository.load("patient-1")
+
+        assertTrue(repository.recordDose("patient-1", original))
+        val recorded = repository.state.value.doses.single()
+        assertEquals(DoseStatus.TAKEN, recorded.status)
+        assertEquals(com.afterlifearchive.medmanager.data.patient.RecordedByType.CAREGIVER, recorded.recordedByType)
+        assertEquals(CaregiverTodayMutationMessage.RECORDED, repository.state.value.mutationMessage)
+        assertTrue(repository.deleteDose("patient-1", recorded))
+
+        assertEquals(DoseStatus.PENDING, repository.state.value.doses.single().status)
+        assertEquals(CaregiverTodayMutationMessage.DELETED, repository.state.value.mutationMessage)
+        assertEquals(listOf("record:dose-1", "delete:dose-1"), calls)
+        assertEquals(2L, freshness.revisions.value.dose)
+        assertEquals(2L, freshness.revisions.value.inventory)
+        assertEquals(2L, freshness.revisions.value.notificationPlan)
+    }
+
+    @Test
+    fun inventoryGuardPreservesDoseStateWithoutCallingServer() = runTest {
+        var recordCalls = 0
+        val original = dose("dose-1", DoseStatus.PENDING, "2026-07-15T08:00:00Z")
+        val source = object : CaregiverTodayDataSource {
+            override suspend fun today(patientId: String) = listOf(original)
+            override suspend fun medications(patientId: String) = emptyList<PatientMedication>()
+            override suspend fun inventory(patientId: String) = listOf(CaregiverInventorySummary("dose-1", true, 0.0, 1.0, true, true))
+            override suspend fun recordDose(patientId: String, dose: PatientDose) { recordCalls += 1; error("offline") }
+        }
+        val repository = CaregiverTodayRepository(source, MutationFreshnessStore())
+        repository.load("patient-1")
+
+        assertFalse(repository.recordDose("patient-1", original))
+        assertEquals(0, recordCalls)
+        assertEquals(DoseStatus.PENDING, repository.state.value.doses.single().status)
+        assertEquals(CaregiverTodayMutationError.INSUFFICIENT_INVENTORY, repository.state.value.mutationError)
+    }
+
+    @Test
+    fun serverFailurePreservesDoseAndPublishesNoFreshness() = runTest {
+        val freshness = MutationFreshnessStore()
+        val original = dose("dose-1", DoseStatus.PENDING, "2026-07-15T08:00:00Z")
+        val source = object : CaregiverTodayDataSource {
+            override suspend fun today(patientId: String) = listOf(original)
+            override suspend fun medications(patientId: String) = emptyList<PatientMedication>()
+            override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
+            override suspend fun recordDose(patientId: String, dose: PatientDose) = error("offline")
+        }
+        val repository = CaregiverTodayRepository(source, freshness)
+        repository.load("patient-1")
+
+        assertFalse(repository.recordDose("patient-1", original))
+
+        assertEquals(DoseStatus.PENDING, repository.state.value.doses.single().status)
+        assertEquals(CaregiverTodayMutationError.FAILED, repository.state.value.mutationError)
+        assertEquals(0L, freshness.revisions.value.dose)
+    }
+
+    @Test
+    fun caregiverBulkRecordsOlderMissedSlotWithoutClientTimeWindow() = runTest {
+        val freshness = MutationFreshnessStore()
+        val olderMissed = dose("old-missed", DoseStatus.MISSED, "2026-07-13T23:00:00Z")
+        var request: Triple<String, String, MedicationSlot>? = null
+        val source = object : CaregiverTodayDataSource {
+            override suspend fun today(patientId: String) = listOf(olderMissed)
+            override suspend fun medications(patientId: String) = emptyList<PatientMedication>()
+            override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
+            override suspend fun recordSlot(patientId: String, date: String, slot: MedicationSlot): SlotBulkRecordResult {
+                request = Triple(patientId, date, slot)
+                return slotResult(updated = 1)
+            }
+        }
+        val repository = CaregiverTodayRepository(source, freshness)
+        repository.load("patient-1")
+
+        assertTrue(repository.recordSlot("patient-1", MedicationSlot.MORNING, listOf(olderMissed)))
+
+        assertEquals(Triple("patient-1", "2026-07-14", MedicationSlot.MORNING), request)
+        assertEquals(DoseStatus.TAKEN, repository.state.value.doses.single().status)
+        assertEquals(CaregiverTodayMutationMessage.SLOT_RECORDED, repository.state.value.mutationMessage)
+        assertEquals(1L, freshness.revisions.value.dose)
+    }
+
+    @Test
+    fun partialBulkResultKeepsInsufficientDoseAndReportsCounts() = runTest {
+        val available = dose("available", DoseStatus.PENDING, "2026-07-14T23:00:00Z")
+        val insufficient = dose("insufficient", DoseStatus.MISSED, "2026-07-14T23:00:00Z")
+        val source = object : CaregiverTodayDataSource {
+            override suspend fun today(patientId: String) = listOf(available, insufficient)
+            override suspend fun medications(patientId: String) = emptyList<PatientMedication>()
+            override suspend fun inventory(patientId: String) = listOf(CaregiverInventorySummary("insufficient", true, 0.0, 1.0, true, true))
+            override suspend fun recordSlot(patientId: String, date: String, slot: MedicationSlot) = slotResult(updated = 1, insufficient = 1)
+        }
+        val repository = CaregiverTodayRepository(source, MutationFreshnessStore())
+        repository.load("patient-1")
+
+        assertTrue(repository.recordSlot("patient-1", MedicationSlot.MORNING, listOf(available, insufficient)))
+
+        assertEquals(DoseStatus.TAKEN, repository.state.value.doses.first { it.key == "available" }.status)
+        assertEquals(DoseStatus.MISSED, repository.state.value.doses.first { it.key == "insufficient" }.status)
+        assertEquals(CaregiverTodayMutationMessage.SLOT_PARTIAL, repository.state.value.mutationMessage)
+        assertEquals(1, repository.state.value.lastUpdatedCount)
+        assertEquals(1, repository.state.value.lastInsufficientCount)
+    }
+
+    @Test
+    fun prnSuccessPublishesDoseInventoryFreshnessAndFailureDoesNot() = runTest {
+        val freshness = MutationFreshnessStore()
+        val prn = medication("prn-1", "痛み止め", isPrn = true, active = true)
+        var fail = false
+        val source = object : CaregiverTodayDataSource {
+            override suspend fun today(patientId: String) = emptyList<PatientDose>()
+            override suspend fun medications(patientId: String) = listOf(prn)
+            override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
+            override suspend fun recordPrn(patientId: String, medication: PatientMedication) {
+                if (fail) error("offline")
+            }
+        }
+        val repository = CaregiverTodayRepository(source, freshness)
+        repository.load("patient-1")
+
+        assertTrue(repository.recordPrn("patient-1", prn))
+        assertEquals(CaregiverTodayMutationMessage.PRN_RECORDED, repository.state.value.mutationMessage)
+        assertEquals(1L, freshness.revisions.value.dose)
+        assertEquals(1L, freshness.revisions.value.inventory)
+        assertEquals(0L, freshness.revisions.value.notificationPlan)
+
+        fail = true
+        assertFalse(repository.recordPrn("patient-1", prn))
+        assertEquals(CaregiverTodayMutationError.FAILED, repository.state.value.mutationError)
+        assertEquals(1L, freshness.revisions.value.dose)
+    }
+
+    @Test
+    fun failedFollowUpRefreshPreservesSuccessfulMutationUi() = runTest {
+        val original = dose("dose-1", DoseStatus.PENDING, "2026-07-15T08:00:00Z")
+        var refreshFails = false
+        val source = object : CaregiverTodayDataSource {
+            override suspend fun today(patientId: String): List<PatientDose> = if (refreshFails) error("refresh offline") else listOf(original)
+            override suspend fun medications(patientId: String) = emptyList<PatientMedication>()
+            override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
+            override suspend fun recordDose(patientId: String, dose: PatientDose) = Unit
+        }
+        val repository = CaregiverTodayRepository(source, MutationFreshnessStore())
+        repository.load("patient-1")
+        assertTrue(repository.recordDose("patient-1", original))
+
+        refreshFails = true
+        repository.load("patient-1")
+
+        assertEquals(DoseStatus.TAKEN, repository.state.value.doses.single().status)
+        assertEquals(CaregiverTodayMutationMessage.RECORDED, repository.state.value.mutationMessage)
+        assertEquals(CaregiverTodayMutationError.FAILED, repository.state.value.mutationError)
+        assertFalse(repository.state.value.loading)
+        assertFalse(repository.state.value.refreshing)
+        assertFalse(repository.state.value.loadFailed)
+    }
+
     private fun dose(key: String, status: DoseStatus, at: String) = PatientDose(
         key = key,
         medicationId = key,
@@ -118,4 +361,15 @@ class CaregiverTodayRepositoryTest {
     private fun medicationsJson() = """{"data":[{"id":"prn-1","patientId":"patient-1","name":"頓服","dosageText":"200 mg","doseCountPerIntake":1.0,"dosageStrengthValue":200.0,"dosageStrengthUnit":"mg","isPrn":true,"startDate":"2026-01-01T00:00:00Z","inventoryEnabled":false,"inventoryQuantity":0.0,"inventoryOut":false,"isActive":true,"isArchived":false}]}"""
 
     private fun inventoryJson() = """{"data":{"patientId":"patient-1","medications":[{"medicationId":"med-1","doseCountPerIntake":1.0,"inventoryEnabled":true,"inventoryQuantity":0.5,"low":true,"out":false}]}}"""
+
+    private fun slotResult(updated: Int, insufficient: Int = 0) = SlotBulkRecordResult(
+        updatedCount = updated,
+        remainingCount = insufficient,
+        insufficientCount = insufficient,
+        totalPills = 2.0,
+        medCount = 2,
+        slotTime = "08:00",
+        slotSummary = MedicationSlot.entries.associateWith { HistoryStatus.NONE },
+        recordingGroupId = if (updated > 0) "group-1" else null,
+    )
 }

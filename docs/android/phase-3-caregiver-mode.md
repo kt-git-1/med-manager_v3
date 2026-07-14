@@ -159,3 +159,16 @@ E05 and Gate E are `IMPLEMENTED`. Gate F now owns caregiver Today proxy actions 
 - The full gate passes with 59/59 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
 
 F01 is `IMPLEMENTED`; F02–F04 add the individual, bulk and PRN proxy mutations without changing this read-state contract.
+
+## F02–F05 caregiver Today mutations — 2026-07-15
+
+- Individual proxy recording sends caregiver-authenticated `POST /api/patients/{patientId}/dose-records`; undo sends `DELETE` with encoded medication and scheduled-time query parameters. The local dose becomes taken-by-caregiver or pending again only after server success.
+- Slot recording sends `POST /api/patients/{patientId}/dose-records/slot` with the scheduled dose's Tokyo calendar date and canonical slot. Android applies no patient recording-window restriction, so the current backend caregiver exception can record older missed slots.
+- Every slot action requires the iOS-equivalent confirmation, explicitly identifies older missed records, maps complete/partial/nothing-to-record results and preserves inventory-insufficient doses.
+- PRN selection and confirmation use `POST /api/patients/{patientId}/prn-dose-records`. Known insufficient inventory disables the medication before the request; authoritative 409 inventory errors map to the same warning.
+- Successful individual/slot/PRN writes publish the correct dose, inventory and scheduled-notification freshness domains. Failed requests keep prior dose state and publish no revisions.
+- Follow-up refresh now distinguishes initial loading from an in-place refresh. A transient refresh failure retains the successful local status and success message, keeps the timeline visible and adds an inline retry warning instead of replacing the screen with a fatal empty state.
+- Exact method/path/body/auth, older Tokyo date behavior, partial inventory results, success/failure revisions and follow-up preservation have JVM/API coverage. Production Compose tests exercise individual record/undo, older-missed bulk confirmation, PRN confirmation and refresh-failure preservation.
+- The full gate passes with 63/63 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
+
+F02–F05 and `CG-008`, `CG-015`, `CG-016` are `IMPLEMENTED`. F06 now owns complete inventory management.

@@ -23,18 +23,26 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.LocalHospital
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,9 +57,12 @@ import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayRepository
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayMutationError
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayMutationMessage
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.PatientDose
+import com.afterlifearchive.medmanager.data.patient.PatientMedication
 import com.afterlifearchive.medmanager.data.patient.RecordedByType
 import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import java.time.ZoneId
@@ -70,6 +81,9 @@ internal fun CaregiverTodayScreen(
     val selected = patientState.selectedPatient
     val cursor = remember(repository) { repository.newFreshnessCursor() }
     val scope = rememberCoroutineScope()
+    var slotToConfirm by remember { mutableStateOf<Pair<MedicationSlot, List<PatientDose>>?>(null) }
+    var showingPrnPicker by remember { mutableStateOf(false) }
+    var prnToConfirm by remember { mutableStateOf<PatientMedication?>(null) }
 
     LaunchedEffect(enabled, selected?.id, freshness.dose, freshness.medication, freshness.inventory, freshness.slotTimes) {
         if (enabled && selected != null) cursor.refreshIfStale { repository.load(selected.id) }
@@ -103,9 +117,105 @@ internal fun CaregiverTodayScreen(
             patientName = selected.displayName,
             slotTimes = selected.slotTimes,
             doses = state.doses,
-            prnCount = state.prnMedications.size,
+            prnMedications = state.prnMedications,
             outOfStockMedicationIds = state.outOfStockMedicationIds,
+            updatingDoseKey = state.updatingDoseKey,
+            mutationError = state.mutationError,
+            mutationMessage = state.mutationMessage,
+            refreshing = state.refreshing,
+            lastUpdatedCount = state.lastUpdatedCount,
+            lastInsufficientCount = state.lastInsufficientCount,
+            updatingSlot = state.updatingSlot,
+            enabled = enabled,
+            onRecordDose = { dose -> scope.launch { repository.recordDose(selected.id, dose) } },
+            onDeleteDose = { dose -> scope.launch { repository.deleteDose(selected.id, dose) } },
+            onRecordSlot = { slot, doses -> slotToConfirm = slot to doses },
+            onOpenPrn = { showingPrnPicker = true },
             onOpenMedications = onOpenMedications,
+        )
+    }
+
+    val confirmation = slotToConfirm
+    if (confirmation != null && selected != null) {
+        val recordable = confirmation.second.filter { it.status != DoseStatus.TAKEN }
+        val includesMissed = recordable.any { it.status == DoseStatus.MISSED }
+        AlertDialog(
+            onDismissRequest = { slotToConfirm = null },
+            title = { Text(stringResource(R.string.caregiver_today_confirm_slot_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        if (includesMissed) R.string.caregiver_today_confirm_slot_missed_message else R.string.caregiver_today_confirm_slot_message,
+                        slotLabel(confirmation.first),
+                        recordable.size,
+                    ),
+                )
+            },
+            dismissButton = {
+                TextButton(onClick = { slotToConfirm = null }) { Text(stringResource(R.string.caregiver_medication_form_cancel)) }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        slotToConfirm = null
+                        scope.launch { repository.recordSlot(selected.id, confirmation.first, confirmation.second) }
+                    },
+                    modifier = Modifier.testTag("caregiver-today-slot-confirm"),
+                ) { Text(stringResource(R.string.caregiver_today_confirm_record)) }
+            },
+            modifier = Modifier.testTag("caregiver-today-slot-dialog"),
+        )
+    }
+    if (showingPrnPicker) {
+        AlertDialog(
+            onDismissRequest = { showingPrnPicker = false },
+            title = { Text(stringResource(R.string.caregiver_today_prn_select)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    state.prnMedications.forEach { medication ->
+                        val insufficient = medication.id in state.outOfStockMedicationIds
+                        OutlinedButton(
+                            onClick = {
+                                showingPrnPicker = false
+                                prnToConfirm = medication
+                            },
+                            enabled = !insufficient && state.updatingPrnMedicationId == null,
+                            modifier = Modifier.fillMaxWidth().testTag("caregiver-today-prn-${medication.id}"),
+                        ) {
+                            Column(Modifier.fillMaxWidth()) {
+                                Text(medication.name, fontWeight = FontWeight.Bold)
+                                Text(if (insufficient) stringResource(R.string.patient_inventory_insufficient) else medication.dosageText)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showingPrnPicker = false }) { Text(stringResource(R.string.caregiver_medication_form_cancel)) }
+            },
+            modifier = Modifier.testTag("caregiver-today-prn-picker"),
+        )
+    }
+    val prnConfirmation = prnToConfirm
+    if (prnConfirmation != null && selected != null) {
+        AlertDialog(
+            onDismissRequest = { prnToConfirm = null },
+            title = { Text(stringResource(R.string.caregiver_today_prn_confirm_title)) },
+            text = { Text(stringResource(R.string.caregiver_today_prn_confirm_message, prnConfirmation.name)) },
+            dismissButton = {
+                TextButton(onClick = { prnToConfirm = null }) { Text(stringResource(R.string.caregiver_medication_form_cancel)) }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        prnToConfirm = null
+                        scope.launch { repository.recordPrn(selected.id, prnConfirmation) }
+                    },
+                    modifier = Modifier.testTag("caregiver-today-prn-confirm"),
+                ) { Text(stringResource(R.string.caregiver_today_confirm_record)) }
+            },
+            modifier = Modifier.testTag("caregiver-today-prn-confirm-dialog"),
         )
     }
 }
@@ -115,10 +225,23 @@ private fun CaregiverTodayContent(
     patientName: String,
     slotTimes: CaregiverSlotTimes?,
     doses: List<PatientDose>,
-    prnCount: Int,
+    prnMedications: List<PatientMedication>,
     outOfStockMedicationIds: Set<String>,
+    updatingDoseKey: String?,
+    mutationError: CaregiverTodayMutationError?,
+    mutationMessage: CaregiverTodayMutationMessage?,
+    refreshing: Boolean,
+    lastUpdatedCount: Int,
+    lastInsufficientCount: Int,
+    updatingSlot: MedicationSlot?,
+    enabled: Boolean,
+    onRecordDose: (PatientDose) -> Unit,
+    onDeleteDose: (PatientDose) -> Unit,
+    onRecordSlot: (MedicationSlot, List<PatientDose>) -> Unit,
+    onOpenPrn: () -> Unit,
     onOpenMedications: () -> Unit,
 ) {
+    val prnCount = prnMedications.size
     val rows = MedicationSlot.entries.mapNotNull { slot ->
         doses.filter { resolveSlot(it, slotTimes) == slot }.takeIf { it.isNotEmpty() }?.let { slot to it }
     }
@@ -141,6 +264,31 @@ private fun CaregiverTodayContent(
                     Text(stringResource(R.string.caregiver_today_watching, patientName), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(stringResource(R.string.caregiver_today_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 }
+            }
+        }
+        if (refreshing) item {
+            LinearProgressIndicator(Modifier.fillMaxWidth().testTag("caregiver-today-refreshing"))
+        }
+        mutationError?.let { error ->
+            item {
+                TodayCard(MaterialTheme.colorScheme.error) {
+                    Text(
+                        stringResource(if (error == CaregiverTodayMutationError.INSUFFICIENT_INVENTORY) R.string.patient_inventory_insufficient else R.string.caregiver_today_mutation_failed),
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.testTag("caregiver-today-mutation-error"),
+                    )
+                }
+            }
+        }
+        mutationMessage?.let { message ->
+            item {
+                Text(
+                    caregiverMutationMessage(message, lastUpdatedCount, lastInsufficientCount),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.testTag("caregiver-today-mutation-message"),
+                )
             }
         }
         if (doses.isEmpty() && prnCount == 0) {
@@ -204,11 +352,29 @@ private fun CaregiverTodayContent(
                             Text(stringResource(R.string.caregiver_today_prn_message, prnCount), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
+                    Button(onClick = onOpenPrn, modifier = Modifier.fillMaxWidth().testTag("caregiver-today-prn-open")) {
+                        Text(stringResource(R.string.caregiver_today_prn_open))
+                    }
                 }
             }
             if (rows.isNotEmpty()) {
                 item { Text(stringResource(R.string.caregiver_today_timeline_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
-                rows.forEach { (slot, items) -> item(key = slot.name) { CaregiverTimelineCard(slot, items, slotTimes) } }
+                rows.forEach { (slot, items) ->
+                    item(key = slot.name) {
+                        CaregiverTimelineCard(
+                            slot = slot,
+                            doses = items,
+                            slotTimes = slotTimes,
+                            outOfStockMedicationIds = outOfStockMedicationIds,
+                            updatingDoseKey = updatingDoseKey,
+                            updatingSlot = updatingSlot,
+                            enabled = enabled,
+                            onRecordDose = onRecordDose,
+                            onDeleteDose = onDeleteDose,
+                            onRecordSlot = onRecordSlot,
+                        )
+                    }
+                }
             }
         }
         item { Spacer(Modifier.height(24.dp)) }
@@ -234,7 +400,18 @@ private fun CaregiverTodayEmpty(onOpenMedications: () -> Unit) {
 }
 
 @Composable
-private fun CaregiverTimelineCard(slot: MedicationSlot, doses: List<PatientDose>, slotTimes: CaregiverSlotTimes?) {
+private fun CaregiverTimelineCard(
+    slot: MedicationSlot,
+    doses: List<PatientDose>,
+    slotTimes: CaregiverSlotTimes?,
+    outOfStockMedicationIds: Set<String>,
+    updatingDoseKey: String?,
+    updatingSlot: MedicationSlot?,
+    enabled: Boolean,
+    onRecordDose: (PatientDose) -> Unit,
+    onDeleteDose: (PatientDose) -> Unit,
+    onRecordSlot: (MedicationSlot, List<PatientDose>) -> Unit,
+) {
     val status = when {
         doses.all { it.status == DoseStatus.TAKEN } -> DoseStatus.TAKEN
         doses.any { it.status == DoseStatus.MISSED } -> DoseStatus.MISSED
@@ -251,7 +428,7 @@ private fun CaregiverTimelineCard(slot: MedicationSlot, doses: List<PatientDose>
             Text(statusLabel(status), color = tint, fontWeight = FontWeight.Bold)
         }
         doses.forEach { dose ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(dose.medicationName, fontWeight = FontWeight.Bold)
                     Text("${dose.dosageText}・1回${formatTodayNumber(dose.doseCount)}錠", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -263,9 +440,48 @@ private fun CaregiverTimelineCard(slot: MedicationSlot, doses: List<PatientDose>
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                if (updatingDoseKey == dose.key) {
+                    CircularProgressIndicator(Modifier.size(32.dp), strokeWidth = 3.dp)
+                } else {
+                    val canRecord = dose.medicationId !in outOfStockMedicationIds
+                    IconButton(
+                        onClick = { if (dose.status == DoseStatus.TAKEN) onDeleteDose(dose) else onRecordDose(dose) },
+                        enabled = enabled && updatingSlot == null && (dose.status == DoseStatus.TAKEN || canRecord),
+                        modifier = Modifier.testTag("caregiver-today-dose-action-${dose.key}"),
+                    ) {
+                        Icon(
+                            if (dose.status == DoseStatus.TAKEN) Icons.AutoMirrored.Rounded.Undo else Icons.Rounded.CheckCircle,
+                            contentDescription = stringResource(if (dose.status == DoseStatus.TAKEN) R.string.caregiver_today_delete_individual else R.string.caregiver_today_record_individual),
+                            tint = if (dose.status == DoseStatus.TAKEN) MaterialTheme.colorScheme.onSurfaceVariant else if (canRecord) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            }
+        }
+        val recordable = doses.filter { it.status != DoseStatus.TAKEN }
+        if (recordable.isNotEmpty()) {
+            Button(
+                onClick = { onRecordSlot(slot, doses) },
+                enabled = enabled && updatingDoseKey == null && updatingSlot == null,
+                modifier = Modifier.fillMaxWidth().testTag("caregiver-today-slot-action-${slot.name.lowercase()}"),
+            ) {
+                if (updatingSlot == slot) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 3.dp, color = MaterialTheme.colorScheme.onPrimary)
+                else Icon(Icons.Rounded.CheckCircle, contentDescription = null)
+                Spacer(Modifier.size(6.dp))
+                Text(stringResource(R.string.caregiver_today_record_slot, recordable.size))
             }
         }
     }
+}
+
+@Composable
+private fun caregiverMutationMessage(message: CaregiverTodayMutationMessage, updated: Int, insufficient: Int): String = when (message) {
+    CaregiverTodayMutationMessage.RECORDED -> stringResource(R.string.caregiver_today_recorded)
+    CaregiverTodayMutationMessage.DELETED -> stringResource(R.string.caregiver_today_deleted)
+    CaregiverTodayMutationMessage.SLOT_RECORDED -> stringResource(R.string.caregiver_today_slot_recorded, updated)
+    CaregiverTodayMutationMessage.SLOT_PARTIAL -> stringResource(R.string.caregiver_today_slot_partial, updated, insufficient)
+    CaregiverTodayMutationMessage.NOTHING_TO_RECORD -> stringResource(R.string.caregiver_today_nothing_to_record)
+    CaregiverTodayMutationMessage.PRN_RECORDED -> stringResource(R.string.caregiver_today_prn_recorded)
 }
 
 @Composable
