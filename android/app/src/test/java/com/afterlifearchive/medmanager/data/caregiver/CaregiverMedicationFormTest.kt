@@ -26,6 +26,7 @@ class CaregiverMedicationFormTest {
                 CaregiverMedicationField.DOSE_COUNT,
                 CaregiverMedicationField.END_DATE,
                 CaregiverMedicationField.INVENTORY_COUNT,
+                CaregiverMedicationField.SCHEDULE_SLOT,
             ),
             errors.map { it.field }.toSet(),
         )
@@ -58,6 +59,7 @@ class CaregiverMedicationFormTest {
             startDate = LocalDate.parse("2026-07-15"),
             notes = " 朝食後 ",
             inventoryCount = "30",
+            selectedSlots = setOf(CaregiverScheduleSlot.MORNING, CaregiverScheduleSlot.EVENING),
         )
 
         assertTrue(draft.validate().isEmpty())
@@ -69,5 +71,22 @@ class CaregiverMedicationFormTest {
         assertEquals("錠", wire.inventoryUnit)
         assertTrue(wire.startDate.startsWith("2026-07-14T15:00:00Z"))
         assertFalse(wire.isPrn)
+        assertEquals(listOf("morning", "evening"), draft.toRegimenWire().times)
+    }
+
+    @Test
+    fun weeklyScheduleRequiresDaysAndUsesCanonicalOrder() {
+        val draft = CaregiverMedicationDraft(
+            name = "薬",
+            dosageStrengthValue = "5",
+            dosageStrengthUnit = "mg",
+            scheduleFrequency = CaregiverScheduleFrequency.WEEKLY,
+            selectedSlots = setOf(CaregiverScheduleSlot.BEDTIME),
+        )
+        assertTrue(draft.validate().any { it.field == CaregiverMedicationField.SCHEDULE_DAY })
+
+        val selected = draft.copy(selectedDays = setOf(CaregiverScheduleDay.FRI, CaregiverScheduleDay.MON))
+        assertTrue(selected.validate().isEmpty())
+        assertEquals(listOf("MON", "FRI"), selected.toRegimenWire().daysOfWeek)
     }
 }

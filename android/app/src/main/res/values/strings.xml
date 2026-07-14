@@ -335,6 +335,15 @@
     <string name="caregiver_medication_form_cancel">キャンセル</string>
     <string name="caregiver_medication_form_error">保存できませんでした。通信状態を確認して、もう一度お試しください。</string>
     <string name="caregiver_medication_form_required">必須</string>
+    <string name="caregiver_medication_form_schedule">服用スケジュール</string>
+    <string name="caregiver_medication_form_daily">毎日</string>
+    <string name="caregiver_medication_form_weekly">曜日を指定</string>
+    <string name="caregiver_medication_form_schedule_days">服用する曜日</string>
+    <string name="caregiver_medication_form_schedule_slots">服用する時間帯</string>
+    <string name="caregiver_medication_form_slot_morning">朝</string>
+    <string name="caregiver_medication_form_slot_noon">昼</string>
+    <string name="caregiver_medication_form_slot_evening">夕</string>
+    <string name="caregiver_medication_form_slot_bedtime">寝る前</string>
 
     <!-- Local notifications -->
     <string name="notification_channel_patient_reminders">服薬リマインダー</string>

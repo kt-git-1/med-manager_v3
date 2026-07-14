@@ -66,12 +66,45 @@ class CaregiverMedicationRepositoryTest {
     }
 
     @Test
+    fun apiRegimenListCreateAndUpdateUseCanonicalContracts() = runTest {
+        val requests = mutableListOf<HttpRequest>()
+        val client = ApiClient(
+            baseUrl = "https://example.test/",
+            caregiverTokenProvider = { "caregiver-token" },
+            transport = HttpTransport { request ->
+                requests += request
+                if (request.method == "GET") HttpResponse(200, REGIMEN_LIST_RESPONSE)
+                else HttpResponse(if (request.method == "POST") 201 else 200, REGIMEN_ITEM_RESPONSE)
+            },
+        )
+        val api = CaregiverMedicationApi(client)
+        val draft = validDraft().copy(
+            scheduleFrequency = CaregiverScheduleFrequency.WEEKLY,
+            selectedDays = setOf(CaregiverScheduleDay.MON, CaregiverScheduleDay.FRI),
+            selectedSlots = setOf(CaregiverScheduleSlot.MORNING, CaregiverScheduleSlot.BEDTIME),
+        )
+
+        assertEquals("reg-1", api.listRegimens("med-1").single().id)
+        api.createRegimen("med-1", draft)
+        api.updateRegimen("reg-1", draft, enabled = false)
+
+        assertEquals("https://example.test/api/medications/med-1/regimens", requests[0].url)
+        val create = JSONObject(requests[1].body!!)
+        assertEquals(listOf("morning", "bedtime"), create.getJSONArray("times").let { array -> (0 until array.length()).map(array::getString) })
+        assertEquals(listOf("MON", "FRI"), create.getJSONArray("daysOfWeek").let { array -> (0 until array.length()).map(array::getString) })
+        assertEquals("https://example.test/api/regimens/reg-1", requests[2].url)
+        assertFalse(JSONObject(requests[2].body!!).getBoolean("enabled"))
+    }
+
+    @Test
     fun saveUpdatesStateAndFreshnessOnlyAfterServerSuccess() = runTest {
         val freshness = MutationFreshnessStore()
         val saved = medication("med-new", "patient-1")
         val dataSource = object : CaregiverMedicationDataSource {
             override suspend fun listMedications(patientId: String) = emptyList<PatientMedication>()
             override suspend fun createMedication(patientId: String, draft: CaregiverMedicationDraft) = saved
+            override suspend fun listRegimens(medicationId: String) = emptyList<CaregiverRegimen>()
+            override suspend fun createRegimen(medicationId: String, draft: CaregiverMedicationDraft) = CaregiverRegimen("reg-new", true)
         }
         val repository = CaregiverMedicationRepository(dataSource, freshness)
         repository.load("patient-1")
@@ -100,6 +133,55 @@ class CaregiverMedicationRepositoryTest {
         assertTrue(result.isFailure)
         assertEquals(listOf("old"), repository.state.value.items.map { it.id })
         assertEquals(0L, freshness.revisions.value.medication)
+    }
+
+    @Test
+    fun scheduledSaveCreatesOrReenablesRegimenAndPrnDisablesActiveOnes() = runTest {
+        val calls = mutableListOf<String>()
+        var regimens = emptyList<CaregiverRegimen>()
+        val dataSource = object : CaregiverMedicationDataSource {
+            override suspend fun listMedications(patientId: String) = emptyList<PatientMedication>()
+            override suspend fun createMedication(patientId: String, draft: CaregiverMedicationDraft) = medication("med-new", patientId)
+            override suspend fun updateMedication(patientId: String, medicationId: String, draft: CaregiverMedicationDraft) =
+                medication(medicationId, patientId).copy(isPrn = draft.isPrn)
+            override suspend fun listRegimens(medicationId: String) = regimens
+            override suspend fun createRegimen(medicationId: String, draft: CaregiverMedicationDraft): CaregiverRegimen {
+                calls += "create:$medicationId"
+                return CaregiverRegimen("reg-created", true)
+            }
+            override suspend fun updateRegimen(regimenId: String, draft: CaregiverMedicationDraft, enabled: Boolean): CaregiverRegimen {
+                calls += "update:$regimenId:$enabled"
+                return CaregiverRegimen(regimenId, enabled)
+            }
+        }
+        val repository = CaregiverMedicationRepository(dataSource, MutationFreshnessStore())
+        repository.load("patient-1")
+
+        assertTrue(repository.save("patient-1", null, validDraft()).isSuccess)
+        regimens = listOf(CaregiverRegimen("reg-active", true))
+        assertTrue(repository.save("patient-1", "med-new", validDraft()).isSuccess)
+        assertTrue(repository.save("patient-1", "med-new", validDraft().copy(isPrn = true, selectedSlots = emptySet())).isSuccess)
+
+        assertEquals(listOf("create:med-new", "update:reg-active:true", "update:reg-active:false"), calls)
+    }
+
+    @Test
+    fun regimenFailureReportsFailureButRetainsAuthoritativeMedicationMutation() = runTest {
+        val freshness = MutationFreshnessStore()
+        val dataSource = object : CaregiverMedicationDataSource {
+            override suspend fun listMedications(patientId: String) = emptyList<PatientMedication>()
+            override suspend fun createMedication(patientId: String, draft: CaregiverMedicationDraft) = medication("med-saved", patientId)
+            override suspend fun listRegimens(medicationId: String): List<CaregiverRegimen> = error("regimen offline")
+        }
+        val repository = CaregiverMedicationRepository(dataSource, freshness)
+        repository.load("patient-1")
+
+        val result = repository.save("patient-1", null, validDraft())
+
+        assertTrue(result.isFailure)
+        assertEquals(listOf("med-saved"), repository.state.value.items.map { it.id })
+        assertEquals(1L, freshness.revisions.value.medication)
+        assertEquals(1L, freshness.revisions.value.notificationPlan)
     }
 
     @Test
@@ -143,10 +225,13 @@ class CaregiverMedicationRepositoryTest {
         doseCountPerIntake = "1",
         startDate = LocalDate.parse("2026-07-15"),
         inventoryCount = "30",
+        selectedSlots = setOf(CaregiverScheduleSlot.MORNING),
     )
 
     private companion object {
         const val MEDICATION_RESPONSE = """{"data":[{"id":"med-1","patientId":"patient-1","name":"アムロジピン","dosageText":"5mg","doseCountPerIntake":1,"dosageStrengthValue":5,"dosageStrengthUnit":"mg","startDate":"2026-07-01T00:00:00Z","isActive":true,"isArchived":false,"regimenTimes":["08:00","18:00"],"regimenDaysOfWeek":[]}]}"""
         const val MEDICATION_ITEM_RESPONSE = """{"data":{"id":"med-1","patientId":"patient-1","name":"アムロジピン","dosageText":"5mg","doseCountPerIntake":1,"dosageStrengthValue":5,"dosageStrengthUnit":"mg","startDate":"2026-07-01T00:00:00Z","isActive":true,"isArchived":false}}"""
+        const val REGIMEN_LIST_RESPONSE = """{"data":[{"id":"reg-1","enabled":true}]}"""
+        const val REGIMEN_ITEM_RESPONSE = """{"data":{"id":"reg-1","enabled":true}}"""
     }
 }

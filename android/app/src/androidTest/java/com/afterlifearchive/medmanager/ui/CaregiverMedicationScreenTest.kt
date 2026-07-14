@@ -67,6 +67,21 @@ class CaregiverMedicationScreenTest {
         composeRule.onNodeWithTag("caregiver-medication-form").assertIsDisplayed()
         composeRule.onNodeWithTag("medication-name").assertTextEquals("薬の名前", "アムロジピン")
         composeRule.onNodeWithTag("medication-strength-value").assertTextEquals("数値", "5")
+        composeRule.onNodeWithTag("medication-slot-morning").assertIsDisplayed()
+    }
+
+    @Test
+    fun regularScheduleSupportsWeeklyDaysAndPrnHidesSchedule() {
+        setContent(emptyList())
+        composeRule.onNodeWithTag("caregiver-medication-add").performClick()
+
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-frequency-weekly"))
+        composeRule.onNodeWithTag("medication-frequency-weekly").performClick()
+        composeRule.onNodeWithTag("medication-day-mon").assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("medication-slot-morning").performClick()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-kind-prn"))
+        composeRule.onNodeWithTag("medication-kind-prn").performClick()
+        composeRule.onNodeWithTag("medication-frequency-weekly").assertDoesNotExist()
     }
 
     private fun setContent(items: List<PatientMedication>) {

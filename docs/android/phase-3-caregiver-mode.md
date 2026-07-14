@@ -114,3 +114,15 @@ E01 and `CG-005` are `IMPLEMENTED`. Paired iOS visuals, large text, TalkBack and
 - The full gate passes with 52/52 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
 
 E02 and `CG-006` are `IMPLEMENTED`. E03 owns regular-medication daily/weekday slot selection and regimen create/update/disable. Matched iOS visual captures, large-text/TalkBack and physical-device verification remain before `VERIFIED`.
+
+## E03 regimen schedule CRUD — 2026-07-15
+
+- Regular medication forms now reproduce the current iOS daily/weekday frequency choice, canonical Monday-through-Sunday ordering and morning/noon/evening/bedtime slot selection. Existing enriched regimen values accept both canonical slot keys and patient-specific resolved times.
+- Regular medications require at least one time slot; weekly schedules additionally require at least one weekday. Switching to PRN clears and hides the regular schedule, matching the iOS form state transition.
+- Saving first commits the medication, then reads `GET /api/medications/{medicationId}/regimens`: no existing regimen uses POST, an active or historical regimen uses PATCH with `enabled: true`, and switching to PRN disables every active regimen with PATCH.
+- Regimen bodies preserve the authoritative `Asia/Tokyo` timezone, medication start/end dates, canonical slot keys and ordered weekday keys. Every request uses caregiver authentication.
+- If regimen persistence fails after the medication server mutation succeeds, the authoritative medication remains in local state, freshness is published, the draft remains open and the UI reports failure so the schedule can be retried without pretending the first mutation rolled back.
+- JVM/API tests cover schedule validation/order, exact list/create/update paths and bodies, create/re-enable/disable branching and partial-success preservation. Compose tests cover weekly controls, weekday/slot interaction, edit prepopulation and PRN schedule removal.
+- The full gate passes with 53/53 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
+
+E03 and `CG-007` are `IMPLEMENTED`. Physical notification timing, matched iOS captures, large-text and TalkBack verification remain before `VERIFIED`.

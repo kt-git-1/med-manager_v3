@@ -44,6 +44,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationDraft
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverScheduleDay
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverScheduleFrequency
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverScheduleSlot
 import com.afterlifearchive.medmanager.data.caregiver.validate
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
@@ -87,6 +90,7 @@ internal fun CaregiverMedicationScreen(
         CaregiverMedicationEditor(
             patientId = selected.id,
             medication = editingMedication,
+            slotTimes = selected.slotTimes,
             repository = repository,
             enabled = enabled,
             onClose = {
@@ -257,11 +261,14 @@ private fun CaregiverMedicationCard(
 private fun CaregiverMedicationEditor(
     patientId: String,
     medication: PatientMedication?,
+    slotTimes: CaregiverSlotTimes?,
     repository: CaregiverMedicationRepository,
     enabled: Boolean,
     onClose: () -> Unit,
 ) {
-    var draft by remember(medication?.id) { mutableStateOf(medication?.let(CaregiverMedicationDraft::from) ?: CaregiverMedicationDraft()) }
+    var draft by remember(medication?.id) {
+        mutableStateOf(medication?.let { CaregiverMedicationDraft.from(it, slotTimes) } ?: CaregiverMedicationDraft())
+    }
     var submitted by rememberSaveable(medication?.id) { mutableStateOf(false) }
     var submitting by rememberSaveable(medication?.id) { mutableStateOf(false) }
     var saveFailed by rememberSaveable(medication?.id) { mutableStateOf(false) }
@@ -306,7 +313,14 @@ private fun CaregiverMedicationEditor(
                     )
                     FilterChip(
                         selected = draft.isPrn,
-                        onClick = { draft = draft.copy(isPrn = true) },
+                        onClick = {
+                            draft = draft.copy(
+                                isPrn = true,
+                                scheduleFrequency = CaregiverScheduleFrequency.DAILY,
+                                selectedDays = emptySet(),
+                                selectedSlots = emptySet(),
+                            )
+                        },
                         label = { Text(stringResource(R.string.caregiver_medication_type_prn)) },
                         modifier = Modifier.testTag("medication-kind-prn"),
                     )
@@ -368,6 +382,54 @@ private fun CaregiverMedicationEditor(
                 label = { Text(stringResource(R.string.caregiver_medication_form_prn_instructions)) },
                 minLines = 2,
             )
+        }
+        if (!draft.isPrn) item {
+            FormSection(stringResource(R.string.caregiver_medication_form_schedule)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = draft.scheduleFrequency == CaregiverScheduleFrequency.DAILY,
+                        onClick = { draft = draft.copy(scheduleFrequency = CaregiverScheduleFrequency.DAILY, selectedDays = emptySet()) },
+                        label = { Text(stringResource(R.string.caregiver_medication_form_daily)) },
+                        modifier = Modifier.testTag("medication-frequency-daily"),
+                    )
+                    FilterChip(
+                        selected = draft.scheduleFrequency == CaregiverScheduleFrequency.WEEKLY,
+                        onClick = { draft = draft.copy(scheduleFrequency = CaregiverScheduleFrequency.WEEKLY) },
+                        label = { Text(stringResource(R.string.caregiver_medication_form_weekly)) },
+                        modifier = Modifier.testTag("medication-frequency-weekly"),
+                    )
+                }
+                if (draft.scheduleFrequency == CaregiverScheduleFrequency.WEEKLY) {
+                    Text(stringResource(R.string.caregiver_medication_form_schedule_days), style = MaterialTheme.typography.labelLarge)
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                        CaregiverScheduleDay.entries.forEach { day ->
+                            FilterChip(
+                                selected = day in draft.selectedDays,
+                                onClick = { draft = draft.copy(selectedDays = draft.selectedDays.toggle(day)) },
+                                label = { Text(DAY_LABELS.getValue(day.apiValue)) },
+                                modifier = Modifier.testTag("medication-day-${day.apiValue.lowercase()}")
+                            )
+                        }
+                    }
+                }
+                Text(stringResource(R.string.caregiver_medication_form_schedule_slots), style = MaterialTheme.typography.labelLarge)
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    CaregiverScheduleSlot.entries.forEach { slot ->
+                        val label = when (slot) {
+                            CaregiverScheduleSlot.MORNING -> R.string.caregiver_medication_form_slot_morning
+                            CaregiverScheduleSlot.NOON -> R.string.caregiver_medication_form_slot_noon
+                            CaregiverScheduleSlot.EVENING -> R.string.caregiver_medication_form_slot_evening
+                            CaregiverScheduleSlot.BEDTIME -> R.string.caregiver_medication_form_slot_bedtime
+                        }
+                        FilterChip(
+                            selected = slot in draft.selectedSlots,
+                            onClick = { draft = draft.copy(selectedSlots = draft.selectedSlots.toggle(slot)) },
+                            label = { Text(stringResource(label)) },
+                            modifier = Modifier.testTag("medication-slot-${slot.apiValue}"),
+                        )
+                    }
+                }
+            }
         }
         item {
             FormSection(stringResource(R.string.caregiver_medication_form_start_date)) {
@@ -480,6 +542,8 @@ private fun MedicationBadge(text: String) {
 
 private fun formatMedicationNumber(value: Double): String = if (value % 1.0 == 0.0) value.toInt().toString()
 else String.format(Locale.US, "%.2f", value).trimEnd('0').trimEnd('.')
+
+private fun <T> Set<T>.toggle(value: T): Set<T> = if (value in this) this - value else this + value
 
 private val TOKYO = ZoneId.of("Asia/Tokyo")
 private val DAY_LABELS = mapOf("MON" to "月", "TUE" to "火", "WED" to "水", "THU" to "木", "FRI" to "金", "SAT" to "土", "SUN" to "日")

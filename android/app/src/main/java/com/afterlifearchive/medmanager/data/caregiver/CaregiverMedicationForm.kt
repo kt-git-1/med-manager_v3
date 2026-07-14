@@ -18,9 +18,12 @@ data class CaregiverMedicationDraft(
     val isPrn: Boolean = false,
     val prnInstructions: String = "",
     val inventoryCount: String = "",
+    val scheduleFrequency: CaregiverScheduleFrequency = CaregiverScheduleFrequency.DAILY,
+    val selectedDays: Set<CaregiverScheduleDay> = emptySet(),
+    val selectedSlots: Set<CaregiverScheduleSlot> = emptySet(),
 ) {
     companion object {
-        fun from(medication: PatientMedication) = CaregiverMedicationDraft(
+        fun from(medication: PatientMedication, slotTimes: CaregiverSlotTimes? = null) = CaregiverMedicationDraft(
             name = medication.name,
             dosageStrengthValue = medication.dosageStrengthValue.takeUnless { it == 0.0 }?.formValue().orEmpty(),
             dosageStrengthUnit = medication.dosageStrengthUnit,
@@ -31,8 +34,34 @@ data class CaregiverMedicationDraft(
             isPrn = medication.isPrn,
             prnInstructions = medication.prnInstructions.orEmpty(),
             inventoryCount = medication.inventoryCount?.formValue().orEmpty(),
+            scheduleFrequency = if (medication.regimenDaysOfWeek.isNullOrEmpty()) CaregiverScheduleFrequency.DAILY else CaregiverScheduleFrequency.WEEKLY,
+            selectedDays = medication.regimenDaysOfWeek.orEmpty().mapNotNull { value ->
+                CaregiverScheduleDay.entries.firstOrNull { it.apiValue == value }
+            }.toSet(),
+            selectedSlots = medication.regimenTimes.orEmpty().mapNotNull { value ->
+                CaregiverScheduleSlot.entries.firstOrNull { slot ->
+                    slot.apiValue == value || slotTimes?.value(slot) == value
+                }
+            }.toSet(),
         )
     }
+}
+
+enum class CaregiverScheduleFrequency { DAILY, WEEKLY }
+
+enum class CaregiverScheduleDay(val apiValue: String) {
+    MON("MON"), TUE("TUE"), WED("WED"), THU("THU"), FRI("FRI"), SAT("SAT"), SUN("SUN"),
+}
+
+enum class CaregiverScheduleSlot(val apiValue: String) {
+    MORNING("morning"), NOON("noon"), EVENING("evening"), BEDTIME("bedtime"),
+}
+
+private fun CaregiverSlotTimes.value(slot: CaregiverScheduleSlot): String = when (slot) {
+    CaregiverScheduleSlot.MORNING -> morning
+    CaregiverScheduleSlot.NOON -> noon
+    CaregiverScheduleSlot.EVENING -> evening
+    CaregiverScheduleSlot.BEDTIME -> bedtime
 }
 
 enum class CaregiverMedicationField {
@@ -42,6 +71,8 @@ enum class CaregiverMedicationField {
     DOSE_COUNT,
     END_DATE,
     INVENTORY_COUNT,
+    SCHEDULE_DAY,
+    SCHEDULE_SLOT,
 }
 
 data class CaregiverMedicationValidationError(
@@ -70,6 +101,14 @@ fun CaregiverMedicationDraft.validate(unknownDosageLabel: String = "不明"): Li
         val value = inventoryCount.toDoubleOrNull()
         if (value == null || !value.isFinite() || value < 0) {
             add(CaregiverMedicationValidationError(CaregiverMedicationField.INVENTORY_COUNT, "在庫数は0以上の数値で入力してください"))
+        }
+    }
+    if (!isPrn) {
+        if (selectedSlots.isEmpty()) {
+            add(CaregiverMedicationValidationError(CaregiverMedicationField.SCHEDULE_SLOT, "服用する時間帯を1つ以上選択してください"))
+        }
+        if (scheduleFrequency == CaregiverScheduleFrequency.WEEKLY && selectedDays.isEmpty()) {
+            add(CaregiverMedicationValidationError(CaregiverMedicationField.SCHEDULE_DAY, "服用する曜日を1つ以上選択してください"))
         }
     }
 }
@@ -105,6 +144,26 @@ internal data class CaregiverMedicationWriteDto(
     val endDate: String? = null,
     val inventoryCount: Double? = null,
     val inventoryUnit: String? = null,
+)
+
+@Serializable
+internal data class CaregiverRegimenWriteDto(
+    val timezone: String = "Asia/Tokyo",
+    val startDate: String,
+    val endDate: String? = null,
+    val times: List<String>,
+    val daysOfWeek: List<String>,
+    val enabled: Boolean? = null,
+)
+
+internal fun CaregiverMedicationDraft.toRegimenWire(enabled: Boolean? = null) = CaregiverRegimenWriteDto(
+    startDate = startDate.atStartOfDay(Tokyo).toInstant().toString(),
+    endDate = endDate?.atStartOfDay(Tokyo)?.toInstant()?.toString(),
+    times = CaregiverScheduleSlot.entries.filter(selectedSlots::contains).map { it.apiValue },
+    daysOfWeek = if (scheduleFrequency == CaregiverScheduleFrequency.WEEKLY) {
+        CaregiverScheduleDay.entries.filter(selectedDays::contains).map { it.apiValue }
+    } else emptyList(),
+    enabled = enabled,
 )
 
 private fun String.toPositiveDoubleOrNull(): Double? = toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 }
