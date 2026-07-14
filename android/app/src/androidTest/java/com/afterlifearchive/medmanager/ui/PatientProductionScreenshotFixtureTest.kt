@@ -14,7 +14,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import java.time.Instant
-import java.time.YearMonth
+import java.time.LocalDate
 
 class PatientProductionScreenshotFixtureTest {
     @get:Rule
@@ -60,17 +60,15 @@ class PatientProductionScreenshotFixtureTest {
             MedicationAppTheme {
                 HistoryContent(
                     days = listOf(
-                        HistoryDay("2026-07-14", HistoryStatus.TAKEN, HistoryStatus.MISSED, HistoryStatus.PENDING, HistoryStatus.NONE, 1),
+                        HistoryDay("2026-07-13", HistoryStatus.TAKEN, HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                        HistoryDay("2026-07-14", HistoryStatus.TAKEN, HistoryStatus.PENDING, HistoryStatus.NONE, HistoryStatus.NONE, 1),
                     ),
-                    yearMonth = YearMonth.of(2026, 7),
                     loading = false,
                     error = null,
                     retentionCutoffDate = null,
                     retentionDays = null,
-                    onPreviousMonth = {},
-                    onNextMonth = {},
-                    onSelectDate = {},
                     onRetry = {},
+                    now = LocalDate.parse("2026-07-14"),
                 )
             }
         }

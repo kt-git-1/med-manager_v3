@@ -3,7 +3,6 @@ package com.afterlifearchive.medmanager.ui
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.HistoryDayDetail
@@ -14,46 +13,79 @@ import com.afterlifearchive.medmanager.data.patient.PrnActorType
 import com.afterlifearchive.medmanager.data.patient.PrnHistoryItem
 import com.afterlifearchive.medmanager.data.patient.RecordedByType
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
-import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import java.time.Instant
 import java.time.LocalDate
-import java.time.YearMonth
 
 class PatientHistoryContentTest {
     @get:Rule
     val composeRule = createComposeRule()
 
     @Test
-    fun monthCalendarShowsLegendStatusesPrnAndNavigation() {
-        var selected: LocalDate? = null
-        var previous: YearMonth? = null
+    fun simpleHistoryShowsTodayWeekAndRecentRecords() {
         composeRule.setContent {
             MedicationAppTheme {
                 HistoryContent(
-                    days = listOf(HistoryDay("2026-07-13", HistoryStatus.TAKEN, HistoryStatus.MISSED, HistoryStatus.PENDING, HistoryStatus.NONE, 2)),
-                    yearMonth = YearMonth.of(2026, 7), loading = false, error = null,
+                    days = listOf(
+                        HistoryDay("2026-07-13", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                        HistoryDay("2026-07-14", HistoryStatus.TAKEN, HistoryStatus.PENDING, HistoryStatus.NONE, HistoryStatus.NONE, 1),
+                    ),
+                    loading = false, error = null,
                     retentionCutoffDate = null, retentionDays = null,
-                    onPreviousMonth = { previous = it.minusMonths(1) }, onNextMonth = {},
-                    onSelectDate = { selected = it }, onRetry = {},
+                    onRetry = {}, now = LocalDate.parse("2026-07-14"),
                 )
             }
         }
 
-        composeRule.onNodeWithText("2026年7月").assertIsDisplayed()
-        composeRule.onNodeWithText("服用済み").assertIsDisplayed()
-        composeRule.onNodeWithText("未達").assertIsDisplayed()
-        composeRule.onNodeWithText("未服用").assertIsDisplayed()
-        composeRule.onNodeWithText("予定なし").assertIsDisplayed()
-        composeRule.onNodeWithText("頓2").assertIsDisplayed()
-        composeRule.onNodeWithText("13").performClick()
-        composeRule.onNodeWithText("‹ 前月").performClick()
+        composeRule.onNodeWithText("飲んだ記録を確認できます").assertIsDisplayed()
+        composeRule.onNodeWithText("1/2回分 記録済み").assertIsDisplayed()
+        composeRule.onNodeWithText("残り 1回分").assertIsDisplayed()
+        composeRule.onNodeWithText("今週").assertIsDisplayed()
+        composeRule.onNodeWithText("1/7日").assertIsDisplayed()
+        composeRule.onNodeWithText("最近の記録").assertIsDisplayed()
+        composeRule.onNodeWithText("今日 7月14日（火）").assertIsDisplayed()
+        composeRule.onNodeWithText("昨日 7月13日（月）").assertIsDisplayed()
+        composeRule.onNodeWithText("朝・昼のお薬").assertIsDisplayed()
+        composeRule.onNodeWithText("朝のお薬").assertIsDisplayed()
+    }
 
-        composeRule.runOnIdle {
-            assertEquals(LocalDate.parse("2026-07-13"), selected)
-            assertEquals(YearMonth.of(2026, 6), previous)
+    @Test
+    fun noScheduleUsesCurrentIosEmptyProgressCopy() {
+        composeRule.setContent {
+            MedicationAppTheme {
+                HistoryContent(
+                    days = emptyList(), loading = false, error = null,
+                    retentionCutoffDate = null, retentionDays = null, onRetry = {},
+                    now = LocalDate.parse("2026-07-14"),
+                )
+            }
         }
+
+        composeRule.onNodeWithText("今日は予定がありません").assertIsDisplayed()
+        composeRule.onNodeWithText("今日は定時薬の予定がありません。必要な時のお薬だけ記録できます。").assertIsDisplayed()
+        composeRule.onNodeWithText("0/7日").assertIsDisplayed()
+    }
+
+    @Test
+    fun missedTodayUsesPriorityMessage() {
+        composeRule.setContent {
+            MedicationAppTheme {
+                HistoryContent(
+                    days = listOf(
+                        HistoryDay("2026-07-12", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                        HistoryDay("2026-07-13", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                        HistoryDay("2026-07-14", HistoryStatus.TAKEN, HistoryStatus.MISSED, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                    ),
+                    loading = false, error = null, retentionCutoffDate = null, retentionDays = null,
+                    onRetry = {}, now = LocalDate.parse("2026-07-14"),
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("飲み忘れ 1回分").assertIsDisplayed()
+        composeRule.onNodeWithText("飲み忘れがあります。気づいた時点で確認しましょう。").assertIsDisplayed()
+        composeRule.onNodeWithText("1/7日").assertIsDisplayed()
     }
 
     @Test
@@ -81,7 +113,7 @@ class PatientHistoryContentTest {
     fun retentionLockShowsCutoffAndDays() {
         composeRule.setContent {
             MedicationAppTheme {
-                HistoryContent(emptyList(), YearMonth.of(2026, 5), false, null, "2026-06-14", 30, {}, {}, {}, {})
+                HistoryContent(emptyList(), false, null, "2026-06-14", 30, {})
             }
         }
         composeRule.onNodeWithText("この履歴は表示できません").assertIsDisplayed()

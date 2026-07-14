@@ -166,20 +166,21 @@ This selector foundation is connected to inventory-backed production candidates 
 
 `PT-010`, `PT-011`, and `PT-012` are `IMPLEMENTED`. Real API recordings, matched iOS light/dark captures, process/background timing on a physical device, large text, and TalkBack remain before `VERIFIED`.
 
-## Phase 2C history calendar vertical slice
+## Phase 2C patient history vertical slice
 
-### PH-001 month calendar and PH-002 legend
+### 2026-07-14 C04 current-iOS rebaseline
 
-- The former reverse chronological card list has been replaced by a Sunday-first seven-column month calendar.
-- Each day retains and renders all four slot summary values independently; missing slots remain visible as the neutral state rather than being discarded.
-- PRN counts are shown on their calendar day, month navigation reloads the requested server month, and every date is selectable.
-- A persistent four-item legend above the calendar maps taken, missed, pending, and no-plan states to the same semantic colors used by day indicators.
+- Current iOS no longer exposes the month calendar or day-detail navigation in patient mode. Android now renders the same simplified hierarchy: Today progress, This Week and Recent Records.
+- Today's card derives its denominator from active morning/noon/evening/bedtime slots, uses taken/remaining/missed pills and applies the iOS no-plan, missed, complete, partial and start message priority.
+- The Monday-first seven-day card counts fully recorded days, renders taken/pending/missed/none icons and applies the same recorded-count/consecutive-day encouragement thresholds.
+- Recent Records summarizes today and yesterday with active slot names, PRN-only/no-plan fallback, and done/pending/missed state treatment.
+- The production preview accepts a fixed History destination and fixed Tokyo date/data, so UI-104 screenshots do not depend on the wall clock.
 
-### PH-003 day detail
+### Retained month/day foundation
 
 - Android implements the full `/api/patient/history/day` contract, including scheduled medication ID/name/dosage/quantity/time/slot/status/recorder and PRN medication/time/quantity/actor.
-- Selecting a calendar date opens a modal detail surface immediately, then shows loading, content, empty, retention, or retryable error state.
-- Scheduled records identify patient/caregiver recording, while PRN records identify their actor separately.
+- The previous month calendar and day-detail components remain available in code for the current caregiver history contract, but are no longer reachable from the patient tab.
+- Scheduled records still identify patient/caregiver recording, while PRN records identify their actor separately; API and Compose tests remain green.
 
 ### PH-004 history retention
 
@@ -189,11 +190,12 @@ This selector foundation is connected to inventory-backed production candidates 
 
 ### Verification
 
-- API fixtures cover month slot summaries and PRN counts plus day scheduled/PRN recorder contracts.
-- Repository tests cover month/day retention state and populated day details.
-- Android 15 Compose tests cover month heading/navigation, all legend labels, day selection, PRN badge, scheduled/PRN detail rows, recorder labels, and retention copy.
+- API fixtures continue to cover month slot summaries, PRN counts and day scheduled/PRN recorder contracts.
+- Repository tests cover current-month freshness, month/day retention state and populated day details.
+- Android 15 Compose tests cover current progress/empty/missed states, week count, recent summaries, retained day rows/recorders and retention copy.
+- `./gradlew test assembleDebug assembleRelease lint connectedDebugAndroidTest` passes with 36/36 instrumentation tests; deterministic light evidence is recorded under `evidence/c04-20260714/`.
 
-`PH-001` through `PH-004` are `IMPLEMENTED`. Real historical patient data, entitlement changes, iOS comparison captures, large text, TalkBack, and physical-device month/day navigation remain before `VERIFIED`.
+`PH-001` through `PH-004` are `IMPLEMENTED` against current main. Real historical patient data, entitlement changes, paired iOS captures, large text, TalkBack and physical-device verification remain before `VERIFIED`.
 
 ## Phase 2C patient settings and notifications
 
@@ -251,9 +253,9 @@ This selector foundation is connected to inventory-backed production candidates 
 
 ### XP-005 patient accessibility hardening
 
-- Calendar dates no longer expose only a day number and unlabeled colored dots. Each selectable date announces the full Japanese date, morning/noon/evening/bedtime status, and PRN count.
-- The history title is marked as a semantic heading and the tutorial overlay announces itself as a named pane with current progress.
+- Current patient history exposes a semantic heading plus textual progress, encouragement, week and recent-record summaries without relying on color alone.
+- The tutorial overlay announces itself as a named pane with current progress.
 - A 200% font-scale instrumentation test verifies the final tutorial step keeps its title and skip/back/permission actions operable.
 - TalkBack semantics and font scaling are covered for the highest-risk patient surfaces; the matrix remains `PARTIAL` pending the complete screen audit, caregiver UI, and physical-device screen-reader verification.
 
-Additional known gaps include server-resolved slot times, next-action ordering, exact loading/updating overlays, history calendar layout, dark mode, large-text verification, and physical-device evidence.
+Additional known gaps are the remaining current-iOS paired captures, dark mode, full large-text/TalkBack audits and physical-device evidence.

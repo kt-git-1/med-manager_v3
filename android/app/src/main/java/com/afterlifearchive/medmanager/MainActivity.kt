@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.afterlifearchive.medmanager.ui.MedicationApp
 import com.afterlifearchive.medmanager.ui.PatientModePreview
+import com.afterlifearchive.medmanager.ui.PatientTab
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,8 +20,10 @@ class MainActivity : ComponentActivity() {
         handlePatientNotificationIntent(intent, patientRepository)
         setContent {
             MedicationAppTheme {
-                if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_PATIENT", false)) {
-                    PatientModePreview()
+                if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_PATIENT_HISTORY", false)) {
+                    PatientModePreview(PatientTab.HISTORY)
+                } else if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_PATIENT", false)) {
+                    PatientModePreview(PatientTab.TODAY)
                 } else {
                     MedicationApp(repository, patientRepository)
                 }

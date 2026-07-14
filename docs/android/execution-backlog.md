@@ -105,7 +105,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [ ] C01 Re-capture entry/auth and patient iOS states at `main@1d9d19e`.
 - [x] C02 Reverify Mode Select, auth choice/login/signup/callback/resend.
 - [x] C03 Reverify Patient Today states/actions/recording-window/inventory/PRN/detail.
-- [ ] C04 Reverify History month/day/retention/freshness.
+- [x] C04 Reverify current Patient History progress/week/recent summaries, retention and freshness.
 - [ ] C05 Reverify Settings/reminders/tutorial/deep links/legal/unlink.
 - [ ] C06 Complete patient TalkBack, font 1.0/1.3/2.0, light/dark and physical-device checks.
 
@@ -185,4 +185,4 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Immediate next item
 
-Continue the remaining **C01 current-iOS reference capture**, then C04, in `ui-screen-contracts.md` order. C03 now mirrors the current UI-101 hierarchy (header, next-dose hero, PRN entry/list, planned progress and slot cards), uses a deterministic production preview, and has paired light evidence plus action/order/inventory/recording-window/PRN/detail Compose coverage under `evidence/c03-20260714/`. C02 behavior remains reverified through production-flow Compose tests plus repository callback/resend tests. Gate B's final visual-regression checkbox remains open until the remaining C01 pairs are complete; physical device, dark/large text and TalkBack remain assigned to C06/V1.
+Continue the remaining **C01 current-iOS reference capture**, then C05, in `ui-screen-contracts.md` order. C03 mirrors UI-101 Today. C04 is rebaselined from the obsolete patient month-calendar UI to current-main's patient history hierarchy: today's progress ring, current-week summary/encouragement and recent today/yesterday cards. The month/day API and detail UI remain as caregiver-history foundation, while patient retention/error and mutation-freshness contracts remain tested. Deterministic Android light evidence is under `evidence/c04-20260714/`. Gate B's final visual-regression checkbox remains open until the remaining C01 pairs are complete; physical device, dark/large text and TalkBack remain assigned to C06/V1.

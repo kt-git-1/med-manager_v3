@@ -72,8 +72,8 @@ Each screen ID maps to parity requirements. Every listed state needs a determini
 | UI-101 Today | `PatientTodayView.swift`, view model | initial load, empty, typical, long names, pending/taken/missed, insufficient, updating, retry, success/partial, notification highlight |
 | UI-102 Dose detail | patient Today detail | status, time, dosage, quantity, strength, notes/empty notes, tracked inventory |
 | UI-103 PRN | patient PRN section/screen | empty, active list, instructions, confirmation, insufficient, submitting, success/error |
-| UI-104 History month | `HistoryMonthView.swift` | calendar, four slot indicators, PRN count, legend, month navigation, today encouragement, retention lock, loading/retry |
-| UI-105 History day | `HistoryDayDetailView.swift` | scheduled/PRN content, recorder, empty, loading, retry, retention |
+| UI-104 Patient history | current `HistoryMonthView.patientSimpleHistory` | title/subtitle, today progress ring and pills, no-plan/partial/complete/missed encouragement, Monday-first current week, recent today/yesterday summaries, loading/retry/retention |
+| UI-105 Retained history detail contract | `HistoryDayDetailView.swift`, day API | no longer reachable from current patient UI; keep scheduled/PRN/recorder/empty/retry/retention behavior as caregiver UI-206 foundation |
 | UI-106 Patient settings | patient settings in `PatientReadOnlyView.swift` | master/slot/re-reminder preferences, permission denied, analytics consent, legal/support, unlink confirmation/failure/success |
 
 ### Caregiver mode

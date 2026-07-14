@@ -1,5 +1,6 @@
 package com.afterlifearchive.medmanager.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,9 +19,19 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AccessTime
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -47,35 +58,284 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.DayOfWeek
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
 internal fun HistoryContent(
     days: List<HistoryDay>,
-    yearMonth: YearMonth,
     loading: Boolean,
     error: String?,
     retentionCutoffDate: String?,
     retentionDays: Int?,
-    onPreviousMonth: (YearMonth) -> Unit,
-    onNextMonth: (YearMonth) -> Unit,
-    onSelectDate: (LocalDate) -> Unit,
     onRetry: () -> Unit,
+    now: LocalDate = LocalDate.now(ZoneId.of("Asia/Tokyo")),
 ) {
-    Column(Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(stringResource(R.string.patient_history_title), modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            TextButton(onClick = { onPreviousMonth(yearMonth) }, enabled = !loading) { Text(stringResource(R.string.patient_history_previous_month)) }
-            Text(stringResource(R.string.patient_history_month, yearMonth.year, yearMonth.monthValue), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            TextButton(onClick = { onNextMonth(yearMonth) }, enabled = !loading) { Text(stringResource(R.string.patient_history_next_month)) }
+    val byDate = days.associateBy(HistoryDay::date)
+    val today = byDate[now.toString()]
+    val weekDates = patientHistoryWeekDates(now)
+    val weeklyRecorded = weekDates.count { patientSimpleStatus(byDate[it.toString()]) == PatientSimpleHistoryStatus.TAKEN }
+    val consecutiveTaken = patientHistoryConsecutiveTaken(weekDates, now, byDate)
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item { PatientHistoryHeader() }
+        if (loading && days.isEmpty()) item { PatientCenteredProgress() }
+        if (error != null) item { PatientNoticeCard(error, MaterialTheme.colorScheme.errorContainer, onRetry) }
+        if (retentionCutoffDate != null) item { RetentionLockCard(retentionCutoffDate, retentionDays ?: 30) }
+        if (!loading && error == null && retentionCutoffDate == null) {
+            item { PatientTodayProgressCard(today) }
+            item { PatientWeekHistoryCard(weekDates, byDate, weeklyRecorded, consecutiveTaken, now) }
+            item { Text(stringResource(R.string.patient_history_recent_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
+            items(listOf(now, now.minusDays(1)), key = LocalDate::toString) { date ->
+                PatientRecentHistoryCard(date, byDate[date.toString()], now)
+            }
         }
-        HistoryLegend()
-        if (loading && days.isEmpty()) PatientCenteredProgress()
-        if (error != null) PatientNoticeCard(error, MaterialTheme.colorScheme.errorContainer, onRetry)
-        if (retentionCutoffDate != null) RetentionLockCard(retentionCutoffDate, retentionDays ?: 30)
-        if (!loading && error == null && retentionCutoffDate == null) HistoryCalendar(yearMonth, days, onSelectDate)
+        item { Spacer(Modifier.height(104.dp)) }
     }
+}
+
+private enum class PatientSimpleHistoryStatus { TAKEN, PENDING, MISSED, NONE }
+
+@Composable
+private fun PatientHistoryHeader() {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        Box(
+            modifier = Modifier.size(58.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Rounded.History, contentDescription = null, tint = PatientTeal, modifier = Modifier.size(32.dp))
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(stringResource(R.string.patient_history_title), modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.patient_history_subtitle), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+private fun PatientTodayProgressCard(day: HistoryDay?) {
+    val statuses = patientActiveStatuses(day)
+    val total = statuses.size
+    val taken = statuses.count { it == HistoryStatus.TAKEN }
+    val pending = statuses.count { it == HistoryStatus.PENDING }
+    val missed = statuses.count { it == HistoryStatus.MISSED }
+    val fraction = if (total == 0) 0f else taken.toFloat() / total
+    val accent = when {
+        missed > 0 -> MaterialTheme.colorScheme.error
+        total > 0 && taken == total -> PatientTeal
+        taken > 0 -> Color(0xFFF36A00)
+        else -> Color(0xFF3478F6)
+    }
+    val title = if (total == 0) stringResource(R.string.patient_history_today_progress_no_schedule)
+    else stringResource(R.string.patient_history_today_progress_format, taken, total)
+    val encouragement = stringResource(
+        when {
+            total == 0 -> R.string.patient_history_encouragement_no_schedule
+            missed > 0 -> R.string.patient_history_encouragement_missed
+            taken == total && pending == 0 -> R.string.patient_history_encouragement_complete
+            taken > 0 -> R.string.patient_history_encouragement_partial
+            else -> R.string.patient_history_encouragement_start
+        },
+    )
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(2.dp, accent.copy(alpha = 0.55f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Box(Modifier.size(86.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(
+                    progress = { fraction },
+                    modifier = Modifier.fillMaxSize(),
+                    color = accent,
+                    trackColor = accent.copy(alpha = 0.16f),
+                    strokeWidth = 10.dp,
+                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(if (total == 0) "--" else "$taken/$total", fontWeight = FontWeight.Bold, color = accent, style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.patient_history_today_progress_unit), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                }
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.patient_history_today_progress_title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(encouragement, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    HistoryStatusPill(stringResource(R.string.patient_history_today_taken, taken), PatientTeal)
+                    if (pending > 0) HistoryStatusPill(stringResource(R.string.patient_history_today_remaining, pending), Color(0xFFF36A00))
+                }
+                if (missed > 0) HistoryStatusPill(stringResource(R.string.patient_history_today_missed, missed), MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PatientWeekHistoryCard(
+    dates: List<LocalDate>,
+    byDate: Map<String, HistoryDay>,
+    recordedCount: Int,
+    consecutiveTaken: Int,
+    now: LocalDate,
+) {
+    val encouragement = stringResource(
+        when {
+            consecutiveTaken >= 3 -> R.string.patient_history_week_streak_strong
+            consecutiveTaken >= 2 -> R.string.patient_history_week_streak
+            recordedCount >= 5 -> R.string.patient_history_week_many
+            recordedCount > 0 -> R.string.patient_history_week_some
+            else -> R.string.patient_history_week_start
+        },
+    )
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(2.dp, PatientTeal.copy(alpha = 0.55f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Text(stringResource(R.string.patient_history_week_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.patient_history_week_count, recordedCount), style = MaterialTheme.typography.displaySmall, color = PatientTeal, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.patient_history_week_recorded), style = MaterialTheme.typography.titleMedium, color = PatientTeal, fontWeight = FontWeight.Bold)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                dates.forEach { date -> PatientWeekDay(date, byDate[date.toString()], now, Modifier.weight(1f)) }
+            }
+            Text(encouragement, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+private fun PatientWeekDay(date: LocalDate, day: HistoryDay?, now: LocalDate, modifier: Modifier = Modifier) {
+    val status = patientSimpleStatus(day)
+    val isUpcoming = date > now && status == PatientSimpleHistoryStatus.PENDING
+    val accent = patientSimpleStatusColor(status, isUpcoming)
+    val icon = when (status) {
+        PatientSimpleHistoryStatus.TAKEN -> Icons.Rounded.CheckCircle
+        PatientSimpleHistoryStatus.PENDING -> Icons.Rounded.AccessTime
+        PatientSimpleHistoryStatus.MISSED -> Icons.Rounded.Warning
+        PatientSimpleHistoryStatus.NONE -> Icons.Rounded.Remove
+    }
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(date.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, Locale.JAPANESE), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
+        Box(Modifier.size(34.dp).background(if (status == PatientSimpleHistoryStatus.NONE || isUpcoming) accent.copy(alpha = 0.14f) else accent, CircleShape), contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(17.dp), tint = if (status == PatientSimpleHistoryStatus.NONE || isUpcoming) accent else Color.White)
+        }
+        Text("${date.monthValue}/${date.dayOfMonth}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun PatientRecentHistoryCard(date: LocalDate, day: HistoryDay?, now: LocalDate) {
+    val status = patientSimpleStatus(day)
+    val accent = patientSimpleStatusColor(status, false)
+    val icon = when (status) {
+        PatientSimpleHistoryStatus.TAKEN -> Icons.Rounded.CheckCircle
+        PatientSimpleHistoryStatus.PENDING -> Icons.Rounded.AccessTime
+        PatientSimpleHistoryStatus.MISSED -> Icons.Rounded.Warning
+        PatientSimpleHistoryStatus.NONE -> Icons.Rounded.CalendarMonth
+    }
+    val formatted = date.format(DateTimeFormatter.ofPattern("M月d日（E）", Locale.JAPANESE))
+    val title = stringResource(if (date == now) R.string.patient_history_today_format else R.string.patient_history_yesterday_format, formatted)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Box(Modifier.size(54.dp).background(accent.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(28.dp))
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(patientHistorySubtitle(day), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+            }
+            HistoryStatusPill(patientSimpleStatusText(status), accent)
+        }
+    }
+}
+
+@Composable
+private fun HistoryStatusPill(text: String, color: Color) {
+    Text(
+        text,
+        modifier = Modifier.background(color.copy(alpha = 0.13f), RoundedCornerShape(50)).padding(horizontal = 11.dp, vertical = 7.dp),
+        color = color,
+        fontWeight = FontWeight.Bold,
+        style = MaterialTheme.typography.labelMedium,
+    )
+}
+
+private fun patientActiveStatuses(day: HistoryDay?): List<HistoryStatus> = day?.let {
+    listOf(it.morning, it.noon, it.evening, it.bedtime).filter { status -> status != HistoryStatus.NONE }
+}.orEmpty()
+
+private fun patientSimpleStatus(day: HistoryDay?): PatientSimpleHistoryStatus {
+    val statuses = patientActiveStatuses(day)
+    return when {
+        HistoryStatus.MISSED in statuses -> PatientSimpleHistoryStatus.MISSED
+        HistoryStatus.PENDING in statuses -> PatientSimpleHistoryStatus.PENDING
+        HistoryStatus.TAKEN in statuses || (day?.prnCount ?: 0) > 0 -> PatientSimpleHistoryStatus.TAKEN
+        else -> PatientSimpleHistoryStatus.NONE
+    }
+}
+
+@Composable
+private fun patientSimpleStatusColor(status: PatientSimpleHistoryStatus, upcoming: Boolean): Color = when (status) {
+    PatientSimpleHistoryStatus.TAKEN -> PatientTeal
+    PatientSimpleHistoryStatus.PENDING -> if (upcoming) Color(0xFF3478F6) else Color(0xFFF36A00)
+    PatientSimpleHistoryStatus.MISSED -> MaterialTheme.colorScheme.error
+    PatientSimpleHistoryStatus.NONE -> MaterialTheme.colorScheme.outline
+}
+
+@Composable
+private fun patientSimpleStatusText(status: PatientSimpleHistoryStatus): String = stringResource(when (status) {
+    PatientSimpleHistoryStatus.TAKEN -> R.string.patient_history_simple_done
+    PatientSimpleHistoryStatus.PENDING -> R.string.patient_history_simple_pending
+    PatientSimpleHistoryStatus.MISSED -> R.string.patient_history_simple_missed
+    PatientSimpleHistoryStatus.NONE -> R.string.patient_history_simple_none
+})
+
+@Composable
+private fun patientHistorySubtitle(day: HistoryDay?): String {
+    if (day == null) return stringResource(R.string.patient_history_no_medication_schedule)
+    val slots = buildList {
+        if (day.morning != HistoryStatus.NONE) add(stringResource(R.string.patient_history_accessibility_slot_morning))
+        if (day.noon != HistoryStatus.NONE) add(stringResource(R.string.patient_history_accessibility_slot_noon))
+        if (day.evening != HistoryStatus.NONE) add(stringResource(R.string.patient_history_accessibility_slot_evening))
+        if (day.bedtime != HistoryStatus.NONE) add(stringResource(R.string.patient_history_accessibility_slot_bedtime))
+    }
+    return when {
+        slots.isNotEmpty() -> stringResource(R.string.patient_history_slots_format, slots.joinToString("・"))
+        day.prnCount > 0 -> stringResource(R.string.patient_history_prn_only)
+        else -> stringResource(R.string.patient_history_no_medication_schedule)
+    }
+}
+
+private fun patientHistoryWeekDates(now: LocalDate): List<LocalDate> {
+    val monday = now.minusDays(((now.dayOfWeek.value - DayOfWeek.MONDAY.value + 7) % 7).toLong())
+    return (0L..6L).map(monday::plusDays)
+}
+
+private fun patientHistoryConsecutiveTaken(
+    weekDates: List<LocalDate>,
+    now: LocalDate,
+    byDate: Map<String, HistoryDay>,
+): Int {
+    var streak = 0
+    for (date in weekDates.filter { it <= now }.asReversed()) {
+        if (patientSimpleStatus(byDate[date.toString()]) == PatientSimpleHistoryStatus.TAKEN) streak += 1 else break
+    }
+    return streak
 }
 
 @Composable

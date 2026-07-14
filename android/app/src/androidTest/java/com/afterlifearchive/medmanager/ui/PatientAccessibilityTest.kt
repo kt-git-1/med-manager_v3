@@ -5,33 +5,32 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import org.junit.Rule
 import org.junit.Test
-import java.time.YearMonth
+import java.time.LocalDate
 
 class PatientAccessibilityTest {
     @get:Rule
     val composeRule = createComposeRule()
 
     @Test
-    fun calendarExposesCompleteTalkBackDescription() {
+    fun simpleHistoryExposesPatientFacingSummary() {
         composeRule.setContent {
             MedicationAppTheme {
                 HistoryContent(
                     listOf(HistoryDay("2026-07-13", HistoryStatus.TAKEN, HistoryStatus.MISSED, HistoryStatus.PENDING, HistoryStatus.NONE, 2)),
-                    YearMonth.of(2026, 7), false, null, null, null, {}, {}, {}, {},
+                    false, null, null, null, {}, LocalDate.parse("2026-07-14"),
                 )
             }
         }
 
-        composeRule.onNodeWithContentDescription(
-            "7月13日 月曜日、朝服用済み、昼未達、夕未服用、寝る前予定なし、頓服2回",
-        ).assertIsDisplayed()
+        composeRule.onNodeWithText("飲んだ記録を確認できます").assertIsDisplayed()
+        composeRule.onNodeWithText("昨日 7月13日（月）").assertIsDisplayed()
+        composeRule.onNodeWithText("朝・昼・夕のお薬").assertIsDisplayed()
     }
 
     @Test

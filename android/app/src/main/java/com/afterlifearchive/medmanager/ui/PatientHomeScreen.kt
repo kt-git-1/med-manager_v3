@@ -115,7 +115,7 @@ internal enum class PatientTab(val titleResource: Int, val icon: ImageVector) {
 }
 
 @Composable
-fun PatientModePreview() {
+internal fun PatientModePreview(initialTab: PatientTab = PatientTab.TODAY) {
     val morningName = stringResource(R.string.patient_preview_morning_name)
     val bloodPressureName = stringResource(R.string.patient_preview_blood_pressure_name)
     val stomachName = stringResource(R.string.patient_preview_stomach_name)
@@ -125,6 +125,16 @@ fun PatientModePreview() {
     val oneTablet = stringResource(R.string.patient_preview_one_tablet)
     val twoTablets = stringResource(R.string.patient_preview_two_tablets)
     val previewNow = remember { Instant.parse("2026-07-14T03:00:00Z") }
+    val previewDate = remember(previewNow) { previewNow.atZone(ZoneId.of("Asia/Tokyo")).toLocalDate() }
+    val previewHistory = remember {
+        listOf(
+            HistoryDay("2026-07-10", HistoryStatus.TAKEN, HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+            HistoryDay("2026-07-11", HistoryStatus.TAKEN, HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+            HistoryDay("2026-07-12", HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 1),
+            HistoryDay("2026-07-13", HistoryStatus.TAKEN, HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+            HistoryDay("2026-07-14", HistoryStatus.TAKEN, HistoryStatus.PENDING, HistoryStatus.PENDING, HistoryStatus.NONE, 0),
+        )
+    }
     val previewDoses = remember(morningName, bloodPressureName, stomachName, eveningName, oneTablet, twoTablets) {
         listOf(
             PatientDose("preview-1", "med-1", Instant.parse("2026-07-13T23:00:00Z"), DoseStatus.TAKEN, morningName, oneTablet, 1.0, slot = MedicationSlot.MORNING),
@@ -149,7 +159,7 @@ fun PatientModePreview() {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 PatientTab.entries.forEach { item ->
                     NavigationBarItem(
-                        selected = item == PatientTab.TODAY,
+                        selected = item == initialTab,
                         onClick = {},
                         icon = { Icon(item.icon, contentDescription = null) },
                         label = { Text(stringResource(item.titleResource)) },
@@ -164,26 +174,38 @@ fun PatientModePreview() {
         },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding).safeDrawingPadding()) {
-            TodayContent(
-                doses = previewDoses,
-                loading = false,
-                updatingKey = null,
-                error = null,
-                message = null,
-                maintenanceWarning = null,
-                medications = mapOf(prnMedication.id to prnMedication),
-                nextSlot = MedicationSlot.NOON,
-                updatingSlot = null,
-                prnMedications = listOf(prnMedication),
-                updatingPrnMedicationId = null,
-                onRetry = {},
-                onRecord = {},
-                onDetail = {},
-                onRecordSlot = {},
-                onRecordPrn = {},
-                onRemind = {},
-                now = previewNow,
-            )
+            if (initialTab == PatientTab.HISTORY) {
+                HistoryContent(
+                    days = previewHistory,
+                    loading = false,
+                    error = null,
+                    retentionCutoffDate = null,
+                    retentionDays = null,
+                    onRetry = {},
+                    now = previewDate,
+                )
+            } else {
+                TodayContent(
+                    doses = previewDoses,
+                    loading = false,
+                    updatingKey = null,
+                    error = null,
+                    message = null,
+                    maintenanceWarning = null,
+                    medications = mapOf(prnMedication.id to prnMedication),
+                    nextSlot = MedicationSlot.NOON,
+                    updatingSlot = null,
+                    prnMedications = listOf(prnMedication),
+                    updatingPrnMedicationId = null,
+                    onRetry = {},
+                    onRecord = {},
+                    onDetail = {},
+                    onRecordSlot = {},
+                    onRecordPrn = {},
+                    onRemind = {},
+                    now = previewNow,
+                )
+            }
         }
     }
 }
@@ -312,14 +334,10 @@ fun PatientHomeScreen(repository: PatientRepository, onUnlink: () -> Unit) {
                 )
                 PatientTab.HISTORY -> HistoryContent(
                     days = state.history,
-                    yearMonth = YearMonth.of(state.historyYear ?: LocalDate.now().year, state.historyMonth ?: LocalDate.now().monthValue),
                     loading = state.loading,
                     error = errorText,
                     retentionCutoffDate = state.retentionCutoffDate,
                     retentionDays = state.retentionDays,
-                    onPreviousMonth = { month -> scope.launch { repository.loadHistory(month.minusMonths(1).atDay(1)) } },
-                    onNextMonth = { month -> scope.launch { repository.loadHistory(month.plusMonths(1).atDay(1)) } },
-                    onSelectDate = { date -> navigation.showHistoryDate(date); scope.launch { repository.loadHistoryDay(date) } },
                     onRetry = { scope.launch { repository.loadHistory() } },
                 )
                 PatientTab.SETTINGS -> SettingsContent(
