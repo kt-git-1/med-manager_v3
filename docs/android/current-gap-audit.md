@@ -6,7 +6,7 @@
 
 ## 1. Executive result
 
-The existing Android project is a useful patient-mode implementation, but it is not yet a high-fidelity port of the current product. Patient functionality has substantial automated coverage; caregiver product UI is still a placeholder. The new main baseline changes several session and mutation contracts, so affected rows are reset to `RECHECK_REQUIRED` before Phase C1 begins.
+The Android project now contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. This audit began against `main@1d9d19e`; the 2026-07-15 Gate I fetch confirms that commit is still `origin/main` and is an ancestor of `android-dev`, with zero unmerged main-side commits. Remaining gaps are live Firebase verification, visual/accessibility/device matrices and Play release operations rather than missing core product tabs.
 
 ## 2. What is reusable
 
@@ -57,11 +57,11 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Area | Status | Reason |
 |---|---|---|
 | Phase 0 build foundation | IMPLEMENTED | Build/test/lint workflow exists; release/device proof remains |
-| Shared session/API | RECHECK_REQUIRED | A01/A02 are repaired; installation safety and mutation/freshness contracts remain in A03–A06 |
+| Shared session/API | IMPLEMENTED | A01–A06 auth, installation safety, typed networking, mutation freshness and notification rebuild gates pass; physical OEM transfer remains release evidence |
 | Entry/caregiver auth UI | IMPLEMENTED / re-visualize | Main copy/analytics paths and current captures need recheck |
-| Patient Today | RECHECK_REQUIRED | Post-record reminder and history invalidation changed |
+| Patient Today | IMPLEMENTED / re-visualize | Post-record reminder/history/inventory revisions and failure preservation are covered; final matched visual matrix remains |
 | Patient History/Settings | IMPLEMENTED / re-visualize | Freshness/lazy-tab behavior changed |
-| Patient notification/tutorial | RECHECK_REQUIRED | Next-day rebuild and loaded-tab lifetime need current evidence |
+| Patient notification/tutorial | IMPLEMENTED / physical verify | Next-day rebuild, loaded-tab lifetime, routing and tutorial actions are covered; physical permission/tap/TalkBack remain |
 | Caregiver mode | IMPLEMENTED / re-visualize | Gate G production flow and 74-test checkpoint are complete; physical/visual state matrix remains |
 | Analytics/privacy parity | PARTIAL | Code and automated privacy gates complete; Firebase Console evidence awaits environment configuration |
 | Physical release verification | NOT_STARTED | Emulator evidence is not release proof |

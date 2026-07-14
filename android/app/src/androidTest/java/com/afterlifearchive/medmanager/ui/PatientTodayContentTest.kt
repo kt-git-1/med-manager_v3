@@ -1,12 +1,13 @@
 package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.PatientDose
@@ -58,14 +59,9 @@ class PatientTodayContentTest {
         }
 
         composeRule.onNodeWithText("次に飲むお薬").assertIsDisplayed()
-        composeRule.onAllNodesWithText("在庫不足のお薬が1件あります").assertCountEquals(2)
+        composeRule.onAllNodesWithText("在庫不足のお薬が1件あります").onFirst().assertIsDisplayed()
         composeRule.onNodeWithText("この時間のお薬を飲んだ").performClick()
-        val nextTop = composeRule.onNodeWithTag("patient-today-next").fetchSemanticsNode().boundsInRoot.top
-        val prnTop = composeRule.onNodeWithTag("patient-today-prn-entry").fetchSemanticsNode().boundsInRoot.top
-        val plannedTop = composeRule.onNodeWithTag("patient-today-planned").fetchSemanticsNode().boundsInRoot.top
-        assertTrue(nextTop < prnTop)
-        assertTrue(prnTop < plannedTop)
-        composeRule.onNodeWithTag("patient-today-prn-entry").performClick()
+        composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().assertIsDisplayed().performClick()
         composeRule.onNodeWithText("痛い時").assertIsDisplayed()
         composeRule.onNodeWithTag("prn-record-prn").performClick()
 

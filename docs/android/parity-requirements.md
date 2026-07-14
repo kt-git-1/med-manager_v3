@@ -95,6 +95,6 @@ This file tracks product parity against `main@1d9d19e`. Status is conservative: 
 | XP-005 | Dynamic type/font scale and screen-reader semantics | PARTIAL | At 200% font, Patient Today primary bulk/planned content, History recent/today content, Settings analytics/logout, and tutorial actions remain reachable. History weekday/date/status is one merged TalkBack label. The 130% matrix, full traversal, caregiver surfaces and physical TalkBack verification remain |
 | XP-006 | Dark mode visual parity | PARTIAL | Current Patient Today, History and Settings render successfully in API-35 emulator dark mode with evidence under `evidence/c06-20260714/`; complete state-by-state iOS comparison and physical-device verification remain |
 | XP-007 | Offline/retry behavior | PARTIAL | Patient retry states exist; shared stale/cache policy and caregiver paths remain |
-| XP-008 | Physical-device matrix | NOT_STARTED | Supported API/device classes, notification/Doze, TalkBack, font scale and lifecycle required |
+| XP-008 | Physical-device matrix | PARTIAL | API 26/33/35 ARM emulator matrix passes 228/228 after removing test-only API/storage/viewport assumptions; notification/Doze, TalkBack, font scale and lifecycle still require physical devices |
 | XP-009 | Google Play Data safety and health declarations | NOT_STARTED | Complete from actual release behavior and analytics consent configuration |
 | XP-010 | Closed-test and signed production release | NOT_STARTED | Production signing, Firebase Android app, Play tracks and rollout evidence required |

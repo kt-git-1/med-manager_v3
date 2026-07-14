@@ -54,7 +54,9 @@ class CaregiverReportUiTest {
         val generated = CaregiverPdfReportGenerator.generate(context, report())
 
         assertTrue(generated.file.canonicalPath.startsWith(context.cacheDir.canonicalPath))
-        assertEquals("%PDF", generated.file.inputStream().use { String(it.readNBytes(4), Charsets.US_ASCII) })
+        val header = ByteArray(4)
+        generated.file.inputStream().use { assertEquals(4, it.read(header)) }
+        assertEquals("%PDF", String(header, Charsets.US_ASCII))
         assertEquals("content", generated.contentUri.scheme)
         assertEquals("${context.packageName}.fileprovider", generated.contentUri.authority)
     }

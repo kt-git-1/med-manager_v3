@@ -7,6 +7,10 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasContentDescription
 import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
@@ -30,8 +34,10 @@ class PatientAccessibilityTest {
         }
 
         composeRule.onNodeWithText("飲んだ記録を確認できます").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasText("昨日 7月13日（月）"))
         composeRule.onNodeWithText("昨日 7月13日（月）").assertIsDisplayed()
         composeRule.onNodeWithText("朝・昼・夕のお薬").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasContentDescription("月 7月13日 忘れ"))
         composeRule.onNodeWithContentDescription("月 7月13日 忘れ").assertIsDisplayed()
     }
 

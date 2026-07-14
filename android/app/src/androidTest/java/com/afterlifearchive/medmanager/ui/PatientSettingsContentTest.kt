@@ -8,6 +8,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.hasText
 import com.afterlifearchive.medmanager.PatientNotificationSettings
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import org.junit.Assert.assertEquals
@@ -62,7 +64,8 @@ class PatientSettingsContentTest {
         }
 
         composeRule.onNodeWithTag("patient-notification-toggle").assertIsNotEnabled()
-        composeRule.onNodeWithText("通知が許可されていません。設定アプリで通知を許可してください。").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-settings-list").performScrollToNode(hasText("通知が許可されていません。設定アプリで通知を許可してください。"))
+        composeRule.onNodeWithText("通知が許可されていません。設定アプリで通知を許可してください。").assertIsDisplayed()
     }
 
     @Test

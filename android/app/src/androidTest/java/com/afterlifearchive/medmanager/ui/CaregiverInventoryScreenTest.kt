@@ -2,6 +2,7 @@ package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -54,7 +55,9 @@ class CaregiverInventoryScreenTest {
         composeRule.onNodeWithText("残数を4錠に変更します。").assertIsDisplayed()
         composeRule.onNodeWithTag("inventory-correction-confirm").performClick()
         composeRule.waitForIdle()
+        composeRule.onNodeWithTag("caregiver-inventory-detail").performScrollToNode(hasText("残数を修正しました"))
         composeRule.onNodeWithText("残数を修正しました").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-inventory-detail").performScrollToNode(hasText("残り 4 錠"))
         composeRule.onNodeWithText("残り 4 錠").assertIsDisplayed()
     }
 

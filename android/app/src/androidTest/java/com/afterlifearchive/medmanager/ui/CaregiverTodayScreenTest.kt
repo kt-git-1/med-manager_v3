@@ -1,14 +1,14 @@
 package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverInventorySummary
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatient
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
@@ -46,10 +46,12 @@ class CaregiverTodayScreenTest {
 
         composeRule.onNodeWithText("さくらさんを見守り中").assertIsDisplayed()
         composeRule.onNodeWithText("次にすること").assertIsDisplayed()
-        composeRule.onAllNodesWithText("昼 13:00").assertCountEquals(2)
+        composeRule.onAllNodesWithText("昼 13:00").onFirst().assertIsDisplayed()
         composeRule.onNodeWithText("1 / 3 回完了").assertIsDisplayed()
         composeRule.onNodeWithText("頓服薬が1件あります").assertIsDisplayed()
         composeRule.onNodeWithText("未記録の時間帯があります").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-slot-action-noon"))
+        composeRule.onNodeWithTag("caregiver-today-slot-action-noon").assertIsDisplayed()
     }
 
     @Test

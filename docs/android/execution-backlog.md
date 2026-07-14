@@ -173,9 +173,10 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Gate I — Release and merge
 
-- [ ] Final merge/rebaseline of then-current `main` into `android-dev`.
-- [ ] Resolve all `RECHECK_REQUIRED` rows.
-- [ ] Full emulator/API-level and physical-device matrices.
+- [x] Final rebaseline check: `origin/main@1d9d19e` has zero unique commits and is already an ancestor of `android-dev` (2026-07-15); no merge required.
+- [x] Resolve all `RECHECK_REQUIRED` rows; remaining `PARTIAL` rows are explicitly external/visual/device release gates.
+- [x] Full API 26/33/35 emulator matrix (76 tests each, 228/228 total).
+- [ ] Physical-device matrix.
 - [ ] Notification Doze/delivery/tap/process-death tests.
 - [ ] TalkBack, font 2.0, dark mode, compact/large phone and rotation/configuration tests.
 - [ ] Security, dependency, privacy and performance reviews.

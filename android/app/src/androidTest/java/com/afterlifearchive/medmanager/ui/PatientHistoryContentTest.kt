@@ -3,6 +3,9 @@ package com.afterlifearchive.medmanager.ui
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.hasText
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.HistoryDayDetail
@@ -44,10 +47,10 @@ class PatientHistoryContentTest {
         composeRule.onNodeWithText("今週").assertIsDisplayed()
         composeRule.onNodeWithText("1/7日").assertIsDisplayed()
         composeRule.onNodeWithText("最近の記録").assertIsDisplayed()
-        composeRule.onNodeWithText("今日 7月14日（火）").assertIsDisplayed()
-        composeRule.onNodeWithText("昨日 7月13日（月）").assertIsDisplayed()
-        composeRule.onNodeWithText("朝・昼のお薬").assertIsDisplayed()
-        composeRule.onNodeWithText("朝のお薬").assertIsDisplayed()
+        listOf("今日 7月14日（火）", "昨日 7月13日（月）", "朝・昼のお薬", "朝のお薬").forEach { text ->
+            composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasText(text))
+            composeRule.onNodeWithText(text).assertIsDisplayed()
+        }
     }
 
     @Test

@@ -1,8 +1,6 @@
 package com.afterlifearchive.medmanager.ui
 
 import android.graphics.Bitmap
-import android.content.ContentValues
-import android.provider.MediaStore
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -53,21 +51,12 @@ class CaregiverMedicationProductionScreenshotFixtureTest {
 
     private fun saveCapture(name: String) {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val values = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, name)
-            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/medmanager-e05")
-            put(MediaStore.Images.Media.IS_PENDING, 1)
-        }
-        val uri = requireNotNull(context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values))
-        context.contentResolver.openOutputStream(uri).use { stream ->
-            requireNotNull(stream)
+        val directory = java.io.File(context.cacheDir, "screenshot-fixtures").apply { mkdirs() }
+        val file = java.io.File(directory, name)
+        file.outputStream().use { stream ->
             composeRule.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, stream)
         }
-        values.clear()
-        values.put(MediaStore.Images.Media.IS_PENDING, 0)
-        context.contentResolver.update(uri, values, null, null)
-        assertTrue(uri.toString().isNotBlank())
+        assertTrue(file.length() > 0)
     }
 
     private fun medication(

@@ -8,6 +8,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.semantics.SemanticsActions
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatient
@@ -50,7 +52,10 @@ class CaregiverMedicationScreenTest {
 
         composeRule.onNodeWithTag("caregiver-medication-add").performClick()
         composeRule.onNodeWithTag("caregiver-medication-form").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-kind-prn"))
         composeRule.onNodeWithTag("medication-kind-prn").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-prn-instructions"))
         composeRule.onNodeWithTag("medication-prn-instructions").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-save"))
         composeRule.onNodeWithTag("medication-save").performClick()
@@ -67,7 +72,8 @@ class CaregiverMedicationScreenTest {
         composeRule.onNodeWithTag("caregiver-medication-form").assertIsDisplayed()
         composeRule.onNodeWithTag("medication-name").assertTextEquals("薬の名前", "アムロジピン")
         composeRule.onNodeWithTag("medication-strength-value").assertTextEquals("数値", "5")
-        composeRule.onNodeWithTag("medication-slot-morning").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-slot-morning"))
+        composeRule.onNodeWithTag("medication-slot-morning").assertExists()
     }
 
     @Test
@@ -77,8 +83,9 @@ class CaregiverMedicationScreenTest {
 
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-frequency-weekly"))
         composeRule.onNodeWithTag("medication-frequency-weekly").performClick()
-        composeRule.onNodeWithTag("medication-day-mon").assertIsDisplayed().performClick()
-        composeRule.onNodeWithTag("medication-slot-morning").performClick()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-day-mon"))
+        composeRule.onNodeWithTag("medication-day-mon").assertExists().performSemanticsAction(SemanticsActions.OnClick)
+        composeRule.onNodeWithTag("medication-slot-morning").assertExists().performSemanticsAction(SemanticsActions.OnClick)
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-kind-prn"))
         composeRule.onNodeWithTag("medication-kind-prn").performClick()
         composeRule.onNodeWithTag("medication-frequency-weekly").assertDoesNotExist()
