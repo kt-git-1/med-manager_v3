@@ -7,7 +7,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -17,6 +19,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.unit.Density
 import androidx.core.view.WindowCompat
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.HistoryDay
@@ -99,6 +102,46 @@ class PatientHistoryContentTest {
         composeRule.onNodeWithText("7日").assertIsDisplayed()
         composeRule.onNodeWithText("7日達成！1週間続きました。").assertIsDisplayed()
         composeRule.onNodeWithText("今日もすべて記録すると、8日になります").assertIsDisplayed()
+    }
+
+    @Test
+    fun currentIosAchievementPreviewFixtureMatchesFiveDayHierarchy() {
+        val activity = showHistory(
+            days = listOf(
+                HistoryDay("2026-07-13", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                HistoryDay("2026-07-14", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                HistoryDay("2026-07-15", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                HistoryDay("2026-07-16", HistoryStatus.TAKEN, HistoryStatus.TAKEN, HistoryStatus.PENDING, HistoryStatus.NONE, 0),
+            ),
+            streak = PatientHistoryStreak(5, false, HistoryStreakTodayStatus.IN_PROGRESS),
+            now = LocalDate.parse("2026-07-16"),
+        )
+
+        composeRule.onNodeWithText("2/3回分 記録済み").assertIsDisplayed()
+        composeRule.onNodeWithText("5日").assertIsDisplayed()
+        composeRule.onNodeWithText("5日間、記録できています。すばらしいです。").assertIsDisplayed()
+        composeRule.onNodeWithText("今日もすべて記録すると、6日になります").assertIsDisplayed()
+        captureDevice(activity, "android-ui-104-history-streak-light.png")
+    }
+
+    @Test
+    fun currentIosAchievementPreviewRemainsReadableInDarkMaximumText() {
+        val activity = showHistory(
+            days = listOf(
+                HistoryDay("2026-07-13", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                HistoryDay("2026-07-14", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                HistoryDay("2026-07-15", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                HistoryDay("2026-07-16", HistoryStatus.TAKEN, HistoryStatus.TAKEN, HistoryStatus.PENDING, HistoryStatus.NONE, 0),
+            ),
+            streak = PatientHistoryStreak(5, false, HistoryStreakTodayStatus.IN_PROGRESS),
+            now = LocalDate.parse("2026-07-16"),
+            darkTheme = true,
+            fontScale = 2f,
+        )
+
+        composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasText("今日もすべて記録すると、6日になります"))
+        composeRule.onNodeWithText("今日もすべて記録すると、6日になります").assertIsDisplayed()
+        captureDevice(activity, "android-ui-104-history-streak-dark-font-2.0.png", darkTheme = true)
     }
 
     @Test
@@ -235,22 +278,27 @@ class PatientHistoryContentTest {
         retentionDays: Int? = null,
         onRetry: () -> Unit = {},
         now: LocalDate = LocalDate.parse("2026-07-14"),
+        darkTheme: Boolean = false,
+        fontScale: Float = 1f,
     ): Activity {
         lateinit var activity: Activity
         composeRule.setContent {
-            MedicationAppTheme {
-                activity = checkNotNull(LocalActivity.current)
-                Box(Modifier.fillMaxSize().background(PatientBackground).safeDrawingPadding()) {
-                    HistoryContent(
-                        days = days,
-                        streak = streak,
-                        loading = loading,
-                        error = error,
-                        retentionCutoffDate = retentionCutoffDate,
-                        retentionDays = retentionDays,
-                        onRetry = onRetry,
-                        now = now,
-                    )
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
+                MedicationAppTheme(darkTheme = darkTheme) {
+                    activity = checkNotNull(LocalActivity.current)
+                    Box(Modifier.fillMaxSize().background(PatientBackground).safeDrawingPadding()) {
+                        HistoryContent(
+                            days = days,
+                            streak = streak,
+                            loading = loading,
+                            error = error,
+                            retentionCutoffDate = retentionCutoffDate,
+                            retentionDays = retentionDays,
+                            onRetry = onRetry,
+                            now = now,
+                        )
+                    }
                 }
             }
         }
@@ -293,11 +341,11 @@ class PatientHistoryContentTest {
     }
 
     @Suppress("DEPRECATION")
-    private fun captureDevice(activity: Activity, filename: String) {
+    private fun captureDevice(activity: Activity, filename: String, darkTheme: Boolean = false) {
         composeRule.runOnIdle {
             WindowCompat.setDecorFitsSystemWindows(activity.window, false)
             activity.window.statusBarColor = android.graphics.Color.TRANSPARENT
-            WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = true
+            WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = !darkTheme
         }
         SystemClock.sleep(250)
         writeDeviceScreenshotFixture(filename)

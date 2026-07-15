@@ -6,7 +6,7 @@
 
 ## 1. Executive result
 
-The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C31 formally rebased the contract from `main@1d9d19e` to `main@1cf8aef`; C32–C34 closed the three resulting Android parity gaps and C35 passed the complete current API/JVM/API-35 regression. Remaining gaps are explicitly live Firebase, fresh matched iOS captures, physical-device evidence and Play release operations.
+The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C31 formally rebased the contract from `main@1d9d19e` to `main@1cf8aef`; C32–C34 closed the three resulting Android parity gaps, C35/C36 passed the current regression matrices, and C37 closed fresh matched Patient History streak and Caregiver Today status captures. Remaining gaps are explicitly live Firebase, the rest of the fresh visual matrix, physical-device evidence and Play release operations.
 
 ## 2. What is reusable
 
@@ -35,8 +35,8 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Resolved B01 | Patient feature parsing exposed `JSONObject` at endpoint boundaries | Kotlin serialization wire DTOs now map every patient endpoint into domain models; current/legacy history keys and optional/required-field behavior are fixture-tested | Reuse the same wire/domain boundary for caregiver endpoints |
 | Resolved B02 | Session, caregiver selection and patient navigation ownership were mixed or composition-local | Caregiver selection has an independent repository; patient tab/detail/history navigation is saveable; notification preferences and feature data remain separate; UI contains no token or auth-policy access | Reuse these owners in the caregiver shell |
 | Resolved B03 | Patient UI was one oversized screen file | Shell, navigation state, Today, History, Settings, Tutorial and shared components now live in separate files while retaining the A06 tab host | Production component capture fixtures and all prior interaction tests pass |
-| Resolved C32 | Patient History lacked the server-defined recording streak | API-045 now has strict typed mapping and independent state; the current-iOS card/copy sits between progress and week | Contract/repository tests plus API-35 Patient History 14/14 pass; matched adaptive/physical evidence remains |
-| Resolved C33 | Caregiver Today rendered the removed next-action hero | Current Android now leads with status, then optional PRN and slot-colored timeline actions; stale next copy/resources are absent | API-35 Today 13/13 and adaptive/large-text/accessibility 17/17 pass with two production-tree captures |
+| Resolved C32 | Patient History lacked the server-defined recording streak | API-045 now has strict typed mapping and independent state; the current-iOS card/copy sits between progress and week | Contract/repository tests pass; C37 adds fresh matched light and dark/maximum-text runtime evidence; physical evidence remains |
+| Resolved C33 | Caregiver Today rendered the removed next-action hero | Current Android now leads with status, then optional PRN and slot-colored timeline actions; stale next copy/resources are absent | C37 adds fresh current-iOS/Android light and dark/maximum-text runtime pairs after closing scheduled-time/icon drift; physical evidence remains |
 | Resolved C34 | Caregiver notification parser rejected `DOSE_MISSED` | One shared strict parser now accepts only taken/missed and validates patient/real ISO date/canonical slot before display or navigation | Parser/repository JVM gates plus API-35 Home/History 27/27 prove exact patient/date/slot routing and unknown/malformed rejection |
 | P1 | Existing patient screenshots predate current iOS behavior | Main added lazy tab lifetime, mutation/history refresh and UI adjustments | Recapture baseline and rerun visual acceptance |
 | P2 | Analytics live verification is pending | Runtime Firebase transport, both-role consent/reset and a privacy-rejecting fixed schema are implemented; no local Android Firebase values are available | Supply four environment values and capture DebugView then Realtime/Events/Explore evidence |
@@ -67,9 +67,9 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Shared session/API | IMPLEMENTED | A01–A06 auth, installation safety, typed networking, mutation freshness and notification rebuild gates pass; physical OEM transfer remains release evidence |
 | Entry/caregiver auth UI | IMPLEMENTED / re-visualize | Main copy/analytics paths and current captures need recheck |
 | Patient Today | IMPLEMENTED / re-visualize | Post-record reminder/history/inventory revisions and failure preservation are covered; final matched visual matrix remains |
-| Patient History/Settings | IMPLEMENTED / re-visualize | C32 streak contract/UI passes automated gates; matched dark/maximum-text and physical evidence remain |
+| Patient History/Settings | IMPLEMENTED / re-visualize | C37 closes matched streak light/dark/maximum-text evidence; other exceptional Settings/History states and physical evidence remain |
 | Patient notification/tutorial | IMPLEMENTED / physical verify | Next-day rebuild, loaded-tab lifetime, routing and tutorial actions are covered; physical permission/tap/TalkBack remain |
-| Caregiver mode | IMPLEMENTED / re-visualize | C33 current Today and C34 missed-dose routing pass the full C35 regression; fresh matched iOS and physical FCM/TalkBack evidence remain |
+| Caregiver mode | IMPLEMENTED / re-visualize | C37 closes fresh matched status-first Today light/dark/maximum-text evidence; other exceptional flows and physical FCM/TalkBack evidence remain |
 | Analytics/privacy parity | PARTIAL | Code and automated privacy gates complete; Firebase Console evidence awaits environment configuration |
 | Physical release verification | NOT_STARTED | Emulator evidence is not release proof |
 

@@ -25,9 +25,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.EventAvailable
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -147,7 +149,7 @@ private fun PatientHistoryStreakCard(streak: PatientHistoryStreak) {
         Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(Modifier.size(56.dp).background(PatientTeal, CircleShape), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.CalendarMonth, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                    Icon(Icons.Rounded.EventAvailable, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
                 }
                 Text(stringResource(R.string.patient_history_streak_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 Text(
@@ -160,7 +162,7 @@ private fun PatientHistoryStreakCard(streak: PatientHistoryStreak) {
                 )
             }
             Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = PatientTeal)
+                Icon(Icons.Rounded.Verified, contentDescription = null, tint = PatientTeal)
                 Text(achievement, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             }
             Text(

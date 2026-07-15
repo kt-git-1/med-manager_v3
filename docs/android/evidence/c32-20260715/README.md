@@ -17,5 +17,5 @@
 
 ## Remaining release evidence
 
-- Matched current-iOS dark and maximum-text captures.
+- C37 adds fresh current-iOS/Android light plus matched dark/maximum-text captures under `../c37-20260716/` and closes the emulator visual residual.
 - Physical-device TalkBack and font-scale verification.

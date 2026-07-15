@@ -7,7 +7,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -19,6 +21,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.unit.Density
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverInventorySummary
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatient
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
@@ -100,6 +103,49 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithText("胃薬").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-today-slot-action-noon").assertIsEnabled()
         captureDevice(activity, "android-ui-201-caregiver-today-source-calibrated-light.png")
+    }
+
+    @Test
+    fun currentIosDebugPreviewFixtureMatchesStatusAndTimelineHierarchy() {
+        val activity = setContent(
+            patientName = "なおみ",
+            slotTimes = CaregiverSlotTimes("08:00", "13:00", "19:00", "22:00"),
+            doses = listOf(
+                dose("preview-morning", DoseStatus.MISSED, "2026-07-15T23:00:00Z", "血圧の薬", "5 mg"),
+                dose("preview-noon-1", DoseStatus.PENDING, "2026-07-16T04:00:00Z", "カルボシステイン", "500 mg"),
+                dose("preview-noon-2", DoseStatus.PENDING, "2026-07-16T04:00:00Z", "整腸剤", "50 mg"),
+                dose("preview-evening", DoseStatus.TAKEN, "2026-07-16T10:00:00Z", "夕食後の薬", "10 mg", RecordedByType.PATIENT),
+            ),
+        )
+
+        composeRule.onNodeWithText("なおみさん").assertIsDisplayed()
+        composeRule.onNodeWithText("飲み忘れがあります").assertIsDisplayed()
+        composeRule.onNodeWithText("朝 8:00の服薬が飲み忘れになっています。下の今日の予定で確認できます").assertIsDisplayed()
+        composeRule.onNodeWithText("1/3回分 記録済み").assertIsDisplayed()
+        composeRule.onNodeWithText("飲み忘れが1回分あります").assertIsDisplayed()
+        composeRule.onNodeWithText("今日の予定").assertIsDisplayed()
+        captureDevice(activity, "android-ui-201-caregiver-today-status-matched-light.png")
+    }
+
+    @Test
+    fun currentIosDebugPreviewRemainsReadableInDarkMaximumText() {
+        val activity = setContent(
+            patientName = "なおみ",
+            slotTimes = CaregiverSlotTimes("08:00", "13:00", "19:00", "22:00"),
+            doses = listOf(
+                dose("preview-morning", DoseStatus.MISSED, "2026-07-15T23:00:00Z", "血圧の薬", "5 mg"),
+                dose("preview-noon-1", DoseStatus.PENDING, "2026-07-16T04:00:00Z", "カルボシステイン", "500 mg"),
+                dose("preview-noon-2", DoseStatus.PENDING, "2026-07-16T04:00:00Z", "整腸剤", "50 mg"),
+                dose("preview-evening", DoseStatus.TAKEN, "2026-07-16T10:00:00Z", "夕食後の薬", "10 mg", RecordedByType.PATIENT),
+            ),
+            darkTheme = true,
+            fontScale = 2f,
+        )
+
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-progress"))
+        composeRule.onNodeWithTag("caregiver-today-progress").assertIsDisplayed()
+        composeRule.onNodeWithText("1/3回分 記録済み").assertIsDisplayed()
+        captureDevice(activity, "android-ui-201-caregiver-today-dark-font-2.0.png", darkTheme = true)
     }
 
     @Test
@@ -395,6 +441,8 @@ class CaregiverTodayScreenTest {
         patientName: String = "さくら",
         slotTimes: CaregiverSlotTimes = CaregiverSlotTimes("08:00", "13:00", "19:00", "22:00"),
         onOpenMedications: () -> Unit = {},
+        darkTheme: Boolean = false,
+        fontScale: Float = 1f,
     ): Activity {
         val source = object : CaregiverTodayDataSource {
             override suspend fun today(patientId: String) = doses
@@ -405,10 +453,13 @@ class CaregiverTodayScreenTest {
         val patient = CaregiverPatient("patient-1", patientName, slotTimes)
         lateinit var activity: Activity
         composeRule.setContent {
-            MedicationAppTheme {
-                activity = checkNotNull(LocalActivity.current)
-                Box(Modifier.fillMaxSize().background(androidx.compose.material3.MaterialTheme.colorScheme.background).safeDrawingPadding()) {
-                    CaregiverTodayScreen(repository, CaregiverPatientState(listOf(patient), patient.id), true, onOpenMedications)
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
+                MedicationAppTheme(darkTheme = darkTheme) {
+                    activity = checkNotNull(LocalActivity.current)
+                    Box(Modifier.fillMaxSize().background(androidx.compose.material3.MaterialTheme.colorScheme.background).safeDrawingPadding()) {
+                        CaregiverTodayScreen(repository, CaregiverPatientState(listOf(patient), patient.id), true, onOpenMedications)
+                    }
                 }
             }
         }
@@ -448,11 +499,11 @@ class CaregiverTodayScreenTest {
     )
 
     @Suppress("DEPRECATION")
-    private fun captureDevice(activity: Activity, filename: String) {
+    private fun captureDevice(activity: Activity, filename: String, darkTheme: Boolean = false) {
         composeRule.runOnIdle {
             WindowCompat.setDecorFitsSystemWindows(activity.window, false)
             activity.window.statusBarColor = android.graphics.Color.TRANSPARENT
-            WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = true
+            WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = !darkTheme
         }
         SystemClock.sleep(250)
         writeDeviceScreenshotFixture(filename)

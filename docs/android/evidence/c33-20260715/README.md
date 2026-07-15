@@ -31,5 +31,5 @@ Both are direct API-35 device screenshots of the production Compose component tr
 
 ## Remaining release evidence
 
-- A fresh current-iOS runtime capture is still required because the repository public screenshot is stale.
-- Physical-device TalkBack and matched dark/maximum-text visual review remain in Gate I.
+- C37 captures the current iOS runtime directly and pairs it with Android light and dark/maximum-text states under `../c37-20260716/`; the stale repository public screenshot remains historical only.
+- Physical-device TalkBack remains in Gate I.

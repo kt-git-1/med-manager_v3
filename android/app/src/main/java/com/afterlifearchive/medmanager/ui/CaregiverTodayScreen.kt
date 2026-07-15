@@ -33,7 +33,7 @@ import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.LocalHospital
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Warning
-import androidx.compose.material.icons.rounded.WbSunny
+import androidx.compose.material.icons.rounded.WbTwilight
 import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
@@ -331,15 +331,15 @@ private fun CaregiverTodayContent(
             item { CaregiverTodayEmpty(onOpenMedications) }
         } else {
             if (missedRows > 0) item {
-                TodayCard(colors.caregiverRed) {
+                TodayCard(colors.caregiverRed, Modifier.testTag("caregiver-today-missed-alert")) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
                         TodayIcon(Icons.Rounded.Warning, colors.caregiverRed)
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(stringResource(R.string.caregiver_today_missed_title), color = colors.caregiverRed, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                             Text(
                                 if (missedRows == 1) {
-                                    val slot = missedSlotRows.single().first
-                                    stringResource(R.string.caregiver_today_missed_message_single, slotLabel(slot), configuredTime(slot, slotTimes))
+                                    val (slot, missedDoses) = missedSlotRows.single()
+                                    stringResource(R.string.caregiver_today_missed_message_single, slotLabel(slot), timelineDisplayTime(slot, missedDoses, slotTimes))
                                 } else {
                                     stringResource(R.string.caregiver_today_missed_message_multiple, missedRows)
                                 },
@@ -352,7 +352,7 @@ private fun CaregiverTodayContent(
                 }
             }
             if (rows.isNotEmpty()) item {
-                TodayCard {
+                TodayCard(modifier = Modifier.testTag("caregiver-today-progress")) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Box(contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(
@@ -589,7 +589,7 @@ private fun CaregiverTimelineCard(
                 }
                 Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(slotLabel(slot), color = slotColor, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                    Text(configuredTime(slot, slotTimes), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                    Text(timelineDisplayTime(slot, doses, slotTimes), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
                 }
                 CaregiverTodayStatusPill(
                     text = when {
@@ -742,7 +742,7 @@ private fun caregiverTimelineSlotColor(slot: MedicationSlot): Color = when (slot
 }
 
 private fun caregiverTimelineSlotIcon(slot: MedicationSlot): ImageVector = when (slot) {
-    MedicationSlot.MORNING -> Icons.Rounded.WbSunny
+    MedicationSlot.MORNING -> Icons.Rounded.WbTwilight
     MedicationSlot.NOON -> Icons.Rounded.LightMode
     MedicationSlot.EVENING -> Icons.Rounded.DarkMode
     MedicationSlot.BEDTIME -> Icons.Rounded.Bed
@@ -826,6 +826,16 @@ private fun configuredTime(slot: MedicationSlot, times: CaregiverSlotTimes?) = w
     MedicationSlot.BEDTIME -> times?.bedtime ?: "22:00"
 }
 
+private fun timelineDisplayTime(
+    slot: MedicationSlot,
+    doses: List<PatientDose>,
+    times: CaregiverSlotTimes?,
+): String = doses.minByOrNull(PatientDose::scheduledAt)
+    ?.scheduledAt
+    ?.atZone(TOKYO)
+    ?.format(DISPLAY_TIME_FORMAT)
+    ?: configuredTime(slot, times)
+
 @Composable
 private fun CaregiverTodayMessage(title: String, message: String, action: (@Composable () -> Unit)? = null) {
     CaregiverTodayCentered {
@@ -842,4 +852,5 @@ private fun CaregiverTodayCentered(content: @Composable ColumnScope.() -> Unit) 
 
 private val TOKYO = ZoneId.of("Asia/Tokyo")
 private val TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm")
+private val DISPLAY_TIME_FORMAT = DateTimeFormatter.ofPattern("H:mm")
 private fun formatTodayNumber(value: Double) = if (value % 1.0 == 0.0) value.toInt().toString() else value.toString()
