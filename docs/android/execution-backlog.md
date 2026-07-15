@@ -183,6 +183,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [ ] Physical TalkBack traversal and OEM configuration/lifecycle tests.
 - [x] Security, dependency, privacy and initial performance reviews; external dependency upgrades and signed-release profiling remain recorded residuals.
 - [x] Add a secret-free, fail-closed production signing configuration and Play release runbook.
+- [x] Make the signed-AAB task fail closed on incomplete production Firebase/runtime configuration and add repeatable application-ID/SDK/permission/16-KB APK+ELF compatibility inspection (`i04-play-preflight-20260715.md`).
 - [x] Map implementation data flows to a draft Play Data safety and Health apps declaration worksheet; final signed-AAB/Console submission remains pending.
 - [x] Add a fail-closed Digital Asset Links endpoint after live production hosts returned 404; production Play signing fingerprint, deploy and Play-installed verification remain pending.
 - [x] Define and implement the cross-role offline contract: in-memory last-known snapshots, explicit stale/retry UI, empty-snapshot handling, scope isolation and no offline mutation queue.

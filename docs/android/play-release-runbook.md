@@ -11,6 +11,8 @@ This is the production handoff procedure for Gate I. It does not authorize creat
 - Register and verify the production App Link domain.
 - Use Play App Signing. Store the upload-key keystore and passwords in an approved password manager/backup, never in Git or build logs.
 - Increment `versionCode` for every Play upload. Confirm `versionName` is the intended public version.
+- Recheck the current official target-API requirement immediately before upload. As of 2026-07-15, mobile submissions require API 35 or newer and this project targets 35.
+- Verify 16 KB page-size compatibility for every native library. Play requires this for API-35+ submissions; the repository gate checks both APK ZIP alignment and every ELF `LOAD` segment.
 
 ## 2. Local or CI-only configuration
 
@@ -41,16 +43,18 @@ Do not add `google-services.json`, a keystore, passwords, or populated `local.pr
 ```bash
 cd android
 ./gradlew clean test assembleDebug assembleRelease lint
+./gradlew verifyReleaseApkCompatibility
 ./gradlew bundleSignedRelease
 jarsigner -verify -verbose -certs app/build/outputs/bundle/release/app-release.aab
 ```
 
-`bundleSignedRelease` intentionally fails before bundle generation when any signing value is missing or the keystore path does not exist. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
+`verifyReleaseApkCompatibility` checks the Release APK application ID, min/target SDK, advertising/attribution permission exclusions, 16 KB ZIP alignment and native ELF alignment, then prints its SHA-256. `bundleSignedRelease` intentionally fails before bundle generation when production runtime/Firebase configuration is incomplete, any signing value is missing, or the keystore path does not exist. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
 
 Before upload, also verify:
 
 - `applicationId` is `com.afterlifearchive.medmanager`.
 - The merged Release Manifest contains no advertising ID, AdServices attribution/ID, or Install Referrer permission.
+- `verifyReleaseApkCompatibility` passes for the exact commit and dependency lock state used for the AAB.
 - No production secret appears in tracked files or Gradle output.
 - The AAB certificate matches the registered Play upload certificate.
 - API 26/33/35 tests and the physical-device matrix are green for the exact commit.
@@ -67,4 +71,5 @@ Before upload, also verify:
 
 - No production Android Firebase values are available locally, so DebugView/Realtime/Events/Explore evidence is pending.
 - No release-owner upload keystore has been selected, so a production-signed AAB cannot be produced here yet.
+- Only the API-35 emulator is currently attached; no physical-device result may be inferred from it.
 - Physical-device, Play-installed Internal/Closed track and Console declaration evidence remain pending.

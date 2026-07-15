@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.gradle.api.tasks.Sync
+import java.net.URI
 import java.util.Properties
 
 fun String.asBuildConfigString(): String = "\"${replace("\\", "\\\\").replace("\"", "\\\"")}\""
@@ -23,6 +24,18 @@ val releaseSigningConfigured = listOf(
     releaseKeyAlias,
     releaseKeyPassword,
 ).all(String::isNotBlank)
+val productionApiBaseUrl = runtimeConfig("API_BASE_URL", "https://www.okusuri-mimamori.com/")
+val productionSupabaseUrl = runtimeConfig("SUPABASE_URL")
+val productionSupabaseAnonKey = runtimeConfig("SUPABASE_ANON_KEY")
+val productionFirebaseAppId = runtimeConfig("FIREBASE_APP_ID")
+val productionFirebaseApiKey = runtimeConfig("FIREBASE_API_KEY")
+val productionFirebaseProjectId = runtimeConfig("FIREBASE_PROJECT_ID")
+val productionFirebaseSenderId = runtimeConfig("FIREBASE_SENDER_ID")
+val productionEmailRedirectUrl = runtimeConfig(
+    "EMAIL_CONFIRMATION_REDIRECT_URL",
+    "https://www.okusuri-mimamori.com/auth/confirmed",
+)
+val productionBillingEnabled = runtimeConfig("BILLING_ENABLED", "false")
 val syncRoleAssets by tasks.registering(Sync::class) {
     into(generatedRoleAssets)
     from(rootProject.file("../ios/MedicationApp/Assets.xcassets/RolePatient.imageset/role-patient.png")) {
@@ -53,18 +66,18 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        buildConfigField("String", "API_BASE_URL", runtimeConfig("API_BASE_URL", "https://www.okusuri-mimamori.com/").asBuildConfigString())
-        buildConfigField("String", "SUPABASE_URL", runtimeConfig("SUPABASE_URL").asBuildConfigString())
-        buildConfigField("String", "SUPABASE_ANON_KEY", runtimeConfig("SUPABASE_ANON_KEY").asBuildConfigString())
-        buildConfigField("boolean", "BILLING_ENABLED", runtimeConfig("BILLING_ENABLED", "false"))
-        buildConfigField("String", "FIREBASE_APP_ID", runtimeConfig("FIREBASE_APP_ID").asBuildConfigString())
-        buildConfigField("String", "FIREBASE_API_KEY", runtimeConfig("FIREBASE_API_KEY").asBuildConfigString())
-        buildConfigField("String", "FIREBASE_PROJECT_ID", runtimeConfig("FIREBASE_PROJECT_ID").asBuildConfigString())
-        buildConfigField("String", "FIREBASE_SENDER_ID", runtimeConfig("FIREBASE_SENDER_ID").asBuildConfigString())
+        buildConfigField("String", "API_BASE_URL", productionApiBaseUrl.asBuildConfigString())
+        buildConfigField("String", "SUPABASE_URL", productionSupabaseUrl.asBuildConfigString())
+        buildConfigField("String", "SUPABASE_ANON_KEY", productionSupabaseAnonKey.asBuildConfigString())
+        buildConfigField("boolean", "BILLING_ENABLED", productionBillingEnabled)
+        buildConfigField("String", "FIREBASE_APP_ID", productionFirebaseAppId.asBuildConfigString())
+        buildConfigField("String", "FIREBASE_API_KEY", productionFirebaseApiKey.asBuildConfigString())
+        buildConfigField("String", "FIREBASE_PROJECT_ID", productionFirebaseProjectId.asBuildConfigString())
+        buildConfigField("String", "FIREBASE_SENDER_ID", productionFirebaseSenderId.asBuildConfigString())
         buildConfigField(
             "String",
             "EMAIL_CONFIRMATION_REDIRECT_URL",
-            runtimeConfig("EMAIL_CONFIRMATION_REDIRECT_URL", "https://www.okusuri-mimamori.com/auth/confirmed").asBuildConfigString(),
+            productionEmailRedirectUrl.asBuildConfigString(),
         )
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -118,13 +131,61 @@ val verifyProductionSigning by tasks.registering {
     }
 }
 
+val verifyProductionRuntime by tasks.registering {
+    group = "verification"
+    description = "Fails unless the Play artifact has complete, structurally valid production runtime configuration."
+    doLast {
+        fun httpsUri(value: String): URI? = runCatching { URI(value) }.getOrNull()
+            ?.takeIf { it.scheme == "https" && !it.host.isNullOrBlank() }
+
+        val failures = buildList {
+            val apiUri = httpsUri(productionApiBaseUrl)
+            if (apiUri?.host != "www.okusuri-mimamori.com") add("API_BASE_URL must use the production HTTPS host")
+            if (httpsUri(productionSupabaseUrl) == null) add("SUPABASE_URL is missing or is not HTTPS")
+            if (productionSupabaseAnonKey.length < 20) add("SUPABASE_ANON_KEY is missing or malformed")
+            if (!productionFirebaseAppId.matches(Regex("^1:[0-9]+:android:[A-Za-z0-9]+$"))) {
+                add("FIREBASE_APP_ID is missing or malformed")
+            }
+            if (!productionFirebaseApiKey.startsWith("AIza") || productionFirebaseApiKey.length < 20) {
+                add("FIREBASE_API_KEY is missing or malformed")
+            }
+            if (!productionFirebaseProjectId.matches(Regex("^[a-z][a-z0-9-]{4,}$"))) {
+                add("FIREBASE_PROJECT_ID is missing or malformed")
+            }
+            if (!productionFirebaseSenderId.matches(Regex("^[0-9]+$"))) {
+                add("FIREBASE_SENDER_ID is missing or malformed")
+            }
+            val redirectUri = httpsUri(productionEmailRedirectUrl)
+            if (redirectUri?.host != "www.okusuri-mimamori.com" || redirectUri.path != "/auth/confirmed") {
+                add("EMAIL_CONFIRMATION_REDIRECT_URL must use the production confirmation route")
+            }
+            if (productionBillingEnabled != "false") {
+                add("BILLING_ENABLED must remain false for the approved initial Android release")
+            }
+        }
+        require(failures.isEmpty()) {
+            "Production runtime configuration is not Play-ready:\n - ${failures.joinToString("\n - ")}"
+        }
+    }
+}
+
+val verifyReleaseApkCompatibility by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Builds and inspects the Release APK for SDK, permission and 16 KB page-size compatibility."
+    dependsOn("assembleRelease")
+    commandLine("bash", rootProject.file("scripts/verify-release-apk.sh").absolutePath)
+}
+
 tasks.register("bundleSignedRelease") {
     group = "build"
-    description = "Builds the Play upload AAB only after production signing configuration is verified."
-    dependsOn(verifyProductionSigning, "bundleRelease")
+    description = "Builds the Play upload AAB only after production runtime and signing configuration are verified."
+    dependsOn(verifyProductionRuntime, verifyProductionSigning, verifyReleaseApkCompatibility, "bundleRelease")
+}
+verifyReleaseApkCompatibility.configure {
+    mustRunAfter(verifyProductionRuntime, verifyProductionSigning)
 }
 tasks.matching { it.name == "bundleRelease" }.configureEach {
-    mustRunAfter(verifyProductionSigning)
+    mustRunAfter(verifyProductionRuntime, verifyProductionSigning, verifyReleaseApkCompatibility)
 }
 
 tasks.named("preBuild").configure { dependsOn(syncRoleAssets) }

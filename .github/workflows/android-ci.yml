@@ -44,3 +44,9 @@ jobs:
 
       - name: Debug build
         run: ./gradlew assembleDebug
+
+      - name: Lint
+        run: ./gradlew lintDebug
+
+      - name: Release compatibility
+        run: ./gradlew verifyReleaseApkCompatibility
