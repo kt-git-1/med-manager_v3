@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -53,7 +54,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.afterlifearchive.medmanager.R
+import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.PatientDose
@@ -255,7 +258,11 @@ private fun PatientTodayInitialLoading() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        CircularProgressIndicator(modifier = Modifier.size(52.dp), color = PatientTeal)
+        CircularProgressIndicator(
+            modifier = Modifier.size(38.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f),
+            strokeWidth = 4.dp,
+        )
         Spacer(Modifier.height(14.dp))
         Text(
             stringResource(R.string.patient_today_loading),
@@ -268,25 +275,40 @@ private fun PatientTodayInitialLoading() {
 
 @Composable
 private fun PatientTodayInitialError(message: String) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 36.dp).testTag("patient-today-initial-error"),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+    Box(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp).testTag("patient-today-initial-error"),
+        contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            Icons.Rounded.Warning,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.error,
-            modifier = Modifier.size(44.dp),
-        )
-        Spacer(Modifier.height(12.dp))
-        Text(
-            message,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.error,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        )
+        val shape = RoundedCornerShape(18.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = 12.dp,
+                    shape = shape,
+                    ambientColor = MedicationTheme.colors.patientCardShadow,
+                    spotColor = MedicationTheme.colors.patientCardShadow,
+                )
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f), shape)
+                .padding(22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                Icons.Rounded.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(48.dp),
+            )
+            Text(
+                message,
+                fontSize = 20.sp,
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+        }
     }
 }
 

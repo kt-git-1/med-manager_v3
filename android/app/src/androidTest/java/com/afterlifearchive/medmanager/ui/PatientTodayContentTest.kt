@@ -44,6 +44,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import java.time.Instant
+import kotlinx.coroutines.delay
 
 class PatientTodayContentTest {
     @get:Rule
@@ -257,28 +258,30 @@ class PatientTodayContentTest {
 
     @Test
     fun todayShowsCurrentIosInitialLoadingAsFullState() {
-        showTodayState(loading = true)
+        val (activity, repository) = showProductionInitialTodayState(fail = false)
 
+        composeRule.waitUntil(timeoutMillis = 5_000) { repository.state.value.loading }
         composeRule.onNodeWithTag("patient-today-initial-loading").assertIsDisplayed()
         composeRule.onNodeWithText("読み込み中...").assertIsDisplayed()
         composeRule.onAllNodesWithText("今日のお薬").assertCountEquals(0)
-        writeScreenshotFixture(
-            composeRule.onNodeWithTag("patient-today-initial-loading").captureToImage(),
-            "android-ui-101-patient-initial-loading-light.png",
-        )
+        composeRule.onNodeWithText("今日").assertIsDisplayed()
+        composeRule.runOnIdle { normalizeStatusBar(activity) }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-101-patient-initial-loading-light-matched.png")
     }
 
     @Test
     fun todayShowsCurrentIosInitialFailureAsFullState() {
-        showTodayState(error = "取得に失敗しました")
+        val (activity, repository) = showProductionInitialTodayState(fail = true)
 
+        composeRule.waitUntil(timeoutMillis = 5_000) { repository.state.value.error != null }
         composeRule.onNodeWithTag("patient-today-initial-error").assertIsDisplayed()
         composeRule.onNodeWithText("取得に失敗しました").assertIsDisplayed()
         composeRule.onAllNodesWithText("今日のお薬").assertCountEquals(0)
-        writeScreenshotFixture(
-            composeRule.onNodeWithTag("patient-today-initial-error").captureToImage(),
-            "android-ui-101-patient-initial-error-light.png",
-        )
+        composeRule.onNodeWithText("今日").assertIsDisplayed()
+        composeRule.runOnIdle { normalizeStatusBar(activity) }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-101-patient-initial-error-light-matched.png")
     }
 
     @Test
@@ -624,6 +627,30 @@ class PatientTodayContentTest {
                 }
             }
         }
+    }
+
+    private fun showProductionInitialTodayState(fail: Boolean): Pair<Activity, PatientRepository> {
+        lateinit var activity: Activity
+        val repository = PatientRepository(object : PatientDataSource {
+            override suspend fun today(): List<PatientDose> = emptyList()
+            override suspend fun slotTimes() = PatientSlotTimes.DEFAULT
+            override suspend fun medications(): List<PatientMedication> {
+                if (fail) error("synthetic C42 initial-load failure")
+                delay(60_000)
+                return emptyList()
+            }
+            override suspend fun recordDose(dose: PatientDose) = Unit
+            override suspend fun recordPrn(medication: PatientMedication) = Unit
+            override suspend fun history(year: Int, month: Int) = emptyList<HistoryDay>()
+            override suspend fun revokeSession() = Unit
+        })
+        composeRule.setContent {
+            MedicationAppTheme {
+                activity = checkNotNull(LocalActivity.current)
+                PatientHomeScreen(repository = repository, onUnlink = {}, tutorialEnabled = false)
+            }
+        }
+        return activity to repository
     }
 
     private fun showMatchedAdaptiveToday(

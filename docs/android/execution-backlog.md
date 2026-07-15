@@ -140,6 +140,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C39 Close the UI-004 current-runtime residual with fresh empty/synthetic-filled light and dark pairs plus adaptive evidence; align the form canvas, glass card, blue accent, filled fields, spacing and circular navigation.
 - [x] C40 Close the UI-005 current-runtime residual with fresh empty/synthetic-filled light and dark pairs plus adaptive evidence; align signup card origin, person-add title and confirmation-lock semantics without changing C39 login geometry.
 - [x] C41 Close the UI-002 non-empty current-runtime residual with fresh empty/real-field synthetic-filled light and dark pairs plus adaptive evidence; align link field/action geometry, `.xLarge` hierarchy and chevron semantics without sending a link request.
+- [x] C42 Close the UI-101 current-runtime initial-loading/failure light residual with production-shell pairs; match neutral loading, the glass error card and the shared floating patient tab bar, then pass the 205-test API-35 suite.
 - [x] C34 Accept strict caregiver `DOSE_MISSED` payloads alongside `DOSE_TAKEN` and verify identical exact-date/slot History routing.
 - [x] C35 Rerun the full API/JVM/lint/build/API-35 matrix and close all C31 `RECHECK_REQUIRED` rows.
 - [ ] C06 Complete full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification.

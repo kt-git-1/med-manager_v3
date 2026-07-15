@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.NotificationManagerCompat
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -32,7 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
-import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -43,9 +46,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -64,6 +64,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -76,7 +78,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
@@ -106,6 +111,7 @@ import com.afterlifearchive.medmanager.data.patient.PatientMedication
 import com.afterlifearchive.medmanager.data.patient.PatientMaintenanceWarning
 import com.afterlifearchive.medmanager.data.patient.PatientHistoryStreak
 import com.afterlifearchive.medmanager.R
+import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import java.time.LocalDate
@@ -117,8 +123,67 @@ import java.util.Locale
 
 internal enum class PatientTab(val titleResource: Int, val icon: ImageVector) {
     TODAY(R.string.patient_tab_today, Icons.Rounded.CalendarMonth),
-    HISTORY(R.string.patient_tab_history, Icons.Rounded.History),
+    HISTORY(R.string.patient_tab_history, Icons.Rounded.AccessTime),
     SETTINGS(R.string.patient_tab_settings, Icons.Rounded.Settings),
+}
+
+@Composable
+private fun PatientBottomTabBar(
+    selectedTab: PatientTab,
+    onSelect: (PatientTab) -> Unit,
+) {
+    val barShape = RoundedCornerShape(28.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(PatientBackground)
+            .navigationBarsPadding()
+            .padding(horizontal = 14.dp)
+            .padding(bottom = 8.dp)
+            .shadow(
+                elevation = 14.dp,
+                shape = barShape,
+                ambientColor = MedicationTheme.colors.patientCardShadow,
+                spotColor = MedicationTheme.colors.patientCardShadow,
+            )
+            .background(MaterialTheme.colorScheme.surface, barShape)
+            .border(1.dp, MedicationTheme.colors.cardStroke, barShape)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        PatientTab.entries.forEach { item ->
+            val selected = item == selectedTab
+            val itemShape = RoundedCornerShape(18.dp)
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 74.dp)
+                    .clip(itemShape)
+                    .background(if (selected) PatientTeal.copy(alpha = 0.13f) else Color.Transparent)
+                    .clickable(role = Role.Tab) { onSelect(item) }
+                    .semantics { this.selected = selected }
+                    .padding(horizontal = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),
+            ) {
+                Icon(
+                    item.icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(30.dp),
+                    tint = if (selected) PatientTeal else MedicationTheme.colors.readableSecondaryText,
+                )
+                Text(
+                    stringResource(item.titleResource),
+                    color = if (selected) PatientTeal else MedicationTheme.colors.readableSecondaryText,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 21.sp,
+                    maxLines = 2,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -163,21 +228,7 @@ internal fun PatientModePreview(initialTab: PatientTab = PatientTab.TODAY) {
     Scaffold(
         containerColor = PatientBackground,
         bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                PatientTab.entries.forEach { item ->
-                    NavigationBarItem(
-                        selected = item == initialTab,
-                        onClick = {},
-                        icon = { Icon(item.icon, contentDescription = null) },
-                        label = { Text(stringResource(item.titleResource)) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = PatientTeal,
-                            selectedTextColor = PatientTeal,
-                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                        ),
-                    )
-                }
-            }
+            PatientBottomTabBar(selectedTab = initialTab, onSelect = {})
         },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding).safeDrawingPadding()) {
@@ -328,21 +379,7 @@ fun PatientHomeScreen(
     Scaffold(
         containerColor = PatientBackground,
         bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                PatientTab.entries.forEach { item ->
-                    NavigationBarItem(
-                        selected = tab == item,
-                        onClick = { navigation.selectTab(item) },
-                        icon = { Icon(item.icon, contentDescription = null) },
-                        label = { Text(stringResource(item.titleResource)) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = PatientTeal,
-                            selectedTextColor = PatientTeal,
-                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                        ),
-                    )
-                }
-            }
+            PatientBottomTabBar(selectedTab = tab, onSelect = navigation::selectTab)
         },
     ) { padding ->
         PatientPersistentTabHost(
