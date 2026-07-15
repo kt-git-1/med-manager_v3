@@ -65,6 +65,23 @@ class CaregiverAuthFlowScreenTest {
         composeRule.onNodeWithText("メールアドレスの形式を確認してください。")
             .performScrollTo()
             .assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_ERROR_TAG).assertIsDisplayed()
+        captureFixture("android-ui-005-caregiver-signup-invalid-email-light.png")
+    }
+
+    @Test
+    fun signupPasswordMismatchUsesIosErrorCard() {
+        val repository = authRepository()
+        render(repository)
+
+        composeRule.onNodeWithText("新規登録").performClick()
+        runBlocking { repository.signupCaregiver("care@example.com", "123456", "654321") }
+
+        composeRule.onNodeWithText("確認用のパスワードが一致していません。")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_ERROR_TAG).assertIsDisplayed()
+        captureFixture("android-ui-005-caregiver-signup-password-mismatch-light.png")
     }
 
     @Test
@@ -84,6 +101,7 @@ class CaregiverAuthFlowScreenTest {
         composeRule.onNodeWithText("秒で再送", substring = true)
             .performScrollTo()
             .assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_INFO_TAG).assertIsDisplayed()
         captureFixture("android-ui-005-caregiver-signup-confirmation-font-2.0.png")
     }
 
@@ -106,6 +124,7 @@ class CaregiverAuthFlowScreenTest {
 
         composeRule.waitUntil(5_000) { repository.state.value.loading }
         composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).assertIsDisplayed().assertIsNotEnabled()
+        captureFixture("android-ui-005-caregiver-signup-loading-light.png")
         signupResult.complete(AuthSession(null, null, null))
     }
 
@@ -142,6 +161,38 @@ class CaregiverAuthFlowScreenTest {
             .performScrollTo()
             .assertIsDisplayed()
         assertEquals(false, repository.state.value.resendingConfirmation)
+        captureFixture("android-ui-005-caregiver-signup-resend-success-light.png")
+    }
+
+    @Test
+    fun resendRateLimitShowsIosErrorCardAndRestartsCooldown() {
+        val auth = object : AuthService {
+            override suspend fun login(email: String, password: String) = error("unused")
+            override suspend fun refresh(refreshToken: String) = error("unused")
+            override suspend fun signup(email: String, password: String) = AuthSession(null, null, null)
+            override suspend fun resendSignupConfirmation(email: String) {
+                throw com.afterlifearchive.medmanager.data.auth.AuthException(
+                    com.afterlifearchive.medmanager.data.auth.AuthFailure.RATE_LIMITED,
+                )
+            }
+        }
+        val repository = authRepository(auth)
+        render(repository, resendCooldownSeconds = 0)
+
+        composeRule.onNodeWithText("新規登録").performClick()
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performTextInput("care@example.com")
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performTextInput("123456")
+        composeRule.onNodeWithTag(AUTH_CONFIRMATION_TAG).performTextInput("123456")
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).performScrollTo().performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.resendCooldownRevision == 1 }
+        composeRule.onNodeWithTag(AUTH_RESEND_TAG).performScrollTo().performClick()
+
+        composeRule.waitUntil(5_000) { repository.state.value.resendCooldownRevision == 2 }
+        composeRule.onNodeWithText("確認メールの送信上限に達しました。", substring = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_ERROR_TAG).assertIsDisplayed()
+        captureFixture("android-ui-005-caregiver-signup-resend-rate-limit-light.png")
     }
 
     @Test

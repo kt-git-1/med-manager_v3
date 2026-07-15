@@ -28,6 +28,8 @@ import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.MarkEmailRead
 import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -51,6 +53,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -77,6 +80,8 @@ const val AUTH_SUBMIT_TAG = "caregiver-auth-submit"
 const val AUTH_NAVIGATION_BACK_TAG = "caregiver-auth-navigation-back"
 const val AUTH_FORM_LIST_TAG = "caregiver-auth-form-list"
 const val AUTH_RESEND_TAG = "caregiver-auth-resend"
+const val AUTH_ERROR_TAG = "caregiver-auth-error"
+const val AUTH_INFO_TAG = "caregiver-auth-info"
 
 @Composable
 fun CaregiverAuthFlow(
@@ -190,11 +195,24 @@ private fun CaregiverSignupScreen(
             TextButton(
                 enabled = cooldown == 0 && !state.loading && !state.resendingConfirmation,
                 onClick = { scope.launch { repository.resendSignupConfirmation(email) } },
-                modifier = Modifier.fillMaxWidth().height(48.dp).testTag(AUTH_RESEND_TAG),
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f), RoundedCornerShape(14.dp))
+                    .testTag(AUTH_RESEND_TAG),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = AuthTeal,
+                    disabledContentColor = MedicationTheme.colors.readableSecondaryText,
+                ),
             ) {
                 if (state.resendingConfirmation) {
                     CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 3.dp)
                 } else {
+                    Icon(
+                        if (cooldown > 0) Icons.Rounded.Schedule else Icons.Rounded.Email,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.size(8.dp))
                     Text(
                         if (cooldown > 0) stringResource(R.string.caregiver_signup_resend_countdown, cooldown)
                         else stringResource(R.string.caregiver_signup_resend),
@@ -271,13 +289,45 @@ private fun AuthPrimaryButton(text: String, loading: Boolean, ready: Boolean, on
     }
 }
 
-@Composable private fun AuthError(message: String) = Text(message, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
+@Composable
+private fun AuthError(message: String) {
+    val error = MaterialTheme.colorScheme.error
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+            .background(error.copy(alpha = 0.08f), RoundedCornerShape(18.dp))
+            .border(1.dp, error.copy(alpha = 0.16f), RoundedCornerShape(18.dp))
+            .padding(22.dp).semantics(mergeDescendants = true) {}.testTag(AUTH_ERROR_TAG),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(
+            Icons.Rounded.Warning,
+            contentDescription = null,
+            tint = error,
+            modifier = Modifier.size(36.dp),
+        )
+        Text(
+            message,
+            color = error,
+            fontSize = 17.sp,
+            lineHeight = 24.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
 
 @Composable
 private fun AuthInfo(message: String) {
-    Column(Modifier.fillMaxWidth().background(MedicationTheme.colors.authInfoContainer, RoundedCornerShape(18.dp)).padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = 20.dp)
+            .background(MedicationTheme.colors.authInfoContainer, RoundedCornerShape(18.dp))
+            .padding(22.dp).semantics(mergeDescendants = true) {}.testTag(AUTH_INFO_TAG),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         Icon(Icons.Rounded.MarkEmailRead, null, tint = MedicationTheme.colors.authInfoIcon, modifier = Modifier.size(34.dp))
-        Text(message, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+        Text(message, fontSize = 17.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
     }
 }
 

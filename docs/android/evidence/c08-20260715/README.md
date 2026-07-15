@@ -37,3 +37,5 @@ The screenshot contains synthetic credentials only. It was emitted by the produc
 - JVM tests, Debug APK, Debug AndroidTest APK and Lint pass.
 
 Live email delivery and live Supabase rate-limit behavior remain release-environment verification; the local state contract no longer depends on those services.
+
+The subsequent C10 visual-parity repair added the current-iOS-style inset error/info cards and rounded icon-bearing resend action without changing this lifecycle contract. See [`../c10-20260715/README.md`](../c10-20260715/README.md).

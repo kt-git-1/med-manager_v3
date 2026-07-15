@@ -106,6 +106,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C02 Reverify Mode Select, auth choice/login/signup/callback/resend.
 - [x] C02 Repair confirmation-resend lifecycle parity: separate in-flight progress and duplicate lock, with cooldown only after confirmation-required, success or 429.
 - [x] C02 Record the deterministic UI-002 six-digit, submitting, validation, expired, forbidden, network and rate-limit/fallback Android state matrix.
+- [x] C02 Match UI-005 error/info/resend visual hierarchy and record invalid-email, password-mismatch, loading, confirmation, resend-loading/success/429 states.
 - [x] C03 Reverify Patient Today states/actions/recording-window/inventory/PRN/detail.
 - [x] C04 Reverify current Patient History progress/week/recent summaries, retention and freshness.
 - [x] C05 Reverify Settings/reminders/tutorial/deep links/legal/logout and patient analytics-consent UI.
