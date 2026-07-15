@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -15,12 +16,15 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.unit.Density
 import androidx.test.platform.app.InstrumentationRegistry
 import com.afterlifearchive.medmanager.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.data.auth.AuthService
 import com.afterlifearchive.medmanager.data.auth.AuthSession
+import com.afterlifearchive.medmanager.data.auth.AuthException
+import com.afterlifearchive.medmanager.data.auth.AuthFailure
 import com.afterlifearchive.medmanager.data.network.ApiClient
 import com.afterlifearchive.medmanager.data.network.HttpResponse
 import com.afterlifearchive.medmanager.data.session.SessionRepository
@@ -52,6 +56,67 @@ class CaregiverAuthFlowScreenTest {
         composeRule.onNodeWithText("メールアドレス").assertIsDisplayed()
         composeRule.onNodeWithText("パスワード（6文字以上）").assertIsDisplayed()
         composeRule.onNodeWithText("パスワードをもう一度入力").assertIsDisplayed()
+    }
+
+    @Test
+    fun loginImeNextMovesFocusAndDoneSubmits() {
+        val repository = authRepository()
+        render(repository)
+
+        composeRule.onNodeWithText("ログイン").performClick()
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performTextInput("care@example.com")
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performImeAction()
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).assertIsFocused().performTextInput("password")
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performImeAction()
+
+        composeRule.waitUntil(5_000) { repository.state.value.caregiverAuthenticated }
+        assertEquals(false, repository.state.value.loading)
+    }
+
+    @Test
+    fun signupImeNextTraversesAllFieldsAndDoneSubmits() {
+        val repository = authRepository()
+        render(repository)
+
+        composeRule.onNodeWithText("新規登録").performClick()
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performTextInput("care@example.com")
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performImeAction()
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).assertIsFocused().performTextInput("123456")
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performImeAction()
+        composeRule.onNodeWithTag(AUTH_CONFIRMATION_TAG).assertIsFocused().performTextInput("123456")
+        composeRule.onNodeWithTag(AUTH_CONFIRMATION_TAG).performImeAction()
+
+        composeRule.waitUntil(5_000) { repository.state.value.canResendConfirmation }
+        composeRule.onNodeWithTag(AUTH_INFO_TAG).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun loginLoadingAndInvalidCredentialsUseIosFeedbackHierarchy() {
+        val loginResult = CompletableDeferred<AuthSession>()
+        val auth = object : AuthService {
+            override suspend fun login(email: String, password: String) = loginResult.await()
+            override suspend fun refresh(refreshToken: String) = error("unused")
+        }
+        val repository = authRepository(auth)
+        render(repository)
+
+        composeRule.onNodeWithText("ログイン").performClick()
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performTextInput("care@example.com")
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performTextInput("wrong-password")
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).performClick()
+
+        composeRule.waitUntil(5_000) { repository.state.value.loading }
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).assertIsNotEnabled()
+        composeRule.onNodeWithText("ログイン").assertDoesNotExist()
+        captureFixture("android-ui-004-caregiver-login-loading-light.png")
+
+        loginResult.completeExceptionally(AuthException(AuthFailure.INVALID_CREDENTIALS))
+        composeRule.waitUntil(5_000) { repository.state.value.errorMessage != null }
+        composeRule.onNodeWithText("メールアドレスまたはパスワードが正しくありません。")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_ERROR_TAG).assertIsDisplayed()
+        captureFixture("android-ui-004-caregiver-login-invalid-credentials-light.png")
     }
 
     @Test

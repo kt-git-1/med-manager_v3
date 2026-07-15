@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
@@ -50,12 +51,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -155,14 +160,38 @@ private fun CaregiverLoginScreen(state: SessionState, repository: SessionReposit
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
-    AuthFormShell(onBack) {
-        FormTitle(Icons.Rounded.AccountCircle, stringResource(R.string.caregiver_login_title))
-        AuthField(email, { email = it; repository.clearMessages() }, stringResource(R.string.caregiver_auth_email), false, AUTH_EMAIL_TAG)
-        AuthField(password, { password = it; repository.clearMessages() }, stringResource(R.string.caregiver_auth_password), true, AUTH_PASSWORD_TAG)
-        state.errorMessage?.let { AuthError(sessionUserMessageText(it)) }
-        AuthPrimaryButton(stringResource(R.string.caregiver_auth_login), state.loading, email.isNotBlank() && password.isNotBlank()) {
+    val passwordFocus = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val ready = email.isNotBlank() && password.isNotBlank()
+    val submit = {
+        if (ready && !state.loading) {
+            focusManager.clearFocus()
             scope.launch { repository.loginCaregiver(email, password) }
         }
+    }
+    AuthFormShell(onBack) {
+        FormTitle(Icons.Rounded.AccountCircle, stringResource(R.string.caregiver_login_title))
+        AuthField(
+            email,
+            { email = it; repository.clearMessages() },
+            stringResource(R.string.caregiver_auth_email),
+            false,
+            AUTH_EMAIL_TAG,
+            imeAction = ImeAction.Next,
+            onImeAction = passwordFocus::requestFocus,
+        )
+        AuthField(
+            password,
+            { password = it; repository.clearMessages() },
+            stringResource(R.string.caregiver_auth_password),
+            true,
+            AUTH_PASSWORD_TAG,
+            focusRequester = passwordFocus,
+            imeAction = ImeAction.Done,
+            onImeAction = submit,
+        )
+        state.errorMessage?.let { AuthError(sessionUserMessageText(it)) }
+        AuthPrimaryButton(stringResource(R.string.caregiver_auth_login), state.loading, ready, submit)
     }
 }
 
@@ -178,6 +207,16 @@ private fun CaregiverSignupScreen(
     var confirmation by remember { mutableStateOf("") }
     var cooldown by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
+    val passwordFocus = remember { FocusRequester() }
+    val confirmationFocus = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val ready = email.isNotBlank() && password.isNotBlank() && confirmation.isNotBlank()
+    val submit = {
+        if (ready && !state.loading) {
+            focusManager.clearFocus()
+            scope.launch { repository.signupCaregiver(email, password, confirmation) }
+        }
+    }
     LaunchedEffect(cooldown) {
         if (cooldown > 0) { delay(1_000); cooldown -= 1 }
     }
@@ -186,9 +225,35 @@ private fun CaregiverSignupScreen(
     }
     AuthFormShell(onBack) {
         FormTitle(Icons.Rounded.AddCircle, stringResource(R.string.caregiver_signup_title), stringResource(R.string.caregiver_signup_subtitle))
-        AuthField(email, { email = it; repository.clearMessages() }, stringResource(R.string.caregiver_signup_email), false, AUTH_EMAIL_TAG)
-        AuthField(password, { password = it; repository.clearMessages() }, stringResource(R.string.caregiver_signup_password), true, AUTH_PASSWORD_TAG)
-        AuthField(confirmation, { confirmation = it; repository.clearMessages() }, stringResource(R.string.caregiver_signup_password_confirmation), true, AUTH_CONFIRMATION_TAG)
+        AuthField(
+            email,
+            { email = it; repository.clearMessages() },
+            stringResource(R.string.caregiver_signup_email),
+            false,
+            AUTH_EMAIL_TAG,
+            imeAction = ImeAction.Next,
+            onImeAction = passwordFocus::requestFocus,
+        )
+        AuthField(
+            password,
+            { password = it; repository.clearMessages() },
+            stringResource(R.string.caregiver_signup_password),
+            true,
+            AUTH_PASSWORD_TAG,
+            focusRequester = passwordFocus,
+            imeAction = ImeAction.Next,
+            onImeAction = confirmationFocus::requestFocus,
+        )
+        AuthField(
+            confirmation,
+            { confirmation = it; repository.clearMessages() },
+            stringResource(R.string.caregiver_signup_password_confirmation),
+            true,
+            AUTH_CONFIRMATION_TAG,
+            focusRequester = confirmationFocus,
+            imeAction = ImeAction.Done,
+            onImeAction = submit,
+        )
         state.errorMessage?.let { AuthError(sessionUserMessageText(it)) }
         state.infoMessage?.let { AuthInfo(sessionUserMessageText(it)) }
         if (state.canResendConfirmation) {
@@ -221,9 +286,7 @@ private fun CaregiverSignupScreen(
                 }
             }
         }
-        AuthPrimaryButton(stringResource(R.string.caregiver_auth_signup), state.loading, email.isNotBlank() && password.isNotBlank() && confirmation.isNotBlank()) {
-            scope.launch { repository.signupCaregiver(email, password, confirmation) }
-        }
+        AuthPrimaryButton(stringResource(R.string.caregiver_auth_signup), state.loading, ready, submit)
     }
 }
 
@@ -271,12 +334,33 @@ private fun FormTitle(icon: androidx.compose.ui.graphics.vector.ImageVector, tit
 }
 
 @Composable
-private fun AuthField(value: String, onChange: (String) -> Unit, placeholder: String, secure: Boolean, testTag: String) {
+private fun AuthField(
+    value: String,
+    onChange: (String) -> Unit,
+    placeholder: String,
+    secure: Boolean,
+    testTag: String,
+    focusRequester: FocusRequester? = null,
+    imeAction: ImeAction,
+    onImeAction: () -> Unit,
+) {
     OutlinedTextField(
-        value = value, onValueChange = onChange, placeholder = { Text(placeholder) }, modifier = Modifier.fillMaxWidth().testTag(testTag),
+        value = value,
+        onValueChange = onChange,
+        placeholder = { Text(placeholder) },
+        modifier = Modifier.fillMaxWidth()
+            .then(focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier)
+            .testTag(testTag),
         leadingIcon = { Icon(if (secure) Icons.Rounded.Lock else Icons.Rounded.Email, null) },
         visualTransformation = if (secure) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
-        keyboardOptions = KeyboardOptions(keyboardType = if (secure) KeyboardType.Password else KeyboardType.Email),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = if (secure) KeyboardType.Password else KeyboardType.Email,
+            imeAction = imeAction,
+        ),
+        keyboardActions = KeyboardActions(
+            onNext = { onImeAction() },
+            onDone = { onImeAction() },
+        ),
         singleLine = true, shape = RoundedCornerShape(12.dp),
     )
 }
