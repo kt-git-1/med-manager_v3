@@ -19,8 +19,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.ChevronLeft
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Numbers
 import androidx.compose.material.icons.rounded.Warning
@@ -101,24 +101,32 @@ fun PatientLinkContent(
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(colors.background).safeDrawingPadding(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, top = 48.dp, end = 20.dp, bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(22.dp),
+        verticalArrangement = Arrangement.spacedBy(25.dp),
     ) {
         item { LinkHeader() }
         item {
             LinkCard {
-                Text(placeholder, color = colors.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(placeholder, color = colors.onSurface, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 OutlinedTextField(
                     value = code,
                     onValueChange = onCodeChange,
                     modifier = Modifier.fillMaxWidth()
+                        .height(64.dp)
                         .semantics { contentDescription = codeA11yLabel }
                         .testTag(LINK_CODE_INPUT_TAG),
                     placeholder = { Text(placeholder, color = extended.readableSecondaryText.copy(alpha = 0.48f)) },
-                    leadingIcon = { Icon(Icons.Rounded.Numbers, contentDescription = null, tint = colors.primary) },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Rounded.Numbers,
+                            contentDescription = null,
+                            tint = colors.primary,
+                            modifier = Modifier.size(30.dp),
+                        )
+                    },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                     textStyle = androidx.compose.ui.text.TextStyle(
                         color = colors.onSurface,
-                        fontSize = 22.sp,
+                        fontSize = 28.sp,
                         fontWeight = FontWeight.SemiBold,
                         fontFamily = FontFamily.Monospace,
                     ),
@@ -136,7 +144,7 @@ fun PatientLinkContent(
                     onClick = onSubmit,
                     enabled = ready && !loading,
                     modifier = Modifier.fillMaxWidth()
-                        .height(58.dp)
+                        .height(64.dp)
                         .alpha(if (ready) 1f else 0.55f)
                         .semantics { contentDescription = submitA11yLabel }
                         .testTag(LINK_CODE_SUBMIT_TAG),
@@ -150,9 +158,9 @@ fun PatientLinkContent(
                     if (loading) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 3.dp, modifier = Modifier.size(24.dp))
                     } else {
-                        Icon(Icons.Rounded.CheckCircle, contentDescription = null)
+                        Icon(Icons.Rounded.CheckCircle, contentDescription = null, modifier = Modifier.size(28.dp))
                         Spacer(Modifier.size(8.dp))
-                        Text(stringResource(R.string.patient_link_submit), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.patient_link_submit), fontSize = 22.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -160,16 +168,16 @@ fun PatientLinkContent(
         item {
             Surface(
                 onClick = onBack,
-                modifier = Modifier.fillMaxWidth().height(52.dp).border(1.dp, colors.primary.copy(alpha = 0.18f), RoundedCornerShape(16.dp)),
+                modifier = Modifier.fillMaxWidth().height(56.dp).border(1.dp, colors.primary.copy(alpha = 0.18f), RoundedCornerShape(16.dp)),
                 shape = RoundedCornerShape(16.dp),
                 color = colors.surface.copy(alpha = 0.75f),
             ) {
                 Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = null, tint = colors.primary)
+                    Icon(Icons.Rounded.ChevronLeft, contentDescription = null, tint = colors.primary)
                     Text(
                         stringResource(R.string.patient_link_back),
                         color = colors.primary,
-                        fontSize = 17.sp,
+                        fontSize = 19.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
@@ -205,7 +213,7 @@ private fun LinkHeader() {
             Text(
                 stringResource(R.string.patient_link_subtitle),
                 color = extended.readableSecondaryText,
-                fontSize = 17.sp,
+                fontSize = 19.sp,
                 lineHeight = 23.sp,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -220,7 +228,7 @@ private fun LinkCard(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth().shadow(12.dp, shape).background(colors.surface, shape)
             .border(1.5.dp, colors.primary.copy(alpha = 0.55f), shape).padding(18.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
+        verticalArrangement = Arrangement.spacedBy(22.dp),
         content = content,
     )
 }

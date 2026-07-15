@@ -6,7 +6,7 @@
 
 ## 1. Executive result
 
-The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C31 formally rebased the contract from `main@1d9d19e` to `main@1cf8aef`; C32–C34 closed the three resulting Android parity gaps, C35/C36 passed the current regression matrices, and C37–C40 closed fresh matched Patient History streak, Caregiver Today status, Auth Choice, Caregiver Login and Caregiver Signup captures. Remaining gaps are explicitly live Firebase, the rest of the fresh visual matrix, physical-device evidence and Play release operations.
+The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C31 formally rebased the contract from `main@1d9d19e` to `main@1cf8aef`; C32–C34 closed the three resulting Android parity gaps, C35/C36 passed the current regression matrices, and C37–C41 closed fresh matched Patient History streak, Caregiver Today status and the complete entry/auth UI-002–005 matrix. Remaining gaps are explicitly live Firebase, the rest of the fresh product-screen visual matrix, physical-device evidence and Play release operations.
 
 ## 2. What is reusable
 
@@ -65,7 +65,7 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 |---|---|---|
 | Phase 0 build foundation | IMPLEMENTED | Build/test/lint workflow exists; release/device proof remains |
 | Shared session/API | IMPLEMENTED | A01–A06 auth, installation safety, typed networking, mutation freshness and notification rebuild gates pass; physical OEM transfer remains release evidence |
-| Entry/caregiver auth UI | IMPLEMENTED / re-visualize | C38 closes UI-003, C39 closes UI-004 and C40 closes UI-005 current-runtime empty/filled light, dark and adaptive evidence. Non-empty patient-link matched state and live auth/email still remain |
+| Entry/caregiver auth UI | IMPLEMENTED / live/physical verify | C38–C41 close UI-002–005 current-runtime empty/filled light, dark and adaptive evidence. Deterministic failures and callbacks are automated; live link/auth/email plus physical keyboard/OEM IME/TalkBack remain |
 | Patient Today | IMPLEMENTED / re-visualize | Post-record reminder/history/inventory revisions and failure preservation are covered; final matched visual matrix remains |
 | Patient History/Settings | IMPLEMENTED / re-visualize | C37 closes matched streak light/dark/maximum-text evidence; other exceptional Settings/History states and physical evidence remain |
 | Patient notification/tutorial | IMPLEMENTED / physical verify | Next-day rebuild, loaded-tab lifetime, routing and tutorial actions are covered; physical permission/tap/TalkBack remain |

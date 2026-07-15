@@ -1,5 +1,8 @@
 package com.afterlifearchive.medmanager.ui
 
+import android.app.Activity
+import android.os.SystemClock
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
@@ -22,6 +25,7 @@ import androidx.compose.ui.unit.Density
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import com.afterlifearchive.medmanager.data.session.PatientLinkFailure
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.core.view.WindowCompat
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -44,6 +48,51 @@ class PatientLinkScreenTest {
         composeRule.onNodeWithContentDescription("連携コード送信").assertIsDisplayed()
         composeRule.onNodeWithTag(LINK_CODE_SUBMIT_TAG).assertIsNotEnabled()
         composeRule.onNodeWithText("モードを選び直す").assertIsDisplayed()
+    }
+
+    @Test
+    fun currentIosEmptyHierarchyMatchesInLightAppearance() {
+        val activity = showLink(code = "")
+
+        composeRule.onNodeWithText("連携コード").assertIsDisplayed()
+        composeRule.onNodeWithTag(LINK_CODE_INPUT_TAG).assertIsDisplayed()
+        composeRule.onNodeWithTag(LINK_CODE_SUBMIT_TAG).assertIsDisplayed().assertIsNotEnabled()
+        composeRule.onNodeWithText("モードを選び直す").assertIsDisplayed()
+        captureDevice(activity, "android-ui-002-patient-link-empty-light.png")
+    }
+
+    @Test
+    fun currentIosFilledHierarchyMatchesInLightAppearanceWithoutSubmitting() {
+        val activity = showLink(code = "")
+
+        composeRule.onNodeWithTag(LINK_CODE_INPUT_TAG).performTextInput("123456")
+        dismissKeyboard()
+        composeRule.onNodeWithTag(LINK_CODE_INPUT_TAG).assertTextEquals("123456")
+        composeRule.onNodeWithTag(LINK_CODE_SUBMIT_TAG).assertIsDisplayed().assertIsEnabled()
+        captureDevice(activity, "android-ui-002-patient-link-filled-light.png")
+    }
+
+    @Test
+    fun currentIosFilledHierarchyMatchesInDarkAppearanceWithoutSubmitting() {
+        val activity = showLink(code = "", darkTheme = true)
+
+        composeRule.onNodeWithTag(LINK_CODE_INPUT_TAG).performTextInput("123456")
+        dismissKeyboard()
+        composeRule.onNodeWithTag(LINK_CODE_INPUT_TAG).assertTextEquals("123456")
+        composeRule.onNodeWithTag(LINK_CODE_SUBMIT_TAG).assertIsDisplayed().assertIsEnabled()
+        captureDevice(activity, "android-ui-002-patient-link-filled-dark.png", darkTheme = true)
+    }
+
+    @Test
+    fun filledActionsRemainReachableInDarkAppearanceAtTwoHundredPercentFontScale() {
+        val activity = showLink(code = "", darkTheme = true, fontScale = 2f)
+
+        composeRule.onNodeWithTag(LINK_CODE_INPUT_TAG).performTextInput("123456")
+        dismissKeyboard()
+        captureDevice(activity, "android-ui-002-patient-link-filled-dark-font-2.0.png", darkTheme = true)
+        composeRule.onNodeWithTag(LINK_CODE_INPUT_TAG).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag(LINK_CODE_SUBMIT_TAG).performScrollTo().assertIsDisplayed().assertIsEnabled()
+        composeRule.onNodeWithText("モードを選び直す").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -178,6 +227,53 @@ class PatientLinkScreenTest {
 
     private fun captureFixture(name: String) {
         writeScreenshotFixture(composeRule.onRoot().captureToImage(), name)
+    }
+
+    private fun showLink(
+        code: String,
+        darkTheme: Boolean = false,
+        fontScale: Float = 1f,
+    ): Activity {
+        lateinit var activity: Activity
+        var currentCode by mutableStateOf(code)
+        composeRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(density.density, fontScale = fontScale),
+            ) {
+                MedicationAppTheme(darkTheme = darkTheme) {
+                    activity = checkNotNull(LocalActivity.current)
+                    PatientLinkContent(
+                        code = currentCode,
+                        loading = false,
+                        errorMessage = null,
+                        onCodeChange = { currentCode = it.filter(Char::isDigit).take(6) },
+                        onSubmit = {},
+                        onBack = {},
+                    )
+                }
+            }
+        }
+        return activity
+    }
+
+    private fun dismissKeyboard() {
+        InstrumentationRegistry.getInstrumentation().uiAutomation
+            .executeShellCommand("input keyevent KEYCODE_BACK")
+            .close()
+        SystemClock.sleep(250)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun captureDevice(activity: Activity, filename: String, darkTheme: Boolean = false) {
+        composeRule.runOnIdle {
+            WindowCompat.setDecorFitsSystemWindows(activity.window, false)
+            activity.window.statusBarColor = android.graphics.Color.TRANSPARENT
+            WindowCompat.getInsetsController(activity.window, activity.window.decorView)
+                .isAppearanceLightStatusBars = !darkTheme
+        }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture(filename)
     }
 }
 
