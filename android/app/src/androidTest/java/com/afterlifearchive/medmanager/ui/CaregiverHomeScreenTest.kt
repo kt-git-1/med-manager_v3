@@ -71,7 +71,7 @@ class CaregiverHomeScreenTest {
         val (repository, storage) = setContent(listOf(CaregiverPatient("patient-1", "さくら")))
 
         composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
-        composeRule.onNodeWithText("さくら").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-patient-patient-1").assertTextContains("さくら")
         composeRule.onNodeWithText("選択中").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-slot-times"))
         composeRule.onNodeWithTag("caregiver-slot-times").assertIsDisplayed()
@@ -292,11 +292,37 @@ class CaregiverHomeScreenTest {
             },
             selection,
         )
+        val pushStorage = TestPushStorage().apply {
+            enabled = true
+            token = "fixture-token"
+            registeredToken = "fixture-token"
+        }
+        val pushRepository = CaregiverPushRepository(
+            dataSource = object : CaregiverPushDataSource {
+                override suspend fun register(token: String) = Unit
+                override suspend fun unregister(token: String) = Unit
+            },
+            tokenSource = object : CaregiverPushTokenSource {
+                override val configured = true
+                override fun setAutoInitEnabled(enabled: Boolean) = Unit
+                override suspend fun token() = "fixture-token"
+            },
+            storage = pushStorage,
+        )
+        val analytics = AnalyticsService(
+            CaregiverTestAnalyticsStore(AnalyticsConsentState(enabled = true, decided = true)),
+            CaregiverTestAnalyticsTransport(),
+        ).also { it.configure() }
         lateinit var activity: Activity
         composeRule.setContent {
             MedicationAppTheme {
                 activity = checkNotNull(LocalActivity.current)
-                CaregiverHomeScreen(repository, tutorialEnabled = false)
+                CaregiverHomeScreen(
+                    repository,
+                    pushRepository = pushRepository,
+                    analyticsService = analytics,
+                    tutorialEnabled = false,
+                )
             }
         }
         composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }

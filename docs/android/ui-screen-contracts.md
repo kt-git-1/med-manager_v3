@@ -88,7 +88,7 @@ Each screen ID maps to parity requirements. Every listed state needs a determini
 | UI-205 Inventory detail | `InventoryDetailView.swift` | tracking off/on, quantity, refill/adjust, validation, saving, success/failure |
 | UI-206 Caregiver history | `HistoryMonthView.swift`, `HistoryDayDetailView.swift` | 62/50 patient avatar, 34/17 header, centered current month (navigation only when billing-enabled), Monday-first 54-unit explained calendar, teal/red/gray/purple markers, selected-day `%d/%d回分 記録済み` summary, timestamp-sorted day timeline, exact push destination/highlight, stale-data refresh, retention and PDF action |
 | UI-207 PDF period/share | PDF feature files | free lock, presets, custom range errors, generating overlay, success share, generation failure; absent in patient mode |
-| UI-208 Link/settings | `PatientManagementView.swift` | load error, zero/one/multiple patients, create/limit, selection, time presets, code issue/share, revoke/delete, push, analytics, legal, logout/account delete |
+| UI-208 Link/settings | `PatientManagementView.swift` | load error, zero/one/multiple patients, create/limit, shared patient header, grouped selection/selected-patient actions, time presets, code issue/share, push, analytics, legal and account actions. Android additionally exposes the API-contract-required data-preserving revoke beside irreversible delete |
 
 ## 5. Interaction-state rules
 

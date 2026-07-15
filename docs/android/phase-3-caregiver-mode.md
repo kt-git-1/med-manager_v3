@@ -266,3 +266,11 @@ G05 completes Gate G implementation. Physical browser, FCM, process-death and de
 - Direct light-theme UI-208 device evidence is recorded at `docs/android/evidence/c01-20260714/android-ui-208-caregiver-settings-light.png`. The complete Android gate passes 148/148 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
 
 The C17 UI-208 state/modal rebaseline closes the remaining Android Settings implementation drift and adds dark/200%-font sheet evidence. Matched iOS captures, full TalkBack and physical clipboard/Sharesheet/browser/FCM/destructive checks remain Gate I verification rather than implementation work.
+
+### C29 UI-208 typical-light source calibration — 2026-07-15
+
+- The selected state now uses the shared 62/50-unit patient avatar/header, one grouped patient-selection card and one teal-stroked selected-patient action card.
+- Code issue and destructive actions no longer occupy unrelated standalone cards. Android retains a separate data-preserving revoke row because CG-004 and the backend contract distinguish it from cascade deletion.
+- Detail, push, Analytics, legal/support and account cards now share current SwiftUI group headers, icon-bearing rows and semantic action hierarchy.
+- The settings surface uses the grouped background, 16-unit rhythm and 128-unit bottom inset; tutorial scroll targets were updated for the grouped list.
+- Same-screen iOS/Android typical-light evidence is recorded under `docs/android/evidence/c29-20260715/`; C17 continues to own loading/error/empty and modal/adaptive evidence.
