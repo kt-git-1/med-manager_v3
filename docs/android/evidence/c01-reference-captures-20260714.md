@@ -36,6 +36,7 @@
 | UI-004 | Android caregiver login empty | [`c01-20260714/android-ui-004-caregiver-login-light.png`](c01-20260714/android-ui-004-caregiver-login-light.png) | Production choice-to-login navigation, no credentials |
 | UI-004 | Android login loading/error and auth IME flow | [`c11-20260715/README.md`](c11-20260715/README.md) | Production typed flow; loading and invalid-credential captures plus login/signup Next/Done focus traversal |
 | UI-004 | Current iOS/Android matched login matrix | [`c39-20260716/README.md`](c39-20260716/README.md) | Fresh empty/synthetic-filled light and dark plus iOS OS-Accessibility-XXXL / Android 200%-font diagnostic pairs |
+| UI-005 | Current iOS/Android matched signup matrix | [`c40-20260716/README.md`](c40-20260716/README.md) | Fresh empty/synthetic-filled light and dark plus iOS OS-Accessibility-XXXL / Android 200%-font diagnostic pairs; no signup submission |
 | UI-002 | iOS patient link empty | [`c01-20260714/ui-002-patient-link-empty-light.png`](c01-20260714/ui-002-patient-link-empty-light.png) | Current iOS Debug build; deterministic patient mode with no patient session |
 | UI-002 | Android patient link empty | [`c01-20260714/android-ui-002-patient-link-empty-light.png`](c01-20260714/android-ui-002-patient-link-empty-light.png) | Production mode-select-to-patient navigation, no code entered |
 | UI-002 | Android network error, 200% font | [`c01-20260714/android-ui-002-patient-link-network-error-font-2.0.png`](c01-20260714/android-ui-002-patient-link-network-error-font-2.0.png) | Production `PatientLinkContent`; valid code, localized network error, all actions reached |
@@ -157,7 +158,7 @@
 
 ## Remaining C01 reference work
 
-- UI-001 compact/large matched pairs are complete; physical/TalkBack verification remains. UI-002 Android valid/loading/failure captures are complete under `c09-20260715/`; matched non-empty iOS and live-code evidence remain. UI-005 Android validation/loading/confirmation/resend-result states are complete under `c01`, `c08` and `c10`; matched non-empty iOS and live email evidence remain.
+- UI-001 compact/large matched pairs are complete; physical/TalkBack verification remains. UI-002 Android valid/loading/failure captures are complete under `c09-20260715/`; matched non-empty iOS and live-code evidence remain. UI-005 fresh current-iOS/Android empty and synthetic-filled light/dark plus adaptive pairs are complete under `c40-20260716/`; validation/loading/confirmation/resend-result states remain protected under `c08` and `c10`. Live email and physical evidence remain.
 - UI-004 fresh current-iOS/Android empty and synthetic-filled light/dark plus adaptive pairs are complete under `c39-20260716/`; loading/invalid-credential and IME states remain protected under `c11`. Physical keyboard/OEM IME, TalkBack and live-credential evidence remain.
 - UI-003 current-iOS light/dark/OS-Accessibility-XXXL and Android matched light/dark/200%-font states are complete under `c38-20260716/`. The iOS root caps Dynamic Type at `.xLarge`; Android retains scroll-reachable 200% support. Physical TalkBack remains.
 - UI-100 default-size, completion/skip and largest-text references are complete on the current baseline. Physical TalkBack traversal and notification-permission behavior remain under Gate I.

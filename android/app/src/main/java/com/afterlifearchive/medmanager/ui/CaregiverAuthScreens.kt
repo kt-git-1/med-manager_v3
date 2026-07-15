@@ -21,7 +21,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
-import androidx.compose.material.icons.rounded.AddCircle
 import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.ArrowCircleRight
 import androidx.compose.material.icons.rounded.ChevronLeft
@@ -29,6 +28,7 @@ import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.LockReset
 import androidx.compose.material.icons.rounded.MarkEmailRead
 import androidx.compose.material.icons.rounded.PersonAdd
 import androidx.compose.material.icons.rounded.Schedule
@@ -236,8 +236,15 @@ private fun CaregiverSignupScreen(
     LaunchedEffect(state.resendCooldownRevision) {
         if (state.resendCooldownRevision > 0) cooldown = resendCooldownSeconds
     }
-    AuthFormShell(onBack) {
-        FormTitle(Icons.Rounded.AddCircle, stringResource(R.string.caregiver_signup_title), stringResource(R.string.caregiver_signup_subtitle))
+    AuthFormShell(onBack, cardSpacing = 45.dp) {
+        FormTitle(
+            Icons.Rounded.PersonAdd,
+            stringResource(R.string.caregiver_signup_title),
+            stringResource(R.string.caregiver_signup_subtitle),
+            iconSize = 68.dp,
+            titleSize = 30.sp,
+            subtitleSize = 18.sp,
+        )
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             AuthField(
                 email,
@@ -264,6 +271,7 @@ private fun CaregiverSignupScreen(
                 stringResource(R.string.caregiver_signup_password_confirmation),
                 true,
                 AUTH_CONFIRMATION_TAG,
+                leadingIcon = Icons.Rounded.LockReset,
                 focusRequester = confirmationFocus,
                 imeAction = ImeAction.Done,
                 onImeAction = submit,
@@ -306,12 +314,16 @@ private fun CaregiverSignupScreen(
 }
 
 @Composable
-private fun AuthFormShell(onBack: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+private fun AuthFormShell(
+    onBack: () -> Unit,
+    cardSpacing: androidx.compose.ui.unit.Dp = 52.dp,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     val cardShape = RoundedCornerShape(24.dp)
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(AuthFormBackground).safeDrawingPadding().testTag(AUTH_FORM_LIST_TAG),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(24.dp, 16.dp, 24.dp, 52.dp),
-        verticalArrangement = Arrangement.spacedBy(52.dp),
+        verticalArrangement = Arrangement.spacedBy(cardSpacing),
     ) {
         item { AuthNavigationBackButton(onBack) }
         item {
@@ -350,11 +362,26 @@ private fun AuthNavigationBackButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun FormTitle(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String? = null) {
+private fun FormTitle(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String? = null,
+    iconSize: androidx.compose.ui.unit.Dp = 52.dp,
+    titleSize: androidx.compose.ui.unit.TextUnit = 28.sp,
+    subtitleSize: androidx.compose.ui.unit.TextUnit = 16.sp,
+) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Icon(icon, null, tint = AuthFormAccent, modifier = Modifier.size(52.dp))
-        Text(title, fontSize = 28.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-        subtitle?.let { Text(it, color = MedicationTheme.colors.readableSecondaryText, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center) }
+        Icon(icon, null, tint = AuthFormAccent, modifier = Modifier.size(iconSize))
+        Text(title, fontSize = titleSize, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        subtitle?.let {
+            Text(
+                it,
+                color = MedicationTheme.colors.readableSecondaryText,
+                fontSize = subtitleSize,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 
@@ -365,6 +392,7 @@ private fun AuthField(
     placeholder: String,
     secure: Boolean,
     testTag: String,
+    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector? = null,
     focusRequester: FocusRequester? = null,
     imeAction: ImeAction,
     onImeAction: () -> Unit,
@@ -376,7 +404,7 @@ private fun AuthField(
         modifier = Modifier.fillMaxWidth()
             .then(focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier)
             .testTag(testTag),
-        leadingIcon = { Icon(if (secure) Icons.Rounded.Lock else Icons.Rounded.Email, null) },
+        leadingIcon = { Icon(leadingIcon ?: if (secure) Icons.Rounded.Lock else Icons.Rounded.Email, null) },
         visualTransformation = if (secure) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
         keyboardOptions = KeyboardOptions(
             keyboardType = if (secure) KeyboardType.Password else KeyboardType.Email,

@@ -118,6 +118,66 @@ class CaregiverAuthFlowScreenTest {
     }
 
     @Test
+    fun currentIosSignupEmptyHierarchyMatchesInLightAppearance() {
+        val repository = authRepository()
+        val activity = render(repository)
+
+        composeRule.onNodeWithText("新規登録").performClick()
+        composeRule.onNodeWithTag(AUTH_NAVIGATION_BACK_TAG).assertIsDisplayed()
+        composeRule.onNodeWithText("家族アカウント作成").assertIsDisplayed()
+        composeRule.onNodeWithText("服薬を見守る家族用のアカウントを作成します").assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_CONFIRMATION_TAG).assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).assertIsDisplayed().assertIsNotEnabled()
+        captureDevice(activity, "android-ui-005-caregiver-signup-empty-light.png")
+    }
+
+    @Test
+    fun currentIosSignupFilledHierarchyMatchesInLightAppearanceWithoutSubmitting() {
+        val repository = authRepository()
+        val activity = render(repository)
+
+        composeRule.onNodeWithText("新規登録").performClick()
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performTextInput("care@example.com")
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performTextInput("SamplePass123!")
+        composeRule.onNodeWithTag(AUTH_CONFIRMATION_TAG).performTextInput("SamplePass123!")
+        dismissKeyboard()
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).assertIsDisplayed()
+        captureDevice(activity, "android-ui-005-caregiver-signup-filled-light.png")
+        assertEquals(false, repository.state.value.canResendConfirmation)
+    }
+
+    @Test
+    fun currentIosSignupFilledHierarchyMatchesInDarkAppearanceWithoutSubmitting() {
+        val repository = authRepository()
+        val activity = render(repository, darkTheme = true)
+
+        composeRule.onNodeWithText("新規登録").performClick()
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performTextInput("care@example.com")
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performTextInput("SamplePass123!")
+        composeRule.onNodeWithTag(AUTH_CONFIRMATION_TAG).performTextInput("SamplePass123!")
+        dismissKeyboard()
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).assertIsDisplayed()
+        captureDevice(activity, "android-ui-005-caregiver-signup-filled-dark.png", darkTheme = true)
+        assertEquals(false, repository.state.value.canResendConfirmation)
+    }
+
+    @Test
+    fun signupActionsRemainReachableInDarkAppearanceAtTwoHundredPercentFontScale() {
+        val repository = authRepository()
+        val activity = render(repository, fontScale = 2f, darkTheme = true)
+
+        composeRule.onNodeWithText("新規登録").performClick()
+        captureDevice(activity, "android-ui-005-caregiver-signup-empty-dark-font-2.0.png", darkTheme = true)
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_CONFIRMATION_TAG).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_NAVIGATION_BACK_TAG).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
     fun loginImeNextMovesFocusAndDoneSubmits() {
         val repository = authRepository()
         render(repository)
