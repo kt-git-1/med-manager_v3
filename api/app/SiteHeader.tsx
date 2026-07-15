@@ -3,8 +3,19 @@ type SiteHeaderProps = {
 };
 
 export function SiteHeader({ current = "legal" }: SiteHeaderProps) {
+  const startLink =
+    current === "home"
+      ? { href: "#overview", label: "はじめ方" }
+      : { href: "/#overview", label: "はじめ方" };
   const guideLink =
     current === "guide" ? { href: "#start", label: "使い方" } : { href: "/guide", label: "使い方" };
+  const links = [
+    startLink,
+    guideLink,
+    { href: "/privacy", label: "プライバシー" },
+    { href: "/terms", label: "利用規約" },
+    { href: "/support", label: "サポート" }
+  ];
 
   return (
     <header className="site-header">
@@ -14,10 +25,31 @@ export function SiteHeader({ current = "legal" }: SiteHeaderProps) {
           <span>お薬見守り</span>
         </a>
         <div className="desktop-nav">
-          <a className={current === "guide" ? "is-current" : undefined} href={guideLink.href}>
-            {guideLink.label}
-          </a>
+          {links.map((link) => (
+            <a
+              className={
+                (current === "home" && link.label === "はじめ方") ||
+                (current === "guide" && link.label === "使い方")
+                  ? "is-current"
+                  : undefined
+              }
+              href={link.href}
+              key={link.href}
+            >
+              {link.label}
+            </a>
+          ))}
         </div>
+        <details className="mobile-nav">
+          <summary>メニュー</summary>
+          <div>
+            {links.map((link) => (
+              <a href={link.href} key={link.href}>
+                {link.label}
+              </a>
+            ))}
+          </div>
+        </details>
       </nav>
     </header>
   );

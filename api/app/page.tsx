@@ -3,35 +3,62 @@ import { SiteHeader } from "./SiteHeader";
 
 export const metadata = {
   title: "お薬見守り | 家族で服薬を見守るアプリ",
-  description: "毎日の服薬予定・服薬記録・お薬の残量を、本人と家族で確認できるアプリです。"
+  description: "お薬見守りは、毎日の服薬予定・服薬記録・お薬の残量を家族で確認できるアプリです。"
 };
 
 const appStoreUrl =
   "https://apps.apple.com/jp/app/%E3%81%8A%E8%96%AC%E8%A6%8B%E5%AE%88%E3%82%8A/id6787427428";
 
+const features = [
+  {
+    label: "準備",
+    title: "お薬と飲む時間を家族が登録",
+    body: "お薬名、飲む量、朝・昼・夜などの時間帯を家族が先に登録します。本人はその日に飲む分だけを確認できます。"
+  },
+  {
+    label: "記録",
+    title: "本人は今日のお薬を見て記録",
+    body: "本人画面には、次に飲むお薬と時間帯を大きく表示します。飲めたらボタンを押すだけで記録できます。"
+  },
+  {
+    label: "共有",
+    title: "離れていても状況が分かる",
+    body: "家族は服薬済み・未記録・飲み忘れを確認できます。お薬の残量も見られるので、補充の時期にも気づきやすくなります。"
+  }
+];
+
+const benefits = [
+  ["今日飲む分が分かる", "次に飲む分を分かりやすく案内"],
+  ["まとめて記録できる", "朝・昼・夜など時間帯ごとに整理"],
+  ["進み具合が見える", "家族が記録状況を確認"],
+  ["頓服にも対応", "必要な時のお薬も記録"]
+];
+
+function StoreActions() {
+  return (
+    <div className="store-actions" aria-label="アプリのダウンロード">
+      <a className="primary-button" href={appStoreUrl} rel="noreferrer" target="_blank">
+        iPhone版をダウンロード
+      </a>
+      <span className="store-coming-soon">Android版は今後配信予定です</span>
+    </div>
+  );
+}
+
 export default function Home() {
   return (
-    <main className="page-shell">
+    <main className="page-shell home-page">
       <SiteHeader current="home" />
 
       <section className="site-hero" aria-labelledby="home-title">
         <div className="site-hero-inner">
           <div className="site-hero-copy">
-            <p className="section-label">本人と家族の服薬をつなぐアプリ</p>
-            <h1 id="home-title">毎日のお薬を、家族で見守る。</h1>
+            <p className="section-label">お薬見守り</p>
+            <h1 id="home-title">今日のお薬を、家族で見守る。</h1>
             <p>
-              家族がお薬と飲む時間を登録し、本人は今日飲む分を確認して記録します。
-              離れていても、服薬状況とお薬の残りを家族で確認できます。
+              毎日の服薬予定・記録・残量を家族で確認できるアプリです。本人は飲むお薬を迷わず確認でき、家族は離れていても服薬状況に気づけます。
             </p>
-            <div className="hero-actions">
-              <a className="primary-button" href="/guide">
-                使い方を順番に見る
-              </a>
-              <a className="secondary-button" href={appStoreUrl} target="_blank" rel="noreferrer">
-                iPhone版をダウンロード
-              </a>
-            </div>
-            <p className="needed-note">Android版は今後の配信を予定しています。</p>
+            <StoreActions />
           </div>
 
           <div className="screenshot-pair" aria-label="実際のアプリ画面">
@@ -47,127 +74,134 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="steps-section" id="overview" aria-label="使い始めるまでの流れ">
-        <div className="steps-list">
-          <article className="step-row family-step">
-            <span className="step-number">1</span>
-            <span className="step-role">家族の操作</span>
-            <div className="step-copy">
-              <h2>家族モードでお薬を登録します</h2>
-              <p>お薬の名前、量、朝・昼・夜などの飲む時間を登録します。</p>
-            </div>
-            <div className="step-detail">
-              <strong>準備するもの</strong>
-              <p>本人のお名前、お薬の情報、本人が使う端末</p>
-            </div>
-          </article>
-          <article className="step-row">
-            <span className="step-number">2</span>
-            <span className="step-role">本人と連携</span>
-            <div className="step-copy">
-              <h2>6桁のコードで本人の端末とつなぎます</h2>
-              <p>家族モードでコードを発行し、本人モードの端末で入力します。</p>
-            </div>
-            <a className="secondary-button" href="/guide#start">
-              連携方法を見る
-            </a>
-          </article>
-          <article className="step-row">
-            <span className="step-number">3</span>
-            <span className="step-role">本人の操作</span>
-            <div className="step-copy">
-              <h2>本人モードでお薬を確認・記録します</h2>
-              <p>飲むお薬を確認し、飲んだら大きなボタンで記録します。</p>
-            </div>
-            <a className="secondary-button" href="/guide#patient">
-              本人モードを見る
-            </a>
-          </article>
-        </div>
-      </section>
-
-      <section className="info-section">
-        <div className="content-width two-column">
-          <div>
-            <p className="section-label">本人モード</p>
-            <h2 className="section-title">今日飲む分だけを、分かりやすく表示</h2>
-            <ul className="plain-list">
-              <li>
-                <strong>次に飲むお薬が分かる</strong>
-                <span>時間とお薬の名前、量を大きく表示します。</span>
-              </li>
-              <li>
-                <strong>同じ時間のお薬をまとめて記録</strong>
-                <span>朝・昼・夜など、時間帯ごとに記録できます。</span>
-              </li>
-              <li>
-                <strong>頓服と履歴も確認</strong>
-                <span>必要な時のお薬と、これまでの記録を確認できます。</span>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <p className="section-label" style={{ color: "var(--orange)" }}>
-              家族モード
-            </p>
-            <h2 className="section-title">予定を整え、離れていても状況を確認</h2>
-            <ul className="plain-list">
-              <li>
-                <strong>お薬と飲む時間を登録</strong>
-                <span>定時薬・頓服・生活に合わせた時間を管理します。</span>
-              </li>
-              <li>
-                <strong>今日の服薬と履歴を確認</strong>
-                <span>未記録や飲み忘れに気づきやすくなります。</span>
-              </li>
-              <li>
-                <strong>在庫と補充の目安を確認</strong>
-                <span>お薬の残数を見て、補充の時期を判断できます。</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section className="info-section soft">
+      <section className="home-section" id="overview" aria-labelledby="overview-title">
         <div className="content-width">
-          <div className="cta-band">
-            <div>
-              <h2>画面を見ながら、順番に始めましょう</h2>
-              <p>連携コードの発行から、本人・家族それぞれの使い方まで詳しくご案内します。</p>
-            </div>
-            <a className="primary-button" href="/guide">
-              詳しい使い方を見る
-            </a>
-          </div>
-          <div className="notice-box" style={{ marginTop: 28 }}>
-            <strong>通知は服薬に気づくための補助機能です</strong>
-            <p>
-              重要な服薬判断は、医師・薬剤師の指示を優先し、アプリの通知だけに頼らないでください。
-            </p>
+          <p className="section-label">アプリでできること</p>
+          <h2 className="section-title" id="overview-title">
+            服薬予定・記録・残量をひとつに
+          </h2>
+          <div className="home-feature-grid">
+            {features.map((feature) => (
+              <article className="home-feature" key={feature.title}>
+                <span>{feature.label}</span>
+                <h3>{feature.title}</h3>
+                <p>{feature.body}</p>
+              </article>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="info-section" id="download">
-        <div className="content-width two-column">
+      <section className="home-guide-entry" aria-labelledby="guide-entry-title">
+        <div className="content-width home-guide-entry-inner">
+          <div>
+            <p className="section-label">詳しい使い方</p>
+            <h2 id="guide-entry-title">本人と家族で使う流れを、画面を見ながら確認</h2>
+            <p>
+              連携コードの発行から、本人の服薬記録、家族によるお薬・在庫・履歴の管理まで順番にご案内します。
+            </p>
+          </div>
+          <a className="primary-button" href="/guide">
+            詳しい使い方を見る
+          </a>
+        </div>
+      </section>
+
+      <section className="home-section home-demo" id="demo" aria-labelledby="demo-title">
+        <div className="content-width">
+          <p className="section-label">実際の画面</p>
+          <h2 className="section-title" id="demo-title">
+            本人は迷わず記録。家族は必要な状況を確認。
+          </h2>
+          <div className="home-demo-layout">
+            <div>
+              <p className="section-lead">
+                本人には次に飲むお薬と時間を分かりやすく表示します。家族は今日の進み具合や未記録の予定を確認できるため、声をかける時期を判断しやすくなります。
+              </p>
+              <div className="home-benefits">
+                {benefits.map(([title, description]) => (
+                  <div key={title}>
+                    <strong>{title}</strong>
+                    <span>{description}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div
+              className="screenshot-pair home-demo-screens"
+              aria-label="本人用と家族用の実際の画面"
+            >
+              <figure className="app-screenshot">
+                <figcaption>本人用：今日のお薬を確認して記録</figcaption>
+                <img src="/screenshots/patient-today.png" alt="本人用の服薬確認・記録画面" />
+              </figure>
+              <figure className="app-screenshot family">
+                <figcaption>家族用：服薬状況と未記録を確認</figcaption>
+                <img src="/screenshots/caregiver-today.png" alt="家族用の服薬状況確認画面" />
+              </figure>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="home-mail-note" aria-labelledby="mail-note-title">
+        <div className="content-width">
+          <p className="section-label">登録メールから開いた方へ</p>
+          <h2 id="mail-note-title">メール確認が終わった方へ</h2>
+          <p>
+            メール確認が完了したら、このページを閉じてアプリに戻ってください。家族モードからログインすると、確認済みのアカウントとして利用できます。
+          </p>
+        </div>
+      </section>
+
+      <section
+        className="home-section home-download"
+        id="download"
+        aria-labelledby="download-title"
+      >
+        <div className="content-width home-download-inner">
           <div>
             <p className="section-label">アプリを始める</p>
-            <h2 className="section-title">iPhone版を配信中です</h2>
+            <h2 className="section-title" id="download-title">
+              iPhone版を配信中です
+            </h2>
             <p className="section-lead">
               App Storeからダウンロードし、まずは家族モードで見守る方とお薬を登録してください。
             </p>
-            <div className="hero-actions">
-              <a className="primary-button" href={appStoreUrl} target="_blank" rel="noreferrer">
-                App Storeを開く
-              </a>
-            </div>
+            <StoreActions />
           </div>
-          <div className="notice-box">
-            <strong>メール確認が終わった方へ</strong>
-            <p>
-              このページを閉じてアプリへ戻り、家族モードから登録したメールアドレスでログインしてください。
-            </p>
+          <a className="home-qr" href={appStoreUrl} rel="noreferrer" target="_blank">
+            <img src="/app-store-qr.svg" alt="iPhone版のApp Storeページを開くQRコード" />
+            <span>
+              <strong>iPhone版QRコード</strong>
+              <small>スマートフォンのカメラで読み取れます</small>
+            </span>
+          </a>
+        </div>
+      </section>
+
+      <section className="home-section home-public-info" aria-labelledby="public-info-title">
+        <div className="content-width">
+          <p className="section-label">安心して使うために</p>
+          <h2 className="section-title" id="public-info-title">
+            大切な情報をご確認ください
+          </h2>
+          <div className="home-public-grid">
+            <a href="/privacy">
+              <span>データの扱い</span>
+              <strong>プライバシーポリシー</strong>
+              <p>取得する情報、利用目的、外部サービス、削除依頼について確認できます。</p>
+            </a>
+            <a href="/terms">
+              <span>利用時の約束</span>
+              <strong>利用規約</strong>
+              <p>サービス内容、医療上の注意、利用者の責任、免責事項をまとめています。</p>
+            </a>
+            <a href="/support">
+              <span>困ったとき</span>
+              <strong>サポート</strong>
+              <p>問い合わせ、アカウント削除、不具合、通知が届かない場合の案内です。</p>
+            </a>
           </div>
         </div>
       </section>
