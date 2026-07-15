@@ -1,5 +1,9 @@
 package com.afterlifearchive.medmanager.ui
 
+import android.app.Activity
+import android.os.SystemClock
+import androidx.activity.compose.LocalActivity
+import androidx.core.view.WindowCompat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
@@ -37,6 +41,14 @@ import com.afterlifearchive.medmanager.data.patient.PatientDose
 import com.afterlifearchive.medmanager.data.patient.PatientMedication
 import com.afterlifearchive.medmanager.data.session.CaregiverSelectionRepository
 import com.afterlifearchive.medmanager.data.session.SessionStorage
+import com.afterlifearchive.medmanager.data.push.CaregiverPushDataSource
+import com.afterlifearchive.medmanager.data.push.CaregiverPushRepository
+import com.afterlifearchive.medmanager.data.push.CaregiverPushStorage
+import com.afterlifearchive.medmanager.data.push.CaregiverPushTokenSource
+import com.afterlifearchive.medmanager.AnalyticsConsentState
+import com.afterlifearchive.medmanager.AnalyticsConsentStore
+import com.afterlifearchive.medmanager.AnalyticsService
+import com.afterlifearchive.medmanager.AnalyticsTransport
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import java.time.LocalDate
 import java.time.YearMonth
@@ -177,13 +189,66 @@ class CaregiverLargeTextUiTest(private val darkTheme: Boolean) {
             },
             selection,
         )
+        val pushStorage = LargeTextPushStorage().apply {
+            enabled = true
+            token = "fixture-token"
+            registeredToken = "fixture-token"
+        }
+        val pushRepository = CaregiverPushRepository(
+            dataSource = object : CaregiverPushDataSource {
+                override suspend fun register(token: String) = Unit
+                override suspend fun unregister(token: String) = Unit
+            },
+            tokenSource = object : CaregiverPushTokenSource {
+                override val configured = true
+                override fun setAutoInitEnabled(enabled: Boolean) = Unit
+                override suspend fun token() = "fixture-token"
+            },
+            storage = pushStorage,
+        )
+        val analytics = AnalyticsService(
+            LargeTextAnalyticsStore(AnalyticsConsentState(enabled = true, decided = true)),
+            LargeTextAnalyticsTransport(),
+        ).also { it.configure() }
+        lateinit var activity: Activity
         composeRule.setContent {
             CaregiverLargeText(darkTheme) {
-                CaregiverHomeScreen(repository, tutorialEnabled = false)
+                activity = checkNotNull(LocalActivity.current)
+                CaregiverHomeScreen(
+                    repository,
+                    pushRepository = pushRepository,
+                    analyticsService = analytics,
+                    tutorialEnabled = false,
+                )
             }
         }
         composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
         composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-settings-header").assertIsDisplayed()
+        if (darkTheme) {
+            @Suppress("DEPRECATION")
+            composeRule.runOnIdle {
+                activity.window.statusBarColor = android.graphics.Color.rgb(36, 46, 48)
+                WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = false
+            }
+            SystemClock.sleep(500)
+            writeDeviceScreenshotFixture("android-ui-208-caregiver-settings-dark-font-2.0.png")
+        }
+
+        listOf(
+            "caregiver-push-switch",
+            "caregiver-analytics-toggle",
+            "caregiver-privacy-link",
+            "caregiver-account-delete",
+        ).forEach { tag ->
+            composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag(tag))
+            composeRule.onNodeWithTag(tag).assertIsDisplayed()
+        }
+        if (darkTheme) {
+            SystemClock.sleep(250)
+            writeDeviceScreenshotFixture("android-ui-208-caregiver-settings-actions-dark-font-2.0.png")
+        }
+
         composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-linking-code-issue"))
         composeRule.onNodeWithTag("caregiver-linking-code-issue").performClick()
         composeRule.waitUntil(5_000) { repository.state.value.linkingCode != null }
@@ -216,6 +281,25 @@ private class LargeTextSelectionStorage : SessionStorage {
     override var currentPatientId: String? = null
     override fun getSecret(key: String): String? = null
     override fun putSecret(key: String, value: String?) = Unit
+}
+
+private class LargeTextPushStorage : CaregiverPushStorage {
+    override var enabled = false
+    override var token: String? = null
+    override var registeredToken: String? = null
+    override var pendingUnregisterToken: String? = null
+}
+
+private class LargeTextAnalyticsStore(initial: AnalyticsConsentState) : AnalyticsConsentStore {
+    private var value = initial
+    override fun state() = value
+    override fun save(enabled: Boolean) { value = AnalyticsConsentState(enabled, decided = true) }
+}
+
+private class LargeTextAnalyticsTransport : AnalyticsTransport {
+    override fun setCollectionEnabled(enabled: Boolean) = Unit
+    override fun reset() = Unit
+    override fun log(name: String, parameters: Map<String, String>) = Unit
 }
 
 @Composable

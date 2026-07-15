@@ -42,6 +42,8 @@ Android tokens are derived from `Shared/AppConstants.swift` and role UI aliases,
 
 Shape family is named and centralized: common cards 18dp, caregiver bottom bar 18dp, patient bottom bar 28dp, tab selections 16–18dp, tutorial card 16dp. Unexplained screen-local color, radius or elevation literals are a review failure.
 
+Patient and caregiver shell roots paint the semantic screen background across the complete window before safe-area padding is applied. System-bar inset regions may not fall back to the Activity/window default, especially in dark mode.
+
 ## 3. Copy and localization contract
 
 - `ios/MedicationApp/Resources/Localizable.strings` at the pinned commit is the source for Japanese wording.

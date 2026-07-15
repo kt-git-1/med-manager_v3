@@ -198,7 +198,7 @@ fun CaregiverHomeScreen(
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(Modifier.fillMaxSize().safeDrawingPadding().testTag("caregiver-home")) {
             if (state.refreshFailed) {
                 CaregiverStaleDataCard(

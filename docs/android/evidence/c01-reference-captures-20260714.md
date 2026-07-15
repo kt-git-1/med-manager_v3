@@ -98,6 +98,7 @@
 | UI-208 | Android caregiver linking/settings | [`c01-20260714/android-ui-208-caregiver-settings-light.png`](c01-20260714/android-ui-208-caregiver-settings-light.png) | Current-iOS hierarchy with selected-patient header, patient selection, linking/destructive actions and collapsed detail-settings entry; direct API-35 device capture after a clean emulator reboot |
 | UI-208 | Android caregiver settings state/sheet matrix | [`c17-20260715/README.md`](c17-20260715/README.md) | Loading, initial failure, no-patient onboarding, dedicated linking-code and time-preset sheets plus dark/200%-font modal evidence |
 | UI-208 | Source-calibrated caregiver Settings | [`c29-20260715/README.md`](c29-20260715/README.md) | Current iOS tutorial sample plus production Android typical-light fixture with matched patient header, grouped selection/selected-patient, detail and push hierarchy; Android retains contract-required revoke |
+| UI-208 | Matched dark/maximum-text caregiver Settings | [`c30-20260715/README.md`](c30-20260715/README.md) | iOS dark accessibility-XXXL sample plus Android dark 200% production surface and scrolled account-action evidence; all off-screen settings actions are asserted reachable |
 
 ## Review disposition
 
@@ -151,6 +152,7 @@
 - C27 closes the typical-light UI-205 source-calibration residual with a same-data production SwiftUI/Android pair. Android now shares the centered save contract, 56-unit illustration, 28-unit title, compact status, divider, 52-unit remaining quantity, toggle-only settings card, capsule refill presets, inline input and separate correction hierarchy. Its leading back action is intentionally retained because the detail is navigated inside a tab rather than presented as an iOS sheet.
 - C28 closes the typical-light UI-206 month-history source-calibration residual. Android now shares the 62/50-unit caregiver avatar, 34/17-unit header, Monday-first 54-unit calendar, subtle history-cell treatment, ordered teal/red/gray/purple markers, explained adaptive legend and selected-day `%d/%d回分 記録済み` hierarchy. The iOS tutorial sample's guidance subtitle/tab overlay and omitted production month label remain explicitly sample-only.
 - C29 closes the typical-light UI-208 Settings source-calibration residual. Android now shares the patient avatar/header, one-card selection treatment, teal-stroked selected-patient actions, detail/push/Analytics/legal/account ordering and 128-unit bottom inset. The CG-004 data-preserving revoke row remains an explicit Android/API extension; the iOS tutorial guidance/tab overlay remains sample-only.
+- C30 closes the normal-screen UI-208 dark/maximum-text residual. The evidence-driven pass also found and fixed a shared shell defect where the safe-area above every caregiver tab stayed white in dark mode. Push, Analytics, legal, account, code and time actions are scroll-reachable at 200%.
 
 ## Remaining C01 reference work
 

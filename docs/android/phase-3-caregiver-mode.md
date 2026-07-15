@@ -274,3 +274,10 @@ The C17 UI-208 state/modal rebaseline closes the remaining Android Settings impl
 - Detail, push, Analytics, legal/support and account cards now share current SwiftUI group headers, icon-bearing rows and semantic action hierarchy.
 - The settings surface uses the grouped background, 16-unit rhythm and 128-unit bottom inset; tutorial scroll targets were updated for the grouped list.
 - Same-screen iOS/Android typical-light evidence is recorded under `docs/android/evidence/c29-20260715/`; C17 continues to own loading/error/empty and modal/adaptive evidence.
+
+### C30 UI-208 dark/maximum-text calibration — 2026-07-15
+
+- A matched iOS dark accessibility-XXXL / Android dark 200% pair now protects the selected-patient Settings hierarchy.
+- The production adaptive test scrolls through push, Analytics, all legal destinations and account deletion before reopening both code and time sheets, proving every primary action remains reachable.
+- Evidence exposed a white top safe-area in the dark caregiver shell. The shell root now paints `MaterialTheme.colorScheme.background`, fixing all five caregiver tabs rather than masking the issue in Settings alone.
+- Evidence and the scrolled account-actions capture are stored under `docs/android/evidence/c30-20260715/`.
