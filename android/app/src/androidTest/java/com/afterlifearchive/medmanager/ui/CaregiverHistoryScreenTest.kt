@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.hasTestTag
@@ -27,6 +29,8 @@ import com.afterlifearchive.medmanager.data.patient.HistoryDayDetail
 import com.afterlifearchive.medmanager.data.patient.HistoryScheduledDose
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
+import com.afterlifearchive.medmanager.data.patient.PrnActorType
+import com.afterlifearchive.medmanager.data.patient.PrnHistoryItem
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import java.time.Instant
 import java.time.LocalDate
@@ -74,6 +78,101 @@ class CaregiverHistoryScreenTest {
         composeRule.waitUntil(5_000) { repository.state.value.dayDetail != null }
         composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("history-dose-highlighted-evening"))
         composeRule.onNodeWithTag("history-dose-highlighted-evening").assertIsDisplayed()
+    }
+
+    @Test
+    fun selectedDayUsesCurrentIosTimestampSortedTimeline() {
+        val date = LocalDate.of(2026, 7, 15)
+        val (repository, _) = repository(date)
+        setContent(repository)
+
+        composeRule.onNodeWithTag("caregiver-history-day-$date").performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.dayDetail != null }
+        val timeline = patientHistoryTimelineItems(checkNotNull(repository.state.value.dayDetail))
+        assertTrue(timeline.first() is PatientHistoryTimelineItem.Prn)
+        assertTrue(timeline.last() is PatientHistoryTimelineItem.Scheduled)
+
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(androidx.compose.ui.test.hasText("頓服: 頭痛薬"))
+        composeRule.onNodeWithText("頓服: 頭痛薬").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("history-dose-morning"))
+        composeRule.onNodeWithText("薬A 1錠").assertIsDisplayed()
+        writeScreenshotFixture(
+            composeRule.onRoot().captureToImage(),
+            "android-ui-206-caregiver-history-day-timeline-light.png",
+        )
+    }
+
+    @Test
+    fun selectedDayShowsMessageBearingLoadingState() {
+        val date = LocalDate.of(2026, 7, 15)
+        val dayGate = CompletableDeferred<Unit>()
+        val repository = CaregiverHistoryRepository(object : CaregiverHistoryDataSource {
+            override suspend fun month(patientId: String, yearMonth: YearMonth) = listOf(
+                HistoryDay(date.toString(), HistoryStatus.NONE, HistoryStatus.PENDING, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+            )
+            override suspend fun day(patientId: String, date: LocalDate): HistoryDayDetail {
+                dayGate.await()
+                return HistoryDayDetail(date.toString(), emptyList(), emptyList())
+            }
+            override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
+        }, MutationFreshnessStore())
+        setContent(repository)
+        composeRule.waitUntil(5_000) { repository.state.value.monthLoaded }
+
+        composeRule.onNodeWithTag("caregiver-history-day-$date").performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.loadingDay }
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("caregiver-history-day-loading"))
+        composeRule.onNodeWithText("読み込み中...").assertIsDisplayed()
+        writeScreenshotFixture(composeRule.onRoot().captureToImage(), "android-ui-206-caregiver-history-day-loading-light.png")
+        dayGate.complete(Unit)
+    }
+
+    @Test
+    fun selectedDayShowsCurrentIosEmptyState() {
+        val date = LocalDate.of(2026, 7, 15)
+        val repository = CaregiverHistoryRepository(object : CaregiverHistoryDataSource {
+            override suspend fun month(patientId: String, yearMonth: YearMonth) = listOf(
+                HistoryDay(date.toString(), HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+            )
+            override suspend fun day(patientId: String, date: LocalDate) = HistoryDayDetail(date.toString(), emptyList(), emptyList())
+            override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
+        }, MutationFreshnessStore())
+        setContent(repository)
+        composeRule.waitUntil(5_000) { repository.state.value.monthLoaded }
+
+        composeRule.onNodeWithTag("caregiver-history-day-$date").performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.dayDetail != null }
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(androidx.compose.ui.test.hasText("予定がありません"))
+        composeRule.onNodeWithText("予定がありません").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(androidx.compose.ui.test.hasText("この日の服用予定はありません"))
+        composeRule.onNodeWithText("この日の服用予定はありません").assertIsDisplayed()
+        writeScreenshotFixture(composeRule.onRoot().captureToImage(), "android-ui-206-caregiver-history-day-empty-light.png")
+    }
+
+    @Test
+    fun selectedDayFailureRetriesTheExactDayRequest() {
+        val date = LocalDate.of(2026, 7, 15)
+        var dayCalls = 0
+        val repository = CaregiverHistoryRepository(object : CaregiverHistoryDataSource {
+            override suspend fun month(patientId: String, yearMonth: YearMonth) = listOf(
+                HistoryDay(date.toString(), HistoryStatus.NONE, HistoryStatus.PENDING, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+            )
+            override suspend fun day(patientId: String, date: LocalDate): HistoryDayDetail {
+                dayCalls += 1
+                error("offline")
+            }
+            override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
+        }, MutationFreshnessStore())
+        setContent(repository)
+        composeRule.waitUntil(5_000) { repository.state.value.monthLoaded }
+
+        composeRule.onNodeWithTag("caregiver-history-day-$date").performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.dayFailed }
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(androidx.compose.ui.test.hasText("再試行"))
+        composeRule.onNodeWithText("通信状況を確認して", substring = true).assertIsDisplayed()
+        writeScreenshotFixture(composeRule.onRoot().captureToImage(), "android-ui-206-caregiver-history-day-error-light.png")
+        composeRule.onNodeWithText("再試行").performClick()
+        composeRule.waitUntil(5_000) { dayCalls >= 2 }
     }
 
     @Test
@@ -192,6 +291,10 @@ private class MutableHistorySource(private val date: LocalDate, private val slot
         ),
     )
 
-    override suspend fun day(patientId: String, date: LocalDate) = HistoryDayDetail(date.toString(), listOf(dose), emptyList())
+    override suspend fun day(patientId: String, date: LocalDate) = HistoryDayDetail(
+        date.toString(),
+        listOf(dose),
+        listOf(PrnHistoryItem("prn-1", "頭痛薬", Instant.parse("${date}T03:00:00Z"), 1.0, PrnActorType.PATIENT)),
+    )
     override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) { recordGate?.await(); recorded = true }
 }

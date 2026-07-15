@@ -29,6 +29,7 @@ import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -536,10 +537,8 @@ internal fun HistoryDayDetailContent(
             if (detail.doses.isEmpty() && detail.prnItems.isEmpty()) {
                 item { PatientDetailCard(stringResource(R.string.patient_history_day_empty_title), stringResource(R.string.patient_history_day_empty_message)) }
             }
-            val timelineItems = detail.doses.map { PatientHistoryTimelineItem.Scheduled(it) } +
-                detail.prnItems.map { PatientHistoryTimelineItem.Prn(it) }
             items(
-                timelineItems.sortedWith(compareBy<PatientHistoryTimelineItem>({ it.instant }, { it.sortName })),
+                patientHistoryTimelineItems(detail),
                 key = PatientHistoryTimelineItem::key,
             ) { item ->
                 when (item) {
@@ -627,10 +626,23 @@ internal fun HistoryScheduledDoseRow(
             }
         }
         if (dose.status == DoseStatus.MISSED && onRecordMissed != null) {
-            TextButton(
-                onClick = { onRecordMissed(dose) },
-                modifier = Modifier.align(Alignment.End).padding(end = 8.dp).testTag("history-backfill-${dose.medicationId}"),
-            ) { Text(stringResource(R.string.caregiver_history_backfill_action)) }
+            if (isPatientStyle) {
+                TextButton(
+                    onClick = { onRecordMissed(dose) },
+                    modifier = Modifier.align(Alignment.End).padding(end = 8.dp).testTag("history-backfill-${dose.medicationId}"),
+                ) { Text(stringResource(R.string.caregiver_history_backfill_action)) }
+            } else {
+                Button(
+                    onClick = { onRecordMissed(dose) },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp).height(46.dp).testTag("history-backfill-${dose.medicationId}"),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                ) {
+                    Icon(Icons.Rounded.CheckCircle, contentDescription = null)
+                    Spacer(Modifier.size(8.dp))
+                    Text(stringResource(R.string.caregiver_history_backfill_action), fontWeight = FontWeight.Bold)
+                }
+            }
         }
     }
 }
@@ -668,7 +680,12 @@ internal fun PrnHistoryRow(item: PrnHistoryItem, style: HistoryDayRowStyle = His
 
 internal enum class HistoryDayRowStyle { PATIENT, CAREGIVER }
 
-private sealed interface PatientHistoryTimelineItem {
+internal fun patientHistoryTimelineItems(detail: HistoryDayDetail): List<PatientHistoryTimelineItem> =
+    (detail.doses.map { PatientHistoryTimelineItem.Scheduled(it) } +
+        detail.prnItems.map { PatientHistoryTimelineItem.Prn(it) })
+        .sortedWith(compareBy<PatientHistoryTimelineItem>({ it.instant }, { it.sortName }))
+
+internal sealed interface PatientHistoryTimelineItem {
     val instant: Instant
     val sortName: String
     val key: String

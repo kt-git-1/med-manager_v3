@@ -7,17 +7,20 @@ import androidx.core.view.WindowCompat
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatient
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverCreateError
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
@@ -128,13 +131,14 @@ class CaregiverHomeScreenTest {
 
         composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
         composeRule.onNodeWithTag("caregiver-create-submit").assertIsEnabled()
-        composeRule.onNodeWithTag("caregiver-create-name").performTextInput("x".repeat(51))
+        composeRule.onNodeWithTag("caregiver-create-name").performTextReplacement("x".repeat(51))
+        composeRule.onNodeWithTag("caregiver-create-name").assertTextContains("x".repeat(51))
         composeRule.onNodeWithTag("caregiver-settings-list")
             .performScrollToNode(hasTestTag("caregiver-create-submit"))
         composeRule.onNodeWithTag("caregiver-create-submit").performClick()
-        composeRule.onNodeWithTag("caregiver-settings-list")
-            .performScrollToNode(hasText("表示名は50文字以内で入力してください"))
-        composeRule.onNodeWithText("表示名は50文字以内で入力してください").assertIsDisplayed()
+        composeRule.waitUntil(5_000) { repository.state.value.createError == CaregiverCreateError.TOO_LONG }
+        composeRule.onNodeWithTag("caregiver-create-error", useUnmergedTree = true).assertIsDisplayed()
+            .assertTextContains("表示名は50文字以内で入力してください")
     }
 
     @Test

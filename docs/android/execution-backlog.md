@@ -166,6 +166,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 ## Gate G — History, PDF, push and settings
 
 - [x] G01 Caregiver month/day history, retention and exact push target/highlight.
+  - [x] Rebaseline UI-206 day detail against current iOS: unified timestamp timeline, exact loading/empty/retry states, lifecycle-safe repeated selection and API-35 C16 evidence.
 - [x] G02 PDF free lock, presets/custom validation, on-device generation and content-URI share.
 - [x] G03 FCM permission/token register/unregister/retry/disable lifecycle using `platform=android`.
 - [x] G04 Push privacy and dedup behavior; account deletion cleanup.

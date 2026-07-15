@@ -863,7 +863,11 @@ private fun CaregiverCreatePatientCard(
                 onValueChange = onDisplayNameChange,
                 enabled = enabled,
                 label = { Text(stringResource(R.string.caregiver_patient_display_name)) },
-                supportingText = { error?.let { Text(caregiverCreateErrorText(it)) } },
+                supportingText = {
+                    error?.let {
+                        Text(caregiverCreateErrorText(it), modifier = Modifier.testTag("caregiver-create-error"))
+                    }
+                },
                 isError = error != null,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().testTag("caregiver-create-name"),

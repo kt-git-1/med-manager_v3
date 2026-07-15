@@ -176,6 +176,7 @@ class CaregiverHistoryRepository(
     }
 
     fun selectDate(date: LocalDate) {
+        if (mutableState.value.selectedDate == date) return
         mutableState.value = mutableState.value.copy(
             selectedDate = date,
             dayDetail = null,

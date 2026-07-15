@@ -230,15 +230,33 @@ private fun CaregiverHistoryMonth(
             if (dayRefreshFailed) item { CaregiverStaleDataCard("caregiver-history-day-stale", onRetryDay) }
             if (mutationFailed) item { Text(stringResource(R.string.caregiver_history_backfill_failed), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) }
             if (mutationSucceeded) item { Text(stringResource(R.string.caregiver_history_backfill_success), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }
-            item { Text(selectedDate.format(DateTimeFormatter.ofPattern("M月d日 EEEE", Locale.JAPANESE)), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("caregiver-history-day-detail")) }
-            if (loadingDay) item { Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+            item { Text(selectedDate.format(DateTimeFormatter.ofPattern(stringResource(R.string.patient_history_day_date_pattern), Locale.JAPANESE)), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("caregiver-history-day-detail")) }
+            if (loadingDay) item {
+                Column(
+                    Modifier.fillMaxWidth().padding(24.dp).testTag("caregiver-history-day-loading"),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    CircularProgressIndicator()
+                    Text(stringResource(R.string.patient_today_loading), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
             if (dayFailed) item { HistoryMessageCard(stringResource(R.string.caregiver_data_unavailable_message), onRetryDay) }
             if (!loadingDay && !dayFailed && dayDetail != null) {
-                if (dayDetail.doses.isEmpty() && dayDetail.prnItems.isEmpty()) item { HistoryMessageCard(stringResource(R.string.patient_history_day_empty_message)) }
-                if (dayDetail.doses.isNotEmpty()) item { Text(stringResource(R.string.patient_history_scheduled_section), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
-                items(dayDetail.doses, key = { "${it.medicationId}:${it.scheduledAt}" }) { dose -> HistoryScheduledDoseRow(dose, highlightedSlot == dose.slot, onRecordMissed, HistoryDayRowStyle.CAREGIVER) }
-                if (dayDetail.prnItems.isNotEmpty()) item { Text(stringResource(R.string.patient_history_prn_section), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
-                items(dayDetail.prnItems, key = { "${it.medicationId}:${it.takenAt}" }) { PrnHistoryRow(it, HistoryDayRowStyle.CAREGIVER) }
+                if (dayDetail.doses.isEmpty() && dayDetail.prnItems.isEmpty()) {
+                    item {
+                        HistoryMessageCard(
+                            message = stringResource(R.string.patient_history_day_empty_message),
+                            title = stringResource(R.string.patient_history_day_empty_title),
+                        )
+                    }
+                }
+                items(patientHistoryTimelineItems(dayDetail), key = PatientHistoryTimelineItem::key) { item ->
+                    when (item) {
+                        is PatientHistoryTimelineItem.Scheduled -> HistoryScheduledDoseRow(item.dose, highlightedSlot == item.dose.slot, onRecordMissed, HistoryDayRowStyle.CAREGIVER)
+                        is PatientHistoryTimelineItem.Prn -> PrnHistoryRow(item.item, HistoryDayRowStyle.CAREGIVER)
+                    }
+                }
             }
         }
         reportAction?.let { item { it() } }
@@ -372,9 +390,10 @@ private fun HistorySummaryPill(text: String, tint: Color, modifier: Modifier = M
 }
 
 @Composable
-private fun HistoryMessageCard(message: String, onRetry: (() -> Unit)? = null) {
+private fun HistoryMessageCard(message: String, onRetry: (() -> Unit)? = null, title: String? = null) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            title?.let { Text(it, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium) }
             Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (onRetry != null) Button(onClick = onRetry) { Text(stringResource(R.string.common_retry)) }
         }
