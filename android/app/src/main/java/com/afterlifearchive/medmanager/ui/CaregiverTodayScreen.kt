@@ -2,16 +2,20 @@ package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.LocalHospital
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Warning
@@ -49,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
@@ -56,6 +62,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
@@ -276,21 +283,23 @@ private fun CaregiverTodayContent(
     val pending = doses.filter { it.status == DoseStatus.PENDING }.minByOrNull { it.scheduledAt }
     val missedRows = rows.count { (_, items) -> items.any { it.status == DoseStatus.MISSED } }
     val takenRows = rows.count { (_, items) -> items.all { it.status == DoseStatus.TAKEN } }
+    val nextSlot = pending?.let { resolveSlot(it, slotTimes) }
+    val nextSlotDoses = nextSlot?.let { slot -> rows.firstOrNull { it.first == slot }?.second }.orEmpty()
+    val recordableNextSlotDoses = nextSlotDoses.filter { it.status != DoseStatus.TAKEN && it.medicationId !in outOfStockMedicationIds }
+    val nextOutOfStock = pending?.medicationId in outOfStockMedicationIds
     val colors = MedicationTheme.colors
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 16.dp).testTag("caregiver-today-list"),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).testTag("caregiver-today-list"),
+        contentPadding = PaddingValues(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 120.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(Modifier.size(56.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-                    Text(patientName.trim().take(1), style = MaterialTheme.typography.headlineSmall, color = colors.primaryTealText, fontWeight = FontWeight.Bold)
-                }
-                Column {
-                    Text(stringResource(R.string.caregiver_today_watching, patientName), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(stringResource(R.string.caregiver_today_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                CaregiverPatientAvatar(patientName)
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(stringResource(R.string.caregiver_today_patient_name, patientName), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.caregiver_today_title), fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -326,34 +335,88 @@ private fun CaregiverTodayContent(
                 TodayCard(colors.caregiverRed) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
                         TodayIcon(Icons.Rounded.Warning, colors.caregiverRed)
-                        Column(Modifier.weight(1f)) {
-                            Text(stringResource(R.string.caregiver_today_missed_title), color = colors.caregiverRed, fontWeight = FontWeight.Bold)
-                            Text(stringResource(R.string.caregiver_today_missed_message, missedRows), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(stringResource(R.string.caregiver_today_missed_title), color = colors.caregiverRed, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                stringResource(if (missedRows == 1) R.string.caregiver_today_missed_message_single else R.string.caregiver_today_missed_message_multiple, missedRows),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
                         }
                     }
                 }
             }
             if (doses.isNotEmpty()) item {
-                TodayCard(if (pending == null) MaterialTheme.colorScheme.primary else colors.orange) {
-                    Text(stringResource(R.string.caregiver_today_next_action), fontWeight = FontWeight.Bold)
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                        TodayIcon(if (pending == null) Icons.Rounded.CheckCircle else Icons.Rounded.AccessTime, if (pending == null) MaterialTheme.colorScheme.primary else colors.orange, 58)
-                        Column {
-                            Text(stringResource(if (pending == null) R.string.caregiver_today_all_done else R.string.caregiver_today_next_label), fontWeight = FontWeight.Bold)
+                val heroAccent = when {
+                    pending == null -> MaterialTheme.colorScheme.primary
+                    nextOutOfStock -> MaterialTheme.colorScheme.error
+                    else -> colors.orange
+                }
+                TodayCard(heroAccent) {
+                    Text(stringResource(R.string.caregiver_today_next_action), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        TodayIcon(
+                            if (pending == null) Icons.Rounded.CheckCircle else Icons.Rounded.AccessTime,
+                            if (pending == null) MaterialTheme.colorScheme.primary else colors.primaryTealText,
+                            66,
+                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                            Text(stringResource(if (pending == null) R.string.caregiver_today_all_done else R.string.caregiver_today_next_label), fontSize = 17.sp, fontWeight = FontWeight.Bold)
                             Text(
                                 pending?.let { "${slotLabel(resolveSlot(it, slotTimes))} ${TIME_FORMAT.format(it.scheduledAt.atZone(TOKYO))}" }
                                     ?: stringResource(R.string.caregiver_today_no_pending),
-                                style = MaterialTheme.typography.headlineSmall,
+                                fontSize = 32.sp,
                                 color = colors.primaryTealText,
                                 fontWeight = FontWeight.Bold,
                             )
                         }
                     }
-                    pending?.let {
-                        Text(it.medicationName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        if (it.medicationId in outOfStockMedicationIds) {
-                            Text(stringResource(R.string.patient_inventory_check), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        CaregiverTodayStatusPill(
+                            text = when {
+                                pending == null -> stringResource(R.string.patient_status_taken)
+                                nextOutOfStock -> stringResource(R.string.patient_inventory_insufficient)
+                                else -> stringResource(R.string.patient_status_pending)
+                            },
+                            color = heroAccent,
+                            icon = if (pending == null) Icons.Rounded.CheckCircle else null,
+                        )
+                        Text(
+                            when {
+                                pending == null && missedRows > 0 -> stringResource(R.string.caregiver_today_next_no_pending_help)
+                                pending == null -> stringResource(R.string.caregiver_today_next_done_help)
+                                recordableNextSlotDoses.isEmpty() -> stringResource(R.string.caregiver_today_next_out_of_stock_help)
+                                else -> stringResource(R.string.caregiver_today_next_slot_help, recordableNextSlotDoses.size)
+                            },
+                            modifier = Modifier.weight(1f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    if (nextSlotDoses.isNotEmpty()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                stringResource(R.string.caregiver_today_next_medicines_title),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            nextSlotDoses.forEach { dose ->
+                                CaregiverNextDoseLine(dose, dose.medicationId in outOfStockMedicationIds)
+                            }
                         }
+                    }
+                    Button(
+                        onClick = { nextSlot?.let { onRecordSlot(it, recordableNextSlotDoses) } },
+                        enabled = enabled && recordableNextSlotDoses.isNotEmpty(),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp).testTag("caregiver-today-primary-record"),
+                        shape = RoundedCornerShape(16.dp),
+                    ) {
+                        Icon(Icons.Rounded.Medication, contentDescription = null)
+                        Spacer(Modifier.size(8.dp))
+                        Text(stringResource(if (pending == null) R.string.caregiver_today_primary_done else R.string.caregiver_today_primary_slot), fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -361,27 +424,44 @@ private fun CaregiverTodayContent(
                 TodayCard {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Box(contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(progress = { takenRows.toFloat() / rows.size.coerceAtLeast(1) }, modifier = Modifier.size(72.dp), strokeWidth = 8.dp)
-                            Text("$takenRows/${rows.size}", fontWeight = FontWeight.Bold)
+                            CircularProgressIndicator(
+                                progress = { takenRows.toFloat() / rows.size.coerceAtLeast(1) },
+                                modifier = Modifier.size(76.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                                strokeWidth = 9.dp,
+                            )
+                            Text("$takenRows/${rows.size}", color = colors.primaryTealText, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                         }
-                        Column {
-                            Text(stringResource(R.string.caregiver_today_progress_title), fontWeight = FontWeight.Bold)
-                            Text(stringResource(R.string.caregiver_today_progress_format, takenRows, rows.size), style = MaterialTheme.typography.titleMedium, color = colors.primaryTealText, fontWeight = FontWeight.Bold)
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(stringResource(R.string.caregiver_today_progress_title), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.caregiver_today_progress_format, takenRows, rows.size), fontSize = 20.sp, color = colors.primaryTealText, fontWeight = FontWeight.Bold)
+                            Text(
+                                when {
+                                    missedRows > 0 -> stringResource(R.string.caregiver_today_progress_missed, missedRows)
+                                    pending != null -> stringResource(R.string.caregiver_today_progress_next, slotLabel(resolveSlot(pending, slotTimes)))
+                                    else -> stringResource(R.string.caregiver_today_progress_done)
+                                },
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
                         }
                     }
                 }
             }
             if (prnCount > 0) item {
-                TodayCard(colors.orange) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                        TodayIcon(Icons.Rounded.LocalHospital, colors.orange, 54)
-                        Column {
-                            Text(stringResource(R.string.caregiver_today_prn_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                            Text(stringResource(R.string.caregiver_today_prn_message, prnCount), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                TodayCard(
+                    accent = colors.orange,
+                    modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenPrn).testTag("caregiver-today-prn-open"),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        TodayIcon(Icons.Rounded.LocalHospital, colors.orange, 62)
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                            Text(stringResource(R.string.caregiver_today_prn_title), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.caregiver_today_prn_message, prnCount), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                         }
-                    }
-                    Button(onClick = onOpenPrn, modifier = Modifier.fillMaxWidth().testTag("caregiver-today-prn-open")) {
-                        Text(stringResource(R.string.caregiver_today_prn_open))
+                        Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -617,14 +697,68 @@ private fun caregiverMutationMessage(message: CaregiverTodayMutationMessage, upd
 }
 
 @Composable
-private fun TodayCard(accent: Color? = null, content: @Composable ColumnScope.() -> Unit) {
+private fun CaregiverTodayStatusPill(text: String, color: Color, icon: ImageVector?) {
+    Row(
+        modifier = Modifier.background(color.copy(alpha = 0.13f), RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        icon?.let { Icon(it, contentDescription = null, tint = color, modifier = Modifier.size(16.dp)) }
+        Text(text, color = color, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun CaregiverNextDoseLine(dose: PatientDose, outOfStock: Boolean) {
+    val color = when {
+        outOfStock -> MaterialTheme.colorScheme.error
+        dose.status == DoseStatus.TAKEN -> MaterialTheme.colorScheme.primary
+        dose.status == DoseStatus.MISSED -> MedicationTheme.colors.caregiverRed
+        else -> MedicationTheme.colors.orange
+    }
+    val icon = when {
+        outOfStock -> Icons.Rounded.Warning
+        dose.status == DoseStatus.TAKEN -> Icons.Rounded.CheckCircle
+        dose.status == DoseStatus.MISSED -> Icons.Rounded.Warning
+        else -> Icons.Rounded.AccessTime
+    }
+    val dosage = dose.dosageText.trim()
+    val displayName = if (dosage.isEmpty() || dosage == "不明") dose.medicationName else "${dose.medicationName} $dosage"
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.78f), RoundedCornerShape(12.dp))
+            .border(1.dp, MedicationTheme.colors.cardStroke, RoundedCornerShape(12.dp))
+            .padding(horizontal = 10.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        TodayIcon(Icons.Rounded.Medication, color, 30)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(displayName, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(
+                stringResource(R.string.patient_prn_dose_count, formatTodayNumber(dose.doseCount)),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        Box(Modifier.size(34.dp).background(color.copy(alpha = 0.13f), CircleShape), contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(17.dp))
+        }
+    }
+}
+
+@Composable
+private fun TodayCard(accent: Color? = null, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, accent?.copy(alpha = 0.24f) ?: MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = if (accent == null) BorderStroke(1.dp, MedicationTheme.colors.cardStroke)
+        else BorderStroke(1.5.dp, accent.copy(alpha = 0.55f)),
     ) {
-        Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
+        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp), content = content)
     }
 }
 

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -56,15 +57,41 @@ class CaregiverTodayScreenTest {
             inventory = listOf(CaregiverInventorySummary("noon", true, 0.0, 1.0, true, true)),
         )
 
-        composeRule.onNodeWithText("さくらさんを見守り中").assertIsDisplayed()
+        composeRule.onNodeWithText("さくらさん").assertIsDisplayed()
+        composeRule.onNodeWithText("さくらさんを見守り中").assertDoesNotExist()
         composeRule.onNodeWithText("次にすること").assertIsDisplayed()
         composeRule.onAllNodesWithText("昼 13:00").onFirst().assertIsDisplayed()
-        composeRule.onNodeWithText("1 / 3 回完了").assertIsDisplayed()
+        composeRule.onNodeWithText("1/3回分 完了").assertIsDisplayed()
         composeRule.onNodeWithText("頓服薬が1件あります").assertIsDisplayed()
-        composeRule.onNodeWithText("未記録の時間帯があります").assertIsDisplayed()
+        composeRule.onNodeWithText("飲み忘れがあります").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-primary-record").assertIsNotEnabled()
         captureDevice(activity, "android-ui-201-caregiver-today-light.png")
         composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-slot-action-noon"))
         composeRule.onNodeWithTag("caregiver-today-slot-action-noon").assertIsDisplayed()
+    }
+
+    @Test
+    fun currentIosSourceCalibratedTodayFixtureUsesProductionHeroHierarchy() {
+        val activity = setContent(
+            patientName = "田中 花子",
+            slotTimes = CaregiverSlotTimes("08:00", "12:30", "19:00", "22:00"),
+            doses = listOf(
+                dose("morning", DoseStatus.TAKEN, "2026-07-14T23:00:00Z", "朝の薬", "5 mg"),
+                dose("noon-1", DoseStatus.PENDING, "2026-07-15T03:30:00Z", "血圧の薬", "5 mg"),
+                dose("noon-2", DoseStatus.PENDING, "2026-07-15T03:30:00Z", "胃薬", ""),
+                dose("evening", DoseStatus.TAKEN, "2026-07-15T10:00:00Z", "夕の薬", "10 mg"),
+            ),
+        )
+
+        composeRule.onNodeWithText("田中 花子さん").assertIsDisplayed()
+        composeRule.onNodeWithText("田中 花子さんを見守り中").assertDoesNotExist()
+        composeRule.onNodeWithText("昼 12:30").assertIsDisplayed()
+        composeRule.onNodeWithText("血圧の薬 5 mg").assertIsDisplayed()
+        composeRule.onNodeWithText("胃薬").assertIsDisplayed()
+        composeRule.onNodeWithText("2/3回分 完了").assertIsDisplayed()
+        composeRule.onNodeWithText("昼が次に記録する服薬です").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-primary-record").assertIsEnabled()
+        captureDevice(activity, "android-ui-201-caregiver-today-source-calibrated-light.png")
     }
 
     @Test
@@ -330,6 +357,8 @@ class CaregiverTodayScreenTest {
         doses: List<PatientDose> = emptyList(),
         prn: List<PatientMedication> = emptyList(),
         inventory: List<CaregiverInventorySummary> = emptyList(),
+        patientName: String = "さくら",
+        slotTimes: CaregiverSlotTimes = CaregiverSlotTimes("08:00", "13:00", "19:00", "22:00"),
         onOpenMedications: () -> Unit = {},
     ): Activity {
         val source = object : CaregiverTodayDataSource {
@@ -338,7 +367,7 @@ class CaregiverTodayScreenTest {
             override suspend fun inventory(patientId: String) = inventory
         }
         val repository = CaregiverTodayRepository(source, MutationFreshnessStore())
-        val patient = CaregiverPatient("patient-1", "さくら", CaregiverSlotTimes("08:00", "13:00", "19:00", "22:00"))
+        val patient = CaregiverPatient("patient-1", patientName, slotTimes)
         lateinit var activity: Activity
         composeRule.setContent {
             MedicationAppTheme {
@@ -358,13 +387,19 @@ class CaregiverTodayScreenTest {
         override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
     }, MutationFreshnessStore())
 
-    private fun dose(id: String, status: DoseStatus, time: String) = PatientDose(
+    private fun dose(
+        id: String,
+        status: DoseStatus,
+        time: String,
+        medicationName: String = "薬$id",
+        dosageText: String = "5 mg",
+    ) = PatientDose(
         key = id,
         medicationId = id,
         scheduledAt = Instant.parse(time),
         status = status,
-        medicationName = "薬$id",
-        dosageText = "5 mg",
+        medicationName = medicationName,
+        dosageText = dosageText,
         doseCount = 1.0,
         patientId = "patient-1",
     )

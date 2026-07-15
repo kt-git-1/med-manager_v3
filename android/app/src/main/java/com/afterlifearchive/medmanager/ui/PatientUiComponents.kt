@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
@@ -45,6 +46,29 @@ internal fun PatientHeaderIcon(icon: ImageVector) {
         contentAlignment = Alignment.Center,
     ) {
         Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(30.dp))
+    }
+}
+
+@Composable
+internal fun CaregiverPatientAvatar(name: String) {
+    Box(
+        modifier = Modifier
+            .size(62.dp)
+            .shadow(8.dp, CircleShape)
+            .background(MaterialTheme.colorScheme.surface, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier.size(50.dp).background(PatientTeal, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                name.trim().take(1),
+                color = Color.White,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+            )
+        }
     }
 }
 

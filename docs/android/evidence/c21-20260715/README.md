@@ -14,6 +14,7 @@ The iOS image is a real-app-derived marketing capture containing the notificatio
 ## Differences found and closed
 
 - Settings cards now use the shared iOS `PatientCard` family: 18-unit corners, 18-unit padding, a one-unit neutral stroke or 1.5-unit accent stroke, and the existing elevation.
+- The neutral stroke is bound to the shared semantic `cardStroke` token; C22 comparison removed the purple-tinted Compose default and regenerated both C21 Android raw fixtures and diagnostics.
 - Section titles use 20-unit bold type and 20-unit icons with 18-unit content spacing.
 - Toggle, linked-status and legal rows now use 20-unit bold titles, 15-unit semibold supporting text, four-unit title spacing and the current 44/48-unit circular icon frames.
 - Legal/support rows use a plain full-width row with 14-unit spacing and a proper chevron icon instead of Material text-button padding and a text glyph.

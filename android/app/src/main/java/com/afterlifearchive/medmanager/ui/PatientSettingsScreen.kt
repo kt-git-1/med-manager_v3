@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.afterlifearchive.medmanager.PatientNotificationSettings
 import com.afterlifearchive.medmanager.R
+import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 
 @Composable
 internal fun SettingsContent(
@@ -179,7 +180,7 @@ private fun SettingsCard(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        border = if (accent == null) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        border = if (accent == null) BorderStroke(1.dp, MedicationTheme.colors.cardStroke)
         else BorderStroke(1.5.dp, accent.copy(alpha = 0.55f)),
     ) {
         Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
