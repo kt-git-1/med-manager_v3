@@ -454,7 +454,7 @@ private fun CaregiverMedicationDetailLine(text: String, icon: ImageVector, usePi
 }
 
 @Composable
-private fun MedicationPillsGlyph(tint: Color, modifier: Modifier = Modifier) {
+internal fun MedicationPillsGlyph(tint: Color, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         val unit = size.minDimension
         val capsuleTopLeft = Offset(unit * 0.05f, unit * 0.16f)

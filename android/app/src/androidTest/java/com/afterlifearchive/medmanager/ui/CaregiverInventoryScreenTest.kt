@@ -110,9 +110,9 @@ class CaregiverInventoryScreenTest {
     @Test
     fun screenshotFixtureShowsCaregiverInventoryList() {
         val initial = mutableListOf(
-            item("out", "朝の血圧のお薬", 0.0, out = true),
-            item("low", "夕食後のお薬", 2.0, low = true),
-            item("ok", "痛み止め", 18.0),
+            item("low", "血圧の薬 5 mg", 4.0, low = true),
+            item("ok", "胃の薬", 18.0),
+            item("off", "整腸剤", 0.0, enabled = false),
         )
         val source = object : CaregiverInventoryDataSource {
             override suspend fun list(patientId: String) = initial.toList()
@@ -120,7 +120,7 @@ class CaregiverInventoryScreenTest {
             override suspend fun adjust(patientId: String, medicationId: String, reason: String, delta: Double?, absoluteQuantity: Double?) = initial.first { it.medicationId == medicationId }
         }
         val repository = CaregiverInventoryRepository(source, MutationFreshnessStore())
-        val patient = CaregiverPatient("p1", "さくら")
+        val patient = CaregiverPatient("p1", "田中 花子")
         lateinit var activity: Activity
         composeRule.setContent {
             MedicationAppTheme {
@@ -131,7 +131,8 @@ class CaregiverInventoryScreenTest {
             }
         }
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-list").fetchSemanticsNodes().isNotEmpty() }
-        captureDevice(activity, "android-ui-204-caregiver-inventory-light.png")
+        composeRule.onNodeWithText("田中 花子さん").assertIsDisplayed()
+        captureDevice(activity, "android-ui-204-caregiver-inventory-source-calibrated-light.png")
     }
 
     @Test
