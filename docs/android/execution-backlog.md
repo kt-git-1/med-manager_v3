@@ -134,7 +134,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C30 Match UI-208 normal Settings in dark mode at maximum text; verify push, Analytics, legal, account, code and time actions remain scroll-reachable, and repair the shared caregiver shell's white dark-mode safe-area.
 - [x] C31 Merge `main@1cf8aef`, audit the complete API/iOS/spec delta, pin the new source baseline and reopen invalidated rows before implementation.
 - [x] C32 Implement `GET /api/patient/history/streak` as supplementary Patient History state and reproduce the current iOS streak card/copy/lifecycle.
-- [ ] C33 Replace the obsolete Caregiver Today next-action hero with the current status-first summary, optional PRN entry and action-owning four-slot timeline.
+- [x] C33 Replace the obsolete Caregiver Today next-action hero with the current status-first summary, optional PRN entry and action-owning four-slot timeline.
 - [ ] C34 Accept strict caregiver `DOSE_MISSED` payloads alongside `DOSE_TAKEN` and verify identical exact-date/slot History routing.
 - [ ] C35 Rerun the full API/JVM/lint/build/API-35 matrix and close all C31 `RECHECK_REQUIRED` rows.
 - [ ] C06 Complete full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification.

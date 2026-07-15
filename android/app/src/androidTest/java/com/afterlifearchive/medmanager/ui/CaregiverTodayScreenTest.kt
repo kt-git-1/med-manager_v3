@@ -47,7 +47,7 @@ class CaregiverTodayScreenTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun contentShowsNextActionProgressPrnAndTimelineAggregation() {
+    fun contentShowsStatusProgressPrnAndTimelineAggregationWithoutLegacyHero() {
         val activity = setContent(
             doses = listOf(
                 dose("morning", DoseStatus.TAKEN, "2026-07-14T23:00:00Z"),
@@ -60,12 +60,14 @@ class CaregiverTodayScreenTest {
 
         composeRule.onNodeWithText("さくらさん").assertIsDisplayed()
         composeRule.onNodeWithText("さくらさんを見守り中").assertDoesNotExist()
-        composeRule.onNodeWithText("次にすること").assertIsDisplayed()
-        composeRule.onAllNodesWithText("昼 13:00").onFirst().assertIsDisplayed()
-        composeRule.onNodeWithText("1/3回分 完了").assertIsDisplayed()
+        composeRule.onNodeWithText("次にすること").assertDoesNotExist()
+        composeRule.onNodeWithText("今日の服薬状況").assertIsDisplayed()
+        composeRule.onNodeWithText("1/3回分 記録済み").assertIsDisplayed()
+        composeRule.onNodeWithText("飲み忘れが1回分あります").assertIsDisplayed()
         composeRule.onNodeWithText("頓服薬が1件あります").assertIsDisplayed()
         composeRule.onNodeWithText("飲み忘れがあります").assertIsDisplayed()
-        composeRule.onNodeWithTag("caregiver-today-primary-record").assertIsNotEnabled()
+        composeRule.onNodeWithText("夕 19:00の服薬が飲み忘れになっています。下の今日の予定で確認できます").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-primary-record").assertDoesNotExist()
         captureDevice(activity, "android-ui-201-caregiver-today-light.png")
         composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-timeline-noon"))
         composeRule.onNodeWithTag("caregiver-today-slot-action-noon").assertDoesNotExist()
@@ -73,7 +75,7 @@ class CaregiverTodayScreenTest {
     }
 
     @Test
-    fun currentIosSourceCalibratedTodayFixtureUsesProductionHeroHierarchy() {
+    fun currentIosSourceCalibratedTodayFixtureUsesStatusFirstHierarchy() {
         val activity = setContent(
             patientName = "田中 花子",
             slotTimes = CaregiverSlotTimes("08:00", "12:30", "19:00", "22:00"),
@@ -87,12 +89,16 @@ class CaregiverTodayScreenTest {
 
         composeRule.onNodeWithText("田中 花子さん").assertIsDisplayed()
         composeRule.onNodeWithText("田中 花子さんを見守り中").assertDoesNotExist()
-        composeRule.onNodeWithText("昼 12:30").assertIsDisplayed()
+        composeRule.onNodeWithText("今日の服薬状況").assertIsDisplayed()
+        composeRule.onNodeWithText("2/3回分 記録済み").assertIsDisplayed()
+        composeRule.onNodeWithText("未記録が1回分あります").assertIsDisplayed()
+        composeRule.onNodeWithText("昼が次に記録する服薬です").assertDoesNotExist()
+        composeRule.onNodeWithText("次にすること").assertDoesNotExist()
+        composeRule.onNodeWithTag("caregiver-today-primary-record").assertDoesNotExist()
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-timeline-noon"))
         composeRule.onNodeWithText("血圧の薬 5 mg").assertIsDisplayed()
         composeRule.onNodeWithText("胃薬").assertIsDisplayed()
-        composeRule.onNodeWithText("2/3回分 完了").assertIsDisplayed()
-        composeRule.onNodeWithText("昼が次に記録する服薬です").assertIsDisplayed()
-        composeRule.onNodeWithTag("caregiver-today-primary-record").assertIsEnabled()
+        composeRule.onNodeWithTag("caregiver-today-slot-action-noon").assertIsEnabled()
         captureDevice(activity, "android-ui-201-caregiver-today-source-calibrated-light.png")
     }
 
@@ -111,7 +117,8 @@ class CaregiverTodayScreenTest {
 
         composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-timeline-title"))
         composeRule.onNodeWithText("飲みました").assertIsDisplayed()
-        composeRule.onNodeWithText("次に記録").assertIsDisplayed()
+        composeRule.onNodeWithText("未記録").assertIsDisplayed()
+        composeRule.onNodeWithText("次に記録").assertDoesNotExist()
         composeRule.onNodeWithText("2件をまとめて記録").assertIsDisplayed()
         composeRule.onNodeWithText("この時間帯の2件を記録").assertDoesNotExist()
         composeRule.onNodeWithTag("caregiver-today-dose-action-morning").assertIsDisplayed()
@@ -368,7 +375,8 @@ class CaregiverTodayScreenTest {
         }
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithTag("caregiver-today-primary-record").performClick()
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-slot-action-morning"))
+        composeRule.onNodeWithTag("caregiver-today-slot-action-morning").performClick()
         composeRule.onNodeWithTag("caregiver-today-slot-confirm").performClick()
         composeRule.waitForIdle()
 
