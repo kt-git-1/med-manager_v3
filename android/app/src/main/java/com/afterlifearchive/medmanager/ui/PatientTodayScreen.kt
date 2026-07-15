@@ -49,6 +49,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
@@ -389,12 +390,18 @@ private fun NextDoseHeroCard(
                 doses.forEach { dose ->
                     Card(
                         onClick = { onDetail(dose) },
+                        modifier = Modifier.testTag("patient-today-next-dose-${dose.key}"),
                         shape = RoundedCornerShape(14.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     ) {
                         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                Text(dose.medicationName, fontWeight = FontWeight.Bold)
+                                Text(
+                                    dose.medicationName,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
                                 Text(dose.dosageText, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             Icon(
@@ -547,7 +554,13 @@ private fun DoseCard(
         Column(Modifier.padding(20.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column(Modifier.weight(1f)) {
-                    Text(dose.medicationName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(
+                        dose.medicationName,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                     Text(dose.dosageText, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(timeText(dose), color = PatientTeal, fontWeight = FontWeight.SemiBold)
                 }

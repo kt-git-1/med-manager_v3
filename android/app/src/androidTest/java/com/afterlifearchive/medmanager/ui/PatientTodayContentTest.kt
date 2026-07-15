@@ -224,6 +224,64 @@ class PatientTodayContentTest {
     }
 
     @Test
+    fun todayKeepsLongMedicationNamesBoundedWithoutHidingThePrimaryAction() {
+        val longName = "朝食後に服用する非常に長い名称の血圧降下薬配合錠ジェネリック医薬品"
+        val longDose = dose("long", DoseStatus.PENDING).copy(medicationName = longName)
+        showTodayState(doses = listOf(longDose))
+
+        composeRule.onAllNodesWithText(longName).onFirst().assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-primary-bulk-record").assertIsDisplayed()
+        writeScreenshotFixture(
+            composeRule.onRoot().captureToImage(),
+            "android-ui-101-patient-long-name-light.png",
+        )
+    }
+
+    @Test
+    fun productionNotificationTargetPromotesExactSlotIntoNextDoseHero() {
+        lateinit var activity: Activity
+        val morning = dose("morning", DoseStatus.PENDING).copy(
+            key = "dose-morning",
+            slot = MedicationSlot.MORNING,
+            scheduledAt = Instant.parse("2026-07-15T00:00:00Z"),
+        )
+        val evening = dose("evening", DoseStatus.PENDING).copy(
+            key = "dose-evening",
+            slot = MedicationSlot.EVENING,
+            scheduledAt = Instant.parse("2026-07-15T09:00:00Z"),
+        )
+        val repository = PatientRepository(object : PatientDataSource {
+            override suspend fun today() = listOf(morning, evening)
+            override suspend fun slotTimes() = PatientSlotTimes.DEFAULT
+            override suspend fun medications() = listOf(
+                medication("morning", 10.0),
+                medication("evening", 10.0),
+            )
+            override suspend fun recordDose(dose: PatientDose) = Unit
+            override suspend fun recordPrn(medication: PatientMedication) = Unit
+            override suspend fun history(year: Int, month: Int) = emptyList<HistoryDay>()
+            override suspend fun revokeSession() = Unit
+        })
+        repository.handleNotificationTarget("2026-07-15", "evening")
+
+        composeRule.setContent {
+            MedicationAppTheme {
+                activity = checkNotNull(LocalActivity.current)
+                PatientHomeScreen(repository = repository, onUnlink = {}, tutorialEnabled = false)
+            }
+        }
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            repository.state.value.doses.size == 2 && repository.state.value.notificationTarget == null
+        }
+        composeRule.onNodeWithTag("patient-today-next-dose-dose-evening").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-next-dose-dose-morning").assertDoesNotExist()
+        composeRule.runOnIdle { normalizeStatusBar(activity) }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-101-patient-notification-target-light.png")
+    }
+
+    @Test
     fun detailContentShowsCanonicalMedicationInformation() {
         val activity = showDoseDetail(notes = "夕食後に服用")
 

@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -86,8 +87,8 @@ internal fun HistoryContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item { PatientHistoryHeader() }
-        if (loading && days.isEmpty()) item { PatientCenteredProgress() }
-        if (error != null) item { PatientNoticeCard(error, MaterialTheme.colorScheme.errorContainer, onRetry) }
+        if (loading && days.isEmpty()) item { PatientHistoryLoadingState() }
+        if (error != null) item { PatientHistoryErrorState(error, onRetry) }
         if (retentionCutoffDate != null) item { RetentionLockCard(retentionCutoffDate, retentionDays ?: 30) }
         if (!loading && error == null && retentionCutoffDate == null) {
             item { PatientTodayProgressCard(today) }
@@ -98,6 +99,57 @@ internal fun HistoryContent(
             }
         }
         item { Spacer(Modifier.height(104.dp)) }
+    }
+}
+
+@Composable
+private fun PatientHistoryLoadingState() {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(24.dp).testTag("patient-history-loading"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        CircularProgressIndicator(modifier = Modifier.size(48.dp), color = PatientTeal)
+        Text(
+            stringResource(R.string.patient_today_loading),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun PatientHistoryErrorState(message: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth().testTag("patient-history-error"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(Icons.Rounded.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(40.dp))
+                Text(
+                    message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+        Button(onClick = onRetry, modifier = Modifier.testTag("patient-history-retry")) {
+            Text(stringResource(R.string.patient_detail_retry))
+        }
     }
 }
 

@@ -35,6 +35,7 @@ A04 establishes the shared contract. A05 binds reminder maintenance; A06 supplie
 - Compose tests prove a destination is absent before first visit, each tab is created once, local remembered state survives repeated switching, lazy-list scroll position is retained, and hidden actions are absent from the merged semantics tree.
 - History's duplicate-safe freshness cursor runs on first visible visit and after a dose revision only when visible or next selected.
 - Patient local notification payloads always select Today and preserve the exact slot highlight for four seconds. The payload date no longer incorrectly routes patient reminders to History.
+- A production-shell Compose regression now proves that the payload slot is promoted into the next-dose hero during that four-second transition; current iOS scrolls to the corresponding slot rather than adding a separate highlight border to normal bulk-slot cards.
 - Existing tutorial navigation still selects/loads its required retained tab; the 200% font-scale tutorial test remains green.
 
 `PT-014` is `IMPLEMENTED`. `XP-002` is `PARTIAL` until caregiver remote push routing and process-death/physical notification taps are verified.
@@ -150,6 +151,7 @@ This selector foundation is connected to inventory-backed production candidates 
 - Every scheduled-dose card opens a modal detail surface built from the already loaded schedule and medication contracts.
 - The surface mirrors the current iOS production hierarchy: centered navigation-equivalent title, medication/dosage/Tokyo schedule/status header, memo with an explicit empty fallback, and per-intake quantity.
 - Current iOS no longer renders separate strength or inventory cards on this patient surface. A paired iOS XCUITest and API-35 Compose test verify the exact Japanese copy, date/status treatment, fractional quantity and absence of those stale cards.
+- Today medication names now have explicit current-iOS-equivalent bounds: two lines in compact slot rows and three lines in full planned-dose cards, with ellipsis overflow and the primary action protected by API-35 evidence.
 - Opening a detail uses the already loaded medication cache when possible and falls back to the patient-scoped medication list request when the item is absent. Loading and error state are detail-local, retryable, duplicate-safe, and cleared when the sheet closes, matching the current iOS state machine without replacing Today content or its messages.
 
 ### PT-011 authoritative refresh
@@ -176,6 +178,7 @@ This selector foundation is connected to inventory-backed production candidates 
 ### 2026-07-14 C04 current-iOS rebaseline
 
 - Current iOS no longer exposes the month calendar or day-detail navigation in patient mode. Android now renders the same simplified hierarchy: Today progress, This Week and Recent Records.
+- Initial history loading now includes the exact current-iOS loading message. Failure uses the warning state plus `再試行` action and preserves a deterministic callback contract; no-schedule and retention states have direct API-35 device evidence.
 - Today's card derives its denominator from active morning/noon/evening/bedtime slots, uses taken/remaining/missed pills and applies the iOS no-plan, missed, complete, partial and start message priority.
 - The Monday-first seven-day card counts fully recorded days, renders taken/pending/missed/none icons and applies the same recorded-count/consecutive-day encouragement thresholds.
 - Recent Records summarizes today and yesterday with active slot names, PRN-only/no-plan fallback, and done/pending/missed state treatment.
