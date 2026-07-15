@@ -1,5 +1,7 @@
 # C20 UI-104 Patient History Source-Calibrated Comparison — 2026-07-15
 
+> Historical calibration note: C46 provides the deterministic current-runtime UI-104 matrix and supersedes C20 for zero-plan copy, loading/failure treatment, retention behavior, dark mode and largest-text conclusions. C20 remains the provenance record for the populated progress/week/recent metric calibration.
+
 ## Evidence
 
 | Surface | File | Provenance |

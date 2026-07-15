@@ -155,33 +155,34 @@ class PatientHistoryContentTest {
 
     @Test
     fun noScheduleUsesCurrentIosEmptyProgressCopy() {
-        val activity = showHistory()
+        val activity = showHistory(now = LocalDate.parse("2026-07-16"))
 
         composeRule.onNodeWithText("今日は予定がありません").assertIsDisplayed()
         composeRule.onNodeWithText("今日は定時薬の予定がありません。必要な時のお薬だけ記録できます。").assertIsDisplayed()
+        composeRule.onNodeWithText("記録済み 0回分").assertDoesNotExist()
         composeRule.onNodeWithText("0/7日").assertIsDisplayed()
-        captureDevice(activity, "android-ui-104-patient-history-no-schedule-light.png")
+        captureDevice(activity, "android-ui-104-patient-history-no-plan-light-matched.png")
     }
 
     @Test
     fun initialLoadingUsesCurrentIosMessageState() {
-        val activity = showHistory(loading = true)
+        showHistory(loading = true)
 
         composeRule.onNodeWithTag("patient-history-loading").assertIsDisplayed()
         composeRule.onNodeWithText("読み込み中...").assertIsDisplayed()
-        captureDevice(activity, "android-ui-104-patient-history-loading-light.png")
+        captureNode("android-ui-104-patient-history-loading-light-matched.png")
     }
 
     @Test
     fun failureUsesCurrentIosErrorAndRetryContract() {
         var retryCount = 0
-        val activity = showHistory(error = "取得に失敗しました", onRetry = { retryCount += 1 })
+        val activity = showHistory(error = "読み込みに失敗しました。再試行してください。", onRetry = { retryCount += 1 })
 
         composeRule.onNodeWithTag("patient-history-error").assertIsDisplayed()
-        composeRule.onNodeWithText("取得に失敗しました").assertIsDisplayed()
+        composeRule.onNodeWithText("読み込みに失敗しました。再試行してください。").assertIsDisplayed()
         composeRule.onNodeWithText("再試行").assertIsDisplayed().performClick()
         composeRule.runOnIdle { org.junit.Assert.assertEquals(1, retryCount) }
-        captureDevice(activity, "android-ui-104-patient-history-error-light.png")
+        captureDevice(activity, "android-ui-104-patient-history-error-light-matched.png")
     }
 
     @Test
@@ -261,12 +262,43 @@ class PatientHistoryContentTest {
     }
 
     @Test
-    fun retentionLockShowsCutoffAndDays() {
-        val activity = showHistory(retentionCutoffDate = "2026-06-14", retentionDays = 30)
-        composeRule.onNodeWithText("この履歴は表示できません").assertIsDisplayed()
-        composeRule.onNodeWithText("直近30日間", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("2026-06-14", substring = true).assertIsDisplayed()
-        captureDevice(activity, "android-ui-104-patient-history-retention-light.png")
+    fun retentionLockMatchesCurrentIosFullScreenActions() {
+        var refreshCount = 0
+        showHistory(
+            retentionCutoffDate = "2026-06-17",
+            retentionDays = 30,
+            onRetry = { refreshCount += 1 },
+        )
+        composeRule.onNodeWithTag("patient-history-retention").assertIsDisplayed()
+        composeRule.onNodeWithText("履歴の閲覧制限").assertIsDisplayed()
+        composeRule.onNodeWithText("現在のバージョンでは30日より前の履歴は閲覧できません。").assertIsDisplayed()
+        composeRule.onNodeWithText("2026-06-17", substring = true).assertDoesNotExist()
+        captureNode("android-ui-104-patient-history-retention-light-matched.png")
+
+        composeRule.onNodeWithTag("patient-history-retention-refresh").performClick()
+        composeRule.runOnIdle { org.junit.Assert.assertEquals(1, refreshCount) }
+        composeRule.onNodeWithTag("patient-history-retention-close").performClick()
+        composeRule.onNodeWithTag("patient-history-retention").assertDoesNotExist()
+        composeRule.onNodeWithText("今日は予定がありません").assertIsDisplayed()
+    }
+
+    @Test
+    fun noSchedulePreservesCurrentIosHierarchyInDarkTheme() {
+        val activity = showHistory(now = LocalDate.parse("2026-07-16"), darkTheme = true)
+
+        composeRule.onNodeWithText("今日は予定がありません").assertIsDisplayed()
+        composeRule.onNodeWithText("0/7日").assertIsDisplayed()
+        captureDevice(activity, "android-ui-104-patient-history-no-plan-dark-matched.png", darkTheme = true)
+    }
+
+    @Test
+    fun noScheduleRemainsScrollReachableAtTwoHundredPercentFontScale() {
+        val activity = showHistory(now = LocalDate.parse("2026-07-16"), fontScale = 2f)
+
+        composeRule.onNodeWithText("今日は予定がありません").assertIsDisplayed()
+        captureDevice(activity, "android-ui-104-patient-history-no-plan-font-2.0-matched.png")
+        composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasText("最近の記録"))
+        composeRule.onNodeWithText("最近の記録").assertIsDisplayed()
     }
 
     private fun showHistory(
@@ -347,7 +379,8 @@ class PatientHistoryContentTest {
             activity.window.statusBarColor = android.graphics.Color.TRANSPARENT
             WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = !darkTheme
         }
-        SystemClock.sleep(250)
+        composeRule.waitForIdle()
+        SystemClock.sleep(1_000)
         writeDeviceScreenshotFixture(filename)
     }
 }

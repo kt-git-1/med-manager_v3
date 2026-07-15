@@ -26,7 +26,7 @@ import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.EventAvailable
-import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material.icons.rounded.Verified
@@ -40,6 +40,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -85,6 +89,16 @@ internal fun HistoryContent(
     now: LocalDate = LocalDate.now(ZoneId.of("Asia/Tokyo")),
     streak: PatientHistoryStreak? = null,
 ) {
+    val retentionStateKey = "$retentionCutoffDate:$retentionDays"
+    var retentionDismissed by rememberSaveable(retentionStateKey) { mutableStateOf(false) }
+    if (retentionCutoffDate != null && !retentionDismissed) {
+        PatientHistoryRetentionLockState(
+            onRefresh = onRetry,
+            onDismiss = { retentionDismissed = true },
+        )
+        return
+    }
+
     val byDate = days.associateBy(HistoryDay::date)
     val today = byDate[now.toString()]
     val weekDates = patientHistoryWeekDates(now)
@@ -99,8 +113,7 @@ internal fun HistoryContent(
         item { PatientHistoryHeader() }
         if (loading && days.isEmpty()) item { PatientHistoryLoadingState() }
         if (error != null) item { PatientHistoryErrorState(error, onRetry) }
-        if (retentionCutoffDate != null) item { RetentionLockCard(retentionCutoffDate, retentionDays ?: 30) }
-        if (!loading && error == null && retentionCutoffDate == null) {
+        if (!loading && error == null) {
             item { PatientTodayProgressCard(today) }
             streak?.let { item { PatientHistoryStreakCard(it) } }
             item { PatientWeekHistoryCard(weekDates, byDate, weeklyRecorded, consecutiveTaken, now) }
@@ -184,10 +197,15 @@ private fun PatientHistoryLoadingState() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        CircularProgressIndicator(modifier = Modifier.size(48.dp), color = PatientTeal)
+        CircularProgressIndicator(
+            modifier = Modifier.size(51.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f),
+            strokeWidth = 4.dp,
+        )
         Text(
             stringResource(R.string.patient_today_loading),
-            style = MaterialTheme.typography.titleMedium,
+            fontSize = 20.sp,
+            lineHeight = 24.sp,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -202,7 +220,7 @@ private fun PatientHistoryErrorState(message: String, onRetry: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             shape = RoundedCornerShape(18.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -212,17 +230,22 @@ private fun PatientHistoryErrorState(message: String, onRetry: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Icon(Icons.Rounded.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(40.dp))
+                Icon(Icons.Rounded.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(36.dp))
                 Text(
                     message,
                     color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 17.sp,
+                    lineHeight = 24.sp,
                     fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center,
                 )
             }
         }
-        Button(onClick = onRetry, modifier = Modifier.testTag("patient-history-retry")) {
+        Button(
+            onClick = onRetry,
+            modifier = Modifier.testTag("patient-history-retry"),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A84FF), contentColor = Color.White),
+        ) {
             Text(stringResource(R.string.patient_detail_retry))
         }
     }
@@ -233,7 +256,7 @@ private enum class PatientSimpleHistoryStatus { TAKEN, PENDING, MISSED, NONE }
 @Composable
 private fun PatientHistoryHeader() {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        PatientHeaderIcon(Icons.Rounded.History)
+        PatientHeaderIcon(Icons.Rounded.AccessTime)
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(stringResource(R.string.patient_history_title), modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.patient_history_subtitle), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
@@ -291,10 +314,12 @@ private fun PatientTodayProgressCard(day: HistoryDay?) {
                 Text(stringResource(R.string.patient_history_today_progress_title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Text(encouragement, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    HistoryStatusPill(stringResource(R.string.patient_history_today_taken, taken), PatientTeal, Icons.Rounded.CheckCircle)
-                    if (pending > 0) HistoryStatusPill(stringResource(R.string.patient_history_today_remaining, pending), Color(0xFFF36A00), Icons.Rounded.AccessTime)
-                    if (missed > 0) HistoryStatusPill(stringResource(R.string.patient_history_today_missed, missed), MaterialTheme.colorScheme.error, Icons.Rounded.Warning)
+                if (total > 0) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        HistoryStatusPill(stringResource(R.string.patient_history_today_taken, taken), PatientTeal, Icons.Rounded.CheckCircle)
+                        if (pending > 0) HistoryStatusPill(stringResource(R.string.patient_history_today_remaining, pending), Color(0xFFF36A00), Icons.Rounded.AccessTime)
+                        if (missed > 0) HistoryStatusPill(stringResource(R.string.patient_history_today_missed, missed), MaterialTheme.colorScheme.error, Icons.Rounded.Warning)
+                    }
                 }
             }
         }
@@ -577,6 +602,72 @@ private fun RetentionLockCard(cutoffDate: String, retentionDays: Int) {
             Text(stringResource(R.string.patient_history_locked_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.patient_history_locked_message, retentionDays, cutoffDate), textAlign = TextAlign.Center)
         }
+    }
+}
+
+@Composable
+private fun PatientHistoryRetentionLockState(
+    onRefresh: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val pane = stringResource(R.string.patient_history_retention_title)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(PatientBackground)
+            .semantics { contentDescription = pane }
+            .padding(horizontal = 24.dp)
+            .testTag("patient-history-retention"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(Modifier.weight(1f))
+        Icon(
+            Icons.Rounded.Lock,
+            contentDescription = null,
+            modifier = Modifier.size(48.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(24.dp))
+        Text(
+            pane,
+            fontSize = 20.sp,
+            lineHeight = 25.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(24.dp))
+        Text(
+            stringResource(R.string.patient_history_retention_body),
+            fontSize = 17.sp,
+            lineHeight = 24.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.weight(1f))
+        TextButton(
+            onClick = onRefresh,
+            modifier = Modifier.testTag("patient-history-retention-refresh"),
+            colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF0A84FF)),
+        ) {
+            Text(
+                stringResource(R.string.patient_history_retention_refresh),
+                fontSize = 20.sp,
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        TextButton(
+            onClick = onDismiss,
+            modifier = Modifier.testTag("patient-history-retention-close"),
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+        ) {
+            Text(
+                stringResource(R.string.patient_history_retention_close),
+                fontSize = 17.sp,
+                lineHeight = 22.sp,
+            )
+        }
+        Spacer(Modifier.height(32.dp))
     }
 }
 

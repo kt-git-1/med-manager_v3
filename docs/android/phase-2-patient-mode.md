@@ -208,6 +208,14 @@ This selector foundation is connected to inventory-backed production candidates 
 - Recent Records summarizes today and yesterday with active slot names, PRN-only/no-plan fallback, and done/pending/missed state treatment.
 - The production preview accepts a fixed History destination and fixed Tokyo date/data, so UI-104 screenshots do not depend on the wall clock.
 
+### 2026-07-16 C46 current-runtime History calibration
+
+- Deterministic current iOS and Android pairs now cover no-plan, loading, failure and retention in light mode plus no-plan dark and largest-text behavior under `evidence/c46-20260716/`.
+- The History identity uses the current filled clock, and the zero-plan card no longer renders the stale Android-only `記録済み 0回分` pill.
+- Loading uses the shared neutral indicator hierarchy. Failure uses the inset elevated warning card and leading iOS-blue retry action while retaining exact callback assertions.
+- Retention now replaces History with the current full-screen lock title/body and `更新`/`閉じる` actions. Refresh invokes the authoritative retry, close returns to ordinary History, and raw cutoff dates are not exposed in product copy.
+- Current iOS caps the app root at `.xLarge` under Accessibility XXXL. Android intentionally keeps the complete no-plan History scroll-reachable at 200% rather than copying that cap.
+
 ### Retained month/day foundation
 
 - Android implements the full `/api/patient/history/day` contract, including scheduled medication ID/name/dosage/quantity/time/slot/status/recorder and PRN medication/time/quantity/actor.
@@ -218,16 +226,16 @@ This selector foundation is connected to inventory-backed production candidates 
 
 - `HISTORY_RETENTION_LIMIT` remains a typed non-auth error and never clears the patient session.
 - Month and day loads expose cutoff date and retention days separately from generic errors.
-- Lock surfaces state the allowed number of recent days and the first viewable date; normal calendar/detail content is suppressed while locked.
+- Current patient History shows the full-screen current-iOS title/body and refresh/close actions while suppressing normal content. The retained day-detail foundation keeps its explicit cutoff treatment isolated from this reachable patient surface.
 
 ### Verification
 
 - API fixtures continue to cover month slot summaries, PRN counts and day scheduled/PRN recorder contracts.
 - Repository tests cover current-month freshness, month/day retention state and populated day details.
-- Android 15 Compose tests cover current progress/empty/missed states, week count, recent summaries, retained day rows/recorders and retention copy.
-- `./gradlew test assembleDebug assembleRelease lint connectedDebugAndroidTest` passes with 36/36 instrumentation tests; deterministic light evidence is recorded under `evidence/c04-20260714/`.
+- Android 15 Compose tests cover current progress/empty/missed states, week count, recent summaries, retained day rows/recorders, full-screen retention actions and no-plan dark/200% behavior.
+- `PatientHistoryContentTest` passes 18/18 on API 35; C46 raw, normalized, side-by-side and overlay evidence is recorded under `evidence/c46-20260716/`.
 
-`PH-001` through `PH-004` are `IMPLEMENTED` against current main. Real historical patient data, entitlement changes, paired iOS captures, large text, TalkBack and physical-device verification remain before `VERIFIED`.
+`PH-001` through `PH-004` are `IMPLEMENTED`. C46 closes the emulator-verifiable UI-104 current-runtime matrix; real historical patient data, entitlement changes, full TalkBack and physical-device verification remain before `VERIFIED`.
 
 ## Phase 2C patient settings and notifications
 
