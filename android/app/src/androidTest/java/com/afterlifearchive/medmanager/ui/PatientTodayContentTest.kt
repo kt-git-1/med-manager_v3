@@ -1,8 +1,8 @@
 package com.afterlifearchive.medmanager.ui
 
 import android.app.Activity
-import android.os.Build
 import android.os.SystemClock
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -17,7 +17,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -27,7 +26,6 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
@@ -102,7 +100,7 @@ class PatientTodayContentTest {
         composeRule.onNodeWithText("飲んだ薬を選んでください").assertIsDisplayed()
         composeRule.onNodeWithText("頭痛薬 1錠").assertIsDisplayed()
         composeRule.onNodeWithText("痛い時").assertIsDisplayed()
-        capturePrnSheet("android-ui-103-prn-list-light.png")
+        capturePrnScreen(activity, "android-ui-103-prn-list-light-matched.png")
         composeRule.onNodeWithTag("prn-record-prn").performClick()
 
         composeRule.runOnIdle {
@@ -177,28 +175,28 @@ class PatientTodayContentTest {
 
     @Test
     fun prnSheetShowsCurrentIosUpdatingOverlay() {
-        showPrnSheet(updatingPrnMedicationId = "prn")
+        val activity = showPrnSheet(updatingPrnMedicationId = "prn")
 
         composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
         composeRule.onNodeWithTag("patient-prn-updating").assertIsDisplayed()
         composeRule.onAllNodesWithText("更新中...").assertCountEquals(1)
-        capturePrnSheet("android-ui-103-prn-updating-light.png")
+        capturePrnScreen(activity, "android-ui-103-prn-loading-light-matched.png")
     }
 
     @Test
     fun prnSheetKeepsRetryableFailureVisible() {
-        showPrnSheet(prnError = "取得に失敗しました")
+        val activity = showPrnSheet(prnError = "取得に失敗しました")
 
         composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
         composeRule.onNodeWithText("取得に失敗しました").assertIsDisplayed()
         composeRule.onNodeWithText("この薬を飲んだ").assertIsDisplayed()
-        capturePrnSheet("android-ui-103-prn-error-light.png")
+        capturePrnScreen(activity, "android-ui-103-prn-error-light-matched.png")
     }
 
     @Test
     fun prnInsufficientInventoryShowsBadgeAndDisablesRecord() {
         var recordCount = 0
-        showPrnSheet(
+        val activity = showPrnSheet(
             prnQuantity = 0.5,
             onRecordPrn = { recordCount += 1 },
         )
@@ -207,27 +205,45 @@ class PatientTodayContentTest {
         composeRule.onNodeWithText("在庫不足").assertIsDisplayed()
         composeRule.onNodeWithTag("prn-record-prn").assertIsDisplayed().assertIsNotEnabled().performClick()
         composeRule.runOnIdle { assertEquals(0, recordCount) }
-        capturePrnSheet("android-ui-103-prn-insufficient-light.png")
+        capturePrnScreen(activity, "android-ui-103-prn-insufficient-light-matched.png")
     }
 
     @Test
     fun prnSheetPreservesHierarchyInDarkTheme() {
-        showPrnSheet(darkTheme = true)
+        val activity = showPrnSheet(darkTheme = true)
 
         composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
         composeRule.onNodeWithText("飲んだ薬を選んでください").assertIsDisplayed()
         composeRule.onNodeWithTag("prn-record-prn").assertIsDisplayed()
-        capturePrnSheet("android-ui-103-prn-list-dark.png")
+        capturePrnScreen(activity, "android-ui-103-prn-list-dark-matched.png", darkTheme = true)
     }
 
     @Test
     fun prnRecordActionRemainsReachableAtTwoHundredPercentFontScale() {
-        showPrnSheet(fontScale = 2f)
+        val activity = showPrnSheet(fontScale = 2f)
 
         composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
         composeRule.onNodeWithText("頭痛薬 1錠").assertIsDisplayed()
         composeRule.onNodeWithTag("prn-record-prn").performScrollTo().assertIsDisplayed()
-        capturePrnSheet("android-ui-103-prn-list-font-2.0.png")
+        capturePrnScreen(activity, "android-ui-103-prn-list-font-2.0-matched.png")
+    }
+
+    @Test
+    fun prnBackActionDismissesFullScreenRoute() {
+        var clearCount = 0
+        val activity = showPrnSheet(onClearFeedback = { clearCount += 1 })
+
+        composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
+        composeRule.onNodeWithTag("patient-prn-back").assertIsDisplayed().performClick()
+
+        composeRule.onAllNodesWithText("飲んだ薬を選んでください").assertCountEquals(0)
+        composeRule.runOnIdle { assertEquals(2, clearCount) }
+
+        composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
+        composeRule.runOnIdle { (activity as ComponentActivity).onBackPressedDispatcher.onBackPressed() }
+
+        composeRule.onAllNodesWithText("飲んだ薬を選んでください").assertCountEquals(0)
+        composeRule.runOnIdle { assertEquals(4, clearCount) }
     }
 
     @Test
@@ -635,15 +651,11 @@ class PatientTodayContentTest {
         return activity
     }
 
-    private fun capturePrnSheet(filename: String) {
-        if (Build.VERSION.SDK_INT >= 28) {
-            writeScreenshotFixture(
-                composeRule.onNodeWithTag("patient-prn-sheet").captureToImage(),
-                filename,
-            )
-        } else {
-            writeDeviceScreenshotFixture(filename)
-        }
+    private fun capturePrnScreen(activity: Activity, filename: String, darkTheme: Boolean = false) {
+        composeRule.runOnIdle { normalizeStatusBar(activity, darkTheme = darkTheme) }
+        composeRule.waitForIdle()
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture(filename)
     }
 
     private fun showTodayState(

@@ -1,5 +1,6 @@
 package com.afterlifearchive.medmanager.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -9,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Error
@@ -33,10 +34,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -55,6 +55,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -72,7 +74,6 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 internal fun TodayContent(
     doses: List<PatientDose>,
     loading: Boolean,
@@ -267,37 +268,113 @@ internal fun TodayContent(
         if (screenUpdating && !showPrnSheet) PatientTodayUpdatingOverlay()
 
         if (showPrnSheet) {
-            ModalBottomSheet(onDismissRequest = {
+            val dismissPrn = {
                 showPrnSheet = false
                 onClearPrnFeedback()
-            }) {
-                Box(Modifier.fillMaxWidth().fillMaxHeight(0.85f).testTag("patient-prn-sheet")) {
-                    Column(
-                        modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp).padding(bottom = 32.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        Text(
-                            stringResource(R.string.patient_prn_sheet_title),
-                            modifier = Modifier.fillMaxWidth(),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        )
-                        Text(stringResource(R.string.patient_prn_list_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                        prnError?.let { PatientNoticeCard(it, MaterialTheme.colorScheme.errorContainer, null) }
-                        LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            items(prnMedications, key = PatientMedication::id) { medication ->
-                                PrnMedicationCard(
-                                    medication = medication,
-                                    disabled = screenUpdating || updatingPrnMedicationId != null,
-                                    onRecordPrn = onRecordPrn,
-                                )
-                            }
-                        }
-                    }
-                    if (updatingPrnMedicationId != null) PatientPrnUpdatingOverlay()
+            }
+            BackHandler(onBack = dismissPrn)
+            PatientPrnScreen(
+                medications = prnMedications,
+                disabled = screenUpdating || updatingPrnMedicationId != null,
+                error = prnError,
+                updating = updatingPrnMedicationId != null,
+                onBack = dismissPrn,
+                onRecordPrn = onRecordPrn,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PatientPrnScreen(
+    medications: List<PatientMedication>,
+    disabled: Boolean,
+    error: String?,
+    updating: Boolean,
+    onBack: () -> Unit,
+    onRecordPrn: (PatientMedication) -> Unit,
+) {
+    val pane = stringResource(R.string.patient_prn_sheet_title)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(PatientBackground)
+            .semantics { paneTitle = pane }
+            .testTag("patient-prn-sheet"),
+    ) {
+        Column(Modifier.fillMaxSize()) {
+            Box(Modifier.fillMaxWidth().height(56.dp)) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.align(Alignment.CenterStart).size(48.dp).testTag("patient-prn-back"),
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = stringResource(R.string.common_back),
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+                Text(
+                    stringResource(R.string.patient_prn_sheet_title),
+                    modifier = Modifier.align(Alignment.Center),
+                    fontSize = 20.sp,
+                    lineHeight = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                item {
+                    Text(
+                        stringResource(R.string.patient_prn_list_title),
+                        fontSize = 28.sp,
+                        lineHeight = 34.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                items(medications, key = PatientMedication::id) { medication ->
+                    PrnMedicationCard(
+                        medication = medication,
+                        disabled = disabled,
+                        onRecordPrn = onRecordPrn,
+                    )
                 }
             }
+        }
+        error?.let {
+            PatientPrnErrorToast(
+                message = it,
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp, start = 16.dp, end = 16.dp),
+            )
+        }
+        if (updating) PatientPrnUpdatingOverlay()
+    }
+}
+
+@Composable
+private fun PatientPrnErrorToast(message: String, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(50),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.35f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(
+                Icons.Rounded.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(20.dp),
+            )
+            Text(message, fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -629,6 +706,7 @@ private fun PrnMedicationCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, orange.copy(alpha = 0.32f)),
         shape = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -636,17 +714,33 @@ private fun PrnMedicationCard(
                     Modifier.size(50.dp).background(orange.copy(alpha = 0.12f), CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Rounded.LocalHospital, contentDescription = null, tint = orange, modifier = Modifier.size(28.dp))
+                    MedicationPillsGlyph(orange, Modifier.size(32.dp))
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(displayName, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.headlineSmall)
+                    Text(
+                        displayName,
+                        fontSize = 28.sp,
+                        lineHeight = 34.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                     Text(
                         stringResource(R.string.patient_prn_dose_count, formatPatientAmount(medication.doseCountPerIntake)),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 20.sp,
+                        lineHeight = 24.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
-                    note?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold) }
+                    note?.let {
+                        Text(
+                            it,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 17.sp,
+                            lineHeight = 22.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
                     if (medication.isInsufficientForDose) {
                         Text(
                             stringResource(R.string.patient_inventory_insufficient),
@@ -684,19 +778,45 @@ private fun PrnMedicationCard(
 @Composable
 private fun PatientPrnUpdatingOverlay() {
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.2f)).testTag("patient-prn-updating"),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.2f))
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
+                    }
+                }
+            }
+            .testTag("patient-prn-updating"),
+        contentAlignment = Alignment.Center,
     ) {
         Card(
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 160.dp),
+            shape = RoundedCornerShape(21.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier.width(172.dp).padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                CircularProgressIndicator(modifier = Modifier.size(44.dp), color = PatientTeal)
-                Text(stringResource(R.string.patient_prn_updating), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Image(
+                    painter = painterResource(R.drawable.app_image),
+                    contentDescription = null,
+                    modifier = Modifier.size(85.dp),
+                )
+                CircularProgressIndicator(
+                    modifier = Modifier.size(51.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f),
+                    strokeWidth = 4.dp,
+                )
+                Text(
+                    stringResource(R.string.patient_prn_updating),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

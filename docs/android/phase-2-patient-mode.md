@@ -66,10 +66,10 @@ PRN recording, slot bulk/partial inventory, history-day detail, recurring notifi
 
 - `TodayContent` now follows the current iOS information hierarchy: icon/date header, next-dose hero, orange PRN entry, planned section progress, then canonical slot/dose cards.
 - The next-dose hero shows slot/time, pill and medication totals, medication rows with status icons, the primary bulk action, recording-window state and inventory warnings. Completed schedules render the iOS-equivalent all-done card.
-- PRN medications moved from an always-expanded block to a scrollable modal list opened by the iOS-equivalent entry card; existing single-flight, inventory and confirmation contracts remain intact.
+- PRN medications moved from an always-expanded block behind the iOS-equivalent entry card; C45 later replaced the interim modal list with the current full navigation route while retaining single-flight, inventory and confirmation contracts.
 - `PatientModePreview` is deterministic at 2026-07-14 12:00 JST and mirrors the UI-101 sample data. It no longer depends on wall-clock timing, so reference captures are repeatable.
 - Patient bottom navigation now uses calendar/history/settings icons and the current `今日` label. Teal and orange card borders match the iOS emphasis system while retaining Material touch behavior.
-- API-35 Compose coverage asserts next/PRN/planned order, bulk recording, partial inventory warning, PRN sheet/action, canonical details, success/warning coexistence and the existing empty/updating states.
+- API-35 Compose coverage asserts next/PRN/planned order, bulk recording, partial inventory warning, the full PRN route/action, canonical details, success/warning coexistence and the existing empty/updating states.
 - Paired evidence is recorded in `evidence/c03-20260714/`; `./gradlew test assembleDebug assembleRelease lint connectedDebugAndroidTest` passes with all 34 instrumentation tests.
 
 ## Phase 2A contract hardening evidence
@@ -162,6 +162,14 @@ This selector foundation is connected to inventory-backed production candidates 
 - Current iOS caps the app root at `.xLarge` even when the OS is set to Accessibility XXXL. Android intentionally retains complete scroll-reachable content at 200% rather than copying that cap.
 - The screenshot fixture also exposed a wall-clock-dependent long-name regression. Its scheduled time is now relative to test execution, so the record-window action contract does not expire as evidence ages.
 
+### 2026-07-16 C45 current-runtime patient PRN calibration
+
+- Direct production-component capture confirms current iOS opens PRN as a full navigation destination rather than a modal sheet. Android now uses a full in-tab route with explicit and system back handling while preserving the persistent patient shell.
+- Same-data current iOS and Android pairs cover normal list, blocking submission, failed submission, insufficient inventory, dark mode and largest-text behavior under `evidence/c45-20260716/`.
+- The 20-unit navigation title, 28-unit instruction, capsule-and-tablet symbol, 28/20/17-unit card text, orange stroke/shadow and 72-unit teal record action follow current SwiftUI.
+- Submission uses the shared app illustration, neutral progress and input-blocking dim layer. Failure uses the top error capsule and keeps the route open; only a successful monotonic revision closes it.
+- Insufficient inventory remains callback-locked with the exact red badge and a teal action at 55% opacity. Android 200% keeps the action scroll-reachable while current iOS retains its `.xLarge` root cap.
+
 ### PT-011 authoritative refresh
 
 - The Today tab observes lifecycle `ON_RESUME` and reloads schedule, slot times, medications, and inventory after returning from the background.
@@ -187,7 +195,7 @@ This selector foundation is connected to inventory-backed production candidates 
 - A notification target preserves `PatientTodayNextSlotSelector` output and scrolls the exact payload slot into view. The earlier Android-only hero replacement behavior was removed after direct production-iOS verification.
 - Same-data raw, normalized, side-by-side and 50% overlay evidence for inventory-partial, updating, long-name and notification-target states is retained under `evidence/c43-20260716/`.
 
-`PT-010`, `PT-011`, and `PT-012` are `IMPLEMENTED`. C42/C43 close the current-runtime UI-101 light exceptional-state matrix and C44 closes the emulator-verifiable UI-102 detail matrix; real API recordings, process/background timing on a physical device, remaining screen variants, and TalkBack remain before `VERIFIED`.
+`PT-009`, `PT-010`, `PT-011`, and `PT-012` are `IMPLEMENTED`. C42/C43 close the current-runtime UI-101 light exceptional-state matrix, C44 closes UI-102 detail and C45 closes UI-103 patient PRN; real API recordings, process/background timing on a physical device, remaining screen variants, and TalkBack remain before `VERIFIED`.
 
 ## Phase 2C patient history vertical slice
 

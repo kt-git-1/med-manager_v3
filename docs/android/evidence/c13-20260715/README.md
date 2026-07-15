@@ -23,3 +23,5 @@
 - At 200% font scale, the medicine name, dose count and instruction reflow without clipping, and the full record action remains reachable through the bounded sheet scroll.
 
 `PatientTodayContentTest` now has 18 API-35 tests, including insufficient-inventory behavior, dark rendering and 200%-font action reachability. Matched iOS adaptive captures and physical TalkBack/device verification remain C01/Gate I work.
+
+C45 supersedes this historical Android-only bottom-sheet checkpoint with fresh current-baseline same-data iOS/Android list, loading, error, insufficient, dark and largest-text pairs. Physical TalkBack/device verification remains Gate I work.
