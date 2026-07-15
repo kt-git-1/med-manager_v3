@@ -19,4 +19,17 @@ class PatientTabRoutingTest {
         assertEquals(PatientTab.TODAY, route.tab)
         assertEquals(MedicationSlot.BEDTIME, route.highlightedSlot)
     }
+
+    @Test
+    fun historicalPatientTargetDoesNotReopenRetainedDayDetail() {
+        val target = PatientNotificationTarget(
+            date = LocalDate.parse("2020-01-02"),
+            slot = MedicationSlot.MORNING,
+        )
+
+        val route = patientRouteFor(target)
+
+        assertEquals(PatientTab.TODAY, route.tab)
+        assertEquals(MedicationSlot.MORNING, route.highlightedSlot)
+    }
 }

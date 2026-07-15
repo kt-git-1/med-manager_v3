@@ -416,6 +416,7 @@ class PatientTodayContentTest {
             repository.state.value.doses.size == 2 && repository.state.value.notificationTarget == null
         }
         composeRule.onNodeWithTag("patient-today-slot-evening").assertIsDisplayed()
+        composeRule.onNodeWithTag("history-day-detail-list").assertDoesNotExist()
         composeRule.runOnIdle {
             assertEquals(
                 MedicationSlot.BEDTIME,

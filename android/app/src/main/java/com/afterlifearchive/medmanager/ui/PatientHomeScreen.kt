@@ -101,9 +101,6 @@ import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
 import com.afterlifearchive.medmanager.data.patient.HistoryStreakTodayStatus
-import com.afterlifearchive.medmanager.data.patient.HistoryDayDetail
-import com.afterlifearchive.medmanager.data.patient.PrnHistoryItem
-import com.afterlifearchive.medmanager.data.patient.HistoryScheduledDose
 import com.afterlifearchive.medmanager.data.patient.PatientDose
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.PatientRepository
@@ -281,7 +278,6 @@ fun PatientHomeScreen(
     val state by repository.state.collectAsStateWithLifecycle()
     val freshness by repository.freshness.collectAsStateWithLifecycle()
     val errorText = state.error?.let { patientUserMessageText(it) }
-    val historyDayErrorText = state.historyDayError?.let { patientUserMessageText(it) }
     val messageText = state.message?.let { patientUserMessageText(it) }
     val navigation = rememberPatientNavigationState()
     val tab = navigation.tab
@@ -521,19 +517,6 @@ fun PatientHomeScreen(
                 loading = state.detailLoading,
                 error = state.detailError,
                 onRetry = { scope.launch { repository.loadDoseDetail(dose.medicationId) } },
-            )
-        }
-    }
-    navigation.selectedHistoryDate?.let { date ->
-        ModalBottomSheet(onDismissRequest = { navigation.dismissHistoryDate(); repository.clearHistoryDay() }) {
-            HistoryDayDetailContent(
-                date = date,
-                detail = state.historyDayDetail,
-                loading = state.historyDayLoading,
-                error = historyDayErrorText,
-                retentionCutoffDate = state.historyDayRetentionCutoffDate,
-                retentionDays = state.historyDayRetentionDays,
-                onRetry = { scope.launch { repository.loadHistoryDay(date) } },
             )
         }
     }

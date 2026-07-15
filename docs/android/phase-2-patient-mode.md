@@ -60,7 +60,7 @@ The UI establishes the patient tab structure and shared teal identity. Patient T
 - Physical AlarmManager delivery, process death and notification taps
 - The remaining current-main paired screen captures in C01/C04/C05
 
-PRN recording, slot bulk/partial inventory, history-day detail, recurring notification settings and tutorial coachmarks are implemented and covered by automated tests; they are no longer missing implementation items.
+PRN recording, slot bulk/partial inventory, recurring notification settings and tutorial coachmarks are implemented and covered by automated tests. The historical patient day-detail component is retained only as a typed/shared caregiver foundation and is no longer a patient navigation destination.
 
 ## 2026-07-14 C03 current Patient Today parity evidence
 
@@ -289,7 +289,7 @@ This selector foundation is connected to inventory-backed production candidates 
 - Every scheduled notification carries its canonical `YYYY-MM-DD` date, medication slot, and primary/secondary sequence.
 - Notification content PendingIntents use a date/slot-derived request code so multiple notifications cannot overwrite each other's destination.
 - Cold and warm Activity intents validate date and slot before publishing a one-time repository target.
-- A target for today switches to Today, reloads current data, and highlights the exact slot. A historical target switches to History, loads the correct month, and opens the exact day detail.
+- Every valid patient target switches to Today, reloads current data and highlights the exact slot, including a payload carrying an older date. C47 removes the stale saved history-date destination and unreachable patient day-detail bottom sheet to match current iOS.
 - Malformed dates and unknown slots are rejected without changing navigation state.
 
 ### XP-003 patient real-screen tutorial

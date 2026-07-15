@@ -13,7 +13,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import org.junit.Rule
 import org.junit.Test
-import java.time.LocalDate
 
 class PatientNavigationStateTest {
     @get:Rule
@@ -30,7 +29,6 @@ class PatientNavigationStateTest {
                         navigation.tab.name,
                         navigation.loadedTabs.map(PatientTab::name).sorted().joinToString(","),
                         navigation.selectedDoseKey.orEmpty(),
-                        navigation.selectedHistoryDate?.toString().orEmpty(),
                     ).joinToString("|"),
                 )
                 Button(
@@ -38,17 +36,16 @@ class PatientNavigationStateTest {
                     onClick = {
                         navigation.selectTab(PatientTab.HISTORY)
                         navigation.showDose("dose-42")
-                        navigation.showHistoryDate(LocalDate.of(2026, 7, 14))
                     },
                 ) { Text("set") }
             }
         }
 
         composeRule.onNodeWithTag("set-navigation").performClick()
-        composeRule.onNodeWithText("HISTORY|HISTORY,TODAY|dose-42|2026-07-14").assertIsDisplayed()
+        composeRule.onNodeWithText("HISTORY|HISTORY,TODAY|dose-42").assertIsDisplayed()
 
         restoration.emulateSavedInstanceStateRestore()
 
-        composeRule.onNodeWithText("HISTORY|HISTORY,TODAY|dose-42|2026-07-14").assertIsDisplayed()
+        composeRule.onNodeWithText("HISTORY|HISTORY,TODAY|dose-42").assertIsDisplayed()
     }
 }

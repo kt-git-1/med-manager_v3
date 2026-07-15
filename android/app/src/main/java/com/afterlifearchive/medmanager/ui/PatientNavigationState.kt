@@ -8,22 +8,18 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import java.time.LocalDate
 
 @Stable
 internal class PatientNavigationState(
     initialTab: PatientTab = PatientTab.TODAY,
     initialLoadedTabs: Set<PatientTab> = setOf(PatientTab.TODAY),
     initialSelectedDoseKey: String? = null,
-    initialSelectedHistoryDate: LocalDate? = null,
 ) {
     var tab by mutableStateOf(initialTab)
         private set
     var loadedTabs by mutableStateOf(initialLoadedTabs + initialTab)
         private set
     var selectedDoseKey by mutableStateOf(initialSelectedDoseKey)
-        private set
-    var selectedHistoryDate by mutableStateOf(initialSelectedHistoryDate)
         private set
 
     fun selectTab(tab: PatientTab) {
@@ -39,14 +35,6 @@ internal class PatientNavigationState(
         selectedDoseKey = null
     }
 
-    fun showHistoryDate(date: LocalDate) {
-        selectedHistoryDate = date
-    }
-
-    fun dismissHistoryDate() {
-        selectedHistoryDate = null
-    }
-
     companion object {
         val Saver: Saver<PatientNavigationState, Any> = listSaver(
             save = { state ->
@@ -54,7 +42,6 @@ internal class PatientNavigationState(
                     state.tab.name,
                     state.loadedTabs.joinToString(",") { it.name },
                     state.selectedDoseKey.orEmpty(),
-                    state.selectedHistoryDate?.toString().orEmpty(),
                 )
             },
             restore = { saved ->
@@ -66,7 +53,6 @@ internal class PatientNavigationState(
                     initialTab = tab,
                     initialLoadedTabs = loaded,
                     initialSelectedDoseKey = saved[2].toString().takeIf(String::isNotBlank),
-                    initialSelectedHistoryDate = saved[3].toString().takeIf(String::isNotBlank)?.let(LocalDate::parse),
                 )
             },
         )
