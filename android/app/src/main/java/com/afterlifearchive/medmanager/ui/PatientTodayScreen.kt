@@ -779,8 +779,8 @@ internal fun PatientDoseDetailContent(
     Box(Modifier.fillMaxWidth()) {
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp, 8.dp, 16.dp, 40.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp, 28.dp, 16.dp, 40.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             item {
                 Text(
@@ -794,11 +794,16 @@ internal fun PatientDoseDetailContent(
             item {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 ) {
                     Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(dose.medicationName, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                        Text(dose.dosageText, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            dose.dosageText,
+                            style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp, lineHeight = 24.sp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(
                                 Icons.Rounded.AccessTime,
@@ -806,12 +811,16 @@ internal fun PatientDoseDetailContent(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(22.dp),
                             )
-                            Text(dateTimeText(dose), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                dateTimeText(dose),
+                                style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp, lineHeight = 18.sp),
+                                fontWeight = FontWeight.SemiBold,
+                            )
                         }
                         Text(
                             patientDetailStatusText(dose.status),
                             modifier = Modifier.background(patientDetailStatusColor(dose.status), RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelLarge,
+                            style = MaterialTheme.typography.labelLarge.copy(fontSize = 12.sp, lineHeight = 16.sp),
                             fontWeight = FontWeight.SemiBold,
                         )
                     }
@@ -844,15 +853,21 @@ internal fun PatientDoseDetailContent(
                 contentAlignment = Alignment.Center,
             ) {
                 Card(
+                    modifier = Modifier.width(172.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)),
                     shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
                 ) {
                     Column(
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
-                        CircularProgressIndicator(modifier = Modifier.size(44.dp), color = PatientTeal)
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(44.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f),
+                            strokeWidth = 4.dp,
+                        )
                         Text(
                             stringResource(R.string.patient_detail_loading),
                             style = MaterialTheme.typography.titleMedium,
@@ -870,15 +885,17 @@ internal fun PatientDoseDetailContent(
 private fun PatientDoseDetailError(onRetry: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Card(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.18f)),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(22.dp),
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -897,7 +914,12 @@ private fun PatientDoseDetailError(onRetry: () -> Unit) {
                 )
             }
         }
-        Button(onClick = onRetry) { Text(stringResource(R.string.patient_detail_retry)) }
+        Button(
+            onClick = onRetry,
+            modifier = Modifier.height(40.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp),
+        ) { Text(stringResource(R.string.patient_detail_retry)) }
     }
 }
 
@@ -910,10 +932,11 @@ private fun PatientDoseDetailCard(
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(
                 value,
                 modifier = if (insetValue) {
@@ -945,7 +968,7 @@ private fun patientDetailStatusText(status: DoseStatus) = stringResource(
 @Composable
 private fun patientDetailStatusColor(status: DoseStatus) = when (status) {
     DoseStatus.PENDING -> MaterialTheme.colorScheme.surfaceVariant
-    DoseStatus.TAKEN -> PatientTeal.copy(alpha = 0.14f)
+    DoseStatus.TAKEN -> Color(0xFF34C759).copy(alpha = 0.15f)
     DoseStatus.MISSED -> MaterialTheme.colorScheme.errorContainer
 }
 

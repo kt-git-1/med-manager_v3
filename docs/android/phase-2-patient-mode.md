@@ -154,6 +154,14 @@ This selector foundation is connected to inventory-backed production candidates 
 - Today medication names now have explicit current-iOS-equivalent bounds: two lines in compact slot rows and three lines in full planned-dose cards, with ellipsis overflow and the primary action protected by API-35 evidence.
 - Opening a detail uses the already loaded medication cache when possible and falls back to the patient-scoped medication list request when the item is absent. Loading and error state are detail-local, retryable, duplicate-safe, and cleared when the sheet closes, matching the current iOS state machine without replacing Today content or its messages.
 
+### 2026-07-16 C44 current-runtime detail calibration
+
+- Same-data current iOS and Android pairs now cover populated detail, empty memo, cache-miss loading, retryable failure, dark mode and largest-text behavior under `evidence/c44-20260716/`.
+- Android replaces outlined Material detail cards with the current 16-unit rounded/elevated hierarchy and aligns the header schedule/date/status metrics, memo heading/inset and vertical rhythm.
+- Recorded status uses the current green capsule. Cache-miss loading uses a neutral indicator and calibrated blocking card; detail failure uses an inset elevated warning plus a leading iOS-blue retry action.
+- Current iOS caps the app root at `.xLarge` even when the OS is set to Accessibility XXXL. Android intentionally retains complete scroll-reachable content at 200% rather than copying that cap.
+- The screenshot fixture also exposed a wall-clock-dependent long-name regression. Its scheduled time is now relative to test execution, so the record-window action contract does not expire as evidence ages.
+
 ### PT-011 authoritative refresh
 
 - The Today tab observes lifecycle `ON_RESUME` and reloads schedule, slot times, medications, and inventory after returning from the background.
@@ -179,7 +187,7 @@ This selector foundation is connected to inventory-backed production candidates 
 - A notification target preserves `PatientTodayNextSlotSelector` output and scrolls the exact payload slot into view. The earlier Android-only hero replacement behavior was removed after direct production-iOS verification.
 - Same-data raw, normalized, side-by-side and 50% overlay evidence for inventory-partial, updating, long-name and notification-target states is retained under `evidence/c43-20260716/`.
 
-`PT-010`, `PT-011`, and `PT-012` are `IMPLEMENTED`. C42/C43 close the current-runtime UI-101 light exceptional-state matrix; real API recordings, process/background timing on a physical device, remaining adaptive variants, and TalkBack remain before `VERIFIED`.
+`PT-010`, `PT-011`, and `PT-012` are `IMPLEMENTED`. C42/C43 close the current-runtime UI-101 light exceptional-state matrix and C44 closes the emulator-verifiable UI-102 detail matrix; real API recordings, process/background timing on a physical device, remaining screen variants, and TalkBack remain before `VERIFIED`.
 
 ## Phase 2C patient history vertical slice
 

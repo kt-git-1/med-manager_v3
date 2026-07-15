@@ -6,7 +6,7 @@
 
 ## 1. Executive result
 
-The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C31 formally rebased the contract from `main@1d9d19e` to `main@1cf8aef`; C32–C34 closed the three resulting Android parity gaps, C35/C36 passed the current regression matrices, C37–C41 closed fresh matched Patient History streak, Caregiver Today status and the complete entry/auth UI-002–005 matrix, C42 closed UI-101 initial loading/failure plus the shared patient floating-tab-shell drift, and C43 closed the remaining emulator-verifiable UI-101 light exceptional states. Remaining gaps are explicitly live Firebase, other product-screen/adaptive visual residuals, physical-device evidence and Play release operations.
+The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C31 formally rebased the contract from `main@1d9d19e` to `main@1cf8aef`; C32–C34 closed the three resulting Android parity gaps, C35/C36 passed the current regression matrices, C37–C41 closed fresh matched Patient History streak, Caregiver Today status and the complete entry/auth UI-002–005 matrix, C42/C43 closed the emulator-verifiable UI-101 exceptional states, and C44 closed the current-runtime UI-102 dose-detail matrix. Remaining gaps are explicitly live Firebase, other product-screen/adaptive visual residuals, physical-device evidence and Play release operations.
 
 ## 2. What is reusable
 
@@ -66,7 +66,7 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Phase 0 build foundation | IMPLEMENTED | Build/test/lint workflow exists; release/device proof remains |
 | Shared session/API | IMPLEMENTED | A01–A06 auth, installation safety, typed networking, mutation freshness and notification rebuild gates pass; physical OEM transfer remains release evidence |
 | Entry/caregiver auth UI | IMPLEMENTED / live/physical verify | C38–C41 close UI-002–005 current-runtime empty/filled light, dark and adaptive evidence. Deterministic failures and callbacks are automated; live link/auth/email plus physical keyboard/OEM IME/TalkBack remain |
-| Patient Today | IMPLEMENTED / physical verify | C42/C43 close the current-runtime light loading, failure, inventory-partial, updating, long-name and notification-target production-shell pairs. Post-record reminder/history/inventory revisions and failure preservation are covered; physical TalkBack/OEM/lifecycle evidence remains |
+| Patient Today | IMPLEMENTED / physical verify | C42/C43 close the current-runtime light Today exceptional pairs; C44 closes same-data detail content, empty memo, loading, failure, dark and largest-text pairs. Post-record reminder/history/inventory revisions and failure preservation are covered; physical TalkBack/OEM/lifecycle evidence remains |
 | Patient History/Settings | IMPLEMENTED / re-visualize | C37 closes matched streak light/dark/maximum-text evidence; other exceptional Settings/History states and physical evidence remain |
 | Patient notification/tutorial | IMPLEMENTED / physical verify | Next-day rebuild, loaded-tab lifetime, routing and tutorial actions are covered; physical permission/tap/TalkBack remain |
 | Caregiver mode | IMPLEMENTED / re-visualize | C37 closes fresh matched status-first Today light/dark/maximum-text evidence; other exceptional flows and physical FCM/TalkBack evidence remain |
@@ -75,7 +75,7 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 
 ## 6. Next execution order
 
-1. Complete remaining emulator-verifiable fresh iOS/Android visual pairs outside the C42/C43 UI-101 light matrix; the C36 187-test API 26/33/35 matrix is complete at 561/561 and the expanded current API-35 suite passes 206/206 after C43.
+1. Complete remaining emulator-verifiable fresh iOS/Android visual pairs outside the C42–C44 UI-101/UI-102 matrices; the C36 187-test API 26/33/35 matrix is complete at 561/561 and the expanded current API-35 suite passes 206/206 after C44.
 2. H07 supply Android Firebase values and capture privacy-reviewed DebugView, Realtime, Events and Explore evidence.
 3. I02 complete physical FCM/Doze/process-death, TalkBack/font/dark/rotation and browser/share checks.
 4. Complete signed Play closed-test/release gates and perform the final main rebaseline.

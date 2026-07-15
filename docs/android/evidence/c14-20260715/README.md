@@ -22,3 +22,5 @@
 - Platform typography and clock glyph remain native; no production UI repair was required.
 
 `PatientTodayContentTest` passes 20/20 on API 35, including the existing UI-102 content, empty-note, loading and retryable-error contracts plus these two adaptive variants. Matched iOS loading/error/dark/largest-text and physical TalkBack/device verification remain C01/Gate I work.
+
+C44 supersedes this historical Android-only checkpoint with fresh current-baseline same-data iOS/Android content, empty, loading, error, dark and largest-text pairs. Physical TalkBack/device verification remains Gate I work.

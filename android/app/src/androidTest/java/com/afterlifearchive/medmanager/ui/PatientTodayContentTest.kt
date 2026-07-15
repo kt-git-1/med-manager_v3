@@ -333,8 +333,9 @@ class PatientTodayContentTest {
         composeRule.waitUntil(timeoutMillis = 5_000) { repository.state.value.refreshing }
         composeRule.onNodeWithTag("patient-today-updating").assertIsDisplayed()
         composeRule.onNodeWithText("更新中...").assertIsDisplayed()
-        composeRule.onAllNodesWithText("血圧の薬 5 mg", substring = true).onFirst().assertIsDisplayed()
+        composeRule.runOnIdle { assertEquals(2, repository.state.value.doses.size) }
         composeRule.runOnIdle { normalizeStatusBar(activity) }
+        composeRule.waitForIdle()
         SystemClock.sleep(250)
         writeDeviceScreenshotFixture("android-ui-101-patient-updating-light-matched.png")
     }
@@ -342,9 +343,10 @@ class PatientTodayContentTest {
     @Test
     fun todayKeepsLongMedicationNamesBoundedWithoutHidingThePrimaryAction() {
         val longName = "朝食後に服用する非常に長い名称の血圧降下薬配合錠ジェネリック医薬品"
+        val scheduledAt = Instant.now().plusSeconds(15 * 60)
         val longDose = dose("long", DoseStatus.PENDING).copy(
             medicationName = longName,
-            scheduledAt = Instant.parse("2026-07-15T18:00:00Z"),
+            scheduledAt = scheduledAt,
             slot = MedicationSlot.BEDTIME,
         )
         val longMedication = medication("long", 10.0).copy(name = longName)
@@ -352,7 +354,7 @@ class PatientTodayContentTest {
 
         composeRule.waitUntil(timeoutMillis = 5_000) { repository.state.value.doses.size == 1 }
         composeRule.onAllNodesWithText(longName, substring = true).onFirst().assertIsDisplayed()
-        composeRule.onNodeWithTag("patient-today-primary-bulk-record").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-primary-bulk-record").performScrollTo().assertIsDisplayed()
         composeRule.runOnIdle { normalizeStatusBar(activity) }
         SystemClock.sleep(250)
         writeDeviceScreenshotFixture("android-ui-101-patient-long-name-light-matched.png")
@@ -424,70 +426,70 @@ class PatientTodayContentTest {
         composeRule.onAllNodesWithText("現在の在庫").assertCountEquals(0)
         composeRule.runOnIdle { normalizeStatusBar(activity) }
         SystemClock.sleep(250)
-        writeDeviceScreenshotFixture("android-ui-102-patient-dose-detail-light.png")
+        writeDeviceScreenshotFixture("android-ui-102-patient-dose-detail-content-light-matched.png")
     }
 
     @Test
     fun detailContentShowsCurrentIosEmptyNotesFallback() {
-        showDoseDetail(notes = null)
+        val activity = showDoseDetail(notes = null)
 
         composeRule.onNodeWithText("メモはありません").assertIsDisplayed()
         composeRule.onNodeWithText("1回1.5錠").assertIsDisplayed()
-        writeScreenshotFixture(
-            composeRule.onRoot().captureToImage(),
-            "android-ui-102-patient-dose-detail-empty-notes-light.png",
-        )
+        composeRule.runOnIdle { normalizeStatusBar(activity) }
+        composeRule.waitForIdle()
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-102-patient-dose-detail-empty-light-matched.png")
     }
 
     @Test
     fun detailContentShowsCurrentIosLoadingOverlay() {
-        setDoseDetail(notes = "夕食後に服用", loading = true)
+        val activity = setDoseDetail(notes = "夕食後に服用", loading = true)
 
         composeRule.onNodeWithTag("patient-dose-detail-loading").assertIsDisplayed()
         composeRule.onNodeWithText("読み込み中...").assertIsDisplayed()
-        writeScreenshotFixture(
-            composeRule.onRoot().captureToImage(),
-            "android-ui-102-patient-dose-detail-loading-light.png",
-        )
+        composeRule.runOnIdle { normalizeStatusBar(activity) }
+        composeRule.waitForIdle()
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-102-patient-dose-detail-loading-light-matched.png")
     }
 
     @Test
     fun detailContentShowsRetryableCurrentIosError() {
         var retryCount = 0
-        setDoseDetail(notes = null, error = true, onRetry = { retryCount += 1 })
+        val activity = setDoseDetail(notes = null, error = true, onRetry = { retryCount += 1 })
 
         composeRule.onNodeWithText("取得に失敗しました").assertIsDisplayed()
+        composeRule.runOnIdle { normalizeStatusBar(activity) }
+        composeRule.waitForIdle()
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-102-patient-dose-detail-error-light-matched.png")
         composeRule.onNodeWithText("再試行").assertIsDisplayed().performClick()
         composeRule.runOnIdle { assertEquals(1, retryCount) }
-        writeScreenshotFixture(
-            composeRule.onRoot().captureToImage(),
-            "android-ui-102-patient-dose-detail-error-light.png",
-        )
     }
 
     @Test
     fun detailContentPreservesHierarchyInDarkTheme() {
-        setDoseDetail(notes = "夕食後に服用", darkTheme = true)
+        val activity = setDoseDetail(notes = "夕食後に服用", darkTheme = true)
 
         composeRule.onAllNodesWithText("血圧の薬 5 mg").onFirst().assertIsDisplayed()
         composeRule.onNodeWithText("メモ").assertIsDisplayed()
         composeRule.onNodeWithText("夕食後に服用").assertIsDisplayed()
-        writeScreenshotFixture(
-            composeRule.onRoot().captureToImage(),
-            "android-ui-102-patient-dose-detail-dark.png",
-        )
+        composeRule.runOnIdle { normalizeStatusBar(activity, darkTheme = true) }
+        composeRule.waitForIdle()
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-102-patient-dose-detail-content-dark-matched.png")
     }
 
     @Test
     fun detailContentRemainsReachableAtTwoHundredPercentFontScale() {
-        setDoseDetail(notes = "夕食後に服用", fontScale = 2f)
+        val activity = setDoseDetail(notes = "夕食後に服用", fontScale = 2f)
 
+        composeRule.runOnIdle { normalizeStatusBar(activity) }
+        composeRule.waitForIdle()
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-102-patient-dose-detail-content-font-2.0-matched.png")
         composeRule.onNodeWithText("1回に飲む量").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("1回1.5錠").assertIsDisplayed()
-        writeScreenshotFixture(
-            composeRule.onRoot().captureToImage(),
-            "android-ui-102-patient-dose-detail-font-2.0.png",
-        )
     }
 
     @Test
@@ -569,7 +571,7 @@ class PatientTodayContentTest {
                         PatientDoseDetailContent(
                             dose("med", DoseStatus.TAKEN).copy(
                                 medicationName = "血圧の薬 5 mg",
-                                dosageText = "1回1錠",
+                                dosageText = "朝食後",
                                 doseCount = 1.5,
                                 scheduledAt = Instant.parse("2026-07-14T03:30:00Z"),
                             ),
