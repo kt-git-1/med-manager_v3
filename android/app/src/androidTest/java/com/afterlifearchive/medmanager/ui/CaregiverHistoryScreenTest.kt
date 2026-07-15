@@ -70,10 +70,10 @@ class CaregiverHistoryScreenTest {
     }
 
     @Test
-    fun remotePushOpensExactDateAndHighlightsExactSlot() {
+    fun missedDoseRemotePushOpensExactDateAndHighlightsExactSlot() {
         val date = LocalDate.of(2026, 2, 11)
         val (repository, _) = repository(date, MedicationSlot.EVENING)
-        repository.handleNotificationTarget("DOSE_TAKEN", "p1", date.toString(), "evening")
+        repository.handleNotificationTarget("DOSE_MISSED", "p1", date.toString(), "evening")
 
         setContent(repository)
 

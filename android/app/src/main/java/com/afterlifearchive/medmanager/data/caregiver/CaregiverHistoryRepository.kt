@@ -12,6 +12,7 @@ import com.afterlifearchive.medmanager.data.patient.HistoryScheduledDose
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.PatientHistoryDayResponseDto
 import com.afterlifearchive.medmanager.data.patient.PatientHistoryMonthResponseDto
+import com.afterlifearchive.medmanager.data.push.CaregiverPushPayloadParser
 import com.afterlifearchive.medmanager.data.patient.PatientWireJson
 import java.time.LocalDate
 import java.time.YearMonth
@@ -206,15 +207,20 @@ class CaregiverHistoryRepository(
     }
 
     fun handleNotificationTarget(type: String?, patientId: String?, date: String?, slot: String?): Boolean {
-        if (type != "DOSE_TAKEN" || patientId.isNullOrBlank()) return false
-        val parsedDate = runCatching { LocalDate.parse(date) }.getOrNull() ?: return false
-        val parsedSlot = runCatching { MedicationSlot.valueOf(slot.orEmpty().uppercase()) }.getOrNull() ?: return false
+        val target = CaregiverPushPayloadParser.parse(
+            mapOf(
+                "type" to type.orEmpty(),
+                "patientId" to patientId.orEmpty(),
+                "date" to date.orEmpty(),
+                "slot" to slot.orEmpty(),
+            ),
+        ) ?: return false
         mutableState.value = mutableState.value.copy(
-            displayedMonth = YearMonth.from(parsedDate),
-            selectedDate = parsedDate,
+            displayedMonth = YearMonth.from(target.date),
+            selectedDate = target.date,
             dayDetail = null,
-            highlightedSlot = parsedSlot,
-            notificationPatientId = patientId,
+            highlightedSlot = target.slot,
+            notificationPatientId = target.patientId,
             navigationRequestId = mutableState.value.navigationRequestId + 1,
         )
         return true

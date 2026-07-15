@@ -37,7 +37,7 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Resolved B03 | Patient UI was one oversized screen file | Shell, navigation state, Today, History, Settings, Tutorial and shared components now live in separate files while retaining the A06 tab host | Production component capture fixtures and all prior interaction tests pass |
 | Resolved C32 | Patient History lacked the server-defined recording streak | API-045 now has strict typed mapping and independent state; the current-iOS card/copy sits between progress and week | Contract/repository tests plus API-35 Patient History 14/14 pass; matched adaptive/physical evidence remains |
 | Resolved C33 | Caregiver Today rendered the removed next-action hero | Current Android now leads with status, then optional PRN and slot-colored timeline actions; stale next copy/resources are absent | API-35 Today 13/13 and adaptive/large-text/accessibility 17/17 pass with two production-tree captures |
-| P0 | Caregiver notification parser rejects `DOSE_MISSED` | Backend cron and current iOS accept missed-dose payloads using the same strict navigation fields | C34 expands only the allowlist and proves exact date/slot History routing plus malformed/unknown rejection |
+| Resolved C34 | Caregiver notification parser rejected `DOSE_MISSED` | One shared strict parser now accepts only taken/missed and validates patient/real ISO date/canonical slot before display or navigation | Parser/repository JVM gates plus API-35 Home/History 27/27 prove exact patient/date/slot routing and unknown/malformed rejection |
 | P1 | Existing patient screenshots predate current iOS behavior | Main added lazy tab lifetime, mutation/history refresh and UI adjustments | Recapture baseline and rerun visual acceptance |
 | P2 | Analytics live verification is pending | Runtime Firebase transport, both-role consent/reset and a privacy-rejecting fixed schema are implemented; no local Android Firebase values are available | Supply four environment values and capture DebugView then Realtime/Events/Explore evidence |
 | P2 | Production artifact ownership/configuration is pending | The Play task now fails closed on incomplete Firebase/runtime/signing inputs; the Release APK passes application-ID, SDK, forbidden-permission and 16 KB ZIP/ELF checks | Release owner supplies Firebase values and upload key, then verifies the exact signed AAB and Play scan |
@@ -69,16 +69,15 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Patient Today | IMPLEMENTED / re-visualize | Post-record reminder/history/inventory revisions and failure preservation are covered; final matched visual matrix remains |
 | Patient History/Settings | IMPLEMENTED / re-visualize | C32 streak contract/UI passes automated gates; matched dark/maximum-text and physical evidence remain |
 | Patient notification/tutorial | IMPLEMENTED / physical verify | Next-day rebuild, loaded-tab lifetime, routing and tutorial actions are covered; physical permission/tap/TalkBack remain |
-| Caregiver mode | RECHECK_REQUIRED | C33 current Today hierarchy passes; C34 missed-dose push routing still must match current main |
+| Caregiver mode | IMPLEMENTED / re-visualize | C33 current Today and C34 missed-dose routing pass; full C35 regression and physical FCM/TalkBack evidence remain |
 | Analytics/privacy parity | PARTIAL | Code and automated privacy gates complete; Firebase Console evidence awaits environment configuration |
 | Physical release verification | NOT_STARTED | Emulator evidence is not release proof |
 
 ## 6. Next execution order
 
-1. C34 accept/route strict `DOSE_MISSED` caregiver pushes and rerun notification gates.
-2. Rerun the complete API/JVM/emulator matrix and close the C31 rebaseline checklist.
-3. H07 supply Android Firebase values and capture privacy-reviewed DebugView, Realtime, Events and Explore evidence.
-4. I02 complete physical FCM/Doze/process-death, TalkBack/font/dark/rotation and browser/share checks.
-5. Complete signed Play closed-test/release gates and perform the final main rebaseline.
+1. C35 rerun the complete API/JVM/emulator matrix and close the C31 rebaseline checklist.
+2. H07 supply Android Firebase values and capture privacy-reviewed DebugView, Realtime, Events and Explore evidence.
+3. I02 complete physical FCM/Doze/process-death, TalkBack/font/dark/rotation and browser/share checks.
+4. Complete signed Play closed-test/release gates and perform the final main rebaseline.
 
 Do not claim a rebaselined row complete until its new-baseline contract and evidence pass.

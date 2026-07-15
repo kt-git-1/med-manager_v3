@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.afterlifearchive.medmanager.data.push.CaregiverPushTokenSource
+import com.afterlifearchive.medmanager.data.push.CaregiverPushPayloadParser
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.messaging.FirebaseMessaging
@@ -89,25 +90,22 @@ class CaregiverFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         val app = application as? MedicationApplication ?: return
         if (!app.caregiverPushRepository.acceptsMessages()) return
-        val data = message.data
-        if (data["type"] != "DOSE_TAKEN") return
-        val patientId = data["patientId"]?.takeIf(String::isNotBlank) ?: return
-        val date = data["date"]?.takeIf { DATE_PATTERN.matches(it) } ?: return
-        val slot = data["slot"]?.takeIf { it in VALID_SLOTS } ?: return
+        val target = CaregiverPushPayloadParser.parse(message.data) ?: return
         if (!deduplicator.shouldDisplay(message.messageId)) return
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
 
         createChannel()
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            putExtra("type", "DOSE_TAKEN")
-            putExtra("patientId", patientId)
-            putExtra("date", date)
-            putExtra("slot", slot)
+            putExtra("type", target.type.wireValue)
+            putExtra("patientId", target.patientId)
+            putExtra("date", target.date.toString())
+            putExtra("slot", target.slot.name.lowercase())
         }
+        val targetKey = "${target.patientId}:${target.date}:${target.slot.name.lowercase()}"
         val pendingIntent = PendingIntent.getActivity(
             this,
-            "$patientId:$date:$slot".hashCode(),
+            targetKey.hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
@@ -119,7 +117,7 @@ class CaregiverFirebaseMessagingService : FirebaseMessagingService() {
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .build()
-        NotificationManagerCompat.from(this).notify("$patientId:$date:$slot".hashCode(), notification)
+        NotificationManagerCompat.from(this).notify(targetKey.hashCode(), notification)
     }
 
     private fun createChannel() {
@@ -134,8 +132,6 @@ class CaregiverFirebaseMessagingService : FirebaseMessagingService() {
 
     companion object {
         const val CHANNEL_ID = "caregiver_updates"
-        private val DATE_PATTERN = Regex("\\d{4}-\\d{2}-\\d{2}")
-        private val VALID_SLOTS = setOf("morning", "noon", "evening", "bedtime")
     }
 }
 

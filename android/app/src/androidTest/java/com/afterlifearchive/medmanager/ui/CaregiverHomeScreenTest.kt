@@ -399,7 +399,7 @@ class CaregiverHomeScreenTest {
     }
 
     @Test
-    fun remotePushSelectsTargetPatientAndHistoryTab() {
+    fun missedDoseRemotePushSelectsTargetPatientAndHistoryTab() {
         val storage = TestSelectionStorage()
         val selection = CaregiverSelectionRepository(storage).also { it.restore() }
         val patientRepository = CaregiverPatientRepository(
@@ -411,7 +411,7 @@ class CaregiverHomeScreenTest {
             override suspend fun day(patientId: String, date: LocalDate) = HistoryDayDetail(date.toString(), emptyList(), emptyList())
             override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
         }, MutationFreshnessStore())
-        historyRepository.handleNotificationTarget("DOSE_TAKEN", "p2", "2026-07-15", "noon")
+        historyRepository.handleNotificationTarget("DOSE_MISSED", "p2", "2026-07-15", "noon")
 
         composeRule.setContent {
             MedicationAppTheme {

@@ -170,6 +170,12 @@ class CaregiverHistoryRepositoryTest {
         assertEquals(YearMonth.of(2026, 7), repository.state.value.displayedMonth)
         assertEquals(MedicationSlot.EVENING, repository.state.value.highlightedSlot)
         assertEquals(1L, repository.state.value.navigationRequestId)
+
+        assertTrue(repository.handleNotificationTarget("DOSE_MISSED", "p3", "2026-07-16", "morning"))
+        assertEquals("p3", repository.state.value.notificationPatientId)
+        assertEquals(LocalDate.of(2026, 7, 16), repository.state.value.selectedDate)
+        assertEquals(MedicationSlot.MORNING, repository.state.value.highlightedSlot)
+        assertEquals(2L, repository.state.value.navigationRequestId)
     }
 
     private fun noopSource() = object : CaregiverHistoryDataSource {
