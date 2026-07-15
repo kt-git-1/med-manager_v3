@@ -217,6 +217,23 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="guide-entry" aria-labelledby="guide-entry-title">
+        <div>
+          <div>
+            <p className="eyebrow">How to use</p>
+            <h2 id="guide-entry-title">本人と家族で使う流れを、画面を見ながら確認</h2>
+            <p>
+              最初の連携コードの発行から、本人の服薬記録、家族によるお薬・在庫・履歴の管理まで、
+              モードごとに詳しくご案内します。
+            </p>
+          </div>
+          <a href="/guide">
+            詳しい使い方を見る
+            <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      </section>
+
       <section className="demo-section" id="demo" aria-labelledby="demo-title">
         <div className="section-heading">
           <p className="eyebrow">Demo</p>
@@ -500,6 +517,7 @@ export default function Home() {
         .hero-copy,
         .overview,
           .demo-section,
+          .guide-entry,
           .mail-note,
           .download-note,
           .public-info {
@@ -694,6 +712,7 @@ export default function Home() {
         }
 
         .overview,
+        .guide-entry,
         .demo-section,
         .mail-note,
         .download-note,
@@ -771,6 +790,7 @@ export default function Home() {
         }
 
         .feature p,
+        .guide-entry p,
         .public-grid p,
         .demo-copy p,
         .mail-note p,
@@ -816,6 +836,53 @@ export default function Home() {
         .mini-metrics span {
           color: #667771;
           font-size: 13px;
+        }
+
+        .guide-entry > div {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 28px;
+          padding: 30px 32px;
+          border-radius: 8px;
+          background: #123b32;
+          color: #ffffff;
+          box-shadow: 0 18px 50px rgba(18, 34, 29, 0.14);
+        }
+
+        .guide-entry h2 {
+          margin: 0;
+          font-size: 27px;
+          line-height: 1.35;
+        }
+
+        .guide-entry p:not(.eyebrow) {
+          max-width: 680px;
+          color: #d8f6e9;
+        }
+
+        .guide-entry .eyebrow {
+          color: #9fe0c4;
+        }
+
+        .guide-entry a {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          flex: 0 0 auto;
+          min-height: 52px;
+          padding: 0 20px;
+          border-radius: 8px;
+          background: #ffffff;
+          color: #123b32;
+          font-size: 15px;
+          font-weight: 900;
+          text-decoration: none;
+        }
+
+        .guide-entry a span {
+          font-size: 20px;
         }
 
         .demo-stage {
@@ -1779,6 +1846,7 @@ export default function Home() {
           }
 
           .overview,
+          .guide-entry,
           .demo-section,
           .mail-note,
           .download-note,
@@ -1814,6 +1882,15 @@ export default function Home() {
           .download-note > div {
             display: grid;
             justify-items: start;
+          }
+
+          .guide-entry > div {
+            display: grid;
+            padding: 26px 24px;
+          }
+
+          .guide-entry a {
+            width: fit-content;
           }
         }
 

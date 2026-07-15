@@ -1,5 +1,5 @@
 type SiteHeaderProps = {
-  current?: "home" | "legal";
+  current?: "home" | "guide" | "legal";
 };
 
 const legalLinks = [
@@ -13,14 +13,23 @@ export function SiteHeader({ current = "legal" }: SiteHeaderProps) {
     current === "home"
       ? [
           { href: "#overview", label: "概要" },
+          { href: "/guide", label: "詳しい使い方" },
           { href: "#demo", label: "画面例" },
           { href: "#download", label: "ダウンロード" }
         ]
-      : [
-          { href: "/#overview", label: "概要" },
-          { href: "/#demo", label: "画面例" },
-          { href: "/#download", label: "ダウンロード" }
-        ];
+      : current === "guide"
+        ? [
+            { href: "#start", label: "はじめ方" },
+            { href: "#patient", label: "本人モード" },
+            { href: "#caregiver", label: "家族モード" },
+            { href: "#sharing", label: "連携のしくみ" }
+          ]
+        : [
+            { href: "/#overview", label: "概要" },
+            { href: "/guide", label: "詳しい使い方" },
+            { href: "/#demo", label: "画面例" },
+            { href: "/#download", label: "ダウンロード" }
+          ];
   const navLinks = [...sectionLinks, ...legalLinks];
 
   return (

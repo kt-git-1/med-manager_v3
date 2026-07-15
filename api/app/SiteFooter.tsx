@@ -5,6 +5,7 @@ export function SiteFooter() {
         <div className="site-footer-main">
           <span>お薬見守り</span>
           <div>
+            <a href="/guide">詳しい使い方</a>
             <a href="/privacy">プライバシーポリシー</a>
             <a href="/terms">利用規約</a>
             <a href="/support">サポート</a>
