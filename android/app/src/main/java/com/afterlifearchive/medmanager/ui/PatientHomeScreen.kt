@@ -350,12 +350,14 @@ fun PatientHomeScreen(
                 PatientTab.TODAY -> TodayContent(
                     doses = state.doses,
                     loading = state.loading,
+                    refreshing = state.refreshing,
                     updatingKey = state.updatingDoseKey,
                     error = errorText,
                     message = messageText,
                     maintenanceWarning = state.maintenanceWarning?.let { warning ->
                         when (warning) {
                             PatientMaintenanceWarning.REMINDER_REFRESH_FAILED -> stringResource(R.string.patient_reminder_refresh_failed)
+                            PatientMaintenanceWarning.TODAY_REFRESH_FAILED -> stringResource(R.string.patient_today_refresh_failed)
                         }
                     },
                     medications = state.medicationById,

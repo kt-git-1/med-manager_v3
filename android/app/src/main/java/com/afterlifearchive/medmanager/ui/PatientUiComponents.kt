@@ -70,6 +70,7 @@ internal fun patientUserMessageText(message: PatientUserMessage): String = when 
     PatientUserMessage.NoRecordableMedication -> stringResource(R.string.patient_message_no_recordable_medication)
     PatientUserMessage.PrnRecorded -> stringResource(R.string.patient_message_prn_recorded)
     PatientUserMessage.PrnRecordFailed -> stringResource(R.string.patient_prn_error)
+    PatientUserMessage.TodayLoadFailed -> stringResource(R.string.patient_today_error)
     is PatientUserMessage.Validation -> message.safeMessage ?: stringResource(R.string.api_error_validation)
     PatientUserMessage.Unauthorized -> stringResource(R.string.api_error_unauthorized)
     PatientUserMessage.Forbidden -> stringResource(R.string.api_error_forbidden)

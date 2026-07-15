@@ -69,7 +69,7 @@ Each screen ID maps to parity requirements. Every listed state needs a determini
 | Screen | iOS reference | Required states/actions |
 |---|---|---|
 | UI-100 Patient shell/tutorial | `PatientReadOnlyView.swift`, `GuidedTutorialOverlay` | three live tabs; four tutorial steps; skip/back/next/final permission; persisted completion; 200% font |
-| UI-101 Today | `PatientTodayView.swift`, view model | initial load, empty, typical, long names, pending/taken/missed, insufficient, updating, retry, success/partial, notification highlight |
+| UI-101 Today | current `PatientTodayBaseView` / list / view model | full initial loading and generic failure; empty, typical, long names, pending/taken/missed, insufficient, cached-content blocking update, success/partial, non-destructive post-write refresh failure and notification highlight |
 | UI-102 Dose detail | current `PatientTodayDoseDetailView` | navigation title; medication, dosage, time and status header; notes/empty notes; per-intake quantity; cache-first loading overlay and isolated retryable medication-detail error; dismiss resets transient detail state. Current iOS does not render separate strength or inventory cards here. |
 | UI-103 PRN | current `PrnMedicationListView` | entry exists only when active PRN medication exists; active list, dosage/count, instruction-or-notes, confirmation, insufficient, submitting overlay, success-only dismissal and in-flow error. Current iOS has no reachable empty PRN list screen. |
 | UI-104 Patient history | current `HistoryMonthView.patientSimpleHistory` | title/subtitle, today progress ring and pills, no-plan/partial/complete/missed encouragement, Monday-first current week, recent today/yesterday summaries, loading/retry/retention |

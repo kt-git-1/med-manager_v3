@@ -29,6 +29,7 @@ data class PatientUiState(
     val retentionDays: Int? = null,
     val notificationTarget: PatientNotificationTarget? = null,
     val loading: Boolean = false,
+    val refreshing: Boolean = false,
     val updatingDoseKey: String? = null,
     val updatingSlot: MedicationSlot? = null,
     val updatingPrnMedicationId: String? = null,
@@ -45,6 +46,7 @@ data class PatientUiState(
 
 enum class PatientMaintenanceWarning {
     REMINDER_REFRESH_FAILED,
+    TODAY_REFRESH_FAILED,
 }
 
 class PatientRepository(
@@ -58,7 +60,15 @@ class PatientRepository(
     fun newFreshnessCursor(consumer: FreshnessConsumer): FreshnessCursor = freshnessStore.newCursor(consumer)
 
     suspend fun loadToday() {
-        mutableState.value = mutableState.value.copy(loading = true, error = null, message = null)
+        if (mutableState.value.loading || mutableState.value.refreshing) return
+        val hasRenderedContent = mutableState.value.doses.isNotEmpty() || mutableState.value.medications.isNotEmpty()
+        mutableState.value = mutableState.value.copy(
+            loading = !hasRenderedContent,
+            refreshing = hasRenderedContent,
+            error = null,
+            message = null,
+            maintenanceWarning = null,
+        )
         runCatching {
             val slotTimes = runCatching { api.slotTimes() }.getOrElse { mutableState.value.slotTimes }
             val medications = api.medications()
@@ -68,13 +78,26 @@ class PatientRepository(
             Triple(slotTimes, medications, doses)
         }
             .onSuccess { (slotTimes, medications, doses) ->
-                mutableState.value = mutableState.value.copy(slotTimes = slotTimes, medications = medications, doses = doses, loading = false)
+                mutableState.value = mutableState.value.copy(
+                    slotTimes = slotTimes,
+                    medications = medications,
+                    doses = doses,
+                    loading = false,
+                    refreshing = false,
+                )
             }
-            .onFailure { mutableState.value = mutableState.value.copy(loading = false, error = it.toPatientUserMessage()) }
+            .onFailure {
+                mutableState.value = mutableState.value.copy(
+                    loading = false,
+                    refreshing = false,
+                    error = PatientUserMessage.TodayLoadFailed,
+                )
+            }
     }
 
     suspend fun refreshTodayAfterAction() {
         val previousMessage = mutableState.value.message
+        mutableState.value = mutableState.value.copy(refreshing = true, maintenanceWarning = null)
         runCatching {
             val slotTimes = runCatching { api.slotTimes() }.getOrElse { mutableState.value.slotTimes }
             val medications = api.medications()
@@ -87,7 +110,14 @@ class PatientRepository(
                 medications = medications,
                 doses = doses,
                 loading = false,
+                refreshing = false,
                 message = previousMessage,
+            )
+        }.onFailure {
+            mutableState.value = mutableState.value.copy(
+                refreshing = false,
+                message = previousMessage,
+                maintenanceWarning = PatientMaintenanceWarning.TODAY_REFRESH_FAILED,
             )
         }
     }

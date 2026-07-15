@@ -1,7 +1,10 @@
 package com.afterlifearchive.medmanager.data.patient
 
 import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.runCurrent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -9,6 +12,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class PatientRepositoryTest {
     @Test
     fun loadingTodayPublishesDoses() = runTest {
@@ -22,6 +26,53 @@ class PatientRepositoryTest {
         assertEquals("07:30", repository.state.value.slotTimes.morning)
         assertFalse(repository.state.value.loading)
         assertNull(repository.state.value.error)
+    }
+
+    @Test
+    fun todaySeparatesInitialLoadingFromCachedRefreshing() = runTest {
+        val initialGate = CompletableDeferred<Unit>()
+        val refreshGate = CompletableDeferred<Unit>()
+        var todayCalls = 0
+        val source = object : PatientDataSource by FakePatientDataSource() {
+            override suspend fun medications() = listOf(testMedication("med-1", 10.0))
+            override suspend fun today(): List<PatientDose> {
+                todayCalls += 1
+                if (todayCalls == 1) initialGate.await() else refreshGate.await()
+                return listOf(testDose("med-1"))
+            }
+        }
+        val repository = PatientRepository(source)
+
+        val initial = launch { repository.loadToday() }
+        runCurrent()
+        assertTrue(repository.state.value.loading)
+        assertFalse(repository.state.value.refreshing)
+        initialGate.complete(Unit)
+        initial.join()
+
+        val refresh = launch { repository.loadToday() }
+        runCurrent()
+        assertFalse(repository.state.value.loading)
+        assertTrue(repository.state.value.refreshing)
+        assertEquals(1, repository.state.value.doses.size)
+
+        refreshGate.complete(Unit)
+        refresh.join()
+        assertFalse(repository.state.value.refreshing)
+    }
+
+    @Test
+    fun initialTodayFailurePublishesCurrentIosGenericState() = runTest {
+        val source = object : PatientDataSource by FakePatientDataSource() {
+            override suspend fun medications(): List<PatientMedication> = error("offline")
+        }
+        val repository = PatientRepository(source)
+
+        repository.loadToday()
+
+        assertEquals(PatientUserMessage.TodayLoadFailed, repository.state.value.error)
+        assertFalse(repository.state.value.loading)
+        assertFalse(repository.state.value.refreshing)
     }
 
     @Test
@@ -167,6 +218,8 @@ class PatientRepositoryTest {
         assertEquals(DoseStatus.TAKEN, repository.state.value.doses.single().status)
         assertEquals(PatientUserMessage.DoseRecorded, repository.state.value.message)
         assertNull(repository.state.value.updatingDoseKey)
+        assertEquals(PatientMaintenanceWarning.TODAY_REFRESH_FAILED, repository.state.value.maintenanceWarning)
+        assertFalse(repository.state.value.refreshing)
     }
 
     @Test

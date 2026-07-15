@@ -182,6 +182,48 @@ class PatientTodayContentTest {
     }
 
     @Test
+    fun todayShowsCurrentIosInitialLoadingAsFullState() {
+        showTodayState(loading = true)
+
+        composeRule.onNodeWithTag("patient-today-initial-loading").assertIsDisplayed()
+        composeRule.onNodeWithText("読み込み中...").assertIsDisplayed()
+        composeRule.onAllNodesWithText("今日のお薬").assertCountEquals(0)
+        writeScreenshotFixture(
+            composeRule.onNodeWithTag("patient-today-initial-loading").captureToImage(),
+            "android-ui-101-patient-initial-loading-light.png",
+        )
+    }
+
+    @Test
+    fun todayShowsCurrentIosInitialFailureAsFullState() {
+        showTodayState(error = "取得に失敗しました")
+
+        composeRule.onNodeWithTag("patient-today-initial-error").assertIsDisplayed()
+        composeRule.onNodeWithText("取得に失敗しました").assertIsDisplayed()
+        composeRule.onAllNodesWithText("今日のお薬").assertCountEquals(0)
+        writeScreenshotFixture(
+            composeRule.onNodeWithTag("patient-today-initial-error").captureToImage(),
+            "android-ui-101-patient-initial-error-light.png",
+        )
+    }
+
+    @Test
+    fun todayBlocksCachedContentBehindCurrentIosUpdatingOverlay() {
+        showTodayState(
+            refreshing = true,
+            doses = listOf(dose("enough", DoseStatus.PENDING)),
+        )
+
+        composeRule.onNodeWithTag("patient-today-updating").assertIsDisplayed()
+        composeRule.onNodeWithText("更新中...").assertIsDisplayed()
+        composeRule.onAllNodesWithText("血圧の薬 5 mg", substring = true).onFirst().assertIsDisplayed()
+        writeScreenshotFixture(
+            composeRule.onRoot().captureToImage(),
+            "android-ui-101-patient-updating-light.png",
+        )
+    }
+
+    @Test
     fun detailContentShowsCanonicalMedicationInformation() {
         val activity = showDoseDetail(notes = "夕食後に服用")
 
@@ -366,6 +408,42 @@ class PatientTodayContentTest {
             }
         }
         return activity
+    }
+
+    private fun showTodayState(
+        loading: Boolean = false,
+        refreshing: Boolean = false,
+        error: String? = null,
+        doses: List<PatientDose> = emptyList(),
+    ) {
+        val medications = doses.map { medication(it.medicationId, 10.0) }.associateBy(PatientMedication::id)
+        composeRule.setContent {
+            MedicationAppTheme {
+                Box(Modifier.fillMaxSize().background(PatientBackground).safeDrawingPadding()) {
+                    TodayContent(
+                        doses = doses,
+                        loading = loading,
+                        refreshing = refreshing,
+                        updatingKey = null,
+                        error = error,
+                        message = null,
+                        maintenanceWarning = null,
+                        medications = medications,
+                        nextSlot = doses.firstOrNull()?.slot,
+                        updatingSlot = null,
+                        prnMedications = emptyList(),
+                        updatingPrnMedicationId = null,
+                        onRetry = {},
+                        onRecord = {},
+                        onDetail = {},
+                        onRecordSlot = {},
+                        onRecordPrn = {},
+                        onRemind = {},
+                        now = Instant.parse("2026-07-13T23:15:00Z"),
+                    )
+                }
+            }
+        }
     }
 
     @Suppress("DEPRECATION")

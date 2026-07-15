@@ -157,13 +157,15 @@ This selector foundation is connected to inventory-backed production candidates 
 - The Today tab observes lifecycle `ON_RESUME` and reloads schedule, slot times, medications, and inventory after returning from the background.
 - Individual, bulk, and PRN success paths perform a quiet authoritative resync after their immediate UI response.
 - Quiet refresh keeps the success/partial-success message visible and retains the optimistic state if the follow-up request alone fails.
+- Initial Today loading is distinct from cached refresh: the former uses the current-iOS full loading/error states, while the latter preserves content behind a blocking `更新中...` overlay and prevents duplicate requests.
+- A failed post-write authoritative read does not reverse the mutation or replace content; it clears the overlay and publishes a separate maintenance warning for the next foreground retry.
 - Repository coverage proves a second Today fetch consumes server truth without losing the success message.
 
 ### PT-012 complete screen states
 
-- Initial loading uses a centered progress state; refresh with existing content uses a non-destructive updating banner.
-- Empty, inline error/retry, success, partial-success, individual progress, slot progress, and PRN progress states are distinct.
-- While a screen refresh is active, scheduled-dose, reminder, bulk, and PRN actions are disabled to prevent overlapping mutations.
+- Initial loading and generic failure replace Today content with the same centered current-iOS states; cached refresh and scheduled mutations use a content-preserving blocking overlay.
+- Empty, initial error, cached-refresh warning, success, partial-success, scheduled-mutation progress, and PRN-local progress/error states are distinct.
+- While a screen refresh or scheduled mutation is active, the overlay consumes pointer input and the underlying scheduled-dose, detail, reminder, bulk, and PRN actions are disabled.
 - Today navigation, cards, detail surfaces, and supporting text now consume semantic light/dark theme colors rather than light-only constants.
 - Slot bulk actions are exposed only inside the backend-equivalent recording window (scheduled time minus 30 minutes through plus 60 minutes) and require an explicit confirmation showing medication and pill totals.
 

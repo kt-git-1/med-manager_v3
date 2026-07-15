@@ -44,6 +44,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -82,13 +84,24 @@ internal fun TodayContent(
     prnError: String? = null,
     prnSuccessRevision: Long = 0,
     onClearPrnFeedback: () -> Unit = {},
+    refreshing: Boolean = false,
     now: Instant = Instant.now(),
 ) {
+    if (loading && doses.isEmpty()) {
+        PatientTodayInitialLoading()
+        return
+    }
+    if (!loading && error != null && doses.isEmpty() && prnMedications.isEmpty()) {
+        PatientTodayInitialError(error)
+        return
+    }
+
     val today = now.atZone(ZoneId.of("Asia/Tokyo")).toLocalDate()
     val date = today.format(DateTimeFormatter.ofPattern(stringResource(R.string.patient_today_date_pattern), Locale.JAPANESE))
     val grouped = doses.groupBy { it.slot ?: PatientSlotTimes.DEFAULT.resolve(it.scheduledAt) }
     val nextDoses = nextSlot?.let { grouped[it] }.orEmpty()
     val takenCount = doses.count { it.status == DoseStatus.TAKEN }
+    val screenUpdating = refreshing || updatingKey != null || updatingSlot != null
     var showPrnSheet by rememberSaveable { mutableStateOf(false) }
     var observedPrnSuccessRevision by rememberSaveable { mutableStateOf(prnSuccessRevision) }
 
@@ -107,8 +120,6 @@ internal fun TodayContent(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item { PatientTodayHeader(date) }
-            if (loading && doses.isEmpty()) item { PatientCenteredProgress() }
-            if (loading && doses.isNotEmpty()) item { PatientNoticeCard(stringResource(R.string.patient_today_refreshing), MaterialTheme.colorScheme.surfaceVariant, null) }
             error?.let { item { PatientNoticeCard(it, MaterialTheme.colorScheme.errorContainer, onRetry) } }
             message?.let { item { PatientNoticeCard(it, MaterialTheme.colorScheme.primaryContainer, null) } }
             maintenanceWarning?.let { item { PatientNoticeCard(it, MaterialTheme.colorScheme.tertiaryContainer, null) } }
@@ -118,7 +129,7 @@ internal fun TodayContent(
                     slot = nextSlot,
                     doses = nextDoses,
                     medications = medications,
-                    loading = loading,
+                    loading = screenUpdating,
                     updating = nextSlot != null && updatingSlot == nextSlot,
                     now = now,
                     onRecordSlot = onRecordSlot,
@@ -177,7 +188,7 @@ internal fun TodayContent(
                         recordableCount = if (isWithinRecordingWindow) remaining.size - insufficient else 0,
                         insufficientCount = insufficient,
                         isWithinRecordingWindow = isWithinRecordingWindow,
-                        updating = updatingSlot == slot || loading,
+                        updating = updatingSlot == slot || screenUpdating,
                         onRecordSlot = onRecordSlot,
                     )
                 }
@@ -185,7 +196,7 @@ internal fun TodayContent(
                     DoseCard(
                         dose,
                         updatingKey == dose.key,
-                        loading,
+                        screenUpdating,
                         medications[dose.medicationId]?.isInsufficientForDose == true,
                         onRecord,
                         onRemind,
@@ -195,6 +206,8 @@ internal fun TodayContent(
             }
             item { Spacer(Modifier.height(12.dp)) }
         }
+
+        if (screenUpdating && !showPrnSheet) PatientTodayUpdatingOverlay()
 
         if (showPrnSheet) {
             ModalBottomSheet(onDismissRequest = {
@@ -219,7 +232,7 @@ internal fun TodayContent(
                             items(prnMedications, key = PatientMedication::id) { medication ->
                                 PrnMedicationCard(
                                     medication = medication,
-                                    disabled = loading || updatingPrnMedicationId != null,
+                                    disabled = screenUpdating || updatingPrnMedicationId != null,
                                     onRecordPrn = onRecordPrn,
                                 )
                             }
@@ -227,6 +240,77 @@ internal fun TodayContent(
                     }
                     if (updatingPrnMedicationId != null) PatientPrnUpdatingOverlay()
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PatientTodayInitialLoading() {
+    Column(
+        modifier = Modifier.fillMaxSize().testTag("patient-today-initial-loading"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        CircularProgressIndicator(modifier = Modifier.size(52.dp), color = PatientTeal)
+        Spacer(Modifier.height(14.dp))
+        Text(
+            stringResource(R.string.patient_today_loading),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun PatientTodayInitialError(message: String) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 36.dp).testTag("patient-today-initial-error"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(
+            Icons.Rounded.Warning,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(44.dp),
+        )
+        Spacer(Modifier.height(12.dp))
+        Text(
+            message,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.error,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun PatientTodayUpdatingOverlay() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.2f))
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
+                    }
+                }
+            }
+            .testTag("patient-today-updating"),
+        contentAlignment = Alignment.Center,
+    ) {
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(44.dp), color = PatientTeal)
+                Text(stringResource(R.string.patient_today_updating), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             }
         }
     }
