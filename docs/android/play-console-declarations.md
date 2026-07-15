@@ -21,7 +21,7 @@ Google states that every published app, including closed-test apps, must complet
 |---|---|---|
 | Does the app collect or share required user data types? | Yes, collects | Account, patient, medication, adherence, inventory and optional SDK data are sent off-device to service providers. |
 | Is all collected user data encrypted in transit? | Yes, after final endpoint verification | Android forbids cleartext traffic. Production API, Supabase and Firebase use HTTPS/TLS. Inspect the signed merged manifest and production environment again. |
-| Can users request data deletion? | Yes | Caregiver Settings exposes server-first `DELETE /api/me`; the public privacy/support pages provide contact handling. Verify the Play account-deletion URL field points to a public deletion instruction/request page accepted by current policy. |
+| Can users request data deletion? | Yes | Caregiver Settings exposes server-first `DELETE /api/me`. Use `https://www.okusuri-mimamori.com/support#section-3` for the Play account-deletion URL: the live public page names お薬見守り, prominently explains in-app deletion and lets an uninstalled/signed-out user initiate deletion by emailing support. |
 | Is data shared with third parties? | Draft: No | Supabase, Vercel and Firebase act as instructed service providers, not advertising recipients. Reconfirm contracts, Console sharing settings and Google's current definition before submission. |
 
 ## Data-type mapping
@@ -66,6 +66,6 @@ SDK-provided coarse technical metadata must still be rechecked against the exact
 - [ ] Recheck Firebase Analytics, Cloud Messaging and Installations disclosures for the resolved SDK versions.
 - [ ] Verify production Analytics sharing, retention and consent behavior in Console/DebugView.
 - [ ] Verify production FCM data-only payloads never contain patient/medication text.
-- [ ] Verify the public privacy policy and account-deletion web route are live and match Android behavior.
+- [x] Verify the public privacy policy and nominated account-deletion URL (`/support#section-3`) are live and match Android behavior (2026-07-15); recheck immediately before submission.
 - [ ] Save screenshots/export of submitted Data safety and Health apps answers with date and operator.
 - [ ] Repeat review whenever SDKs, billing, OCR/images, crash reporting, advertising, permissions or backend data flows change.

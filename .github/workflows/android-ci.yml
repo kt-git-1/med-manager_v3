@@ -7,6 +7,9 @@ on:
       - "android/**"
       - "ios/MedicationApp/Assets.xcassets/RolePatient.imageset/**"
       - "ios/MedicationApp/Assets.xcassets/RoleFamily.imageset/**"
+      - "ios/MedicationApp/Assets.xcassets/AppIcon.appiconset/**"
+      - "docs/android/play-store-listing-ja.md"
+      - "docs/android/play-store-assets/**"
       - ".github/workflows/android-ci.yml"
   pull_request:
     branches: [main, staging]
@@ -14,6 +17,9 @@ on:
       - "android/**"
       - "ios/MedicationApp/Assets.xcassets/RolePatient.imageset/**"
       - "ios/MedicationApp/Assets.xcassets/RoleFamily.imageset/**"
+      - "ios/MedicationApp/Assets.xcassets/AppIcon.appiconset/**"
+      - "docs/android/play-store-listing-ja.md"
+      - "docs/android/play-store-assets/**"
       - ".github/workflows/android-ci.yml"
 
 concurrency:
@@ -50,3 +56,6 @@ jobs:
 
       - name: Release compatibility
         run: ./gradlew verifyReleaseApkCompatibility
+
+      - name: Play listing assets
+        run: ./gradlew verifyPlayStoreAssets

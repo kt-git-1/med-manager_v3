@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.gradle.api.tasks.Sync
 import java.net.URI
 import java.util.Properties
+import javax.imageio.ImageIO
 
 fun String.asBuildConfigString(): String = "\"${replace("\\", "\\\\").replace("\"", "\\\"")}\""
 
@@ -176,10 +177,86 @@ val verifyReleaseApkCompatibility by tasks.registering(org.gradle.api.tasks.Exec
     commandLine("bash", rootProject.file("scripts/verify-release-apk.sh").absolutePath)
 }
 
+val verifyPlayStoreAssets by tasks.registering {
+    group = "verification"
+    description = "Validates Play listing text limits, phone screenshots, store icon and cross-platform icon parity."
+
+    val listingFile = rootProject.file("../docs/android/play-store-listing-ja.md")
+    val assetRoot = rootProject.file("../docs/android/play-store-assets")
+    val phoneDirectory = assetRoot.resolve("phone-ja-JP")
+    val storeIconFile = assetRoot.resolve("icon-512.png")
+    val iosIconFile = rootProject.file("../ios/MedicationApp/Assets.xcassets/AppIcon.appiconset/med_1024_transparent.png")
+    val androidForegroundFile = project.file("src/main/res/drawable-nodpi/ic_launcher_foreground.png")
+    inputs.files(listingFile, storeIconFile, iosIconFile, androidForegroundFile)
+    inputs.dir(phoneDirectory)
+
+    doLast {
+        val expectedScreenshots = listOf(
+            "01-mode-select.jpg",
+            "02-patient-today.jpg",
+            "03-patient-history.jpg",
+            "04-caregiver-today.jpg",
+            "05-caregiver-medications.jpg",
+            "06-caregiver-inventory.jpg",
+            "07-caregiver-history.jpg",
+            "08-caregiver-settings.jpg",
+        )
+        val screenshotFiles = phoneDirectory.listFiles()
+            ?.filter { it.isFile }
+            ?.sortedBy { it.name }
+            .orEmpty()
+        require(screenshotFiles.map { it.name } == expectedScreenshots) {
+            "Expected exactly the ordered Play phone screenshot set: ${expectedScreenshots.joinToString()}"
+        }
+        screenshotFiles.forEach { file ->
+            val image = requireNotNull(ImageIO.read(file)) { "Unreadable screenshot: $file" }
+            require(image.width == 1350 && image.height == 2400) {
+                "Play phone screenshot must be 1350 x 2400: $file is ${image.width} x ${image.height}"
+            }
+            require(!image.colorModel.hasAlpha()) { "Play JPEG must not contain alpha: $file" }
+        }
+
+        val storeIcon = requireNotNull(ImageIO.read(storeIconFile)) { "Unreadable Play store icon" }
+        require(storeIcon.width == 512 && storeIcon.height == 512) { "Play store icon must be 512 x 512" }
+        require(storeIcon.colorModel.hasAlpha()) { "Play store icon must be a 32-bit RGBA PNG" }
+        require(storeIconFile.length() <= 1_024 * 1_024) { "Play store icon must not exceed 1,024 KB" }
+
+        val iosIcon = requireNotNull(ImageIO.read(iosIconFile)) { "Unreadable iOS source icon" }
+        val androidForeground = requireNotNull(ImageIO.read(androidForegroundFile)) { "Unreadable Android launcher foreground" }
+        require(iosIcon.width == androidForeground.width && iosIcon.height == androidForeground.height) {
+            "Android launcher foreground dimensions drifted from the shipping iOS icon"
+        }
+        val width = iosIcon.width
+        val height = iosIcon.height
+        require(
+            iosIcon.getRGB(0, 0, width, height, null, 0, width)
+                .contentEquals(androidForeground.getRGB(0, 0, width, height, null, 0, width)),
+        ) { "Android launcher foreground pixels drifted from the shipping iOS icon" }
+
+        val textBlocks = Regex("```text\\R(.*?)\\R```", setOf(RegexOption.DOT_MATCHES_ALL))
+            .findAll(listingFile.readText())
+            .map { it.groupValues[1] }
+            .toList()
+        require(textBlocks.size == 4) { "Expected app name, short description, full description and release-note blocks" }
+        val limits = listOf(30, 80, 4_000, 500)
+        textBlocks.zip(limits).forEachIndexed { index, (text, limit) ->
+            require(text.codePointCount(0, text.length) <= limit) {
+                "Play text block ${index + 1} exceeds its $limit-character limit"
+            }
+        }
+    }
+}
+
 tasks.register("bundleSignedRelease") {
     group = "build"
     description = "Builds the Play upload AAB only after production runtime and signing configuration are verified."
-    dependsOn(verifyProductionRuntime, verifyProductionSigning, verifyReleaseApkCompatibility, "bundleRelease")
+    dependsOn(
+        verifyProductionRuntime,
+        verifyProductionSigning,
+        verifyReleaseApkCompatibility,
+        verifyPlayStoreAssets,
+        "bundleRelease",
+    )
 }
 verifyReleaseApkCompatibility.configure {
     mustRunAfter(verifyProductionRuntime, verifyProductionSigning)

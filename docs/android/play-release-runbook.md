@@ -44,11 +44,12 @@ Do not add `google-services.json`, a keystore, passwords, or populated `local.pr
 cd android
 ./gradlew clean test assembleDebug assembleRelease lint
 ./gradlew verifyReleaseApkCompatibility
+./gradlew verifyPlayStoreAssets
 ./gradlew bundleSignedRelease
 jarsigner -verify -verbose -certs app/build/outputs/bundle/release/app-release.aab
 ```
 
-`verifyReleaseApkCompatibility` checks the Release APK application ID, min/target SDK, advertising/attribution permission exclusions, 16 KB ZIP alignment and native ELF alignment, then prints its SHA-256. `bundleSignedRelease` intentionally fails before bundle generation when production runtime/Firebase configuration is incomplete, any signing value is missing, or the keystore path does not exist. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
+`verifyReleaseApkCompatibility` checks the Release APK application ID, min/target SDK, advertising/attribution permission exclusions, 16 KB ZIP alignment and native ELF alignment, then prints its SHA-256. `verifyPlayStoreAssets` checks listing text limits, the exact eight JPEG screenshot names and dimensions, the 512 px RGBA icon, and pixel parity between the iOS source icon and Android launcher foreground. `bundleSignedRelease` intentionally fails before bundle generation when these gates fail, production runtime/Firebase configuration is incomplete, any signing value is missing, or the keystore path does not exist. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
 
 Before upload, also verify:
 
@@ -64,8 +65,10 @@ Before upload, also verify:
 1. Upload the signed AAB to Internal testing and record commit SHA, `versionCode`, certificate fingerprint, tester account and result.
 2. Install from Play, not adb. Verify caregiver/patient sign-in, session restoration, App Links, FCM permission/token/delivery/tap, local reminders, background/Doze/process death, legal links and analytics consent.
 3. Complete Data safety and Health apps declarations from the actual production build. Do not infer declarations from SDK names alone.
-4. Promote the same artifact to Closed testing. Record device/OS coverage, crashes/ANRs, Firebase delivery and Analytics verification.
-5. Only after all residual matrix rows are accepted, prepare production rollout and the `android-dev` to `main` merge without overwriting newer iOS/API work.
+   Use `https://www.okusuri-mimamori.com/support#section-3` as the account-deletion request URL unless the release owner intentionally replaces it; it is the verified public support section with an email request path and does not require the app to be installed.
+4. Populate the Japanese main store listing from `play-store-listing-ja.md`, upload the prepared 1350 x 2400 phone set, and verify every field and asset in the Play preview. The store listing is shared across test tracks.
+5. Promote the same artifact to Closed testing. Record device/OS coverage, crashes/ANRs, Firebase delivery and Analytics verification.
+6. Only after all residual matrix rows are accepted, prepare production rollout and the `android-dev` to `main` merge without overwriting newer iOS/API work.
 
 ## 5. Current external blockers
 
