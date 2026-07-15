@@ -340,11 +340,11 @@
     <string name="caregiver_inventory_filter_low">低在庫のみ</string>
     <string name="caregiver_inventory_filter_out">在庫なし</string>
     <string name="caregiver_inventory_remaining">残り %1$s 錠</string>
-    <string name="caregiver_inventory_days">あと%1$d日</string>
+    <string name="caregiver_inventory_days">あと%1$d日分</string>
     <string name="caregiver_inventory_refill_due">補充目安：%1$s</string>
     <string name="caregiver_inventory_status_available">在庫あり</string>
-    <string name="caregiver_inventory_status_low">残りわずか</string>
-    <string name="caregiver_inventory_status_out">在庫切れ</string>
+    <string name="caregiver_inventory_status_low">少</string>
+    <string name="caregiver_inventory_status_out">なし</string>
     <string name="caregiver_inventory_status_unconfigured">未設定</string>
     <string name="caregiver_inventory_status_ended">服用期間終了</string>
     <string name="caregiver_inventory_empty_title">在庫管理はまだ空です</string>
@@ -382,6 +382,7 @@
     <string name="caregiver_inventory_refill_week">1週間</string>
     <string name="caregiver_inventory_refill_two_weeks">2週間</string>
     <string name="caregiver_inventory_refill_three_weeks">3週間</string>
+    <string name="caregiver_inventory_refill_custom">+入力</string>
     <string name="caregiver_inventory_refill_action">補充</string>
     <string name="caregiver_inventory_correction_section">在庫を修正（誤入力の修正）</string>
     <string name="caregiver_inventory_correction_quantity">修正後の在庫数</string>

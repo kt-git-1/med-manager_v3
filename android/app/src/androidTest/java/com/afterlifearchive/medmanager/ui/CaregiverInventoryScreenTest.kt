@@ -157,7 +157,9 @@ class CaregiverInventoryScreenTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-item-low").fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag("caregiver-inventory-item-low").performClick()
         composeRule.onNodeWithTag("caregiver-inventory-detail").assertIsDisplayed()
-        captureDevice(activity, "android-ui-205-caregiver-inventory-detail-light.png")
+        composeRule.onNodeWithText("在庫").assertIsDisplayed()
+        composeRule.onNodeWithText("夕食後のお薬").assertIsDisplayed()
+        captureDevice(activity, "android-ui-205-caregiver-inventory-detail-source-calibrated-light.png")
     }
 
     @Test

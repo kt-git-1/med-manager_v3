@@ -26,11 +26,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.FormatListBulleted
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Cancel
+import androidx.compose.material.icons.rounded.AddCircle
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.EventBusy
@@ -47,6 +49,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -431,42 +434,54 @@ private fun CaregiverInventoryDetail(
     val correction = correctionText.toDoubleOrNull()
     val tint = if (item.needsAction) MedicationTheme.colors.orange else MaterialTheme.colorScheme.primary
 
-    LazyColumn(
-        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 16.dp).testTag("caregiver-inventory-detail"),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        item {
-            Spacer(Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.common_back)) }
-                Text(stringResource(R.string.caregiver_inventory_detail_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).testTag("caregiver-inventory-detail")) {
+        Box(Modifier.fillMaxWidth().height(58.dp).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
+            IconButton(onClick = onClose, modifier = Modifier.align(Alignment.CenterStart)) {
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.common_back))
             }
-        }
-        item {
-            InventoryCard(tint) {
-                Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    InventoryIcon(Icons.Rounded.Inventory2, tint, 56)
-                    Column(Modifier.weight(1f)) {
-                        Text(item.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        Text(inventoryDailySummary(item), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.caregiver_tab_inventory), fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold)
+            TextButton(
+                onClick = {
+                    scope.launch {
+                        val succeeded = repository.updateSettings(patientId, item, inventoryEnabled)
+                        if (succeeded) onClose() else retryAction = InventoryDetailRetryAction.SaveSettings
                     }
-                    Text(inventoryStatusText(item), color = tint, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(50)).background(tint.copy(alpha = 0.13f)).padding(horizontal = 9.dp, vertical = 5.dp))
+                },
+                enabled = enabled && !updating && inventoryEnabled != item.inventoryEnabled,
+                modifier = Modifier.align(Alignment.CenterEnd).testTag("inventory-save-settings"),
+            ) { Text(stringResource(R.string.caregiver_inventory_save_settings), fontSize = 17.sp, fontWeight = FontWeight.SemiBold) }
+        }
+
+        LazyColumn(
+            Modifier.weight(1f).padding(horizontal = 16.dp).testTag("caregiver-inventory-detail-scroll"),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+        item {
+            InventoryCard(if (item.needsAction) MedicationTheme.colors.caregiverRed else MaterialTheme.colorScheme.primary) {
+                Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    InventoryMedicationIllustration(tint, item.isPrn, size = 56)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(item.name, fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold, maxLines = 3)
+                        Text(inventoryDailySummary(item), fontSize = 17.sp, lineHeight = 22.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                    }
+                    InventoryDetailStatusBadge(item, tint)
                 }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-                    Text(stringResource(R.string.caregiver_inventory_remaining_label), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.caregiver_inventory_remaining_label), fontSize = 15.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.weight(1f))
-                    Text(if (inventoryEnabled) formatInventoryNumber(item.inventoryQuantity) else "—", style = MaterialTheme.typography.displaySmall, color = if (inventoryEnabled) tint else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                    Text(if (inventoryEnabled) formatInventoryNumber(item.inventoryQuantity) else "—", fontSize = 52.sp, lineHeight = 56.sp, color = if (inventoryEnabled) tint else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.size(5.dp))
-                    Text(stringResource(R.string.caregiver_inventory_unit), style = MaterialTheme.typography.titleMedium, color = tint, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.caregiver_inventory_unit), fontSize = 20.sp, lineHeight = 25.sp, color = tint, fontWeight = FontWeight.Bold)
                 }
                 if (item.isPrn) {
                     Text("頓服", fontWeight = FontWeight.Bold)
                     Text(stringResource(R.string.caregiver_inventory_prn_per_use, formatInventoryNumber(item.doseCountPerIntake)), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
-                    Text(inventoryDaysText(item), fontWeight = FontWeight.Bold)
+                    Text(inventoryDaysText(item), fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.Bold)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.caregiver_inventory_refill_due_label), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-                        Text(item.refillDueDate ?: "—", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.caregiver_inventory_refill_due_label), fontSize = 14.sp, lineHeight = 19.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                        Text(item.refillDueDate ?: "—", fontSize = 14.sp, lineHeight = 19.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -492,71 +507,72 @@ private fun CaregiverInventoryDetail(
             }
         }
         message?.let { item { Text(inventoryMutationText(it), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) } }
-        item { Text(stringResource(R.string.caregiver_inventory_settings_section), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold) }
+        item { InventoryDetailSectionTitle(stringResource(R.string.caregiver_inventory_settings_section)) }
         item {
             InventoryCard {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(stringResource(R.string.caregiver_inventory_enabled), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.caregiver_inventory_enabled), fontSize = 20.sp, lineHeight = 25.sp, fontWeight = FontWeight.SemiBold)
                     Switch(checked = inventoryEnabled, onCheckedChange = { inventoryEnabled = it }, enabled = enabled && !updating, modifier = Modifier.testTag("inventory-enabled"))
                 }
-                Button(
-                    onClick = { scope.launch {
-                        val succeeded = repository.updateSettings(patientId, item, inventoryEnabled)
-                        if (succeeded) onClose() else retryAction = InventoryDetailRetryAction.SaveSettings
-                    } },
-                    enabled = enabled && !updating && inventoryEnabled != item.inventoryEnabled,
-                    modifier = Modifier.fillMaxWidth().testTag("inventory-save-settings"),
-                ) { Text(stringResource(R.string.caregiver_inventory_save_settings)) }
             }
         }
-        item { Text(stringResource(R.string.caregiver_inventory_adjust_section), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold) }
+        item { InventoryDetailSectionTitle(stringResource(R.string.caregiver_inventory_adjust_section)) }
         item {
             InventoryCard {
-                Text(stringResource(R.string.caregiver_inventory_refill_section), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(7 to R.string.caregiver_inventory_refill_week, 14 to R.string.caregiver_inventory_refill_two_weeks, 21 to R.string.caregiver_inventory_refill_three_weeks).forEach { (days, label) ->
-                        OutlinedButton(
+                        InventoryPresetButton(
+                            title = stringResource(label),
                             onClick = { refillText = formatInventoryNumber(plannedRefill(item, days)) },
                             enabled = enabled && !updating,
-                        ) { Text(stringResource(label)) }
+                        )
                     }
+                    InventoryPresetButton(title = stringResource(R.string.caregiver_inventory_refill_custom), onClick = { refillText = "" }, enabled = enabled && !updating)
                 }
-                OutlinedTextField(
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                InventoryDetailQuantityInput(
+                    title = stringResource(R.string.caregiver_inventory_refill_amount),
                     value = refillText,
                     onValueChange = { refillText = it },
-                    label = { Text(stringResource(R.string.caregiver_inventory_refill_amount)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true,
                     enabled = enabled && !updating,
-                    modifier = Modifier.fillMaxWidth().testTag("inventory-refill-amount"),
+                    showUnit = false,
+                    modifier = Modifier.testTag("inventory-refill-amount"),
                 )
                 Button(
                     onClick = { if (refill != null && refill > 0) confirmRefill = refill },
                     enabled = enabled && !updating && item.inventoryEnabled && refill != null && refill > 0,
-                    modifier = Modifier.fillMaxWidth().testTag("inventory-refill"),
-                ) { Text(stringResource(R.string.caregiver_inventory_refill_action)) }
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier.fillMaxWidth().height(58.dp).testTag("inventory-refill"),
+                ) {
+                    Icon(Icons.Rounded.AddCircle, contentDescription = null)
+                    Spacer(Modifier.width(7.dp))
+                    Text(stringResource(R.string.caregiver_inventory_refill_action), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
+        item { InventoryDetailSectionTitle(stringResource(R.string.caregiver_inventory_correction_section)) }
         item {
             InventoryCard {
-                Text(stringResource(R.string.caregiver_inventory_correction_section), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                OutlinedTextField(
+                InventoryDetailQuantityInput(
+                    title = stringResource(R.string.caregiver_inventory_correction_quantity),
                     value = correctionText,
                     onValueChange = { correctionText = it },
-                    label = { Text(stringResource(R.string.caregiver_inventory_correction_quantity)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true,
                     enabled = enabled && !updating,
-                    modifier = Modifier.fillMaxWidth().testTag("inventory-correction-quantity"),
+                    showUnit = true,
+                    modifier = Modifier.testTag("inventory-correction-quantity"),
                 )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                 Button(
                     onClick = { if (correction != null && correction >= 0) confirmCorrection = correction },
                     enabled = enabled && !updating && item.inventoryEnabled && correction != null && correction >= 0,
-                    modifier = Modifier.fillMaxWidth().testTag("inventory-correction"),
-                ) { Text(stringResource(R.string.caregiver_inventory_correction_action)) }
+                    colors = ButtonDefaults.buttonColors(containerColor = MedicationTheme.colors.orange),
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier.fillMaxWidth().height(58.dp).testTag("inventory-correction"),
+                ) { Text(stringResource(R.string.caregiver_inventory_correction_action), fontSize = 20.sp, fontWeight = FontWeight.Bold) }
             }
         }
         item { Spacer(Modifier.height(24.dp)) }
+        }
     }
 
     confirmRefill?.let { amount ->
@@ -598,6 +614,71 @@ private fun CaregiverInventoryDetail(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun InventoryDetailStatusBadge(item: CaregiverInventoryItem, tint: Color) {
+    val icon = when {
+        item.out -> Icons.Rounded.Cancel
+        item.low -> Icons.Rounded.Warning
+        item.periodEnded -> Icons.Rounded.EventBusy
+        !item.inventoryEnabled -> Icons.Rounded.Error
+        else -> Icons.Rounded.CheckCircle
+    }
+    Row(
+        Modifier.clip(CircleShape).background(tint.copy(alpha = 0.13f)).padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
+        Text(inventoryStatusText(item), color = tint, fontSize = 12.sp, lineHeight = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+    }
+}
+
+@Composable
+private fun InventoryDetailSectionTitle(title: String) {
+    Text(title, modifier = Modifier.padding(horizontal = 2.dp), fontSize = 20.sp, lineHeight = 25.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+}
+
+@Composable
+private fun InventoryPresetButton(title: String, onClick: () -> Unit, enabled: Boolean) {
+    TextButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.height(38.dp).clip(CircleShape).background(MedicationTheme.colors.elevatedBackground),
+    ) {
+        Text(title, color = MedicationTheme.colors.caregiverBlue, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun InventoryDetailQuantityInput(
+    title: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    enabled: Boolean,
+    showUnit: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(title, modifier = Modifier.weight(1f), fontSize = 20.sp, lineHeight = 25.sp, fontWeight = FontWeight.SemiBold)
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            enabled = enabled,
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            textStyle = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.End, fontWeight = FontWeight.Bold),
+            modifier = modifier.width(92.dp),
+            decorationBox = { inner ->
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                    if (value.isEmpty()) Text("0", fontSize = 22.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                    inner()
+                }
+            },
+        )
+        if (showUnit) Text(stringResource(R.string.caregiver_inventory_unit), fontSize = 17.sp, lineHeight = 22.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -675,14 +756,14 @@ private fun InventoryFilterChip(filter: InventoryFilter, selected: Boolean, onCl
 }
 
 @Composable
-private fun InventoryMedicationIllustration(tint: Color, isPrn: Boolean) {
+private fun InventoryMedicationIllustration(tint: Color, isPrn: Boolean, size: Int = 62) {
     Box(
-        Modifier.size(62.dp).background(Brush.linearGradient(listOf(tint.copy(alpha = 0.18f), tint.copy(alpha = 0.07f))), CircleShape)
+        Modifier.size(size.dp).background(Brush.linearGradient(listOf(tint.copy(alpha = 0.18f), tint.copy(alpha = 0.07f))), CircleShape)
             .border(1.dp, tint.copy(alpha = 0.18f), CircleShape),
         contentAlignment = Alignment.Center,
     ) {
         Row(
-            Modifier.size(width = 42.dp, height = 34.dp).shadow(4.dp, RoundedCornerShape(14.dp)).clip(RoundedCornerShape(14.dp))
+            Modifier.size(width = (size * 0.68f).dp, height = (size * 0.55f).dp).shadow(4.dp, RoundedCornerShape(14.dp)).clip(RoundedCornerShape(14.dp))
                 .background(MedicationTheme.colors.elevatedBackground).padding(horizontal = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),

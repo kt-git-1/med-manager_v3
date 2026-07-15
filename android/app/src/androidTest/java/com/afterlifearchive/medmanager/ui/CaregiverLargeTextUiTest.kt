@@ -128,7 +128,7 @@ class CaregiverLargeTextUiTest(private val darkTheme: Boolean) {
         composeRule.onNodeWithTag("caregiver-inventory-list")
             .performScrollToNode(hasTestTag("caregiver-inventory-item-med-1"))
         composeRule.onNodeWithTag("caregiver-inventory-item-med-1").performClick()
-        composeRule.onNodeWithTag("caregiver-inventory-detail")
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll")
             .performScrollToNode(hasTestTag("inventory-correction"))
         composeRule.onNodeWithTag("inventory-correction").assertIsDisplayed()
         captureDarkFixture("android-caregiver-inventory-detail-dark-font-2.0.png")

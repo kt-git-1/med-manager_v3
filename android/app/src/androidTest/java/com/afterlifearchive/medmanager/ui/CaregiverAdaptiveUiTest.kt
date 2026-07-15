@@ -117,9 +117,9 @@ class CaregiverAdaptiveUiTest {
             }
         }
         composeRule.onNodeWithTag("caregiver-inventory-item-med-1").performClick()
-        composeRule.onNodeWithTag("caregiver-inventory-detail")
-            .performScrollToNode(hasTestTag("inventory-save-settings"))
-        composeRule.onNodeWithTag("inventory-save-settings").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll")
+            .performScrollToNode(hasTestTag("inventory-correction"))
+        composeRule.onNodeWithTag("inventory-correction").assertIsDisplayed()
     }
 
     @Test
