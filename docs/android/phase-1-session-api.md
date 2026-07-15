@@ -1,6 +1,6 @@
 # Android Phase 1: Session and API Core
 
-**Status: RECHECK REQUIRED against `main@1d9d19e`.**
+**Status: IMPLEMENTED against `main@1cf8aef`; physical/OEM verification remains.**
 
 The historical evidence below remains useful, but the current baseline introduced endpoint-specific public auth behavior for `POST /api/patient/link`. Phase R0 must prove that Android sends no Authorization, performs no refresh, and does not invalidate a stored session when that public request fails. See `source-baseline.md` and `api-contracts.md`.
 
@@ -21,7 +21,7 @@ The historical evidence below remains useful, but the current baseline introduce
 - Link-screen production copy is sourced from `strings.xml` and pinned to the current iOS `Localizable.strings`; backend exception text is not rendered.
 - Compose tests assert canonical copy, six-digit behavior and TalkBack labels. Repository/JVM tests assert every error family and public-session preservation.
 - The Android header link symbol is rotated to match the diagonal iOS SF Symbol; spacing, semantic colors, card hierarchy and disabled treatment were compared against the pinned iOS build.
-- Current reference captures (`main@1d9d19e` iOS, current `android-dev` working tree):
+- Historical entry/session reference captures (`main@1d9d19e` iOS, retained because C31 found no changed entry/session layout contract):
   - iOS light: `/Users/kaito/.codex/visualizations/2026/07/12/019f54b5-867d-7a21-8c6c-0827f3167ce6/rebaseline-20260714/ios-link-code-light.png`
   - iOS dark: `/Users/kaito/.codex/visualizations/2026/07/12/019f54b5-867d-7a21-8c6c-0827f3167ce6/rebaseline-20260714/ios-link-code-dark.png`
   - iOS accessibility-large: `/Users/kaito/.codex/visualizations/2026/07/12/019f54b5-867d-7a21-8c6c-0827f3167ce6/rebaseline-20260714/ios-link-code-accessibility-large.png`

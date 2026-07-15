@@ -1,6 +1,6 @@
 # Android Phase 2: Patient Mode
 
-> **Rebaseline notice (2026-07-14):** Historical implementation evidence below predates `main@1d9d19e`. `PT-005`, `PT-006`, `PT-011`, `PT-013`, `PT-014`, `PH-006` and `XP-002` must be rechecked for post-record reminder rebuilding, next-day retention, cross-tab history freshness, persistent lazy tabs and role-correct notification routing before this phase is treated as current.
+> **Rebaseline closure (2026-07-15):** Historical evidence below began before `main@1d9d19e`; C31–C35 advanced the pin to `main@1cf8aef` and rechecked post-record rebuilding, next-day retention, freshness, persistent tabs, patient streak and both caregiver push event types. Physical/OEM evidence remains separate.
 
 **Status: IMPLEMENTED / VERIFICATION IN PROGRESS. This is not final iOS parity completion.**
 

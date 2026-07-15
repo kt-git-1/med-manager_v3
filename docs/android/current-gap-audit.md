@@ -6,7 +6,7 @@
 
 ## 1. Executive result
 
-The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C31 formally rebased the contract from `main@1d9d19e` to `main@1cf8aef`. That delta introduced three real Android parity gaps—patient recording streak, the status-focused Caregiver Today layout, and `DOSE_MISSED` caregiver routing—so they are explicitly reopened before live Firebase, physical-device and Play release gates.
+The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C31 formally rebased the contract from `main@1d9d19e` to `main@1cf8aef`; C32–C34 closed the three resulting Android parity gaps and C35 passed the complete current API/JVM/API-35 regression. Remaining gaps are explicitly live Firebase, fresh matched iOS captures, physical-device evidence and Play release operations.
 
 ## 2. What is reusable
 
@@ -69,13 +69,13 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Patient Today | IMPLEMENTED / re-visualize | Post-record reminder/history/inventory revisions and failure preservation are covered; final matched visual matrix remains |
 | Patient History/Settings | IMPLEMENTED / re-visualize | C32 streak contract/UI passes automated gates; matched dark/maximum-text and physical evidence remain |
 | Patient notification/tutorial | IMPLEMENTED / physical verify | Next-day rebuild, loaded-tab lifetime, routing and tutorial actions are covered; physical permission/tap/TalkBack remain |
-| Caregiver mode | IMPLEMENTED / re-visualize | C33 current Today and C34 missed-dose routing pass; full C35 regression and physical FCM/TalkBack evidence remain |
+| Caregiver mode | IMPLEMENTED / re-visualize | C33 current Today and C34 missed-dose routing pass the full C35 regression; fresh matched iOS and physical FCM/TalkBack evidence remain |
 | Analytics/privacy parity | PARTIAL | Code and automated privacy gates complete; Firebase Console evidence awaits environment configuration |
 | Physical release verification | NOT_STARTED | Emulator evidence is not release proof |
 
 ## 6. Next execution order
 
-1. C35 rerun the complete API/JVM/emulator matrix and close the C31 rebaseline checklist.
+1. Complete remaining emulator-verifiable fresh iOS/Android visual pairs and current API 26/33 compatibility runs.
 2. H07 supply Android Firebase values and capture privacy-reviewed DebugView, Realtime, Events and Explore evidence.
 3. I02 complete physical FCM/Doze/process-death, TalkBack/font/dark/rotation and browser/share checks.
 4. Complete signed Play closed-test/release gates and perform the final main rebaseline.

@@ -1,6 +1,6 @@
 # Android API and Session Contracts
 
-**Pinned reference:** `main@1d9d19e`
+**Pinned reference:** `main@1cf8aef`
 **Time zone:** `Asia/Tokyo` unless an endpoint explicitly carries another value
 **Machine dates:** `YYYY-MM-DD`; timestamps are ISO-8601
 

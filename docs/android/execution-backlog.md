@@ -1,6 +1,6 @@
 # Android Ordered Execution Backlog
 
-**Baseline:** `main@1d9d19e`
+**Baseline:** `main@1cf8aef`
 **Work branch:** `android-dev`
 **Rule:** Work top to bottom. A later item may start only when its dependency/gate is satisfied.
 
@@ -102,7 +102,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Gate C — Current patient parity
 
-- [ ] C01 Re-capture entry/auth and patient iOS states at `main@1d9d19e`.
+- [ ] C01 Re-capture remaining entry/auth and patient iOS states at `main@1cf8aef`.
 - [x] C02 Reverify Mode Select, auth choice/login/signup/callback/resend.
 - [x] C02 Repair confirmation-resend lifecycle parity: separate in-flight progress and duplicate lock, with cooldown only after confirmation-required, success or 429.
 - [x] C02 Record the deterministic UI-002 six-digit, submitting, validation, expired, forbidden, network and rate-limit/fallback Android state matrix.
@@ -136,7 +136,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C32 Implement `GET /api/patient/history/streak` as supplementary Patient History state and reproduce the current iOS streak card/copy/lifecycle.
 - [x] C33 Replace the obsolete Caregiver Today next-action hero with the current status-first summary, optional PRN entry and action-owning four-slot timeline.
 - [x] C34 Accept strict caregiver `DOSE_MISSED` payloads alongside `DOSE_TAKEN` and verify identical exact-date/slot History routing.
-- [ ] C35 Rerun the full API/JVM/lint/build/API-35 matrix and close all C31 `RECHECK_REQUIRED` rows.
+- [x] C35 Rerun the full API/JVM/lint/build/API-35 matrix and close all C31 `RECHECK_REQUIRED` rows.
 - [ ] C06 Complete full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification.
 
 ## Gate D — Caregiver patient-management vertical slice
@@ -204,9 +204,9 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Gate I — Release and merge
 
-- [x] Final rebaseline check: `origin/main@1d9d19e` has zero unique commits and is already an ancestor of `android-dev` (2026-07-15); no merge required.
+- [x] Final C35 rebaseline fetch: `origin/main@1cf8aef` exactly matches the C31 pin and is the second parent already merged into `android-dev` (2026-07-15); no additional merge required.
 - [x] Resolve all `RECHECK_REQUIRED` rows; remaining `PARTIAL` rows are explicitly external/visual/device release gates.
-- [x] Full API 26/33/35 emulator matrix (108 tests each, 324/324 total), plus a separate API-35 448 x 997 dp large-phone override pass (108/108), including light/dark 200% Caregiver reachability, Patient/Caregiver Activity recreation and rotation, count-specific slot-bulk and medication-specific destructive/detail TalkBack actions, the compact PDF sheet fix, caregiver stale/retry states, 200%-font Analytics consent opt-out, Patient-link error/actions/loading and Caregiver confirmation/resend/loading/re-entry reachability.
+- [x] Historical cross-version API 26/33/35 matrix passed 108 tests per API (324/324) plus API-35 large-phone 108/108. After the C31–C34 rebaseline, C35 passes the expanded current API-35 suite 187/187 with 0 skipped/failed; API 26/33 rerun remains part of the final device matrix.
 - [ ] Physical-device matrix.
 - [ ] Notification Doze/delivery/tap/process-death tests.
 - [x] Automated font 2.0, dark mode, compact/standard/large phone, semantics and rotation/configuration tests.

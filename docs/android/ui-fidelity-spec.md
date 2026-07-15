@@ -1,6 +1,6 @@
 # Android UI Fidelity Specification
 
-**Pinned screen reference:** `main@1d9d19e`. Use this together with `ui-screen-contracts.md`; older captures are historical evidence until recaptured from this baseline.
+**Pinned screen reference:** `main@1cf8aef`. Use this together with `ui-screen-contracts.md`; older captures are historical evidence until recaptured from this baseline.
 
 ## 1. Fidelity target
 

@@ -2,7 +2,7 @@
 
 **Status:** Rebaselined; implementation recheck required
 **Development branch:** `android-dev`
-**Reference:** `main@1d9d19e`
+**Reference:** `main@1cf8aef`
 **Stack:** Kotlin, Jetpack Compose, Material 3
 
 ## 1. Outcome
@@ -69,7 +69,7 @@ Every slice follows this order:
 
 ### R0 — Baseline integrity and regression repair
 
-Goal: make the existing Android foundation conform to `main@1d9d19e` before adding caregiver breadth.
+Goal: keep the Android foundation conformant with the explicitly pinned `main@1cf8aef` product contract before release verification.
 
 1. Add explicit per-request auth policies; make link exchange public/no-auth and non-invalidating.
 2. Add link-error localization fixtures and canonical UI mapping.
