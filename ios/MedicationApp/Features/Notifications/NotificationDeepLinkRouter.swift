@@ -17,9 +17,10 @@ enum NotificationDeepLinkParser {
     }
 
     /// Parse a remote push notification userInfo dict into a deep link target.
-    /// Expects keys: "type" (must be "DOSE_TAKEN"), "date" (YYYY-MM-DD), "slot" (morning|noon|evening|bedtime).
+    /// Expects keys: "type" ("DOSE_TAKEN" or "DOSE_MISSED"), "date" (YYYY-MM-DD), "slot" (morning|noon|evening|bedtime).
     static func parseRemotePush(userInfo: [AnyHashable: Any]) -> NotificationDeepLinkTarget? {
-        guard let type = userInfo["type"] as? String, type == "DOSE_TAKEN" else { return nil }
+        guard let type = userInfo["type"] as? String,
+              ["DOSE_TAKEN", "DOSE_MISSED"].contains(type) else { return nil }
         guard let dateKey = userInfo["date"] as? String else { return nil }
         guard isDateKey(dateKey) else { return nil }
         guard let slotString = userInfo["slot"] as? String,

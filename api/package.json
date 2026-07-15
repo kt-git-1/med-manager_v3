@@ -16,6 +16,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "check:release-security": "node scripts/release-security-check.mjs",
+    "cron:configure:missed-dose": "node scripts/configure-missed-dose-cron.mjs",
     "smoke:account-delete": "node scripts/account-delete-smoke.mjs"
   },
   "devDependencies": {
