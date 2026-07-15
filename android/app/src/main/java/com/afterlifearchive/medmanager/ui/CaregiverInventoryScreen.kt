@@ -78,6 +78,11 @@ import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import kotlinx.coroutines.launch
 
 private enum class InventoryFilter { ALL, LOW, OUT }
+private sealed interface InventoryDetailRetryAction {
+    data object SaveSettings : InventoryDetailRetryAction
+    data class Refill(val amount: Double) : InventoryDetailRetryAction
+    data class Correction(val quantity: Double) : InventoryDetailRetryAction
+}
 
 @Composable
 internal fun CaregiverInventoryScreen(
@@ -400,6 +405,7 @@ private fun CaregiverInventoryDetail(
     var correctionText by rememberSaveable(item.medicationId) { mutableStateOf(formatInventoryNumber(item.inventoryQuantity)) }
     var confirmRefill by remember { mutableStateOf<Double?>(null) }
     var confirmCorrection by remember { mutableStateOf<Double?>(null) }
+    var retryAction by remember { mutableStateOf<InventoryDetailRetryAction?>(null) }
     val scope = rememberCoroutineScope()
     val refill = refillText.toDoubleOrNull()
     val correction = correctionText.toDoubleOrNull()
@@ -418,19 +424,55 @@ private fun CaregiverInventoryDetail(
         }
         item {
             InventoryCard(tint) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     InventoryIcon(Icons.Rounded.Inventory2, tint, 56)
                     Column(Modifier.weight(1f)) {
                         Text(item.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        Text(inventoryStatusText(item), color = tint, fontWeight = FontWeight.Bold)
+                        Text(inventoryDailySummary(item), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                    }
+                    Text(inventoryStatusText(item), color = tint, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(50)).background(tint.copy(alpha = 0.13f)).padding(horizontal = 9.dp, vertical = 5.dp))
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+                    Text(stringResource(R.string.caregiver_inventory_remaining_label), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.weight(1f))
+                    Text(if (inventoryEnabled) formatInventoryNumber(item.inventoryQuantity) else "—", style = MaterialTheme.typography.displaySmall, color = if (inventoryEnabled) tint else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.size(5.dp))
+                    Text(stringResource(R.string.caregiver_inventory_unit), style = MaterialTheme.typography.titleMedium, color = tint, fontWeight = FontWeight.Bold)
+                }
+                if (item.isPrn) {
+                    Text("頓服", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.caregiver_inventory_prn_per_use, formatInventoryNumber(item.doseCountPerIntake)), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    Text(inventoryDaysText(item), fontWeight = FontWeight.Bold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(stringResource(R.string.caregiver_inventory_refill_due_label), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                        Text(item.refillDueDate ?: "—", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                     }
                 }
-                Text(if (item.inventoryEnabled) stringResource(R.string.caregiver_inventory_remaining, formatInventoryNumber(item.inventoryQuantity)) else "—", style = MaterialTheme.typography.headlineMedium, color = tint, fontWeight = FontWeight.Bold)
             }
         }
         if (refreshFailed) item { CaregiverStaleDataCard("caregiver-inventory-detail-stale", onRetry) }
-        if (failed) item { Text(stringResource(R.string.caregiver_inventory_failed), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) }
+        if (failed) item {
+            InventoryCard(MaterialTheme.colorScheme.error) {
+                Text(stringResource(R.string.caregiver_inventory_failed), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                if (retryAction != null) Button(
+                    onClick = {
+                        val action = retryAction ?: return@Button
+                        scope.launch {
+                            val succeeded = when (action) {
+                                InventoryDetailRetryAction.SaveSettings -> repository.updateSettings(patientId, item, inventoryEnabled)
+                                is InventoryDetailRetryAction.Refill -> repository.refill(patientId, item, action.amount)
+                                is InventoryDetailRetryAction.Correction -> repository.correct(patientId, item, action.quantity)
+                            }
+                            if (succeeded) onClose()
+                        }
+                    },
+                    modifier = Modifier.testTag("inventory-retry"),
+                ) { Text(stringResource(R.string.common_retry)) }
+            }
+        }
         message?.let { item { Text(inventoryMutationText(it), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) } }
+        item { Text(stringResource(R.string.caregiver_inventory_settings_section), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold) }
         item {
             InventoryCard {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -438,12 +480,16 @@ private fun CaregiverInventoryDetail(
                     Switch(checked = inventoryEnabled, onCheckedChange = { inventoryEnabled = it }, enabled = enabled && !updating, modifier = Modifier.testTag("inventory-enabled"))
                 }
                 Button(
-                    onClick = { scope.launch { repository.updateSettings(patientId, item, inventoryEnabled) } },
+                    onClick = { scope.launch {
+                        val succeeded = repository.updateSettings(patientId, item, inventoryEnabled)
+                        if (succeeded) onClose() else retryAction = InventoryDetailRetryAction.SaveSettings
+                    } },
                     enabled = enabled && !updating && inventoryEnabled != item.inventoryEnabled,
                     modifier = Modifier.fillMaxWidth().testTag("inventory-save-settings"),
                 ) { Text(stringResource(R.string.caregiver_inventory_save_settings)) }
             }
         }
+        item { Text(stringResource(R.string.caregiver_inventory_adjust_section), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold) }
         item {
             InventoryCard {
                 Text(stringResource(R.string.caregiver_inventory_refill_section), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -497,11 +543,14 @@ private fun CaregiverInventoryDetail(
         AlertDialog(
             onDismissRequest = { confirmRefill = null },
             title = { Text(stringResource(R.string.caregiver_inventory_confirm_refill_title)) },
-            text = { Text(stringResource(R.string.caregiver_inventory_confirm_refill_message, item.name, formatInventoryNumber(amount), formatInventoryNumber(item.inventoryQuantity + amount))) },
+            text = { Text(stringResource(R.string.caregiver_inventory_confirm_refill_message, item.name, formatInventoryNumber(amount), formatInventoryNumber(item.inventoryQuantity), formatInventoryNumber(item.inventoryQuantity + amount))) },
             dismissButton = { TextButton(onClick = { confirmRefill = null }) { Text(stringResource(R.string.caregiver_medication_form_cancel)) } },
             confirmButton = {
                 TextButton(
-                    onClick = { confirmRefill = null; scope.launch { repository.refill(patientId, item, amount) } },
+                    onClick = { confirmRefill = null; scope.launch {
+                        val succeeded = repository.refill(patientId, item, amount)
+                        if (succeeded) onClose() else retryAction = InventoryDetailRetryAction.Refill(amount)
+                    } },
                     enabled = enabled && !updating,
                     modifier = Modifier.testTag("inventory-refill-confirm"),
                 ) {
@@ -518,7 +567,10 @@ private fun CaregiverInventoryDetail(
             dismissButton = { TextButton(onClick = { confirmCorrection = null }) { Text(stringResource(R.string.caregiver_medication_form_cancel)) } },
             confirmButton = {
                 TextButton(
-                    onClick = { confirmCorrection = null; scope.launch { repository.correct(patientId, item, quantity) } },
+                    onClick = { confirmCorrection = null; scope.launch {
+                        val succeeded = repository.correct(patientId, item, quantity)
+                        if (succeeded) onClose() else retryAction = InventoryDetailRetryAction.Correction(quantity)
+                    } },
                     enabled = enabled && !updating,
                     modifier = Modifier.testTag("inventory-correction-confirm"),
                 ) {
@@ -527,6 +579,18 @@ private fun CaregiverInventoryDetail(
             },
         )
     }
+}
+
+@Composable
+private fun inventoryDailySummary(item: CaregiverInventoryItem): String {
+    if (item.isPrn) return "頓服"
+    val daily = item.dailyPlannedUnits
+    if (daily == null || daily <= 0 || item.doseCountPerIntake <= 0) return stringResource(R.string.caregiver_inventory_daily_unknown)
+    return stringResource(
+        R.string.caregiver_inventory_daily_format,
+        formatInventoryNumber(daily / item.doseCountPerIntake),
+        formatInventoryNumber(item.doseCountPerIntake),
+    )
 }
 
 @Composable
