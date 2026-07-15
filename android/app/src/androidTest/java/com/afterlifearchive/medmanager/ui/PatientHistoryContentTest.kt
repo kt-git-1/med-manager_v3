@@ -123,7 +123,7 @@ class PatientHistoryContentTest {
 
         composeRule.onNodeWithText("血圧薬 1錠").assertIsDisplayed()
         composeRule.onNodeWithText("家族が代理で記録").assertIsDisplayed()
-        composeRule.onNodeWithText("服用済み").assertIsDisplayed()
+        composeRule.onNodeWithText("記録済み").assertIsDisplayed()
         composeRule.onNodeWithText("頓服: 頭痛薬").assertIsDisplayed()
         composeRule.onNodeWithText("本人が記録").assertIsDisplayed()
         captureNode("android-ui-105-patient-history-day-content-light.png")

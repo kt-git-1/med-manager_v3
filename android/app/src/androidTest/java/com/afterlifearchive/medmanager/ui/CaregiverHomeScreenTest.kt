@@ -269,9 +269,11 @@ class CaregiverHomeScreenTest {
         composeRule.onNodeWithTag("caregiver-settings-list")
             .performScrollToNode(hasTestTag("caregiver-create-name"))
         composeRule.onNodeWithTag("caregiver-create-name").performTextInput("さくら")
+        composeRule.onNodeWithTag("caregiver-create-name").assertTextContains("さくら")
+        composeRule.waitForIdle()
         composeRule.onNodeWithTag("caregiver-settings-list")
             .performScrollToNode(hasTestTag("caregiver-create-submit"))
-        composeRule.onNodeWithTag("caregiver-create-submit").performClick()
+        composeRule.onNodeWithTag("caregiver-create-submit").assertIsEnabled().performClick()
         composeRule.waitUntil(5_000) { repository.state.value.creating }
         composeRule.onNodeWithTag("caregiver-settings-updating").assertIsDisplayed()
         composeRule.onNodeWithText("更新中...").assertIsDisplayed()

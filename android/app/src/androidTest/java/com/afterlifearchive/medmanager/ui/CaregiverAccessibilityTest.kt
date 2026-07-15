@@ -71,7 +71,7 @@ class CaregiverAccessibilityTest {
             }
         }
         composeRule.waitUntil(5_000) { repository.state.value.monthLoaded }
-        val label = "7月15日 水曜日、朝のお薬 服用済み、昼のお薬 未達、夕方のお薬 未服用、頓服 2回"
+        val label = "7月15日 水曜日、朝のお薬 記録済み、昼のお薬 飲み忘れ、夕方のお薬 未記録、頓服 2回"
         composeRule.onNodeWithTag("caregiver-history-month")
             .performScrollToNode(hasContentDescription(label))
         composeRule.onNodeWithContentDescription(label).assertIsDisplayed()

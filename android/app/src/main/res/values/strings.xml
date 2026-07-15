@@ -85,9 +85,9 @@
     <string name="patient_taken_action">飲みました</string>
     <string name="patient_today_empty_title">今日のお薬はありません</string>
     <string name="patient_today_empty_message">ゆっくりお過ごしください</string>
-    <string name="patient_status_taken">服用済み</string>
-    <string name="patient_status_missed">未達</string>
-    <string name="patient_status_pending">未服用</string>
+    <string name="patient_status_taken">記録済み</string>
+    <string name="patient_status_missed">飲み忘れ</string>
+    <string name="patient_status_pending">未記録</string>
     <string name="patient_inventory_check">在庫を確認してください</string>
     <string name="patient_remind_ten_minutes">10分後に知らせる</string>
     <string name="patient_detail_notes">メモ</string>

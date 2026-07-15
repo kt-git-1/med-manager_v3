@@ -119,6 +119,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C06 Record UI-103 PRN dark hierarchy and 200%-font action reachability on API 35.
 - [x] C06 Record UI-208 loading/error/empty and dedicated code/time sheets; verify both sheets at dark plus 200% under C17.
 - [x] C07 Match UI-001 mode-select and Analytics-consent on current iOS/Android compact and large-phone viewports; all primary actions remain visible and no repair is required.
+- [x] C18 Match the shared scheduled-dose state copy to current iOS (`記録済み` / `飲み忘れ` / `未記録`) across patient, caregiver and spoken calendar summaries; reject the stale Android labels in API-35 regressions.
 - [ ] C06 Complete full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification.
 
 ## Gate D — Caregiver patient-management vertical slice
