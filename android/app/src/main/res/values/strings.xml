@@ -516,6 +516,7 @@
     <string name="caregiver_medication_edit">薬を編集</string>
     <string name="caregiver_medication_edit_accessibility">%1$sを編集</string>
     <string name="caregiver_medication_add_title">薬を追加</string>
+    <string name="caregiver_medication_add_compact">追加</string>
     <string name="caregiver_medication_form_hero_new">新しい薬を追加</string>
     <string name="caregiver_medication_form_hero_edit">薬の情報を編集</string>
     <string name="caregiver_medication_form_hero_scheduled">定時薬の基本情報と服用スケジュールを登録します</string>

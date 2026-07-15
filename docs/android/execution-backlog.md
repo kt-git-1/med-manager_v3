@@ -125,6 +125,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C21 Calibrate UI-106 typical light against the current iOS app-derived reference and production SwiftUI source; match card, toggle/info/navigation row and logout metrics while preserving adaptive reachability.
 - [x] C22 Record a same-data UI-201 Caregiver Today light pair; match the current caregiver avatar/header, next-slot hero/list/action, progress summary and card-level PRN entry while retaining dark/200% reachability.
 - [x] C23 Source-calibrate the UI-201 four-slot timeline; match current row/card metrics, exact state copy, medicine indicators, taken-only undo, recordable-only bulk action and explicit no-plan rows.
+- [x] C24 Source-calibrate UI-202 caregiver medications; match the production header/add action, 2 x 2 metrics, icon filters, medication card/symbol/detail hierarchy and inventory/edit treatments while retaining adaptive reachability.
 - [ ] C06 Complete full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification.
 
 ## Gate D — Caregiver patient-management vertical slice

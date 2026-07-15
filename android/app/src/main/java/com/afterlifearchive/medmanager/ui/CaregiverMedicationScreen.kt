@@ -2,17 +2,21 @@ package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -38,9 +42,12 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.EventBusy
+import androidx.compose.material.icons.automirrored.rounded.FormatListBulleted
 import androidx.compose.material.icons.rounded.Inventory2
+import androidx.compose.material.icons.rounded.LocalHospital
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Science
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,8 +59,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.testTag
@@ -63,6 +76,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
@@ -191,26 +205,39 @@ private fun CaregiverMedicationList(
     }
     val colors = MedicationTheme.colors
     LazyColumn(
-        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 16.dp).testTag("caregiver-medication-list"),
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).testTag("caregiver-medication-list"),
+        contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 120.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Spacer(Modifier.height(12.dp))
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(
-                    Modifier.size(54.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center,
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                CaregiverPatientAvatar(patientName)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        stringResource(R.string.caregiver_medication_title),
+                        fontSize = 34.sp,
+                        lineHeight = 38.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                    )
+                    Text(
+                        stringResource(R.string.caregiver_medication_patient, patientName),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
+                Button(
+                    onClick = onAdd,
+                    enabled = enabled,
+                    modifier = Modifier.height(44.dp).testTag("caregiver-medication-add"),
+                    shape = CircleShape,
+                    contentPadding = PaddingValues(horizontal = 14.dp),
                 ) {
-                    Text(patientName.trim().take(1), style = MaterialTheme.typography.headlineSmall, color = colors.primaryTealText, fontWeight = FontWeight.Bold)
-                }
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.caregiver_medication_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                    Text(stringResource(R.string.caregiver_medication_patient, patientName), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Button(onClick = onAdd, enabled = enabled, modifier = Modifier.testTag("caregiver-medication-add")) {
                     Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(4.dp))
-                    Text(stringResource(R.string.caregiver_medication_add_title))
+                    Spacer(Modifier.size(6.dp))
+                    Text(stringResource(R.string.caregiver_medication_add_compact), fontSize = 17.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -218,13 +245,13 @@ private fun CaregiverMedicationList(
         if (items.isEmpty()) item {
             CaregiverMedicationEmptyCard(onAdd, enabled)
         } else item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CaregiverMetric(stringResource(R.string.caregiver_medication_metric_active), items.count { !ended(it) }, Icons.Rounded.Medication, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    CaregiverMetric(stringResource(R.string.caregiver_medication_metric_active), items.count { !ended(it) }, Icons.Rounded.Medication, MaterialTheme.colorScheme.primary, Modifier.weight(1f), usePillsGlyph = true)
                     CaregiverMetric(stringResource(R.string.caregiver_medication_metric_scheduled), items.count { !it.isPrn && !ended(it) }, Icons.Rounded.Schedule, colors.caregiverBlue, Modifier.weight(1f))
                 }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CaregiverMetric(stringResource(R.string.caregiver_medication_metric_prn), items.count { it.isPrn && !ended(it) }, Icons.Rounded.Inventory2, colors.orange, Modifier.weight(1f))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    CaregiverMetric(stringResource(R.string.caregiver_medication_metric_prn), items.count { it.isPrn && !ended(it) }, Icons.Rounded.LocalHospital, colors.orange, Modifier.weight(1f))
                     CaregiverMetric(stringResource(R.string.caregiver_medication_metric_ended), items.count(::ended), Icons.Rounded.EventBusy, MaterialTheme.colorScheme.onSurfaceVariant, Modifier.weight(1f))
                 }
             }
@@ -232,22 +259,10 @@ private fun CaregiverMedicationList(
         if (items.isNotEmpty()) item {
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 CaregiverMedicationFilter.entries.forEach { item ->
-                    FilterChip(
+                    CaregiverMedicationFilterChip(
+                        filter = item,
                         selected = filter == item,
                         onClick = { onFilter(item) },
-                        label = { Text(stringResource(item.label)) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = colors.primaryTealText,
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = filter == item,
-                            borderColor = MaterialTheme.colorScheme.outline,
-                            selectedBorderColor = MaterialTheme.colorScheme.primary,
-                        ),
-                        modifier = Modifier.testTag("caregiver-medication-filter-${item.name.lowercase()}"),
                     )
                 }
             }
@@ -274,9 +289,9 @@ private fun CaregiverMedicationList(
         }
         sections.forEach { (title, sectionItems) ->
             if (sectionItems.isNotEmpty()) {
-                item { Text(stringResource(title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold) }
+                item { Text(stringResource(title), fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold) }
                 items(sectionItems, key = { it.id }) { medication ->
-                    CaregiverMedicationCard(medication, slotTimes, ended(medication), { onEdit(medication) }, enabled)
+                    CaregiverMedicationCard(medication, slotTimes, { onEdit(medication) }, enabled)
                 }
             }
         }
@@ -285,22 +300,71 @@ private fun CaregiverMedicationList(
 }
 
 @Composable
-private fun CaregiverMetric(label: String, value: Int, icon: ImageVector, tint: Color, modifier: Modifier = Modifier) {
+private fun CaregiverMetric(
+    label: String,
+    value: Int,
+    icon: ImageVector,
+    tint: Color,
+    modifier: Modifier = Modifier,
+    usePillsGlyph: Boolean = false,
+) {
     Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.heightIn(min = 124.dp).shadow(3.dp, RoundedCornerShape(18.dp)),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        border = androidx.compose.foundation.BorderStroke(1.dp, tint.copy(alpha = 0.18f)),
     ) {
-        Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.size(36.dp).clip(CircleShape).background(tint.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
-                Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(21.dp))
+        Column(
+            Modifier.fillMaxWidth().padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.Start,
+        ) {
+            Box(Modifier.size(30.dp).clip(CircleShape).background(tint.copy(alpha = 0.13f)), contentAlignment = Alignment.Center) {
+                if (usePillsGlyph) MedicationPillsGlyph(tint, Modifier.size(20.dp))
+                else Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
             }
-            Column {
-                Text(value.toString(), style = MaterialTheme.typography.titleLarge, color = tint, fontWeight = FontWeight.Bold)
-                Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            Text(value.toString(), fontSize = 28.sp, lineHeight = 32.sp, fontWeight = FontWeight.Bold)
+            Text(label, fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    }
+}
+
+@Composable
+private fun CaregiverMedicationFilterChip(
+    filter: CaregiverMedicationFilter,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val tint = when (filter) {
+        CaregiverMedicationFilter.ALL -> MaterialTheme.colorScheme.primary
+        CaregiverMedicationFilter.SCHEDULED -> MedicationTheme.colors.caregiverBlue
+        CaregiverMedicationFilter.PRN -> MedicationTheme.colors.orange
+        CaregiverMedicationFilter.ENDED -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val icon = when (filter) {
+        CaregiverMedicationFilter.ALL -> Icons.AutoMirrored.Rounded.FormatListBulleted
+        CaregiverMedicationFilter.SCHEDULED -> Icons.Rounded.Schedule
+        CaregiverMedicationFilter.PRN -> Icons.Rounded.LocalHospital
+        CaregiverMedicationFilter.ENDED -> Icons.Rounded.EventBusy
+    }
+    Row(
+        modifier = Modifier.height(38.dp)
+            .clip(CircleShape)
+            .background(if (selected) tint else MaterialTheme.colorScheme.surface)
+            .border(1.dp, tint.copy(alpha = if (selected) 1f else 0.22f), CircleShape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp)
+            .testTag("caregiver-medication-filter-${filter.name.lowercase()}"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = if (selected) Color.White else tint, modifier = Modifier.size(18.dp))
+        Text(
+            stringResource(filter.label),
+            color = if (selected) Color.White else tint,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
 
@@ -308,53 +372,120 @@ private fun CaregiverMetric(label: String, value: Int, icon: ImageVector, tint: 
 private fun CaregiverMedicationCard(
     item: PatientMedication,
     slotTimes: CaregiverSlotTimes?,
-    ended: Boolean,
     onEdit: () -> Unit,
     enabled: Boolean,
 ) {
-    val typeColor = if (item.isPrn) MedicationTheme.colors.orange else MedicationTheme.colors.caregiverBlue
+    val typeColor = if (item.isPrn) MedicationTheme.colors.orange else MaterialTheme.colorScheme.primary
     Card(
-        modifier = Modifier.fillMaxWidth().testTag("caregiver-medication-${item.id}"),
+        modifier = Modifier.fillMaxWidth()
+            .shadow(3.dp, RoundedCornerShape(18.dp))
+            .clickable(enabled = enabled, onClick = onEdit)
+            .testTag("caregiver-medication-${item.id}"),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        border = androidx.compose.foundation.BorderStroke(1.2.dp, typeColor.copy(alpha = 0.20f)),
     ) {
-        Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-            Box(Modifier.size(44.dp).clip(CircleShape).background(typeColor.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.Medication, contentDescription = null, tint = typeColor, modifier = Modifier.size(25.dp))
+        Row(Modifier.padding(18.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Top) {
+            Box(
+                Modifier.size(62.dp)
+                    .background(Brush.linearGradient(listOf(typeColor.copy(alpha = 0.18f), typeColor.copy(alpha = 0.08f))), CircleShape)
+                    .border(1.dp, typeColor.copy(alpha = 0.18f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (item.isPrn) {
+                    Icon(Icons.Rounded.LocalHospital, contentDescription = null, tint = typeColor, modifier = Modifier.size(28.dp))
+                } else {
+                    MedicationPillsGlyph(typeColor, Modifier.size(32.dp))
+                }
             }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            Text(item.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(item.name, fontSize = 22.sp, lineHeight = 27.sp, fontWeight = FontWeight.Bold, maxLines = 3)
                 MedicationBadge(stringResource(if (item.isPrn) R.string.caregiver_medication_type_prn else R.string.caregiver_medication_type_scheduled), typeColor)
-                if (ended) MedicationBadge(stringResource(R.string.caregiver_medication_type_ended), MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            item.dosageText.trim().takeUnless { it.isEmpty() || it == "不明" }?.let {
-                Text(stringResource(R.string.caregiver_medication_dosage, it))
+            Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                item.dosageText.trim().takeUnless { it.isEmpty() || it == "不明" }?.let {
+                    CaregiverMedicationDetailLine(stringResource(R.string.caregiver_medication_dosage, it), Icons.Rounded.Science)
+                }
+                CaregiverMedicationDetailLine(
+                    stringResource(R.string.caregiver_medication_dose, formatMedicationNumber(item.doseCountPerIntake)),
+                    Icons.Rounded.Medication,
+                    usePillsGlyph = true,
+                )
+                medicationSchedule(item, slotTimes)?.let { CaregiverMedicationDetailLine(it, Icons.Rounded.Schedule) }
+                    ?: if (item.isPrn) CaregiverMedicationDetailLine(stringResource(R.string.caregiver_medication_prn_when_needed), Icons.Rounded.LocalHospital) else Unit
             }
-            Text(stringResource(R.string.caregiver_medication_dose, formatMedicationNumber(item.doseCountPerIntake)))
-            medicationSchedule(item, slotTimes)?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                ?: if (item.isPrn) Text(stringResource(R.string.caregiver_medication_prn_when_needed), color = MaterialTheme.colorScheme.onSurfaceVariant) else Unit
             if (item.inventoryEnabled) {
-                Text(
-                    if (item.inventoryOut) stringResource(R.string.caregiver_medication_inventory_out)
-                    else stringResource(
-                        R.string.caregiver_medication_inventory_remaining,
-                        formatMedicationNumber(item.inventoryQuantity),
-                        item.inventoryUnit ?: stringResource(R.string.caregiver_medication_inventory_unit),
-                    ),
-                    color = if (item.inventoryOut || item.isInsufficientForDose) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                CaregiverMedicationInventoryPill(
+                    text = if (item.inventoryOut) stringResource(R.string.caregiver_medication_inventory_out)
+                    else stringResource(R.string.caregiver_medication_inventory_remaining, formatMedicationNumber(item.inventoryQuantity), item.inventoryUnit ?: stringResource(R.string.caregiver_medication_inventory_unit)),
+                    error = item.inventoryOut || item.isInsufficientForDose,
                 )
             }
             }
-            IconButton(onClick = onEdit, enabled = enabled, modifier = Modifier.testTag("caregiver-medication-edit-${item.id}")) {
-                Icon(
-                    Icons.Rounded.Edit,
-                    contentDescription = stringResource(R.string.caregiver_medication_edit_accessibility, item.name),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
+            IconButton(onClick = onEdit, enabled = enabled, modifier = Modifier.size(48.dp).testTag("caregiver-medication-edit-${item.id}")) {
+                Box(Modifier.size(42.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Rounded.Edit,
+                        contentDescription = stringResource(R.string.caregiver_medication_edit_accessibility, item.name),
+                        tint = MedicationTheme.colors.primaryTealText,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun CaregiverMedicationDetailLine(text: String, icon: ImageVector, usePillsGlyph: Boolean = false) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (usePillsGlyph) MedicationPillsGlyph(MedicationTheme.colors.primaryTealText, Modifier.size(20.dp))
+        else Icon(icon, contentDescription = null, tint = MedicationTheme.colors.primaryTealText, modifier = Modifier.size(20.dp))
+        Text(text, modifier = Modifier.weight(1f), fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 3)
+    }
+}
+
+@Composable
+private fun MedicationPillsGlyph(tint: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val unit = size.minDimension
+        val capsuleTopLeft = Offset(unit * 0.05f, unit * 0.16f)
+        val capsuleSize = Size(unit * 0.58f, unit * 0.30f)
+        rotate(-42f, pivot = Offset(unit * 0.34f, unit * 0.31f)) {
+            drawRoundRect(
+                color = tint,
+                topLeft = capsuleTopLeft,
+                size = capsuleSize,
+                cornerRadius = CornerRadius(unit * 0.15f, unit * 0.15f),
+            )
+            drawLine(
+                color = Color.White.copy(alpha = 0.72f),
+                start = Offset(unit * 0.34f, unit * 0.16f),
+                end = Offset(unit * 0.34f, unit * 0.46f),
+                strokeWidth = unit * 0.055f,
+            )
+        }
+        drawCircle(color = tint.copy(alpha = 0.66f), radius = unit * 0.19f, center = Offset(unit * 0.73f, unit * 0.70f))
+        drawLine(
+            color = Color.White.copy(alpha = 0.78f),
+            start = Offset(unit * 0.55f, unit * 0.70f),
+            end = Offset(unit * 0.91f, unit * 0.70f),
+            strokeWidth = unit * 0.055f,
+        )
+    }
+}
+
+@Composable
+private fun CaregiverMedicationInventoryPill(text: String, error: Boolean) {
+    val color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        modifier = Modifier.clip(CircleShape).background(color.copy(alpha = 0.13f)).padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(Icons.Rounded.Inventory2, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
+        Text(text, color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
     }
 }
 

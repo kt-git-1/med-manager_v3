@@ -100,6 +100,38 @@ class CaregiverMedicationScreenTest {
     }
 
     @Test
+    fun currentIosSourceCalibratedMedicationListUsesProductionHierarchy() {
+        val items = listOf(
+            medication("blood-pressure", "血圧の薬", false, null, 18.0, listOf("08:00", "12:00"), "5 mg"),
+            medication("stomach", "整腸剤", false, null, 10.0, listOf("18:00"), "50 mg"),
+            medication("headache", "頭痛薬", true, null, 0.0, null, ""),
+        )
+        val repository = CaregiverMedicationRepository(CaregiverMedicationDataSource { items }, MutationFreshnessStore())
+        val patient = CaregiverPatient("patient-1", "田中 花子", CaregiverSlotTimes("08:00", "12:00", "18:00", "21:00"))
+        lateinit var activity: Activity
+        composeRule.setContent {
+            MedicationAppTheme {
+                activity = checkNotNull(LocalActivity.current)
+                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding()) {
+                    CaregiverMedicationScreen(repository, CaregiverPatientState(listOf(patient), patient.id), true)
+                }
+            }
+        }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-medication-list").fetchSemanticsNodes().isNotEmpty() }
+
+        composeRule.onNodeWithText("薬を管理").assertIsDisplayed()
+        composeRule.onNodeWithText("田中 花子さん").assertIsDisplayed()
+        composeRule.onNodeWithText("追加").assertIsDisplayed()
+        composeRule.onNodeWithText("3").assertIsDisplayed()
+        composeRule.onNodeWithText("2").assertIsDisplayed()
+        composeRule.onNodeWithText("血圧の薬").assertIsDisplayed()
+        composeRule.onNodeWithText("用量 5 mg").assertIsDisplayed()
+        composeRule.onNodeWithText("毎日 朝・昼").assertIsDisplayed()
+        composeRule.onNodeWithText("残り18錠").assertIsDisplayed()
+        captureDevice(activity, "android-ui-202-caregiver-medications-source-calibrated-light.png")
+    }
+
+    @Test
     fun screenshotFixtureShowsMedicationForm() {
         val repository = CaregiverMedicationRepository(CaregiverMedicationDataSource { emptyList() }, MutationFreshnessStore())
         val patient = CaregiverPatient("patient-1", "さくら", CaregiverSlotTimes("08:00", "12:00", "18:00", "21:00"))
@@ -199,9 +231,13 @@ class CaregiverMedicationScreenTest {
         composeRule.onNodeWithText("この操作は取り消せません。").assertIsDisplayed()
     }
 
-    private fun setContent(items: List<PatientMedication>) {
+    private fun setContent(
+        items: List<PatientMedication>,
+        patientName: String = "さくら",
+        slotTimes: CaregiverSlotTimes = CaregiverSlotTimes("08:00", "12:00", "18:00", "21:00"),
+    ) {
         val repository = CaregiverMedicationRepository(CaregiverMedicationDataSource { items }, MutationFreshnessStore())
-        val patient = CaregiverPatient("patient-1", "さくら", CaregiverSlotTimes("08:00", "12:00", "18:00", "21:00"))
+        val patient = CaregiverPatient("patient-1", patientName, slotTimes)
         composeRule.setContent {
             MedicationAppTheme {
                 CaregiverMedicationScreen(repository, CaregiverPatientState(listOf(patient), patient.id), enabled = true)
@@ -221,8 +257,9 @@ class CaregiverMedicationScreenTest {
         endDate: Instant?,
         inventory: Double,
         times: List<String>?,
+        dosageText: String = "5mg",
     ) = PatientMedication(
-        id, "patient-1", name, "5mg", 1.0, 5.0, "mg", null, isPrn, null,
+        id, "patient-1", name, dosageText, 1.0, 5.0, "mg", null, isPrn, null,
         Instant.parse("2025-01-01T00:00:00Z"), endDate, inventory, "錠", inventory > 0, inventory, false,
         endDate == null, false, null, times, emptyList(),
     )
