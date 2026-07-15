@@ -108,6 +108,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C04 Reverify current Patient History progress/week/recent summaries, retention and freshness.
 - [x] C05 Reverify Settings/reminders/tutorial/deep links/legal/logout and patient analytics-consent UI.
 - [x] C06 Complete emulator-verifiable patient/caregiver font 1.0/1.3/2.0, light/dark, compact/standard/large-phone, semantics and rotation/configuration checks. This includes dark captures for Patient Today/History/Settings and all four Caregiver primary surfaces, Caregiver primary-screen action paths at dark plus 200%, Settings/tutorial 200%, merged Patient week and Caregiver calendar-day semantics, medication-named Caregiver primary actions, and production Patient/Caregiver Activity recreation.
+- [x] C07 Match UI-001 mode-select and Analytics-consent on current iOS/Android compact and large-phone viewports; all primary actions remain visible and no repair is required.
 - [ ] C06 Complete full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification.
 
 ## Gate D — Caregiver patient-management vertical slice
@@ -194,4 +195,4 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Immediate next item
 
-Execute the **Gate I physical-device and Play release matrix** using `play-release-runbook.md`. Production Firebase values, a release-owner-managed upload key, Play Console access and physical devices are required for the remaining external evidence. Until those are available, continue closing emulator-verifiable C01/C06 visual and accessibility residuals without marking device-only rows verified.
+Execute the **Gate I physical-device and Play release matrix** using `play-release-runbook.md`. Production Firebase values, a release-owner-managed upload key, Play Console access and physical devices are required for the remaining external evidence. Until those are available, continue closing emulator-verifiable C01/C06 visual and accessibility residuals without marking device-only rows verified. UI-001 compact/large matched evidence is complete under `evidence/c07-20260715/`.
