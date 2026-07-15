@@ -129,6 +129,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C25 Source-calibrate UI-203 caregiver medication add/edit; match the production hero/progress, grouped basic-information rows, dosage-unit picker and descriptive scheduled/PRN choice cards while preserving validation and adaptive reachability.
 - [x] C26 Source-calibrate UI-204 caregiver inventory list; match the production patient header, 2 x 2 summary, priority guide, semantic filters and rich inventory-card hierarchy while preserving refill/detail behavior.
 - [x] C27 Source-calibrate UI-205 caregiver inventory detail; match the centered save contract, medication/status/remaining hierarchy, settings toggle, refill presets/input and separate absolute-correction card while preserving confirmation and exact failed-action retry behavior.
+- [x] C28 Source-calibrate UI-206 caregiver history; match the caregiver header, Monday-first explained calendar, marker colors/cells, selected-day progress/pills and free-release month-navigation contract while preserving the C16 inline timeline and notification/backfill behavior.
 - [ ] C06 Complete full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification.
 
 ## Gate D — Caregiver patient-management vertical slice

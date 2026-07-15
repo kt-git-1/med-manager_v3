@@ -86,7 +86,7 @@ Each screen ID maps to parity requirements. Every listed state needs a determini
 | UI-203 Medication form | `MedicationFormView.swift` | add/edit, scheduled/PRN, validation, date range, daily/weekday, slots, inventory, notes, keyboard, unsaved dismissal |
 | UI-204 Inventory list | `InventoryListView.swift` | no patient, empty, all/low/out filters, badge/metrics, loading/updating/retry |
 | UI-205 Inventory detail | `InventoryDetailView.swift` | tracking off/on, quantity, refill/adjust, validation, saving, success/failure |
-| UI-206 Caregiver history | caregiver/history views | no patient, month/day, exact push destination/highlight, stale-data refresh, retention and PDF action |
+| UI-206 Caregiver history | `HistoryMonthView.swift`, `HistoryDayDetailView.swift` | 62/50 patient avatar, 34/17 header, centered current month (navigation only when billing-enabled), Monday-first 54-unit explained calendar, teal/red/gray/purple markers, selected-day `%d/%d回分 記録済み` summary, timestamp-sorted day timeline, exact push destination/highlight, stale-data refresh, retention and PDF action |
 | UI-207 PDF period/share | PDF feature files | free lock, presets, custom range errors, generating overlay, success share, generation failure; absent in patient mode |
 | UI-208 Link/settings | `PatientManagementView.swift` | load error, zero/one/multiple patients, create/limit, selection, time presets, code issue/share, revoke/delete, push, analytics, legal, logout/account delete |
 
