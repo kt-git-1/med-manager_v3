@@ -75,7 +75,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.afterlifearchive.medmanager
         DEVELOPMENT_TEAM: QSZR732YXD
-        CURRENT_PROJECT_VERSION: 37
+        CURRENT_PROJECT_VERSION: 38
         MARKETING_VERSION: 1.0.4
         APP_DISPLAY_NAME: "お薬見守り"
         API_BASE_URL: "https://www.okusuri-mimamori.com/"
