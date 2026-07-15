@@ -1,22 +1,28 @@
 package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -27,6 +33,20 @@ import com.afterlifearchive.medmanager.data.patient.PatientUserMessage
 
 internal val PatientTeal: Color @Composable get() = MaterialTheme.colorScheme.primary
 internal val PatientBackground: Color @Composable get() = MaterialTheme.colorScheme.background
+
+@Composable
+internal fun PatientHeaderIcon(icon: ImageVector) {
+    Box(
+        modifier = Modifier
+            .size(62.dp)
+            .shadow(8.dp, CircleShape)
+            .background(PatientTeal, CircleShape)
+            .border(5.dp, MaterialTheme.colorScheme.surface, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(30.dp))
+    }
+}
 
 @Composable
 internal fun PatientDetailCard(title: String, value: String) {

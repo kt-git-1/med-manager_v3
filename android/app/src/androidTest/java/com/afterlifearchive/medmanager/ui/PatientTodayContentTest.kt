@@ -132,6 +132,28 @@ class PatientTodayContentTest {
     }
 
     @Test
+    fun currentIosMatchedTodayFixtureRendersInDarkTheme() {
+        val activity = showMatchedAdaptiveToday(darkTheme = true)
+
+        composeRule.onNodeWithText("7月15日（水）").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-primary-bulk-record").assertIsDisplayed()
+        composeRule.runOnIdle { normalizeStatusBar(activity, darkTheme = true) }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-101-patient-today-dark-matched.png")
+    }
+
+    @Test
+    fun currentIosMatchedTodayFixtureRendersAtTwoHundredPercentFontScale() {
+        val activity = showMatchedAdaptiveToday(fontScale = 2f)
+
+        composeRule.onNodeWithText("7月15日（水）").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-primary-bulk-record").assertIsDisplayed()
+        composeRule.runOnIdle { normalizeStatusBar(activity) }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-101-patient-today-font-2.0-matched.png")
+    }
+
+    @Test
     fun prnSheetShowsCurrentIosUpdatingOverlay() {
         showPrnSheet(updatingPrnMedicationId = "prn")
 
@@ -610,10 +632,59 @@ class PatientTodayContentTest {
         }
     }
 
+    private fun showMatchedAdaptiveToday(
+        darkTheme: Boolean = false,
+        fontScale: Float = 1f,
+    ): Activity {
+        lateinit var activity: Activity
+        val scheduledAt = Instant.parse("2026-07-15T03:30:00Z")
+        val now = Instant.parse("2026-07-15T03:00:00Z")
+        val regularMedications = listOf(
+            medication("enough", 10.0),
+            medication("short", 10.0),
+        )
+        val prn = medication("prn", 10.0, isPrn = true)
+        val doses = listOf(
+            dose("enough", DoseStatus.PENDING).copy(scheduledAt = scheduledAt, slot = MedicationSlot.NOON),
+            dose("short", DoseStatus.PENDING).copy(scheduledAt = scheduledAt, slot = MedicationSlot.NOON),
+        )
+        composeRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
+                MedicationAppTheme(darkTheme = darkTheme) {
+                    activity = checkNotNull(LocalActivity.current)
+                    Box(Modifier.fillMaxSize().background(PatientBackground).safeDrawingPadding()) {
+                        TodayContent(
+                            doses = doses,
+                            loading = false,
+                            updatingKey = null,
+                            error = null,
+                            message = null,
+                            maintenanceWarning = null,
+                            medications = (regularMedications + prn).associateBy(PatientMedication::id),
+                            nextSlot = MedicationSlot.NOON,
+                            updatingSlot = null,
+                            prnMedications = listOf(prn),
+                            updatingPrnMedicationId = null,
+                            onRetry = {},
+                            onRecord = {},
+                            onDetail = {},
+                            onRecordSlot = {},
+                            onRecordPrn = {},
+                            onRemind = {},
+                            now = now,
+                        )
+                    }
+                }
+            }
+        }
+        return activity
+    }
+
     @Suppress("DEPRECATION")
-    private fun normalizeStatusBar(activity: Activity) {
+    private fun normalizeStatusBar(activity: Activity, darkTheme: Boolean = false) {
         WindowCompat.setDecorFitsSystemWindows(activity.window, false)
         activity.window.statusBarColor = android.graphics.Color.TRANSPARENT
-        WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = true
+        WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = !darkTheme
     }
 }

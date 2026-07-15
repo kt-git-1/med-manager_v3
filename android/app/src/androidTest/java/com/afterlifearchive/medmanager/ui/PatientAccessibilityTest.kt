@@ -44,6 +44,7 @@ class PatientAccessibilityTest {
         composeRule.onNodeWithText("飲んだ記録を確認できます").assertIsDisplayed()
         composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasText("昨日 7月13日（月）"))
         composeRule.onNodeWithText("昨日 7月13日（月）").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasText("朝・昼・夕のお薬"))
         composeRule.onNodeWithText("朝・昼・夕のお薬").assertIsDisplayed()
         composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasContentDescription("月 7月13日 忘れ"))
         composeRule.onNodeWithContentDescription("月 7月13日 忘れ").assertIsDisplayed()

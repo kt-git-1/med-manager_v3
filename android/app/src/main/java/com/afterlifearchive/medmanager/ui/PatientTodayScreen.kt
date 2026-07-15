@@ -322,14 +322,9 @@ private fun PatientTodayUpdatingOverlay() {
 @Composable
 private fun PatientTodayHeader(date: String) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Box(
-            modifier = Modifier.size(58.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(Icons.Rounded.CalendarMonth, contentDescription = null, tint = PatientTeal, modifier = Modifier.size(32.dp))
-        }
+        PatientHeaderIcon(Icons.Rounded.CalendarMonth)
         Column {
-            Text(stringResource(R.string.patient_today_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.patient_today_title), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
             Text(date, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         }
     }
@@ -348,10 +343,10 @@ private fun NextDoseHeroCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().testTag("patient-today-next"),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        border = BorderStroke(2.dp, PatientTeal.copy(alpha = 0.55f)),
+        border = BorderStroke(1.5.dp, PatientTeal.copy(alpha = 0.55f)),
     ) {
         if (slot == null || doses.isEmpty()) {
             Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -379,7 +374,7 @@ private fun NextDoseHeroCard(
                     Icon(Icons.Rounded.AccessTime, contentDescription = null, tint = PatientTeal, modifier = Modifier.size(36.dp))
                 }
                 Column {
-                    Text(patientSlotTitle(slot), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = PatientTeal)
+                    Text(patientSlotTitle(slot), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = PatientTeal)
                     Text(timeText(doses.first()), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 }
             }
@@ -393,13 +388,14 @@ private fun NextDoseHeroCard(
                     Card(
                         onClick = { onDetail(dose) },
                         modifier = Modifier.testTag("patient-today-next-dose-${dose.key}"),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     ) {
                         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text(
                                     dose.medicationName,
+                                    style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
@@ -418,7 +414,8 @@ private fun NextDoseHeroCard(
             Button(
                 onClick = { onRecordSlot(slot) },
                 enabled = !loading && !updating && withinWindow && recordableCount > 0,
-                modifier = Modifier.fillMaxWidth().height(64.dp).testTag("patient-today-primary-bulk-record"),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp).testTag("patient-today-primary-bulk-record"),
+                shape = RoundedCornerShape(18.dp),
             ) {
                 Icon(Icons.Rounded.CheckCircle, contentDescription = null)
                 Spacer(Modifier.size(8.dp))
@@ -436,10 +433,10 @@ private fun PrnEntryCard(count: Int, onClick: () -> Unit) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().testTag("patient-today-prn-entry"),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        border = BorderStroke(2.dp, orange.copy(alpha = 0.55f)),
+        border = BorderStroke(1.5.dp, orange.copy(alpha = 0.55f)),
     ) {
         Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Box(
