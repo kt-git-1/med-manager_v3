@@ -305,6 +305,50 @@ class PatientRepositoryTest {
     }
 
     @Test
+    fun dayHistoryFailureDoesNotReplaceHistoryListState() = runTest {
+        val source = object : PatientDataSource by FakePatientDataSource() {
+            override suspend fun historyDay(date: String): HistoryDayDetail = error("日別履歴の取得に失敗しました")
+        }
+        val repository = PatientRepository(source)
+
+        repository.loadHistory(java.time.LocalDate.parse("2026-07-01"))
+        val loadedHistory = repository.state.value.history
+        repository.loadHistoryDay(java.time.LocalDate.parse("2026-07-13"))
+
+        assertEquals(loadedHistory, repository.state.value.history)
+        assertNull(repository.state.value.error)
+        assertEquals(PatientUserMessage.Raw("日別履歴の取得に失敗しました"), repository.state.value.historyDayError)
+        assertFalse(repository.state.value.historyDayLoading)
+    }
+
+    @Test
+    fun dayHistoryRetentionAndDismissalStayIsolatedFromHistoryList() = runTest {
+        val source = object : PatientDataSource by FakePatientDataSource() {
+            override suspend fun historyDay(date: String): HistoryDayDetail =
+                throw com.afterlifearchive.medmanager.data.network.ApiException.HistoryRetentionLimit("2026-06-14", 30)
+        }
+        val repository = PatientRepository(source)
+
+        repository.loadHistory(java.time.LocalDate.parse("2026-07-01"))
+        val loadedHistory = repository.state.value.history
+        repository.loadHistoryDay(java.time.LocalDate.parse("2026-05-01"))
+
+        assertEquals(loadedHistory, repository.state.value.history)
+        assertNull(repository.state.value.retentionCutoffDate)
+        assertNull(repository.state.value.retentionDays)
+        assertEquals("2026-06-14", repository.state.value.historyDayRetentionCutoffDate)
+        assertEquals(30, repository.state.value.historyDayRetentionDays)
+        assertNull(repository.state.value.historyDayError)
+
+        repository.clearHistoryDay()
+
+        assertEquals(loadedHistory, repository.state.value.history)
+        assertNull(repository.state.value.historyDayRetentionCutoffDate)
+        assertNull(repository.state.value.historyDayRetentionDays)
+        assertNull(repository.state.value.historyDayError)
+    }
+
+    @Test
     fun revokeOnlyReportsSuccessAfterServerCompletes() = runTest {
         var revokeCount = 0
         val source = object : PatientDataSource by FakePatientDataSource() {

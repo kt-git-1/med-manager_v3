@@ -123,9 +123,11 @@ class CaregiverHomeScreenTest {
 
     @Test
     fun createFormRejectsNamesOverFiftyCharactersLocally() {
-        setContent(emptyList())
+        val (repository, _) = setContent(emptyList())
+        composeRule.waitUntil(5_000) { repository.state.value.hasLoaded && !repository.state.value.loading }
 
         composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-create-submit").assertIsEnabled()
         composeRule.onNodeWithTag("caregiver-create-name").performTextInput("x".repeat(51))
         composeRule.onNodeWithTag("caregiver-settings-list")
             .performScrollToNode(hasTestTag("caregiver-create-submit"))

@@ -37,7 +37,7 @@
     <string name="patient_record">記録する</string>
     <string name="patient_record_bulk">まとめて記録</string>
     <string name="common_cancel">キャンセル</string>
-    <string name="common_retry">もう一度試す</string>
+    <string name="common_retry">再試行</string>
     <string name="common_error_generic">エラーが発生しました。もう一度お試しください。</string>
 
     <!-- Patient tutorial -->
@@ -162,12 +162,15 @@
     <string name="patient_history_accessibility_prn">頓服%1$d回</string>
     <string name="patient_history_locked_title">この履歴は表示できません</string>
     <string name="patient_history_locked_message">無料版では直近%1$d日間の履歴を確認できます。\n閲覧可能な最初の日：%2$s</string>
-    <string name="patient_history_day_empty_title">この日の記録</string>
-    <string name="patient_history_day_empty_message">予定されたお薬や頓服の記録はありません</string>
+    <string name="patient_history_day_date_pattern">M月d日 (E)</string>
+    <string name="patient_history_day_empty_title">予定がありません</string>
+    <string name="patient_history_day_empty_message">この日の服用予定はありません</string>
+    <string name="patient_history_day_error">読み込みに失敗しました。再試行してください。</string>
+    <string name="patient_history_prn_name_format">%1$s: %2$s</string>
     <string name="patient_history_scheduled_section">予定されたお薬</string>
     <string name="patient_history_prn_section">頓服</string>
     <string name="patient_history_recorded_by_patient">本人が記録</string>
-    <string name="patient_history_recorded_by_caregiver">家族が記録</string>
+    <string name="patient_history_recorded_by_caregiver">家族が代理で記録</string>
     <string name="patient_actor_patient">本人</string>
     <string name="patient_actor_caregiver">家族</string>
 

@@ -53,7 +53,7 @@ class CaregiverHistoryScreenTest {
         composeRule.onNodeWithTag("caregiver-history-day-$date").performClick()
         composeRule.waitUntil(5_000) { repository.state.value.dayDetail != null }
         composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("history-dose-morning"))
-        composeRule.onNodeWithText("薬A").assertIsDisplayed()
+        composeRule.onNodeWithText("薬A 1錠").assertIsDisplayed()
         composeRule.onNodeWithTag("history-backfill-med-1").performClick()
         composeRule.onNodeWithText("薬Aを服用済みとして記録します。").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-history-backfill-confirm").performClick()

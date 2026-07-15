@@ -236,9 +236,9 @@ private fun CaregiverHistoryMonth(
             if (!loadingDay && !dayFailed && dayDetail != null) {
                 if (dayDetail.doses.isEmpty() && dayDetail.prnItems.isEmpty()) item { HistoryMessageCard(stringResource(R.string.patient_history_day_empty_message)) }
                 if (dayDetail.doses.isNotEmpty()) item { Text(stringResource(R.string.patient_history_scheduled_section), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
-                items(dayDetail.doses, key = { "${it.medicationId}:${it.scheduledAt}" }) { dose -> HistoryScheduledDoseRow(dose, highlightedSlot == dose.slot, onRecordMissed) }
+                items(dayDetail.doses, key = { "${it.medicationId}:${it.scheduledAt}" }) { dose -> HistoryScheduledDoseRow(dose, highlightedSlot == dose.slot, onRecordMissed, HistoryDayRowStyle.CAREGIVER) }
                 if (dayDetail.prnItems.isNotEmpty()) item { Text(stringResource(R.string.patient_history_prn_section), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
-                items(dayDetail.prnItems, key = { "${it.medicationId}:${it.takenAt}" }) { PrnHistoryRow(it) }
+                items(dayDetail.prnItems, key = { "${it.medicationId}:${it.takenAt}" }) { PrnHistoryRow(it, HistoryDayRowStyle.CAREGIVER) }
             }
         }
         reportAction?.let { item { it() } }

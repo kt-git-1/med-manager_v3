@@ -227,6 +227,7 @@ fun PatientHomeScreen(
     val state by repository.state.collectAsStateWithLifecycle()
     val freshness by repository.freshness.collectAsStateWithLifecycle()
     val errorText = state.error?.let { patientUserMessageText(it) }
+    val historyDayErrorText = state.historyDayError?.let { patientUserMessageText(it) }
     val messageText = state.message?.let { patientUserMessageText(it) }
     val navigation = rememberPatientNavigationState()
     val tab = navigation.tab
@@ -487,9 +488,9 @@ fun PatientHomeScreen(
                 date = date,
                 detail = state.historyDayDetail,
                 loading = state.historyDayLoading,
-                error = errorText,
-                retentionCutoffDate = state.retentionCutoffDate,
-                retentionDays = state.retentionDays,
+                error = historyDayErrorText,
+                retentionCutoffDate = state.historyDayRetentionCutoffDate,
+                retentionDays = state.historyDayRetentionDays,
                 onRetry = { scope.launch { repository.loadHistoryDay(date) } },
             )
         }

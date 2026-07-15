@@ -57,6 +57,7 @@ import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.PrnActorType
 import com.afterlifearchive.medmanager.data.patient.PrnHistoryItem
 import com.afterlifearchive.medmanager.data.patient.RecordedByType
+import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -518,20 +519,34 @@ internal fun HistoryDayDetailContent(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp, 8.dp, 20.dp, 40.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item { Text(date.format(DateTimeFormatter.ofPattern(stringResource(R.string.patient_today_date_pattern), Locale.JAPANESE)), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
-        if (loading) item { PatientCenteredProgress() }
+        item { Text(date.format(DateTimeFormatter.ofPattern(stringResource(R.string.patient_history_day_date_pattern), Locale.JAPANESE)), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
+        if (loading) item {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(32.dp).testTag("history-day-detail-loading"),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                CircularProgressIndicator(color = PatientTeal)
+                Text(stringResource(R.string.patient_today_loading), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
         if (retentionCutoffDate != null) item { RetentionLockCard(retentionCutoffDate, retentionDays ?: 30) }
-        if (error != null) item { PatientNoticeCard(error, MaterialTheme.colorScheme.errorContainer, onRetry) }
+        if (error != null) item { PatientNoticeCard(stringResource(R.string.patient_history_day_error), MaterialTheme.colorScheme.errorContainer, onRetry) }
         if (!loading && error == null && retentionCutoffDate == null && detail != null) {
             if (detail.doses.isEmpty() && detail.prnItems.isEmpty()) {
                 item { PatientDetailCard(stringResource(R.string.patient_history_day_empty_title), stringResource(R.string.patient_history_day_empty_message)) }
             }
-            if (detail.doses.isNotEmpty()) item { Text(stringResource(R.string.patient_history_scheduled_section), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
-            items(detail.doses, key = { "${it.medicationId}:${it.scheduledAt}" }) {
-                HistoryScheduledDoseRow(it, highlightedSlot == it.slot, onRecordMissed)
+            val timelineItems = detail.doses.map { PatientHistoryTimelineItem.Scheduled(it) } +
+                detail.prnItems.map { PatientHistoryTimelineItem.Prn(it) }
+            items(
+                timelineItems.sortedWith(compareBy<PatientHistoryTimelineItem>({ it.instant }, { it.sortName })),
+                key = PatientHistoryTimelineItem::key,
+            ) { item ->
+                when (item) {
+                    is PatientHistoryTimelineItem.Scheduled -> HistoryScheduledDoseRow(item.dose, highlightedSlot == item.dose.slot, onRecordMissed)
+                    is PatientHistoryTimelineItem.Prn -> PrnHistoryRow(item.item)
+                }
             }
-            if (detail.prnItems.isNotEmpty()) item { Text(stringResource(R.string.patient_history_prn_section), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
-            items(detail.prnItems, key = { "${it.medicationId}:${it.takenAt}" }) { PrnHistoryRow(it) }
         }
     }
 }
@@ -541,24 +556,75 @@ internal fun HistoryScheduledDoseRow(
     dose: HistoryScheduledDose,
     highlighted: Boolean = false,
     onRecordMissed: ((HistoryScheduledDose) -> Unit)? = null,
+    style: HistoryDayRowStyle = HistoryDayRowStyle.PATIENT,
 ) {
+    val isPatientStyle = style == HistoryDayRowStyle.PATIENT
+    val slotColor = historySlotColor(dose.slot)
+    val statusColor = historyDoseColor(dose.status)
+    val dosage = dose.dosageText.trim()
+    val displayName = if (dosage.isEmpty() || dosage == "不明") dose.medicationName else "${dose.medicationName} $dosage"
     Card(
         colors = CardDefaults.cardColors(containerColor = if (highlighted) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface),
-        border = if (highlighted) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+        border = when {
+            highlighted -> BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+            !isPatientStyle -> null
+            dose.status == DoseStatus.MISSED -> BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.30f))
+            else -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+        },
+        shape = RoundedCornerShape(if (isPatientStyle) 18.dp else 12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isPatientStyle) 4.dp else 0.dp),
         modifier = Modifier.testTag(
             if (highlighted) "history-dose-highlighted-${dose.slot.name.lowercase()}"
             else "history-dose-${dose.slot.name.lowercase()}",
         ),
     ) {
-        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(dose.medicationName, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                Text("${historyTime(dose.scheduledAt)}　${dose.dosageText}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(Modifier.fillMaxWidth().padding(if (isPatientStyle) 16.dp else 14.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(historyTime(dose.scheduledAt), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        patientSlotTitle(dose.slot),
+                        modifier = Modifier.background(slotColor.copy(alpha = 0.16f), RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 3.dp),
+                        color = slotColor,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Text(displayName, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                 dose.recordedByType?.let {
-                    Text(stringResource(if (it == RecordedByType.PATIENT) R.string.patient_history_recorded_by_patient else R.string.patient_history_recorded_by_caregiver), style = MaterialTheme.typography.labelMedium)
+                    Text(
+                        stringResource(if (it == RecordedByType.PATIENT) R.string.patient_history_recorded_by_patient else R.string.patient_history_recorded_by_caregiver),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (isPatientStyle) PatientTeal else MedicationTheme.colors.primaryTealText,
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 }
             }
-            Text(patientDoseStatusText(dose.status), color = historyDoseColor(dose.status), fontWeight = FontWeight.Bold)
+            if (isPatientStyle) {
+                Text(
+                    patientDoseStatusText(dose.status),
+                    modifier = Modifier.background(statusColor.copy(alpha = 0.15f), RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 4.dp),
+                    color = statusColor,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            } else {
+                Box(
+                    modifier = Modifier.size(36.dp).background(statusColor.copy(alpha = 0.15f), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        when (dose.status) {
+                            DoseStatus.TAKEN -> Icons.Rounded.CheckCircle
+                            DoseStatus.MISSED -> Icons.Rounded.Warning
+                            DoseStatus.PENDING -> Icons.Rounded.AccessTime
+                        },
+                        contentDescription = patientDoseStatusText(dose.status),
+                        tint = statusColor,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
         }
         if (dose.status == DoseStatus.MISSED && onRecordMissed != null) {
             TextButton(
@@ -570,15 +636,53 @@ internal fun HistoryScheduledDoseRow(
 }
 
 @Composable
-internal fun PrnHistoryRow(item: PrnHistoryItem) {
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(item.medicationName, fontWeight = FontWeight.Bold)
-                Text("${historyTime(item.takenAt)}　${stringResource(R.string.patient_tablet_amount, formatPatientAmount(item.quantityTaken))}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+internal fun PrnHistoryRow(item: PrnHistoryItem, style: HistoryDayRowStyle = HistoryDayRowStyle.PATIENT) {
+    val isPatientStyle = style == HistoryDayRowStyle.PATIENT
+    val prnColor = if (isPatientStyle) MedicationTheme.colors.indigo else Color(0xFF8E24AA)
+    val recordedBy = stringResource(
+        if (item.actorType == PrnActorType.PATIENT) R.string.patient_history_recorded_by_patient
+        else R.string.patient_history_recorded_by_caregiver,
+    )
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = if (isPatientStyle) BorderStroke(1.dp, prnColor.copy(alpha = 0.26f)) else null,
+        shape = RoundedCornerShape(if (isPatientStyle) 18.dp else 12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isPatientStyle) 4.dp else 0.dp),
+    ) {
+        Row(Modifier.fillMaxWidth().padding(if (isPatientStyle) 16.dp else 14.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(historyTime(item.takenAt), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.patient_history_prn_name_format, stringResource(R.string.patient_history_prn_section), item.medicationName), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                Text(recordedBy, color = if (isPatientStyle) PatientTeal else MedicationTheme.colors.primaryTealText, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
             }
-            Text(stringResource(if (item.actorType == PrnActorType.PATIENT) R.string.patient_actor_patient else R.string.patient_actor_caregiver), fontWeight = FontWeight.SemiBold)
+            Text(
+                stringResource(R.string.patient_history_prn_section),
+                modifier = Modifier.background(prnColor.copy(alpha = 0.18f), RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 4.dp),
+                color = prnColor,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
         }
+    }
+}
+
+internal enum class HistoryDayRowStyle { PATIENT, CAREGIVER }
+
+private sealed interface PatientHistoryTimelineItem {
+    val instant: Instant
+    val sortName: String
+    val key: String
+
+    data class Scheduled(val dose: HistoryScheduledDose) : PatientHistoryTimelineItem {
+        override val instant = dose.scheduledAt
+        override val sortName = dose.medicationName
+        override val key = "scheduled:${dose.medicationId}:${dose.scheduledAt}"
+    }
+
+    data class Prn(val item: PrnHistoryItem) : PatientHistoryTimelineItem {
+        override val instant = item.takenAt
+        override val sortName = item.medicationName
+        override val key = "prn:${item.medicationId}:${item.takenAt}"
     }
 }
 
@@ -589,4 +693,12 @@ private fun historyDoseColor(status: DoseStatus): Color = when (status) {
     DoseStatus.PENDING -> MaterialTheme.colorScheme.tertiary
 }
 
-private fun historyTime(instant: Instant) = instant.atZone(ZoneId.of("Asia/Tokyo")).format(DateTimeFormatter.ofPattern("H:mm"))
+@Composable
+private fun historySlotColor(slot: MedicationSlot): Color = when (slot) {
+    MedicationSlot.MORNING -> MedicationTheme.colors.slotMorning
+    MedicationSlot.NOON -> MedicationTheme.colors.slotNoon
+    MedicationSlot.EVENING -> MedicationTheme.colors.slotEvening
+    MedicationSlot.BEDTIME -> MedicationTheme.colors.slotBedtime
+}
+
+private fun historyTime(instant: Instant) = instant.atZone(ZoneId.of("Asia/Tokyo")).format(DateTimeFormatter.ofPattern("HH:mm"))

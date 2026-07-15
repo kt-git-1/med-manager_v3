@@ -108,7 +108,7 @@ class CaregiverTodayScreenTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("情報を取得できませんでした").assertIsDisplayed()
-        composeRule.onNodeWithText("もう一度試す").assertIsDisplayed()
+        composeRule.onNodeWithText("再試行").assertIsDisplayed()
     }
 
     @Test

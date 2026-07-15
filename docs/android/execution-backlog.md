@@ -113,6 +113,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C03 Record UI-103 insufficient-inventory behavior and repair its unavailable action to the iOS teal 55% treatment.
 - [x] C03 Record UI-102 dose-detail dark hierarchy and complete 200%-font content reachability.
 - [x] C04 Reverify current Patient History progress/week/recent summaries, retention and freshness.
+- [x] C04 Match UI-105 retained day-detail timeline/copy, isolate its failure/retention lifecycle and record the five-state API-35 matrix.
 - [x] C05 Reverify Settings/reminders/tutorial/deep links/legal/logout and patient analytics-consent UI.
 - [x] C06 Complete emulator-verifiable patient/caregiver font 1.0/1.3/2.0, light/dark, compact/standard/large-phone, semantics and rotation/configuration checks. This includes dark captures for Patient Today/History/Settings and all four Caregiver primary surfaces, Caregiver primary-screen action paths at dark plus 200%, Settings/tutorial 200%, merged Patient week and Caregiver calendar-day semantics, medication-named Caregiver primary actions, and production Patient/Caregiver Activity recreation.
 - [x] C06 Record UI-103 PRN dark hierarchy and 200%-font action reachability on API 35.

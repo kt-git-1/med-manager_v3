@@ -21,6 +21,9 @@ data class PatientUiState(
     val historyMonth: Int? = null,
     val historyDayDetail: HistoryDayDetail? = null,
     val historyDayLoading: Boolean = false,
+    val historyDayError: PatientUserMessage? = null,
+    val historyDayRetentionCutoffDate: String? = null,
+    val historyDayRetentionDays: Int? = null,
     val detailMedicationId: String? = null,
     val detailMedication: PatientMedication? = null,
     val detailLoading: Boolean = false,
@@ -290,22 +293,34 @@ class PatientRepository(
     }
 
     suspend fun loadHistoryDay(date: LocalDate) {
-        mutableState.value = mutableState.value.copy(historyDayLoading = true, historyDayDetail = null, error = null, retentionCutoffDate = null, retentionDays = null)
+        mutableState.value = mutableState.value.copy(
+            historyDayLoading = true,
+            historyDayDetail = null,
+            historyDayError = null,
+            historyDayRetentionCutoffDate = null,
+            historyDayRetentionDays = null,
+        )
         runCatching { api.historyDay(date.toString()) }
             .onSuccess { mutableState.value = mutableState.value.copy(historyDayDetail = it, historyDayLoading = false) }
             .onFailure { error ->
                 val retention = error as? ApiException.HistoryRetentionLimit
                 mutableState.value = mutableState.value.copy(
                     historyDayLoading = false,
-                    error = if (retention == null) error.toPatientUserMessage() else null,
-                    retentionCutoffDate = retention?.cutoffDate,
-                    retentionDays = retention?.retentionDays,
+                    historyDayError = if (retention == null) error.toPatientUserMessage() else null,
+                    historyDayRetentionCutoffDate = retention?.cutoffDate,
+                    historyDayRetentionDays = retention?.retentionDays,
                 )
             }
     }
 
     fun clearHistoryDay() {
-        mutableState.value = mutableState.value.copy(historyDayDetail = null, historyDayLoading = false, error = null)
+        mutableState.value = mutableState.value.copy(
+            historyDayDetail = null,
+            historyDayLoading = false,
+            historyDayError = null,
+            historyDayRetentionCutoffDate = null,
+            historyDayRetentionDays = null,
+        )
     }
 
     fun handleNotificationTarget(date: String?, slot: String?): Boolean {

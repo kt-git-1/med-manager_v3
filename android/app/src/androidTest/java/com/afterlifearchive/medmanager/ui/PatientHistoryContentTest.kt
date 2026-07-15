@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.hasText
@@ -117,23 +119,57 @@ class PatientHistoryContentTest {
 
     @Test
     fun dayDetailShowsScheduledAndPrnRecorderInformation() {
-        val detail = HistoryDayDetail(
-            "2026-07-13",
-            listOf(HistoryScheduledDose("med", "血圧薬", "1錠", 1.0, Instant.parse("2026-07-13T03:15:00Z"), MedicationSlot.NOON, DoseStatus.TAKEN, RecordedByType.CAREGIVER)),
-            listOf(PrnHistoryItem("prn", "頭痛薬", Instant.parse("2026-07-13T05:00:00Z"), 1.5, PrnActorType.PATIENT)),
-        )
-        composeRule.setContent {
-            MedicationAppTheme {
-                HistoryDayDetailContent(LocalDate.parse("2026-07-13"), detail, false, null, null, null, {})
-            }
-        }
+        showDayDetail(detail = historyDetailFixture())
 
-        composeRule.onNodeWithText("血圧薬").assertIsDisplayed()
-        composeRule.onNodeWithText("家族が記録").assertIsDisplayed()
+        composeRule.onNodeWithText("血圧薬 1錠").assertIsDisplayed()
+        composeRule.onNodeWithText("家族が代理で記録").assertIsDisplayed()
         composeRule.onNodeWithText("服用済み").assertIsDisplayed()
-        composeRule.onNodeWithText("頭痛薬").assertIsDisplayed()
-        composeRule.onNodeWithText("1.5錠", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("本人").assertIsDisplayed()
+        composeRule.onNodeWithText("頓服: 頭痛薬").assertIsDisplayed()
+        composeRule.onNodeWithText("本人が記録").assertIsDisplayed()
+        captureNode("android-ui-105-patient-history-day-content-light.png")
+    }
+
+    @Test
+    fun dayDetailShowsEmptyContract() {
+        showDayDetail(detail = HistoryDayDetail("2026-07-13", emptyList(), emptyList()))
+
+        composeRule.onNodeWithText("予定がありません").assertIsDisplayed()
+        composeRule.onNodeWithText("この日の服用予定はありません").assertIsDisplayed()
+        captureNode("android-ui-105-patient-history-day-empty-light.png")
+    }
+
+    @Test
+    fun dayDetailShowsLoadingContract() {
+        showDayDetail(detail = null, loading = true)
+
+        composeRule.onNodeWithTag("history-day-detail-loading").assertIsDisplayed()
+        captureNode("android-ui-105-patient-history-day-loading-light.png")
+    }
+
+    @Test
+    fun dayDetailShowsRetryableErrorContract() {
+        var retryCount = 0
+        showDayDetail(detail = null, error = "内部詳細を表示しない", onRetry = { retryCount += 1 })
+
+        composeRule.onNodeWithText("読み込みに失敗しました。再試行してください。").assertIsDisplayed()
+        composeRule.onNodeWithTag("history-day-detail-list").performScrollToNode(hasText("再試行"))
+        composeRule.onNodeWithText("再試行").assertIsDisplayed().performClick()
+        composeRule.runOnIdle { org.junit.Assert.assertEquals(1, retryCount) }
+        captureNode("android-ui-105-patient-history-day-error-light.png")
+    }
+
+    @Test
+    fun dayDetailShowsRetentionContract() {
+        showDayDetail(
+            detail = null,
+            retentionCutoffDate = "2026-06-14",
+            retentionDays = 30,
+        )
+
+        composeRule.onNodeWithText("この履歴は表示できません").assertIsDisplayed()
+        composeRule.onNodeWithText("直近30日間", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("2026-06-14", substring = true).assertIsDisplayed()
+        captureNode("android-ui-105-patient-history-day-retention-light.png")
     }
 
     @Test
@@ -171,6 +207,41 @@ class PatientHistoryContentTest {
             }
         }
         return activity
+    }
+
+    private fun showDayDetail(
+        detail: HistoryDayDetail?,
+        loading: Boolean = false,
+        error: String? = null,
+        retentionCutoffDate: String? = null,
+        retentionDays: Int? = null,
+        onRetry: () -> Unit = {},
+    ) {
+        composeRule.setContent {
+            MedicationAppTheme {
+                Box(Modifier.fillMaxSize().background(PatientBackground).safeDrawingPadding()) {
+                    HistoryDayDetailContent(
+                        date = LocalDate.parse("2026-07-13"),
+                        detail = detail,
+                        loading = loading,
+                        error = error,
+                        retentionCutoffDate = retentionCutoffDate,
+                        retentionDays = retentionDays,
+                        onRetry = onRetry,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun historyDetailFixture() = HistoryDayDetail(
+        "2026-07-13",
+        listOf(HistoryScheduledDose("med", "血圧薬", "1錠", 1.0, Instant.parse("2026-07-13T03:15:00Z"), MedicationSlot.NOON, DoseStatus.TAKEN, RecordedByType.CAREGIVER)),
+        listOf(PrnHistoryItem("prn", "頭痛薬", Instant.parse("2026-07-13T05:00:00Z"), 1.5, PrnActorType.PATIENT)),
+    )
+
+    private fun captureNode(filename: String) {
+        writeScreenshotFixture(composeRule.onRoot().captureToImage(), filename)
     }
 
     @Suppress("DEPRECATION")
