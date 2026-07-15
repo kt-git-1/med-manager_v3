@@ -316,9 +316,13 @@
     <string name="caregiver_today_timeline_record_slot">%1$d件をまとめて記録</string>
     <string name="caregiver_today_prn_title">必要な時のお薬</string>
     <string name="caregiver_today_prn_message">頓服薬が%1$d件あります</string>
-    <string name="caregiver_today_empty_title">今日の服薬予定はありません</string>
-    <string name="caregiver_today_empty_message">薬と服用スケジュールを登録すると、ここに今日の予定が表示されます。</string>
+    <string name="caregiver_today_empty_title">今日の予定はまだ空です</string>
+    <string name="caregiver_today_empty_message">薬を登録して飲む時間を設定すると、この画面に今日の予定が並びます。</string>
+    <string name="caregiver_today_empty_step_medication">薬タブで薬名と飲む量を登録</string>
+    <string name="caregiver_today_empty_step_schedule">朝・昼・夜・眠前などの時間を設定</string>
+    <string name="caregiver_today_empty_step_record">今日画面で服薬状況を確認・記録</string>
     <string name="caregiver_today_empty_action">薬を登録する</string>
+    <string name="caregiver_today_return_login">ログイン画面に戻る</string>
     <string name="caregiver_today_slot_morning">朝</string>
     <string name="caregiver_today_slot_noon">昼</string>
     <string name="caregiver_today_slot_evening">夕</string>

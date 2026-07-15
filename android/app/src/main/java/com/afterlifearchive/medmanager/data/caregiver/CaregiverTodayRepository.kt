@@ -340,6 +340,10 @@ class CaregiverTodayRepository(
         }
     }
 
+    fun clearMutationFeedback() {
+        mutableState.value = mutableState.value.copy(mutationError = null)
+    }
+
     fun clear() {
         mutableState.value = CaregiverTodayState()
     }

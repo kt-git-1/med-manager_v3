@@ -1,5 +1,6 @@
 package com.afterlifearchive.medmanager.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -32,7 +33,10 @@ import androidx.compose.material.icons.rounded.Bed
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.LocalHospital
 import androidx.compose.material.icons.rounded.Medication
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material.icons.rounded.WbTwilight
 import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material3.Button
@@ -42,10 +46,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -56,12 +58,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -85,12 +90,12 @@ import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.launch
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 internal fun CaregiverTodayScreen(
     repository: CaregiverTodayRepository,
     patientState: CaregiverPatientState,
     enabled: Boolean,
     onOpenMedications: () -> Unit,
+    onReturnToLogin: () -> Unit = {},
 ) {
     val state by repository.state.collectAsStateWithLifecycle()
     val freshness by repository.freshness.collectAsStateWithLifecycle()
@@ -121,14 +126,11 @@ internal fun CaregiverTodayScreen(
             stringResource(R.string.caregiver_no_selection_message),
         )
         state.loading -> CaregiverTodayLoadingState()
-        state.loadFailed -> CaregiverTodayMessage(
-            stringResource(R.string.caregiver_data_unavailable_title),
-            stringResource(R.string.caregiver_data_unavailable_message),
-        ) {
-            Button(onClick = { scope.launch { repository.load(selected.id) } }, enabled = enabled) {
-                Text(stringResource(R.string.common_retry))
-            }
-        }
+        state.loadFailed -> CaregiverTodayUnavailableState(
+            enabled = enabled,
+            onRetry = { scope.launch { repository.load(selected.id) } },
+            onReturnToLogin = onReturnToLogin,
+        )
         else -> Box(Modifier.fillMaxSize()) {
             CaregiverTodayContent(
                 patientName = selected.displayName,
@@ -188,49 +190,22 @@ internal fun CaregiverTodayScreen(
         )
     }
     if (showingPrnPicker) {
-        ModalBottomSheet(
-            onDismissRequest = { if (state.updatingPrnMedicationId == null) showingPrnPicker = false },
-        ) {
-            Box(Modifier.fillMaxWidth().fillMaxHeight(0.9f).testTag("caregiver-today-prn-picker")) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    item {
-                        Text(
-                            stringResource(R.string.caregiver_today_prn_screen_title),
-                            modifier = Modifier.fillMaxWidth(),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                    item {
-                        Text(stringResource(R.string.caregiver_today_prn_select), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                        Text(stringResource(R.string.caregiver_today_prn_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-                    }
-                    state.mutationError?.let { error ->
-                        item {
-                            PatientNoticeCard(
-                                stringResource(if (error == CaregiverTodayMutationError.INSUFFICIENT_INVENTORY) R.string.patient_inventory_insufficient else R.string.caregiver_today_mutation_failed),
-                                MaterialTheme.colorScheme.errorContainer,
-                                null,
-                            )
-                        }
-                    }
-                    items(state.prnMedications, key = PatientMedication::id) { medication ->
-                        CaregiverPrnMedicationCard(
-                            medication = medication,
-                            insufficient = medication.id in state.outOfStockMedicationIds,
-                            disabled = state.updatingPrnMedicationId != null,
-                            onRecord = { prnToConfirm = medication },
-                        )
-                    }
-                    item { Spacer(Modifier.height(32.dp)) }
-                }
-                if (state.updatingPrnMedicationId != null) CaregiverTodayUpdatingOverlay()
+        val dismissPrn = {
+            if (state.updatingPrnMedicationId == null) {
+                showingPrnPicker = false
+                prnToConfirm = null
+                repository.clearMutationFeedback()
             }
         }
+        BackHandler(enabled = state.updatingPrnMedicationId == null, onBack = dismissPrn)
+        CaregiverPrnScreen(
+            medications = state.prnMedications,
+            outOfStockMedicationIds = state.outOfStockMedicationIds,
+            error = state.mutationError,
+            updating = state.updatingPrnMedicationId != null,
+            onBack = dismissPrn,
+            onRecord = { prnToConfirm = it },
+        )
     }
     val prnConfirmation = prnToConfirm
     if (prnConfirmation != null && selected != null) {
@@ -431,14 +406,17 @@ private fun CaregiverTodayContent(
 private fun CaregiverTodayEmpty(onOpenMedications: () -> Unit) {
     TodayCard(MaterialTheme.colorScheme.primary) {
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Top) {
-            TodayIcon(Icons.Rounded.CalendarMonth, MaterialTheme.colorScheme.primary, 58)
+            CaregiverTodayEmptyCalendarIcon()
             Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.caregiver_today_empty_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text(stringResource(R.string.caregiver_today_empty_message), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.caregiver_today_empty_title), fontSize = 24.sp, lineHeight = 30.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.caregiver_today_empty_message), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 17.sp, lineHeight = 23.sp)
             }
         }
-        Button(onClick = onOpenMedications, modifier = Modifier.fillMaxWidth().testTag("caregiver-today-open-medications")) {
-            Icon(Icons.Rounded.Medication, contentDescription = null)
+        CaregiverTodayOnboardingStep(1, R.string.caregiver_today_empty_step_medication, MedicationTheme.colors.primaryTealText, Icons.Rounded.Medication, usePillsGlyph = true)
+        CaregiverTodayOnboardingStep(2, R.string.caregiver_today_empty_step_schedule, MedicationTheme.colors.caregiverBlue, Icons.Rounded.AccessTime)
+        CaregiverTodayOnboardingStep(3, R.string.caregiver_today_empty_step_record, MedicationTheme.colors.orange, Icons.Rounded.CheckCircle)
+        Button(onClick = onOpenMedications, modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp).testTag("caregiver-today-open-medications")) {
+            MedicationPillsGlyph(Color.White, Modifier.size(24.dp))
             Spacer(Modifier.size(6.dp))
             Text(stringResource(R.string.caregiver_today_empty_action))
         }
@@ -446,9 +424,41 @@ private fun CaregiverTodayEmpty(onOpenMedications: () -> Unit) {
 }
 
 @Composable
+private fun CaregiverTodayEmptyCalendarIcon() {
+    val tint = MaterialTheme.colorScheme.primary
+    Box(Modifier.size(58.dp).clip(CircleShape).background(tint.copy(alpha = 0.12f))) {
+        Icon(Icons.Rounded.CalendarMonth, contentDescription = null, tint = tint, modifier = Modifier.size(32.dp).align(Alignment.Center))
+        Box(
+            Modifier.size(19.dp).align(Alignment.BottomEnd).clip(CircleShape).background(tint),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("+", color = Color.White, fontSize = 16.sp, lineHeight = 16.sp, fontWeight = FontWeight.Black)
+        }
+    }
+}
+
+@Composable
+private fun CaregiverTodayOnboardingStep(number: Int, label: Int, tint: Color, icon: ImageVector, usePillsGlyph: Boolean = false) {
+    Row(
+        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f), RoundedCornerShape(14.dp)).padding(horizontal = 12.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(Modifier.size(24.dp).clip(CircleShape).background(tint), contentAlignment = Alignment.Center) {
+            Text(number.toString(), color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
+        }
+        Box(Modifier.size(34.dp).clip(CircleShape).background(tint.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+            if (usePillsGlyph) MedicationPillsGlyph(tint, Modifier.size(19.dp))
+            else Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(19.dp))
+        }
+        Text(stringResource(label), modifier = Modifier.weight(1f), fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
 private fun CaregiverTodayLoadingState() {
     CaregiverTodayCentered {
-        CircularProgressIndicator(modifier = Modifier.size(52.dp), color = MedicationTheme.colors.primaryTealText)
+        CircularProgressIndicator(modifier = Modifier.size(38.dp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f), strokeWidth = 4.dp)
         Text(
             stringResource(R.string.patient_today_loading),
             style = MaterialTheme.typography.titleLarge,
@@ -456,6 +466,97 @@ private fun CaregiverTodayLoadingState() {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.testTag("caregiver-today-loading"),
         )
+    }
+}
+
+@Composable
+private fun CaregiverTodayUnavailableState(enabled: Boolean, onRetry: () -> Unit, onReturnToLogin: () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 24.dp).testTag("caregiver-today-unavailable"),
+        contentAlignment = Alignment.Center,
+    ) {
+        val shape = RoundedCornerShape(20.dp)
+        Column(
+            modifier = Modifier.fillMaxWidth().shadow(12.dp, shape).background(MaterialTheme.colorScheme.surface.copy(alpha = 0.96f), shape).padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Icon(Icons.Rounded.WifiOff, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(44.dp))
+            Text(stringResource(R.string.caregiver_data_unavailable_title), fontSize = 20.sp, lineHeight = 25.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.caregiver_data_unavailable_message), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 17.sp, lineHeight = 23.sp, textAlign = TextAlign.Center)
+            Button(onClick = onRetry, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp).testTag("caregiver-today-retry"), shape = RoundedCornerShape(14.dp)) {
+                Icon(Icons.Rounded.Refresh, contentDescription = null)
+                Spacer(Modifier.size(8.dp))
+                Text(stringResource(R.string.common_retry), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            }
+            TextButton(
+                onClick = onReturnToLogin,
+                enabled = enabled,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f), RoundedCornerShape(14.dp)).testTag("caregiver-today-return-login"),
+            ) {
+                Icon(Icons.Rounded.Person, contentDescription = null)
+                Spacer(Modifier.size(8.dp))
+                Text(stringResource(R.string.caregiver_today_return_login), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CaregiverPrnScreen(
+    medications: List<PatientMedication>,
+    outOfStockMedicationIds: Set<String>,
+    error: CaregiverTodayMutationError?,
+    updating: Boolean,
+    onBack: () -> Unit,
+    onRecord: (PatientMedication) -> Unit,
+) {
+    val title = stringResource(R.string.caregiver_today_prn_screen_title)
+    Box(
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).semantics { paneTitle = title }.testTag("caregiver-today-prn-picker"),
+    ) {
+        Column(Modifier.fillMaxSize()) {
+            Box(Modifier.fillMaxWidth().height(56.dp)) {
+                androidx.compose.material3.IconButton(
+                    onClick = onBack,
+                    enabled = !updating,
+                    modifier = Modifier.align(Alignment.CenterStart).size(48.dp).testTag("caregiver-today-prn-back"),
+                ) {
+                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.common_back), modifier = Modifier.size(24.dp))
+                }
+                Text(title, modifier = Modifier.align(Alignment.Center), fontSize = 20.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold)
+            }
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().weight(1f).testTag("caregiver-today-prn-list"),
+                contentPadding = PaddingValues(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 120.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(stringResource(R.string.caregiver_today_prn_select), fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.caregiver_today_prn_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+                items(medications, key = PatientMedication::id) { medication ->
+                    CaregiverPrnMedicationCard(
+                        medication = medication,
+                        insufficient = medication.id in outOfStockMedicationIds,
+                        disabled = updating,
+                        onRecord = { onRecord(medication) },
+                    )
+                }
+            }
+        }
+        error?.let {
+            Box(Modifier.align(Alignment.TopCenter).padding(top = 8.dp, start = 16.dp, end = 16.dp)) {
+                PatientNoticeCard(
+                    stringResource(if (it == CaregiverTodayMutationError.INSUFFICIENT_INVENTORY) R.string.patient_inventory_insufficient else R.string.caregiver_today_mutation_failed),
+                    MaterialTheme.colorScheme.errorContainer,
+                    null,
+                )
+            }
+        }
+        if (updating) CaregiverTodayUpdatingOverlay()
     }
 }
 
@@ -506,7 +607,9 @@ private fun CaregiverPrnMedicationCard(
     ) {
         Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                TodayIcon(Icons.Rounded.LocalHospital, orange, 48)
+                Box(Modifier.size(50.dp).clip(CircleShape).background(orange.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+                    MedicationPillsGlyph(orange, Modifier.size(32.dp))
+                }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(displayName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, maxLines = 2)
                     Text(
@@ -531,7 +634,10 @@ private fun CaregiverPrnMedicationCard(
                 enabled = !disabled && !insufficient,
                 modifier = Modifier.fillMaxWidth().height(58.dp).testTag("caregiver-today-prn-${medication.id}"),
                 shape = RoundedCornerShape(16.dp),
-                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = if (insufficient) MaterialTheme.colorScheme.error else orange),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = if (insufficient) Color.Gray else MaterialTheme.colorScheme.primary,
+                    disabledContainerColor = if (insufficient) Color.Gray else MaterialTheme.colorScheme.primary,
+                ),
             ) {
                 Icon(if (insufficient) Icons.Rounded.Warning else Icons.Rounded.CheckCircle, contentDescription = null)
                 Spacer(Modifier.size(8.dp))

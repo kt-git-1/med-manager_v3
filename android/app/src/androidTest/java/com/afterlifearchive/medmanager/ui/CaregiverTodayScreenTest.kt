@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -182,9 +183,13 @@ class CaregiverTodayScreenTest {
     @Test
     fun canonicalEmptyStateRoutesToMedicationTabAction() {
         var opened = false
-        setContent(onOpenMedications = { opened = true })
+        val activity = setContent(onOpenMedications = { opened = true })
 
-        composeRule.onNodeWithText("今日の服薬予定はありません").assertIsDisplayed()
+        composeRule.onNodeWithText("今日の予定はまだ空です").assertIsDisplayed()
+        composeRule.onNodeWithText("薬タブで薬名と飲む量を登録").assertIsDisplayed()
+        composeRule.onNodeWithText("朝・昼・夜・眠前などの時間を設定").assertIsDisplayed()
+        composeRule.onNodeWithText("今日画面で服薬状況を確認・記録").assertIsDisplayed()
+        captureDevice(activity, "android-ui-201-caregiver-today-empty-light-matched.png")
         composeRule.onNodeWithTag("caregiver-today-open-medications").performClick()
 
         assertTrue(opened)
@@ -212,15 +217,24 @@ class CaregiverTodayScreenTest {
         }
         val repository = CaregiverTodayRepository(source, MutationFreshnessStore())
         val patient = CaregiverPatient("patient-1", "さくら")
+        lateinit var activity: Activity
+        var returnedToLogin = false
         composeRule.setContent {
             MedicationAppTheme {
-                CaregiverTodayScreen(repository, CaregiverPatientState(listOf(patient), patient.id), true, {})
+                activity = checkNotNull(LocalActivity.current)
+                Box(Modifier.fillMaxSize().background(androidx.compose.material3.MaterialTheme.colorScheme.background).safeDrawingPadding()) {
+                    CaregiverTodayScreen(repository, CaregiverPatientState(listOf(patient), patient.id), true, {}, { returnedToLogin = true })
+                }
             }
         }
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("情報を取得できませんでした").assertIsDisplayed()
         composeRule.onNodeWithText("再試行").assertIsDisplayed()
+        composeRule.onNodeWithText("ログイン画面に戻る").assertIsDisplayed()
+        captureDevice(activity, "android-ui-201-caregiver-today-error-light-matched.png")
+        composeRule.onNodeWithTag("caregiver-today-return-login").performClick()
+        assertTrue(returnedToLogin)
     }
 
     @Test
@@ -336,10 +350,12 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithText("今服用した頓服を家族が代理で記録できます。").assertIsDisplayed()
         composeRule.onNodeWithText("痛み止め 200 mg").assertIsDisplayed()
         composeRule.onNodeWithText("1回1錠").assertIsDisplayed()
-        captureDevice(activity, "android-ui-201-caregiver-prn-list-light.png")
+        composeRule.onNodeWithText("痛い時").assertIsDisplayed()
+        captureDevice(activity, "android-ui-201-caregiver-today-prn-light-matched.png")
         composeRule.onNodeWithTag("caregiver-today-prn-prn").performClick()
         composeRule.onNodeWithTag("caregiver-today-prn-confirm-dialog").assertIsDisplayed()
         composeRule.onNodeWithText("さくらさんが「痛み止め」を今服用した記録を残します。").assertIsDisplayed()
+        captureDevice(activity, "android-ui-201-caregiver-today-confirm-light-matched.png")
         composeRule.onNodeWithTag("caregiver-today-prn-confirm").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("caregiver-today-prn-picker").assertDoesNotExist()
@@ -368,8 +384,48 @@ class CaregiverTodayScreenTest {
 
         composeRule.onNodeWithTag("caregiver-today-loading").assertIsDisplayed()
         composeRule.onNodeWithText("読み込み中...").assertIsDisplayed()
-        captureDevice(activity, "android-ui-201-caregiver-today-loading-light.png")
+        captureDevice(activity, "android-ui-201-caregiver-today-loading-light-matched.png")
         release.complete(Unit)
+    }
+
+    @Test
+    fun emptyStateMatchesCurrentIosInDarkMode() {
+        val activity = setContent(darkTheme = true)
+
+        composeRule.onNodeWithText("今日の予定はまだ空です").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-open-medications").assertIsDisplayed()
+        captureDevice(activity, "android-ui-201-caregiver-today-empty-dark-matched.png", darkTheme = true)
+    }
+
+    @Test
+    fun emptyStateRemainsReachableAtTwoHundredPercentText() {
+        val activity = setContent(fontScale = 2f)
+
+        composeRule.onNodeWithTag("caregiver-today-list")
+            .performScrollToNode(hasTestTag("caregiver-today-open-medications"))
+        composeRule.onNodeWithTag("caregiver-today-open-medications").assertIsDisplayed()
+        captureDevice(activity, "android-ui-201-caregiver-today-empty-font-2.0-matched.png")
+    }
+
+    @Test
+    fun prnRouteMatchesCurrentIosInDarkMode() {
+        val activity = setContent(prn = listOf(medication()), darkTheme = true)
+
+        composeRule.onNodeWithTag("caregiver-today-prn-open").performClick()
+        composeRule.onNodeWithTag("caregiver-today-prn-picker").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-prn-prn").assertIsDisplayed()
+        captureDevice(activity, "android-ui-201-caregiver-today-prn-dark-matched.png", darkTheme = true)
+    }
+
+    @Test
+    fun prnRouteRemainsReachableAtTwoHundredPercentText() {
+        val activity = setContent(prn = listOf(medication()), fontScale = 2f)
+
+        composeRule.onNodeWithTag("caregiver-today-prn-open").performClick()
+        composeRule.onNodeWithTag("caregiver-today-prn-list")
+            .performScrollToNode(hasTestTag("caregiver-today-prn-prn"))
+        composeRule.onNodeWithTag("caregiver-today-prn-prn").assertIsDisplayed()
+        captureDevice(activity, "android-ui-201-caregiver-today-prn-font-2.0-matched.png")
     }
 
     @Test
@@ -398,6 +454,10 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithTag("caregiver-today-prn-picker").assertIsDisplayed()
         composeRule.onAllNodesWithText("更新できませんでした。通信状態を確認して、もう一度お試しください。").onFirst().assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-today-prn-prn").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("caregiver-today-prn-back").performClick()
+        composeRule.onNodeWithTag("caregiver-today-prn-picker").assertDoesNotExist()
+        composeRule.onAllNodesWithText("更新できませんでした。通信状態を確認して、もう一度お試しください。").assertCountEquals(0)
     }
 
     @Test
@@ -493,8 +553,8 @@ class CaregiverTodayScreenTest {
     )
 
     private fun medication() = PatientMedication(
-        "prn", "patient-1", "痛み止め", "200 mg", 1.0, 200.0, "mg", null, true, null,
-        Instant.parse("2026-01-01T00:00:00Z"), null, null, null, false, 0.0, false,
+        "prn", "patient-1", "痛み止め", "200 mg", 1.0, 200.0, "mg", null, true, "痛い時",
+        Instant.parse("2026-01-01T00:00:00Z"), null, 20.0, "錠", true, 20.0, false,
         true, false, null, null, null,
     )
 

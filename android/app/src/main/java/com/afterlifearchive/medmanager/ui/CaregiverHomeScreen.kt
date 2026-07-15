@@ -299,7 +299,7 @@ private fun CaregiverTabContent(
             )
         } else CaregiverFeatureLanding(tab, state, repository, visible)
         CaregiverTab.TODAY -> if (todayRepository != null) {
-            CaregiverTodayScreen(todayRepository, state, visible, onOpenMedications)
+            CaregiverTodayScreen(todayRepository, state, visible, onOpenMedications, onLogout)
         } else CaregiverFeatureLanding(tab, state, repository, visible)
         CaregiverTab.INVENTORY -> if (inventoryRepository != null) {
             CaregiverInventoryScreen(inventoryRepository, state, visible, onOpenMedications)

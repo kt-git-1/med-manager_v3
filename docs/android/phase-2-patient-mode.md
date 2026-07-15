@@ -290,6 +290,13 @@ This selector foundation is connected to inventory-backed production candidates 
 - Current iOS exposes no logout progress/failure state and ignores revoke failure before clearing its token. Android intentionally preserves the pinned server-first contract: `ログアウト中…` is disabled, failed revoke keeps the linked session and retry remains available.
 - Current iOS caps its root at `.xLarge` under Accessibility XXXL; Android keeps all Settings actions scroll-reachable at 200%. Physical permission transitions, browser return, real revocation and TalkBack remain Gate I.
 
+## 2026-07-16 C49 Caregiver Today exceptional-state calibration
+
+- Nine deterministic current-iOS/Android pairs under `evidence/c49-20260716/` close initial loading/failure, empty onboarding, PRN list/confirmation, empty/PRN dark and empty/PRN adaptive states.
+- Empty Today now reproduces the exact three numbered registration steps, calendar-plus and pills identities, and full-width medicine action. Initial failure uses the shared blocking recovery hierarchy with Retry and return-to-login.
+- PRN now opens as a full navigation surface rather than a bottom sheet. The card uses the shared orange capsule, exact strength/count/instruction copy and teal proxy-record action; mutation failure remains in-route, success alone dismisses, and Back clears transient feedback.
+- Native alert geometry and Android's explicit route Back remain platform conventions. iOS caps its root at `.xLarge`, while Android keeps both exceptional surfaces reachable at true 200% font scale. Physical TalkBack and real-API verification remain Gate I.
+
 ## Phase 2D notification routing and patient tutorial
 
 ### XP-002 exact notification destination
