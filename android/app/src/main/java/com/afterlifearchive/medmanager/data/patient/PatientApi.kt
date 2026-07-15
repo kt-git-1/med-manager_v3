@@ -13,6 +13,7 @@ interface PatientDataSource {
     suspend fun recordPrn(medication: PatientMedication) = Unit
     suspend fun recordDose(dose: PatientDose)
     suspend fun history(year: Int, month: Int): List<HistoryDay>
+    suspend fun historyStreak(): PatientHistoryStreak = error("historyStreak not implemented")
     suspend fun historyDay(date: String): HistoryDayDetail = error("historyDay not implemented")
     suspend fun revokeSession()
 }
@@ -68,6 +69,11 @@ class PatientApi(private val client: ApiClient) : PatientDataSource {
             RequestAuthPolicy.PATIENT,
         )
         return PatientWireJson.decodeFromString<PatientHistoryMonthResponseDto>(response).toDomain()
+    }
+
+    override suspend fun historyStreak(): PatientHistoryStreak {
+        val response = client.getBody("api/patient/history/streak", RequestAuthPolicy.PATIENT)
+        return PatientWireJson.decodeFromString<PatientHistoryStreakResponseDto>(response).toDomain()
     }
 
     override suspend fun historyDay(date: String): HistoryDayDetail {

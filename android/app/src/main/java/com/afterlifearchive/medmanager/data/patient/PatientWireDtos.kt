@@ -183,6 +183,25 @@ internal data class PatientHistoryMonthResponseDto(
 }
 
 @Serializable
+internal data class PatientHistoryStreakResponseDto(
+    val currentStreakDays: Int,
+    val isAtLeast: Boolean,
+    val todayStatus: String,
+) {
+    fun toDomain() = PatientHistoryStreak(
+        currentStreakDays = currentStreakDays.also { require(it >= 0) },
+        isAtLeast = isAtLeast,
+        todayStatus = when (todayStatus) {
+            "complete" -> HistoryStreakTodayStatus.COMPLETE
+            "inProgress" -> HistoryStreakTodayStatus.IN_PROGRESS
+            "missed" -> HistoryStreakTodayStatus.MISSED
+            "noSchedule" -> HistoryStreakTodayStatus.NO_SCHEDULE
+            else -> throw SerializationException("Unknown history streak todayStatus: $todayStatus")
+        },
+    )
+}
+
+@Serializable
 internal data class PatientHistoryDayDto(val date: String, val slotSummary: PatientSlotSummaryDto) {
     fun toDomain(prnCount: Int) = HistoryDay(
         date = date,

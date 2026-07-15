@@ -6,6 +6,13 @@ import java.time.LocalDate
 enum class DoseStatus { PENDING, TAKEN, MISSED }
 enum class RecordedByType { PATIENT, CAREGIVER }
 enum class MedicationSlot { MORNING, NOON, EVENING, BEDTIME }
+enum class HistoryStreakTodayStatus { COMPLETE, IN_PROGRESS, MISSED, NO_SCHEDULE }
+
+data class PatientHistoryStreak(
+    val currentStreakDays: Int,
+    val isAtLeast: Boolean,
+    val todayStatus: HistoryStreakTodayStatus,
+)
 
 data class PatientSlotTimes(
     val morning: String,

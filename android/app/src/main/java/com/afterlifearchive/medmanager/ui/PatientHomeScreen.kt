@@ -95,6 +95,7 @@ import com.afterlifearchive.medmanager.data.freshness.FreshnessConsumer
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
+import com.afterlifearchive.medmanager.data.patient.HistoryStreakTodayStatus
 import com.afterlifearchive.medmanager.data.patient.HistoryDayDetail
 import com.afterlifearchive.medmanager.data.patient.PrnHistoryItem
 import com.afterlifearchive.medmanager.data.patient.HistoryScheduledDose
@@ -103,6 +104,7 @@ import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.PatientRepository
 import com.afterlifearchive.medmanager.data.patient.PatientMedication
 import com.afterlifearchive.medmanager.data.patient.PatientMaintenanceWarning
+import com.afterlifearchive.medmanager.data.patient.PatientHistoryStreak
 import com.afterlifearchive.medmanager.R
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -182,6 +184,7 @@ internal fun PatientModePreview(initialTab: PatientTab = PatientTab.TODAY) {
             when (initialTab) {
                 PatientTab.HISTORY -> HistoryContent(
                     days = previewHistory, loading = false, error = null,
+                    streak = PatientHistoryStreak(7, false, HistoryStreakTodayStatus.IN_PROGRESS),
                     retentionCutoffDate = null, retentionDays = null, onRetry = {}, now = previewDate,
                 )
                 PatientTab.SETTINGS -> SettingsContent(
@@ -384,6 +387,7 @@ fun PatientHomeScreen(
                 )
                 PatientTab.HISTORY -> HistoryContent(
                     days = state.history,
+                    streak = state.historyStreak,
                     loading = state.loading,
                     error = errorText,
                     retentionCutoffDate = state.retentionCutoffDate,

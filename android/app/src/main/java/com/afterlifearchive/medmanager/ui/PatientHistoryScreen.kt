@@ -57,10 +57,12 @@ import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.HistoryDayDetail
 import com.afterlifearchive.medmanager.data.patient.HistoryScheduledDose
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
+import com.afterlifearchive.medmanager.data.patient.HistoryStreakTodayStatus
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.PrnActorType
 import com.afterlifearchive.medmanager.data.patient.PrnHistoryItem
 import com.afterlifearchive.medmanager.data.patient.RecordedByType
+import com.afterlifearchive.medmanager.data.patient.PatientHistoryStreak
 import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import java.time.Instant
 import java.time.LocalDate
@@ -79,6 +81,7 @@ internal fun HistoryContent(
     retentionDays: Int?,
     onRetry: () -> Unit,
     now: LocalDate = LocalDate.now(ZoneId.of("Asia/Tokyo")),
+    streak: PatientHistoryStreak? = null,
 ) {
     val byDate = days.associateBy(HistoryDay::date)
     val today = byDate[now.toString()]
@@ -97,6 +100,7 @@ internal fun HistoryContent(
         if (retentionCutoffDate != null) item { RetentionLockCard(retentionCutoffDate, retentionDays ?: 30) }
         if (!loading && error == null && retentionCutoffDate == null) {
             item { PatientTodayProgressCard(today) }
+            streak?.let { item { PatientHistoryStreakCard(it) } }
             item { PatientWeekHistoryCard(weekDates, byDate, weeklyRecorded, consecutiveTaken, now) }
             item { Text(stringResource(R.string.patient_history_recent_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
             items(listOf(now, now.minusDays(1)), key = LocalDate::toString) { date ->
@@ -104,6 +108,70 @@ internal fun HistoryContent(
             }
         }
         item { Spacer(Modifier.height(104.dp)) }
+    }
+}
+
+@Composable
+private fun PatientHistoryStreakCard(streak: PatientHistoryStreak) {
+    val value = when {
+        streak.currentStreakDays == 0 -> stringResource(R.string.patient_history_streak_start_value)
+        streak.isAtLeast -> stringResource(R.string.patient_history_streak_days_at_least, streak.currentStreakDays)
+        else -> stringResource(R.string.patient_history_streak_days, streak.currentStreakDays)
+    }
+    val valueAccessibility = stringResource(R.string.patient_history_streak_accessibility, value)
+    val achievement = when (streak.currentStreakDays) {
+        0 -> stringResource(R.string.patient_history_streak_start)
+        1 -> stringResource(R.string.patient_history_streak_first)
+        3 -> stringResource(R.string.patient_history_streak_milestone_3)
+        7 -> stringResource(R.string.patient_history_streak_milestone_7)
+        14 -> stringResource(R.string.patient_history_streak_milestone_14)
+        30 -> stringResource(R.string.patient_history_streak_milestone_30)
+        else -> stringResource(R.string.patient_history_streak_continuing, streak.currentStreakDays)
+    }
+    val next = when {
+        streak.currentStreakDays == 0 && streak.todayStatus == HistoryStreakTodayStatus.MISSED -> stringResource(R.string.patient_history_streak_next_restart)
+        streak.currentStreakDays == 0 && streak.todayStatus == HistoryStreakTodayStatus.NO_SCHEDULE -> stringResource(R.string.patient_history_streak_next_no_schedule)
+        streak.currentStreakDays == 0 -> stringResource(R.string.patient_history_streak_next_start)
+        streak.todayStatus == HistoryStreakTodayStatus.COMPLETE -> stringResource(R.string.patient_history_streak_next_tomorrow, streak.currentStreakDays + 1)
+        streak.todayStatus == HistoryStreakTodayStatus.IN_PROGRESS -> stringResource(R.string.patient_history_streak_next_today, streak.currentStreakDays + 1)
+        streak.todayStatus == HistoryStreakTodayStatus.MISSED -> stringResource(R.string.patient_history_streak_next_restart)
+        else -> stringResource(R.string.patient_history_streak_next_no_schedule)
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth().testTag("patient-history-streak-card"),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, PatientTeal.copy(alpha = 0.18f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.size(56.dp).background(PatientTeal, CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.CalendarMonth, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                }
+                Text(stringResource(R.string.patient_history_streak_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text(
+                    value,
+                    fontSize = if (streak.currentStreakDays == 0) 28.sp else 50.sp,
+                    color = PatientTeal,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    modifier = Modifier.semantics { contentDescription = valueAccessibility },
+                )
+            }
+            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = PatientTeal)
+                Text(achievement, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            }
+            Text(
+                next,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = PatientTeal,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().background(PatientTeal.copy(alpha = 0.12f), RoundedCornerShape(12.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
+            )
+        }
     }
 }
 

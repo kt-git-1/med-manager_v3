@@ -23,10 +23,12 @@ import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.HistoryDayDetail
 import com.afterlifearchive.medmanager.data.patient.HistoryScheduledDose
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
+import com.afterlifearchive.medmanager.data.patient.HistoryStreakTodayStatus
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.PrnActorType
 import com.afterlifearchive.medmanager.data.patient.PrnHistoryItem
 import com.afterlifearchive.medmanager.data.patient.RecordedByType
+import com.afterlifearchive.medmanager.data.patient.PatientHistoryStreak
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import org.junit.Rule
 import org.junit.Test
@@ -82,6 +84,29 @@ class PatientHistoryContentTest {
         composeRule.onNodeWithText("服用済み 1回分").assertDoesNotExist()
         composeRule.onNodeWithText("3/7日").assertIsDisplayed()
         captureDevice(activity, "android-ui-104-patient-history-source-calibrated-light.png")
+    }
+
+    @Test
+    fun streakCardMatchesCurrentIosSevenDayInProgressCopy() {
+        showHistory(
+            days = listOf(HistoryDay("2026-07-14", HistoryStatus.TAKEN, HistoryStatus.PENDING, HistoryStatus.NONE, HistoryStatus.NONE, 0)),
+            streak = PatientHistoryStreak(7, false, HistoryStreakTodayStatus.IN_PROGRESS),
+        )
+
+        composeRule.onNodeWithTag("patient-history-streak-card").assertIsDisplayed()
+        composeRule.onNodeWithText("連続記録").assertIsDisplayed()
+        composeRule.onNodeWithText("7日").assertIsDisplayed()
+        composeRule.onNodeWithText("7日達成！1週間続きました。").assertIsDisplayed()
+        composeRule.onNodeWithText("今日もすべて記録すると、8日になります").assertIsDisplayed()
+    }
+
+    @Test
+    fun absentSupplementaryStreakKeepsOrdinaryHistoryUsable() {
+        showHistory(days = listOf(HistoryDay("2026-07-14", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0)))
+
+        composeRule.onNodeWithText("1/1回分 記録済み").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-history-streak-card").assertDoesNotExist()
+        composeRule.onNodeWithText("今週").assertIsDisplayed()
     }
 
     @Test
@@ -202,6 +227,7 @@ class PatientHistoryContentTest {
 
     private fun showHistory(
         days: List<HistoryDay> = emptyList(),
+        streak: PatientHistoryStreak? = null,
         loading: Boolean = false,
         error: String? = null,
         retentionCutoffDate: String? = null,
@@ -216,6 +242,7 @@ class PatientHistoryContentTest {
                 Box(Modifier.fillMaxSize().background(PatientBackground).safeDrawingPadding()) {
                     HistoryContent(
                         days = days,
+                        streak = streak,
                         loading = loading,
                         error = error,
                         retentionCutoffDate = retentionCutoffDate,

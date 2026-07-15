@@ -17,6 +17,7 @@ data class PatientUiState(
     val slotTimes: PatientSlotTimes = PatientSlotTimes.DEFAULT,
     val medications: List<PatientMedication> = emptyList(),
     val history: List<HistoryDay> = emptyList(),
+    val historyStreak: PatientHistoryStreak? = null,
     val historyYear: Int? = null,
     val historyMonth: Int? = null,
     val historyDayDetail: HistoryDayDetail? = null,
@@ -290,6 +291,13 @@ class PatientRepository(
                     retentionDays = retention?.retentionDays,
                 )
             }
+        loadHistoryStreak()
+    }
+
+    private suspend fun loadHistoryStreak() {
+        runCatching { api.historyStreak() }
+            .onSuccess { streak -> mutableState.value = mutableState.value.copy(historyStreak = streak) }
+            .onFailure { mutableState.value = mutableState.value.copy(historyStreak = null) }
     }
 
     suspend fun loadHistoryDay(date: LocalDate) {

@@ -164,6 +164,24 @@ class PatientApiContractTest {
     }
 
     @Test
+    fun historyStreakUsesPatientEndpointAndParsesStrictAggregate() = runTest {
+        val transport = ContractTransport(HttpResponse(200, """{"currentStreakDays":7,"isAtLeast":true,"todayStatus":"inProgress"}"""))
+        val api = PatientApi(ApiClient("https://example.test/", { "patient-token" }, transport = transport))
+
+        val streak = api.historyStreak()
+
+        assertEquals(PatientHistoryStreak(7, true, HistoryStreakTodayStatus.IN_PROGRESS), streak)
+        assertTrue(transport.requests.single().url.endsWith("/api/patient/history/streak"))
+        assertEquals("Bearer patient-token", transport.requests.single().headers["Authorization"])
+    }
+
+    @Test(expected = kotlinx.serialization.SerializationException::class)
+    fun historyStreakRejectsUnknownTodayStatus() = runTest {
+        val api = PatientApi(ApiClient("https://example.test/", { null }, transport = ContractTransport(HttpResponse(200, """{"currentStreakDays":1,"isAtLeast":false,"todayStatus":"unknown"}"""))))
+        api.historyStreak()
+    }
+
+    @Test
     fun dayHistoryParsesScheduledRecorderAndPrnActor() = runTest {
         val transport = ContractTransport(HttpResponse(200, HISTORY_DAY_FIXTURE))
         val api = PatientApi(ApiClient("https://example.test/", { null }, transport = transport))

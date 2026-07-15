@@ -287,6 +287,37 @@ class PatientRepositoryTest {
     }
 
     @Test
+    fun historyPublishesSupplementaryServerStreak() = runTest {
+        val expected = PatientHistoryStreak(14, true, HistoryStreakTodayStatus.COMPLETE)
+        val source = object : PatientDataSource by FakePatientDataSource() {
+            override suspend fun historyStreak() = expected
+        }
+        val repository = PatientRepository(source)
+
+        repository.loadHistory(java.time.LocalDate.parse("2026-07-15"))
+
+        assertEquals(expected, repository.state.value.historyStreak)
+        assertNull(repository.state.value.error)
+    }
+
+    @Test
+    fun streakFailureDoesNotReplaceUsableHistory() = runTest {
+        val expectedHistory = listOf(HistoryDay("2026-07-15", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0))
+        val source = object : PatientDataSource by FakePatientDataSource() {
+            override suspend fun history(year: Int, month: Int) = expectedHistory
+            override suspend fun historyStreak(): PatientHistoryStreak = error("supplementary unavailable")
+        }
+        val repository = PatientRepository(source)
+
+        repository.loadHistory(java.time.LocalDate.parse("2026-07-15"))
+
+        assertEquals(expectedHistory, repository.state.value.history)
+        assertNull(repository.state.value.historyStreak)
+        assertNull(repository.state.value.error)
+        assertFalse(repository.state.value.loading)
+    }
+
+    @Test
     fun dayHistoryPublishesScheduledAndPrnDetails() = runTest {
         val detail = HistoryDayDetail(
             date = "2026-07-13",

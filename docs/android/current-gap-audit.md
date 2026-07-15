@@ -35,7 +35,7 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Resolved B01 | Patient feature parsing exposed `JSONObject` at endpoint boundaries | Kotlin serialization wire DTOs now map every patient endpoint into domain models; current/legacy history keys and optional/required-field behavior are fixture-tested | Reuse the same wire/domain boundary for caregiver endpoints |
 | Resolved B02 | Session, caregiver selection and patient navigation ownership were mixed or composition-local | Caregiver selection has an independent repository; patient tab/detail/history navigation is saveable; notification preferences and feature data remain separate; UI contains no token or auth-policy access | Reuse these owners in the caregiver shell |
 | Resolved B03 | Patient UI was one oversized screen file | Shell, navigation state, Today, History, Settings, Tutorial and shared components now live in separate files while retaining the A06 tab host | Production component capture fixtures and all prior interaction tests pass |
-| P0 | Patient History lacks the server-defined recording streak | Main adds API-045 and `PatientHistoryStreakCard`; Android's weekly encouragement is not an equivalent contract | C32 adds typed supplementary state, exact copy/card placement, refresh triggers and failure-isolation tests |
+| Resolved C32 | Patient History lacked the server-defined recording streak | API-045 now has strict typed mapping and independent state; the current-iOS card/copy sits between progress and week | Contract/repository tests plus API-35 Patient History 14/14 pass; matched adaptive/physical evidence remains |
 | P0 | Caregiver Today still renders the removed next-action hero | Main now leads with today's status and keeps record actions in the timeline; C22/C23 evidence targets the prior screen | C33 removes obsolete hierarchy/next styling, preserves mutation semantics and recaptures UI-201 |
 | P0 | Caregiver notification parser rejects `DOSE_MISSED` | Backend cron and current iOS accept missed-dose payloads using the same strict navigation fields | C34 expands only the allowlist and proves exact date/slot History routing plus malformed/unknown rejection |
 | P1 | Existing patient screenshots predate current iOS behavior | Main added lazy tab lifetime, mutation/history refresh and UI adjustments | Recapture baseline and rerun visual acceptance |
@@ -67,7 +67,7 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Shared session/API | IMPLEMENTED | A01–A06 auth, installation safety, typed networking, mutation freshness and notification rebuild gates pass; physical OEM transfer remains release evidence |
 | Entry/caregiver auth UI | IMPLEMENTED / re-visualize | Main copy/analytics paths and current captures need recheck |
 | Patient Today | IMPLEMENTED / re-visualize | Post-record reminder/history/inventory revisions and failure preservation are covered; final matched visual matrix remains |
-| Patient History/Settings | RECHECK_REQUIRED | C32 streak endpoint/card is not implemented; existing history remains reusable |
+| Patient History/Settings | IMPLEMENTED / re-visualize | C32 streak contract/UI passes automated gates; matched dark/maximum-text and physical evidence remain |
 | Patient notification/tutorial | IMPLEMENTED / physical verify | Next-day rebuild, loaded-tab lifetime, routing and tutorial actions are covered; physical permission/tap/TalkBack remain |
 | Caregiver mode | RECHECK_REQUIRED | C33 Today hierarchy and C34 missed-dose push routing must match current main; other Gate G flows remain reusable |
 | Analytics/privacy parity | PARTIAL | Code and automated privacy gates complete; Firebase Console evidence awaits environment configuration |
@@ -75,12 +75,11 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 
 ## 6. Next execution order
 
-1. C32 implement and verify API-045 plus the Patient History streak card.
-2. C33 reproduce current status-focused Caregiver Today and recapture UI-201.
-3. C34 accept/route strict `DOSE_MISSED` caregiver pushes and rerun notification gates.
-4. Rerun the complete API/JVM/emulator matrix and close the C31 rebaseline checklist.
-5. H07 supply Android Firebase values and capture privacy-reviewed DebugView, Realtime, Events and Explore evidence.
-6. I02 complete physical FCM/Doze/process-death, TalkBack/font/dark/rotation and browser/share checks.
-7. Complete signed Play closed-test/release gates and perform the final main rebaseline.
+1. C33 reproduce current status-focused Caregiver Today and recapture UI-201.
+2. C34 accept/route strict `DOSE_MISSED` caregiver pushes and rerun notification gates.
+3. Rerun the complete API/JVM/emulator matrix and close the C31 rebaseline checklist.
+4. H07 supply Android Firebase values and capture privacy-reviewed DebugView, Realtime, Events and Explore evidence.
+5. I02 complete physical FCM/Doze/process-death, TalkBack/font/dark/rotation and browser/share checks.
+6. Complete signed Play closed-test/release gates and perform the final main rebaseline.
 
 Do not claim a rebaselined row complete until its new-baseline contract and evidence pass.
