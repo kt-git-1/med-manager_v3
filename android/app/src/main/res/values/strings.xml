@@ -287,6 +287,13 @@
     <string name="caregiver_today_primary_slot">この時間帯をまとめて記録</string>
     <string name="caregiver_today_primary_done">記録できる服薬はありません</string>
     <string name="caregiver_today_timeline_title">今日の予定</string>
+    <string name="caregiver_today_timeline_no_dose">予定なし</string>
+    <string name="caregiver_today_timeline_no_plan">予定なし</string>
+    <string name="caregiver_today_timeline_taken">飲みました</string>
+    <string name="caregiver_today_timeline_next">次に記録</string>
+    <string name="caregiver_today_timeline_pending">まだです</string>
+    <string name="caregiver_today_timeline_missed">飲み忘れ</string>
+    <string name="caregiver_today_timeline_record_slot">%1$d件をまとめて記録</string>
     <string name="caregiver_today_prn_title">必要な時のお薬</string>
     <string name="caregiver_today_prn_message">頓服薬が%1$d件あります</string>
     <string name="caregiver_today_empty_title">今日の服薬予定はありません</string>

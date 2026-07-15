@@ -115,7 +115,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C04 Reverify current Patient History progress/week/recent summaries, retention and freshness.
 - [x] C04 Match UI-105 retained day-detail timeline/copy, isolate its failure/retention lifecycle and record the five-state API-35 matrix.
 - [x] C05 Reverify Settings/reminders/tutorial/deep links/legal/logout and patient analytics-consent UI.
-- [x] C06 Complete emulator-verifiable patient/caregiver font 1.0/1.3/2.0, light/dark, compact/standard/large-phone, semantics and rotation/configuration checks. This includes dark captures for Patient Today/History/Settings and all four Caregiver primary surfaces, Caregiver primary-screen action paths at dark plus 200%, Settings/tutorial 200%, merged Patient week and Caregiver calendar-day semantics, medication-named Caregiver primary actions, and production Patient/Caregiver Activity recreation.
+- [x] C06 Complete emulator-verifiable patient/caregiver font 1.0/1.3/2.0, light/dark, compact/standard/large-phone, semantics and rotation/configuration checks. This includes dark captures for Patient Today/History/Settings and all four Caregiver primary surfaces, Caregiver primary-screen action paths at dark plus 200%, Settings/tutorial 200%, merged Patient week and Caregiver calendar-day semantics, count-specific Caregiver slot-bulk plus medication-named destructive/detail actions, and production Patient/Caregiver Activity recreation.
 - [x] C06 Record UI-103 PRN dark hierarchy and 200%-font action reachability on API 35.
 - [x] C06 Record UI-208 loading/error/empty and dedicated code/time sheets; verify both sheets at dark plus 200% under C17.
 - [x] C07 Match UI-001 mode-select and Analytics-consent on current iOS/Android compact and large-phone viewports; all primary actions remain visible and no repair is required.
@@ -124,6 +124,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C20 Calibrate UI-104 typical light against the current iOS app-derived reference and production SwiftUI source; match progress/week/recent card metrics, status pills/icons and current taken-count copy.
 - [x] C21 Calibrate UI-106 typical light against the current iOS app-derived reference and production SwiftUI source; match card, toggle/info/navigation row and logout metrics while preserving adaptive reachability.
 - [x] C22 Record a same-data UI-201 Caregiver Today light pair; match the current caregiver avatar/header, next-slot hero/list/action, progress summary and card-level PRN entry while retaining dark/200% reachability.
+- [x] C23 Source-calibrate the UI-201 four-slot timeline; match current row/card metrics, exact state copy, medicine indicators, taken-only undo, recordable-only bulk action and explicit no-plan rows.
 - [ ] C06 Complete full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification.
 
 ## Gate D — Caregiver patient-management vertical slice
@@ -193,7 +194,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 - [x] Final rebaseline check: `origin/main@1d9d19e` has zero unique commits and is already an ancestor of `android-dev` (2026-07-15); no merge required.
 - [x] Resolve all `RECHECK_REQUIRED` rows; remaining `PARTIAL` rows are explicitly external/visual/device release gates.
-- [x] Full API 26/33/35 emulator matrix (108 tests each, 324/324 total), plus a separate API-35 448 x 997 dp large-phone override pass (108/108), including light/dark 200% Caregiver reachability, Patient/Caregiver Activity recreation and rotation, medication-specific Caregiver TalkBack actions, the compact PDF sheet fix, caregiver stale/retry states, 200%-font Analytics consent opt-out, Patient-link error/actions/loading and Caregiver confirmation/resend/loading/re-entry reachability.
+- [x] Full API 26/33/35 emulator matrix (108 tests each, 324/324 total), plus a separate API-35 448 x 997 dp large-phone override pass (108/108), including light/dark 200% Caregiver reachability, Patient/Caregiver Activity recreation and rotation, count-specific slot-bulk and medication-specific destructive/detail TalkBack actions, the compact PDF sheet fix, caregiver stale/retry states, 200%-font Analytics consent opt-out, Patient-link error/actions/loading and Caregiver confirmation/resend/loading/re-entry reachability.
 - [ ] Physical-device matrix.
 - [ ] Notification Doze/delivery/tap/process-death tests.
 - [x] Automated font 2.0, dark mode, compact/standard/large phone, semantics and rotation/configuration tests.

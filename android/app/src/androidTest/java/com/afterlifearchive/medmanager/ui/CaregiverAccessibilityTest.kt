@@ -3,9 +3,11 @@ package com.afterlifearchive.medmanager.ui
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryDataSource
@@ -26,8 +28,10 @@ import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.HistoryDayDetail
 import com.afterlifearchive.medmanager.data.patient.HistoryScheduledDose
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
+import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.PatientDose
 import com.afterlifearchive.medmanager.data.patient.PatientMedication
+import com.afterlifearchive.medmanager.data.patient.SlotBulkRecordResult
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import java.time.Instant
 import java.time.LocalDate
@@ -99,7 +103,10 @@ class CaregiverAccessibilityTest {
             override suspend fun today(patientId: String) = listOf(dose.copy(status = if (recorded) DoseStatus.TAKEN else DoseStatus.PENDING))
             override suspend fun medications(patientId: String) = emptyList<PatientMedication>()
             override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
-            override suspend fun recordDose(patientId: String, dose: PatientDose) { recorded = true }
+            override suspend fun recordSlot(patientId: String, date: String, slot: MedicationSlot): SlotBulkRecordResult {
+                recorded = true
+                return SlotBulkRecordResult(1, 0, 0, 1.0, 1, "08:00", MedicationSlot.entries.associateWith { HistoryStatus.NONE }, "group-1")
+            }
         }, MutationFreshnessStore())
         val medicationRepository = CaregiverMedicationRepository(
             CaregiverMedicationDataSource { listOf(medication) },
@@ -130,8 +137,9 @@ class CaregiverAccessibilityTest {
 
         composeRule.waitUntil(5_000) { todayRepository.state.value.hasLoaded }
         composeRule.onNodeWithTag("caregiver-today-list")
-            .performScrollToNode(hasContentDescription("血圧の薬を服用済みにする"))
-        composeRule.onNodeWithContentDescription("血圧の薬を服用済みにする").assertIsDisplayed().performClick()
+            .performScrollToNode(hasText("1件をまとめて記録"))
+        composeRule.onNodeWithText("1件をまとめて記録").assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("caregiver-today-slot-confirm").performClick()
         composeRule.waitUntil(5_000) { todayRepository.state.value.doses.single().status == DoseStatus.TAKEN }
         composeRule.onNodeWithTag("caregiver-today-list")
             .performScrollToNode(hasContentDescription("血圧の薬の服用記録を取り消す"))

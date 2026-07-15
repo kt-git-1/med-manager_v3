@@ -27,9 +27,13 @@ import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.Bed
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.LocalHospital
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material.icons.rounded.WbSunny
 import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
@@ -37,7 +41,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -54,9 +57,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -74,7 +80,6 @@ import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.PatientDose
 import com.afterlifearchive.medmanager.data.patient.PatientMedication
-import com.afterlifearchive.medmanager.data.patient.RecordedByType
 import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -141,7 +146,6 @@ internal fun CaregiverTodayScreen(
                 updatingSlot = state.updatingSlot,
                 enabled = enabled && !state.refreshFailed,
                 onRetry = { scope.launch { repository.load(selected.id) } },
-                onRecordDose = { dose -> scope.launch { repository.recordDose(selected.id, dose) } },
                 onDeleteDose = { dose -> scope.launch { repository.deleteDose(selected.id, dose) } },
                 onRecordSlot = { slot, doses -> slotToConfirm = slot to doses },
                 onOpenPrn = { showingPrnPicker = true },
@@ -270,7 +274,6 @@ private fun CaregiverTodayContent(
     updatingSlot: MedicationSlot?,
     enabled: Boolean,
     onRetry: () -> Unit,
-    onRecordDose: (PatientDose) -> Unit,
     onDeleteDose: (PatientDose) -> Unit,
     onRecordSlot: (MedicationSlot, List<PatientDose>) -> Unit,
     onOpenPrn: () -> Unit,
@@ -466,18 +469,26 @@ private fun CaregiverTodayContent(
                 }
             }
             if (rows.isNotEmpty()) {
-                item { Text(stringResource(R.string.caregiver_today_timeline_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
-                rows.forEach { (slot, items) ->
+                item {
+                    Text(
+                        stringResource(R.string.caregiver_today_timeline_title),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.testTag("caregiver-today-timeline-title"),
+                    )
+                }
+                MedicationSlot.entries.forEach { slot ->
+                    val items = rows.firstOrNull { it.first == slot }?.second.orEmpty()
                     item(key = slot.name) {
                         CaregiverTimelineCard(
                             slot = slot,
                             doses = items,
+                            isNextAction = slot == nextSlot,
                             slotTimes = slotTimes,
                             outOfStockMedicationIds = outOfStockMedicationIds,
                             updatingDoseKey = updatingDoseKey,
                             updatingSlot = updatingSlot,
                             enabled = enabled,
-                            onRecordDose = onRecordDose,
                             onDeleteDose = onDeleteDose,
                             onRecordSlot = onRecordSlot,
                         )
@@ -611,79 +622,210 @@ private fun CaregiverPrnMedicationCard(
 private fun CaregiverTimelineCard(
     slot: MedicationSlot,
     doses: List<PatientDose>,
+    isNextAction: Boolean,
     slotTimes: CaregiverSlotTimes?,
     outOfStockMedicationIds: Set<String>,
     updatingDoseKey: String?,
     updatingSlot: MedicationSlot?,
     enabled: Boolean,
-    onRecordDose: (PatientDose) -> Unit,
     onDeleteDose: (PatientDose) -> Unit,
     onRecordSlot: (MedicationSlot, List<PatientDose>) -> Unit,
 ) {
+    val recordable = doses.filter { it.status != DoseStatus.TAKEN && it.medicationId !in outOfStockMedicationIds }
+    val hasOutOfStock = doses.any { it.medicationId in outOfStockMedicationIds }
     val status = when {
+        doses.isEmpty() -> null
         doses.all { it.status == DoseStatus.TAKEN } -> DoseStatus.TAKEN
-        doses.any { it.status == DoseStatus.MISSED } -> DoseStatus.MISSED
+        doses.all { it.status == DoseStatus.MISSED } -> DoseStatus.MISSED
         else -> DoseStatus.PENDING
     }
     val tint = when (status) {
         DoseStatus.TAKEN -> MaterialTheme.colorScheme.primary
         DoseStatus.MISSED -> MedicationTheme.colors.caregiverRed
         DoseStatus.PENDING -> MedicationTheme.colors.orange
+        null -> MaterialTheme.colorScheme.onSurfaceVariant
     }
-    TodayCard(tint) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("${slotLabel(slot)} ${configuredTime(slot, slotTimes)}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(statusLabel(status), color = tint, fontWeight = FontWeight.Bold)
-        }
-        doses.forEach { dose ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(dose.medicationName, fontWeight = FontWeight.Bold)
-                    Text("${dose.dosageText}・1回${formatTodayNumber(dose.doseCount)}錠", color = MaterialTheme.colorScheme.onSurfaceVariant)
+    val slotColor = caregiverTimelineSlotColor(slot)
+    val rowAccent = if (isNextAction) MedicationTheme.colors.orange else slotColor
+    Card(
+        modifier = Modifier.fillMaxWidth().testTag("caregiver-today-timeline-${slot.name.lowercase()}"),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isNextAction) MedicationTheme.colors.orange.copy(alpha = 0.10f).compositeOver(MaterialTheme.colorScheme.surface)
+            else MaterialTheme.colorScheme.surface,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(if (isNextAction) 1.5.dp else 1.dp, rowAccent.copy(alpha = if (isNextAction) 0.72f else 0.38f)),
+    ) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.size(42.dp).background(if (isNextAction) MedicationTheme.colors.orange else slotColor, CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(caregiverTimelineSlotIcon(slot), contentDescription = null, tint = Color.White, modifier = Modifier.size(21.dp))
                 }
-                if (dose.status == DoseStatus.TAKEN) {
-                    Text(
-                        stringResource(if (dose.recordedByType == RecordedByType.CAREGIVER) R.string.caregiver_today_recorded_by_caregiver else R.string.caregiver_today_recorded_by_patient),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(slotLabel(slot), color = if (isNextAction) MedicationTheme.colors.orange else slotColor, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    Text(configuredTime(slot, slotTimes), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
                 }
-                if (updatingDoseKey == dose.key) {
-                    CircularProgressIndicator(Modifier.size(32.dp), strokeWidth = 3.dp)
-                } else {
-                    val canRecord = dose.medicationId !in outOfStockMedicationIds
-                    IconButton(
-                        onClick = { if (dose.status == DoseStatus.TAKEN) onDeleteDose(dose) else onRecordDose(dose) },
-                        enabled = enabled && updatingSlot == null && (dose.status == DoseStatus.TAKEN || canRecord),
-                        modifier = Modifier.testTag("caregiver-today-dose-action-${dose.key}"),
-                    ) {
-                        Icon(
-                            if (dose.status == DoseStatus.TAKEN) Icons.AutoMirrored.Rounded.Undo else Icons.Rounded.CheckCircle,
-                            contentDescription = stringResource(
-                                if (dose.status == DoseStatus.TAKEN) R.string.caregiver_today_delete_individual_accessibility
-                                else R.string.caregiver_today_record_individual_accessibility,
-                                dose.medicationName,
-                            ),
-                            tint = if (dose.status == DoseStatus.TAKEN) MaterialTheme.colorScheme.onSurfaceVariant else if (canRecord) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                CaregiverTodayStatusPill(
+                    text = when {
+                        hasOutOfStock -> stringResource(R.string.patient_inventory_insufficient)
+                        status == null -> stringResource(R.string.caregiver_today_timeline_no_plan)
+                        status == DoseStatus.TAKEN -> stringResource(R.string.caregiver_today_timeline_taken)
+                        status == DoseStatus.MISSED -> stringResource(R.string.caregiver_today_timeline_missed)
+                        isNextAction -> stringResource(R.string.caregiver_today_timeline_next)
+                        else -> stringResource(R.string.caregiver_today_timeline_pending)
+                    },
+                    color = if (hasOutOfStock) MedicationTheme.colors.caregiverRed else if (isNextAction) MedicationTheme.colors.orange else tint,
+                    icon = when {
+                        hasOutOfStock -> Icons.Rounded.Warning
+                        status == DoseStatus.TAKEN -> Icons.Rounded.CheckCircle
+                        isNextAction -> Icons.Rounded.ChevronRight
+                        status == DoseStatus.PENDING -> Icons.Rounded.Warning
+                        else -> null
+                    },
+                )
+            }
+
+            if (doses.isEmpty()) {
+                Text(
+                    stringResource(R.string.caregiver_today_timeline_no_dose),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                )
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    doses.forEach { dose ->
+                        CaregiverTimelineDoseLine(
+                            dose = dose,
+                            outOfStock = dose.status != DoseStatus.TAKEN && dose.medicationId in outOfStockMedicationIds,
+                            updating = updatingDoseKey == dose.key,
+                            deleteEnabled = enabled && updatingSlot == null,
+                            onDeleteDose = onDeleteDose,
                         )
                     }
                 }
             }
-        }
-        val recordable = doses.filter { it.status != DoseStatus.TAKEN }
-        if (recordable.isNotEmpty()) {
-            Button(
-                onClick = { onRecordSlot(slot, doses) },
-                enabled = enabled && updatingDoseKey == null && updatingSlot == null,
-                modifier = Modifier.fillMaxWidth().testTag("caregiver-today-slot-action-${slot.name.lowercase()}"),
-            ) {
-                if (updatingSlot == slot) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 3.dp, color = MaterialTheme.colorScheme.onPrimary)
-                else Icon(Icons.Rounded.CheckCircle, contentDescription = null)
-                Spacer(Modifier.size(6.dp))
-                Text(stringResource(R.string.caregiver_today_record_slot, recordable.size))
+
+            if (recordable.isNotEmpty()) {
+                Button(
+                    onClick = { onRecordSlot(slot, recordable) },
+                    enabled = enabled && updatingDoseKey == null && updatingSlot == null,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("caregiver-today-slot-action-${slot.name.lowercase()}"),
+                    shape = RoundedCornerShape(14.dp),
+                ) {
+                    if (updatingSlot == slot) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 3.dp, color = MaterialTheme.colorScheme.onPrimary)
+                    else Icon(Icons.Rounded.CheckCircle, contentDescription = null)
+                    Spacer(Modifier.size(6.dp))
+                    Text(stringResource(R.string.caregiver_today_timeline_record_slot, recordable.size), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }
+}
+
+@Composable
+private fun CaregiverTimelineDoseLine(
+    dose: PatientDose,
+    outOfStock: Boolean,
+    updating: Boolean,
+    deleteEnabled: Boolean,
+    onDeleteDose: (PatientDose) -> Unit,
+) {
+    val color = when {
+        outOfStock -> MedicationTheme.colors.caregiverRed
+        dose.status == DoseStatus.TAKEN -> MaterialTheme.colorScheme.primary
+        dose.status == DoseStatus.MISSED -> MedicationTheme.colors.caregiverRed
+        else -> MedicationTheme.colors.orange
+    }
+    val dosage = dose.dosageText.trim()
+    val displayName = if (dosage.isEmpty() || dosage == "不明") dose.medicationName else "${dose.medicationName} $dosage"
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.78f), RoundedCornerShape(12.dp))
+            .border(1.dp, MedicationTheme.colors.cardStroke, RoundedCornerShape(12.dp))
+            .padding(horizontal = 10.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            Modifier.size(30.dp)
+                .background(Brush.linearGradient(listOf(color.copy(alpha = 0.18f), color.copy(alpha = 0.08f))), CircleShape)
+                .border(1.dp, color.copy(alpha = 0.18f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Rounded.Medication, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(displayName, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+            Text(
+                stringResource(R.string.patient_prn_dose_count, formatTodayNumber(dose.doseCount)),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        if (updating) {
+            CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 3.dp)
+        } else {
+            Box(Modifier.size(34.dp).background(color.copy(alpha = 0.13f), CircleShape), contentAlignment = Alignment.Center) {
+                Icon(
+                    when {
+                        outOfStock -> Icons.Rounded.Warning
+                        dose.status == DoseStatus.TAKEN -> Icons.Rounded.CheckCircle
+                        dose.status == DoseStatus.MISSED -> Icons.Rounded.Warning
+                        else -> Icons.Rounded.AccessTime
+                    },
+                    contentDescription = stringResource(
+                        when {
+                            outOfStock -> R.string.patient_inventory_insufficient
+                            dose.status == DoseStatus.TAKEN -> R.string.caregiver_today_timeline_taken
+                            dose.status == DoseStatus.MISSED -> R.string.caregiver_today_timeline_missed
+                            else -> R.string.caregiver_today_timeline_pending
+                        },
+                    ),
+                    tint = color,
+                    modifier = Modifier.size(17.dp),
+                )
+            }
+        }
+        if (dose.status == DoseStatus.TAKEN) {
+            Box(
+                modifier = Modifier.size(48.dp)
+                    .clickable(enabled = deleteEnabled, role = Role.Button) { onDeleteDose(dose) }
+                    .testTag("caregiver-today-dose-action-${dose.key}"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(Modifier.size(24.dp).background(Color.Gray, CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.AutoMirrored.Rounded.Undo,
+                        contentDescription = stringResource(R.string.caregiver_today_delete_individual_accessibility, dose.medicationName),
+                        tint = Color.White,
+                        modifier = Modifier.size(12.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun caregiverTimelineSlotColor(slot: MedicationSlot): Color = when (slot) {
+    MedicationSlot.MORNING -> MedicationTheme.colors.slotMorning
+    MedicationSlot.NOON -> MedicationTheme.colors.slotNoon
+    MedicationSlot.EVENING -> MedicationTheme.colors.slotEvening
+    MedicationSlot.BEDTIME -> MedicationTheme.colors.slotBedtime
+}
+
+private fun caregiverTimelineSlotIcon(slot: MedicationSlot): ImageVector = when (slot) {
+    MedicationSlot.MORNING -> Icons.Rounded.WbSunny
+    MedicationSlot.NOON -> Icons.Rounded.LightMode
+    MedicationSlot.EVENING -> Icons.Rounded.DarkMode
+    MedicationSlot.BEDTIME -> Icons.Rounded.Bed
 }
 
 @Composable

@@ -29,6 +29,7 @@ import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.PatientDose
 import com.afterlifearchive.medmanager.data.patient.PatientMedication
+import com.afterlifearchive.medmanager.data.patient.RecordedByType
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.SlotBulkRecordResult
@@ -66,8 +67,9 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithText("飲み忘れがあります").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-today-primary-record").assertIsNotEnabled()
         captureDevice(activity, "android-ui-201-caregiver-today-light.png")
-        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-slot-action-noon"))
-        composeRule.onNodeWithTag("caregiver-today-slot-action-noon").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-timeline-noon"))
+        composeRule.onNodeWithTag("caregiver-today-slot-action-noon").assertDoesNotExist()
+        composeRule.onNodeWithText("在庫不足").assertIsDisplayed()
     }
 
     @Test
@@ -92,6 +94,35 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithText("昼が次に記録する服薬です").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-today-primary-record").assertIsEnabled()
         captureDevice(activity, "android-ui-201-caregiver-today-source-calibrated-light.png")
+    }
+
+    @Test
+    fun currentIosSourceCalibratedTimelineUsesFourSlotAndDoseHierarchy() {
+        val activity = setContent(
+            patientName = "田中 花子",
+            slotTimes = CaregiverSlotTimes("08:00", "12:30", "19:00", "22:00"),
+            doses = listOf(
+                dose("morning", DoseStatus.TAKEN, "2026-07-14T23:00:00Z", "朝の薬", "5 mg", RecordedByType.CAREGIVER),
+                dose("noon-1", DoseStatus.PENDING, "2026-07-15T03:30:00Z", "血圧の薬", "5 mg"),
+                dose("noon-2", DoseStatus.PENDING, "2026-07-15T03:30:00Z", "胃薬", ""),
+                dose("evening", DoseStatus.MISSED, "2026-07-15T10:00:00Z", "夕の薬", "10 mg"),
+            ),
+        )
+
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-timeline-title"))
+        composeRule.onNodeWithText("飲みました").assertIsDisplayed()
+        composeRule.onNodeWithText("次に記録").assertIsDisplayed()
+        composeRule.onNodeWithText("2件をまとめて記録").assertIsDisplayed()
+        composeRule.onNodeWithText("この時間帯の2件を記録").assertDoesNotExist()
+        composeRule.onNodeWithTag("caregiver-today-dose-action-morning").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-dose-action-noon-1").assertDoesNotExist()
+        captureDevice(activity, "android-ui-201-caregiver-today-timeline-source-calibrated-light.png")
+
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-timeline-bedtime"))
+        composeRule.onNodeWithText("飲み忘れ").assertIsDisplayed()
+        composeRule.onAllNodesWithText("予定なし").onFirst().assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-timeline-bedtime").assertIsDisplayed()
+        captureDevice(activity, "android-ui-201-caregiver-today-timeline-empty-slot-light.png")
     }
 
     @Test
@@ -160,20 +191,17 @@ class CaregiverTodayScreenTest {
         }
 
         composeRule.onNodeWithTag("caregiver-today-stale").assertIsDisplayed()
-        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-dose-action-stale"))
-        composeRule.onNodeWithTag("caregiver-today-dose-action-stale").assertIsNotEnabled()
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-slot-action-noon"))
+        composeRule.onNodeWithTag("caregiver-today-slot-action-noon").assertIsNotEnabled()
     }
 
     @Test
-    fun individualDoseActionRecordsThenDeletesThroughProductionScreen() {
-        var current = listOf(dose("dose-1", DoseStatus.PENDING, "2026-07-14T23:00:00Z"))
+    fun takenDoseActionDeletesThroughCurrentIosTimeline() {
+        var current = listOf(dose("dose-1", DoseStatus.TAKEN, "2026-07-14T23:00:00Z", recordedByType = RecordedByType.CAREGIVER))
         val source = object : CaregiverTodayDataSource {
             override suspend fun today(patientId: String) = current
             override suspend fun medications(patientId: String) = emptyList<PatientMedication>()
             override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
-            override suspend fun recordDose(patientId: String, dose: PatientDose) {
-                current = current.map { if (it.key == dose.key) it.copy(status = DoseStatus.TAKEN) else it }
-            }
             override suspend fun deleteDose(patientId: String, dose: PatientDose) {
                 current = current.map { if (it.key == dose.key) it.copy(status = DoseStatus.PENDING) else it }
             }
@@ -191,13 +219,8 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithTag("caregiver-today-dose-action-dose-1").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-mutation-message"))
-        composeRule.onNodeWithText("服用を記録しました").assertIsDisplayed()
-
-        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-dose-action-dose-1"))
-        composeRule.onNodeWithTag("caregiver-today-dose-action-dose-1").performClick()
-        composeRule.waitForIdle()
-        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-mutation-message"))
         composeRule.onNodeWithText("服用記録を取り消しました").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-dose-action-dose-1").assertDoesNotExist()
     }
 
     @Test
@@ -331,7 +354,10 @@ class CaregiverTodayScreenTest {
             override suspend fun today(patientId: String): List<PatientDose> = if (refreshFails) error("offline") else listOf(original)
             override suspend fun medications(patientId: String) = emptyList<PatientMedication>()
             override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
-            override suspend fun recordDose(patientId: String, dose: PatientDose) { refreshFails = true }
+            override suspend fun recordSlot(patientId: String, date: String, slot: MedicationSlot): SlotBulkRecordResult {
+                refreshFails = true
+                return SlotBulkRecordResult(1, 0, 0, 1.0, 1, "08:00", MedicationSlot.entries.associateWith { HistoryStatus.NONE }, "group-1")
+            }
         }
         val repository = CaregiverTodayRepository(source, MutationFreshnessStore())
         val patient = CaregiverPatient("patient-1", "さくら")
@@ -342,12 +368,12 @@ class CaregiverTodayScreenTest {
         }
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-dose-action-dose-1"))
-        composeRule.onNodeWithTag("caregiver-today-dose-action-dose-1").performClick()
+        composeRule.onNodeWithTag("caregiver-today-primary-record").performClick()
+        composeRule.onNodeWithTag("caregiver-today-slot-confirm").performClick()
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-mutation-message"))
-        composeRule.onNodeWithText("服用を記録しました").assertIsDisplayed()
+        composeRule.onNodeWithText("1件を記録しました").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-today-stale").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-today-mutation-error").assertDoesNotExist()
         composeRule.onNodeWithText("情報を取得できませんでした").assertDoesNotExist()
@@ -393,6 +419,7 @@ class CaregiverTodayScreenTest {
         time: String,
         medicationName: String = "薬$id",
         dosageText: String = "5 mg",
+        recordedByType: RecordedByType? = null,
     ) = PatientDose(
         key = id,
         medicationId = id,
@@ -402,6 +429,7 @@ class CaregiverTodayScreenTest {
         dosageText = dosageText,
         doseCount = 1.0,
         patientId = "patient-1",
+        recordedByType = recordedByType,
     )
 
     private fun medication() = PatientMedication(
