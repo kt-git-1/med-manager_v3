@@ -235,6 +235,10 @@ class CaregiverPatientRepository(
         }
     }
 
+    fun dismissLinkingCode() {
+        mutableState.value = mutableState.value.copy(linkingCode = null)
+    }
+
     suspend fun revokeSelectedPatient(): Boolean = mutateSelectedPatient(dataSource::revokePatient)
 
     suspend fun deleteSelectedPatient(): Boolean = mutateSelectedPatient(dataSource::deletePatient)

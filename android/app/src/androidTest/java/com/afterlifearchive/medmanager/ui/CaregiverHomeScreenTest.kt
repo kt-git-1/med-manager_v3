@@ -8,9 +8,11 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
@@ -24,6 +26,7 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverCreateError
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverLinkingCode
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryRepository
 import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
@@ -161,6 +164,7 @@ class CaregiverHomeScreenTest {
         composeRule.waitUntil(5_000) { repository.state.value.loading }
         composeRule.onNodeWithTag("caregiver-settings-loading").assertIsDisplayed()
         composeRule.onNodeWithText("読み込み中...").assertIsDisplayed()
+        writeScreenshotFixture(composeRule.onRoot().captureToImage(), "android-ui-208-caregiver-settings-loading-light.png")
 
         release.complete(Unit)
         composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
@@ -175,6 +179,70 @@ class CaregiverHomeScreenTest {
         composeRule.onNodeWithText("見守る方の名前を登録").assertIsDisplayed()
         composeRule.onNodeWithText("連携コードを発行").assertIsDisplayed()
         composeRule.onNodeWithText("本人モードの端末でコードを入力").assertIsDisplayed()
+        writeScreenshotFixture(composeRule.onRoot().captureToImage(), "android-ui-208-caregiver-settings-empty-light.png")
+    }
+
+    @Test
+    fun settingsInitialFailureMatchesCurrentIosRetryState() {
+        val storage = TestSelectionStorage()
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val repository = CaregiverPatientRepository(CaregiverPatientDataSource { error("offline") }, selection)
+        composeRule.setContent { MedicationAppTheme { CaregiverHomeScreen(repository, tutorialEnabled = false) } }
+
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.loadFailed }
+        composeRule.onNodeWithTag("caregiver-settings-retry").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-settings-return-login").assertIsDisplayed()
+        writeScreenshotFixture(composeRule.onRoot().captureToImage(), "android-ui-208-caregiver-settings-error-light.png")
+    }
+
+    @Test
+    fun issuedLinkingCodeUsesCurrentIosSheetHierarchy() {
+        val storage = TestSelectionStorage()
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val repository = CaregiverPatientRepository(
+            object : CaregiverPatientDataSource {
+                override suspend fun listPatients() = listOf(
+                    CaregiverPatient("patient-1", "さくら", CaregiverSlotTimes("08:00", "12:00", "18:00", "21:00")),
+                )
+                override suspend fun issueLinkingCode(patientId: String) =
+                    CaregiverLinkingCode("123456", "2026-07-15T12:00:00Z")
+            },
+            selection,
+        )
+        composeRule.setContent { MedicationAppTheme { CaregiverHomeScreen(repository, tutorialEnabled = false) } }
+        composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
+
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-linking-code-issue"))
+        composeRule.onNodeWithTag("caregiver-linking-code-issue").performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.linkingCode != null }
+        composeRule.onNodeWithTag("caregiver-linking-code-sheet").assertIsDisplayed()
+        composeRule.onNodeWithText("患者にこのコードを伝えてください").assertIsDisplayed()
+        composeRule.onNodeWithText("有効期限: 2026/07/15 21:00").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-linking-code-copy").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-linking-code-share").assertIsDisplayed()
+        writeDeviceScreenshotFixture("android-ui-208-caregiver-linking-code-sheet-light.png")
+    }
+
+    @Test
+    fun slotTimePresetUsesCurrentIosDetailSheet() {
+        val (repository, _) = setContent(
+            listOf(CaregiverPatient("patient-1", "さくら", CaregiverSlotTimes("08:00", "12:00", "18:00", "21:00"))),
+        )
+        composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
+
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-slot-times"))
+        composeRule.onNodeWithTag("caregiver-slot-times").performClick()
+        composeRule.onNodeWithTag("caregiver-slot-times-sheet").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-slot-times-sheet-content").performScrollToNode(hasText("朝"))
+        composeRule.onNodeWithText("朝").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-slot-times-sheet-content").performScrollToNode(hasText("眠前"))
+        composeRule.onNodeWithText("眠前").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-slot-times-sheet-content").performScrollToNode(hasTestTag("caregiver-slot-times-save"))
+        composeRule.onNodeWithTag("caregiver-slot-times-save").assertIsDisplayed()
+        writeDeviceScreenshotFixture("android-ui-208-caregiver-slot-times-sheet-light.png")
     }
 
     @Test

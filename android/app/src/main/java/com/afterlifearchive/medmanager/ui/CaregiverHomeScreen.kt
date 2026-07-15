@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -30,15 +31,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Inventory2
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -48,6 +55,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
@@ -375,6 +383,8 @@ private fun CaregiverPatientSelectionScreen(
     var bedtime by rememberSaveable { mutableStateOf("21:00") }
     var confirmation by rememberSaveable { mutableStateOf<String?>(null) }
     var showingSlotTimes by rememberSaveable { mutableStateOf(false) }
+    val linkingCodeSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val slotTimesSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val listState = rememberLazyListState()
     LaunchedEffect(selectedPatient?.id, selectedPatient?.slotTimes) {
         val times = selectedPatient?.slotTimes ?: CaregiverSlotTimes("08:00", "12:00", "18:00", "21:00")
@@ -491,7 +501,6 @@ private fun CaregiverPatientSelectionScreen(
         }
         if (selectedPatient != null) item {
             CaregiverLinkingCodeCard(
-                code = state.linkingCode,
                 issuing = state.issuingLinkingCode,
                 failed = state.linkingCodeFailed,
                 enabled = patientActionsEnabled,
@@ -650,13 +659,25 @@ private fun CaregiverPatientSelectionScreen(
         }
         if (updating) CaregiverSettingsUpdatingOverlay()
     }
+    state.linkingCode?.let { code ->
+        ModalBottomSheet(
+            onDismissRequest = repository::dismissLinkingCode,
+            sheetState = linkingCodeSheetState,
+            modifier = Modifier.testTag("caregiver-linking-code-sheet"),
+        ) {
+            CaregiverLinkingCodeSheet(code)
+        }
+    }
     if (showingSlotTimes && selectedPatient != null) {
         ModalBottomSheet(
             onDismissRequest = { if (!state.savingSlotTimes) showingSlotTimes = false },
+            sheetState = slotTimesSheetState,
             modifier = Modifier.testTag("caregiver-slot-times-sheet"),
         ) {
             Column(
-                Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 24.dp),
+                Modifier.fillMaxWidth().fillMaxHeight(0.9f).verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp).padding(bottom = 24.dp)
+                    .testTag("caregiver-slot-times-sheet-content"),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
@@ -951,14 +972,11 @@ private fun CaregiverLegalRow(title: String, message: String, testTag: String, o
 
 @Composable
 private fun CaregiverLinkingCodeCard(
-    code: CaregiverLinkingCode?,
     issuing: Boolean,
     failed: Boolean,
     enabled: Boolean,
     onIssue: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val expiry = code?.let(::formatLinkingCodeExpiry).orEmpty()
     Card(
         Modifier.fillMaxWidth().testTag("caregiver-linking-code"),
         shape = RoundedCornerShape(18.dp),
@@ -968,20 +986,6 @@ private fun CaregiverLinkingCodeCard(
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(stringResource(R.string.caregiver_linking_code_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.caregiver_linking_code_detail), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (code != null) {
-                Text(code.code, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("caregiver-linking-code-value"))
-                Text(stringResource(R.string.caregiver_linking_code_expires, expiry), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(
-                        onClick = { copyLinkingCode(context, code.code) },
-                        modifier = Modifier.weight(1f).testTag("caregiver-linking-code-copy"),
-                    ) { Text(stringResource(R.string.caregiver_linking_code_copy)) }
-                    Button(
-                        onClick = { shareLinkingCode(context, code, expiry) },
-                        modifier = Modifier.weight(1f).testTag("caregiver-linking-code-share"),
-                    ) { Text(stringResource(R.string.caregiver_linking_code_share)) }
-                }
-            }
             if (failed) Text(stringResource(R.string.caregiver_linking_code_failed), color = MaterialTheme.colorScheme.error)
             OutlinedButton(
                 onClick = onIssue,
@@ -994,8 +998,74 @@ private fun CaregiverLinkingCodeCard(
     }
 }
 
+@Composable
+private fun CaregiverLinkingCodeSheet(code: CaregiverLinkingCode) {
+    val context = LocalContext.current
+    val expiry = formatLinkingCodeExpiry(code)
+    var copied by rememberSaveable(code.code) { mutableStateOf(false) }
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 32.dp).testTag("caregiver-linking-code-content"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(18.dp),
+    ) {
+        Box(Modifier.size(58.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape), contentAlignment = Alignment.Center) {
+            Icon(Icons.Rounded.Link, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(stringResource(R.string.caregiver_linking_code_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text(
+                stringResource(R.string.caregiver_linking_code_subtitle),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+        Row(
+            Modifier.fillMaxWidth().testTag("caregiver-linking-code-value"),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        ) {
+            code.code.forEach { character ->
+                Box(
+                    Modifier.size(width = 44.dp, height = 56.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(character.toString(), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedButton(
+                onClick = { copyLinkingCode(context, code.code); copied = true },
+                modifier = Modifier.weight(1f).height(48.dp).testTag("caregiver-linking-code-copy"),
+            ) {
+                Icon(Icons.Rounded.ContentCopy, contentDescription = null)
+                Spacer(Modifier.size(6.dp))
+                Text(stringResource(R.string.caregiver_linking_code_copy))
+            }
+            OutlinedButton(
+                onClick = { shareLinkingCode(context, code, expiry) },
+                modifier = Modifier.weight(1f).height(48.dp).testTag("caregiver-linking-code-share"),
+            ) {
+                Icon(Icons.Rounded.Share, contentDescription = null)
+                Spacer(Modifier.size(6.dp))
+                Text(stringResource(R.string.caregiver_linking_code_share))
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Icon(Icons.Rounded.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+            Text(stringResource(R.string.caregiver_linking_code_expires, expiry), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+    if (copied) {
+        AlertDialog(
+            onDismissRequest = { copied = false },
+            text = { Text(stringResource(R.string.caregiver_linking_code_copied)) },
+            confirmButton = { TextButton(onClick = { copied = false }) { Text(stringResource(R.string.common_ok)) } },
+        )
+    }
+}
+
 private fun formatLinkingCodeExpiry(code: CaregiverLinkingCode): String = runCatching {
-    DateTimeFormatter.ofPattern("M/d HH:mm", Locale.JAPANESE)
+    DateTimeFormatter.ofPattern("yyyy/MM/dd H:mm", Locale.JAPANESE)
         .withZone(ZoneId.of("Asia/Tokyo"))
         .format(Instant.parse(code.expiresAt))
 }.getOrDefault(code.expiresAt)
@@ -1037,10 +1107,10 @@ private fun CaregiverSlotTimesCard(
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(stringResource(R.string.caregiver_slot_times_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.caregiver_slot_times_detail), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            CaregiverTimeRow(R.string.patient_slot_morning, morning, enabled, onMorning)
-            CaregiverTimeRow(R.string.patient_slot_noon, noon, enabled, onNoon)
-            CaregiverTimeRow(R.string.patient_slot_evening, evening, enabled, onEvening)
-            CaregiverTimeRow(R.string.patient_slot_bedtime, bedtime, enabled, onBedtime)
+            CaregiverTimeRow(R.string.caregiver_slot_morning, morning, enabled, onMorning)
+            CaregiverTimeRow(R.string.caregiver_slot_noon, noon, enabled, onNoon)
+            CaregiverTimeRow(R.string.caregiver_slot_evening, evening, enabled, onEvening)
+            CaregiverTimeRow(R.string.caregiver_slot_bedtime, bedtime, enabled, onBedtime)
             if (saveFailed) Text(stringResource(R.string.caregiver_slot_times_save_failed), color = MaterialTheme.colorScheme.error)
             Button(onClick = onSave, enabled = enabled, modifier = Modifier.fillMaxWidth().testTag("caregiver-slot-times-save")) {
                 Text(stringResource(R.string.caregiver_slot_times_save))

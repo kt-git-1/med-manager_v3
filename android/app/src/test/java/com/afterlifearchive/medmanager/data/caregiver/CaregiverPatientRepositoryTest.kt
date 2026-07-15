@@ -228,6 +228,11 @@ class CaregiverPatientRepositoryTest {
         assertTrue(repository.issueLinkingCode())
         assertEquals("123456", repository.state.value.linkingCode?.code)
 
+        repository.dismissLinkingCode()
+        assertNull(repository.state.value.linkingCode)
+
+        assertTrue(repository.issueLinkingCode())
+
         repository.selectPatient("two")
         assertNull(repository.state.value.linkingCode)
     }

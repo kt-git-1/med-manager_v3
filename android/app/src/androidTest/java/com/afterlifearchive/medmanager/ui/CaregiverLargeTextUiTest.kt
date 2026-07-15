@@ -21,7 +21,11 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverInventorySummary
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatient
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientDataSource
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverLinkingCode
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayRepository
 import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
@@ -31,6 +35,8 @@ import com.afterlifearchive.medmanager.data.patient.HistoryScheduledDose
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
 import com.afterlifearchive.medmanager.data.patient.PatientDose
 import com.afterlifearchive.medmanager.data.patient.PatientMedication
+import com.afterlifearchive.medmanager.data.session.CaregiverSelectionRepository
+import com.afterlifearchive.medmanager.data.session.SessionStorage
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import java.time.LocalDate
 import java.time.YearMonth
@@ -157,6 +163,42 @@ class CaregiverLargeTextUiTest(private val darkTheme: Boolean) {
         composeRule.onNodeWithTag("caregiver-history-day-detail").assertIsDisplayed()
     }
 
+    @Test
+    fun settingsSheetsRemainReachableAtTwoHundredPercent() {
+        val storage = LargeTextSelectionStorage().apply { currentPatientId = "p1" }
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val repository = CaregiverPatientRepository(
+            object : CaregiverPatientDataSource {
+                override suspend fun listPatients() = listOf(
+                    CaregiverPatient("p1", "さくら", CaregiverSlotTimes("08:00", "12:00", "18:00", "21:00")),
+                )
+                override suspend fun issueLinkingCode(patientId: String) =
+                    CaregiverLinkingCode("123456", "2026-07-15T12:00:00Z")
+            },
+            selection,
+        )
+        composeRule.setContent {
+            CaregiverLargeText(darkTheme) {
+                CaregiverHomeScreen(repository, tutorialEnabled = false)
+            }
+        }
+        composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-linking-code-issue"))
+        composeRule.onNodeWithTag("caregiver-linking-code-issue").performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.linkingCode != null }
+        composeRule.onNodeWithTag("caregiver-linking-code-share").assertIsDisplayed()
+        if (darkTheme) writeDeviceScreenshotFixture("android-ui-208-caregiver-linking-code-sheet-dark-font-2.0.png")
+
+        composeRule.runOnIdle(repository::dismissLinkingCode)
+        composeRule.waitUntil(5_000) { repository.state.value.linkingCode == null }
+        composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-slot-times"))
+        composeRule.onNodeWithTag("caregiver-slot-times").performClick()
+        composeRule.onNodeWithTag("caregiver-slot-times-sheet-content").performScrollToNode(hasTestTag("caregiver-slot-times-save"))
+        composeRule.onNodeWithTag("caregiver-slot-times-save").assertIsDisplayed()
+        if (darkTheme) writeDeviceScreenshotFixture("android-ui-208-caregiver-slot-times-sheet-dark-font-2.0.png")
+    }
+
     private fun captureDarkFixture(name: String) {
         if (!darkTheme) return
         writeScreenshotFixture(composeRule.onRoot().captureToImage(), name)
@@ -167,6 +209,13 @@ class CaregiverLargeTextUiTest(private val darkTheme: Boolean) {
         @Parameterized.Parameters(name = "darkTheme={0}")
         fun themes() = listOf(false, true)
     }
+}
+
+private class LargeTextSelectionStorage : SessionStorage {
+    override var mode: AppMode? = AppMode.CAREGIVER
+    override var currentPatientId: String? = null
+    override fun getSecret(key: String): String? = null
+    override fun putSecret(key: String, value: String?) = Unit
 }
 
 @Composable
