@@ -386,6 +386,31 @@ class PatientTodayContentTest {
     }
 
     @Test
+    fun detailContentPreservesHierarchyInDarkTheme() {
+        setDoseDetail(notes = "夕食後に服用", darkTheme = true)
+
+        composeRule.onAllNodesWithText("血圧の薬 5 mg").onFirst().assertIsDisplayed()
+        composeRule.onNodeWithText("メモ").assertIsDisplayed()
+        composeRule.onNodeWithText("夕食後に服用").assertIsDisplayed()
+        writeScreenshotFixture(
+            composeRule.onRoot().captureToImage(),
+            "android-ui-102-patient-dose-detail-dark.png",
+        )
+    }
+
+    @Test
+    fun detailContentRemainsReachableAtTwoHundredPercentFontScale() {
+        setDoseDetail(notes = "夕食後に服用", fontScale = 2f)
+
+        composeRule.onNodeWithText("1回に飲む量").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("1回1.5錠").assertIsDisplayed()
+        writeScreenshotFixture(
+            composeRule.onRoot().captureToImage(),
+            "android-ui-102-patient-dose-detail-font-2.0.png",
+        )
+    }
+
+    @Test
     fun reminderMaintenanceWarningDoesNotReplaceMutationSuccess() {
         val warning = "服薬記録は保存されましたが、通知予定を更新できませんでした。アプリを開いたときに再試行します。"
         composeRule.setContent {
@@ -446,6 +471,8 @@ class PatientTodayContentTest {
         loading: Boolean = false,
         error: Boolean = false,
         onRetry: () -> Unit = {},
+        darkTheme: Boolean = false,
+        fontScale: Float = 1f,
     ): Activity {
         lateinit var activity: Activity
         val medication = medication("med", 12.0).copy(
@@ -454,21 +481,24 @@ class PatientTodayContentTest {
             dosageStrengthUnit = "mg",
         )
         composeRule.setContent {
-            MedicationAppTheme {
-                activity = checkNotNull(LocalActivity.current)
-                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).safeDrawingPadding()) {
-                    PatientDoseDetailContent(
-                        dose("med", DoseStatus.TAKEN).copy(
-                            medicationName = "血圧の薬 5 mg",
-                            dosageText = "1回1錠",
-                            doseCount = 1.5,
-                            scheduledAt = Instant.parse("2026-07-14T03:30:00Z"),
-                        ),
-                        medication,
-                        loading = loading,
-                        error = error,
-                        onRetry = onRetry,
-                    )
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
+                MedicationAppTheme(darkTheme = darkTheme) {
+                    activity = checkNotNull(LocalActivity.current)
+                    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).safeDrawingPadding()) {
+                        PatientDoseDetailContent(
+                            dose("med", DoseStatus.TAKEN).copy(
+                                medicationName = "血圧の薬 5 mg",
+                                dosageText = "1回1錠",
+                                doseCount = 1.5,
+                                scheduledAt = Instant.parse("2026-07-14T03:30:00Z"),
+                            ),
+                            medication,
+                            loading = loading,
+                            error = error,
+                            onRetry = onRetry,
+                        )
+                    }
                 }
             }
         }
