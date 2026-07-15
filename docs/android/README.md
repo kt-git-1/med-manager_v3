@@ -41,6 +41,7 @@ An Android shortcut never overrides a backend rule or an intentional iOS product
 - [Play Console declaration worksheet](./play-console-declarations.md)
 - [Japanese Play store listing and screenshot handoff](./play-store-listing-ja.md)
 - [Production App Links evidence and completion steps](./evidence/i03-app-links-20260715.md)
+- [Android launcher icon render evidence](./evidence/i05-launcher-20260715/README.md)
 
 ## Status vocabulary
 
