@@ -5,6 +5,7 @@ import SwiftUI
 final class HistoryViewModel: ObservableObject {
     @Published var month: HistoryMonthResponseDTO?
     @Published var day: HistoryDayResponseDTO?
+    @Published var patientStreak: HistoryStreakResponseDTO?
     @Published var isLoadingMonth = false
     @Published var isLoadingDay = false
     @Published var isUpdating = false
@@ -19,6 +20,8 @@ final class HistoryViewModel: ObservableObject {
     private var activeRequests = 0
     private var pendingMonthRequest: (year: Int, month: Int)?
     private var pendingDayRequest: String?
+    private var isLoadingPatientStreak = false
+    private var pendingPatientStreakLoad = false
     var toastPresenter: ToastPresenter?
 
     init(
@@ -121,6 +124,34 @@ final class HistoryViewModel: ObservableObject {
                 }
             } catch {
                 self.dayErrorMessage = dataUnavailableMessage()
+            }
+        }
+    }
+
+    func loadPatientStreak() {
+        guard sessionStore.mode == .patient else {
+            patientStreak = nil
+            pendingPatientStreakLoad = false
+            return
+        }
+        guard !isLoadingPatientStreak else {
+            pendingPatientStreakLoad = true
+            return
+        }
+        isLoadingPatientStreak = true
+        Task {
+            defer {
+                isLoadingPatientStreak = false
+                if pendingPatientStreakLoad {
+                    pendingPatientStreakLoad = false
+                    loadPatientStreak()
+                }
+            }
+            do {
+                patientStreak = try await apiClient.fetchPatientHistoryStreak()
+            } catch {
+                // The streak is supplementary. Keep the history usable if this aggregate fails.
+                patientStreak = nil
             }
         }
     }
