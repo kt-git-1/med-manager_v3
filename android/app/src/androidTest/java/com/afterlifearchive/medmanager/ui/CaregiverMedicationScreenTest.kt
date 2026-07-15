@@ -1,7 +1,9 @@
 package com.afterlifearchive.medmanager.ui
 
 import android.app.Activity
+import android.content.Context
 import android.os.SystemClock
+import android.view.inputmethod.InputMethodManager
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -16,6 +18,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.performSemanticsAction
@@ -147,7 +150,20 @@ class CaregiverMedicationScreenTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-medication-empty-add").fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
         composeRule.onNodeWithTag("caregiver-medication-form").assertIsDisplayed()
-        captureDevice(activity, "android-ui-203-caregiver-medication-form-light.png")
+        composeRule.onNodeWithTag("medication-name").performTextInput("血圧の薬")
+        composeRule.onNodeWithTag("medication-strength-value").performTextInput("5")
+        composeRule.onNodeWithTag("medication-strength-unit").performTextInput("mg")
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-slot-morning"))
+        composeRule.onNodeWithTag("medication-slot-morning").performClick()
+        composeRule.onNodeWithTag("medication-slot-evening").performClick()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-editor-hero"))
+        activity.runOnUiThread {
+            activity.currentFocus?.clearFocus()
+            (activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                .hideSoftInputFromWindow(activity.window.decorView.windowToken, 0)
+        }
+        composeRule.waitForIdle()
+        captureDevice(activity, "android-ui-203-caregiver-medication-form-source-calibrated-light.png")
     }
 
     @Test
@@ -191,14 +207,25 @@ class CaregiverMedicationScreenTest {
     }
 
     @Test
+    fun addFormProvidesIOSParityDosageUnitPicker() {
+        setContent(emptyList())
+
+        composeRule.onNodeWithTag("caregiver-medication-add").performClick()
+        composeRule.onNodeWithTag("medication-strength-unit-menu").performClick()
+        composeRule.onNodeWithTag("medication-strength-unit-mg").assertIsDisplayed().performClick()
+
+        composeRule.onNodeWithTag("medication-strength-unit").assertTextEquals("mg")
+    }
+
+    @Test
     fun editFormIsPrepopulatedFromSelectedMedication() {
         setContent(listOf(scheduled()))
 
         composeRule.onNodeWithTag("caregiver-medication-edit-scheduled").performClick()
 
         composeRule.onNodeWithTag("caregiver-medication-form").assertIsDisplayed()
-        composeRule.onNodeWithTag("medication-name").assertTextEquals("薬の名前", "アムロジピン")
-        composeRule.onNodeWithTag("medication-strength-value").assertTextEquals("数値", "5")
+        composeRule.onNodeWithTag("medication-name").assertTextEquals("アムロジピン")
+        composeRule.onNodeWithTag("medication-strength-value").assertTextEquals("5")
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-slot-morning"))
         composeRule.onNodeWithTag("medication-slot-morning").assertExists()
     }

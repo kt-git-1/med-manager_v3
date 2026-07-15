@@ -7,6 +7,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,14 +34,19 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.EventBusy
 import androidx.compose.material.icons.automirrored.rounded.FormatListBulleted
@@ -588,88 +595,66 @@ private fun CaregiverMedicationEditor(
         ) {
         item {
             Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onClose, enabled = !submitting) { Text(stringResource(R.string.caregiver_medication_form_cancel)) }
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                TextButton(
+                    onClick = onClose,
+                    enabled = !submitting,
+                    modifier = Modifier.align(Alignment.CenterStart),
+                ) { Text(stringResource(R.string.caregiver_medication_form_cancel)) }
                 Text(
-                    stringResource(if (medication == null) R.string.caregiver_medication_add_title else R.string.caregiver_medication_edit),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 8.dp),
+                    stringResource(if (medication == null) R.string.caregiver_medication_form_hero_new else R.string.caregiver_medication_edit),
+                    fontSize = 17.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
         }
         item { MedicationEditorHero(medication == null, draft) }
         item {
-            FormSection(stringResource(R.string.caregiver_medication_form_name)) {
-                OutlinedTextField(
-                    value = draft.name,
-                    onValueChange = { draft = draft.copy(name = it) },
-                    modifier = Modifier.fillMaxWidth().testTag("medication-name"),
-                    singleLine = true,
-                    isError = errors.any { it.field.name == "NAME" },
-                    label = { Text(stringResource(R.string.caregiver_medication_form_name)) },
-                )
-            }
+            MedicationFormSectionHeader(stringResource(R.string.caregiver_medication_form_basic), MedicationFormHeaderIcon.PILLS)
+            Spacer(Modifier.height(8.dp))
+            MedicationBasicInformation(
+                draft = draft,
+                nameIsError = errors.any { it.field.name == "NAME" },
+                onDraftChange = { draft = it },
+            )
+            Text(
+                stringResource(R.string.caregiver_medication_form_basic_help),
+                modifier = Modifier.padding(start = 16.dp, top = 7.dp, end = 12.dp),
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         item {
-            FormSection(stringResource(R.string.caregiver_medication_form_strength)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(
-                        value = draft.dosageStrengthValue,
-                        onValueChange = { draft = draft.copy(dosageStrengthValue = it) },
-                        modifier = Modifier.weight(1f).testTag("medication-strength-value"),
-                        enabled = draft.dosageStrengthUnit != "不明",
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        label = { Text(stringResource(R.string.caregiver_medication_form_strength_value)) },
-                    )
-                    OutlinedTextField(
-                        value = draft.dosageStrengthUnit,
-                        onValueChange = { draft = draft.copy(dosageStrengthUnit = it) },
-                        modifier = Modifier.weight(1f).testTag("medication-strength-unit"),
-                        singleLine = true,
-                        label = { Text(stringResource(R.string.caregiver_medication_form_strength_unit)) },
-                    )
-                }
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("mg", "μg", "g", "mL", "不明").forEach { unit ->
-                        MedicationChoiceChip(selected = draft.dosageStrengthUnit == unit, onClick = { draft = draft.copy(dosageStrengthUnit = unit) }, label = unit)
-                    }
-                }
-                OutlinedTextField(
-                    value = draft.doseCountPerIntake,
-                    onValueChange = { draft = draft.copy(doseCountPerIntake = it) },
-                    modifier = Modifier.fillMaxWidth().testTag("medication-dose-count"),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    label = { Text(stringResource(R.string.caregiver_medication_form_dose_count)) },
+            MedicationFormSectionHeader(stringResource(R.string.caregiver_medication_form_kind), MedicationFormHeaderIcon.TYPE)
+            Spacer(Modifier.height(8.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                MedicationTypeChoice(
+                    title = stringResource(R.string.caregiver_medication_type_scheduled_title),
+                    subtitle = stringResource(R.string.caregiver_medication_type_scheduled_subtitle),
+                    selected = !draft.isPrn,
+                    accent = MedicationTheme.colors.primaryTealText,
+                    icon = MedicationFormTypeIcon.SCHEDULED,
+                    onClick = { draft = draft.copy(isPrn = false) },
+                    modifier = Modifier.testTag("medication-kind-scheduled"),
                 )
-            }
-        }
-        item {
-            FormSection(stringResource(R.string.caregiver_medication_form_kind)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MedicationChoiceChip(
-                        selected = !draft.isPrn,
-                        onClick = { draft = draft.copy(isPrn = false) },
-                        label = stringResource(R.string.caregiver_medication_type_scheduled),
-                        modifier = Modifier.testTag("medication-kind-scheduled"),
-                    )
-                    MedicationChoiceChip(
-                        selected = draft.isPrn,
-                        onClick = {
-                            draft = draft.copy(
-                                isPrn = true,
-                                scheduleFrequency = CaregiverScheduleFrequency.DAILY,
-                                selectedDays = emptySet(),
-                                selectedSlots = emptySet(),
-                            )
-                        },
-                        label = stringResource(R.string.caregiver_medication_type_prn),
-                        accent = MedicationTheme.colors.orange,
-                        modifier = Modifier.testTag("medication-kind-prn"),
-                    )
-                }
+                MedicationTypeChoice(
+                    title = stringResource(R.string.caregiver_medication_type_prn_title),
+                    subtitle = stringResource(R.string.caregiver_medication_type_prn_subtitle),
+                    selected = draft.isPrn,
+                    accent = MedicationTheme.colors.orange,
+                    icon = MedicationFormTypeIcon.PRN,
+                    onClick = {
+                        draft = draft.copy(
+                            isPrn = true,
+                            scheduleFrequency = CaregiverScheduleFrequency.DAILY,
+                            selectedDays = emptySet(),
+                            selectedSlots = emptySet(),
+                        )
+                    },
+                    modifier = Modifier.testTag("medication-kind-prn"),
+                )
             }
         }
         if (draft.isPrn) item {
@@ -856,40 +841,238 @@ private fun FormSection(title: String, content: @Composable ColumnScope.() -> Un
 
 @Composable
 private fun MedicationEditorHero(isNew: Boolean, draft: CaregiverMedicationDraft) {
-    val accent = if (draft.isPrn) MedicationTheme.colors.orange else MaterialTheme.colorScheme.primary
-    val stepsDone = listOf(draft.name.isNotBlank(), draft.dosageStrengthValue.isNotBlank(), draft.isPrn || draft.selectedSlots.isNotEmpty())
+    val accent = if (draft.isPrn) MedicationTheme.colors.orange else MedicationTheme.colors.primaryTealText
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().shadow(12.dp, RoundedCornerShape(20.dp), ambientColor = MedicationTheme.colors.caregiverCardShadow, spotColor = MedicationTheme.colors.caregiverCardShadow).testTag("medication-editor-hero"),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = 0.18f)),
+        border = androidx.compose.foundation.BorderStroke(1.2.dp, accent.copy(alpha = 0.24f)),
     ) {
-        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(accent.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.Medication, contentDescription = null, tint = accent, modifier = Modifier.size(28.dp))
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Box(Modifier.size(54.dp).clip(RoundedCornerShape(16.dp)).background(accent.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+                    MedicationPillsGlyph(accent, Modifier.size(38.dp))
                 }
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(if (isNew) R.string.caregiver_medication_form_hero_new else R.string.caregiver_medication_form_hero_edit), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text(stringResource(if (draft.isPrn) R.string.caregiver_medication_form_hero_prn else R.string.caregiver_medication_form_hero_scheduled), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        if (isNew || draft.name.isBlank()) stringResource(if (isNew) R.string.caregiver_medication_form_hero_new else R.string.caregiver_medication_form_hero_edit) else draft.name,
+                        fontSize = 22.sp,
+                        lineHeight = 27.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                    )
+                    Text(
+                        stringResource(if (draft.isPrn) R.string.caregiver_medication_form_hero_prn else R.string.caregiver_medication_form_hero_scheduled),
+                        fontSize = 15.sp,
+                        lineHeight = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                val labels = listOf("薬名", "用量", "予定")
-                stepsDone.forEachIndexed { index, complete ->
-                    Row(
-                        Modifier.clip(CircleShape).background(if (complete) accent.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 9.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        if (complete) Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = accent, modifier = Modifier.size(15.dp))
-                        Text(labels[index], style = MaterialTheme.typography.labelMedium, color = if (complete) accent else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
-                    }
-                }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                MedicationProgressPill("薬名", draft.name.isNotBlank(), MedicationTheme.colors.primaryTealText)
+                MedicationProgressPill("用量", draft.dosageStrengthUnit.isNotBlank(), MedicationTheme.colors.caregiverBlue)
+                MedicationProgressPill("予定", draft.isPrn || draft.selectedSlots.isNotEmpty(), accent)
             }
         }
     }
 }
+
+@Composable
+private fun MedicationProgressPill(label: String, complete: Boolean, color: Color) {
+    val foreground = if (complete) color else MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        Modifier.clip(CircleShape).background(foreground.copy(alpha = 0.12f)).padding(horizontal = 9.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        if (complete) Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = foreground, modifier = Modifier.size(15.dp))
+        else Box(Modifier.size(13.dp).border(1.5.dp, foreground, CircleShape))
+        Text(label, color = foreground, fontSize = 12.sp, lineHeight = 15.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+private enum class MedicationFormHeaderIcon { PILLS, TYPE }
+private enum class MedicationFormTypeIcon { SCHEDULED, PRN }
+
+@Composable
+private fun MedicationFormSectionHeader(title: String, icon: MedicationFormHeaderIcon) {
+    Row(
+        Modifier.padding(start = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        if (icon == MedicationFormHeaderIcon.PILLS) MedicationPillsGlyph(MedicationTheme.colors.caregiverBlue, Modifier.size(17.dp))
+        else Icon(Icons.AutoMirrored.Rounded.FormatListBulleted, contentDescription = null, tint = MedicationTheme.colors.primaryTealText, modifier = Modifier.size(17.dp))
+        Text(title, fontSize = 14.sp, lineHeight = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun MedicationBasicInformation(
+    draft: CaregiverMedicationDraft,
+    nameIsError: Boolean,
+    onDraftChange: (CaregiverMedicationDraft) -> Unit,
+) {
+    var unitMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (nameIsError) MaterialTheme.colorScheme.error.copy(alpha = 0.7f) else MedicationTheme.colors.cardStroke),
+    ) {
+        Column {
+            MedicationInlineField(
+                value = draft.name,
+                placeholder = stringResource(R.string.caregiver_medication_form_name),
+                onValueChange = { onDraftChange(draft.copy(name = it)) },
+                modifier = Modifier.fillMaxWidth().testTag("medication-name"),
+                leading = { Icon(Icons.Rounded.Edit, contentDescription = null, tint = MedicationTheme.colors.caregiverBlue, modifier = Modifier.size(18.dp)) },
+            )
+            MedicationFormDivider()
+            Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.Science, contentDescription = null, tint = MedicationTheme.colors.orange, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(12.dp))
+                MedicationInlineField(
+                    value = draft.dosageStrengthValue,
+                    placeholder = stringResource(R.string.caregiver_medication_form_strength_value),
+                    onValueChange = { onDraftChange(draft.copy(dosageStrengthValue = it)) },
+                    modifier = Modifier.weight(1f).testTag("medication-strength-value"),
+                    enabled = draft.dosageStrengthUnit != "不明",
+                    keyboardType = KeyboardType.Decimal,
+                    contentPadding = PaddingValues(vertical = 14.dp),
+                )
+                Box(Modifier.height(22.dp).width(1.dp).background(MaterialTheme.colorScheme.outline))
+                Box(Modifier.width(108.dp)) {
+                    MedicationInlineField(
+                        value = draft.dosageStrengthUnit,
+                        placeholder = stringResource(R.string.caregiver_medication_form_strength_unit),
+                        onValueChange = { unit -> onDraftChange(draft.copy(dosageStrengthUnit = unit, dosageStrengthValue = if (unit == "不明") "" else draft.dosageStrengthValue)) },
+                        modifier = Modifier.fillMaxWidth().testTag("medication-strength-unit"),
+                        contentPadding = PaddingValues(start = 14.dp, top = 14.dp, bottom = 14.dp),
+                        trailing = {
+                            IconButton(
+                                onClick = { unitMenuExpanded = true },
+                                modifier = Modifier.size(28.dp).testTag("medication-strength-unit-menu"),
+                            ) { Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = "単位を選択", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp)) }
+                        },
+                    )
+                    DropdownMenu(expanded = unitMenuExpanded, onDismissRequest = { unitMenuExpanded = false }) {
+                        listOf("mg", "g", "μg", "mL", "IU", "mEq", "%", "滴", "包", "枚", "吸入", "不明").forEach { unit ->
+                            DropdownMenuItem(
+                                text = { Text(unit) },
+                                onClick = {
+                                    unitMenuExpanded = false
+                                    onDraftChange(draft.copy(dosageStrengthUnit = unit, dosageStrengthValue = if (unit == "不明") "" else draft.dosageStrengthValue))
+                                },
+                                modifier = Modifier.testTag("medication-strength-unit-$unit"),
+                            )
+                        }
+                    }
+                }
+            }
+            MedicationFormDivider()
+            Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                MedicationPillsGlyph(MedicationTheme.colors.primaryTealText, Modifier.size(18.dp))
+                Spacer(Modifier.width(12.dp))
+                Text(stringResource(R.string.caregiver_medication_form_dose_count_short), modifier = Modifier.weight(1f), fontSize = 16.sp)
+                MedicationInlineField(
+                    value = draft.doseCountPerIntake,
+                    placeholder = "0",
+                    onValueChange = { onDraftChange(draft.copy(doseCountPerIntake = it)) },
+                    modifier = Modifier.width(48.dp).testTag("medication-dose-count"),
+                    keyboardType = KeyboardType.Decimal,
+                    textAlign = TextAlign.End,
+                    contentPadding = PaddingValues(vertical = 12.dp),
+                )
+                IconButton(
+                    onClick = { onDraftChange(draft.copy(doseCountPerIntake = adjustDose(draft.doseCountPerIntake, -0.5))) },
+                    modifier = Modifier.size(34.dp).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(topStart = 7.dp, bottomStart = 7.dp)),
+                ) { Icon(Icons.Rounded.Remove, contentDescription = "減らす", modifier = Modifier.size(18.dp)) }
+                IconButton(
+                    onClick = { onDraftChange(draft.copy(doseCountPerIntake = adjustDose(draft.doseCountPerIntake, 0.5))) },
+                    modifier = Modifier.size(34.dp).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(topEnd = 7.dp, bottomEnd = 7.dp)),
+                ) { Icon(Icons.Rounded.Add, contentDescription = "増やす", modifier = Modifier.size(18.dp)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MedicationInlineField(
+    value: String,
+    placeholder: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier,
+    enabled: Boolean = true,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    textAlign: TextAlign = TextAlign.Start,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 16.dp),
+    leading: (@Composable () -> Unit)? = null,
+    trailing: (@Composable () -> Unit)? = null,
+) {
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier,
+        enabled = enabled,
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface, textAlign = textAlign),
+        decorationBox = { inner ->
+            Row(Modifier.fillMaxWidth().padding(contentPadding), verticalAlignment = Alignment.CenterVertically) {
+                leading?.let { it(); Spacer(Modifier.width(12.dp)) }
+                Box(Modifier.weight(1f)) {
+                    if (value.isEmpty()) Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 16.sp)
+                    inner()
+                }
+                trailing?.let { Spacer(Modifier.width(4.dp)); it() }
+            }
+        },
+    )
+}
+
+@Composable
+private fun MedicationFormDivider() {
+    HorizontalDivider(modifier = Modifier.padding(start = 44.dp), color = MaterialTheme.colorScheme.outline)
+}
+
+@Composable
+private fun MedicationTypeChoice(
+    title: String,
+    subtitle: String,
+    selected: Boolean,
+    accent: Color,
+    icon: MedicationFormTypeIcon,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface)
+            .border(if (selected) 1.5.dp else 1.dp, if (selected) accent.copy(alpha = 0.45f) else MedicationTheme.colors.cardStroke, RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick).padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(if (selected) accent else accent.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+            Icon(
+                if (icon == MedicationFormTypeIcon.SCHEDULED) Icons.Rounded.Schedule else Icons.Rounded.LocalHospital,
+                contentDescription = null,
+                tint = if (selected) Color.White else accent,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(title, fontSize = 17.sp, lineHeight = 21.sp, fontWeight = FontWeight.Bold)
+            Text(subtitle, fontSize = 14.sp, lineHeight = 19.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (selected) Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = accent, modifier = Modifier.size(23.dp))
+        else Box(Modifier.size(21.dp).border(1.5.dp, MaterialTheme.colorScheme.onSurfaceVariant, CircleShape))
+    }
+}
+
+private fun adjustDose(value: String, delta: Double): String = formatMedicationNumber(((value.toDoubleOrNull() ?: 0.0) + delta).coerceIn(0.0, 999.0))
 
 @Composable
 private fun MedicationChoiceChip(
