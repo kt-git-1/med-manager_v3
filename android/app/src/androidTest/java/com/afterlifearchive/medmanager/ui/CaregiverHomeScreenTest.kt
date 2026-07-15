@@ -1,5 +1,9 @@
 package com.afterlifearchive.medmanager.ui
 
+import android.app.Activity
+import android.os.SystemClock
+import androidx.activity.compose.LocalActivity
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -8,11 +12,15 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatient
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryRepository
 import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
@@ -35,6 +43,7 @@ import org.junit.Rule
 import org.junit.Test
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
 
 class CaregiverHomeScreenTest {
@@ -60,6 +69,9 @@ class CaregiverHomeScreenTest {
         composeRule.onNodeWithText("選択中").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-slot-times"))
         composeRule.onNodeWithTag("caregiver-slot-times").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-slot-times").performClick()
+        composeRule.onNodeWithTag("caregiver-slot-times-sheet").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-slot-times-sheet").performTouchInput { swipeDown() }
         composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-linking-code-issue"))
         composeRule.onNodeWithTag("caregiver-linking-code-issue").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-patient-revoke"))
@@ -115,8 +127,107 @@ class CaregiverHomeScreenTest {
 
         composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
         composeRule.onNodeWithTag("caregiver-create-name").performTextInput("x".repeat(51))
+        composeRule.onNodeWithTag("caregiver-settings-list")
+            .performScrollToNode(hasTestTag("caregiver-create-submit"))
         composeRule.onNodeWithTag("caregiver-create-submit").performClick()
+        composeRule.onNodeWithTag("caregiver-settings-list")
+            .performScrollToNode(hasText("表示名は50文字以内で入力してください"))
         composeRule.onNodeWithText("表示名は50文字以内で入力してください").assertIsDisplayed()
+    }
+
+    @Test
+    fun settingsShowsMessageBearingInitialLoadingState() {
+        val release = CompletableDeferred<Unit>()
+        val storage = TestSelectionStorage()
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val repository = CaregiverPatientRepository(
+            CaregiverPatientDataSource {
+                release.await()
+                emptyList()
+            },
+            selection,
+        )
+        composeRule.setContent {
+            MedicationAppTheme { CaregiverHomeScreen(repository, tutorialEnabled = false) }
+        }
+
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.loading }
+        composeRule.onNodeWithTag("caregiver-settings-loading").assertIsDisplayed()
+        composeRule.onNodeWithText("読み込み中...").assertIsDisplayed()
+
+        release.complete(Unit)
+        composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
+    }
+
+    @Test
+    fun settingsEmptyStateExplainsThreeStepLinkingFlow() {
+        setContent(emptyList())
+
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-settings-empty").assertIsDisplayed()
+        composeRule.onNodeWithText("見守る方の名前を登録").assertIsDisplayed()
+        composeRule.onNodeWithText("連携コードを発行").assertIsDisplayed()
+        composeRule.onNodeWithText("本人モードの端末でコードを入力").assertIsDisplayed()
+    }
+
+    @Test
+    fun settingsBlocksTheScreenWhileCreatingPatient() {
+        val release = CompletableDeferred<Unit>()
+        val storage = TestSelectionStorage()
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val repository = CaregiverPatientRepository(
+            object : CaregiverPatientDataSource {
+                override suspend fun listPatients() = emptyList<CaregiverPatient>()
+                override suspend fun createPatient(displayName: String): CaregiverPatient {
+                    release.await()
+                    return CaregiverPatient("patient-created", displayName)
+                }
+            },
+            selection,
+        )
+        composeRule.setContent {
+            MedicationAppTheme { CaregiverHomeScreen(repository, tutorialEnabled = false) }
+        }
+        composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
+
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-settings-list")
+            .performScrollToNode(hasTestTag("caregiver-create-name"))
+        composeRule.onNodeWithTag("caregiver-create-name").performTextInput("さくら")
+        composeRule.onNodeWithTag("caregiver-settings-list")
+            .performScrollToNode(hasTestTag("caregiver-create-submit"))
+        composeRule.onNodeWithTag("caregiver-create-submit").performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.creating }
+        composeRule.onNodeWithTag("caregiver-settings-updating").assertIsDisplayed()
+        composeRule.onNodeWithText("更新中...").assertIsDisplayed()
+
+        release.complete(Unit)
+        composeRule.waitUntil(5_000) { !repository.state.value.creating }
+    }
+
+    @Test
+    fun screenshotFixtureShowsCaregiverSettingsHierarchy() {
+        val storage = TestSelectionStorage()
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val repository = CaregiverPatientRepository(
+            CaregiverPatientDataSource {
+                listOf(CaregiverPatient("patient-1", "さくら", CaregiverSlotTimes("08:00", "12:00", "18:00", "21:00")))
+            },
+            selection,
+        )
+        lateinit var activity: Activity
+        composeRule.setContent {
+            MedicationAppTheme {
+                activity = checkNotNull(LocalActivity.current)
+                CaregiverHomeScreen(repository, tutorialEnabled = false)
+            }
+        }
+        composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-settings-header").assertIsDisplayed()
+
+        captureDevice(activity, "android-ui-208-caregiver-settings-light.png")
     }
 
     @Test
@@ -218,6 +329,17 @@ class CaregiverHomeScreenTest {
         composeRule.setContent { MedicationAppTheme { CaregiverHomeScreen(repository, tutorialEnabled = false) } }
         composeRule.waitForIdle()
         return repository to storage
+    }
+
+    @Suppress("DEPRECATION")
+    private fun captureDevice(activity: Activity, filename: String) {
+        composeRule.runOnIdle {
+            WindowCompat.setDecorFitsSystemWindows(activity.window, false)
+            activity.window.statusBarColor = android.graphics.Color.TRANSPARENT
+            WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = true
+        }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture(filename)
     }
 }
 

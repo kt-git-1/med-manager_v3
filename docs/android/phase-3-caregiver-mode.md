@@ -254,3 +254,14 @@ G04, `CG-012` and `XP-001` are `IMPLEMENTED`; physical background/Doze/process-d
 - The final Gate G verification passes 74/74 API-35 instrumentation tests plus Android JVM, Debug/Release assembly and Lint. The complete API suite passes 300/300 tests and TypeScript typecheck; ESLint has no errors and retains one unrelated pre-existing E2E warning.
 
 G05 completes Gate G implementation. Physical browser, FCM, process-death and destructive production-account checks remain Gate I verification; Gate H now owns caregiver Analytics consent and the privacy-safe Firebase Analytics wrapper.
+
+### G05 current-iOS UI-208 rebaseline — 2026-07-15
+
+- Settings now separates initial `読み込み中...`, initial data failure with retry/return-login actions, no-patient onboarding and selected-patient content instead of rendering the create form before every state.
+- The selected state mirrors the current iOS hierarchy with a patient-aware icon header, single/multiple-patient selection treatment, selected-patient linking/destructive actions, collapsed detail settings, push, Analytics privacy, legal/support and account sections.
+- The no-patient state explains the complete three-step register -> issue code -> enter code flow before the production create form. Existing max-50, patient-limit and success-only selection contracts remain unchanged.
+- Four-slot editing moved from an always-expanded list card into a modal detail sheet opened by the current-iOS-style detail row. Successful authoritative save closes the sheet; failure preserves it for retry.
+- Create, slot-time, linking-code, destructive and push mutations block the whole settings content with exact `更新中...` feedback. The API-35 tests explicitly cover initial loading, the three-step empty state, time-sheet reachability and in-flight create blocking.
+- Direct light-theme UI-208 device evidence is recorded at `docs/android/evidence/c01-20260714/android-ui-208-caregiver-settings-light.png`. The complete Android gate passes 148/148 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
+
+The UI-208 rebaseline closes the remaining Android Settings implementation drift. Matched iOS exceptional/modal captures, dark/large-text/TalkBack and physical clipboard/Sharesheet/browser/FCM/destructive checks remain Gate I verification rather than implementation work.
