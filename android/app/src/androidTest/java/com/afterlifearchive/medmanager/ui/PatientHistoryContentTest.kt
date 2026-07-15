@@ -66,6 +66,25 @@ class PatientHistoryContentTest {
     }
 
     @Test
+    fun currentIosSourceCalibratedHistoryFixtureUsesCurrentMetricsAndCopy() {
+        val activity = showHistory(
+            days = listOf(
+                HistoryDay("2026-06-08", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                HistoryDay("2026-06-09", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                HistoryDay("2026-06-10", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                HistoryDay("2026-06-11", HistoryStatus.TAKEN, HistoryStatus.PENDING, HistoryStatus.PENDING, HistoryStatus.NONE, 0),
+            ),
+            now = LocalDate.parse("2026-06-11"),
+        )
+
+        composeRule.onNodeWithText("1/3回分 記録済み").assertIsDisplayed()
+        composeRule.onNodeWithText("記録済み 1回分").assertIsDisplayed()
+        composeRule.onNodeWithText("服用済み 1回分").assertDoesNotExist()
+        composeRule.onNodeWithText("3/7日").assertIsDisplayed()
+        captureDevice(activity, "android-ui-104-patient-history-source-calibrated-light.png")
+    }
+
+    @Test
     fun noScheduleUsesCurrentIosEmptyProgressCopy() {
         val activity = showHistory()
 
@@ -188,6 +207,7 @@ class PatientHistoryContentTest {
         retentionCutoffDate: String? = null,
         retentionDays: Int? = null,
         onRetry: () -> Unit = {},
+        now: LocalDate = LocalDate.parse("2026-07-14"),
     ): Activity {
         lateinit var activity: Activity
         composeRule.setContent {
@@ -201,7 +221,7 @@ class PatientHistoryContentTest {
                         retentionCutoffDate = retentionCutoffDate,
                         retentionDays = retentionDays,
                         onRetry = onRetry,
-                        now = LocalDate.parse("2026-07-14"),
+                        now = now,
                     )
                 }
             }

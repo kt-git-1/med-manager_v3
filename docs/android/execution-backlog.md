@@ -121,6 +121,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C07 Match UI-001 mode-select and Analytics-consent on current iOS/Android compact and large-phone viewports; all primary actions remain visible and no repair is required.
 - [x] C18 Match the shared scheduled-dose state copy to current iOS (`記録済み` / `飲み忘れ` / `未記録`) across patient, caregiver and spoken calendar summaries; reject the stale Android labels in API-35 regressions.
 - [x] C19 Record a same-data UI-101 iOS/Android dark and maximum-text pair; match the shared patient header icon plus Today card, typography and primary-action metrics to current SwiftUI.
+- [x] C20 Calibrate UI-104 typical light against the current iOS app-derived reference and production SwiftUI source; match progress/week/recent card metrics, status pills/icons and current taken-count copy.
 - [ ] C06 Complete full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification.
 
 ## Gate D — Caregiver patient-management vertical slice

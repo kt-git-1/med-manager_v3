@@ -123,7 +123,7 @@
     <string name="patient_history_today_progress_unit">回分</string>
     <string name="patient_history_today_remaining">残り %1$d回分</string>
     <string name="patient_history_today_missed">飲み忘れ %1$d回分</string>
-    <string name="patient_history_today_taken">服用済み %1$d回分</string>
+    <string name="patient_history_today_taken">記録済み %1$d回分</string>
     <string name="patient_history_encouragement_complete">今日の分、しっかり記録できています。すばらしいです。</string>
     <string name="patient_history_encouragement_partial">ここまで順調です。残りも飲めたら記録しましょう。</string>
     <string name="patient_history_encouragement_start">今日の予定を確認して、飲めたら記録しましょう。</string>

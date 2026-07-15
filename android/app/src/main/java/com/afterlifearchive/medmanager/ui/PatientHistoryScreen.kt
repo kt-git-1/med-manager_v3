@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -48,6 +50,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.HistoryDay
@@ -195,12 +198,12 @@ private fun PatientTodayProgressCard(day: HistoryDay?) {
     )
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(2.dp, accent.copy(alpha = 0.55f)),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.5.dp, accent.copy(alpha = 0.55f)),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
-        Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Box(Modifier.size(86.dp), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(
                     progress = { fraction },
@@ -210,19 +213,19 @@ private fun PatientTodayProgressCard(day: HistoryDay?) {
                     strokeWidth = 10.dp,
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(if (total == 0) "--" else "$taken/$total", fontWeight = FontWeight.Bold, color = accent, style = MaterialTheme.typography.titleLarge)
-                    Text(stringResource(R.string.patient_history_today_progress_unit), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    Text(if (total == 0) "--" else "$taken/$total", fontWeight = FontWeight.Bold, color = accent, fontSize = 24.sp)
+                    Text(stringResource(R.string.patient_history_today_progress_unit), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                 }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.patient_history_today_progress_title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Text(encouragement, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    HistoryStatusPill(stringResource(R.string.patient_history_today_taken, taken), PatientTeal)
-                    if (pending > 0) HistoryStatusPill(stringResource(R.string.patient_history_today_remaining, pending), Color(0xFFF36A00))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    HistoryStatusPill(stringResource(R.string.patient_history_today_taken, taken), PatientTeal, Icons.Rounded.CheckCircle)
+                    if (pending > 0) HistoryStatusPill(stringResource(R.string.patient_history_today_remaining, pending), Color(0xFFF36A00), Icons.Rounded.AccessTime)
+                    if (missed > 0) HistoryStatusPill(stringResource(R.string.patient_history_today_missed, missed), MaterialTheme.colorScheme.error, Icons.Rounded.Warning)
                 }
-                if (missed > 0) HistoryStatusPill(stringResource(R.string.patient_history_today_missed, missed), MaterialTheme.colorScheme.error)
             }
         }
     }
@@ -247,16 +250,16 @@ private fun PatientWeekHistoryCard(
     )
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(2.dp, PatientTeal.copy(alpha = 0.55f)),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.5.dp, PatientTeal.copy(alpha = 0.55f)),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
-        Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Column(Modifier.fillMaxWidth().padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Text(stringResource(R.string.patient_history_week_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text(stringResource(R.string.patient_history_week_count, recordedCount), style = MaterialTheme.typography.displaySmall, color = PatientTeal, fontWeight = FontWeight.Bold)
-            Text(stringResource(R.string.patient_history_week_recorded), style = MaterialTheme.typography.titleMedium, color = PatientTeal, fontWeight = FontWeight.Bold)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(stringResource(R.string.patient_history_week_count, recordedCount), fontSize = 50.sp, color = PatientTeal, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.patient_history_week_recorded), style = MaterialTheme.typography.titleLarge, color = PatientTeal, fontWeight = FontWeight.Bold)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 dates.forEach { date -> PatientWeekDay(date, byDate[date.toString()], now, Modifier.weight(1f)) }
             }
             Text(encouragement, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
@@ -305,7 +308,7 @@ private fun PatientRecentHistoryCard(date: LocalDate, day: HistoryDay?, now: Loc
     val title = stringResource(if (date == now) R.string.patient_history_today_format else R.string.patient_history_yesterday_format, formatted)
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
@@ -314,23 +317,32 @@ private fun PatientRecentHistoryCard(date: LocalDate, day: HistoryDay?, now: Loc
                 Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(28.dp))
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Text(patientHistorySubtitle(day), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
             }
-            HistoryStatusPill(patientSimpleStatusText(status), accent)
+            HistoryStatusPill(
+                patientSimpleStatusText(status),
+                accent,
+                when (status) {
+                    PatientSimpleHistoryStatus.TAKEN -> Icons.Rounded.CheckCircle
+                    PatientSimpleHistoryStatus.MISSED -> Icons.Rounded.Warning
+                    PatientSimpleHistoryStatus.PENDING, PatientSimpleHistoryStatus.NONE -> null
+                },
+            )
         }
     }
 }
 
 @Composable
-private fun HistoryStatusPill(text: String, color: Color) {
-    Text(
-        text,
-        modifier = Modifier.background(color.copy(alpha = 0.13f), RoundedCornerShape(50)).padding(horizontal = 11.dp, vertical = 7.dp),
-        color = color,
-        fontWeight = FontWeight.Bold,
-        style = MaterialTheme.typography.labelMedium,
-    )
+private fun HistoryStatusPill(text: String, color: Color, icon: ImageVector? = null) {
+    Row(
+        modifier = Modifier.background(color.copy(alpha = 0.13f), RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        icon?.let { Icon(it, contentDescription = null, tint = color, modifier = Modifier.size(16.dp)) }
+        Text(text, color = color, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+    }
 }
 
 private fun patientActiveStatuses(day: HistoryDay?): List<HistoryStatus> = day?.let {
