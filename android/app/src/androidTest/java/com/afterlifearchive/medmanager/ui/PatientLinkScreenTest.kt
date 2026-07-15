@@ -129,6 +129,38 @@ class PatientLinkScreenTest {
     }
 
     @Test
+    fun requiredVisualStatesHaveDeterministicFixtures() {
+        var fixture by mutableStateOf(PatientLinkFixture.Valid)
+        composeRule.setContent {
+            MedicationAppTheme {
+                PatientLinkContent(
+                    code = "123456",
+                    loading = fixture.loading,
+                    errorMessage = fixture.errorMessage,
+                    onCodeChange = {},
+                    onSubmit = {},
+                    onBack = {},
+                )
+            }
+        }
+
+        PatientLinkFixture.entries.forEach { state ->
+            composeRule.runOnIdle { fixture = state }
+            composeRule.waitForIdle()
+            state.errorMessage?.let {
+                composeRule.onNodeWithText(it).assertIsDisplayed()
+            }
+            if (state.loading) {
+                composeRule.onNodeWithTag(LINK_CODE_SUBMIT_TAG).assertIsNotEnabled()
+                composeRule.onNodeWithText("送信").assertDoesNotExist()
+            } else {
+                composeRule.onNodeWithTag(LINK_CODE_SUBMIT_TAG).assertIsEnabled()
+            }
+            captureFixture(state.fixtureName)
+        }
+    }
+
+    @Test
     fun linkFailureResourcesMatchPinnedIosCopy() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val expected = mapOf(
@@ -147,4 +179,33 @@ class PatientLinkScreenTest {
     private fun captureFixture(name: String) {
         writeScreenshotFixture(composeRule.onRoot().captureToImage(), name)
     }
+}
+
+private enum class PatientLinkFixture(
+    val fixtureName: String,
+    val loading: Boolean = false,
+    val errorMessage: String? = null,
+) {
+    Valid("android-ui-002-patient-link-valid-light.png"),
+    Loading("android-ui-002-patient-link-loading-light.png", loading = true),
+    Validation(
+        "android-ui-002-patient-link-validation-light.png",
+        errorMessage = "6桁の数字コードを入力してください",
+    ),
+    NotFound(
+        "android-ui-002-patient-link-not-found-light.png",
+        errorMessage = "コードが見つからないか期限切れです",
+    ),
+    Authorization(
+        "android-ui-002-patient-link-authorization-light.png",
+        errorMessage = "連携できませんでした。コードを確認して、もう一度お試しください",
+    ),
+    Network(
+        "android-ui-002-patient-link-network-light.png",
+        errorMessage = "通信に失敗しました。接続を確認して、もう一度お試しください",
+    ),
+    RateLimit(
+        "android-ui-002-patient-link-rate-limit-light.png",
+        errorMessage = "連携に失敗しました",
+    ),
 }
