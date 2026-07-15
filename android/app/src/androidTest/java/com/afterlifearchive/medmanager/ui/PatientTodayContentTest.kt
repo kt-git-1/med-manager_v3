@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.ui.Modifier
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -23,6 +25,8 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
@@ -129,6 +133,50 @@ class PatientTodayContentTest {
         writeScreenshotFixture(
             composeRule.onNodeWithTag("patient-prn-sheet").captureToImage(),
             "android-ui-103-prn-error-light.png",
+        )
+    }
+
+    @Test
+    fun prnInsufficientInventoryShowsBadgeAndDisablesRecord() {
+        var recordCount = 0
+        showPrnSheet(
+            prnQuantity = 0.5,
+            onRecordPrn = { recordCount += 1 },
+        )
+
+        composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
+        composeRule.onNodeWithText("在庫不足").assertIsDisplayed()
+        composeRule.onNodeWithTag("prn-record-prn").assertIsDisplayed().assertIsNotEnabled().performClick()
+        composeRule.runOnIdle { assertEquals(0, recordCount) }
+        writeScreenshotFixture(
+            composeRule.onNodeWithTag("patient-prn-sheet").captureToImage(),
+            "android-ui-103-prn-insufficient-light.png",
+        )
+    }
+
+    @Test
+    fun prnSheetPreservesHierarchyInDarkTheme() {
+        showPrnSheet(darkTheme = true)
+
+        composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
+        composeRule.onNodeWithText("飲んだ薬を選んでください").assertIsDisplayed()
+        composeRule.onNodeWithTag("prn-record-prn").assertIsDisplayed()
+        writeScreenshotFixture(
+            composeRule.onNodeWithTag("patient-prn-sheet").captureToImage(),
+            "android-ui-103-prn-list-dark.png",
+        )
+    }
+
+    @Test
+    fun prnRecordActionRemainsReachableAtTwoHundredPercentFontScale() {
+        showPrnSheet(fontScale = 2f)
+
+        composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
+        composeRule.onNodeWithText("頭痛薬 1錠").assertIsDisplayed()
+        composeRule.onNodeWithTag("prn-record-prn").performScrollTo().assertIsDisplayed()
+        writeScreenshotFixture(
+            composeRule.onNodeWithTag("patient-prn-sheet").captureToImage(),
+            "android-ui-103-prn-list-font-2.0.png",
         )
     }
 
@@ -432,36 +480,43 @@ class PatientTodayContentTest {
         updatingPrnMedicationId: String? = null,
         successRevision: () -> Long = { 0L },
         onClearFeedback: () -> Unit = {},
+        prnQuantity: Double = 10.0,
+        darkTheme: Boolean = false,
+        fontScale: Float = 1f,
+        onRecordPrn: (PatientMedication) -> Unit = {},
     ): Activity {
         lateinit var activity: Activity
-        val prn = medication("prn", 10.0, isPrn = true)
+        val prn = medication("prn", prnQuantity, isPrn = true)
         composeRule.setContent {
-            MedicationAppTheme {
-                activity = checkNotNull(LocalActivity.current)
-                Box(Modifier.fillMaxSize().background(PatientBackground).safeDrawingPadding()) {
-                    TodayContent(
-                        doses = emptyList(),
-                        loading = false,
-                        updatingKey = null,
-                        error = null,
-                        message = null,
-                        maintenanceWarning = null,
-                        medications = mapOf(prn.id to prn),
-                        nextSlot = null,
-                        updatingSlot = null,
-                        prnMedications = listOf(prn),
-                        updatingPrnMedicationId = updatingPrnMedicationId,
-                        onRetry = {},
-                        onRecord = {},
-                        onDetail = {},
-                        onRecordSlot = {},
-                        onRecordPrn = {},
-                        onRemind = {},
-                        prnError = prnError,
-                        prnSuccessRevision = successRevision(),
-                        onClearPrnFeedback = onClearFeedback,
-                        now = Instant.parse("2026-07-14T03:00:00Z"),
-                    )
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
+                MedicationAppTheme(darkTheme = darkTheme) {
+                    activity = checkNotNull(LocalActivity.current)
+                    Box(Modifier.fillMaxSize().background(PatientBackground).safeDrawingPadding()) {
+                        TodayContent(
+                            doses = emptyList(),
+                            loading = false,
+                            updatingKey = null,
+                            error = null,
+                            message = null,
+                            maintenanceWarning = null,
+                            medications = mapOf(prn.id to prn),
+                            nextSlot = null,
+                            updatingSlot = null,
+                            prnMedications = listOf(prn),
+                            updatingPrnMedicationId = updatingPrnMedicationId,
+                            onRetry = {},
+                            onRecord = {},
+                            onDetail = {},
+                            onRecordSlot = {},
+                            onRecordPrn = onRecordPrn,
+                            onRemind = {},
+                            prnError = prnError,
+                            prnSuccessRevision = successRevision(),
+                            onClearPrnFeedback = onClearFeedback,
+                            now = Instant.parse("2026-07-14T03:00:00Z"),
+                        )
+                    }
                 }
             }
         }

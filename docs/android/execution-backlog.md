@@ -110,9 +110,11 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C02 Define login/signup Next/Done IME traversal and record UI-004 loading plus invalid-credential feedback states.
 - [x] C02 Record UI-003 dark rendering and login/signup/mode-reset reachability at 200% font scale.
 - [x] C03 Reverify Patient Today states/actions/recording-window/inventory/PRN/detail.
+- [x] C03 Record UI-103 insufficient-inventory behavior and repair its unavailable action to the iOS teal 55% treatment.
 - [x] C04 Reverify current Patient History progress/week/recent summaries, retention and freshness.
 - [x] C05 Reverify Settings/reminders/tutorial/deep links/legal/logout and patient analytics-consent UI.
 - [x] C06 Complete emulator-verifiable patient/caregiver font 1.0/1.3/2.0, light/dark, compact/standard/large-phone, semantics and rotation/configuration checks. This includes dark captures for Patient Today/History/Settings and all four Caregiver primary surfaces, Caregiver primary-screen action paths at dark plus 200%, Settings/tutorial 200%, merged Patient week and Caregiver calendar-day semantics, medication-named Caregiver primary actions, and production Patient/Caregiver Activity recreation.
+- [x] C06 Record UI-103 PRN dark hierarchy and 200%-font action reachability on API 35.
 - [x] C07 Match UI-001 mode-select and Analytics-consent on current iOS/Android compact and large-phone viewports; all primary actions remain visible and no repair is required.
 - [ ] C06 Complete full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification.
 

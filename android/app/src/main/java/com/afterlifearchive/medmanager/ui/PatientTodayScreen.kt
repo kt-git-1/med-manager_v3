@@ -26,6 +26,7 @@ import androidx.compose.material.icons.rounded.LocalHospital
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -43,6 +44,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -462,6 +464,7 @@ private fun PrnMedicationCard(
     onRecordPrn: (PatientMedication) -> Unit,
 ) {
     val orange = Color(0xFFF36A00)
+    val unavailable = disabled || medication.isInsufficientForDose
     val dosage = medication.dosageText.trim()
     val displayName = if (dosage.isEmpty() || dosage == "不明") medication.name else "${medication.name} $dosage"
     val note = medication.prnInstructions?.trim().takeUnless { it.isNullOrEmpty() }
@@ -500,9 +503,19 @@ private fun PrnMedicationCard(
             }
             Button(
                 onClick = { onRecordPrn(medication) },
-                enabled = !disabled && !medication.isInsufficientForDose,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp).testTag("prn-record-${medication.id}"),
+                enabled = !unavailable,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 72.dp)
+                    .alpha(if (unavailable) 0.55f else 1f)
+                    .testTag("prn-record-${medication.id}"),
                 shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PatientTeal,
+                    disabledContainerColor = PatientTeal,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
             ) {
                 Icon(Icons.Rounded.CheckCircle, contentDescription = null)
                 Spacer(Modifier.size(8.dp))
