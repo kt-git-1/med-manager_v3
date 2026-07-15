@@ -111,11 +111,12 @@ final class PatientTodayViewModel: ObservableObject {
                         scheduledAt: dose.scheduledAt
                     )
                 )
+                markDosesRecorded([dose])
                 AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
                 showToast(NSLocalizedString("patient.today.recorded", comment: "Recorded"))
                 refreshNotificationsAfterScheduledDoseRecord()
                 notifyDoseRecordsUpdated()
-                load(showLoading: false)
+                refreshAfterMutationInBackground()
             } catch {
                 showToastMessage(for: error)
             }
@@ -153,8 +154,8 @@ final class PatientTodayViewModel: ObservableObject {
                 AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
                 notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("patient.today.prn.recorded", comment: "PRN recorded"))
-                try await refreshTodayData()
                 onSuccess()
+                refreshAfterMutationInBackground()
             } catch {
                 showToastMessage(for: error)
             }
@@ -304,6 +305,17 @@ final class PatientTodayViewModel: ObservableObject {
     func executeBulkRecord() {
         guard let slot = confirmSlot else { return }
         confirmSlot = nil
+        let slotTimes = preferencesStore.slotTimesMap()
+        let recordableDoses = items.filter { dose in
+            guard dose.effectiveStatus == .pending || dose.effectiveStatus == .missed else {
+                return false
+            }
+            return NotificationSlot.from(
+                date: dose.scheduledAt,
+                timeZone: calendar.timeZone,
+                slotTimes: slotTimes
+            ) == slot
+        }
         isUpdating = true
         Task { @MainActor in
             defer { isUpdating = false }
@@ -326,7 +338,14 @@ final class PatientTodayViewModel: ObservableObject {
                 } else {
                     showToast(NSLocalizedString("patient.today.slot.bulk.success", comment: "Bulk recorded"))
                 }
-                load(showLoading: false)
+                if result.insufficientCount == 0 && result.updatedCount == recordableDoses.count {
+                    markDosesRecorded(recordableDoses)
+                    refreshAfterMutationInBackground()
+                } else {
+                    // Keep partial inventory results authoritative because the response only
+                    // includes counts, not the medication IDs that were recorded.
+                    try await refreshTodayData()
+                }
             } catch {
                 showToastMessage(for: error)
             }
@@ -344,6 +363,33 @@ final class PatientTodayViewModel: ObservableObject {
 
     private func notifyDoseRecordsUpdated() {
         NotificationCenter.default.post(name: .doseRecordsUpdated, object: nil)
+    }
+
+    private func refreshAfterMutationInBackground() {
+        Task { @MainActor [weak self] in
+            do {
+                try await self?.refreshTodayData()
+            } catch {
+                // The write already succeeded and the optimistic state is valid. A later
+                // foreground refresh will reconcile transient network failures.
+            }
+        }
+    }
+
+    private func markDosesRecorded(_ doses: [ScheduleDoseDTO]) {
+        let recordedKeys = Set(doses.map(\.key))
+        items = items.map { dose in
+            guard recordedKeys.contains(dose.key) else { return dose }
+            return ScheduleDoseDTO(
+                key: dose.key,
+                patientId: dose.patientId,
+                medicationId: dose.medicationId,
+                scheduledAt: dose.scheduledAt,
+                effectiveStatus: .taken,
+                recordedByType: .patient,
+                medicationSnapshot: dose.medicationSnapshot
+            )
+        }.sorted(by: sortDose)
     }
 
     private func refreshTodayData() async throws {

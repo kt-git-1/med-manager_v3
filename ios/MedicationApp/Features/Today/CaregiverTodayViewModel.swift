@@ -85,9 +85,10 @@ final class CaregiverTodayViewModel: ObservableObject {
                         scheduledAt: dose.scheduledAt
                     )
                 )
+                markDosesRecorded([dose])
                 notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("caregiver.today.recorded", comment: "Recorded"))
-                await refreshAfterMutation()
+                refreshAfterMutationInBackground()
             } catch {
                 showToastMessage(for: error)
             }
@@ -117,7 +118,14 @@ final class CaregiverTodayViewModel: ObservableObject {
                     let format = NSLocalizedString("caregiver.today.recorded.bulk", comment: "Bulk recorded")
                     showToast(String(format: format, result.updatedCount))
                 }
-                await refreshAfterMutation()
+                if result.insufficientCount == 0 && result.updatedCount == recordableDoses.count {
+                    markDosesRecorded(recordableDoses)
+                    refreshAfterMutationInBackground()
+                } else {
+                    // The response does not identify which dose failed inventory validation.
+                    // Wait for the authoritative schedule only for this uncommon partial-success case.
+                    await refreshAfterMutation()
+                }
             } catch {
                 showToastMessage(for: error)
             }
@@ -140,8 +148,8 @@ final class CaregiverTodayViewModel: ObservableObject {
                 )
                 notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("caregiver.today.prn.recorded", comment: "Caregiver PRN recorded"))
-                await refreshAfterMutation()
                 onSuccess()
+                refreshAfterMutationInBackground()
             } catch {
                 showToastMessage(for: error)
             }
@@ -158,9 +166,10 @@ final class CaregiverTodayViewModel: ObservableObject {
                     medicationId: dose.medicationId,
                     scheduledAt: dose.scheduledAt
                 )
+                markDoseDeleted(dose)
                 notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("caregiver.today.deleted", comment: "Deleted"))
-                await refreshAfterMutation()
+                refreshAfterMutationInBackground()
             } catch {
                 showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
             }
@@ -200,6 +209,46 @@ final class CaregiverTodayViewModel: ObservableObject {
             // replacing the whole screen with an empty/error state on a transient refresh failure.
             showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
         }
+    }
+
+    private func refreshAfterMutationInBackground() {
+        Task { @MainActor [weak self] in
+            await self?.refreshAfterMutation()
+        }
+    }
+
+    private func markDosesRecorded(_ doses: [ScheduleDoseDTO]) {
+        let recordedKeys = Set(doses.map(\.key))
+        items = items.map { dose in
+            guard recordedKeys.contains(dose.key) else { return dose }
+            return replacingStatus(of: dose, with: .taken, recordedByType: .caregiver)
+        }.sorted(by: sortDose)
+    }
+
+    private func markDoseDeleted(_ deletedDose: ScheduleDoseDTO) {
+        let restoredStatus: DoseStatusDTO = Date() > deletedDose.scheduledAt.addingTimeInterval(60 * 60)
+            ? .missed
+            : .pending
+        items = items.map { dose in
+            guard dose.key == deletedDose.key else { return dose }
+            return replacingStatus(of: dose, with: restoredStatus, recordedByType: nil)
+        }.sorted(by: sortDose)
+    }
+
+    private func replacingStatus(
+        of dose: ScheduleDoseDTO,
+        with status: DoseStatusDTO,
+        recordedByType: RecordedByTypeDTO?
+    ) -> ScheduleDoseDTO {
+        ScheduleDoseDTO(
+            key: dose.key,
+            patientId: dose.patientId,
+            medicationId: dose.medicationId,
+            scheduledAt: dose.scheduledAt,
+            effectiveStatus: status,
+            recordedByType: recordedByType,
+            medicationSnapshot: dose.medicationSnapshot
+        )
     }
 
     private func refreshData() async throws {
