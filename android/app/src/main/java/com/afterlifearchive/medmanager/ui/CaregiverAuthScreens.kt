@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.AddCircle
 import androidx.compose.material.icons.rounded.AdminPanelSettings
@@ -40,6 +39,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -59,6 +59,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
@@ -80,6 +81,11 @@ import kotlinx.coroutines.launch
 private val AuthTeal: Color @Composable get() = MaterialTheme.colorScheme.primary
 private val AuthOrange: Color @Composable get() = MedicationTheme.colors.orange
 private val AuthBackground: Color @Composable get() = MaterialTheme.colorScheme.background
+private val AuthFormIsDark: Boolean @Composable get() = MaterialTheme.colorScheme.background.luminance() < 0.5f
+private val AuthFormAccent: Color @Composable get() = if (AuthFormIsDark) Color(0xFF0A84FF) else Color(0xFF007AFF)
+private val AuthFormBackground: Color @Composable get() = if (AuthFormIsDark) Color.Black else Color.White
+private val AuthFormCard: Color @Composable get() = if (AuthFormIsDark) Color(0xFF111111) else Color(0xFFFAFAFA)
+private val AuthFormField: Color @Composable get() = if (AuthFormIsDark) Color(0xFF232323) else Color(0xFFE7E7E7)
 
 private enum class AuthPage { CHOICE, LOGIN, SIGNUP }
 
@@ -176,25 +182,27 @@ private fun CaregiverLoginScreen(state: SessionState, repository: SessionReposit
     }
     AuthFormShell(onBack) {
         FormTitle(Icons.Rounded.AccountCircle, stringResource(R.string.caregiver_login_title))
-        AuthField(
-            email,
-            { email = it; repository.clearMessages() },
-            stringResource(R.string.caregiver_auth_email),
-            false,
-            AUTH_EMAIL_TAG,
-            imeAction = ImeAction.Next,
-            onImeAction = passwordFocus::requestFocus,
-        )
-        AuthField(
-            password,
-            { password = it; repository.clearMessages() },
-            stringResource(R.string.caregiver_auth_password),
-            true,
-            AUTH_PASSWORD_TAG,
-            focusRequester = passwordFocus,
-            imeAction = ImeAction.Done,
-            onImeAction = submit,
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            AuthField(
+                email,
+                { email = it; repository.clearMessages() },
+                stringResource(R.string.caregiver_auth_email),
+                false,
+                AUTH_EMAIL_TAG,
+                imeAction = ImeAction.Next,
+                onImeAction = passwordFocus::requestFocus,
+            )
+            AuthField(
+                password,
+                { password = it; repository.clearMessages() },
+                stringResource(R.string.caregiver_auth_password),
+                true,
+                AUTH_PASSWORD_TAG,
+                focusRequester = passwordFocus,
+                imeAction = ImeAction.Done,
+                onImeAction = submit,
+            )
+        }
         state.errorMessage?.let { AuthError(sessionUserMessageText(it)) }
         AuthPrimaryButton(stringResource(R.string.caregiver_auth_login), state.loading, ready, submit)
     }
@@ -230,35 +238,37 @@ private fun CaregiverSignupScreen(
     }
     AuthFormShell(onBack) {
         FormTitle(Icons.Rounded.AddCircle, stringResource(R.string.caregiver_signup_title), stringResource(R.string.caregiver_signup_subtitle))
-        AuthField(
-            email,
-            { email = it; repository.clearMessages() },
-            stringResource(R.string.caregiver_signup_email),
-            false,
-            AUTH_EMAIL_TAG,
-            imeAction = ImeAction.Next,
-            onImeAction = passwordFocus::requestFocus,
-        )
-        AuthField(
-            password,
-            { password = it; repository.clearMessages() },
-            stringResource(R.string.caregiver_signup_password),
-            true,
-            AUTH_PASSWORD_TAG,
-            focusRequester = passwordFocus,
-            imeAction = ImeAction.Next,
-            onImeAction = confirmationFocus::requestFocus,
-        )
-        AuthField(
-            confirmation,
-            { confirmation = it; repository.clearMessages() },
-            stringResource(R.string.caregiver_signup_password_confirmation),
-            true,
-            AUTH_CONFIRMATION_TAG,
-            focusRequester = confirmationFocus,
-            imeAction = ImeAction.Done,
-            onImeAction = submit,
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            AuthField(
+                email,
+                { email = it; repository.clearMessages() },
+                stringResource(R.string.caregiver_signup_email),
+                false,
+                AUTH_EMAIL_TAG,
+                imeAction = ImeAction.Next,
+                onImeAction = passwordFocus::requestFocus,
+            )
+            AuthField(
+                password,
+                { password = it; repository.clearMessages() },
+                stringResource(R.string.caregiver_signup_password),
+                true,
+                AUTH_PASSWORD_TAG,
+                focusRequester = passwordFocus,
+                imeAction = ImeAction.Next,
+                onImeAction = confirmationFocus::requestFocus,
+            )
+            AuthField(
+                confirmation,
+                { confirmation = it; repository.clearMessages() },
+                stringResource(R.string.caregiver_signup_password_confirmation),
+                true,
+                AUTH_CONFIRMATION_TAG,
+                focusRequester = confirmationFocus,
+                imeAction = ImeAction.Done,
+                onImeAction = submit,
+            )
+        }
         state.errorMessage?.let { AuthError(sessionUserMessageText(it)) }
         state.infoMessage?.let { AuthInfo(sessionUserMessageText(it)) }
         if (state.canResendConfirmation) {
@@ -270,7 +280,7 @@ private fun CaregiverSignupScreen(
                     .testTag(AUTH_RESEND_TAG),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = AuthTeal,
+                    contentColor = AuthFormAccent,
                     disabledContentColor = MedicationTheme.colors.readableSecondaryText,
                 ),
             ) {
@@ -297,14 +307,24 @@ private fun CaregiverSignupScreen(
 
 @Composable
 private fun AuthFormShell(onBack: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+    val cardShape = RoundedCornerShape(24.dp)
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(AuthBackground).safeDrawingPadding().testTag(AUTH_FORM_LIST_TAG),
+        modifier = Modifier.fillMaxSize().background(AuthFormBackground).safeDrawingPadding().testTag(AUTH_FORM_LIST_TAG),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(24.dp, 16.dp, 24.dp, 52.dp),
         verticalArrangement = Arrangement.spacedBy(52.dp),
     ) {
         item { AuthNavigationBackButton(onBack) }
         item {
-            Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f), RoundedCornerShape(24.dp)).padding(28.dp), verticalArrangement = Arrangement.spacedBy(18.dp), content = content)
+            Column(
+                Modifier.fillMaxWidth()
+                    .shadow(14.dp, cardShape)
+                    .clip(cardShape)
+                    .background(AuthFormCard)
+                    .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f), cardShape)
+                    .padding(28.dp),
+                verticalArrangement = Arrangement.spacedBy(28.dp),
+                content = content,
+            )
         }
     }
 }
@@ -314,13 +334,13 @@ private fun AuthNavigationBackButton(onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         modifier = Modifier.size(52.dp).testTag(AUTH_NAVIGATION_BACK_TAG),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.86f),
+        color = AuthFormCard,
         shape = CircleShape,
         shadowElevation = 10.dp,
     ) {
         Box(contentAlignment = Alignment.Center) {
             Icon(
-                Icons.AutoMirrored.Rounded.ArrowBack,
+                Icons.Rounded.ChevronLeft,
                 contentDescription = stringResource(R.string.common_back),
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(30.dp),
@@ -331,8 +351,8 @@ private fun AuthNavigationBackButton(onClick: () -> Unit) {
 
 @Composable
 private fun FormTitle(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String? = null) {
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Icon(icon, null, tint = AuthTeal, modifier = Modifier.size(52.dp))
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Icon(icon, null, tint = AuthFormAccent, modifier = Modifier.size(52.dp))
         Text(title, fontSize = 28.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         subtitle?.let { Text(it, color = MedicationTheme.colors.readableSecondaryText, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center) }
     }
@@ -366,14 +386,26 @@ private fun AuthField(
             onNext = { onImeAction() },
             onDone = { onImeAction() },
         ),
-        singleLine = true, shape = RoundedCornerShape(12.dp),
+        singleLine = true,
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color.Transparent,
+            unfocusedBorderColor = Color.Transparent,
+            disabledBorderColor = Color.Transparent,
+            errorBorderColor = Color.Transparent,
+            focusedContainerColor = AuthFormField,
+            unfocusedContainerColor = AuthFormField,
+            disabledContainerColor = AuthFormField,
+            focusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        ),
     )
 }
 
 @Composable
 private fun AuthPrimaryButton(text: String, loading: Boolean, ready: Boolean, onClick: () -> Unit) {
-    Button(onClick, enabled = ready && !loading, modifier = Modifier.fillMaxWidth().height(50.dp).alpha(if (ready) 1f else 0.5f).testTag(AUTH_SUBMIT_TAG), shape = RoundedCornerShape(14.dp), colors = ButtonDefaults.buttonColors(containerColor = AuthTeal)) {
-        if (loading) CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(22.dp), strokeWidth = 3.dp)
+    Button(onClick, enabled = ready && !loading, modifier = Modifier.fillMaxWidth().height(50.dp).alpha(if (ready) 1f else 0.5f).testTag(AUTH_SUBMIT_TAG), shape = RoundedCornerShape(14.dp), colors = ButtonDefaults.buttonColors(containerColor = AuthFormAccent, contentColor = Color.White, disabledContainerColor = AuthFormAccent, disabledContentColor = Color.White)) {
+        if (loading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 3.dp)
         else Text(text, fontWeight = FontWeight.Bold)
     }
 }

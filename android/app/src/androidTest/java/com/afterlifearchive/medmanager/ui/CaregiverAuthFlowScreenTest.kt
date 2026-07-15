@@ -1,5 +1,8 @@
 package com.afterlifearchive.medmanager.ui
 
+import android.app.Activity
+import android.os.SystemClock
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
@@ -19,6 +22,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.unit.Density
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.core.view.WindowCompat
 import com.afterlifearchive.medmanager.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.data.auth.AuthService
@@ -56,6 +60,61 @@ class CaregiverAuthFlowScreenTest {
         composeRule.onNodeWithText("メールアドレス").assertIsDisplayed()
         composeRule.onNodeWithText("パスワード（6文字以上）").assertIsDisplayed()
         composeRule.onNodeWithText("パスワードをもう一度入力").assertIsDisplayed()
+    }
+
+    @Test
+    fun currentIosLoginEmptyHierarchyMatchesInLightAppearance() {
+        val repository = authRepository()
+        val activity = render(repository)
+
+        composeRule.onNodeWithText("ログイン").performClick()
+        composeRule.onNodeWithTag(AUTH_NAVIGATION_BACK_TAG).assertIsDisplayed()
+        composeRule.onNodeWithText("家族ログイン").assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).assertIsDisplayed().assertIsNotEnabled()
+        captureDevice(activity, "android-ui-004-caregiver-login-empty-light.png")
+    }
+
+    @Test
+    fun currentIosLoginFilledHierarchyMatchesInLightAppearanceWithoutSubmitting() {
+        val repository = authRepository()
+        val activity = render(repository)
+
+        composeRule.onNodeWithText("ログイン").performClick()
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performTextInput("care@example.com")
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performTextInput("SamplePass123!")
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).assertIsDisplayed()
+        dismissKeyboard()
+        captureDevice(activity, "android-ui-004-caregiver-login-filled-light.png")
+        assertEquals(false, repository.state.value.caregiverAuthenticated)
+    }
+
+    @Test
+    fun currentIosLoginFilledHierarchyMatchesInDarkAppearanceWithoutSubmitting() {
+        val repository = authRepository()
+        val activity = render(repository, darkTheme = true)
+
+        composeRule.onNodeWithText("ログイン").performClick()
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performTextInput("care@example.com")
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performTextInput("SamplePass123!")
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).assertIsDisplayed()
+        dismissKeyboard()
+        captureDevice(activity, "android-ui-004-caregiver-login-filled-dark.png", darkTheme = true)
+        assertEquals(false, repository.state.value.caregiverAuthenticated)
+    }
+
+    @Test
+    fun loginActionsRemainReachableInDarkAppearanceAtTwoHundredPercentFontScale() {
+        val repository = authRepository()
+        val activity = render(repository, fontScale = 2f, darkTheme = true)
+
+        composeRule.onNodeWithText("ログイン").performClick()
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).performScrollTo().assertIsDisplayed()
+        captureDevice(activity, "android-ui-004-caregiver-login-empty-dark-font-2.0.png", darkTheme = true)
+        composeRule.onNodeWithTag(AUTH_NAVIGATION_BACK_TAG).performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -310,22 +369,45 @@ class CaregiverAuthFlowScreenTest {
         repository: SessionRepository,
         fontScale: Float = 1f,
         resendCooldownSeconds: Int = 60,
-    ) {
+        darkTheme: Boolean = false,
+    ): Activity {
+        lateinit var activity: Activity
         composeRule.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(
                 LocalDensity provides Density(density.density, fontScale = fontScale),
             ) {
                 val state by repository.state.collectAsStateWithLifecycle()
-                MedicationAppTheme {
+                MedicationAppTheme(darkTheme = darkTheme) {
+                    activity = checkNotNull(LocalActivity.current)
                     CaregiverAuthFlow(state, repository, resendCooldownSeconds)
                 }
             }
         }
+        return activity
     }
 
     private fun captureFixture(name: String) {
         writeScreenshotFixture(composeRule.onRoot().captureToImage(), name)
+    }
+
+    private fun dismissKeyboard() {
+        InstrumentationRegistry.getInstrumentation().uiAutomation
+            .executeShellCommand("input keyevent KEYCODE_BACK")
+            .close()
+        SystemClock.sleep(250)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun captureDevice(activity: Activity, filename: String, darkTheme: Boolean = false) {
+        composeRule.runOnIdle {
+            WindowCompat.setDecorFitsSystemWindows(activity.window, false)
+            activity.window.statusBarColor = android.graphics.Color.TRANSPARENT
+            WindowCompat.getInsetsController(activity.window, activity.window.decorView)
+                .isAppearanceLightStatusBars = !darkTheme
+        }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture(filename)
     }
 }
 
