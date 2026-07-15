@@ -72,6 +72,13 @@ export default function GuidePage() {
               <strong>登録する内容</strong>
               <p>定時薬・頓服、1回に飲む量、朝・昼・夜・眠前などの時間</p>
             </div>
+            <figure className="step-shot family-shot">
+              <img
+                src="/screenshots/caregiver-medication-form.png"
+                alt="家族モードで新しいお薬の名前、用量、飲む回数を登録する実際の画面"
+              />
+              <figcaption>家族モードのお薬登録画面</figcaption>
+            </figure>
           </article>
           <article className="step-row">
             <span className="step-number">2</span>
@@ -86,6 +93,13 @@ export default function GuidePage() {
               <strong>コードは本人にだけ共有</strong>
               <p>有効期限内に入力します。コードや確認メールを第三者へ送らないでください。</p>
             </div>
+            <figure className="step-shot">
+              <img
+                src="/screenshots/patient-link-code.png"
+                alt="本人モードで家族から受け取った6桁の連携コードを入力する実際の画面"
+              />
+              <figcaption>本人モードの連携コード入力画面</figcaption>
+            </figure>
           </article>
           <article className="step-row">
             <span className="step-number">3</span>
@@ -100,6 +114,13 @@ export default function GuidePage() {
               <strong>連携した内容は共有されます</strong>
               <p>本人の記録は家族の画面へ、家族の予定変更は本人の画面へ反映されます。</p>
             </div>
+            <figure className="step-shot">
+              <img
+                src="/screenshots/patient-today.png"
+                alt="本人モードで今日飲むお薬を確認して記録する実際の画面"
+              />
+              <figcaption>本人モードの服薬確認・記録画面</figcaption>
+            </figure>
           </article>
         </div>
       </section>

@@ -313,9 +313,7 @@ select {
 .app-screenshot img {
   display: block;
   width: 100%;
-  max-height: 560px;
-  object-fit: cover;
-  object-position: top;
+  height: auto;
   border: 1px solid #d9d2c5;
   border-radius: 28px;
   background: #edf7fb;
@@ -337,6 +335,11 @@ select {
   min-height: 164px;
   padding: 30px 42px;
   border-top: 1px solid var(--line);
+}
+.guide-page .step-row {
+  grid-template-columns: 70px 88px minmax(250px, 1fr) minmax(200px, 0.72fr) 240px;
+  align-items: start;
+  padding: 42px;
 }
 .step-row:first-child {
   border-top: 0;
@@ -378,6 +381,31 @@ select {
 .step-detail {
   padding-left: 26px;
   border-left: 2px solid #b7d8cf;
+}
+.step-shot {
+  display: grid;
+  gap: 9px;
+  width: 100%;
+  margin: 0;
+}
+.step-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid #d9d2c5;
+  border-radius: 24px;
+  background: #edf7fb;
+  box-shadow: var(--shadow);
+}
+.step-shot figcaption {
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.55;
+  text-align: center;
+}
+.step-shot.family-shot figcaption {
+  color: #a84b00;
 }
 
 .info-section {
@@ -438,9 +466,7 @@ select {
 .guide-large-shot img {
   display: block;
   width: 100%;
-  max-height: 760px;
-  object-fit: cover;
-  object-position: top;
+  height: auto;
   border: 1px solid #d9d2c5;
   border-radius: 34px;
   background: #edf7fb;
@@ -787,12 +813,6 @@ select {
 }
 
 @media (max-width: 1120px) {
-  .desktop-nav {
-    display: none;
-  }
-  .mobile-nav {
-    display: block;
-  }
   .site-hero-inner {
     grid-template-columns: 1fr;
   }
@@ -800,7 +820,30 @@ select {
     width: min(620px, 100%);
   }
   .app-screenshot img {
-    max-height: 700px;
+    height: auto;
+  }
+}
+@media (max-width: 960px) {
+  .guide-page .step-row {
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 14px;
+    min-height: 0;
+    padding: 34px 24px;
+  }
+  .guide-page .step-role,
+  .guide-page .step-copy,
+  .guide-page .step-detail,
+  .guide-page .step-shot {
+    grid-column: 2;
+  }
+  .guide-page .step-detail {
+    padding: 14px 0 0;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+  .guide-page .step-shot {
+    width: min(260px, 100%);
+    margin-top: 10px;
   }
 }
 @media (max-width: 760px) {
@@ -844,7 +887,7 @@ select {
   }
   .app-screenshot img {
     border-radius: 18px;
-    max-height: 520px;
+    height: auto;
   }
   .primary-button,
   .secondary-button {
@@ -872,6 +915,9 @@ select {
     padding: 14px 0 0;
     border-top: 1px solid var(--line);
     border-left: 0;
+  }
+  .step-shot {
+    width: min(250px, 100%);
   }
   .step-row h2,
   .step-row h3 {
