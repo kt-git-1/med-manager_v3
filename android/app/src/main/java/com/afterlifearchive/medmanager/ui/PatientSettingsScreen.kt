@@ -2,6 +2,7 @@ package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,7 +10,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,8 +18,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Help
+import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.Lock
@@ -48,6 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.afterlifearchive.medmanager.PatientNotificationSettings
 import com.afterlifearchive.medmanager.R
 
@@ -66,7 +70,7 @@ internal fun SettingsContent(
     var confirmUnlink by remember { mutableStateOf(false) }
     LazyColumn(
         Modifier.fillMaxSize().testTag("patient-settings-list"),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp, 18.dp, 20.dp, 120.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp, 16.dp, 20.dp, 130.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item { PatientSettingsHeader() }
@@ -124,11 +128,21 @@ internal fun SettingsContent(
         error?.let { item { PatientNoticeCard(it, MaterialTheme.colorScheme.errorContainer, null) } }
         item {
             Button(
-                modifier = Modifier.fillMaxWidth().height(56.dp).testTag("patient-unlink-button"),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp).testTag("patient-unlink-button"),
                 enabled = !loading,
                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                shape = RoundedCornerShape(18.dp),
                 onClick = { confirmUnlink = true },
-            ) { Text(stringResource(if (loading) R.string.patient_settings_unlinking else R.string.patient_settings_unlink)) }
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.AutoMirrored.Rounded.Logout, contentDescription = null)
+                    Text(
+                        stringResource(if (loading) R.string.patient_settings_unlinking else R.string.patient_settings_unlink),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
         }
     }
     if (confirmUnlink) {
@@ -162,15 +176,16 @@ private fun SettingsCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        border = accent?.let { BorderStroke(2.dp, it.copy(alpha = 0.55f)) },
+        border = if (accent == null) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        else BorderStroke(1.5.dp, accent.copy(alpha = 0.55f)),
     ) {
-        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
             if (title != null) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (icon != null) Icon(icon, contentDescription = null, tint = iconColor)
-                Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                if (icon != null) Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
+                Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
             content()
         }
@@ -191,9 +206,9 @@ private fun SettingsSwitchRow(
         Box(Modifier.size(44.dp).background(PatientTeal.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = null, tint = PatientTeal)
         }
-        Column(Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text(subtitle, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
         }
         Switch(checked = checked, onCheckedChange = onChecked, enabled = enabled, modifier = if (testTag == null) Modifier else Modifier.testTag(testTag))
     }
@@ -202,12 +217,12 @@ private fun SettingsSwitchRow(
 @Composable
 private fun SettingsInfoRow(title: String, subtitle: String, icon: ImageVector, color: Color) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Box(Modifier.size(44.dp).background(color.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(48.dp).background(color.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = null, tint = color)
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+            Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text(subtitle, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
         }
         Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = PatientTeal)
     }
@@ -215,14 +230,18 @@ private fun SettingsInfoRow(title: String, subtitle: String, icon: ImageVector, 
 
 @Composable
 private fun SettingsLink(title: String, subtitle: String, icon: ImageVector, color: Color, onClick: () -> Unit) {
-    TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Box(Modifier.size(42.dp).background(color.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Box(Modifier.size(48.dp).background(color.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = null, tint = color)
         }
-        Column(Modifier.weight(1f).padding(horizontal = 12.dp), horizontalAlignment = Alignment.Start) {
-            Text(title, textAlign = TextAlign.Start, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            Text(subtitle, textAlign = TextAlign.Start, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(Modifier.weight(1f), horizontalAlignment = Alignment.Start, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(title, textAlign = TextAlign.Start, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text(subtitle, textAlign = TextAlign.Start, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Text("›", style = MaterialTheme.typography.titleLarge)
+        Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

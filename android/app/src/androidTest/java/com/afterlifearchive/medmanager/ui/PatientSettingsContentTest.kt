@@ -66,6 +66,28 @@ class PatientSettingsContentTest {
     }
 
     @Test
+    fun currentIosSourceCalibratedSettingsFixtureUsesProductionHierarchy() {
+        val activity = showSettings(
+            notificationSettings = PatientNotificationSettings(masterEnabled = true),
+            analyticsEnabled = true,
+        )
+
+        composeRule.onNodeWithText("設定").assertIsDisplayed()
+        composeRule.onNodeWithText("お薬の通知").assertIsDisplayed()
+        composeRule.onNodeWithText("通知を有効にする").assertIsDisplayed()
+        composeRule.onNodeWithText("連携中").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-settings-list").performScrollToNode(hasText("利用状況データ"))
+        composeRule.onNodeWithText("利用状況データ").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-settings-list").performScrollToNode(hasText("法務・サポート"))
+        composeRule.onNodeWithText("法務・サポート").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-settings-list").performScrollToNode(hasText("ログアウト"))
+        composeRule.onNodeWithText("ログアウト").assertIsDisplayed()
+        captureDevice(activity, "android-ui-106-patient-settings-source-calibrated-logout-light.png")
+        composeRule.onNodeWithTag("patient-settings-list").performScrollToIndex(0)
+        captureDevice(activity, "android-ui-106-patient-settings-source-calibrated-light.png")
+    }
+
+    @Test
     fun deniedNotificationPermissionDisablesToggleAndShowsGuidance() {
         val activity = showSettings(notificationPermissionDenied = true)
 
@@ -111,6 +133,8 @@ class PatientSettingsContentTest {
         loading: Boolean = false,
         error: String? = null,
         notificationPermissionDenied: Boolean = false,
+        notificationSettings: PatientNotificationSettings = PatientNotificationSettings(),
+        analyticsEnabled: Boolean = false,
         onUnlink: () -> Unit = {},
     ): Activity {
         lateinit var activity: Activity
@@ -121,10 +145,10 @@ class PatientSettingsContentTest {
                     SettingsContent(
                         loading = loading,
                         error = error,
-                        notificationSettings = PatientNotificationSettings(),
+                        notificationSettings = notificationSettings,
                         onNotificationSettingsChange = {},
                         notificationPermissionDenied = notificationPermissionDenied,
-                        analyticsEnabled = false,
+                        analyticsEnabled = analyticsEnabled,
                         onAnalyticsEnabledChange = {},
                         onOpenUrl = {},
                         onUnlink = onUnlink,
