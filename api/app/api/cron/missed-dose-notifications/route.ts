@@ -13,5 +13,5 @@ export async function GET(request: Request) {
   }
 
   const result = await sendDueMissedDoseNotifications();
-  return Response.json({ ok: true, ...result });
+  return Response.json({ ok: true, missedAfterMinutes: 60, ...result });
 }
