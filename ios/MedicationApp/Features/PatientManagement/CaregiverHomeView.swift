@@ -593,41 +593,6 @@ private struct CaregiverTutorialSampleView: View {
     private var tabContent: some View {
         switch tab {
         case .today:
-            CaregiverCard(accent: CaregiverUI.orange) {
-                VStack(alignment: .leading, spacing: 14) {
-                    Text(NSLocalizedString("caregiver.today.nextAction.title", comment: "Next action title"))
-                        .font(.headline.weight(.bold))
-                    HStack(alignment: .center, spacing: 16) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 34, weight: .bold))
-                            .foregroundStyle(CaregiverUI.tealDark)
-                            .frame(width: 66, height: 66)
-                            .background(CaregiverUI.tealDark.opacity(0.10), in: Circle())
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("次に記録する時間")
-                                .font(.headline.weight(.bold))
-                            Text("昼 12:30")
-                                .font(.system(size: 32, weight: .bold, design: .rounded))
-                                .foregroundStyle(CaregiverUI.tealDark)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
-                        }
-                        Spacer()
-                    }
-                    HStack(spacing: 10) {
-                        CaregiverStatusPill(text: "未記録", color: CaregiverUI.orange)
-                        Text("この時間帯の未記録2件をまとめて記録します")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Color.readableSecondaryText)
-                    }
-                    Text(NSLocalizedString("caregiver.today.nextAction.medicinesTitle", comment: "Medicines title"))
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(Color.readableSecondaryText)
-                    sampleCompactDoseLine(name: "血圧の薬 5 mg", detail: "1回1錠", color: CaregiverUI.teal)
-                    sampleCompactDoseLine(name: "胃薬", detail: "1回1錠", color: CaregiverUI.blue)
-                    samplePrimaryButton(title: NSLocalizedString("caregiver.today.primaryRecord.slot", comment: "Record slot"), systemImage: "pills.fill", color: CaregiverUI.teal)
-                }
-            }
             CaregiverCard {
                 HStack(spacing: 16) {
                     sampleProgressRing()
@@ -637,11 +602,33 @@ private struct CaregiverTutorialSampleView: View {
                         Text("2/3回分 記録済み")
                             .font(.title3.weight(.bold))
                             .foregroundStyle(CaregiverUI.tealDark)
-                        Text("次は昼のお薬です")
+                        Text("未記録が1回分あります")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(Color.readableSecondaryText)
                     }
                     Spacer(minLength: 0)
+                }
+            }
+            Text(NSLocalizedString("caregiver.today.timeline.title", comment: "Timeline title"))
+                .font(.headline.weight(.bold))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            CaregiverCard {
+                VStack(spacing: 14) {
+                    HStack {
+                        Label("朝 8:00", systemImage: "sunrise.fill")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(CaregiverUI.teal)
+                        Spacer()
+                        CaregiverStatusPill(text: "記録済み", color: CaregiverUI.teal, systemImage: "checkmark")
+                    }
+                    Divider()
+                    HStack {
+                        Label("昼 12:30", systemImage: "sun.max.fill")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(CaregiverUI.orange)
+                        Spacer()
+                        CaregiverStatusPill(text: "未記録", color: CaregiverUI.orange)
+                    }
                 }
             }
         case .medications:
