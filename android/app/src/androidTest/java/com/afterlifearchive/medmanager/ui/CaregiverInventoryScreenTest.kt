@@ -1,12 +1,23 @@
 package com.afterlifearchive.medmanager.ui
 
+import android.app.Activity
+import android.os.SystemClock
+import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
@@ -21,6 +32,8 @@ import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import org.junit.Rule
 import org.junit.Test
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CompletableDeferred
+import androidx.core.view.WindowCompat
 
 class CaregiverInventoryScreenTest {
     @get:Rule
@@ -30,12 +43,95 @@ class CaregiverInventoryScreenTest {
     fun listShowsMetricsStatusAndFilters() {
         setContent(mutableListOf(item("low", "少ない薬", 2.0, low = true), item("out", "切れた薬", 0.0, out = true), item("off", "未設定薬", 0.0, enabled = false)))
 
-        composeRule.onNodeWithText("在庫を管理").assertIsDisplayed()
-        composeRule.onNodeWithText("要対応").assertIsDisplayed()
+        composeRule.onNodeWithText("在庫を確認").assertIsDisplayed()
+        composeRule.onNodeWithText("要確認").assertIsDisplayed()
+        composeRule.onNodeWithText("まず補充が必要な薬があります").assertIsDisplayed()
+        composeRule.onNodeWithText("対象の薬を詳しく見る").assertIsDisplayed()
+        composeRule.onNodeWithText("在庫一覧").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-inventory-list").performScrollToNode(hasText("在庫未設定"))
+        composeRule.onNodeWithText("在庫未設定").assertIsDisplayed()
         composeRule.onNodeWithText("残り 2 錠").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-inventory-list").performScrollToNode(hasTestTag("caregiver-inventory-filter-out"))
         composeRule.onNodeWithTag("caregiver-inventory-filter-out").performClick()
+        composeRule.onNodeWithTag("caregiver-inventory-filter-out").assertIsSelected()
         composeRule.onNodeWithText("切れた薬").assertIsDisplayed()
-        composeRule.onNodeWithText("少ない薬").assertDoesNotExist()
+    }
+
+    @Test
+    fun initialLoadShowsIosLoadingMessage() {
+        val gate = CompletableDeferred<Unit>()
+        val source = object : CaregiverInventoryDataSource {
+            override suspend fun list(patientId: String): List<CaregiverInventoryItem> { gate.await(); return emptyList() }
+            override suspend fun update(patientId: String, medicationId: String, enabled: Boolean, quantity: Double?) = error("unused")
+            override suspend fun adjust(patientId: String, medicationId: String, reason: String, delta: Double?, absoluteQuantity: Double?) = error("unused")
+        }
+        val repository = CaregiverInventoryRepository(source, MutationFreshnessStore())
+        val patient = CaregiverPatient("p1", "さくら")
+        composeRule.setContent { MedicationAppTheme { CaregiverInventoryScreen(repository, CaregiverPatientState(listOf(patient), patient.id), true, {}) } }
+
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-loading").fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithText("読み込み中...").assertIsDisplayed()
+        gate.complete(Unit)
+    }
+
+    @Test
+    fun weeklyRefillUsesBlockingUpdatingOverlay() {
+        val original = item("low", "少ない薬", 2.0, low = true)
+        val gate = CompletableDeferred<Unit>()
+        val source = object : CaregiverInventoryDataSource {
+            override suspend fun list(patientId: String) = listOf(original)
+            override suspend fun update(patientId: String, medicationId: String, enabled: Boolean, quantity: Double?) = original
+            override suspend fun adjust(patientId: String, medicationId: String, reason: String, delta: Double?, absoluteQuantity: Double?): CaregiverInventoryItem {
+                gate.await()
+                return original.copy(inventoryQuantity = original.inventoryQuantity + (delta ?: 0.0), low = false)
+            }
+        }
+        val repository = CaregiverInventoryRepository(source, MutationFreshnessStore())
+        val patient = CaregiverPatient("p1", "さくら")
+        composeRule.setContent { MedicationAppTheme { CaregiverInventoryScreen(repository, CaregiverPatientState(listOf(patient), patient.id), true, {}) } }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-refill-low").fetchSemanticsNodes().isNotEmpty() }
+
+        composeRule.onNodeWithTag("caregiver-inventory-refill-low").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-updating").fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithText("更新中...").assertIsDisplayed()
+        gate.complete(Unit)
+    }
+
+    @Test
+    fun emptyInventoryShowsThreeStepOnboarding() {
+        setContent(mutableListOf())
+
+        composeRule.onNodeWithText("在庫管理はまだ空です").assertIsDisplayed()
+        composeRule.onNodeWithText("薬タブで薬を登録").assertIsDisplayed()
+        composeRule.onNodeWithText("薬の編集画面で在庫管理をオン").assertIsDisplayed()
+        composeRule.onNodeWithText("残数が少ない薬を在庫画面で確認").assertIsDisplayed()
+    }
+
+    @Test
+    fun screenshotFixtureShowsCaregiverInventoryList() {
+        val initial = mutableListOf(
+            item("out", "朝の血圧のお薬", 0.0, out = true),
+            item("low", "夕食後のお薬", 2.0, low = true),
+            item("ok", "痛み止め", 18.0),
+        )
+        val source = object : CaregiverInventoryDataSource {
+            override suspend fun list(patientId: String) = initial.toList()
+            override suspend fun update(patientId: String, medicationId: String, enabled: Boolean, quantity: Double?) = initial.first { it.medicationId == medicationId }
+            override suspend fun adjust(patientId: String, medicationId: String, reason: String, delta: Double?, absoluteQuantity: Double?) = initial.first { it.medicationId == medicationId }
+        }
+        val repository = CaregiverInventoryRepository(source, MutationFreshnessStore())
+        val patient = CaregiverPatient("p1", "さくら")
+        lateinit var activity: Activity
+        composeRule.setContent {
+            MedicationAppTheme {
+                activity = checkNotNull(LocalActivity.current)
+                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding()) {
+                    CaregiverInventoryScreen(repository, CaregiverPatientState(listOf(patient), patient.id), true, {})
+                }
+            }
+        }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-list").fetchSemanticsNodes().isNotEmpty() }
+        captureDevice(activity, "android-ui-204-caregiver-inventory-light.png")
     }
 
     @Test
@@ -136,4 +232,15 @@ class CaregiverInventoryScreenTest {
         id, name, false, 1.0, enabled, quantity, 3, false, low, out, 1.0,
         7.0, 14.0, 21.0, quantity.toInt(), "2026-07-18",
     )
+
+    @Suppress("DEPRECATION")
+    private fun captureDevice(activity: Activity, filename: String) {
+        composeRule.runOnIdle {
+            WindowCompat.setDecorFitsSystemWindows(activity.window, false)
+            activity.window.statusBarColor = android.graphics.Color.TRANSPARENT
+            WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = true
+        }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture(filename)
+    }
 }

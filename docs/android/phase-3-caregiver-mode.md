@@ -186,7 +186,7 @@ F02–F05 and `CG-008`, `CG-015`, `CG-016` are `IMPLEMENTED`. F06 now owns compl
 - API/JVM tests cover exact caregiver auth, method/path/body, authoritative replacement, validation, failure preservation and inventory-only revisions. Production Compose tests cover metrics/filtering, refill/correction confirmation and enabling inventory management.
 - The full gate passes with 66/66 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
 
-F06 and `CG-009` are `IMPLEMENTED`. F07 owns the explicit cross-tab revision matrix before Gate F closes.
+F06 and `CG-009` are `IMPLEMENTED`. The UI-204 rebaseline also covers the current-iOS loading/updating lifecycle, action-first guide, empty onboarding, sectioned list, status help and one-week quick refill, with a direct API-35 light capture. F07 owns the explicit cross-tab revision matrix before Gate F closes.
 
 ## F07 cross-tab freshness matrix — 2026-07-15
 

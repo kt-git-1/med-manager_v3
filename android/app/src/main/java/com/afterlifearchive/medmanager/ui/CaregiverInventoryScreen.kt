@@ -3,6 +3,8 @@ package com.afterlifearchive.medmanager.ui
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +32,7 @@ import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,7 +40,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -55,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -96,18 +99,21 @@ internal fun CaregiverInventoryScreen(
     }
     val selectedItem = state.items.firstOrNull { it.medicationId == selectedItemId }
     if (selected != null && selectedItem != null) {
-        CaregiverInventoryDetail(
-            patientId = selected.id,
-            item = selectedItem,
-            repository = repository,
-            updating = state.updatingMedicationId == selectedItem.medicationId,
-            failed = state.mutationFailed,
-            message = state.mutationMessage,
-            refreshFailed = state.refreshFailed,
-            onRetry = { scope.launch { repository.load(selected.id) } },
-            enabled = enabled && !state.refreshFailed,
-            onClose = { selectedItemId = null },
-        )
+        Box(Modifier.fillMaxSize()) {
+            CaregiverInventoryDetail(
+                patientId = selected.id,
+                item = selectedItem,
+                repository = repository,
+                updating = state.updatingMedicationId == selectedItem.medicationId,
+                failed = state.mutationFailed,
+                message = state.mutationMessage,
+                refreshFailed = state.refreshFailed,
+                onRetry = { scope.launch { repository.load(selected.id) } },
+                enabled = enabled && !state.refreshFailed,
+                onClose = { selectedItemId = null },
+            )
+            if (state.refreshing || state.updatingMedicationId != null) CaregiverInventoryUpdatingOverlay()
+        }
         return
     }
 
@@ -116,22 +122,25 @@ internal fun CaregiverInventoryScreen(
         patientState.loadFailed -> InventoryMessage(stringResource(R.string.caregiver_data_unavailable_title), stringResource(R.string.caregiver_data_unavailable_message))
         patientState.patients.isEmpty() -> InventoryMessage(stringResource(R.string.caregiver_no_patient_title), stringResource(R.string.caregiver_no_patient_message))
         selected == null -> InventoryMessage(stringResource(R.string.caregiver_no_selection_title), stringResource(R.string.caregiver_no_selection_message))
-        state.loading -> InventoryCentered { CircularProgressIndicator() }
+        state.loading -> CaregiverInventoryLoadingState()
         state.loadFailed -> InventoryMessage(stringResource(R.string.caregiver_data_unavailable_title), stringResource(R.string.caregiver_data_unavailable_message)) {
             Button(onClick = { scope.launch { repository.load(selected.id) } }) { Text(stringResource(R.string.common_retry)) }
         }
-        else -> CaregiverInventoryList(
-            patientName = selected.displayName,
-            items = state.items,
-            refreshing = state.refreshing,
-            refreshFailed = state.refreshFailed,
-            failed = state.mutationFailed,
-            message = state.mutationMessage,
-            onRetry = { scope.launch { repository.load(selected.id) } },
-            onSelect = { selectedItemId = it.medicationId },
-            onOpenMedications = onOpenMedications,
-            actionsEnabled = enabled && !state.refreshFailed,
-        )
+        else -> Box(Modifier.fillMaxSize()) {
+            CaregiverInventoryList(
+                patientName = selected.displayName,
+                items = state.items,
+                refreshFailed = state.refreshFailed,
+                failed = state.mutationFailed,
+                message = state.mutationMessage,
+                onRetry = { scope.launch { repository.load(selected.id) } },
+                onSelect = { selectedItemId = it.medicationId },
+                onQuickRefill = { item -> scope.launch { repository.refill(selected.id, item, plannedRefill(item, 7)) } },
+                onOpenMedications = onOpenMedications,
+                actionsEnabled = enabled && !state.refreshFailed && !state.refreshing && state.updatingMedicationId == null,
+            )
+            if (state.refreshing || state.updatingMedicationId != null) CaregiverInventoryUpdatingOverlay()
+        }
     }
 }
 
@@ -139,12 +148,12 @@ internal fun CaregiverInventoryScreen(
 private fun CaregiverInventoryList(
     patientName: String,
     items: List<CaregiverInventoryItem>,
-    refreshing: Boolean,
     refreshFailed: Boolean,
     failed: Boolean,
     message: CaregiverInventoryMutationMessage?,
     onRetry: () -> Unit,
     onSelect: (CaregiverInventoryItem) -> Unit,
+    onQuickRefill: (CaregiverInventoryItem) -> Unit,
     onOpenMedications: () -> Unit,
     actionsEnabled: Boolean,
 ) {
@@ -172,15 +181,22 @@ private fun CaregiverInventoryList(
                 }
             }
         }
-        if (refreshing) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
         if (refreshFailed) item { CaregiverStaleDataCard("caregiver-inventory-stale", onRetry) }
         if (failed) item { Text(stringResource(R.string.caregiver_inventory_failed), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) }
         message?.let { item { Text(inventoryMutationText(it), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) } }
         if (items.isEmpty()) {
             item {
                 InventoryCard(MaterialTheme.colorScheme.primary) {
-                    Text(stringResource(R.string.caregiver_inventory_empty_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text(stringResource(R.string.caregiver_inventory_empty_message), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+                        InventoryIcon(Icons.Rounded.Inventory2, MaterialTheme.colorScheme.primary, 58)
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(stringResource(R.string.caregiver_inventory_empty_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.caregiver_inventory_empty_message), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    InventoryOnboardingStep(1, stringResource(R.string.caregiver_inventory_empty_step_medication))
+                    InventoryOnboardingStep(2, stringResource(R.string.caregiver_inventory_empty_step_enable))
+                    InventoryOnboardingStep(3, stringResource(R.string.caregiver_inventory_empty_step_refill))
                     Button(onClick = onOpenMedications, enabled = actionsEnabled, modifier = Modifier.fillMaxWidth().testTag("caregiver-inventory-open-medications")) {
                         Icon(Icons.Rounded.Medication, contentDescription = null)
                         Spacer(Modifier.size(6.dp))
@@ -201,6 +217,7 @@ private fun CaregiverInventoryList(
                     }
                 }
             }
+            item { InventoryGuide(items, onSelect, actionsEnabled) }
             item {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     InventoryFilter.entries.forEach { candidate ->
@@ -219,8 +236,18 @@ private fun CaregiverInventoryList(
                     }
                 }
             }
-            items(visible, key = CaregiverInventoryItem::medicationId) { item ->
-                InventoryRow(item, onSelect, actionsEnabled)
+            val sections = if (filter == InventoryFilter.ALL) listOf(
+                R.string.caregiver_inventory_section_active to visible.filter { it.inventoryEnabled && !it.periodEnded },
+                R.string.caregiver_inventory_section_ended to visible.filter { it.periodEnded },
+                R.string.caregiver_inventory_section_unconfigured to visible.filter { !it.inventoryEnabled && !it.periodEnded },
+            ) else listOf(R.string.caregiver_inventory_section_active to visible)
+            sections.forEach { (title, sectionItems) ->
+                if (sectionItems.isNotEmpty()) {
+                    item { Text(stringResource(title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold) }
+                    items(sectionItems, key = CaregiverInventoryItem::medicationId) { item ->
+                        InventoryRow(item, onSelect, onQuickRefill, actionsEnabled)
+                    }
+                }
             }
         }
         item { Spacer(Modifier.height(24.dp)) }
@@ -228,25 +255,43 @@ private fun CaregiverInventoryList(
 }
 
 @Composable
-private fun InventoryRow(item: CaregiverInventoryItem, onSelect: (CaregiverInventoryItem) -> Unit, enabled: Boolean) {
+private fun InventoryRow(item: CaregiverInventoryItem, onSelect: (CaregiverInventoryItem) -> Unit, onQuickRefill: (CaregiverInventoryItem) -> Unit, enabled: Boolean) {
     val detailDescription = stringResource(R.string.caregiver_inventory_open_detail_accessibility, item.name)
     val tint = when {
-        item.out -> MaterialTheme.colorScheme.error
-        item.low -> MedicationTheme.colors.orange
+        item.needsAction -> MedicationTheme.colors.orange
         !item.inventoryEnabled -> MaterialTheme.colorScheme.onSurfaceVariant
         else -> MaterialTheme.colorScheme.primary
+    }
+    val statusTint = when {
+        item.out -> MaterialTheme.colorScheme.error
+        item.low -> MedicationTheme.colors.orange
+        else -> tint
     }
     InventoryCard(if (item.needsAction) tint else null) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             InventoryIcon(if (item.isPrn) Icons.Rounded.AddBox else Icons.Rounded.Inventory2, tint, 48)
             Column(Modifier.weight(1f)) {
                 Text(item.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(inventoryStatusText(item), color = tint, fontWeight = FontWeight.Bold)
+                Text(inventoryStatusText(item), color = statusTint, fontWeight = FontWeight.Bold)
             }
-            Text(if (item.inventoryEnabled) stringResource(R.string.caregiver_inventory_remaining, formatInventoryNumber(item.inventoryQuantity)) else "—", fontWeight = FontWeight.Bold)
+            if (item.inventoryEnabled) Text(stringResource(R.string.caregiver_inventory_remaining, formatInventoryNumber(item.inventoryQuantity)), style = MaterialTheme.typography.titleMedium, color = tint, fontWeight = FontWeight.Bold)
         }
-        if (item.daysRemaining != null && !item.isPrn) Text(stringResource(R.string.caregiver_inventory_days, item.daysRemaining), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        item.refillDueDate?.let { Text(stringResource(R.string.caregiver_inventory_refill_due, it), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        if (item.inventoryEnabled) {
+            Text(inventoryDaysText(item), color = if (item.low) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+            Text(inventoryHelpText(item), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (item.needsAction) {
+                Button(onClick = { onQuickRefill(item) }, enabled = enabled, colors = ButtonDefaults.buttonColors(containerColor = MedicationTheme.colors.orange), modifier = Modifier.fillMaxWidth().height(52.dp).testTag("caregiver-inventory-refill-${item.medicationId}")) {
+                    Icon(Icons.Rounded.Inventory2, contentDescription = null)
+                    Spacer(Modifier.size(6.dp))
+                    Text(stringResource(R.string.caregiver_inventory_weekly_refill))
+                }
+            }
+        } else {
+            InventoryCard {
+                Text(stringResource(R.string.caregiver_inventory_unconfigured_title), fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.caregiver_inventory_unconfigured_message), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
         OutlinedButton(
             onClick = { onSelect(item) },
             enabled = enabled,
@@ -256,6 +301,83 @@ private fun InventoryRow(item: CaregiverInventoryItem, onSelect: (CaregiverInven
                 .testTag("caregiver-inventory-item-${item.medicationId}"),
         ) {
             Text(stringResource(R.string.caregiver_inventory_open_detail))
+        }
+    }
+}
+
+@Composable
+private fun InventoryGuide(items: List<CaregiverInventoryItem>, onSelect: (CaregiverInventoryItem) -> Unit, enabled: Boolean) {
+    val primary = items.filter { it.needsAction }.sortedWith(compareByDescending<CaregiverInventoryItem> { it.out }.thenBy { it.daysRemaining ?: Int.MAX_VALUE }).firstOrNull()
+    val tint = if (primary == null) MaterialTheme.colorScheme.primary else MedicationTheme.colors.orange
+    InventoryCard(tint) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+            InventoryIcon(if (primary == null) Icons.Rounded.CheckCircle else Icons.Rounded.Warning, tint, 42)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(stringResource(if (primary == null) R.string.caregiver_inventory_guide_ok_title else R.string.caregiver_inventory_guide_action_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    when {
+                        primary == null -> stringResource(R.string.caregiver_inventory_guide_ok_message)
+                        primary.out -> stringResource(R.string.caregiver_inventory_guide_out_message, primary.name)
+                        else -> stringResource(R.string.caregiver_inventory_guide_low_message, primary.name, inventoryDaysText(primary))
+                    },
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (primary != null) Button(onClick = { onSelect(primary) }, enabled = enabled, colors = ButtonDefaults.buttonColors(containerColor = MedicationTheme.colors.orange), modifier = Modifier.fillMaxWidth().height(46.dp).testTag("caregiver-inventory-guide-action")) {
+            Text(stringResource(R.string.caregiver_inventory_guide_action))
+        }
+    }
+}
+
+@Composable
+private fun InventoryOnboardingStep(number: Int, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(Modifier.size(30.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
+            Text(number.toString(), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+        }
+        Text(label, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+private fun inventoryDaysText(item: CaregiverInventoryItem): String = when {
+    item.isPrn -> "頓服"
+    item.periodEnded -> stringResource(R.string.caregiver_inventory_status_ended)
+    item.daysRemaining != null -> stringResource(R.string.caregiver_inventory_days, item.daysRemaining)
+    else -> "—"
+}
+
+@Composable
+private fun inventoryHelpText(item: CaregiverInventoryItem): String = stringResource(when {
+    item.periodEnded -> R.string.caregiver_inventory_help_ended
+    item.out -> R.string.caregiver_inventory_help_out
+    item.low -> if (item.daysRemaining != null && !item.refillDueDate.isNullOrBlank()) R.string.caregiver_inventory_refill_due else R.string.caregiver_inventory_help_low
+    item.isPrn -> R.string.caregiver_inventory_help_prn
+    else -> R.string.caregiver_inventory_help_available
+}, *if (item.low && item.daysRemaining != null && !item.refillDueDate.isNullOrBlank()) arrayOf(item.refillDueDate!!) else emptyArray())
+
+@Composable
+private fun CaregiverInventoryLoadingState() {
+    InventoryCentered {
+        CircularProgressIndicator(modifier = Modifier.size(52.dp), color = MedicationTheme.colors.primaryTealText)
+        Text(stringResource(R.string.patient_today_loading), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("caregiver-inventory-loading"))
+    }
+}
+
+@Composable
+private fun CaregiverInventoryUpdatingOverlay() {
+    Box(
+        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.2f)).pointerInput(Unit) {
+            awaitEachGesture { awaitFirstDown().consume() }
+        }.testTag("caregiver-inventory-updating"),
+        contentAlignment = Alignment.Center,
+    ) {
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))) {
+            Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                CircularProgressIndicator(modifier = Modifier.size(44.dp), color = MedicationTheme.colors.primaryTealText)
+                Text(stringResource(R.string.patient_today_updating), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            }
         }
     }
 }
@@ -306,7 +428,6 @@ private fun CaregiverInventoryDetail(
                 Text(if (item.inventoryEnabled) stringResource(R.string.caregiver_inventory_remaining, formatInventoryNumber(item.inventoryQuantity)) else "—", style = MaterialTheme.typography.headlineMedium, color = tint, fontWeight = FontWeight.Bold)
             }
         }
-        if (updating) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
         if (refreshFailed) item { CaregiverStaleDataCard("caregiver-inventory-detail-stale", onRetry) }
         if (failed) item { Text(stringResource(R.string.caregiver_inventory_failed), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) }
         message?.let { item { Text(inventoryMutationText(it), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) } }
