@@ -123,7 +123,7 @@ class CaregiverAdaptiveUiTest {
     }
 
     @Test
-    fun historyDetailRemainsReachableAtOneHundredThirtyPercent() {
+    fun historyInlineDetailRemainsReachableAtOneHundredThirtyPercent() {
         val patient = CaregiverPatient("p1", "さくら")
         val patientState = CaregiverPatientState(listOf(patient), patient.id)
         val date = LocalDate.of(2026, 7, 15)
@@ -144,7 +144,8 @@ class CaregiverAdaptiveUiTest {
         }
         composeRule.onNodeWithTag("caregiver-history-day-$date").performClick()
         composeRule.waitUntil(5_000) { historyRepository.state.value.dayDetail != null }
-        composeRule.onNodeWithTag("caregiver-history-day-sheet").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("caregiver-history-day-detail"))
+        composeRule.onNodeWithTag("caregiver-history-day-detail").assertIsDisplayed()
     }
 
     @Test

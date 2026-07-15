@@ -129,7 +129,7 @@ class CaregiverLargeTextUiTest(private val darkTheme: Boolean) {
     }
 
     @Test
-    fun historyDaySheetRemainsReachableAtTwoHundredPercent() {
+    fun historyInlineDetailRemainsReachableAtTwoHundredPercent() {
         val date = LocalDate.of(2026, 7, 15)
         val repository = CaregiverHistoryRepository(object : CaregiverHistoryDataSource {
             override suspend fun month(patientId: String, yearMonth: YearMonth) = listOf(
@@ -153,7 +153,8 @@ class CaregiverLargeTextUiTest(private val darkTheme: Boolean) {
             .performScrollToNode(hasTestTag("caregiver-history-day-$date"))
         composeRule.onNodeWithTag("caregiver-history-day-$date").performClick()
         composeRule.waitUntil(5_000) { repository.state.value.dayDetail != null }
-        composeRule.onNodeWithTag("caregiver-history-day-sheet").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("caregiver-history-day-detail"))
+        composeRule.onNodeWithTag("caregiver-history-day-detail").assertIsDisplayed()
     }
 
     private fun captureDarkFixture(name: String) {

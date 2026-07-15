@@ -537,7 +537,7 @@ internal fun HistoryDayDetailContent(
 }
 
 @Composable
-private fun HistoryScheduledDoseRow(
+internal fun HistoryScheduledDoseRow(
     dose: HistoryScheduledDose,
     highlighted: Boolean = false,
     onRecordMissed: ((HistoryScheduledDose) -> Unit)? = null,
@@ -570,7 +570,7 @@ private fun HistoryScheduledDoseRow(
 }
 
 @Composable
-private fun PrnHistoryRow(item: PrnHistoryItem) {
+internal fun PrnHistoryRow(item: PrnHistoryItem) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {

@@ -498,7 +498,18 @@
 
     <!-- Caregiver history -->
     <string name="caregiver_history_title">服薬履歴</string>
-    <string name="caregiver_history_patient">%1$sさんの記録</string>
+    <string name="caregiver_history_patient">%1$sさん</string>
+    <string name="caregiver_history_calendar_title">月間カレンダー</string>
+    <string name="caregiver_history_calendar_message">日付をタップすると、その日の記録が下に表示されます。</string>
+    <string name="caregiver_history_selected_title">選択中の日付</string>
+    <string name="caregiver_history_selected_none">予定なし</string>
+    <string name="caregiver_history_selected_none_help">この日は定時薬の予定も頓服の記録もありません。</string>
+    <string name="caregiver_history_selected_missed_help">飲み忘れがあります。下の詳細で薬名と時間を確認してください。</string>
+    <string name="caregiver_history_selected_pending_help">まだ記録されていない服薬があります。未来の予定は未記録として表示されます。</string>
+    <string name="caregiver_history_selected_complete_help">この日の予定は記録済みです。下で薬ごとの詳細を確認できます。</string>
+    <string name="caregiver_history_summary_taken">記録済み %1$d回分</string>
+    <string name="caregiver_history_summary_pending">未記録 %1$d回分</string>
+    <string name="caregiver_history_summary_missed">飲み忘れ %1$d回分</string>
     <string name="caregiver_history_previous_month">前の月</string>
     <string name="caregiver_history_next_month">次の月</string>
     <string name="caregiver_history_prn">頓服</string>

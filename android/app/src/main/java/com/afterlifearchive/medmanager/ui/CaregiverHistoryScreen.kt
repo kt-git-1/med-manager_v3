@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,12 +26,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,7 +37,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,7 +66,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 internal fun CaregiverHistoryScreen(
     repository: CaregiverHistoryRepository,
     patientState: CaregiverPatientState,
@@ -83,7 +79,6 @@ internal fun CaregiverHistoryScreen(
     val selectedPatient = patientState.selectedPatient
     val cursor = remember(repository) { repository.newFreshnessCursor() }
     val scope = rememberCoroutineScope()
-    var showDetail by rememberSaveable { mutableStateOf(false) }
     var backfillDose by remember { mutableStateOf<HistoryScheduledDose?>(null) }
 
     LaunchedEffect(enabled, selectedPatient?.id, state.displayedMonth, freshness.dose, freshness.slotTimes) {
@@ -98,9 +93,6 @@ internal fun CaregiverHistoryScreen(
             repository.loadDay(selectedPatient.id, date)
         }
     }
-    LaunchedEffect(state.navigationRequestId, enabled, selectedPatient?.id) {
-        if (state.navigationRequestId > 0 && enabled && selectedPatient?.id == state.notificationPatientId) showDetail = true
-    }
     LaunchedEffect(state.highlightedSlot, state.dayDetail?.date) {
         if (state.highlightedSlot != null && state.dayDetail?.date == state.selectedDate?.toString() && highlightDurationMillis != null) {
             delay(highlightDurationMillis)
@@ -113,51 +105,36 @@ internal fun CaregiverHistoryScreen(
         patientState.loadFailed -> HistoryMessage(stringResource(R.string.caregiver_data_unavailable_title), stringResource(R.string.caregiver_data_unavailable_message))
         patientState.patients.isEmpty() -> HistoryMessage(stringResource(R.string.caregiver_no_patient_title), stringResource(R.string.caregiver_no_patient_message))
         selectedPatient == null -> HistoryMessage(stringResource(R.string.caregiver_no_selection_title), stringResource(R.string.caregiver_no_selection_message))
-        state.loadingMonth && state.days.isEmpty() -> HistoryCentered { CircularProgressIndicator() }
+        state.loadingMonth && state.days.isEmpty() -> CaregiverHistoryLoadingState()
         state.monthFailed -> HistoryMessage(stringResource(R.string.caregiver_data_unavailable_title), stringResource(R.string.caregiver_data_unavailable_message)) {
             Button(onClick = { scope.launch { repository.loadMonth(selectedPatient.id, state.displayedMonth) } }) { Text(stringResource(R.string.common_retry)) }
         }
-        else -> CaregiverHistoryMonth(
-            patientName = selectedPatient.displayName,
-            displayedMonth = state.displayedMonth,
-            days = state.days,
-            selectedDate = state.selectedDate,
-            refreshing = state.refreshingMonth,
-            refreshFailed = state.monthRefreshFailed,
-            retentionCutoffDate = state.retentionCutoffDate,
-            retentionDays = state.retentionDays,
-            onRetry = { scope.launch { repository.loadMonth(selectedPatient.id, state.displayedMonth) } },
-            onMonth = { scope.launch { repository.loadMonth(selectedPatient.id, it) } },
-            onDate = { repository.selectDate(it); showDetail = true },
-            reportAction = if (reportRepository != null) {
-                { CaregiverReportAction(reportRepository, selectedPatient.id, billingEnabled) }
-            } else null,
-        )
-    }
-
-    if (showDetail && selectedPatient != null && state.selectedDate != null) {
-        ModalBottomSheet(onDismissRequest = { showDetail = false }, modifier = Modifier.testTag("caregiver-history-day-sheet")) {
-            if (state.updating) LinearProgressIndicator(Modifier.fillMaxWidth())
-            if (state.dayRefreshFailed) {
-                CaregiverStaleDataCard(
-                    testTag = "caregiver-history-day-stale",
-                    onRetry = { scope.launch { repository.loadDay(selectedPatient.id, state.selectedDate!!) } },
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                )
-            }
-            if (state.mutationFailed) Text(stringResource(R.string.caregiver_history_backfill_failed), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 20.dp))
-            if (state.mutationSucceeded) Text(stringResource(R.string.caregiver_history_backfill_success), color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 20.dp), fontWeight = FontWeight.Bold)
-            HistoryDayDetailContent(
-                date = state.selectedDate!!,
-                detail = state.dayDetail,
-                loading = state.loadingDay,
-                error = if (state.dayFailed) stringResource(R.string.caregiver_data_unavailable_message) else null,
+        else -> Box(Modifier.fillMaxSize()) {
+            CaregiverHistoryMonth(
+                patientName = selectedPatient.displayName,
+                displayedMonth = state.displayedMonth,
+                days = state.days,
+                selectedDate = state.selectedDate,
+                dayDetail = state.dayDetail,
+                loadingDay = state.loadingDay,
+                dayFailed = state.dayFailed,
+                dayRefreshFailed = state.dayRefreshFailed,
+                mutationFailed = state.mutationFailed,
+                mutationSucceeded = state.mutationSucceeded,
+                highlightedSlot = state.highlightedSlot,
+                refreshFailed = state.monthRefreshFailed,
                 retentionCutoffDate = state.retentionCutoffDate,
                 retentionDays = state.retentionDays,
-                onRetry = { scope.launch { repository.loadDay(selectedPatient.id, state.selectedDate!!) } },
-                highlightedSlot = state.highlightedSlot,
+                onRetry = { scope.launch { repository.loadMonth(selectedPatient.id, state.displayedMonth) } },
+                onRetryDay = { state.selectedDate?.let { scope.launch { repository.loadDay(selectedPatient.id, it) } } },
+                onMonth = { scope.launch { repository.loadMonth(selectedPatient.id, it) } },
+                onDate = repository::selectDate,
                 onRecordMissed = { backfillDose = it },
+                reportAction = if (reportRepository != null) {
+                    { CaregiverReportAction(reportRepository, selectedPatient.id, billingEnabled) }
+                } else null,
             )
+            if (state.refreshingMonth || state.updating) CaregiverHistoryUpdatingOverlay()
         }
     }
 
@@ -183,13 +160,21 @@ private fun CaregiverHistoryMonth(
     displayedMonth: YearMonth,
     days: List<HistoryDay>,
     selectedDate: LocalDate?,
-    refreshing: Boolean,
+    dayDetail: com.afterlifearchive.medmanager.data.patient.HistoryDayDetail?,
+    loadingDay: Boolean,
+    dayFailed: Boolean,
+    dayRefreshFailed: Boolean,
+    mutationFailed: Boolean,
+    mutationSucceeded: Boolean,
+    highlightedSlot: com.afterlifearchive.medmanager.data.patient.MedicationSlot?,
     refreshFailed: Boolean,
     retentionCutoffDate: String?,
     retentionDays: Int?,
     onRetry: () -> Unit,
+    onRetryDay: () -> Unit,
     onMonth: (YearMonth) -> Unit,
     onDate: (LocalDate) -> Unit,
+    onRecordMissed: (HistoryScheduledDose) -> Unit,
     reportAction: (@Composable () -> Unit)?,
 ) {
     val now = LocalDate.now(ZoneId.of("Asia/Tokyo"))
@@ -210,7 +195,6 @@ private fun CaregiverHistoryMonth(
                 }
             }
         }
-        if (refreshing) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
         if (refreshFailed) item { CaregiverStaleDataCard("caregiver-history-stale", onRetry) }
         item {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -231,22 +215,45 @@ private fun CaregiverHistoryMonth(
                 }
             }
         }
-        item { CaregiverCalendar(displayedMonth, days, selectedDate, onDate) }
-        item { HistoryLegendRow() }
+        item {
+            Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(R.string.caregiver_history_calendar_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.caregiver_history_calendar_message), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    CaregiverCalendarContent(displayedMonth, days, selectedDate, onDate)
+                    HistoryLegendRow()
+                }
+            }
+        }
+        if (selectedDate != null) {
+            item { CaregiverSelectedDaySummary(selectedDate, days.firstOrNull { it.date == selectedDate.toString() }) }
+            if (dayRefreshFailed) item { CaregiverStaleDataCard("caregiver-history-day-stale", onRetryDay) }
+            if (mutationFailed) item { Text(stringResource(R.string.caregiver_history_backfill_failed), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) }
+            if (mutationSucceeded) item { Text(stringResource(R.string.caregiver_history_backfill_success), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }
+            item { Text(selectedDate.format(DateTimeFormatter.ofPattern("M月d日 EEEE", Locale.JAPANESE)), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("caregiver-history-day-detail")) }
+            if (loadingDay) item { Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+            if (dayFailed) item { HistoryMessageCard(stringResource(R.string.caregiver_data_unavailable_message), onRetryDay) }
+            if (!loadingDay && !dayFailed && dayDetail != null) {
+                if (dayDetail.doses.isEmpty() && dayDetail.prnItems.isEmpty()) item { HistoryMessageCard(stringResource(R.string.patient_history_day_empty_message)) }
+                if (dayDetail.doses.isNotEmpty()) item { Text(stringResource(R.string.patient_history_scheduled_section), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+                items(dayDetail.doses, key = { "${it.medicationId}:${it.scheduledAt}" }) { dose -> HistoryScheduledDoseRow(dose, highlightedSlot == dose.slot, onRecordMissed) }
+                if (dayDetail.prnItems.isNotEmpty()) item { Text(stringResource(R.string.patient_history_prn_section), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+                items(dayDetail.prnItems, key = { "${it.medicationId}:${it.takenAt}" }) { PrnHistoryRow(it) }
+            }
+        }
         reportAction?.let { item { it() } }
         item { Spacer(Modifier.height(24.dp)) }
     }
 }
 
 @Composable
-private fun CaregiverCalendar(yearMonth: YearMonth, days: List<HistoryDay>, selectedDate: LocalDate?, onDate: (LocalDate) -> Unit) {
+private fun CaregiverCalendarContent(yearMonth: YearMonth, days: List<HistoryDay>, selectedDate: LocalDate?, onDate: (LocalDate) -> Unit) {
     val byDate = days.associateBy(HistoryDay::date)
     val leading = yearMonth.atDay(1).dayOfWeek.value % 7
     val cells = (List<LocalDate?>(leading) { null } + (1..yearMonth.lengthOfMonth()).map(yearMonth::atDay)).let {
         it + List((7 - it.size % 7) % 7) { null }
     }
-    Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.fillMaxWidth()) {
                 stringResource(R.string.patient_history_weekdays).split(',').forEach { Text(it, Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold) }
             }
@@ -258,7 +265,6 @@ private fun CaregiverCalendar(yearMonth: YearMonth, days: List<HistoryDay>, sele
                     }
                 }
             }
-        }
     }
 }
 
@@ -327,6 +333,74 @@ private fun HistoryLegendRow() {
             stringResource(R.string.patient_status_pending) to MaterialTheme.colorScheme.tertiary,
             stringResource(R.string.caregiver_history_prn) to MaterialTheme.colorScheme.secondary,
         ).forEach { (label, color) -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) { Box(Modifier.size(7.dp).background(color, CircleShape)); Text(label, style = MaterialTheme.typography.labelSmall) } }
+    }
+}
+
+@Composable
+private fun CaregiverSelectedDaySummary(date: LocalDate, day: HistoryDay?) {
+    val statuses = day?.let { listOf(it.morning, it.noon, it.evening, it.bedtime) }.orEmpty().filter { it != HistoryStatus.NONE }
+    val taken = statuses.count { it == HistoryStatus.TAKEN }
+    val pending = statuses.count { it == HistoryStatus.PENDING }
+    val missed = statuses.count { it == HistoryStatus.MISSED }
+    val total = statuses.size
+    val help = when {
+        total == 0 && (day?.prnCount ?: 0) == 0 -> R.string.caregiver_history_selected_none_help
+        missed > 0 -> R.string.caregiver_history_selected_missed_help
+        pending > 0 -> R.string.caregiver_history_selected_pending_help
+        else -> R.string.caregiver_history_selected_complete_help
+    }
+    Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.caregiver_history_selected_title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+            Text(date.format(DateTimeFormatter.ofPattern("M月d日 EEEE", Locale.JAPANESE)), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(if (total == 0) stringResource(R.string.caregiver_history_selected_none) else stringResource(R.string.caregiver_history_summary_taken, taken), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(help), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (total > 0) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                HistorySummaryPill(stringResource(R.string.caregiver_history_summary_taken, taken), MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+                HistorySummaryPill(stringResource(R.string.caregiver_history_summary_pending, pending), MaterialTheme.colorScheme.tertiary, Modifier.weight(1f))
+            }
+            if (missed > 0) HistorySummaryPill(stringResource(R.string.caregiver_history_summary_missed, missed), MaterialTheme.colorScheme.error)
+        }
+    }
+}
+
+@Composable
+private fun HistorySummaryPill(text: String, tint: Color, modifier: Modifier = Modifier) {
+    Box(modifier.background(tint.copy(alpha = 0.12f), RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 7.dp), contentAlignment = Alignment.Center) {
+        Text(text, color = tint, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun HistoryMessageCard(message: String, onRetry: (() -> Unit)? = null) {
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (onRetry != null) Button(onClick = onRetry) { Text(stringResource(R.string.common_retry)) }
+        }
+    }
+}
+
+@Composable
+private fun CaregiverHistoryLoadingState() {
+    HistoryCentered {
+        CircularProgressIndicator(modifier = Modifier.size(52.dp))
+        Text(stringResource(R.string.patient_today_loading), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("caregiver-history-loading"))
+    }
+}
+
+@Composable
+private fun CaregiverHistoryUpdatingOverlay() {
+    Box(
+        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.2f)).clickable(onClick = {}).testTag("caregiver-history-updating"),
+        contentAlignment = Alignment.Center,
+    ) {
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))) {
+            Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                CircularProgressIndicator(modifier = Modifier.size(44.dp))
+                Text(stringResource(R.string.patient_today_updating), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            }
+        }
     }
 }
 
