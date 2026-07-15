@@ -518,3 +518,72 @@ describe("notifyCaregiversOfDoseTaken — stable eventKey + linkage + NotRegiste
     expect(disablePushDeviceByIdMock).toHaveBeenCalledWith("device-2");
   });
 });
+
+describe("notifyCaregiversOfDoseMissed", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetStores();
+    seedDevices(defaultDevices);
+
+    listEnabledPushDevicesForCaregiversMock.mockImplementation(async (caregiverIds: string[]) =>
+      deviceStore.filter((device) => caregiverIds.includes(device.ownerId) && device.isEnabled)
+    );
+    tryInsertDeliveryMock.mockImplementation(
+      async (input: { eventKey: string; pushDeviceId: string }) => {
+        const dedupKey = `${input.eventKey}:${input.pushDeviceId}`;
+        if (deliveryStore.has(dedupKey)) return false;
+        deliveryStore.add(dedupKey);
+        return true;
+      }
+    );
+    sendFcmMessageMock.mockResolvedValue({ success: true });
+  });
+
+  it("sends the Japanese missed-dose payload to linked caregiver devices", async () => {
+    const { notifyCaregiversOfDoseMissed } =
+      await import("../../src/services/pushNotificationService");
+
+    await notifyCaregiversOfDoseMissed({
+      patientId: "patient-1",
+      displayName: "太郎",
+      date: "2026-07-15",
+      slot: "noon"
+    });
+
+    expect(sendFcmMessageMock).toHaveBeenCalledTimes(2);
+    expect(sendFcmMessageMock).toHaveBeenCalledWith(
+      "fcm-token-a",
+      {
+        title: "飲み忘れのお知らせ",
+        body: "太郎さんの昼のお薬が、まだ記録されていません"
+      },
+      {
+        type: "DOSE_MISSED",
+        patientId: "patient-1",
+        date: "2026-07-15",
+        slot: "noon"
+      },
+      expect.any(Object)
+    );
+  });
+
+  it("deduplicates repeated cron runs by patient, date, slot and device", async () => {
+    const { notifyCaregiversOfDoseMissed } =
+      await import("../../src/services/pushNotificationService");
+    const input = {
+      patientId: "patient-1",
+      displayName: "太郎",
+      date: "2026-07-15",
+      slot: "evening"
+    };
+
+    await notifyCaregiversOfDoseMissed(input);
+    await notifyCaregiversOfDoseMissed(input);
+
+    expect(sendFcmMessageMock).toHaveBeenCalledTimes(2);
+    expect(tryInsertDeliveryMock).toHaveBeenCalledWith({
+      eventKey: "doseMissed:patient-1:2026-07-15:evening",
+      pushDeviceId: "device-1"
+    });
+  });
+});

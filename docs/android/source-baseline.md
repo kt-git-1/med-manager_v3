@@ -1,9 +1,10 @@
 # Android Port Source Baseline
 
-**Baseline date:** 2026-07-14
+**Baseline date:** 2026-07-15
 **Development branch:** `android-dev`
-**Reference main commit:** `1d9d19e5376752d2e224560a9f2c7e950645e22b` (`Bump production TestFlight to build 36`)
-**Baseline merge commit:** `1b38208c7178b35c49a33548b066eb0fce67a367`
+**Reference main commit:** `1cf8aef5d214718a27175ae0e8290e079e66f922` (`Bump iOS build to 38 for production TestFlight`)
+**Previous reference:** `1d9d19e5376752d2e224560a9f2c7e950645e22b` (`Bump production TestFlight to build 36`)
+**Baseline merge checkpoint:** C31 merge commit containing `main@1cf8aef`
 
 This file pins the source material used to reproduce the current product on Android. A later change on `main` does not silently change the Android contract. It starts a new rebaseline procedure.
 
@@ -50,7 +51,7 @@ The older feature specifications are intent documents, not always the current ru
 
 ## 4. Main changes since the previous Android baseline
 
-The previous Android branch shared history through `d5928cb` and then diverged. The following semantic changes from `main` are mandatory recheck items.
+The prior pinned source was `main@1d9d19e`. C31 reviewed the complete `1d9d19e..1cf8aef` API/iOS/spec delta and merged it without cherry-picking. The following semantic changes are mandatory recheck items; older Android screenshots and passing tests do not close them.
 
 | Change | Current contract | Android impact |
 |---|---|---|
@@ -67,6 +68,10 @@ The previous Android branch shared history through `d5928cb` and then diverged. 
 | Patient deletion integrity | Deletion removes slot-time revisions and all dependent records in server-defined order. | UI waits for server success, then clears selection and invalidates dependent screens. No client cascade. |
 | Account deletion cleanup | Server deletion also disables/removes caregiver device registrations. | Android performs the server delete before local reset and treats local FCM cleanup as defense in depth. |
 | Caregiver Today/History refresh | Caregiver mutations notify history and the currently visible tab refreshes without destructive state reset. | Required in Phase 3C repository design. |
+| Patient recording streak | `GET /api/patient/history/streak` returns `currentStreakDays`, `isAtLeast` and `todayStatus`. Patient History inserts a `連続記録` card after today's progress; streak failure is supplementary and must not replace usable history. | Add the typed endpoint, independent state/lifecycle and current iOS card/copy. `PH-009` is `RECHECK_REQUIRED`. |
+| Status-focused Caregiver Today | Current iOS removes the next-dose hero, medicine list and top bulk action. The screen now leads with `今日の服薬状況`, then optional PRN and the four-slot timeline; recording remains on eligible timeline rows. | Remove the obsolete C22 hero and next-row orange treatment while preserving mutation behavior. `CG-008`/`UI-201` are `RECHECK_REQUIRED`. |
+| Missed-dose caregiver push | The server sends privacy-minimal `type=DOSE_MISSED` payloads one hour after an unrecorded scheduled slot. iOS accepts both `DOSE_TAKEN` and `DOSE_MISSED`, validates the same patient/date/slot fields and opens caregiver History. | Expand the strict Android allowlist without accepting arbitrary types and reuse exact History routing. `XP-002` is `RECHECK_REQUIRED`. |
+| Public guide and release operations | Public-site guide, screenshots, cron configuration notes and release checklist changed without adding an Android runtime contract. | Preserve through the merge; no Android feature row changes solely for these files. |
 
 ## 5. Rebaseline procedure
 
@@ -85,9 +90,9 @@ Run this procedure whenever API or iOS behavior changes on `main`.
 
 ## 6. Baseline acceptance checklist
 
-- [x] `android-dev` contains `main@1d9d19e`.
+- [x] `android-dev` contains `main@1cf8aef` through the C31 merge checkpoint.
 - [x] The main delta was reviewed across API, iOS, and tests.
 - [x] Runtime/spec conflicts are explicitly identified.
-- [x] All affected Android contract tests have been updated.
-- [x] All affected Android implementation rows have passed recheck; explicitly separated physical-device evidence remains pending.
+- [ ] All affected Android contract tests have been updated (C32–C34).
+- [ ] All affected Android implementation rows have passed recheck (C32–C34); explicitly separated physical-device evidence remains pending.
 - [ ] Current iOS reference screenshots have been captured for every scoped state.

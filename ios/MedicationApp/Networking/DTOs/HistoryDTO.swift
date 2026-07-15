@@ -20,6 +20,19 @@ enum HistorySlotSummaryStatusDTO: String, Decodable, Equatable {
     case none
 }
 
+enum HistoryStreakTodayStatusDTO: String, Decodable, Equatable {
+    case complete
+    case inProgress
+    case missed
+    case noSchedule
+}
+
+struct HistoryStreakResponseDTO: Decodable, Equatable {
+    let currentStreakDays: Int
+    let isAtLeast: Bool
+    let todayStatus: HistoryStreakTodayStatusDTO
+}
+
 struct HistoryDaySummaryDTO: Decodable, Equatable {
     let date: String
     let slotSummary: HistorySlotSummaryDTO

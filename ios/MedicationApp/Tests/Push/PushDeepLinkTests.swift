@@ -31,6 +31,21 @@ final class PushDeepLinkTests: XCTestCase {
         XCTAssertEqual(router.target?.slot, .bedtime)
     }
 
+    func testDoseMissedPushRoutesToHistoryTarget() {
+        let router = NotificationDeepLinkRouter()
+
+        router.routeFromRemotePush(userInfo: [
+            "type": "DOSE_MISSED",
+            "date": "2026-02-11",
+            "slot": "noon"
+        ])
+
+        XCTAssertEqual(
+            router.target,
+            NotificationDeepLinkTarget(dateKey: "2026-02-11", slot: .noon)
+        )
+    }
+
     func testUnknownRemotePushTypeDoesNotRoute() {
         let router = NotificationDeepLinkRouter()
 

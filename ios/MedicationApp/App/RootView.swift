@@ -10,7 +10,11 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if isMedicationFormMarketingPreviewActive {
+            if isPatientHistoryAchievementPreviewActive {
+                PatientHistoryAchievementPreview()
+            } else if isCaregiverTodayPreviewActive {
+                CaregiverTodayDebugPreview()
+            } else if isMedicationFormMarketingPreviewActive {
                 NavigationStack {
                     MedicationFormView(sessionStore: sessionStore, marketingPreview: true)
                         .navigationTitle(NSLocalizedString("medication.form.title.add", comment: "Add medication title"))
@@ -91,6 +95,22 @@ struct RootView: View {
     private var isMedicationFormMarketingPreviewActive: Bool {
         #if DEBUG
         ProcessInfo.processInfo.arguments.contains("-MedicationFormMarketingScreenshot")
+        #else
+        false
+        #endif
+    }
+
+    private var isCaregiverTodayPreviewActive: Bool {
+        #if targetEnvironment(simulator)
+        ProcessInfo.processInfo.arguments.contains("-CaregiverTodayPreview")
+        #else
+        false
+        #endif
+    }
+
+    private var isPatientHistoryAchievementPreviewActive: Bool {
+        #if targetEnvironment(simulator)
+        ProcessInfo.processInfo.arguments.contains { $0.hasPrefix("-PatientHistoryAchievementPreview") }
         #else
         false
         #endif

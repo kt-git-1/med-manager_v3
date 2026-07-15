@@ -24,5 +24,11 @@
 - Caregiver can create a patient and issue a linking code.
 - Patient can link with the code and record a dose.
 - Caregiver can see the dose status.
+- Every changed behavior has paired positive and negative acceptance cases; a passing positive case alone is not sufficient.
+- Boundary times, retries/idempotency, and failure/recovery paths are covered for every time-sensitive or state-changing feature.
+- The release decision records evidence for each acceptance category; any unverified category keeps the release on hold.
 - Notification permission prompts and local reminders behave as expected.
+- For each notification type, verify both delivery when its condition is met and suppression when its condition is not met.
+- A recorded dose does not create a missed-dose `PushDelivery` or a caregiver notification after the cutoff.
+- An unrecorded dose creates exactly one missed-dose delivery after the cutoff, and tapping it opens the correct patient/date/slot.
 - Caregiver can delete the account from settings, and the session returns to mode selection.

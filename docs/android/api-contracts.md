@@ -123,10 +123,13 @@ Slot-bulk response is top-level:
 | API-042 | `GET /api/patients/{id}/history/month?year&month` | CAREGIVER | Same core model, selected patient |
 | API-043 | `GET /api/patients/{id}/history/day?date` | CAREGIVER | Same core model, selected patient |
 | API-044 | `GET /api/patients/{id}/history/report?from&to` | CAREGIVER | Patient, range and per-day slot/PRN report data; max 90 inclusive days |
+| API-045 | `GET /api/patient/history/streak` | PATIENT | `{ currentStreakDays: Int, isAtLeast: Boolean, todayStatus: complete|inProgress|missed|noSchedule }` |
 
 History month accepts current `days` and legacy `monthSummary`; day accepts current `doses` and legacy `dayDetails`. Android may support both for compatibility but tests must prefer the current response. Retention uses `[todayTokyo-29d, todayTokyo]` for free access, with the server deciding entitlement.
 
-The production caregiver repository uses API-042/API-043 with caregiver auth and selected-patient isolation. A missed scheduled item may be backfilled only through confirmation-protected `POST /api/patients/{id}/dose-records`; local history and freshness change only after a successful response. Remote caregiver navigation accepts only `type=DOSE_TAKEN` plus a linked `patientId`, ISO local `date` and canonical `slot`.
+API-045 is supplementary to the ordinary history response. Its load or refresh failure hides/retains only the streak presentation and must not replace valid month/day history with an error. Android must parse the four `todayStatus` values strictly, preserve the server's `isAtLeast` qualifier, and refresh streak on History entry/refresh, slot-time changes, scheduled-dose mutations and selected patient-session changes.
+
+The production caregiver repository uses API-042/API-043 with caregiver auth and selected-patient isolation. A missed scheduled item may be backfilled only through confirmation-protected `POST /api/patients/{id}/dose-records`; local history and freshness change only after a successful response. Remote caregiver navigation accepts only `type=DOSE_TAKEN` or `type=DOSE_MISSED` plus a linked `patientId`, ISO local `date` and canonical `slot`; all other event types remain rejected.
 
 PDF generation is on-device. Patient mode renders no PDF action. Android uses the system share sheet and a content URI, never a publicly writable raw file path.
 
@@ -152,7 +155,7 @@ When billing is enabled, Android first reads API-063 and treats unknown entitlem
 | API-063 | `GET /api/me/entitlements` | CAREGIVER | Server entitlement is source of truth |
 | API-064 | iOS `POST /api/iap/claim` | CAREGIVER | Do not reuse StoreKit payload. Google Play billing requires a separately approved backend contract before Android billing work |
 
-Remote push payload must not contain medication name, dosage, dose time/result detail, free text or tokens. Current caregiver navigation requires event type, patientId, Tokyo date, slot and optional recordingGroupId. A tap routes to caregiver History, exact day/slot and temporary highlight.
+Remote push payload must not contain medication name, dosage, dose time/result detail, free text or tokens. Current caregiver navigation requires an allowlisted event type (`DOSE_TAKEN` or `DOSE_MISSED`), patientId, Tokyo date, slot and optional recordingGroupId. Both allowed types route to caregiver History, exact day/slot and temporary highlight; missing, malformed or unknown values are ignored.
 
 ## 9. Contract-test gate
 

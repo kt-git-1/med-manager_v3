@@ -1,6 +1,6 @@
 # Android UI and Screen Contracts
 
-**Pinned reference:** `main@1d9d19e`
+**Pinned reference:** `main@1cf8aef`
 **Primary locale/time zone:** `ja_JP` / `Asia/Tokyo`
 
 This file defines what “high-fidelity reproduction” means at screen level. It supplements `ui-fidelity-spec.md`; it does not replace live comparison with the pinned iOS build.
@@ -74,7 +74,7 @@ Each screen ID maps to parity requirements. Every listed state needs a determini
 | UI-101 Today | current `PatientTodayBaseView` / list / view model | full initial loading and generic failure; empty, typical, long names, pending/taken/missed, insufficient, cached-content blocking update, success/partial, non-destructive post-write refresh failure and notification highlight |
 | UI-102 Dose detail | current `PatientTodayDoseDetailView` | navigation title; medication, dosage, time and status header; notes/empty notes; per-intake quantity; cache-first loading overlay and isolated retryable medication-detail error; dismiss resets transient detail state. Current iOS does not render separate strength or inventory cards here. |
 | UI-103 PRN | current `PrnMedicationListView` | entry exists only when active PRN medication exists; active list, dosage/count, instruction-or-notes, confirmation, insufficient, submitting overlay, success-only dismissal and in-flow error. Current iOS has no reachable empty PRN list screen. |
-| UI-104 Patient history | current `HistoryMonthView.patientSimpleHistory` | title/subtitle, today progress ring and pills, no-plan/partial/complete/missed encouragement, Monday-first current week, recent today/yesterday summaries, loading/retry/retention |
+| UI-104 Patient history | current `HistoryMonthView.patientSimpleHistory` | title/subtitle, today progress ring and pills; supplementary `連続記録` card with server count/qualifier/today-status action copy; Monday-first current week; recent today/yesterday summaries; loading/retry/retention. Streak failure must not replace usable history. |
 | UI-105 Retained history detail contract | `HistoryDayDetailView.swift`, day API | no longer reachable from current patient UI; keep scheduled/PRN/recorder/empty/retry/retention behavior as caregiver UI-206 foundation |
 | UI-106 Patient settings | patient settings in `PatientReadOnlyView.swift` | master/slot/re-reminder preferences, permission denied, analytics consent, legal/support, unlink confirmation/failure/success |
 
@@ -83,7 +83,7 @@ Each screen ID maps to parity requirements. Every listed state needs a determini
 | Screen | iOS reference | Required states/actions |
 |---|---|---|
 | UI-200 Caregiver shell/tutorial | `CaregiverHomeView.swift` | five persistent tabs, lazy first load, selection restoration, low-stock badge, push/history deep link, full tutorial sequence |
-| UI-201 Today | `CaregiverTodayView.swift` | no patient, data unavailable, empty, content, pending/taken/missed, individual/bulk/PRN, delete, insufficient, mutation-success/refresh-failure preservation |
+| UI-201 Today | `CaregiverTodayView.swift` | no patient, data unavailable and empty states; patient header; optional missed alert; `今日の服薬状況` progress card; optional PRN entry; four-slot timeline with pending/taken/missed/no-plan and row-owned individual/bulk/delete actions; insufficient inventory; mutation-success/refresh-failure preservation. No next-dose hero, top medicine list/action or orange next-row state. |
 | UI-202 Medication list | `MedicationListView.swift` | no patient, empty onboarding, all/scheduled/PRN/ended filters, long names, inventory status, loading/updating/retry |
 | UI-203 Medication form | `MedicationFormView.swift` | add/edit, scheduled/PRN, validation, date range, daily/weekday, slots, inventory, notes, keyboard, unsaved dismissal |
 | UI-204 Inventory list | `InventoryListView.swift` | no patient, empty, all/low/out filters, badge/metrics, loading/updating/retry |

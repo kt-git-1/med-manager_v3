@@ -1,3 +1,5 @@
+import "./site.css";
+
 export const metadata = {
   title: "お薬見守り"
 };

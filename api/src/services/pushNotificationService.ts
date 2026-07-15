@@ -129,6 +129,13 @@ export interface DoseTakenNotificationInput {
   isPrn: boolean;
 }
 
+export interface DoseMissedNotificationInput {
+  patientId: string;
+  displayName: string;
+  date: string; // YYYY-MM-DD in Asia/Tokyo
+  slot: string; // morning | noon | evening | bedtime
+}
+
 const slotLabels: Record<string, string> = {
   morning: "朝",
   noon: "昼",
@@ -262,6 +269,93 @@ export async function notifyCaregiversOfDoseTaken(
     log(
       "error",
       `Push notification (FCM dose taken) error: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+/**
+ * Send one FCM push per caregiver device when a scheduled slot is still
+ * unrecorded one hour after its scheduled time.
+ *
+ * The stable patient/date/slot event key makes repeated cron executions safe.
+ */
+export async function notifyCaregiversOfDoseMissed(
+  input: DoseMissedNotificationInput
+): Promise<void> {
+  try {
+    if (!isFcmConfigured()) return;
+
+    const caregiverIds = await getLinkedCaregiverIds(input.patientId);
+    if (caregiverIds.length === 0) return;
+
+    const devices = await listEnabledPushDevicesForCaregivers(caregiverIds);
+    if (devices.length === 0) return;
+
+    const eventKey = `doseMissed:${input.patientId}:${input.date}:${input.slot}`;
+    const slotLabel = slotLabels[input.slot] ?? "定時";
+    const notification: FcmNotification = {
+      title: "飲み忘れのお知らせ",
+      body: `${input.displayName}さんの${slotLabel}のお薬が、まだ記録されていません`
+    };
+    const data: FcmDataPayload = {
+      type: "DOSE_MISSED",
+      patientId: input.patientId,
+      date: input.date,
+      slot: input.slot
+    };
+    const apns: FcmApnsOverride = {
+      payload: {
+        aps: {
+          sound: "default",
+          "thread-id": `patient-${input.patientId}`
+        }
+      }
+    };
+
+    let sentCount = 0;
+    let failedCount = 0;
+    let duplicateCount = 0;
+
+    for (const device of devices) {
+      const inserted = await tryInsertDelivery({ eventKey, pushDeviceId: device.id });
+      if (!inserted) {
+        duplicateCount += 1;
+        continue;
+      }
+
+      const result = await sendFcmMessage(device.token, notification, data, apns);
+      if (result.success) {
+        sentCount += 1;
+        continue;
+      }
+
+      failedCount += 1;
+      if (result.errorCode === "UNREGISTERED") {
+        try {
+          await disablePushDeviceById(device.id);
+        } catch (disableError) {
+          log(
+            "warn",
+            `Failed to disable push device ${device.id}: ${disableError instanceof Error ? disableError.message : String(disableError)}`
+          );
+        }
+      }
+    }
+
+    log(
+      failedCount > 0 ? "warn" : "info",
+      [
+        "FCM dose missed push result",
+        `devices=${devices.length}`,
+        `sent=${sentCount}`,
+        `failed=${failedCount}`,
+        `duplicates=${duplicateCount}`
+      ].join(" ")
+    );
+  } catch (error) {
+    log(
+      "error",
+      `Push notification (FCM dose missed) error: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 }

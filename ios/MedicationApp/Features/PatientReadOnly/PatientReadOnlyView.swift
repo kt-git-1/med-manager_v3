@@ -471,6 +471,14 @@ private struct PatientTutorialSampleView: View {
                 }
             }
 
+            PatientHistoryStreakCard(
+                streak: HistoryStreakResponseDTO(
+                    currentStreakDays: 5,
+                    isAtLeast: false,
+                    todayStatus: .inProgress
+                )
+            )
+
             PatientCard(accent: PatientUI.teal) {
                 VStack(alignment: .center, spacing: 18) {
                     Text(NSLocalizedString("patient.history.week.title", comment: "Patient week title"))

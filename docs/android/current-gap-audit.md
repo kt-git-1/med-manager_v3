@@ -1,12 +1,12 @@
 # Android Current Gap Audit
 
-**Audit date:** 2026-07-14
-**Reference:** `main@1d9d19e`
+**Audit date:** 2026-07-15
+**Reference:** `main@1cf8aef`
 **Android branch:** `android-dev`
 
 ## 1. Executive result
 
-The Android project now contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. This audit began against `main@1d9d19e`; the 2026-07-15 Gate I fetch confirms that commit is still `origin/main` and is an ancestor of `android-dev`, with zero unmerged main-side commits. Remaining gaps are live Firebase verification, visual/accessibility/device matrices and Play release operations rather than missing core product tabs.
+The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C31 formally rebased the contract from `main@1d9d19e` to `main@1cf8aef`. That delta introduced three real Android parity gaps—patient recording streak, the status-focused Caregiver Today layout, and `DOSE_MISSED` caregiver routing—so they are explicitly reopened before live Firebase, physical-device and Play release gates.
 
 ## 2. What is reusable
 
@@ -35,6 +35,9 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Resolved B01 | Patient feature parsing exposed `JSONObject` at endpoint boundaries | Kotlin serialization wire DTOs now map every patient endpoint into domain models; current/legacy history keys and optional/required-field behavior are fixture-tested | Reuse the same wire/domain boundary for caregiver endpoints |
 | Resolved B02 | Session, caregiver selection and patient navigation ownership were mixed or composition-local | Caregiver selection has an independent repository; patient tab/detail/history navigation is saveable; notification preferences and feature data remain separate; UI contains no token or auth-policy access | Reuse these owners in the caregiver shell |
 | Resolved B03 | Patient UI was one oversized screen file | Shell, navigation state, Today, History, Settings, Tutorial and shared components now live in separate files while retaining the A06 tab host | Production component capture fixtures and all prior interaction tests pass |
+| P0 | Patient History lacks the server-defined recording streak | Main adds API-045 and `PatientHistoryStreakCard`; Android's weekly encouragement is not an equivalent contract | C32 adds typed supplementary state, exact copy/card placement, refresh triggers and failure-isolation tests |
+| P0 | Caregiver Today still renders the removed next-action hero | Main now leads with today's status and keeps record actions in the timeline; C22/C23 evidence targets the prior screen | C33 removes obsolete hierarchy/next styling, preserves mutation semantics and recaptures UI-201 |
+| P0 | Caregiver notification parser rejects `DOSE_MISSED` | Backend cron and current iOS accept missed-dose payloads using the same strict navigation fields | C34 expands only the allowlist and proves exact date/slot History routing plus malformed/unknown rejection |
 | P1 | Existing patient screenshots predate current iOS behavior | Main added lazy tab lifetime, mutation/history refresh and UI adjustments | Recapture baseline and rerun visual acceptance |
 | P2 | Analytics live verification is pending | Runtime Firebase transport, both-role consent/reset and a privacy-rejecting fixed schema are implemented; no local Android Firebase values are available | Supply four environment values and capture DebugView then Realtime/Events/Explore evidence |
 | P2 | Production artifact ownership/configuration is pending | The Play task now fails closed on incomplete Firebase/runtime/signing inputs; the Release APK passes application-ID, SDK, forbidden-permission and 16 KB ZIP/ELF checks | Release owner supplies Firebase values and upload key, then verifies the exact signed AAB and Play scan |
@@ -48,7 +51,10 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 - Rebuilding reminders retains next-day/month-boundary entries.
 - Individual, bulk, PRN and delete actions invalidate history.
 - Loaded tabs remain alive; hidden tabs are non-interactive and accessibility-hidden.
+- Caregiver Today is status-focused: no next-dose hero/top bulk action; eligible timeline rows own record actions.
 - Caregiver proxy bulk can record older missed slots outside the patient recording window.
+- Patient History shows the server-defined recording streak without coupling its failure to ordinary history.
+- Both `DOSE_TAKEN` and `DOSE_MISSED` caregiver pushes route to exact History after strict validation.
 - Successful caregiver mutation plus failed refresh preserves rendered data.
 - Server owns transactional inventory and deletion cascades.
 - Account deletion cleans server push devices before local session reset.
@@ -61,23 +67,20 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Shared session/API | IMPLEMENTED | A01–A06 auth, installation safety, typed networking, mutation freshness and notification rebuild gates pass; physical OEM transfer remains release evidence |
 | Entry/caregiver auth UI | IMPLEMENTED / re-visualize | Main copy/analytics paths and current captures need recheck |
 | Patient Today | IMPLEMENTED / re-visualize | Post-record reminder/history/inventory revisions and failure preservation are covered; final matched visual matrix remains |
-| Patient History/Settings | IMPLEMENTED / re-visualize | Freshness/lazy-tab behavior changed |
+| Patient History/Settings | RECHECK_REQUIRED | C32 streak endpoint/card is not implemented; existing history remains reusable |
 | Patient notification/tutorial | IMPLEMENTED / physical verify | Next-day rebuild, loaded-tab lifetime, routing and tutorial actions are covered; physical permission/tap/TalkBack remain |
-| Caregiver mode | IMPLEMENTED / re-visualize | Gate G production flow and 74-test checkpoint are complete; physical/visual state matrix remains |
+| Caregiver mode | RECHECK_REQUIRED | C33 Today hierarchy and C34 missed-dose push routing must match current main; other Gate G flows remain reusable |
 | Analytics/privacy parity | PARTIAL | Code and automated privacy gates complete; Firebase Console evidence awaits environment configuration |
 | Physical release verification | NOT_STARTED | Emulator evidence is not release proof |
 
 ## 6. Next execution order
 
-1. H07 supply Android Firebase values and capture privacy-reviewed DebugView, Realtime, Events and Explore evidence.
-2. I01 rebaseline from current `main`, resolve remaining `RECHECK_REQUIRED` rows and rerun the complete API/emulator matrix.
-3. I02 physical FCM/Doze/process-death, TalkBack/font/dark/rotation and browser/share checks.
-3. P1 current-iOS patient re-verification and visual repair.
-4. C1 caregiver shell/patient management/tutorial.
-5. C2 medication/regimen.
-6. C3 caregiver Today/inventory.
-7. C4 history/PDF/push/settings/account deletion.
-8. X1 analytics/privacy and cross-platform hardening.
-9. V1 physical/release verification and final rebaseline.
+1. C32 implement and verify API-045 plus the Patient History streak card.
+2. C33 reproduce current status-focused Caregiver Today and recapture UI-201.
+3. C34 accept/route strict `DOSE_MISSED` caregiver pushes and rerun notification gates.
+4. Rerun the complete API/JVM/emulator matrix and close the C31 rebaseline checklist.
+5. H07 supply Android Firebase values and capture privacy-reviewed DebugView, Realtime, Events and Explore evidence.
+6. I02 complete physical FCM/Doze/process-death, TalkBack/font/dark/rotation and browser/share checks.
+7. Complete signed Play closed-test/release gates and perform the final main rebaseline.
 
-Do not begin broad caregiver UI before R0 exits. Do not claim a phase complete until its matrix rows are `VERIFIED`.
+Do not claim a rebaselined row complete until its new-baseline contract and evidence pass.

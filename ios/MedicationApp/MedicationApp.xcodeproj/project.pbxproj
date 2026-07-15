@@ -1097,7 +1097,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 38;
 				DEVELOPMENT_TEAM = QSZR732YXD;
 				EMAIL_CONFIRMATION_REDIRECT_URL = "https://www.okusuri-mimamori.com/auth/confirmed";
 				INFOPLIST_FILE = App/Info.plist;
@@ -1105,7 +1105,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.3;
+				MARKETING_VERSION = 1.0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.afterlifearchive.medmanager;
 				SDKROOT = iphoneos;
 				SUPABASE_ANON_KEY = sb_publishable_7hGwwBAmU55gsNVbMw8IAg_KgS2GyaM;
@@ -1238,7 +1238,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 38;
 				DEVELOPMENT_TEAM = QSZR732YXD;
 				EMAIL_CONFIRMATION_REDIRECT_URL = "https://www.okusuri-mimamori.com/auth/confirmed";
 				ENABLE_TESTABILITY = YES;
@@ -1247,7 +1247,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.3;
+				MARKETING_VERSION = 1.0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.afterlifearchive.medmanager;
 				SDKROOT = iphoneos;
 				SUPABASE_ANON_KEY = sb_publishable_nVf6RMV1tUkg8ew7BJLVnw_YDnUMRra;
@@ -1373,7 +1373,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 38;
 				DEVELOPMENT_TEAM = QSZR732YXD;
 				EMAIL_CONFIRMATION_REDIRECT_URL = "https://www.okusuri-mimamori.com/auth/confirmed";
 				INFOPLIST_FILE = App/Info.plist;
@@ -1381,7 +1381,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.3;
+				MARKETING_VERSION = 1.0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.afterlifearchive.medmanager;
 				SDKROOT = iphoneos;
 				SUPABASE_ANON_KEY = sb_publishable_7hGwwBAmU55gsNVbMw8IAg_KgS2GyaM;
