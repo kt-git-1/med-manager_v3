@@ -21,14 +21,17 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.AddCircle
+import androidx.compose.material.icons.rounded.AdminPanelSettings
+import androidx.compose.material.icons.rounded.ArrowCircleRight
+import androidx.compose.material.icons.rounded.ChevronLeft
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.MarkEmailRead
-import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.PersonAdd
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Button
@@ -51,6 +54,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -128,8 +133,8 @@ fun CaregiverAuthChoiceScreen(onLogin: () -> Unit, onSignup: () -> Unit, onBack:
         item { CaregiverHeader(stringResource(R.string.caregiver_auth_title), stringResource(R.string.caregiver_auth_subtitle)) }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                AuthChoiceCard(Icons.Rounded.AccountCircle, stringResource(R.string.caregiver_auth_login), stringResource(R.string.caregiver_auth_login_subtitle), AuthTeal, onLogin)
-                AuthChoiceCard(Icons.Rounded.AddCircle, stringResource(R.string.caregiver_auth_signup), stringResource(R.string.caregiver_auth_signup_subtitle), AuthOrange, onSignup)
+                AuthChoiceCard(Icons.Rounded.ArrowCircleRight, stringResource(R.string.caregiver_auth_login), stringResource(R.string.caregiver_auth_login_subtitle), AuthTeal, onLogin)
+                AuthChoiceCard(Icons.Rounded.PersonAdd, stringResource(R.string.caregiver_auth_signup), stringResource(R.string.caregiver_auth_signup_subtitle), AuthOrange, onSignup)
             }
         }
         item { AuthBackButton(stringResource(R.string.caregiver_auth_reselect_mode), onBack) }
@@ -149,7 +154,7 @@ private fun AuthChoiceCard(icon: androidx.compose.ui.graphics.vector.ImageVector
                 Text(subtitle, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = MedicationTheme.colors.readableSecondaryText)
             }
             Box(Modifier.size(34.dp).background(tint.copy(alpha = 0.10f), CircleShape), contentAlignment = Alignment.Center) {
-                Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = tint)
+                Icon(Icons.Rounded.ChevronRight, null, tint = tint)
             }
         }
     }
@@ -418,8 +423,12 @@ private fun AuthInfo(message: String) {
 @Composable
 private fun CaregiverHeader(title: String, subtitle: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Box(Modifier.size(62.dp).background(AuthOrange, CircleShape).border(5.dp, MaterialTheme.colorScheme.surface, CircleShape), contentAlignment = Alignment.Center) {
-            Icon(Icons.Rounded.Shield, null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(32.dp))
+        Box(
+            Modifier.size(62.dp).shadow(8.dp, CircleShape).clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surface).testTag("caregiver-auth-header-icon"),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Rounded.AdminPanelSettings, null, tint = AuthTeal, modifier = Modifier.size(42.dp))
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(title, fontSize = 32.sp, fontWeight = FontWeight.Bold)
@@ -432,7 +441,7 @@ private fun CaregiverHeader(title: String, subtitle: String) {
 private fun AuthBackButton(text: String, onClick: () -> Unit) {
     Surface(onClick = onClick, modifier = Modifier.fillMaxWidth().height(52.dp).border(1.dp, AuthTeal.copy(alpha = 0.18f), RoundedCornerShape(16.dp)), color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f), shape = RoundedCornerShape(16.dp)) {
         Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.AutoMirrored.Rounded.ArrowBack, null, tint = AuthTeal)
+            Icon(Icons.Rounded.ChevronLeft, null, tint = AuthTeal)
             Text(text, color = AuthTeal, fontWeight = FontWeight.SemiBold)
         }
     }

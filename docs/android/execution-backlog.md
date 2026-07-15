@@ -136,6 +136,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C32 Implement `GET /api/patient/history/streak` as supplementary Patient History state and reproduce the current iOS streak card/copy/lifecycle.
 - [x] C33 Replace the obsolete Caregiver Today next-action hero with the current status-first summary, optional PRN entry and action-owning four-slot timeline.
 - [x] C37 Capture fresh current-iOS Patient History streak and Caregiver Today status references, close populated-time/icon drift, and record matched light plus dark/maximum-text pairs.
+- [x] C38 Close the UI-003 current-runtime residual with fresh iOS light/dark/OS-Accessibility-XXXL and Android matched light/dark/200%-font pairs; align header, role and navigation icon semantics.
 - [x] C34 Accept strict caregiver `DOSE_MISSED` payloads alongside `DOSE_TAKEN` and verify identical exact-date/slot History routing.
 - [x] C35 Rerun the full API/JVM/lint/build/API-35 matrix and close all C31 `RECHECK_REQUIRED` rows.
 - [ ] C06 Complete full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification.

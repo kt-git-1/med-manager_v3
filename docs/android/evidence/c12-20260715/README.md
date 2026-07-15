@@ -25,4 +25,4 @@
 
 No production UI repair was required. `CaregiverAuthChoiceScreenTest` now has four API-35 tests covering canonical content, action isolation, dark rendering and complete 200%-font action reachability.
 
-Matched iOS dark/largest-text and physical TalkBack verification remain C01/Gate I work; Android's required UI-003 dark/large-text matrix is complete.
+C38 adds fresh current-iOS light/dark/OS-Accessibility-XXXL references, Android matched light/dark plus 200%-font evidence, and closes the header/navigation icon drift. Physical TalkBack verification remains Gate I work.
