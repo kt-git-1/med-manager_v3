@@ -273,6 +273,15 @@ final class APIClient {
         return try decoder.decode(HistoryMonthResponseDTO.self, from: data)
     }
 
+    func fetchPatientHistoryStreak() async throws -> HistoryStreakResponseDTO {
+        let request = try makeHistoryRequest(
+            path: "api/patient/history/streak",
+            queryItems: []
+        )
+        let data = try await send(request)
+        return try JSONDecoder().decode(HistoryStreakResponseDTO.self, from: data)
+    }
+
     func fetchPatientHistoryDay(
         date: String,
         slotTimeItems: [URLQueryItem] = []

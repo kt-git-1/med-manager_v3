@@ -1,5 +1,274 @@
 import SwiftUI
 
+struct PatientHistoryAchievementPreview: View {
+    private var isFirstDayPreview: Bool {
+        ProcessInfo.processInfo.arguments.contains("-PatientHistoryAchievementPreview.firstDay")
+    }
+
+    var body: some View {
+        ZStack {
+            PatientScreenBackground()
+
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 16) {
+                    PatientHeader(
+                        title: NSLocalizedString("patient.readonly.history.title", comment: "History title"),
+                        subtitle: NSLocalizedString("patient.history.subtitle", comment: "Patient history subtitle"),
+                        systemImage: "clock.fill"
+                    )
+
+                    todayProgressPreview
+                    streakPreview
+                    weekPreview
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 40)
+            }
+        }
+    }
+
+    private var todayProgressPreview: some View {
+        PatientCard(accent: isFirstDayPreview ? PatientUI.teal : PatientUI.orange) {
+            HStack(alignment: .center, spacing: 16) {
+                progressRing
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(NSLocalizedString("patient.history.today.progress.title", comment: "Today progress"))
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.readableSecondaryText)
+                    Text(isFirstDayPreview ? "3/3回分 記録済み" : "2/3回分 記録済み")
+                        .font(.title3.weight(.bold))
+                    Text(isFirstDayPreview ? "今日の分、しっかり記録できています。すばらしいです。" : "ここまで順調です。残りも飲めたら記録しましょう。")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Color.readableSecondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 8) {
+                            PatientStatusPill(text: isFirstDayPreview ? "記録済み 3" : "記録済み 2", color: PatientUI.teal, systemImage: "checkmark.circle.fill")
+                            if !isFirstDayPreview {
+                                PatientStatusPill(text: "残り 1回分", color: PatientUI.orange, systemImage: "clock.fill")
+                            }
+                        }
+                        VStack(alignment: .leading, spacing: 8) {
+                            PatientStatusPill(text: isFirstDayPreview ? "記録済み 3" : "記録済み 2", color: PatientUI.teal, systemImage: "checkmark.circle.fill")
+                            if !isFirstDayPreview {
+                                PatientStatusPill(text: "残り 1回分", color: PatientUI.orange, systemImage: "clock.fill")
+                            }
+                        }
+                    }
+                }
+
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    private var streakPreview: some View {
+        PatientHistoryStreakCard(
+            streak: HistoryStreakResponseDTO(
+                currentStreakDays: isFirstDayPreview ? 1 : 5,
+                isAtLeast: false,
+                todayStatus: isFirstDayPreview ? .complete : .inProgress
+            )
+        )
+    }
+
+    private var weekPreview: some View {
+        PatientCard(accent: PatientUI.teal) {
+            VStack(alignment: .center, spacing: 18) {
+                Text(NSLocalizedString("patient.history.week.title", comment: "Patient week title"))
+                    .font(.title3.weight(.bold))
+
+                VStack(spacing: 2) {
+                    Text(isFirstDayPreview ? "1/7日" : "5/7日")
+                        .font(.system(size: 50, weight: .bold, design: .rounded))
+                        .foregroundStyle(PatientUI.teal)
+                    Text(NSLocalizedString("patient.history.week.recorded", comment: "Patient week recorded"))
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(PatientUI.teal)
+                }
+
+                HStack(spacing: 8) {
+                    weekDay("月", "7/13", completed: isFirstDayPreview)
+                    weekDay("火", "7/14", completed: !isFirstDayPreview)
+                    weekDay("水", "7/15", completed: !isFirstDayPreview)
+                    weekDay("木", "7/16", completed: false)
+                    weekDay("金", "7/17", completed: false)
+                }
+                .frame(maxWidth: .infinity)
+
+                Text(isFirstDayPreview ? "今日の記録が残りました。明日も無理なく続けましょう。" : "記録が続いています。この調子で無理なく続けましょう。")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color.readableSecondaryText)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var progressRing: some View {
+        ZStack {
+            Circle()
+                .stroke((isFirstDayPreview ? PatientUI.teal : PatientUI.orange).opacity(0.16), lineWidth: 10)
+            Circle()
+                .trim(from: 0, to: isFirstDayPreview ? 1 : 2.0 / 3.0)
+                .stroke(isFirstDayPreview ? PatientUI.teal : PatientUI.orange, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            VStack(spacing: 0) {
+                Text(isFirstDayPreview ? "3/3" : "2/3")
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundStyle(isFirstDayPreview ? PatientUI.teal : PatientUI.orange)
+                Text("回分")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.readableSecondaryText)
+            }
+        }
+        .frame(width: 86, height: 86)
+    }
+
+    private func weekDay(_ weekday: String, _ date: String, completed: Bool) -> some View {
+        VStack(spacing: 6) {
+            Text(weekday)
+                .font(.caption.weight(.semibold))
+            ZStack {
+                Circle()
+                    .fill(completed ? PatientUI.teal : PatientUI.blue.opacity(0.14))
+                    .frame(width: 34, height: 34)
+                Image(systemName: completed ? "checkmark" : "clock")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(completed ? Color.white : PatientUI.blue)
+            }
+            Text(date)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Color.readableSecondaryText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+struct PatientHistoryStreakCard: View {
+    let streak: HistoryStreakResponseDTO
+
+    var body: some View {
+        PatientCard(accent: PatientUI.teal) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 12) {
+                    Image(systemName: "calendar.badge.checkmark")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 56, height: 56)
+                        .background(PatientUI.teal, in: Circle())
+
+                    Text(NSLocalizedString("patient.history.streak.title", comment: "History streak title"))
+                        .font(.title2.weight(.bold))
+
+                    Spacer(minLength: 0)
+
+                    Text(streakValueText)
+                        .font(.system(size: streak.currentStreakDays == 0 ? 28 : 50, weight: .bold, design: .rounded))
+                        .foregroundStyle(PatientUI.tealDark)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.62)
+                        .accessibilityLabel(streakAccessibilityLabel)
+                }
+
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(PatientUI.teal)
+                    Text(achievementMessage)
+                        .font(.body.weight(.bold))
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Text(nextStepMessage)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(PatientUI.tealDark)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
+                    .background(PatientUI.teal.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+        }
+        .accessibilityIdentifier("PatientHistoryStreakCard")
+    }
+
+    private var streakValueText: String {
+        guard streak.currentStreakDays > 0 else {
+            return NSLocalizedString("patient.history.streak.startValue", comment: "Streak not started")
+        }
+        let key = streak.isAtLeast
+            ? "patient.history.streak.daysAtLeast"
+            : "patient.history.streak.days"
+        return String(
+            format: NSLocalizedString(key, comment: "Streak day count"),
+            streak.currentStreakDays
+        )
+    }
+
+    private var streakAccessibilityLabel: String {
+        String(
+            format: NSLocalizedString("patient.history.streak.accessibility", comment: "Streak accessibility label"),
+            streakValueText
+        )
+    }
+
+    private var achievementMessage: String {
+        switch streak.currentStreakDays {
+        case 0:
+            return NSLocalizedString("patient.history.streak.start", comment: "Start streak message")
+        case 1:
+            return NSLocalizedString("patient.history.streak.first", comment: "First streak day message")
+        case 3:
+            return NSLocalizedString("patient.history.streak.milestone3", comment: "Three day milestone")
+        case 7:
+            return NSLocalizedString("patient.history.streak.milestone7", comment: "Seven day milestone")
+        case 14:
+            return NSLocalizedString("patient.history.streak.milestone14", comment: "Fourteen day milestone")
+        case 30:
+            return NSLocalizedString("patient.history.streak.milestone30", comment: "Thirty day milestone")
+        default:
+            return String(
+                format: NSLocalizedString("patient.history.streak.continuing", comment: "Continuing streak message"),
+                streak.currentStreakDays
+            )
+        }
+    }
+
+    private var nextStepMessage: String {
+        if streak.currentStreakDays == 0 {
+            switch streak.todayStatus {
+            case .missed:
+                return NSLocalizedString("patient.history.streak.next.restart", comment: "Restart streak message")
+            case .noSchedule:
+                return NSLocalizedString("patient.history.streak.next.noSchedule", comment: "No schedule streak next step")
+            case .complete, .inProgress:
+                return NSLocalizedString("patient.history.streak.next.start", comment: "Start streak next step")
+            }
+        }
+        switch streak.todayStatus {
+        case .complete:
+            return String(
+                format: NSLocalizedString("patient.history.streak.next.tomorrow", comment: "Tomorrow streak next step"),
+                streak.currentStreakDays + 1
+            )
+        case .inProgress:
+            return String(
+                format: NSLocalizedString("patient.history.streak.next.today", comment: "Today streak next step"),
+                streak.currentStreakDays + 1
+            )
+        case .missed:
+            return NSLocalizedString("patient.history.streak.next.restart", comment: "Restart streak message")
+        case .noSchedule:
+            return NSLocalizedString("patient.history.streak.next.noSchedule", comment: "No schedule streak next step")
+        }
+    }
+}
+
 private enum PatientHistorySimpleStatus {
     case taken
     case pending
@@ -200,6 +469,7 @@ struct HistoryMonthView: View {
                 }
                 .refreshable {
                     loadMonth()
+                    viewModel.loadPatientStreak()
                     updateSelectionForDisplayedMonth()
                     if let selectedDate {
                         viewModel.loadDay(date: HistoryMonthView.dateKeyFormatter.string(from: selectedDate))
@@ -215,17 +485,20 @@ struct HistoryMonthView: View {
             if !clampDisplayedMonthIfNeeded(animated: false) {
                 loadMonth()
             }
+            viewModel.loadPatientStreak()
         }
         .onReceive(NotificationCenter.default.publisher(for: .presetTimesUpdated)) { _ in
             syncPatientPreferences()
             if !clampDisplayedMonthIfNeeded(animated: false) {
                 loadMonth()
             }
+            viewModel.loadPatientStreak()
             updateSelectionForDisplayedMonth()
             loadSelectedDay()
         }
         .onReceive(NotificationCenter.default.publisher(for: .doseRecordsUpdated)) { _ in
             loadMonth()
+            viewModel.loadPatientStreak()
             loadSelectedDay()
         }
         .onChange(of: sessionStore.currentPatientId) { _, _ in
@@ -233,6 +506,7 @@ struct HistoryMonthView: View {
             if !clampDisplayedMonthIfNeeded(animated: false) {
                 loadMonth()
             }
+            viewModel.loadPatientStreak()
             updateSelectionForDisplayedMonth()
             loadSelectedDay()
         }
@@ -360,6 +634,10 @@ struct HistoryMonthView: View {
     private var patientSimpleHistory: some View {
         VStack(alignment: .leading, spacing: 16) {
             todayProgressCard
+
+            if let patientStreak = viewModel.patientStreak {
+                PatientHistoryStreakCard(streak: patientStreak)
+            }
 
             PatientCard(accent: PatientUI.teal) {
                 VStack(alignment: .center, spacing: 18) {

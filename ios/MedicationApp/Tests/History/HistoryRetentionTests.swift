@@ -225,4 +225,22 @@ final class HistoryRetentionTests: XCTestCase {
             "patient.history.today.encouragement.missed"
         )
     }
+
+    func testHistoryStreakResponseDecodesAggregate() throws {
+        let data = Data(
+            """
+            {
+              "currentStreakDays": 5,
+              "isAtLeast": false,
+              "todayStatus": "inProgress"
+            }
+            """.utf8
+        )
+
+        let streak = try JSONDecoder().decode(HistoryStreakResponseDTO.self, from: data)
+
+        XCTAssertEqual(streak.currentStreakDays, 5)
+        XCTAssertFalse(streak.isAtLeast)
+        XCTAssertEqual(streak.todayStatus, .inProgress)
+    }
 }
