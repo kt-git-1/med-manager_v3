@@ -5,8 +5,8 @@ type SiteHeaderProps = {
 export function SiteHeader({ current = "legal" }: SiteHeaderProps) {
   const startLink =
     current === "home"
-      ? { href: "#overview", label: "はじめ方" }
-      : { href: "/#overview", label: "はじめ方" };
+      ? { href: "#overview", label: "概要" }
+      : { href: "/#overview", label: "概要" };
   const guideLink =
     current === "guide" ? { href: "#start", label: "使い方" } : { href: "/guide", label: "使い方" };
   const links = [
@@ -28,7 +28,7 @@ export function SiteHeader({ current = "legal" }: SiteHeaderProps) {
           {links.map((link) => (
             <a
               className={
-                (current === "home" && link.label === "はじめ方") ||
+                (current === "home" && link.label === "概要") ||
                 (current === "guide" && link.label === "使い方")
                   ? "is-current"
                   : undefined
