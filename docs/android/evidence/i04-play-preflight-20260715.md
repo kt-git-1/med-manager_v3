@@ -51,7 +51,7 @@ The APK includes AndroidX native libraries for arm64-v8a, armeabi-v7a, x86 and x
 - Data safety remains the developer's responsibility and must include SDK-transmitted data. The worksheet remains a draft until the exact signed AAB and production Firebase settings are reviewed.
 - The live privacy, terms and support routes returned HTTP 200. `https://www.okusuri-mimamori.com/support#section-3` is the nominated Play account-deletion URL because it identifies the app, makes deletion prominent and offers an email request path without requiring app access. A guessed `/account-deletion` route returned 404 and must not be entered in Play Console.
 - The Android manifest now declares legacy-density, round and API-26 adaptive launcher icons derived from the shipping iOS app-icon source. `aapt dump badging` resolves the Release APK application label to `お薬見守り` and its icon to the packaged adaptive-icon XML.
-- `play-store-listing-ja.md` contains Play-ready Japanese metadata (name 5, short description 36, full description 554 characters), declarations/URLs, alt text and upload order. Eight synthetic Android screenshots are exported as JPEG 1350 x 2400 (9:16), and the store icon is a 512 x 512 8-bit RGBA PNG under 1,024 KB.
+- `play-store-listing-ja.md` contains Play-ready Japanese metadata (name 5, short description 36, full description 554 characters), declarations/URLs, alt text and upload order. Eight synthetic Android screenshots are exported as JPEG 1350 x 2400 (9:16), the store icon is a 512 x 512 8-bit RGBA PNG under 1,024 KB, and the feature graphic is an alpha-free JPEG at 1024 x 500.
 
 ## Remaining external evidence
 
@@ -60,4 +60,4 @@ The APK includes AndroidX native libraries for arm64-v8a, armeabi-v7a, x86 and x
 3. Obtain the Play app-signing certificate SHA-256, configure/deploy Digital Asset Links and verify a Play-installed App Link.
 4. Run the physical-device matrix, including notification permission, local alarm timing, FCM/Doze/process death, TalkBack, browser/Sharesheet, session restore and destructive flows.
 5. Submit and archive the exact Data safety, Health apps, account-deletion (`/support#section-3`) and store-listing declarations in Play Console.
-6. Produce and approve the 1024 x 500 feature graphic, then verify the icon, feature graphic and prepared screenshots in the Play listing preview.
+6. Approve the prepared 1024 x 500 feature graphic, then verify the icon, feature graphic and screenshots in the Play listing preview.

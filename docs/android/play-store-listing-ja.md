@@ -119,11 +119,11 @@ Data safety の個別回答は [`play-console-declarations.md`](./play-console-d
 | アセット | Google Play要件 | 現在の状態 |
 |---|---|---|
 | ストアアイコン | 32-bit PNG、512×512、最大1,024KB | `play-store-assets/icon-512.png` を準備済み。Play Consoleプレビュー確認は未完了 |
-| フィーチャーグラフィック | JPEGまたはalphaなし24-bit PNG、1024×500 | 制作・法務/ブランド確認が未完了 |
+| フィーチャーグラフィック | JPEGまたはalphaなし24-bit PNG、1024×500 | `play-store-assets/feature-graphic-1024x500.jpg` を準備済み。Play Consoleプレビュー確認は未完了 |
 | 携帯スクリーンショット | JPEGまたはalphaなし24-bit PNG、320〜3,840px、長辺は短辺の2倍以下、最低2枚 | 8枚を準備済み。公開AABとの差分を最終確認 |
 | 推奨掲載条件 | アプリは1080px以上の9:16縦画像を4枚以上 | 1350×2400の8枚で充足 |
 
-フィーチャーグラフィックとアイコンは、既存ブランドアセットの所有権とAndroid実装との一致を確認してから追加します。ランキング、価格、ダウンロード誘導、Google Playバッジは入れません。
+フィーチャーグラフィックとアイコンは現行iOSのブランド資産から生成しています。公開担当者は所有権とPlay Consoleプレビューを最終確認します。ランキング、価格、ダウンロード誘導、Google Playバッジは入れません。
 
 ## 7. 公開前チェック
 

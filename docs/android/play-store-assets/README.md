@@ -14,6 +14,12 @@ The original 1080 x 2400 emulator captures cannot be uploaded directly because t
 
 Source mapping and Japanese alt text are maintained in [`../play-store-listing-ja.md`](../play-store-listing-ja.md). If UI behavior changes, recapture the source fixture and regenerate the corresponding store image; do not edit medical state or copy only in the marketing export.
 
-Icon and feature-graphic deliverables remain intentionally separate because they require a brand/ownership review and Play Console preview verification.
+`icon-512.png` is the Play store icon export from the shipping iOS app-icon source. The same source is wired into Android legacy-density and API-26 adaptive launcher resources so the store, launcher and iOS identity do not drift.
 
-`icon-512.png` is the Play store icon export from the shipping iOS app-icon source. The same source is wired into Android legacy-density and API-26 adaptive launcher resources so the store, launcher and iOS identity do not drift. The feature graphic remains pending.
+`feature-graphic-1024x500.jpg` is the alpha-free JPEG handoff. It uses only the shipping patient/family role illustrations, current Android colors and factual product copy. Regenerate it from the repository root on macOS with:
+
+```bash
+./android/scripts/render-play-feature-graphic.swift
+```
+
+Both assets still require a final ownership check and Play Console preview verification by the release owner.

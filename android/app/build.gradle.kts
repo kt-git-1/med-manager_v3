@@ -185,9 +185,10 @@ val verifyPlayStoreAssets by tasks.registering {
     val assetRoot = rootProject.file("../docs/android/play-store-assets")
     val phoneDirectory = assetRoot.resolve("phone-ja-JP")
     val storeIconFile = assetRoot.resolve("icon-512.png")
+    val featureGraphicFile = assetRoot.resolve("feature-graphic-1024x500.jpg")
     val iosIconFile = rootProject.file("../ios/MedicationApp/Assets.xcassets/AppIcon.appiconset/med_1024_transparent.png")
     val androidForegroundFile = project.file("src/main/res/drawable-nodpi/ic_launcher_foreground.png")
-    inputs.files(listingFile, storeIconFile, iosIconFile, androidForegroundFile)
+    inputs.files(listingFile, storeIconFile, featureGraphicFile, iosIconFile, androidForegroundFile)
     inputs.dir(phoneDirectory)
 
     doLast {
@@ -220,6 +221,12 @@ val verifyPlayStoreAssets by tasks.registering {
         require(storeIcon.width == 512 && storeIcon.height == 512) { "Play store icon must be 512 x 512" }
         require(storeIcon.colorModel.hasAlpha()) { "Play store icon must be a 32-bit RGBA PNG" }
         require(storeIconFile.length() <= 1_024 * 1_024) { "Play store icon must not exceed 1,024 KB" }
+
+        val featureGraphic = requireNotNull(ImageIO.read(featureGraphicFile)) { "Unreadable Play feature graphic" }
+        require(featureGraphic.width == 1024 && featureGraphic.height == 500) {
+            "Play feature graphic must be 1024 x 500"
+        }
+        require(!featureGraphic.colorModel.hasAlpha()) { "Play feature graphic must not contain alpha" }
 
         val iosIcon = requireNotNull(ImageIO.read(iosIconFile)) { "Unreadable iOS source icon" }
         val androidForeground = requireNotNull(ImageIO.read(androidForegroundFile)) { "Unreadable Android launcher foreground" }

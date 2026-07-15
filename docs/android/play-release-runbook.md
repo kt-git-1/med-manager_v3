@@ -49,7 +49,7 @@ cd android
 jarsigner -verify -verbose -certs app/build/outputs/bundle/release/app-release.aab
 ```
 
-`verifyReleaseApkCompatibility` checks the Release APK application ID, min/target SDK, advertising/attribution permission exclusions, 16 KB ZIP alignment and native ELF alignment, then prints its SHA-256. `verifyPlayStoreAssets` checks listing text limits, the exact eight JPEG screenshot names and dimensions, the 512 px RGBA icon, and pixel parity between the iOS source icon and Android launcher foreground. `bundleSignedRelease` intentionally fails before bundle generation when these gates fail, production runtime/Firebase configuration is incomplete, any signing value is missing, or the keystore path does not exist. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
+`verifyReleaseApkCompatibility` checks the Release APK application ID, min/target SDK, advertising/attribution permission exclusions, 16 KB ZIP alignment and native ELF alignment, then prints its SHA-256. `verifyPlayStoreAssets` checks listing text limits, the exact eight JPEG screenshot names and dimensions, the 512 px RGBA icon, the alpha-free 1024 x 500 feature graphic, and pixel parity between the iOS source icon and Android launcher foreground. `bundleSignedRelease` intentionally fails before bundle generation when these gates fail, production runtime/Firebase configuration is incomplete, any signing value is missing, or the keystore path does not exist. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
 
 Before upload, also verify:
 
