@@ -13,6 +13,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -246,6 +247,7 @@ class CaregiverHistoryScreenTest {
         composeRule.onNodeWithTag("caregiver-history-weekday-0").assertTextEquals("月")
         composeRule.onNodeWithTag("caregiver-history-weekday-6").assertTextEquals("日")
         composeRule.onNodeWithText("日付の下の点は、朝・昼・夜・眠前の服薬状況です。").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasText("6月10日（水）"))
         composeRule.onNodeWithText("6月10日（水）").assertIsDisplayed()
         composeRule.onNodeWithText("1/3回分 記録済み").assertIsDisplayed()
         captureDevice(activity, "android-ui-206-caregiver-history-source-calibrated-light.png")

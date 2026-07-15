@@ -60,6 +60,7 @@ class PatientHistoryContentTest {
         composeRule.onNodeWithText("残り 1回分").assertIsDisplayed()
         composeRule.onNodeWithText("今週").assertIsDisplayed()
         composeRule.onNodeWithText("1/7日").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasText("最近の記録"))
         composeRule.onNodeWithText("最近の記録").assertIsDisplayed()
         listOf("今日 7月14日（火）", "昨日 7月13日（月）", "朝・昼のお薬", "朝のお薬").forEach { text ->
             composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasText(text))

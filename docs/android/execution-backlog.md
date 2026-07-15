@@ -206,7 +206,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 - [x] Final C35 rebaseline fetch: `origin/main@1cf8aef` exactly matches the C31 pin and is the second parent already merged into `android-dev` (2026-07-15); no additional merge required.
 - [x] Resolve all `RECHECK_REQUIRED` rows; remaining `PARTIAL` rows are explicitly external/visual/device release gates.
-- [x] Historical cross-version API 26/33/35 matrix passed 108 tests per API (324/324) plus API-35 large-phone 108/108. After the C31–C34 rebaseline, C35 passes the expanded current API-35 suite 187/187 with 0 skipped/failed; API 26/33 rerun remains part of the final device matrix.
+- [x] Current cross-version API 26/33/35 matrix passes the expanded suite at 187/187 per API (561/561) with 0 skipped/failed after the C31–C35 rebaseline. Historical API-35 large-phone coverage also passes 108/108; physical devices remain separate.
 - [ ] Physical-device matrix.
 - [ ] Notification Doze/delivery/tap/process-death tests.
 - [x] Automated font 2.0, dark mode, compact/standard/large phone, semantics and rotation/configuration tests.

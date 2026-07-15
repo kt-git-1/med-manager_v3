@@ -3,11 +3,13 @@ package com.afterlifearchive.medmanager.ui
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.Density
 import com.afterlifearchive.medmanager.PatientNotificationSettings
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
@@ -87,7 +89,8 @@ class PatientAdaptiveUiTest(private val fontScale: Float) {
             }
         }
 
-        composeRule.onNodeWithTag("patient-analytics-toggle").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-settings-list").performScrollToNode(hasTestTag("patient-analytics-toggle"))
+        composeRule.onNodeWithTag("patient-analytics-toggle").assertIsDisplayed()
         composeRule.onNodeWithTag("patient-settings-list").performScrollToIndex(5)
         composeRule.onNodeWithTag("patient-unlink-button").assertIsDisplayed()
     }

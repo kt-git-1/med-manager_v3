@@ -75,7 +75,7 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 
 ## 6. Next execution order
 
-1. Complete remaining emulator-verifiable fresh iOS/Android visual pairs and current API 26/33 compatibility runs.
+1. Complete remaining emulator-verifiable fresh iOS/Android visual pairs; the current 187-test API 26/33/35 matrix is complete at 561/561.
 2. H07 supply Android Firebase values and capture privacy-reviewed DebugView, Realtime, Events and Explore evidence.
 3. I02 complete physical FCM/Doze/process-death, TalkBack/font/dark/rotation and browser/share checks.
 4. Complete signed Play closed-test/release gates and perform the final main rebaseline.

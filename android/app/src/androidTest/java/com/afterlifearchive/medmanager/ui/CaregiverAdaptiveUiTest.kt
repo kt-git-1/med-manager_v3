@@ -6,6 +6,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -116,7 +117,9 @@ class CaregiverAdaptiveUiTest {
                 CaregiverInventoryScreen(inventoryRepository, patientState, enabled = true, onOpenMedications = {})
             }
         }
-        composeRule.onNodeWithTag("caregiver-inventory-item-med-1").performClick()
+        composeRule.waitUntil(10_000) { composeRule.onAllNodesWithTag("caregiver-inventory-list").fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithTag("caregiver-inventory-list").performScrollToNode(hasTestTag("caregiver-inventory-item-med-1"))
+        composeRule.onNodeWithTag("caregiver-inventory-item-med-1").assertIsDisplayed().performClick()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll")
             .performScrollToNode(hasTestTag("inventory-correction"))
         composeRule.onNodeWithTag("inventory-correction").assertIsDisplayed()

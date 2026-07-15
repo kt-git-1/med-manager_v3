@@ -119,6 +119,7 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithText("飲みました").assertIsDisplayed()
         composeRule.onNodeWithText("未記録").assertIsDisplayed()
         composeRule.onNodeWithText("次に記録").assertDoesNotExist()
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-slot-action-noon"))
         composeRule.onNodeWithText("2件をまとめて記録").assertIsDisplayed()
         composeRule.onNodeWithText("この時間帯の2件を記録").assertDoesNotExist()
         composeRule.onNodeWithTag("caregiver-today-dose-action-morning").assertIsDisplayed()

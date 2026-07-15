@@ -1,6 +1,7 @@
 package com.afterlifearchive.medmanager.ui
 
 import android.app.Activity
+import android.os.Build
 import android.os.SystemClock
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
@@ -100,10 +101,7 @@ class PatientTodayContentTest {
         composeRule.onNodeWithText("頭痛薬 1錠").assertIsDisplayed()
         composeRule.onNodeWithText("1回1錠").assertIsDisplayed()
         composeRule.onNodeWithText("痛い時").assertIsDisplayed()
-        writeScreenshotFixture(
-            composeRule.onNodeWithTag("patient-prn-sheet").captureToImage(),
-            "android-ui-103-prn-list-light.png",
-        )
+        capturePrnSheet("android-ui-103-prn-list-light.png")
         composeRule.onNodeWithTag("prn-record-prn").performClick()
 
         composeRule.runOnIdle {
@@ -160,10 +158,7 @@ class PatientTodayContentTest {
         composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
         composeRule.onNodeWithTag("patient-prn-updating").assertIsDisplayed()
         composeRule.onAllNodesWithText("更新中...").assertCountEquals(1)
-        writeScreenshotFixture(
-            composeRule.onNodeWithTag("patient-prn-sheet").captureToImage(),
-            "android-ui-103-prn-updating-light.png",
-        )
+        capturePrnSheet("android-ui-103-prn-updating-light.png")
     }
 
     @Test
@@ -173,10 +168,7 @@ class PatientTodayContentTest {
         composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
         composeRule.onNodeWithText("取得に失敗しました").assertIsDisplayed()
         composeRule.onNodeWithText("この薬を飲んだ").assertIsDisplayed()
-        writeScreenshotFixture(
-            composeRule.onNodeWithTag("patient-prn-sheet").captureToImage(),
-            "android-ui-103-prn-error-light.png",
-        )
+        capturePrnSheet("android-ui-103-prn-error-light.png")
     }
 
     @Test
@@ -191,10 +183,7 @@ class PatientTodayContentTest {
         composeRule.onNodeWithText("在庫不足").assertIsDisplayed()
         composeRule.onNodeWithTag("prn-record-prn").assertIsDisplayed().assertIsNotEnabled().performClick()
         composeRule.runOnIdle { assertEquals(0, recordCount) }
-        writeScreenshotFixture(
-            composeRule.onNodeWithTag("patient-prn-sheet").captureToImage(),
-            "android-ui-103-prn-insufficient-light.png",
-        )
+        capturePrnSheet("android-ui-103-prn-insufficient-light.png")
     }
 
     @Test
@@ -204,10 +193,7 @@ class PatientTodayContentTest {
         composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
         composeRule.onNodeWithText("飲んだ薬を選んでください").assertIsDisplayed()
         composeRule.onNodeWithTag("prn-record-prn").assertIsDisplayed()
-        writeScreenshotFixture(
-            composeRule.onNodeWithTag("patient-prn-sheet").captureToImage(),
-            "android-ui-103-prn-list-dark.png",
-        )
+        capturePrnSheet("android-ui-103-prn-list-dark.png")
     }
 
     @Test
@@ -217,10 +203,7 @@ class PatientTodayContentTest {
         composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
         composeRule.onNodeWithText("頭痛薬 1錠").assertIsDisplayed()
         composeRule.onNodeWithTag("prn-record-prn").performScrollTo().assertIsDisplayed()
-        writeScreenshotFixture(
-            composeRule.onNodeWithTag("patient-prn-sheet").captureToImage(),
-            "android-ui-103-prn-list-font-2.0.png",
-        )
+        capturePrnSheet("android-ui-103-prn-list-font-2.0.png")
     }
 
     @Test
@@ -594,6 +577,17 @@ class PatientTodayContentTest {
             }
         }
         return activity
+    }
+
+    private fun capturePrnSheet(filename: String) {
+        if (Build.VERSION.SDK_INT >= 28) {
+            writeScreenshotFixture(
+                composeRule.onNodeWithTag("patient-prn-sheet").captureToImage(),
+                filename,
+            )
+        } else {
+            writeDeviceScreenshotFixture(filename)
+        }
     }
 
     private fun showTodayState(
