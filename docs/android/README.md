@@ -7,7 +7,7 @@ This directory is the source of truth for the Android port. Android work is isol
 - Reference product: `main@1cf8aef`
 - Android baseline merge: `android-dev@1b38208`
 - Baseline date: 2026-07-14
-- Current action: execute the Gate I physical-device and Play Internal/Closed release runbook; live Firebase and release-owner signing inputs remain external prerequisites
+- Current action: execute the Gate I physical-device and Play Internal/Closed release runbook; C42/C43 complete the current-runtime UI-101 light exceptional-state matrix, while live Firebase, physical devices and release-owner signing remain external prerequisites
 
 ## Authority order
 

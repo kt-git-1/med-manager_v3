@@ -45,6 +45,7 @@ import org.junit.Rule
 import org.junit.Test
 import java.time.Instant
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 
 class PatientTodayContentTest {
     @get:Rule
@@ -100,7 +101,6 @@ class PatientTodayContentTest {
         composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().assertIsDisplayed().performClick()
         composeRule.onNodeWithText("飲んだ薬を選んでください").assertIsDisplayed()
         composeRule.onNodeWithText("頭痛薬 1錠").assertIsDisplayed()
-        composeRule.onNodeWithText("1回1錠").assertIsDisplayed()
         composeRule.onNodeWithText("痛い時").assertIsDisplayed()
         capturePrnSheet("android-ui-103-prn-list-light.png")
         composeRule.onNodeWithTag("prn-record-prn").performClick()
@@ -109,6 +109,29 @@ class PatientTodayContentTest {
             assertEquals(MedicationSlot.MORNING, bulkSlot)
             assertEquals("prn", prnId)
         }
+    }
+
+    @Test
+    fun currentIosInventoryPartialFixtureRendersInProductionShell() {
+        val scheduledAt = Instant.parse("2026-07-15T18:00:00Z")
+        val medications = listOf(
+            medication("enough", 10.0),
+            medication("short", 0.5),
+            medication("prn", 10.0, isPrn = true),
+        )
+        val doses = listOf(
+            dose("enough", DoseStatus.PENDING).copy(scheduledAt = scheduledAt, slot = MedicationSlot.BEDTIME),
+            dose("short", DoseStatus.MISSED).copy(scheduledAt = scheduledAt, slot = MedicationSlot.BEDTIME),
+        )
+        val (activity, repository) = showProductionTodayFixture(doses, medications)
+
+        composeRule.waitUntil(timeoutMillis = 5_000) { repository.state.value.doses.size == 2 }
+        composeRule.onNodeWithText("お薬がありません").assertIsDisplayed()
+        composeRule.onNodeWithText("胃薬 1錠がありません").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-inventory-warning").assertIsDisplayed()
+        composeRule.runOnIdle { normalizeStatusBar(activity) }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-101-patient-inventory-partial-light-matched.png")
     }
 
     @Test
@@ -286,60 +309,83 @@ class PatientTodayContentTest {
 
     @Test
     fun todayBlocksCachedContentBehindCurrentIosUpdatingOverlay() {
-        showTodayState(
-            refreshing = true,
-            doses = listOf(dose("enough", DoseStatus.PENDING)),
+        val scheduledAt = Instant.parse("2026-07-15T18:00:00Z")
+        val doses = listOf(
+            dose("enough", DoseStatus.PENDING).copy(scheduledAt = scheduledAt, slot = MedicationSlot.BEDTIME),
+            dose("short", DoseStatus.MISSED).copy(scheduledAt = scheduledAt, slot = MedicationSlot.BEDTIME),
+        )
+        val medications = listOf(
+            medication("enough", 10.0),
+            medication("short", 0.5),
+            medication("prn", 10.0, isPrn = true),
+        )
+        var delayRefresh = false
+        val (activity, repository) = showProductionTodayFixture(
+            doses = doses,
+            medications = medications,
+            beforeContent = { repository ->
+                runBlocking { repository.loadToday() }
+                delayRefresh = true
+            },
+            medicationDelay = { delayRefresh },
         )
 
+        composeRule.waitUntil(timeoutMillis = 5_000) { repository.state.value.refreshing }
         composeRule.onNodeWithTag("patient-today-updating").assertIsDisplayed()
         composeRule.onNodeWithText("更新中...").assertIsDisplayed()
         composeRule.onAllNodesWithText("血圧の薬 5 mg", substring = true).onFirst().assertIsDisplayed()
-        writeScreenshotFixture(
-            composeRule.onRoot().captureToImage(),
-            "android-ui-101-patient-updating-light.png",
-        )
+        composeRule.runOnIdle { normalizeStatusBar(activity) }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-101-patient-updating-light-matched.png")
     }
 
     @Test
     fun todayKeepsLongMedicationNamesBoundedWithoutHidingThePrimaryAction() {
         val longName = "朝食後に服用する非常に長い名称の血圧降下薬配合錠ジェネリック医薬品"
-        val longDose = dose("long", DoseStatus.PENDING).copy(medicationName = longName)
-        showTodayState(doses = listOf(longDose))
-
-        composeRule.onAllNodesWithText(longName).onFirst().assertIsDisplayed()
-        composeRule.onNodeWithTag("patient-today-primary-bulk-record").assertIsDisplayed()
-        writeScreenshotFixture(
-            composeRule.onRoot().captureToImage(),
-            "android-ui-101-patient-long-name-light.png",
+        val longDose = dose("long", DoseStatus.PENDING).copy(
+            medicationName = longName,
+            scheduledAt = Instant.parse("2026-07-15T18:00:00Z"),
+            slot = MedicationSlot.BEDTIME,
         )
+        val longMedication = medication("long", 10.0).copy(name = longName)
+        val (activity, repository) = showProductionTodayFixture(listOf(longDose), listOf(longMedication))
+
+        composeRule.waitUntil(timeoutMillis = 5_000) { repository.state.value.doses.size == 1 }
+        composeRule.onAllNodesWithText(longName, substring = true).onFirst().assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-primary-bulk-record").assertIsDisplayed()
+        composeRule.runOnIdle { normalizeStatusBar(activity) }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-101-patient-long-name-light-matched.png")
     }
 
     @Test
-    fun productionNotificationTargetPromotesExactSlotIntoNextDoseHero() {
+    fun productionNotificationTargetScrollsToExactSlotWithoutReplacingNextDose() {
         lateinit var activity: Activity
-        val morning = dose("morning", DoseStatus.PENDING).copy(
-            key = "dose-morning",
-            slot = MedicationSlot.MORNING,
-            scheduledAt = Instant.parse("2026-07-15T00:00:00Z"),
+        val bedtime = dose("bedtime", DoseStatus.PENDING).copy(
+            key = "dose-bedtime",
+            medicationName = "胃薬",
+            slot = MedicationSlot.BEDTIME,
+            scheduledAt = Instant.parse("2026-07-15T18:00:00Z"),
         )
         val evening = dose("evening", DoseStatus.PENDING).copy(
             key = "dose-evening",
+            medicationName = "夕食後のお薬",
             slot = MedicationSlot.EVENING,
-            scheduledAt = Instant.parse("2026-07-15T09:00:00Z"),
+            scheduledAt = Instant.parse("2026-07-16T10:00:00Z"),
         )
         val repository = PatientRepository(object : PatientDataSource {
-            override suspend fun today() = listOf(morning, evening)
+            override suspend fun today() = listOf(bedtime, evening)
             override suspend fun slotTimes() = PatientSlotTimes.DEFAULT
             override suspend fun medications() = listOf(
-                medication("morning", 10.0),
-                medication("evening", 10.0),
+                medication("bedtime", 10.0).copy(name = "胃薬"),
+                medication("evening", 10.0).copy(name = "夕食後のお薬"),
             )
             override suspend fun recordDose(dose: PatientDose) = Unit
             override suspend fun recordPrn(medication: PatientMedication) = Unit
             override suspend fun history(year: Int, month: Int) = emptyList<HistoryDay>()
             override suspend fun revokeSession() = Unit
         })
-        repository.handleNotificationTarget("2026-07-15", "evening")
+        repository.handleNotificationTarget("2026-07-16", "evening")
 
         composeRule.setContent {
             MedicationAppTheme {
@@ -351,11 +397,16 @@ class PatientTodayContentTest {
         composeRule.waitUntil(timeoutMillis = 5_000) {
             repository.state.value.doses.size == 2 && repository.state.value.notificationTarget == null
         }
-        composeRule.onNodeWithTag("patient-today-next-dose-dose-evening").assertIsDisplayed()
-        composeRule.onNodeWithTag("patient-today-next-dose-dose-morning").assertDoesNotExist()
+        composeRule.onNodeWithTag("patient-today-slot-evening").assertIsDisplayed()
+        composeRule.runOnIdle {
+            assertEquals(
+                MedicationSlot.BEDTIME,
+                repository.nextActionSlot(Instant.parse("2026-07-15T18:15:00Z")),
+            )
+        }
         composeRule.runOnIdle { normalizeStatusBar(activity) }
         SystemClock.sleep(250)
-        writeDeviceScreenshotFixture("android-ui-101-patient-notification-target-light.png")
+        writeDeviceScreenshotFixture("android-ui-101-patient-notification-target-light-matched.png")
     }
 
     @Test
@@ -644,6 +695,35 @@ class PatientTodayContentTest {
             override suspend fun history(year: Int, month: Int) = emptyList<HistoryDay>()
             override suspend fun revokeSession() = Unit
         })
+        composeRule.setContent {
+            MedicationAppTheme {
+                activity = checkNotNull(LocalActivity.current)
+                PatientHomeScreen(repository = repository, onUnlink = {}, tutorialEnabled = false)
+            }
+        }
+        return activity to repository
+    }
+
+    private fun showProductionTodayFixture(
+        doses: List<PatientDose>,
+        medications: List<PatientMedication>,
+        beforeContent: (PatientRepository) -> Unit = {},
+        medicationDelay: () -> Boolean = { false },
+    ): Pair<Activity, PatientRepository> {
+        lateinit var activity: Activity
+        val repository = PatientRepository(object : PatientDataSource {
+            override suspend fun today() = doses
+            override suspend fun slotTimes() = PatientSlotTimes("08:00", "12:00", "19:00", "03:00")
+            override suspend fun medications(): List<PatientMedication> {
+                if (medicationDelay()) delay(60_000)
+                return medications
+            }
+            override suspend fun recordDose(dose: PatientDose) = Unit
+            override suspend fun recordPrn(medication: PatientMedication) = Unit
+            override suspend fun history(year: Int, month: Int) = emptyList<HistoryDay>()
+            override suspend fun revokeSession() = Unit
+        })
+        beforeContent(repository)
         composeRule.setContent {
             MedicationAppTheme {
                 activity = checkNotNull(LocalActivity.current)

@@ -171,7 +171,15 @@ This selector foundation is connected to inventory-backed production candidates 
 - Today navigation, cards, detail surfaces, and supporting text now consume semantic light/dark theme colors rather than light-only constants.
 - Slot bulk actions are exposed only inside the backend-equivalent recording window (scheduled time minus 30 minutes through plus 60 minutes) and require an explicit confirmation showing medication and pill totals.
 
-`PT-010`, `PT-011`, and `PT-012` are `IMPLEMENTED`. Real API recordings, matched iOS light/dark captures, process/background timing on a physical device, large text, and TalkBack remain before `VERIFIED`.
+### 2026-07-16 C43 current-runtime exceptional-state calibration
+
+- The top inventory warning now mirrors current SwiftUI: unique non-taken shortage medicines, exact single/multiple copy, combined medicine name and dosage, red card hierarchy and inline shortage treatment.
+- The next-dose hero uses the current pills header, slot-specific accent, `夜`/`眠前` Today copy, zero-padded time, `薬名 + 用量`, `1回n錠`, two-line ellipsis and inventory/status indicators.
+- Cached refresh uses the shared pinned iOS `AppImage` asset, neutral progress and calibrated blocking-card geometry instead of a generic Material spinner card.
+- A notification target preserves `PatientTodayNextSlotSelector` output and scrolls the exact payload slot into view. The earlier Android-only hero replacement behavior was removed after direct production-iOS verification.
+- Same-data raw, normalized, side-by-side and 50% overlay evidence for inventory-partial, updating, long-name and notification-target states is retained under `evidence/c43-20260716/`.
+
+`PT-010`, `PT-011`, and `PT-012` are `IMPLEMENTED`. C42/C43 close the current-runtime UI-101 light exceptional-state matrix; real API recordings, process/background timing on a physical device, remaining adaptive variants, and TalkBack remain before `VERIFIED`.
 
 ## Phase 2C patient history vertical slice
 

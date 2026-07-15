@@ -141,6 +141,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C40 Close the UI-005 current-runtime residual with fresh empty/synthetic-filled light and dark pairs plus adaptive evidence; align signup card origin, person-add title and confirmation-lock semantics without changing C39 login geometry.
 - [x] C41 Close the UI-002 non-empty current-runtime residual with fresh empty/real-field synthetic-filled light and dark pairs plus adaptive evidence; align link field/action geometry, `.xLarge` hierarchy and chevron semantics without sending a link request.
 - [x] C42 Close the UI-101 current-runtime initial-loading/failure light residual with production-shell pairs; match neutral loading, the glass error card and the shared floating patient tab bar, then pass the 205-test API-35 suite.
+- [x] C43 Close the remaining emulator-verifiable UI-101 light residuals with same-data production-shell inventory-partial, cached-updating, long-name and notification-target pairs; add the missing top shortage warning, app-illustration overlay, pills/slot/copy/row calibration and current-iOS exact-slot scroll semantics, then pass the 206-test API-35 suite.
 - [x] C34 Accept strict caregiver `DOSE_MISSED` payloads alongside `DOSE_TAKEN` and verify identical exact-date/slot History routing.
 - [x] C35 Rerun the full API/JVM/lint/build/API-35 matrix and close all C31 `RECHECK_REQUIRED` rows.
 - [ ] C06 Complete full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification.
@@ -230,4 +231,4 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Immediate next item
 
-Execute the **Gate I physical-device and Play release matrix** using `play-release-runbook.md`. Production Firebase values, a release-owner-managed upload key, Play Console access and physical devices are required for the remaining external evidence. Until those are available, continue closing emulator-verifiable C01/C06 visual and accessibility residuals without marking device-only rows verified. UI-001 compact/large matched evidence is complete under `evidence/c07-20260715/`.
+Execute the **Gate I physical-device and Play release matrix** using `play-release-runbook.md`. Production Firebase values, a release-owner-managed upload key, Play Console access and physical devices are required for the remaining external evidence. Until those are available, continue closing emulator-verifiable C01/C06 visual and accessibility residuals without marking device-only rows verified. UI-101 light exceptional-state matching is complete across C42/C43; dark/large-text and other screen-specific residuals remain separately tracked.

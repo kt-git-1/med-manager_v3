@@ -47,6 +47,10 @@ val syncRoleAssets by tasks.registering(Sync::class) {
         into("drawable-nodpi")
         rename { "role_family.png" }
     }
+    from(rootProject.file("../ios/MedicationApp/Assets.xcassets/AppImage.imageset/med_1024_transparent.png")) {
+        into("drawable-nodpi")
+        rename { "app_image.png" }
+    }
 }
 
 plugins {

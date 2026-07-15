@@ -50,6 +50,20 @@ internal fun PatientHeaderIcon(icon: ImageVector) {
 }
 
 @Composable
+internal fun PatientHeaderPillsIcon() {
+    Box(
+        modifier = Modifier
+            .size(62.dp)
+            .shadow(8.dp, CircleShape)
+            .background(PatientTeal, CircleShape)
+            .border(5.dp, MaterialTheme.colorScheme.surface, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        MedicationPillsGlyph(Color.White, Modifier.size(34.dp))
+    }
+}
+
+@Composable
 internal fun CaregiverPatientAvatar(name: String) {
     Box(
         modifier = Modifier
@@ -101,6 +115,16 @@ internal fun patientSlotTitle(slot: MedicationSlot) = stringResource(
         MedicationSlot.NOON -> R.string.patient_slot_noon
         MedicationSlot.EVENING -> R.string.patient_slot_evening
         MedicationSlot.BEDTIME -> R.string.patient_slot_bedtime
+    },
+)
+
+@Composable
+internal fun patientSlotShortTitle(slot: MedicationSlot) = stringResource(
+    when (slot) {
+        MedicationSlot.MORNING -> R.string.patient_slot_morning_short
+        MedicationSlot.NOON -> R.string.patient_slot_noon_short
+        MedicationSlot.EVENING -> R.string.patient_slot_evening_short
+        MedicationSlot.BEDTIME -> R.string.patient_slot_bedtime_short
     },
 )
 

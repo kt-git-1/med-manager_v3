@@ -402,7 +402,8 @@ fun PatientHomeScreen(
                         }
                     },
                     medications = state.medicationById,
-                    nextSlot = notificationHighlightedSlot ?: repository.nextActionSlot(),
+                    nextSlot = repository.nextActionSlot(),
+                    scrollTargetSlot = notificationHighlightedSlot,
                     updatingSlot = state.updatingSlot,
                     prnMedications = state.prnMedications,
                     updatingPrnMedicationId = state.updatingPrnMedicationId,

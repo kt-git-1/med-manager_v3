@@ -30,4 +30,4 @@ Diagnostic images normalize both raw captures to 1080 x 2400 for alignment only.
 - `assembleDebug`: passed.
 - `lintDebug`: passed.
 
-This closes the matched UI-101 initial-loading and initial-failure light states and the shared patient bottom-navigation visual drift. Inventory-partial, updating, long-name and notification-target matched iOS pairs plus physical TalkBack/device verification remain in C01/C06/Gate I.
+This closes the matched UI-101 initial-loading and initial-failure light states and the shared patient bottom-navigation visual drift. Inventory-partial, updating, long-name and notification-target pairs were subsequently closed by C43; physical TalkBack/device verification remains in C01/C06/Gate I.

@@ -81,6 +81,9 @@
     <string name="patient_prn_updating">更新中...</string>
     <string name="patient_prn_error">取得に失敗しました</string>
     <string name="patient_inventory_insufficient">在庫不足</string>
+    <string name="patient_inventory_warning_title">お薬がありません</string>
+    <string name="patient_inventory_warning_single">%1$sがありません</string>
+    <string name="patient_inventory_warning_multiple">お薬が%1$d件ありません</string>
     <string name="patient_recording">記録中…</string>
     <string name="patient_taken_action">飲みました</string>
     <string name="patient_today_empty_title">今日のお薬はありません</string>
@@ -113,6 +116,14 @@
     <string name="patient_slot_noon">昼のお薬</string>
     <string name="patient_slot_evening">夕方のお薬</string>
     <string name="patient_slot_bedtime">寝る前のお薬</string>
+    <string name="patient_today_slot_morning">朝のお薬</string>
+    <string name="patient_today_slot_noon">昼のお薬</string>
+    <string name="patient_today_slot_evening">夜のお薬</string>
+    <string name="patient_today_slot_bedtime">眠前のお薬</string>
+    <string name="patient_slot_morning_short">朝</string>
+    <string name="patient_slot_noon_short">昼</string>
+    <string name="patient_slot_evening_short">夜</string>
+    <string name="patient_slot_bedtime_short">眠前</string>
 
     <!-- Patient History -->
     <string name="patient_history_title">履歴</string>
