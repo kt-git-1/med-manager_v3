@@ -110,6 +110,41 @@ class CaregiverAuthFlowScreenTest {
     }
 
     @Test
+    fun resendShowsProgressAndStartsCooldownOnlyAfterSuccess() {
+        val resendResult = CompletableDeferred<Unit>()
+        val auth = object : AuthService {
+            override suspend fun login(email: String, password: String) = error("unused")
+            override suspend fun refresh(refreshToken: String) = error("unused")
+            override suspend fun signup(email: String, password: String) = AuthSession(null, null, null)
+            override suspend fun resendSignupConfirmation(email: String) = resendResult.await()
+        }
+        val repository = authRepository(auth)
+        render(repository, resendCooldownSeconds = 0)
+
+        composeRule.onNodeWithText("新規登録").performClick()
+        composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performTextInput("care@example.com")
+        composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performTextInput("123456")
+        composeRule.onNodeWithTag(AUTH_CONFIRMATION_TAG).performTextInput("123456")
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).performScrollTo().performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.resendCooldownRevision == 1 }
+
+        composeRule.onNodeWithTag(AUTH_RESEND_TAG).performScrollTo().performClick()
+
+        composeRule.waitUntil(5_000) { repository.state.value.resendingConfirmation }
+        composeRule.onNodeWithTag(AUTH_RESEND_TAG).assertIsDisplayed().assertIsNotEnabled()
+        composeRule.onNodeWithText("確認メールを再送").assertDoesNotExist()
+        assertEquals(1, repository.state.value.resendCooldownRevision)
+        captureFixture("android-ui-005-caregiver-signup-resend-loading-light.png")
+
+        resendResult.complete(Unit)
+        composeRule.waitUntil(5_000) { repository.state.value.resendCooldownRevision == 2 }
+        composeRule.onNodeWithText("確認メールを再送しました。", substring = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+        assertEquals(false, repository.state.value.resendingConfirmation)
+    }
+
+    @Test
     fun leavingAndReenteringSignupDoesNotRestoreStaleConfirmationState() {
         val repository = authRepository()
         render(repository)
@@ -155,14 +190,20 @@ class CaregiverAuthFlowScreenTest {
         expected.forEach { (resource, copy) -> assertEquals(copy, context.getString(resource)) }
     }
 
-    private fun render(repository: SessionRepository, fontScale: Float = 1f) {
+    private fun render(
+        repository: SessionRepository,
+        fontScale: Float = 1f,
+        resendCooldownSeconds: Int = 60,
+    ) {
         composeRule.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(
                 LocalDensity provides Density(density.density, fontScale = fontScale),
             ) {
                 val state by repository.state.collectAsStateWithLifecycle()
-                MedicationAppTheme { CaregiverAuthFlow(state, repository) }
+                MedicationAppTheme {
+                    CaregiverAuthFlow(state, repository, resendCooldownSeconds)
+                }
             }
         }
     }

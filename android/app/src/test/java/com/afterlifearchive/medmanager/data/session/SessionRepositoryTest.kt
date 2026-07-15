@@ -295,11 +295,14 @@ class SessionRepositoryTest {
 
         assertTrue(repository.state.value.canResendConfirmation)
         assertEquals(SessionUserMessage.ConfirmationSent, repository.state.value.infoMessage)
+        assertEquals(1, repository.state.value.resendCooldownRevision)
         assertEquals("care@example.com", auth.signupEmail)
 
         repository.resendSignupConfirmation("care@example.com")
         assertEquals(1, auth.resendCount)
         assertEquals(SessionUserMessage.ConfirmationResent, repository.state.value.infoMessage)
+        assertEquals(2, repository.state.value.resendCooldownRevision)
+        assertFalse(repository.state.value.resendingConfirmation)
     }
 
     @Test
@@ -352,6 +355,11 @@ class SessionRepositoryTest {
             repository.resendSignupConfirmation("care@example.com")
 
             assertEquals(expected, repository.state.value.errorMessage)
+            assertFalse(repository.state.value.resendingConfirmation)
+            assertEquals(
+                if (failure == AuthFailure.RATE_LIMITED) 1 else 0,
+                repository.state.value.resendCooldownRevision,
+            )
         }
 
         val unknownFailureRepository = SessionRepository(
@@ -370,6 +378,7 @@ class SessionRepositoryTest {
             SessionUserMessage.ConfirmationResendFailed,
             unknownFailureRepository.state.value.errorMessage,
         )
+        assertEquals(0, unknownFailureRepository.state.value.resendCooldownRevision)
     }
 
     @Test

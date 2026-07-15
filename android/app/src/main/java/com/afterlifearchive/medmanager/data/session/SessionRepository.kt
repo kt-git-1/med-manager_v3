@@ -25,6 +25,8 @@ data class SessionState(
     val patientLinkFailure: PatientLinkFailure? = null,
     val infoMessage: SessionUserMessage? = null,
     val canResendConfirmation: Boolean = false,
+    val resendingConfirmation: Boolean = false,
+    val resendCooldownRevision: Int = 0,
     val caregiverLoginRequested: Boolean = false,
 )
 
@@ -92,6 +94,8 @@ class SessionRepository(
             patientLinkFailure = null,
             infoMessage = null,
             canResendConfirmation = false,
+            resendingConfirmation = false,
+            resendCooldownRevision = 0,
         )
     }
 
@@ -103,6 +107,8 @@ class SessionRepository(
             patientLinkFailure = null,
             infoMessage = null,
             canResendConfirmation = false,
+            resendingConfirmation = false,
+            resendCooldownRevision = 0,
         )
     }
 
@@ -111,7 +117,14 @@ class SessionRepository(
     }
 
     suspend fun signupCaregiver(email: String, password: String, confirmation: String) {
-        mutableState.value = mutableState.value.copy(loading = false, errorMessage = null, infoMessage = null, canResendConfirmation = false)
+        mutableState.value = mutableState.value.copy(
+            loading = false,
+            errorMessage = null,
+            infoMessage = null,
+            canResendConfirmation = false,
+            resendingConfirmation = false,
+            resendCooldownRevision = 0,
+        )
         val trimmed = email.trim()
         val error = when {
             !EMAIL_REGEX.matches(trimmed) -> SessionUserMessage.InvalidEmail
@@ -131,6 +144,7 @@ class SessionRepository(
                     loading = false,
                     infoMessage = SessionUserMessage.ConfirmationSent,
                     canResendConfirmation = true,
+                    resendCooldownRevision = mutableState.value.resendCooldownRevision + 1,
                 )
             } else {
                 saveCaregiver(session)
@@ -142,17 +156,31 @@ class SessionRepository(
     }
 
     suspend fun resendSignupConfirmation(email: String) {
-        mutableState.value = mutableState.value.copy(errorMessage = null, infoMessage = null)
+        if (mutableState.value.resendingConfirmation) return
+        mutableState.value = mutableState.value.copy(
+            errorMessage = null,
+            infoMessage = null,
+            resendingConfirmation = true,
+        )
         try {
             authService.resendSignupConfirmation(email.trim())
-            mutableState.value = mutableState.value.copy(infoMessage = SessionUserMessage.ConfirmationResent)
+            mutableState.value = mutableState.value.copy(
+                resendingConfirmation = false,
+                infoMessage = SessionUserMessage.ConfirmationResent,
+                resendCooldownRevision = mutableState.value.resendCooldownRevision + 1,
+            )
         } catch (error: Exception) {
             val message = when (val mapped = error.toSessionUserMessage()) {
                 SessionUserMessage.RateLimited -> SessionUserMessage.ConfirmationResendRateLimited
                 is SessionUserMessage.Raw, SessionUserMessage.Unexpected -> SessionUserMessage.ConfirmationResendFailed
                 else -> mapped
             }
-            mutableState.value = mutableState.value.copy(errorMessage = message)
+            mutableState.value = mutableState.value.copy(
+                resendingConfirmation = false,
+                errorMessage = message,
+                resendCooldownRevision = mutableState.value.resendCooldownRevision +
+                    if (message == SessionUserMessage.ConfirmationResendRateLimited) 1 else 0,
+            )
         }
     }
 
@@ -257,6 +285,8 @@ class SessionRepository(
             errorMessage = null,
             infoMessage = null,
             canResendConfirmation = false,
+            resendingConfirmation = false,
+            resendCooldownRevision = 0,
         )
     }
 

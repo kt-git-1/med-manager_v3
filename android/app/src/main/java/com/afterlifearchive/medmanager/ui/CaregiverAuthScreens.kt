@@ -76,9 +76,14 @@ const val AUTH_CONFIRMATION_TAG = "caregiver-auth-confirmation"
 const val AUTH_SUBMIT_TAG = "caregiver-auth-submit"
 const val AUTH_NAVIGATION_BACK_TAG = "caregiver-auth-navigation-back"
 const val AUTH_FORM_LIST_TAG = "caregiver-auth-form-list"
+const val AUTH_RESEND_TAG = "caregiver-auth-resend"
 
 @Composable
-fun CaregiverAuthFlow(state: SessionState, repository: SessionRepository) {
+fun CaregiverAuthFlow(
+    state: SessionState,
+    repository: SessionRepository,
+    resendCooldownSeconds: Int = 60,
+) {
     var page by remember { mutableStateOf(AuthPage.CHOICE) }
     LaunchedEffect(state.caregiverLoginRequested) {
         if (state.caregiverLoginRequested) {
@@ -96,7 +101,7 @@ fun CaregiverAuthFlow(state: SessionState, repository: SessionRepository) {
             repository.clearAuthFlowState()
             page = AuthPage.CHOICE
         }
-        AuthPage.SIGNUP -> CaregiverSignupScreen(state, repository) {
+        AuthPage.SIGNUP -> CaregiverSignupScreen(state, repository, resendCooldownSeconds) {
             repository.clearAuthFlowState()
             page = AuthPage.CHOICE
         }
@@ -157,7 +162,12 @@ private fun CaregiverLoginScreen(state: SessionState, repository: SessionReposit
 }
 
 @Composable
-private fun CaregiverSignupScreen(state: SessionState, repository: SessionRepository, onBack: () -> Unit) {
+private fun CaregiverSignupScreen(
+    state: SessionState,
+    repository: SessionRepository,
+    resendCooldownSeconds: Int,
+    onBack: () -> Unit,
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmation by remember { mutableStateOf("") }
@@ -166,7 +176,9 @@ private fun CaregiverSignupScreen(state: SessionState, repository: SessionReposi
     LaunchedEffect(cooldown) {
         if (cooldown > 0) { delay(1_000); cooldown -= 1 }
     }
-    LaunchedEffect(state.canResendConfirmation) { if (state.canResendConfirmation && cooldown == 0) cooldown = 60 }
+    LaunchedEffect(state.resendCooldownRevision) {
+        if (state.resendCooldownRevision > 0) cooldown = resendCooldownSeconds
+    }
     AuthFormShell(onBack) {
         FormTitle(Icons.Rounded.AddCircle, stringResource(R.string.caregiver_signup_title), stringResource(R.string.caregiver_signup_subtitle))
         AuthField(email, { email = it; repository.clearMessages() }, stringResource(R.string.caregiver_signup_email), false, AUTH_EMAIL_TAG)
@@ -176,10 +188,20 @@ private fun CaregiverSignupScreen(state: SessionState, repository: SessionReposi
         state.infoMessage?.let { AuthInfo(sessionUserMessageText(it)) }
         if (state.canResendConfirmation) {
             TextButton(
-                enabled = cooldown == 0 && !state.loading,
-                onClick = { cooldown = 60; scope.launch { repository.resendSignupConfirmation(email) } },
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-            ) { Text(if (cooldown > 0) stringResource(R.string.caregiver_signup_resend_countdown, cooldown) else stringResource(R.string.caregiver_signup_resend), fontWeight = FontWeight.SemiBold) }
+                enabled = cooldown == 0 && !state.loading && !state.resendingConfirmation,
+                onClick = { scope.launch { repository.resendSignupConfirmation(email) } },
+                modifier = Modifier.fillMaxWidth().height(48.dp).testTag(AUTH_RESEND_TAG),
+            ) {
+                if (state.resendingConfirmation) {
+                    CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 3.dp)
+                } else {
+                    Text(
+                        if (cooldown > 0) stringResource(R.string.caregiver_signup_resend_countdown, cooldown)
+                        else stringResource(R.string.caregiver_signup_resend),
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
         }
         AuthPrimaryButton(stringResource(R.string.caregiver_auth_signup), state.loading, email.isNotBlank() && password.isNotBlank() && confirmation.isNotBlank()) {
             scope.launch { repository.signupCaregiver(email, password, confirmation) }
