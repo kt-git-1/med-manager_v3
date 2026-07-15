@@ -282,6 +282,14 @@ This selector foundation is connected to inventory-backed production candidates 
 - `PatientSettingsContentTest` covers analytics toggle callback, three destinations, explicit logout confirmation and denied-permission disabling/guidance.
 - Full gate passes with 37/37 API-35 instrumentation tests; deterministic light evidence is under `evidence/c05-20260714/`.
 
+## 2026-07-16 C48 current-runtime Patient Settings calibration
+
+- Deterministic current iOS and Android pairs now cover the top and legal/logout regions, permission-denied top/guidance, logout confirmation, dark mode and largest-text behavior under `evidence/c48-20260716/`.
+- Direct runtime comparison confirms the C21 18-unit card, 20/15-unit hierarchy, circular icons, legal rows and 58-unit logout metrics. It also exposes and closes the remaining toggle drift: enabled notification and Analytics controls now use iOS system green rather than patient teal, including disabled-selected permission state.
+- The confirmation action now uses destructive red text with exact title/body/action copy. Android retains Material-native alert placement while iOS retains its native bottom alert placement.
+- Current iOS exposes no logout progress/failure state and ignores revoke failure before clearing its token. Android intentionally preserves the pinned server-first contract: `ログアウト中…` is disabled, failed revoke keeps the linked session and retry remains available.
+- Current iOS caps its root at `.xLarge` under Accessibility XXXL; Android keeps all Settings actions scroll-reachable at 200%. Physical permission transitions, browser return, real revocation and TalkBack remain Gate I.
+
 ## Phase 2D notification routing and patient tutorial
 
 ### XP-002 exact notification destination

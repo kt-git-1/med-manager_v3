@@ -1,5 +1,7 @@
 # C21 UI-106 Patient Settings Source-Calibrated Comparison — 2026-07-15
 
+> Historical calibration note: C48 supersedes C21 with deterministic current-runtime top/lower, permission-denied, confirmation, dark and largest-text pairs. C21 remains the provenance record for the initial card/row metric repair.
+
 ## Evidence
 
 | Surface | File | Provenance |

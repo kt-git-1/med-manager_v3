@@ -76,7 +76,7 @@ Each screen ID maps to parity requirements. Every listed state needs a determini
 | UI-103 PRN | current `PrnMedicationListView` | entry exists only when active PRN medication exists; active list, dosage/count, instruction-or-notes, confirmation, insufficient, submitting overlay, success-only dismissal and in-flow error. Current iOS has no reachable empty PRN list screen. |
 | UI-104 Patient history | current `HistoryMonthView.patientSimpleHistory` | title/subtitle, today progress ring and pills; supplementary `連続記録` card with server count/qualifier/today-status action copy; Monday-first current week; recent today/yesterday summaries; loading/retry/retention. Streak failure must not replace usable history. |
 | UI-105 Retained history detail contract | `HistoryDayDetailView.swift`, day API | not a current patient screen: patient navigation/saved state must not expose it and all patient notification dates route to Today/exact slot. Keep typed day lifecycle and shared scheduled/PRN/recorder rows only as the tested caregiver UI-206 foundation; visual acceptance belongs to UI-206 |
-| UI-106 Patient settings | patient settings in `PatientReadOnlyView.swift` | master/slot/re-reminder preferences, permission denied, analytics consent, legal/support, unlink confirmation/failure/success |
+| UI-106 Patient settings | current `PatientSettingsView` | visible master notification toggle with hidden retained slot/re-reminder preferences, permission-denied disabled state/guidance, Analytics consent, legal/support, logout confirmation; Android-only server-first progress/failure/success contract |
 
 ### Caregiver mode
 

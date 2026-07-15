@@ -35,6 +35,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -151,7 +152,13 @@ internal fun SettingsContent(
             onDismissRequest = { confirmUnlink = false },
             title = { Text(stringResource(R.string.patient_settings_unlink_confirm_title)) },
             text = { Text(stringResource(R.string.patient_settings_unlink_confirm_message)) },
-            confirmButton = { Button(modifier = Modifier.testTag("patient-logout-confirm"), onClick = { confirmUnlink = false; onUnlink() }) { Text(stringResource(R.string.patient_settings_unlink_confirm)) } },
+            confirmButton = {
+                TextButton(
+                    modifier = Modifier.testTag("patient-logout-confirm"),
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    onClick = { confirmUnlink = false; onUnlink() },
+                ) { Text(stringResource(R.string.patient_settings_unlink_confirm)) }
+            },
             dismissButton = { TextButton(onClick = { confirmUnlink = false }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
@@ -211,7 +218,18 @@ private fun SettingsSwitchRow(
             Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Text(subtitle, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
         }
-        Switch(checked = checked, onCheckedChange = onChecked, enabled = enabled, modifier = if (testTag == null) Modifier else Modifier.testTag(testTag))
+        Switch(
+            checked = checked,
+            onCheckedChange = onChecked,
+            enabled = enabled,
+            modifier = if (testTag == null) Modifier else Modifier.testTag(testTag),
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Color(0xFF34C759),
+                disabledCheckedThumbColor = Color.White.copy(alpha = 0.90f),
+                disabledCheckedTrackColor = Color(0xFF34C759).copy(alpha = 0.50f),
+            ),
+        )
     }
 }
 

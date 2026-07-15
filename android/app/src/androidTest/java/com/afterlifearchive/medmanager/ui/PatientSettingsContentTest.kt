@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -19,6 +21,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.unit.Density
 import androidx.core.view.WindowCompat
 import com.afterlifearchive.medmanager.PatientNotificationSettings
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
@@ -82,19 +85,24 @@ class PatientSettingsContentTest {
         composeRule.onNodeWithText("法務・サポート").assertIsDisplayed()
         composeRule.onNodeWithTag("patient-settings-list").performScrollToNode(hasText("ログアウト"))
         composeRule.onNodeWithText("ログアウト").assertIsDisplayed()
-        captureDevice(activity, "android-ui-106-patient-settings-source-calibrated-logout-light.png")
+        captureDevice(activity, "android-ui-106-patient-settings-lower-light-matched.png")
         composeRule.onNodeWithTag("patient-settings-list").performScrollToIndex(0)
-        captureDevice(activity, "android-ui-106-patient-settings-source-calibrated-light.png")
+        captureDevice(activity, "android-ui-106-patient-settings-top-light-matched.png")
     }
 
     @Test
     fun deniedNotificationPermissionDisablesToggleAndShowsGuidance() {
-        val activity = showSettings(notificationPermissionDenied = true)
+        val activity = showSettings(
+            notificationPermissionDenied = true,
+            notificationSettings = PatientNotificationSettings(masterEnabled = true),
+            analyticsEnabled = true,
+        )
 
         composeRule.onNodeWithTag("patient-notification-toggle").assertIsNotEnabled()
+        captureDevice(activity, "android-ui-106-patient-settings-denied-top-light-matched.png")
         composeRule.onNodeWithTag("patient-settings-list").performScrollToNode(hasText("通知が許可されていません。設定アプリで通知を許可してください。"))
         composeRule.onNodeWithText("通知が許可されていません。設定アプリで通知を許可してください。").assertIsDisplayed()
-        captureDevice(activity, "android-ui-106-patient-settings-notification-denied-light.png")
+        captureDevice(activity, "android-ui-106-patient-settings-denied-light-matched.png")
     }
 
     @Test
@@ -120,13 +128,45 @@ class PatientSettingsContentTest {
     @Test
     fun unlinkRequiresExplicitConfirmation() {
         var unlinkCount = 0
-        showSettings(onUnlink = { unlinkCount += 1 })
+        val activity = showSettings(
+            notificationSettings = PatientNotificationSettings(masterEnabled = true),
+            analyticsEnabled = true,
+            onUnlink = { unlinkCount += 1 },
+        )
 
-        composeRule.onNodeWithTag("patient-settings-list").performScrollToIndex(4)
+        composeRule.onNodeWithTag("patient-settings-list").performScrollToNode(hasText("ログアウト"))
         composeRule.onNodeWithTag("patient-unlink-button").performClick()
         composeRule.onNodeWithText("ログアウトしますか？").assertIsDisplayed()
+        captureDevice(activity, "android-ui-106-patient-settings-confirm-light-matched.png")
         composeRule.onNodeWithTag("patient-logout-confirm").performClick()
         composeRule.runOnIdle { assertEquals(1, unlinkCount) }
+    }
+
+    @Test
+    fun currentIosHierarchyMatchesInDarkTheme() {
+        val activity = showSettings(
+            notificationSettings = PatientNotificationSettings(masterEnabled = true),
+            analyticsEnabled = true,
+            darkTheme = true,
+        )
+
+        composeRule.onNodeWithText("お薬の通知").assertIsDisplayed()
+        composeRule.onNodeWithText("連携中").assertIsDisplayed()
+        captureDevice(activity, "android-ui-106-patient-settings-top-dark-matched.png", darkTheme = true)
+    }
+
+    @Test
+    fun currentIosHierarchyRemainsReachableAtTwoHundredPercent() {
+        val activity = showSettings(
+            notificationSettings = PatientNotificationSettings(masterEnabled = true),
+            analyticsEnabled = true,
+            fontScale = 2f,
+        )
+
+        composeRule.onNodeWithText("お薬の通知").assertIsDisplayed()
+        captureDevice(activity, "android-ui-106-patient-settings-top-font-2.0-matched.png")
+        composeRule.onNodeWithTag("patient-settings-list").performScrollToNode(hasText("ログアウト"))
+        composeRule.onNodeWithTag("patient-unlink-button").assertIsDisplayed()
     }
 
     private fun showSettings(
@@ -135,24 +175,29 @@ class PatientSettingsContentTest {
         notificationPermissionDenied: Boolean = false,
         notificationSettings: PatientNotificationSettings = PatientNotificationSettings(),
         analyticsEnabled: Boolean = false,
+        darkTheme: Boolean = false,
+        fontScale: Float = 1f,
         onUnlink: () -> Unit = {},
     ): Activity {
         lateinit var activity: Activity
         composeRule.setContent {
-            MedicationAppTheme {
-                activity = checkNotNull(LocalActivity.current)
-                Box(Modifier.fillMaxSize().background(PatientBackground).safeDrawingPadding()) {
-                    SettingsContent(
-                        loading = loading,
-                        error = error,
-                        notificationSettings = notificationSettings,
-                        onNotificationSettingsChange = {},
-                        notificationPermissionDenied = notificationPermissionDenied,
-                        analyticsEnabled = analyticsEnabled,
-                        onAnalyticsEnabledChange = {},
-                        onOpenUrl = {},
-                        onUnlink = onUnlink,
-                    )
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
+                MedicationAppTheme(darkTheme = darkTheme) {
+                    activity = checkNotNull(LocalActivity.current)
+                    Box(Modifier.fillMaxSize().background(PatientBackground).safeDrawingPadding()) {
+                        SettingsContent(
+                            loading = loading,
+                            error = error,
+                            notificationSettings = notificationSettings,
+                            onNotificationSettingsChange = {},
+                            notificationPermissionDenied = notificationPermissionDenied,
+                            analyticsEnabled = analyticsEnabled,
+                            onAnalyticsEnabledChange = {},
+                            onOpenUrl = {},
+                            onUnlink = onUnlink,
+                        )
+                    }
                 }
             }
         }
@@ -160,13 +205,14 @@ class PatientSettingsContentTest {
     }
 
     @Suppress("DEPRECATION")
-    private fun captureDevice(activity: Activity, filename: String) {
+    private fun captureDevice(activity: Activity, filename: String, darkTheme: Boolean = false) {
         composeRule.runOnIdle {
             WindowCompat.setDecorFitsSystemWindows(activity.window, false)
             activity.window.statusBarColor = android.graphics.Color.TRANSPARENT
-            WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = true
+            WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = !darkTheme
         }
-        SystemClock.sleep(250)
+        composeRule.waitForIdle()
+        SystemClock.sleep(1_000)
         writeDeviceScreenshotFixture(filename)
     }
 }
