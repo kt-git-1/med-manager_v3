@@ -108,6 +108,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C02 Record the deterministic UI-002 six-digit, submitting, validation, expired, forbidden, network and rate-limit/fallback Android state matrix.
 - [x] C02 Match UI-005 error/info/resend visual hierarchy and record invalid-email, password-mismatch, loading, confirmation, resend-loading/success/429 states.
 - [x] C02 Define login/signup Next/Done IME traversal and record UI-004 loading plus invalid-credential feedback states.
+- [x] C02 Record UI-003 dark rendering and login/signup/mode-reset reachability at 200% font scale.
 - [x] C03 Reverify Patient Today states/actions/recording-window/inventory/PRN/detail.
 - [x] C04 Reverify current Patient History progress/week/recent summaries, retention and freshness.
 - [x] C05 Reverify Settings/reminders/tutorial/deep links/legal/logout and patient analytics-consent UI.
