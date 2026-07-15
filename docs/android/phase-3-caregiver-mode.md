@@ -113,7 +113,7 @@ E01 and `CG-005` are `IMPLEMENTED`. Paired iOS visuals, large text, TalkBack and
 - JVM tests cover aggregate validation, wire mapping, exact method/path/body/auth, successful create state/revisions and failed update preservation. Compose tests cover add navigation, regular-to-PRN conditional content, validation summary and edit prepopulation.
 - The full gate passes with 52/52 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
 
-E02 and `CG-006` are `IMPLEMENTED`. E03 owns regular-medication daily/weekday slot selection and regimen create/update/disable. Matched iOS visual captures, large-text/TalkBack and physical-device verification remain before `VERIFIED`.
+E02 and `CG-006` are `IMPLEMENTED`. E03 owns regular-medication daily/weekday slot selection and regimen create/update/disable. The current-iOS add/edit hierarchy and full-form save/delete `更新中...` blocking have direct UI-203 API-35 light evidence; physical-device verification remains before `VERIFIED`.
 
 ## E03 regimen schedule CRUD — 2026-07-15
 

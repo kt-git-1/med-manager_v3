@@ -1,5 +1,14 @@
 package com.afterlifearchive.medmanager.ui
 
+import android.app.Activity
+import android.os.SystemClock
+import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -23,6 +32,9 @@ import org.junit.Rule
 import org.junit.Test
 import java.time.Instant
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CompletableDeferred
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.core.view.WindowCompat
 
 class CaregiverMedicationScreenTest {
     @get:Rule
@@ -33,11 +45,13 @@ class CaregiverMedicationScreenTest {
         setContent(listOf(scheduled(), prn(), ended()))
 
         composeRule.onNodeWithText("薬を管理").assertIsDisplayed()
+        composeRule.onNodeWithText("さくらさん").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-medication-scheduled").assertIsDisplayed()
         composeRule.onNodeWithText("毎日 朝・夕").assertIsDisplayed()
-        composeRule.onNodeWithText("残り 12 錠").assertIsDisplayed()
+        composeRule.onNodeWithText("残り12錠").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-medication-filter-prn").performClick()
         composeRule.onNodeWithTag("caregiver-medication-prn").assertIsDisplayed()
+        composeRule.onNodeWithText("必要な時").assertIsDisplayed()
     }
 
     @Test
@@ -46,6 +60,62 @@ class CaregiverMedicationScreenTest {
 
         composeRule.onNodeWithText("薬がありません").assertIsDisplayed()
         composeRule.onNodeWithText("まず1つ目の薬を登録しましょう。", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("薬名、用量、1回に飲む量を入力").assertIsDisplayed()
+        composeRule.onNodeWithText("定時薬は飲む時間と曜日を設定").assertIsDisplayed()
+        composeRule.onNodeWithText("必要に応じて在庫管理をオン").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-medication-empty-add").assertIsDisplayed()
+    }
+
+    @Test
+    fun initialLoadShowsIosLoadingMessage() {
+        val gate = CompletableDeferred<Unit>()
+        val repository = CaregiverMedicationRepository(
+            CaregiverMedicationDataSource { gate.await(); emptyList() },
+            MutationFreshnessStore(),
+        )
+        val patient = CaregiverPatient("patient-1", "さくら")
+        composeRule.setContent { MedicationAppTheme { CaregiverMedicationScreen(repository, CaregiverPatientState(listOf(patient), patient.id), true) } }
+
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-medication-loading").fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithText("読み込み中...").assertIsDisplayed()
+        gate.complete(Unit)
+    }
+
+    @Test
+    fun screenshotFixtureShowsSectionedMedicationList() {
+        val items = listOf(scheduled(), prn(), ended())
+        val repository = CaregiverMedicationRepository(CaregiverMedicationDataSource { items }, MutationFreshnessStore())
+        val patient = CaregiverPatient("patient-1", "さくら", CaregiverSlotTimes("08:00", "12:00", "18:00", "21:00"))
+        lateinit var activity: Activity
+        composeRule.setContent {
+            MedicationAppTheme {
+                activity = checkNotNull(LocalActivity.current)
+                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding()) {
+                    CaregiverMedicationScreen(repository, CaregiverPatientState(listOf(patient), patient.id), true)
+                }
+            }
+        }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-medication-list").fetchSemanticsNodes().isNotEmpty() }
+        captureDevice(activity, "android-ui-202-caregiver-medications-light.png")
+    }
+
+    @Test
+    fun screenshotFixtureShowsMedicationForm() {
+        val repository = CaregiverMedicationRepository(CaregiverMedicationDataSource { emptyList() }, MutationFreshnessStore())
+        val patient = CaregiverPatient("patient-1", "さくら", CaregiverSlotTimes("08:00", "12:00", "18:00", "21:00"))
+        lateinit var activity: Activity
+        composeRule.setContent {
+            MedicationAppTheme {
+                activity = checkNotNull(LocalActivity.current)
+                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding()) {
+                    CaregiverMedicationScreen(repository, CaregiverPatientState(listOf(patient), patient.id), true)
+                }
+            }
+        }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-medication-empty-add").fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
+        composeRule.onNodeWithTag("caregiver-medication-form").assertIsDisplayed()
+        captureDevice(activity, "android-ui-203-caregiver-medication-form-light.png")
     }
 
     @Test
@@ -156,4 +226,15 @@ class CaregiverMedicationScreenTest {
         Instant.parse("2025-01-01T00:00:00Z"), endDate, inventory, "錠", inventory > 0, inventory, false,
         endDate == null, false, null, times, emptyList(),
     )
+
+    @Suppress("DEPRECATION")
+    private fun captureDevice(activity: Activity, filename: String) {
+        composeRule.runOnIdle {
+            WindowCompat.setDecorFitsSystemWindows(activity.window, false)
+            activity.window.statusBarColor = android.graphics.Color.TRANSPARENT
+            WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = true
+        }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture(filename)
+    }
 }

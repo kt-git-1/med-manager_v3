@@ -2,6 +2,7 @@ package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
@@ -138,7 +139,7 @@ internal fun CaregiverMedicationScreen(
             stringResource(R.string.caregiver_no_selection_title),
             stringResource(R.string.caregiver_no_selection_message),
         )
-        state.loading -> CaregiverMedicationCentered { CircularProgressIndicator() }
+        state.loading -> CaregiverMedicationLoadingState()
         state.loadFailed -> CaregiverMedicationMessage(
             stringResource(R.string.caregiver_data_unavailable_title),
             stringResource(R.string.caregiver_data_unavailable_message),
@@ -147,19 +148,21 @@ internal fun CaregiverMedicationScreen(
                 Text(stringResource(R.string.common_retry))
             }
         }
-        else -> CaregiverMedicationList(
-            items = state.items,
-            patientName = selected.displayName,
-            slotTimes = selected.slotTimes,
-            filter = filter,
-            onFilter = { filterName = it.name },
-            onAdd = { addingMedication = true },
-            onEdit = { editingMedicationId = it.id },
-            refreshing = state.refreshing,
-            refreshFailed = state.refreshFailed,
-            onRetry = { scope.launch { repository.load(selected.id) } },
-            enabled = enabled && !state.refreshFailed,
-        )
+        else -> Box(Modifier.fillMaxSize()) {
+            CaregiverMedicationList(
+                items = state.items,
+                patientName = selected.displayName,
+                slotTimes = selected.slotTimes,
+                filter = filter,
+                onFilter = { filterName = it.name },
+                onAdd = { addingMedication = true },
+                onEdit = { editingMedicationId = it.id },
+                refreshFailed = state.refreshFailed,
+                onRetry = { scope.launch { repository.load(selected.id) } },
+                enabled = enabled && !state.refreshFailed && !state.refreshing,
+            )
+            if (state.refreshing) CaregiverMedicationUpdatingOverlay()
+        }
     }
 }
 
@@ -172,7 +175,6 @@ private fun CaregiverMedicationList(
     onFilter: (CaregiverMedicationFilter) -> Unit,
     onAdd: () -> Unit,
     onEdit: (PatientMedication) -> Unit,
-    refreshing: Boolean,
     refreshFailed: Boolean,
     onRetry: () -> Unit,
     enabled: Boolean,
@@ -212,9 +214,10 @@ private fun CaregiverMedicationList(
                 }
             }
         }
-        if (refreshing) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
         if (refreshFailed) item { CaregiverStaleDataCard("caregiver-medication-stale", onRetry) }
-        item {
+        if (items.isEmpty()) item {
+            CaregiverMedicationEmptyCard(onAdd, enabled)
+        } else item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     CaregiverMetric(stringResource(R.string.caregiver_medication_metric_active), items.count { !ended(it) }, Icons.Rounded.Medication, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
@@ -226,7 +229,7 @@ private fun CaregiverMedicationList(
                 }
             }
         }
-        item {
+        if (items.isNotEmpty()) item {
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 CaregiverMedicationFilter.entries.forEach { item ->
                     FilterChip(
@@ -249,19 +252,33 @@ private fun CaregiverMedicationList(
                 }
             }
         }
-        if (items.isEmpty()) item {
-            CaregiverMedicationMessage(
-                stringResource(R.string.caregiver_medication_empty_title),
-                stringResource(R.string.caregiver_medication_empty_message),
-            )
-        } else if (visible.isEmpty()) item {
+        if (items.isNotEmpty() && visible.isEmpty()) item {
             CaregiverMedicationMessage(
                 stringResource(R.string.caregiver_medication_filter_empty_title),
                 stringResource(R.string.caregiver_medication_filter_empty_message),
             )
         }
-        items(visible, key = { it.id }) { medication ->
-            CaregiverMedicationCard(medication, slotTimes, ended(medication), { onEdit(medication) }, enabled)
+        val sections = when (filter) {
+            CaregiverMedicationFilter.ALL -> listOf(
+                R.string.caregiver_medication_section_scheduled to visible.filter { !it.isPrn && !ended(it) },
+                R.string.caregiver_medication_section_prn to visible.filter { it.isPrn && !ended(it) },
+                R.string.caregiver_medication_section_ended_scheduled to visible.filter { !it.isPrn && ended(it) },
+                R.string.caregiver_medication_section_ended_prn to visible.filter { it.isPrn && ended(it) },
+            )
+            CaregiverMedicationFilter.SCHEDULED -> listOf(R.string.caregiver_medication_section_scheduled to visible)
+            CaregiverMedicationFilter.PRN -> listOf(R.string.caregiver_medication_section_prn to visible)
+            CaregiverMedicationFilter.ENDED -> listOf(
+                R.string.caregiver_medication_section_ended_scheduled to visible.filter { !it.isPrn },
+                R.string.caregiver_medication_section_ended_prn to visible.filter { it.isPrn },
+            )
+        }
+        sections.forEach { (title, sectionItems) ->
+            if (sectionItems.isNotEmpty()) {
+                item { Text(stringResource(title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold) }
+                items(sectionItems, key = { it.id }) { medication ->
+                    CaregiverMedicationCard(medication, slotTimes, ended(medication), { onEdit(medication) }, enabled)
+                }
+            }
         }
         item { Spacer(Modifier.height(20.dp)) }
     }
@@ -317,6 +334,7 @@ private fun CaregiverMedicationCard(
             }
             Text(stringResource(R.string.caregiver_medication_dose, formatMedicationNumber(item.doseCountPerIntake)))
             medicationSchedule(item, slotTimes)?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                ?: if (item.isPrn) Text(stringResource(R.string.caregiver_medication_prn_when_needed), color = MaterialTheme.colorScheme.onSurfaceVariant) else Unit
             if (item.inventoryEnabled) {
                 Text(
                     if (item.inventoryOut) stringResource(R.string.caregiver_medication_inventory_out)
@@ -335,6 +353,66 @@ private fun CaregiverMedicationCard(
                     contentDescription = stringResource(R.string.caregiver_medication_edit_accessibility, item.name),
                     tint = MaterialTheme.colorScheme.primary,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CaregiverMedicationEmptyCard(onAdd: () -> Unit, enabled: Boolean) {
+    Card(
+        Modifier.fillMaxWidth().testTag("caregiver-medication-empty"),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Top) {
+                Box(Modifier.size(62.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.Medication, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(34.dp))
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text(stringResource(R.string.caregiver_medication_empty_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.caregiver_medication_empty_message), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                }
+            }
+            CaregiverMedicationOnboardingStep(1, stringResource(R.string.caregiver_medication_empty_step_name))
+            CaregiverMedicationOnboardingStep(2, stringResource(R.string.caregiver_medication_empty_step_schedule))
+            CaregiverMedicationOnboardingStep(3, stringResource(R.string.caregiver_medication_empty_step_inventory))
+            Button(onClick = onAdd, enabled = enabled, modifier = Modifier.fillMaxWidth().height(50.dp).testTag("caregiver-medication-empty-add")) {
+                Icon(Icons.Rounded.Add, contentDescription = null)
+                Spacer(Modifier.size(6.dp))
+                Text(stringResource(R.string.caregiver_medication_add))
+            }
+        }
+    }
+}
+
+@Composable
+private fun CaregiverMedicationOnboardingStep(number: Int, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(Modifier.size(30.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.13f)), contentAlignment = Alignment.Center) {
+            Text(number.toString(), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+        }
+        Text(label, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+private fun CaregiverMedicationLoadingState() {
+    CaregiverMedicationCentered {
+        CircularProgressIndicator(modifier = Modifier.size(52.dp))
+        Text(stringResource(R.string.patient_today_loading), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("caregiver-medication-loading"))
+    }
+}
+
+@Composable
+private fun CaregiverMedicationUpdatingOverlay() {
+    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.2f)).clickable(onClick = {}).testTag("caregiver-medication-updating"), contentAlignment = Alignment.Center) {
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))) {
+            Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                CircularProgressIndicator(modifier = Modifier.size(44.dp))
+                Text(stringResource(R.string.patient_today_updating), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -372,10 +450,11 @@ private fun CaregiverMedicationEditor(
         ).show()
     }
 
-    LazyColumn(
-        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 16.dp).testTag("caregiver-medication-form"),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
+    Box(Modifier.fillMaxSize()) {
+        LazyColumn(
+            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 16.dp).testTag("caregiver-medication-form"),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
         item {
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -592,6 +671,8 @@ private fun CaregiverMedicationEditor(
             }
             Spacer(Modifier.height(24.dp))
         }
+        }
+        if (submitting || deleting) CaregiverMedicationUpdatingOverlay()
     }
 
     if (showingDeleteConfirm && medication != null) {
