@@ -1,5 +1,6 @@
 package com.afterlifearchive.medmanager.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -75,6 +76,7 @@ internal fun SettingsContent(
                     stringResource(R.string.patient_settings_notification_master),
                     stringResource(R.string.patient_settings_notification_master_detail),
                     notificationSettings.masterEnabled,
+                    icon = Icons.Rounded.Notifications,
                     enabled = !notificationPermissionDenied,
                     testTag = "patient-notification-toggle",
                 ) {
@@ -98,6 +100,7 @@ internal fun SettingsContent(
                     stringResource(R.string.patient_settings_analytics_toggle),
                     stringResource(R.string.patient_settings_analytics_detail),
                     analyticsEnabled,
+                    icon = Icons.Rounded.Lock,
                     testTag = "patient-analytics-toggle",
                     onChecked = onAnalyticsEnabledChange,
                 )
@@ -111,7 +114,7 @@ internal fun SettingsContent(
             }
         }
         if (notificationPermissionDenied) item {
-            SettingsCard {
+            SettingsCard(accent = MaterialTheme.colorScheme.error) {
                 Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Rounded.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                     Text(stringResource(R.string.patient_settings_permission_denied), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
@@ -157,12 +160,14 @@ private fun SettingsCard(
     title: String? = null,
     icon: ImageVector? = null,
     iconColor: Color = PatientTeal,
+    accent: Color? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = accent?.let { BorderStroke(2.dp, it.copy(alpha = 0.55f)) },
     ) {
         Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             if (title != null) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -175,8 +180,19 @@ private fun SettingsCard(
 }
 
 @Composable
-private fun SettingsSwitchRow(title: String, subtitle: String, checked: Boolean, enabled: Boolean = true, testTag: String? = null, onChecked: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+private fun SettingsSwitchRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    icon: ImageVector,
+    enabled: Boolean = true,
+    testTag: String? = null,
+    onChecked: (Boolean) -> Unit,
+) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        Box(Modifier.size(44.dp).background(PatientTeal.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription = null, tint = PatientTeal)
+        }
         Column(Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.SemiBold)
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
