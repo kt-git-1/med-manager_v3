@@ -12,12 +12,16 @@ import com.afterlifearchive.medmanager.data.patient.HistoryStatus
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.SlotBulkRecordResult
 import java.time.Instant
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class CaregiverTodayRepositoryTest {
     @Test
     fun apiLoadsAllThreeCurrentIosContractsWithCaregiverAuth() = runTest {
@@ -182,7 +186,11 @@ class CaregiverTodayRepositoryTest {
             override suspend fun recordDose(patientId: String, dose: PatientDose) { calls += "record:${dose.key}" }
             override suspend fun deleteDose(patientId: String, dose: PatientDose) { calls += "delete:${dose.key}" }
         }
-        val repository = CaregiverTodayRepository(source, freshness)
+        val repository = CaregiverTodayRepository(
+            source,
+            freshness,
+            now = { Instant.parse("2026-07-15T08:30:00Z") },
+        )
         repository.load("patient-1")
 
         assertTrue(repository.recordDose("patient-1", original))
@@ -198,6 +206,56 @@ class CaregiverTodayRepositoryTest {
         assertEquals(2L, freshness.revisions.value.dose)
         assertEquals(2L, freshness.revisions.value.inventory)
         assertEquals(2L, freshness.revisions.value.notificationPlan)
+    }
+
+    @Test
+    fun deletingOverdueDoseRestoresMissedStatus() = runTest {
+        val original = dose("dose-1", DoseStatus.TAKEN, "2026-07-15T08:00:00Z")
+        val source = object : CaregiverTodayDataSource {
+            override suspend fun today(patientId: String) = listOf(original)
+            override suspend fun medications(patientId: String) = emptyList<PatientMedication>()
+            override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
+            override suspend fun deleteDose(patientId: String, dose: PatientDose) = Unit
+        }
+        val repository = CaregiverTodayRepository(
+            source,
+            MutationFreshnessStore(),
+            now = { Instant.parse("2026-07-15T09:00:01Z") },
+        )
+        repository.load("patient-1")
+
+        assertTrue(repository.deleteDose("patient-1", original))
+        assertEquals(DoseStatus.MISSED, repository.state.value.doses.single().status)
+    }
+
+    @Test
+    fun silentReconciliationKeepsOptimisticCaregiverResultInteractive() = runTest {
+        val refreshGate = CompletableDeferred<Unit>()
+        val original = dose("dose-1", DoseStatus.PENDING, "2026-07-15T08:00:00Z")
+        var todayCalls = 0
+        val source = object : CaregiverTodayDataSource {
+            override suspend fun today(patientId: String): List<PatientDose> {
+                todayCalls += 1
+                if (todayCalls > 1) refreshGate.await()
+                return listOf(original.copy(status = if (todayCalls > 1) DoseStatus.TAKEN else DoseStatus.PENDING))
+            }
+            override suspend fun medications(patientId: String) = emptyList<PatientMedication>()
+            override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
+            override suspend fun recordDose(patientId: String, dose: PatientDose) = Unit
+        }
+        val repository = CaregiverTodayRepository(source, MutationFreshnessStore())
+        repository.load("patient-1")
+        assertTrue(repository.recordDose("patient-1", original))
+
+        val refresh = launch { repository.load("patient-1", showProgress = false) }
+        runCurrent()
+
+        assertEquals(DoseStatus.TAKEN, repository.state.value.doses.single().status)
+        assertEquals(CaregiverTodayMutationMessage.RECORDED, repository.state.value.mutationMessage)
+        assertFalse(repository.state.value.refreshing)
+
+        refreshGate.complete(Unit)
+        refresh.join()
     }
 
     @Test

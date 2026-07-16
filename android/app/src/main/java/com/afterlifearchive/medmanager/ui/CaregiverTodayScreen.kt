@@ -103,7 +103,10 @@ internal fun CaregiverTodayScreen(
     var prnToConfirm by remember { mutableStateOf<PatientMedication?>(null) }
 
     LaunchedEffect(enabled, selected?.id, freshness.dose, freshness.medication, freshness.inventory, freshness.slotTimes) {
-        if (enabled && selected != null) cursor.refreshIfStale { repository.load(selected.id) }
+        if (enabled && selected != null) {
+            val showProgress = state.mutationMessage == null || state.lastInsufficientCount > 0
+            cursor.refreshIfStale { repository.load(selected.id, showProgress = showProgress) }
+        }
         if (selected == null) repository.clear()
     }
 

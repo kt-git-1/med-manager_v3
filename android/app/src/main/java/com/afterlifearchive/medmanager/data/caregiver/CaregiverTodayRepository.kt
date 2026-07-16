@@ -21,6 +21,7 @@ import com.afterlifearchive.medmanager.data.patient.RecordedByType
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.SlotBulkRecordResult
 import java.net.URLEncoder
+import java.time.Instant
 import java.time.ZoneId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
@@ -158,14 +159,16 @@ private data class CaregiverInventoryItemDto(
 class CaregiverTodayRepository(
     private val dataSource: CaregiverTodayDataSource,
     private val freshnessStore: MutationFreshnessStore,
+    private val now: () -> Instant = Instant::now,
 ) {
     private val mutableState = MutableStateFlow(CaregiverTodayState())
     val state: StateFlow<CaregiverTodayState> = mutableState.asStateFlow()
     val freshness = freshnessStore.revisions
 
-    suspend fun load(patientId: String) {
+    suspend fun load(patientId: String, showProgress: Boolean = true) {
         if ((mutableState.value.loading || mutableState.value.refreshing) && mutableState.value.patientId == patientId) return
-        mutableState.value = if (mutableState.value.patientId == patientId) {
+        val canReconcileSilently = !showProgress && mutableState.value.patientId == patientId && mutableState.value.hasLoaded
+        if (!canReconcileSilently) mutableState.value = if (mutableState.value.patientId == patientId) {
             val hasContent = mutableState.value.hasLoaded
             mutableState.value.copy(
                 loading = !hasContent,
@@ -250,8 +253,13 @@ class CaregiverTodayRepository(
         mutableState.value = current.copy(updatingDoseKey = dose.key, mutationError = null, mutationMessage = null)
         return try {
             dataSource.deleteDose(patientId, dose)
+            val restoredStatus = if (now().isAfter(dose.scheduledAt.plusSeconds(60 * 60))) {
+                DoseStatus.MISSED
+            } else {
+                DoseStatus.PENDING
+            }
             val updated = mutableState.value.doses.map {
-                if (it.key == dose.key) it.copy(status = DoseStatus.PENDING, recordedByType = null) else it
+                if (it.key == dose.key) it.copy(status = restoredStatus, recordedByType = null) else it
             }.sortedWith(doseComparator)
             mutableState.value = mutableState.value.copy(
                 doses = updated,

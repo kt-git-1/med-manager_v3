@@ -99,9 +99,12 @@ class PatientRepository(
             }
     }
 
-    suspend fun refreshTodayAfterAction() {
+    suspend fun refreshTodayAfterAction(showProgress: Boolean = true) {
         val previousMessage = mutableState.value.message
-        mutableState.value = mutableState.value.copy(refreshing = true, maintenanceWarning = null)
+        mutableState.value = mutableState.value.copy(
+            refreshing = showProgress,
+            maintenanceWarning = null,
+        )
         runCatching {
             val slotTimes = runCatching { api.slotTimes() }.getOrElse { mutableState.value.slotTimes }
             val medications = api.medications()
@@ -176,50 +179,60 @@ class PatientRepository(
         )
     }
 
-    suspend fun record(dose: PatientDose) {
-        if (dose.status == DoseStatus.TAKEN) return
+    suspend fun record(dose: PatientDose): Boolean {
+        if (dose.status == DoseStatus.TAKEN) return false
         if (mutableState.value.insufficientMedicationIds.contains(dose.medicationId)) {
             mutableState.value = mutableState.value.copy(error = PatientUserMessage.InventoryInsufficient)
-            return
+            return false
         }
         mutableState.value = mutableState.value.copy(updatingDoseKey = dose.key, error = null, message = null)
-        runCatching { api.recordDose(dose) }
-            .onSuccess {
-                val updated = mutableState.value.doses.map {
-                    if (it.key == dose.key) it.copy(status = DoseStatus.TAKEN) else it
-                }
-                mutableState.value = mutableState.value.copy(
-                    doses = updated,
-                    updatingDoseKey = null,
-                    message = PatientUserMessage.DoseRecorded,
-                )
-                freshnessStore.markScheduledDoseChanged()
-            }
-            .onFailure {
-                mutableState.value = mutableState.value.copy(updatingDoseKey = null, error = it.toPatientUserMessage())
-            }
+        return runCatching { api.recordDose(dose) }
+            .fold(
+                onSuccess = {
+                    val updated = mutableState.value.doses.map {
+                        if (it.key == dose.key) it.copy(status = DoseStatus.TAKEN) else it
+                    }
+                    mutableState.value = mutableState.value.copy(
+                        doses = updated,
+                        updatingDoseKey = null,
+                        message = PatientUserMessage.DoseRecorded,
+                    )
+                    freshnessStore.markScheduledDoseChanged()
+                    true
+                },
+                onFailure = {
+                    mutableState.value = mutableState.value.copy(updatingDoseKey = null, error = it.toPatientUserMessage())
+                    false
+                },
+            )
     }
 
-    suspend fun recordSlot(slot: MedicationSlot, date: LocalDate = LocalDate.now(ZoneId.of("Asia/Tokyo"))) {
-        if (mutableState.value.updatingSlot != null) return
+    suspend fun recordSlot(slot: MedicationSlot, date: LocalDate = LocalDate.now(ZoneId.of("Asia/Tokyo"))): Boolean {
+        if (mutableState.value.updatingSlot != null) return false
         mutableState.value = mutableState.value.copy(updatingSlot = slot, error = null, message = null)
-        runCatching { api.recordSlot(date.toString(), slot) }
-            .onSuccess { result ->
-                val message = when {
-                    result.updatedCount > 0 && result.insufficientCount > 0 -> PatientUserMessage.SlotPartial(result.updatedCount, result.insufficientCount)
-                    result.insufficientCount > 0 -> PatientUserMessage.InventoryInsufficient
-                    result.updatedCount > 0 -> PatientUserMessage.SlotRecorded(result.updatedCount)
-                    else -> PatientUserMessage.NoRecordableMedication
-                }
-                val updated = mutableState.value.doses.map { dose ->
-                    if (result.updatedCount > 0 && dose.slot == slot && dose.status != DoseStatus.TAKEN && !mutableState.value.insufficientMedicationIds.contains(dose.medicationId)) {
-                        dose.copy(status = DoseStatus.TAKEN)
-                    } else dose
-                }
-                mutableState.value = mutableState.value.copy(doses = updated, updatingSlot = null, message = message)
-                if (result.updatedCount > 0) freshnessStore.markScheduledDoseChanged()
-            }
-            .onFailure { error -> mutableState.value = mutableState.value.copy(updatingSlot = null, error = error.toPatientUserMessage()) }
+        return runCatching { api.recordSlot(date.toString(), slot) }
+            .fold(
+                onSuccess = { result ->
+                    val message = when {
+                        result.updatedCount > 0 && result.insufficientCount > 0 -> PatientUserMessage.SlotPartial(result.updatedCount, result.insufficientCount)
+                        result.insufficientCount > 0 -> PatientUserMessage.InventoryInsufficient
+                        result.updatedCount > 0 -> PatientUserMessage.SlotRecorded(result.updatedCount)
+                        else -> PatientUserMessage.NoRecordableMedication
+                    }
+                    val updated = mutableState.value.doses.map { dose ->
+                        if (result.updatedCount > 0 && dose.slot == slot && dose.status != DoseStatus.TAKEN && !mutableState.value.insufficientMedicationIds.contains(dose.medicationId)) {
+                            dose.copy(status = DoseStatus.TAKEN)
+                        } else dose
+                    }
+                    mutableState.value = mutableState.value.copy(doses = updated, updatingSlot = null, message = message)
+                    if (result.updatedCount > 0) freshnessStore.markScheduledDoseChanged()
+                    result.updatedCount > 0
+                },
+                onFailure = { error ->
+                    mutableState.value = mutableState.value.copy(updatingSlot = null, error = error.toPatientUserMessage())
+                    false
+                },
+            )
     }
 
     suspend fun recordPrn(medication: PatientMedication): Boolean {

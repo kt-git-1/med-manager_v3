@@ -467,7 +467,9 @@ fun PatientHomeScreen(
             confirmButton = {
                 Button(onClick = {
                     confirmDose = null
-                    scope.launch { repository.record(dose); repository.refreshTodayAfterAction() }
+                    scope.launch {
+                        if (repository.record(dose)) repository.refreshTodayAfterAction(showProgress = false)
+                    }
                 }) { Text(stringResource(R.string.patient_record)) }
             },
             dismissButton = { TextButton(onClick = { confirmDose = null }) { Text(stringResource(R.string.common_cancel)) } },
@@ -482,7 +484,7 @@ fun PatientHomeScreen(
                 Button(onClick = {
                     confirmPrn = null
                     scope.launch {
-                        if (repository.recordPrn(medication)) repository.refreshTodayAfterAction()
+                        if (repository.recordPrn(medication)) repository.refreshTodayAfterAction(showProgress = false)
                     }
                 }) { Text(stringResource(R.string.patient_prn_confirm_action)) }
             },
@@ -500,7 +502,9 @@ fun PatientHomeScreen(
             confirmButton = {
                 Button(onClick = {
                     confirmSlot = null
-                    scope.launch { repository.recordSlot(slot); repository.refreshTodayAfterAction() }
+                    scope.launch {
+                        if (repository.recordSlot(slot)) repository.refreshTodayAfterAction(showProgress = false)
+                    }
                 }) { Text(stringResource(R.string.patient_record_bulk)) }
             },
             dismissButton = { TextButton(onClick = { confirmSlot = null }) { Text(stringResource(R.string.common_cancel)) } },

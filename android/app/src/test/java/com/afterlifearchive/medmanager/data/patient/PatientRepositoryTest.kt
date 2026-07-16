@@ -223,6 +223,33 @@ class PatientRepositoryTest {
     }
 
     @Test
+    fun silentPostActionRefreshKeepsOptimisticSuccessInteractiveWhileServerReconciles() = runTest {
+        val refreshGate = CompletableDeferred<Unit>()
+        var todayCalls = 0
+        val base = FakePatientDataSource()
+        val source = object : PatientDataSource by base {
+            override suspend fun today(): List<PatientDose> {
+                todayCalls += 1
+                if (todayCalls > 1) refreshGate.await()
+                return base.today()
+            }
+        }
+        val repository = PatientRepository(source)
+        repository.loadToday()
+        assertTrue(repository.record(repository.state.value.doses.single()))
+
+        val refresh = launch { repository.refreshTodayAfterAction(showProgress = false) }
+        runCurrent()
+
+        assertEquals(DoseStatus.TAKEN, repository.state.value.doses.single().status)
+        assertEquals(PatientUserMessage.DoseRecorded, repository.state.value.message)
+        assertFalse(repository.state.value.refreshing)
+
+        refreshGate.complete(Unit)
+        refresh.join()
+    }
+
+    @Test
     fun doseDetailUsesTodayMedicationCacheWithoutAnotherRequest() = runTest {
         var medicationCalls = 0
         val expected = testMedication("med", 10.0).copy(notes = "夕食後に服用")
