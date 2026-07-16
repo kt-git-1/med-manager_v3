@@ -1,6 +1,6 @@
 # Android API and Session Contracts
 
-**Pinned reference:** `main@1cf8aef`
+**Pinned reference:** `main@3e52fb2`
 **Time zone:** `Asia/Tokyo` unless an endpoint explicitly carries another value
 **Machine dates:** `YYYY-MM-DD`; timestamps are ISO-8601
 
@@ -85,6 +85,8 @@ Medication DTO fields required by Android include `id`, `patientId`, name/dosage
 
 Schedule dose identity is `(patientId, medicationId, scheduledAt)` and the UI key is stable. Only taken records are stored; pending/missed are derived. Status ordering and aggregation follow current iOS/backend tests.
 
+At `main@3e52fb2`, single-dose creation performs history/event creation and inventory decrement concurrently, and slot-bulk recording performs event creation and inventory deltas concurrently. Caregiver push is still awaited only after those effects have succeeded. This is a latency change, not an Android wire-contract change: responses, idempotency, partial-slot counts, `insufficient_inventory` behavior and server inventory authority remain unchanged.
+
 Slot-bulk response is top-level:
 
 ```json
@@ -109,6 +111,7 @@ Slot-bulk response is top-level:
 ### Cross-screen mutation freshness
 
 - Successful writes advance monotonic domain revisions for `DOSE`, `MEDICATION` and/or `INVENTORY`; failed writes and zero-update bulk results do not. Scheduled-dose/regimen changes additionally advance `NOTIFICATION_PLAN`.
+- Patient and Caregiver Today may reconcile authoritative data silently after a fully successful mutation so the optimistic success remains interactive. Partial caregiver slot-bulk results keep visible refresh feedback because returned inventory counts are authoritative.
 - Consumer mappings are explicit: patient/caregiver Today, caregiver Medications, patient/caregiver History and caregiver Inventory observe their data domains; the notification scheduler observes only `NOTIFICATION_PLAN`, so PRN records cannot rebuild scheduled alarms.
 - A consumer owns a cursor. A new cursor is stale by definition, so first-visit and process-recreated screens fetch authoritative data even if no in-memory event survived.
 - Revision state outlives destination composition within the process. A mutation emitted before a lazy tab exists remains visible to its later-created cursor.

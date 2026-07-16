@@ -1,12 +1,12 @@
 # Android Current Gap Audit
 
 **Audit date:** 2026-07-16
-**Reference:** `main@1cf8aef`
+**Reference:** `main@3e52fb2`
 **Android branch:** `android-dev`
 
 ## 1. Executive result
 
-The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C31 formally rebased the contract from `main@1d9d19e` to `main@1cf8aef`; C32–C34 closed the three resulting Android parity gaps, C37–C41 closed fresh matched Patient History streak, Caregiver Today status and entry/auth UI-002–005, C42–C48 closed UI-101–106, C49–C56 closed the emulator-verifiable UI-201–208 matrices, and C57 passed the complete current 259-test suite on API 26/33/35 (777/777). Remaining gaps are explicitly live Firebase, physical-device evidence and Play release operations.
+The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C31 formally rebased the contract to `main@1cf8aef`; C32–C34 closed its Android parity gaps, C37–C56 closed the current emulator-verifiable UI matrices, and C57 passed 259 tests on each of API 26/33/35 (777/777). C58 then merged `main@3e52fb2` and matched its nonblocking Patient/Caregiver post-record reconciliation and overdue-delete state while preserving the new API side-effect ordering. Remaining gaps are explicitly live Firebase, physical-device evidence and Play release operations.
 
 ## 2. What is reusable
 
@@ -56,6 +56,8 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 - Patient History shows the server-defined recording streak without coupling its failure to ordinary history.
 - Both `DOSE_TAKEN` and `DOSE_MISSED` caregiver pushes route to exact History after strict validation.
 - Successful caregiver mutation plus failed refresh preserves rendered data.
+- Successful Patient and Caregiver mutation feedback remains interactive while the authoritative same-screen reconciliation runs; partial caregiver bulk inventory results retain visible refresh feedback.
+- Deleting a caregiver dose restores `MISSED` after the one-hour grace period and `PENDING` before it, pending authoritative reconciliation.
 - Server owns transactional inventory and deletion cascades.
 - Account deletion cleans server push devices before local session reset.
 

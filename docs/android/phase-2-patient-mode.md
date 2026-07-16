@@ -1,6 +1,6 @@
 # Android Phase 2: Patient Mode
 
-> **Rebaseline closure (2026-07-15):** Historical evidence below began before `main@1d9d19e`; C31–C35 advanced the pin to `main@1cf8aef` and rechecked post-record rebuilding, next-day retention, freshness, persistent tabs, patient streak and both caregiver push event types. Physical/OEM evidence remains separate.
+> **Rebaseline closure (2026-07-16):** Historical evidence below began before `main@1d9d19e`; C31–C35 advanced the pin to `main@1cf8aef`, and C58 advances it to `main@3e52fb2` with nonblocking post-record reconciliation. Physical/OEM evidence remains separate.
 
 **Status: IMPLEMENTED / VERIFICATION IN PROGRESS. This is not final iOS parity completion.**
 
@@ -174,10 +174,12 @@ This selector foundation is connected to inventory-backed production candidates 
 
 - The Today tab observes lifecycle `ON_RESUME` and reloads schedule, slot times, medications, and inventory after returning from the background.
 - Individual, bulk, and PRN success paths perform a quiet authoritative resync after their immediate UI response.
+- C58 makes that post-write resync genuinely nonblocking: the optimistic status and success message remain interactive without the cached-refresh overlay while the request is in flight. Failed and zero-update writes do not start it.
 - Quiet refresh keeps the success/partial-success message visible and retains the optimistic state if the follow-up request alone fails.
 - Initial Today loading is distinct from cached refresh: the former uses the current-iOS full loading/error states, while the latter preserves content behind a blocking `更新中...` overlay and prevents duplicate requests.
 - A failed post-write authoritative read does not reverse the mutation or replace content; it clears the overlay and publishes a separate maintenance warning for the next foreground retry.
 - Repository coverage proves a second Today fetch consumes server truth without losing the success message.
+- A delayed-response test proves silent reconciliation does not set `refreshing` or hide the accepted dose while server truth is pending.
 
 ### PT-012 complete screen states
 

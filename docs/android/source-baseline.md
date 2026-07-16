@@ -1,10 +1,10 @@
 # Android Port Source Baseline
 
-**Baseline date:** 2026-07-15
+**Baseline date:** 2026-07-16
 **Development branch:** `android-dev`
-**Reference main commit:** `1cf8aef5d214718a27175ae0e8290e079e66f922` (`Bump iOS build to 38 for production TestFlight`)
-**Previous reference:** `1d9d19e5376752d2e224560a9f2c7e950645e22b` (`Bump production TestFlight to build 36`)
-**Baseline merge checkpoint:** C31 merge commit containing `main@1cf8aef`
+**Reference main commit:** `3e52fb2f5367052bae8e664eee2c1043de76c377` (`Bump iOS build to 40 for production TestFlight`)
+**Previous reference:** `1cf8aef5d214718a27175ae0e8290e079e66f922` (`Bump iOS build to 38 for production TestFlight`)
+**Baseline merge checkpoint:** C58 merge commit `2fb4a9f` containing `main@3e52fb2`
 
 This file pins the source material used to reproduce the current product on Android. A later change on `main` does not silently change the Android contract. It starts a new rebaseline procedure.
 
@@ -73,6 +73,16 @@ The prior pinned source was `main@1d9d19e`. C31 reviewed the complete `1d9d19e..
 | Missed-dose caregiver push | The server sends privacy-minimal `type=DOSE_MISSED` payloads one hour after an unrecorded scheduled slot. iOS accepts both `DOSE_TAKEN` and `DOSE_MISSED`, validates the same patient/date/slot fields and opens caregiver History. | C34 added the strict two-type parser and identical exact History routing; `XP-002` is `IMPLEMENTED`. |
 | Public guide and release operations | Public-site guide, screenshots, cron configuration notes and release checklist changed without adding an Android runtime contract. | Preserve through the merge; no Android feature row changes solely for these files. |
 
+### C58 delta: `main@1cf8aef..3e52fb2`
+
+C58 merged and reviewed the complete eight-file API/iOS delta rather than copying isolated Swift behavior. It adds three current contracts:
+
+| Change | Current contract | Android impact |
+|---|---|---|
+| Patient post-record feedback | Individual, slot-bulk and PRN success is committed to the visible Today state immediately. The authoritative Today refresh runs afterward without replacing the usable screen with a blocking progress overlay. | Successful Android mutations now start a silent reconciliation only after a real update; failures and zero-update bulk results do not trigger a false success refresh. |
+| Caregiver post-record feedback | Individual, delete, PRN and fully successful slot-bulk mutations keep their optimistic result and success message interactive while authoritative data reloads. Partial slot-bulk remains visibly refreshing because server inventory results are authoritative. | Caregiver Today uses nonblocking same-patient reconciliation for complete success and preserves the existing visible recovery path for partial inventory results. Deleting a record restores `MISSED` when its scheduled time is over one hour past, otherwise `PENDING`, before reconciliation. |
+| Dose-write performance | API history/event and inventory effects run concurrently where independent, while caregiver push remains ordered after both succeed. Response payloads, errors, idempotency and inventory authority are unchanged. | No DTO or endpoint change. Android must not infer inventory locally; the complete API suite and typecheck are the contract gate. |
+
 ## 5. Rebaseline procedure
 
 Run this procedure whenever API or iOS behavior changes on `main`.
@@ -90,9 +100,9 @@ Run this procedure whenever API or iOS behavior changes on `main`.
 
 ## 6. Baseline acceptance checklist
 
-- [x] `android-dev` contains `main@1cf8aef` through the C31 merge checkpoint.
+- [x] `android-dev` contains `main@3e52fb2` through the C58 merge checkpoint `2fb4a9f`.
 - [x] The main delta was reviewed across API, iOS, and tests.
 - [x] Runtime/spec conflicts are explicitly identified.
-- [x] All affected Android contract tests have been updated (C32–C34).
-- [x] All affected Android implementation rows have passed recheck (C32–C35); explicitly separated physical-device evidence remains pending.
+- [x] All affected Android contract tests have been updated (C32–C34 and C58).
+- [x] All affected Android implementation rows have passed recheck (C32–C35 and C58); explicitly separated physical-device evidence remains pending.
 - [ ] Current iOS reference screenshots have been captured for every scoped state.

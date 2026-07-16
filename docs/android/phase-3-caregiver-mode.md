@@ -154,7 +154,7 @@ E05 and Gate E are `IMPLEMENTED`. Gate F now owns caregiver Today proxy actions 
 - A patient switch clears the previous patient's Today content before loading. Any failed member of the three-read snapshot produces the canonical retryable error rather than mixing stale and partial data.
 - Doses sort pending, missed and taken, then by scheduled time. Active non-archived PRN medication, insufficient-dose medication IDs and low-stock state are derived from authoritative medication/inventory responses.
 - The production Today tab now renders the iOS information hierarchy: patient header, missed warning, next action, slot-based progress, PRN entry and morning/noon/evening/bedtime timeline. Empty, no-patient, no-selection, loading and retry states use the shared caregiver copy.
-- The initial selected-patient request now reproduces the current-iOS progress plus exact `読み込み中...` state, while cached refresh and mutations use the blocking `更新中...` overlay instead of a thin inline indicator.
+- The initial selected-patient request reproduces the current-iOS progress plus exact `読み込み中...` state. Explicit cached refresh and partial slot-bulk reconciliation use the blocking `更新中...` overlay; C58 keeps fully successful post-record reconciliation interactive.
 - Today binds the shared caregiver freshness cursor across dose, medication, inventory and slot-time domains. Hidden-tab isolation remains owned by the existing lazy caregiver shell.
 - API/JVM tests cover exact paths/auth, strict response mapping, sorting/filtering/inventory aggregation and failed patient-switch isolation. Compose tests cover populated aggregation, empty navigation, no-patient and retryable failure states.
 - The full gate passes with 59/59 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
@@ -163,13 +163,14 @@ F01 is `IMPLEMENTED`; F02–F04 add the individual, bulk and PRN proxy mutations
 
 ## F02–F05 caregiver Today mutations — 2026-07-15
 
-- Individual proxy recording sends caregiver-authenticated `POST /api/patients/{patientId}/dose-records`; undo sends `DELETE` with encoded medication and scheduled-time query parameters. The local dose becomes taken-by-caregiver or pending again only after server success.
+- Individual proxy recording sends caregiver-authenticated `POST /api/patients/{patientId}/dose-records`; undo sends `DELETE` with encoded medication and scheduled-time query parameters. After server success, undo restores `MISSED` when the scheduled time is more than one hour past and `PENDING` before that boundary, then reconciles with server truth.
 - Slot recording sends `POST /api/patients/{patientId}/dose-records/slot` with the scheduled dose's Tokyo calendar date and canonical slot. Android applies no patient recording-window restriction, so the current backend caregiver exception can record older missed slots.
 - Every slot action requires the iOS-equivalent confirmation, explicitly identifies older missed records, maps complete/partial/nothing-to-record results and preserves inventory-insufficient doses.
 - PRN selection and confirmation use `POST /api/patients/{patientId}/prn-dose-records`. Known insufficient inventory disables the medication before the request; authoritative 409 inventory errors map to the same warning.
 - PRN selection now mirrors the current iOS scrollable medication-list hierarchy and copy, including patient-specific confirmation. The sheet remains open with an enabled retry action after failure and dismisses only after repository success.
 - Successful individual/slot/PRN writes publish the correct dose, inventory and scheduled-notification freshness domains. Failed requests keep prior dose state and publish no revisions.
 - Follow-up refresh now distinguishes initial loading from an in-place refresh. A transient refresh failure retains the successful local status and success message, keeps the timeline visible and adds an inline retry warning instead of replacing the screen with a fatal empty state.
+- C58 matches `main@3e52fb2`: individual, undo, PRN and complete slot-bulk success remain interactive during silent reconciliation. Partial slot-bulk keeps visible progress because its authoritative inventory outcome can differ by medication.
 - Exact method/path/body/auth, older Tokyo date behavior, partial inventory results, success/failure revisions and follow-up preservation have JVM/API coverage. Production Compose tests exercise individual record/undo, older-missed bulk confirmation, PRN confirmation and refresh-failure preservation.
 - The full gate passes with 63/63 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
 

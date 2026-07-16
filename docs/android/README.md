@@ -4,10 +4,10 @@ This directory is the source of truth for the Android port. Android work is isol
 
 ## Current baseline
 
-- Reference product: `main@1cf8aef`
-- Android baseline merge: `android-dev@1b38208`
-- Baseline date: 2026-07-14
-- Current action: execute H07 live Firebase Analytics verification when its Android Firebase values are supplied, then the Gate I physical-device and Play Internal/Closed runbook; C57 passes the complete 259-test suite on API 26/33/35 (777/777), while physical devices, Play Console access and release-owner signing remain external prerequisites
+- Reference product: `main@3e52fb2`
+- Android baseline merge: `android-dev@2fb4a9f`
+- Baseline date: 2026-07-16
+- Current action: execute H07 live Firebase Analytics verification when its Android Firebase values are supplied, then the Gate I physical-device and Play Internal/Closed runbook; C58 rebaselines current Patient/Caregiver nonblocking dose feedback and API performance ordering. Physical devices, Play Console access and release-owner signing remain external prerequisites.
 
 ## Authority order
 
