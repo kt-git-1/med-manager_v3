@@ -1,6 +1,7 @@
 package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -51,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -87,6 +90,10 @@ internal fun CaregiverHistoryScreen(
     highlightDurationMillis: Long? = 4_000,
     reportRepository: CaregiverReportRepository? = null,
     billingEnabled: Boolean = com.afterlifearchive.medmanager.BuildConfig.BILLING_ENABLED,
+    onReturnToLogin: () -> Unit = {},
+    onOpenPatients: () -> Unit = {},
+    onCreatePatient: () -> Unit = {},
+    onRetryPatients: () -> Unit = {},
 ) {
     val state by repository.state.collectAsStateWithLifecycle()
     val freshness by repository.freshness.collectAsStateWithLifecycle()
@@ -115,14 +122,25 @@ internal fun CaregiverHistoryScreen(
     }
 
     when {
-        patientState.loading && patientState.patients.isEmpty() -> HistoryCentered { CircularProgressIndicator() }
-        patientState.loadFailed -> HistoryMessage(stringResource(R.string.caregiver_data_unavailable_title), stringResource(R.string.caregiver_data_unavailable_message))
-        patientState.patients.isEmpty() -> HistoryMessage(stringResource(R.string.caregiver_no_patient_title), stringResource(R.string.caregiver_no_patient_message))
-        selectedPatient == null -> HistoryMessage(stringResource(R.string.caregiver_no_selection_title), stringResource(R.string.caregiver_no_selection_message))
-        state.loadingMonth && state.days.isEmpty() -> CaregiverHistoryLoadingState()
-        state.monthFailed -> HistoryMessage(stringResource(R.string.caregiver_data_unavailable_title), stringResource(R.string.caregiver_data_unavailable_message)) {
-            Button(onClick = { scope.launch { repository.loadMonth(selectedPatient.id, state.displayedMonth) } }) { Text(stringResource(R.string.common_retry)) }
-        }
+        patientState.loading && patientState.patients.isEmpty() -> CaregiverHistoryLoadingState()
+        patientState.loadFailed -> CaregiverDataUnavailableState(
+            enabled = enabled,
+            onRetry = onRetryPatients,
+            onReturnToLogin = onReturnToLogin,
+            testTagPrefix = "caregiver-history-patients",
+        )
+        patientState.patients.isEmpty() -> CaregiverNoPatientState(
+            enabled = enabled,
+            onCreatePatient = onCreatePatient,
+            testTagPrefix = "caregiver-history",
+        )
+        selectedPatient == null -> CaregiverPatientSelectionRequiredState(
+            enabled = enabled,
+            onOpenPatients = onOpenPatients,
+            testTagPrefix = "caregiver-history",
+            icon = Icons.Rounded.AccessTime,
+            usePillsGlyph = false,
+        )
         else -> Box(Modifier.fillMaxSize()) {
             CaregiverHistoryMonth(
                 patientName = selectedPatient.displayName,
@@ -130,6 +148,8 @@ internal fun CaregiverHistoryScreen(
                 days = state.days,
                 selectedDate = state.selectedDate,
                 dayDetail = state.dayDetail,
+                loadingMonth = state.loadingMonth && state.days.isEmpty(),
+                monthFailed = state.monthFailed,
                 loadingDay = state.loadingDay,
                 dayFailed = state.dayFailed,
                 dayRefreshFailed = state.dayRefreshFailed,
@@ -141,6 +161,7 @@ internal fun CaregiverHistoryScreen(
                 retentionDays = state.retentionDays,
                 onRetry = { scope.launch { repository.loadMonth(selectedPatient.id, state.displayedMonth) } },
                 onRetryDay = { state.selectedDate?.let { scope.launch { repository.loadDay(selectedPatient.id, it) } } },
+                onReturnToLogin = onReturnToLogin,
                 onMonth = { scope.launch { repository.loadMonth(selectedPatient.id, it) } },
                 onDate = repository::selectDate,
                 onRecordMissed = { backfillDose = it },
@@ -176,6 +197,8 @@ private fun CaregiverHistoryMonth(
     days: List<HistoryDay>,
     selectedDate: LocalDate?,
     dayDetail: com.afterlifearchive.medmanager.data.patient.HistoryDayDetail?,
+    loadingMonth: Boolean,
+    monthFailed: Boolean,
     loadingDay: Boolean,
     dayFailed: Boolean,
     dayRefreshFailed: Boolean,
@@ -187,6 +210,7 @@ private fun CaregiverHistoryMonth(
     retentionDays: Int?,
     onRetry: () -> Unit,
     onRetryDay: () -> Unit,
+    onReturnToLogin: () -> Unit,
     onMonth: (YearMonth) -> Unit,
     onDate: (LocalDate) -> Unit,
     onRecordMissed: (HistoryScheduledDose) -> Unit,
@@ -217,76 +241,101 @@ private fun CaregiverHistoryMonth(
         }
         if (refreshFailed) item { CaregiverStaleDataCard("caregiver-history-stale", onRetry) }
         item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                if (allowMonthNavigation) {
-                    IconButton(onClick = { onMonth(displayedMonth.minusMonths(1)) }, modifier = Modifier.testTag("caregiver-history-previous-month")) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.caregiver_history_previous_month))
+            CaregiverHistoryMonthNavigation(
+                displayedMonth = displayedMonth,
+                currentMonth = currentMonth,
+                allowMonthNavigation = allowMonthNavigation,
+                onMonth = onMonth,
+            )
+        }
+        if (loadingMonth) {
+            item { CaregiverHistoryInlineLoading("caregiver-history-loading") }
+        } else if (monthFailed) {
+            item {
+                CaregiverDataUnavailableState(
+                    enabled = true,
+                    onRetry = onRetry,
+                    onReturnToLogin = onReturnToLogin,
+                    testTagPrefix = "caregiver-history-month",
+                    fillScreen = false,
+                )
+            }
+        } else {
+            if (retentionCutoffDate != null) item {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+                    Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(stringResource(R.string.patient_history_locked_title), fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.patient_history_locked_message, retentionDays ?: 30, retentionCutoffDate))
                     }
-                } else {
-                    Spacer(Modifier.size(44.dp))
-                }
-                Text("${displayedMonth.year}年${displayedMonth.monthValue}月", fontSize = 20.sp, lineHeight = 25.sp, fontWeight = FontWeight.Bold)
-                if (allowMonthNavigation) {
-                    IconButton(onClick = { onMonth(displayedMonth.plusMonths(1)) }, enabled = displayedMonth < currentMonth, modifier = Modifier.testTag("caregiver-history-next-month")) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = stringResource(R.string.caregiver_history_next_month))
-                    }
-                } else {
-                    Spacer(Modifier.size(44.dp))
                 }
             }
-        }
-        if (retentionCutoffDate != null) item {
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-                Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(stringResource(R.string.patient_history_locked_title), fontWeight = FontWeight.Bold)
-                    Text(stringResource(R.string.patient_history_locked_message, retentionDays ?: 30, retentionCutoffDate))
-                }
-            }
-        }
-        item {
-            HistoryCard {
+            item {
+                HistoryCard {
                     Text(stringResource(R.string.caregiver_history_calendar_title), fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.Bold)
                     Text(stringResource(R.string.caregiver_history_calendar_message), fontSize = 15.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     CaregiverCalendarContent(displayedMonth, days, selectedDate, onDate)
                     HistoryLegendRow()
-            }
-        }
-        if (selectedDate != null) {
-            item { CaregiverSelectedDaySummary(selectedDate, days.firstOrNull { it.date == selectedDate.toString() }) }
-            if (dayRefreshFailed) item { CaregiverStaleDataCard("caregiver-history-day-stale", onRetryDay) }
-            if (mutationFailed) item { Text(stringResource(R.string.caregiver_history_backfill_failed), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) }
-            if (mutationSucceeded) item { Text(stringResource(R.string.caregiver_history_backfill_success), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }
-            item { Text(selectedDate.format(DateTimeFormatter.ofPattern("M月d日 (E)", Locale.JAPANESE)), fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("caregiver-history-day-detail")) }
-            if (loadingDay) item {
-                Column(
-                    Modifier.fillMaxWidth().padding(24.dp).testTag("caregiver-history-day-loading"),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    CircularProgressIndicator()
-                    Text(stringResource(R.string.patient_today_loading), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            if (dayFailed) item { HistoryMessageCard(stringResource(R.string.caregiver_data_unavailable_message), onRetryDay) }
-            if (!loadingDay && !dayFailed && dayDetail != null) {
-                if (dayDetail.doses.isEmpty() && dayDetail.prnItems.isEmpty()) {
-                    item {
-                        HistoryMessageCard(
-                            message = stringResource(R.string.patient_history_day_empty_message),
-                            title = stringResource(R.string.patient_history_day_empty_title),
-                        )
+            if (selectedDate != null) {
+                item { CaregiverSelectedDaySummary(selectedDate, days.firstOrNull { it.date == selectedDate.toString() }) }
+                if (dayRefreshFailed) item { CaregiverStaleDataCard("caregiver-history-day-stale", onRetryDay) }
+                if (mutationFailed) item { Text(stringResource(R.string.caregiver_history_backfill_failed), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) }
+                if (mutationSucceeded) item { Text(stringResource(R.string.caregiver_history_backfill_success), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }
+                item { Text(selectedDate.format(DateTimeFormatter.ofPattern("M月d日 (E)", Locale.JAPANESE)), fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("caregiver-history-day-detail")) }
+                if (loadingDay) item { CaregiverHistoryInlineLoading("caregiver-history-day-loading") }
+                if (dayFailed) item {
+                    CaregiverDataUnavailableState(
+                        enabled = true,
+                        onRetry = onRetryDay,
+                        onReturnToLogin = onReturnToLogin,
+                        testTagPrefix = "caregiver-history-day",
+                        fillScreen = false,
+                    )
+                }
+                if (!loadingDay && !dayFailed && dayDetail != null) {
+                    if (dayDetail.doses.isEmpty() && dayDetail.prnItems.isEmpty()) {
+                        item {
+                            CaregiverHistoryDayEmptyState()
+                        }
                     }
-                }
-                items(patientHistoryTimelineItems(dayDetail), key = PatientHistoryTimelineItem::key) { item ->
-                    when (item) {
-                        is PatientHistoryTimelineItem.Scheduled -> HistoryScheduledDoseRow(item.dose, highlightedSlot == item.dose.slot, onRecordMissed, HistoryDayRowStyle.CAREGIVER)
-                        is PatientHistoryTimelineItem.Prn -> PrnHistoryRow(item.item, HistoryDayRowStyle.CAREGIVER)
+                    items(patientHistoryTimelineItems(dayDetail), key = PatientHistoryTimelineItem::key) { item ->
+                        when (item) {
+                            is PatientHistoryTimelineItem.Scheduled -> HistoryScheduledDoseRow(item.dose, highlightedSlot == item.dose.slot, onRecordMissed, HistoryDayRowStyle.CAREGIVER)
+                            is PatientHistoryTimelineItem.Prn -> PrnHistoryRow(item.item, HistoryDayRowStyle.CAREGIVER)
+                        }
                     }
                 }
             }
+            reportAction?.let { item { it() } }
         }
-        reportAction?.let { item { it() } }
         item { Spacer(Modifier.height(24.dp)) }
+    }
+}
+
+@Composable
+private fun CaregiverHistoryMonthNavigation(
+    displayedMonth: YearMonth,
+    currentMonth: YearMonth,
+    allowMonthNavigation: Boolean,
+    onMonth: (YearMonth) -> Unit,
+) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+        if (allowMonthNavigation) {
+            IconButton(onClick = { onMonth(displayedMonth.minusMonths(1)) }, modifier = Modifier.testTag("caregiver-history-previous-month")) {
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.caregiver_history_previous_month))
+            }
+        } else {
+            Spacer(Modifier.size(44.dp))
+        }
+        Text("${displayedMonth.year}年${displayedMonth.monthValue}月", fontSize = 20.sp, lineHeight = 25.sp, fontWeight = FontWeight.Bold)
+        if (allowMonthNavigation) {
+            IconButton(onClick = { onMonth(displayedMonth.plusMonths(1)) }, enabled = displayedMonth < currentMonth, modifier = Modifier.testTag("caregiver-history-next-month")) {
+                Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = stringResource(R.string.caregiver_history_next_month))
+            }
+        } else {
+            Spacer(Modifier.size(44.dp))
+        }
     }
 }
 
@@ -506,13 +555,26 @@ private fun HistoryCard(content: @Composable androidx.compose.foundation.layout.
 }
 
 @Composable
-private fun HistoryMessageCard(message: String, onRetry: (() -> Unit)? = null, title: String? = null) {
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            title?.let { Text(it, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium) }
-            Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (onRetry != null) Button(onClick = onRetry) { Text(stringResource(R.string.common_retry)) }
-        }
+private fun CaregiverHistoryDayEmptyState() {
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 30.dp).testTag("caregiver-history-day-empty"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(stringResource(R.string.patient_history_day_empty_title), fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.patient_history_day_empty_message), fontSize = 20.sp, lineHeight = 27.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+private fun CaregiverHistoryInlineLoading(testTag: String) {
+    Column(
+        Modifier.fillMaxWidth().padding(24.dp).testTag(testTag),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        CircularProgressIndicator(modifier = Modifier.size(38.dp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f), strokeWidth = 4.dp)
+        Text(stringResource(R.string.patient_today_loading), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
     }
 }
 
@@ -530,18 +592,18 @@ private fun CaregiverHistoryUpdatingOverlay() {
         Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.2f)).clickable(onClick = {}).testTag("caregiver-history-updating"),
         contentAlignment = Alignment.Center,
     ) {
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))) {
-            Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                CircularProgressIndicator(modifier = Modifier.size(44.dp))
-                Text(stringResource(R.string.patient_today_updating), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+        ) {
+            Column(Modifier.width(172.dp).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Image(painter = painterResource(R.drawable.app_image), contentDescription = null, modifier = Modifier.size(64.dp))
+                CircularProgressIndicator(modifier = Modifier.size(38.dp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f), strokeWidth = 4.dp)
+                Text(stringResource(R.string.patient_today_updating), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
-}
-
-@Composable
-private fun HistoryMessage(title: String, message: String, action: (@Composable () -> Unit)? = null) {
-    HistoryCentered { Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center); Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center); action?.invoke() }
 }
 
 @Composable

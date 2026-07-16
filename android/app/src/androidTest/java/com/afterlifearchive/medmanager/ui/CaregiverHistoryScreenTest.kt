@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertTextEquals
@@ -45,6 +47,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.CompletableDeferred
 import androidx.core.view.WindowCompat
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.unit.Density
 
 class CaregiverHistoryScreenTest {
     @get:Rule
@@ -54,7 +57,7 @@ class CaregiverHistoryScreenTest {
     fun monthSelectionShowsDayDetailAndConfirmationProtectedBackfill() {
         val date = LocalDate.of(2026, 7, 15)
         val (repository, source) = repository(date)
-        setContent(repository)
+        val activity = setContent(repository)
 
         composeRule.onNodeWithText("服薬履歴").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-history-day-$date").performClick()
@@ -63,6 +66,7 @@ class CaregiverHistoryScreenTest {
         composeRule.onNodeWithText("薬A 1錠").assertIsDisplayed()
         composeRule.onNodeWithTag("history-backfill-med-1").performClick()
         composeRule.onNodeWithText("薬Aを服用済みとして記録します。").assertIsDisplayed()
+        captureDevice(activity, "android-ui-206-caregiver-history-backfill-confirm-light-matched.png")
         composeRule.onNodeWithTag("caregiver-history-backfill-confirm").performClick()
         composeRule.waitForIdle()
 
@@ -119,14 +123,14 @@ class CaregiverHistoryScreenTest {
             }
             override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
         }, MutationFreshnessStore())
-        setContent(repository)
+        val activity = setContent(repository)
         composeRule.waitUntil(5_000) { repository.state.value.monthLoaded }
 
         composeRule.onNodeWithTag("caregiver-history-day-$date").performClick()
         composeRule.waitUntil(5_000) { repository.state.value.loadingDay }
         composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("caregiver-history-day-loading"))
         composeRule.onNodeWithText("読み込み中...").assertIsDisplayed()
-        writeScreenshotFixture(composeRule.onRoot().captureToImage(), "android-ui-206-caregiver-history-day-loading-light.png")
+        captureDevice(activity, "android-ui-206-caregiver-history-day-loading-light-matched.png")
         dayGate.complete(Unit)
     }
 
@@ -140,7 +144,7 @@ class CaregiverHistoryScreenTest {
             override suspend fun day(patientId: String, date: LocalDate) = HistoryDayDetail(date.toString(), emptyList(), emptyList())
             override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
         }, MutationFreshnessStore())
-        setContent(repository)
+        val activity = setContent(repository)
         composeRule.waitUntil(5_000) { repository.state.value.monthLoaded }
 
         composeRule.onNodeWithTag("caregiver-history-day-$date").performClick()
@@ -149,7 +153,7 @@ class CaregiverHistoryScreenTest {
         composeRule.onNodeWithText("予定がありません").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(androidx.compose.ui.test.hasText("この日の服用予定はありません"))
         composeRule.onNodeWithText("この日の服用予定はありません").assertIsDisplayed()
-        writeScreenshotFixture(composeRule.onRoot().captureToImage(), "android-ui-206-caregiver-history-day-empty-light.png")
+        captureDevice(activity, "android-ui-206-caregiver-history-day-empty-light-matched.png")
     }
 
     @Test
@@ -166,14 +170,14 @@ class CaregiverHistoryScreenTest {
             }
             override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
         }, MutationFreshnessStore())
-        setContent(repository)
+        val activity = setContent(repository)
         composeRule.waitUntil(5_000) { repository.state.value.monthLoaded }
 
         composeRule.onNodeWithTag("caregiver-history-day-$date").performClick()
         composeRule.waitUntil(5_000) { repository.state.value.dayFailed }
         composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(androidx.compose.ui.test.hasText("再試行"))
         composeRule.onNodeWithText("通信状況を確認して", substring = true).assertIsDisplayed()
-        writeScreenshotFixture(composeRule.onRoot().captureToImage(), "android-ui-206-caregiver-history-day-error-light.png")
+        captureDevice(activity, "android-ui-206-caregiver-history-day-error-light-matched.png")
         composeRule.onNodeWithText("再試行").performClick()
         composeRule.waitUntil(5_000) { dayCalls >= 2 }
     }
@@ -200,6 +204,72 @@ class CaregiverHistoryScreenTest {
     }
 
     @Test
+    fun patientListFailureUsesCurrentCaregiverRecoveryState() {
+        var retried = false
+        var returnedToLogin = false
+        val activity = setScreen(
+            repository = emptyRepository(),
+            patientState = CaregiverPatientState(hasLoaded = true, loadFailed = true),
+            onRetryPatients = { retried = true },
+            onReturnToLogin = { returnedToLogin = true },
+        )
+
+        composeRule.onNodeWithTag("caregiver-history-patients-unavailable").assertIsDisplayed()
+        captureDevice(activity, "android-ui-206-caregiver-history-patient-error-light-matched.png")
+        composeRule.onNodeWithTag("caregiver-history-patients-retry").performClick()
+        composeRule.onNodeWithTag("caregiver-history-patients-return-login").performClick()
+        assertTrue(retried)
+        assertTrue(returnedToLogin)
+    }
+
+    @Test
+    fun noPatientUsesCurrentCaregiverRegistrationState() {
+        var createPatient = false
+        val activity = setScreen(
+            repository = emptyRepository(),
+            patientState = CaregiverPatientState(hasLoaded = true),
+            onCreatePatient = { createPatient = true },
+        )
+
+        composeRule.onNodeWithTag("caregiver-history-no-patient").assertIsDisplayed()
+        captureDevice(activity, "android-ui-206-caregiver-history-no-patient-light-matched.png")
+        composeRule.onNodeWithTag("caregiver-history-create-patient").performClick()
+        assertTrue(createPatient)
+    }
+
+    @Test
+    fun patientSelectionUsesHistoryIdentityAndSettingsRoute() {
+        var openedPatients = false
+        val patient = CaregiverPatient("p1", "さくら")
+        val activity = setScreen(
+            repository = emptyRepository(),
+            patientState = CaregiverPatientState(patients = listOf(patient), hasLoaded = true),
+            onOpenPatients = { openedPatients = true },
+        )
+
+        composeRule.onNodeWithTag("caregiver-history-selection-required").assertIsDisplayed()
+        captureDevice(activity, "android-ui-206-caregiver-history-selection-light-matched.png")
+        composeRule.onNodeWithTag("caregiver-history-open-patients").performClick()
+        assertTrue(openedPatients)
+    }
+
+    @Test
+    fun initialMonthFailureKeepsHeaderAndUsesCurrentRecoveryCard() {
+        val repository = CaregiverHistoryRepository(object : CaregiverHistoryDataSource {
+            override suspend fun month(patientId: String, yearMonth: YearMonth): List<HistoryDay> = error("offline")
+            override suspend fun day(patientId: String, date: LocalDate) = HistoryDayDetail(date.toString(), emptyList(), emptyList())
+            override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
+        }, MutationFreshnessStore())
+        val activity = setContent(repository)
+
+        composeRule.waitUntil(5_000) { repository.state.value.monthFailed }
+        composeRule.onNodeWithText("服薬履歴").assertIsDisplayed()
+        composeRule.onNodeWithText(repository.state.value.displayedMonth.let { "${it.year}年${it.monthValue}月" }).assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-history-month-unavailable").assertIsDisplayed()
+        captureDevice(activity, "android-ui-206-caregiver-history-month-error-light-matched.png")
+    }
+
+    @Test
     fun initialLoadShowsIosLoadingMessage() {
         val gate = CompletableDeferred<Unit>()
         val source = object : CaregiverHistoryDataSource {
@@ -208,10 +278,13 @@ class CaregiverHistoryScreenTest {
             override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
         }
         val repository = CaregiverHistoryRepository(source, MutationFreshnessStore())
-        setContent(repository)
+        val activity = setContent(repository)
 
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-history-loading").fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithText("服薬履歴").assertIsDisplayed()
+        composeRule.onNodeWithText(repository.state.value.displayedMonth.let { "${it.year}年${it.monthValue}月" }).assertIsDisplayed()
         composeRule.onNodeWithText("読み込み中...").assertIsDisplayed()
+        captureDevice(activity, "android-ui-206-caregiver-history-month-loading-light-matched.png")
         gate.complete(Unit)
     }
 
@@ -247,9 +320,13 @@ class CaregiverHistoryScreenTest {
         composeRule.onNodeWithTag("caregiver-history-weekday-0").assertTextEquals("月")
         composeRule.onNodeWithTag("caregiver-history-weekday-6").assertTextEquals("日")
         composeRule.onNodeWithText("日付の下の点は、朝・昼・夜・眠前の服薬状況です。").assertIsDisplayed()
+        captureDevice(activity, "android-ui-206-caregiver-history-populated-top-light-matched.png")
         composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasText("6月10日（水）"))
         composeRule.onNodeWithText("6月10日（水）").assertIsDisplayed()
         composeRule.onNodeWithText("1/3回分 記録済み").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("history-dose-evening"))
+        composeRule.onNodeWithTag("history-dose-evening").assertIsDisplayed()
+        captureDevice(activity, "android-ui-206-caregiver-history-populated-lower-light-matched.png")
         captureDevice(activity, "android-ui-206-caregiver-history-source-calibrated-light.png")
     }
 
@@ -277,7 +354,7 @@ class CaregiverHistoryScreenTest {
         val date = LocalDate.of(2026, 7, 15)
         val (repository, source) = repository(date)
         source.recordGate = CompletableDeferred()
-        setContent(repository)
+        val activity = setContent(repository)
         composeRule.waitUntil(5_000) { repository.state.value.dayDetail != null }
         composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("history-backfill-med-1"))
         composeRule.onNodeWithTag("history-backfill-med-1").performClick()
@@ -285,14 +362,85 @@ class CaregiverHistoryScreenTest {
 
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-history-updating").fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithText("更新中...").assertIsDisplayed()
+        captureDevice(activity, "android-ui-206-caregiver-history-updating-light-matched.png")
         source.recordGate?.complete(Unit)
     }
 
-    private fun setContent(repository: CaregiverHistoryRepository) {
+    @Test
+    fun populatedHistoryDarkModeRemainsReachable() {
+        val repository = marketingRepository()
+        val patient = CaregiverPatient("p1", "田中 花子")
+        val activity = setScreen(repository, CaregiverPatientState(listOf(patient), patient.id), darkTheme = true)
+
+        composeRule.onNodeWithText("2026年6月").assertIsDisplayed()
+        captureDevice(activity, "android-ui-206-caregiver-history-populated-dark-matched.png", darkTheme = true)
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("history-dose-evening"))
+        composeRule.onNodeWithTag("history-dose-evening").assertIsDisplayed()
+    }
+
+    @Test
+    fun populatedHistoryTwoHundredPercentKeepsTimelineReachable() {
+        val repository = marketingRepository()
+        val patient = CaregiverPatient("p1", "田中 花子")
+        val activity = setScreen(repository, CaregiverPatientState(listOf(patient), patient.id), fontScale = 2f)
+
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("history-dose-evening"))
+        composeRule.onNodeWithTag("history-dose-evening").assertIsDisplayed()
+        captureDevice(activity, "android-ui-206-caregiver-history-populated-font-2.0-matched.png")
+    }
+
+    private fun setContent(repository: CaregiverHistoryRepository): Activity {
         val patient = CaregiverPatient("p1", "さくら")
+        return setScreen(repository, CaregiverPatientState(listOf(patient), patient.id))
+    }
+
+    private fun setScreen(
+        repository: CaregiverHistoryRepository,
+        patientState: CaregiverPatientState,
+        darkTheme: Boolean = false,
+        fontScale: Float = 1f,
+        onReturnToLogin: () -> Unit = {},
+        onOpenPatients: () -> Unit = {},
+        onCreatePatient: () -> Unit = {},
+        onRetryPatients: () -> Unit = {},
+    ): Activity {
+        lateinit var activity: Activity
         composeRule.setContent {
-            MedicationAppTheme {
-                CaregiverHistoryScreen(repository, CaregiverPatientState(listOf(patient), patient.id), true, highlightDurationMillis = null)
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
+                MedicationAppTheme(darkTheme = darkTheme) {
+                    activity = checkNotNull(LocalActivity.current)
+                    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding()) {
+                        CaregiverHistoryScreen(
+                            repository = repository,
+                            patientState = patientState,
+                            enabled = true,
+                            highlightDurationMillis = null,
+                            billingEnabled = false,
+                            onReturnToLogin = onReturnToLogin,
+                            onOpenPatients = onOpenPatients,
+                            onCreatePatient = onCreatePatient,
+                            onRetryPatients = onRetryPatients,
+                        )
+                    }
+                }
+            }
+        }
+        return activity
+    }
+
+    private fun emptyRepository() = CaregiverHistoryRepository(object : CaregiverHistoryDataSource {
+        override suspend fun month(patientId: String, yearMonth: YearMonth) = emptyList<HistoryDay>()
+        override suspend fun day(patientId: String, date: LocalDate) = HistoryDayDetail(date.toString(), emptyList(), emptyList())
+        override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
+    }, MutationFreshnessStore())
+
+    private fun marketingRepository(): CaregiverHistoryRepository {
+        val date = LocalDate.of(2026, 6, 10)
+        return CaregiverHistoryRepository(MarketingHistorySource(date), MutationFreshnessStore()).also { repository ->
+            runBlocking {
+                repository.loadMonth("p1", YearMonth.of(2026, 6))
+                repository.selectDate(date)
+                repository.loadDay("p1", date)
             }
         }
     }
@@ -303,11 +451,11 @@ class CaregiverHistoryScreenTest {
     }
 
     @Suppress("DEPRECATION")
-    private fun captureDevice(activity: Activity, filename: String) {
+    private fun captureDevice(activity: Activity, filename: String, darkTheme: Boolean = false) {
         composeRule.runOnIdle {
             WindowCompat.setDecorFitsSystemWindows(activity.window, false)
             activity.window.statusBarColor = android.graphics.Color.TRANSPARENT
-            WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = true
+            WindowCompat.getInsetsController(activity.window, activity.window.decorView).isAppearanceLightStatusBars = !darkTheme
         }
         SystemClock.sleep(250)
         writeDeviceScreenshotFixture(filename)

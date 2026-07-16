@@ -329,6 +329,14 @@ This selector foundation is connected to inventory-backed production candidates 
 - Native Back/dismissal, symbols, switches and confirmation geometry remain platform conventions. iOS caps its root at `.xLarge`; Android keeps all actions scroll-reachable at true 200%. Physical TalkBack, OEM and real-API verification remain Gate I.
 - Focused Inventory Detail coverage passes 25/25 on API 35. The expanded API-35 suite passes 243/243, JVM passes 186/186, and Debug assembly/Lint pass.
 
+## 2026-07-16 C54 Caregiver History calibration
+
+- Fourteen deterministic current-iOS/Android pairs under `evidence/c54-20260716/` cover patient-list failure, no patient, selection required, month loading/failure, populated calendar/timeline, day loading/empty/failure, missed-dose confirmation and blocking update in light mode plus populated dark and adaptive states.
+- Patient lifecycle states now use the shared current caregiver recovery, registration and settings routes. Month loading/failure preserves the caregiver identity and displayed month; day failure exposes Retry plus return-to-login, and day empty content uses the current unboxed centered hierarchy.
+- The C16/C28 Monday-first calendar, ordered markers, selected-day summary, timestamp/name-sorted scheduled/PRN rows, recorder attribution, backfill and notification highlight contracts remain intact. The update overlay now uses the production app illustration.
+- Native symbols and alert geometry remain platform conventions. iOS caps its root at `.xLarge`; Android keeps the timeline reachable at true 200%. Physical TalkBack, OEM and real-API verification remain Gate I.
+- Focused History coverage passes 17/17 on API 35. The expanded API-35 suite passes 249/249, JVM passes 186/186, and Debug assembly/Lint pass.
+
 ## Phase 2D notification routing and patient tutorial
 
 ### XP-002 exact notification destination

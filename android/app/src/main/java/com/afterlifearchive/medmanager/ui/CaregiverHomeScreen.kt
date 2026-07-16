@@ -327,7 +327,16 @@ private fun CaregiverTabContent(
             )
         } else CaregiverFeatureLanding(tab, state, repository, visible)
         CaregiverTab.HISTORY -> if (historyRepository != null) {
-            CaregiverHistoryScreen(historyRepository, state, visible, reportRepository = reportRepository)
+            CaregiverHistoryScreen(
+                repository = historyRepository,
+                patientState = state,
+                enabled = visible,
+                reportRepository = reportRepository,
+                onReturnToLogin = onLogout,
+                onOpenPatients = onOpenPatients,
+                onCreatePatient = onCreatePatient,
+                onRetryPatients = onRetryPatients,
+            )
         } else CaregiverFeatureLanding(tab, state, repository, visible)
     }
 }

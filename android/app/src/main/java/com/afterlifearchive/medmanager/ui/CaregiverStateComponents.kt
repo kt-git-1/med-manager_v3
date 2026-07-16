@@ -42,6 +42,7 @@ internal fun CaregiverDataUnavailableState(
     onRetry: () -> Unit,
     onReturnToLogin: () -> Unit,
     testTagPrefix: String,
+    fillScreen: Boolean = true,
 ) {
     CaregiverBlockingStateCard(
         icon = Icons.Rounded.WifiOff,
@@ -49,6 +50,7 @@ internal fun CaregiverDataUnavailableState(
         title = stringResource(R.string.caregiver_data_unavailable_title),
         message = stringResource(R.string.caregiver_data_unavailable_message),
         testTag = "$testTagPrefix-unavailable",
+        fillScreen = fillScreen,
     ) {
         Button(
             onClick = onRetry,
@@ -131,10 +133,12 @@ private fun CaregiverBlockingStateCard(
     testTag: String,
     iconIsError: Boolean = false,
     usePillsGlyph: Boolean = false,
+    fillScreen: Boolean = true,
     actions: @Composable () -> Unit,
 ) {
+    val containerModifier = if (fillScreen) Modifier.fillMaxSize() else Modifier.fillMaxWidth()
     Box(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 24.dp).testTag(testTag),
+        modifier = containerModifier.background(MaterialTheme.colorScheme.background).padding(horizontal = 24.dp, vertical = if (fillScreen) 0.dp else 8.dp).testTag(testTag),
         contentAlignment = Alignment.Center,
     ) {
         val shape = RoundedCornerShape(20.dp)
