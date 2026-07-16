@@ -6,7 +6,7 @@
 
 ## 1. Executive result
 
-The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C31 formally rebased the contract from `main@1d9d19e` to `main@1cf8aef`; C32–C34 closed the three resulting Android parity gaps, C35/C36 passed the recorded cross-API matrix, C37–C41 closed fresh matched Patient History streak, Caregiver Today status and entry/auth UI-002–005, C42–C48 closed UI-101–106, and C49–C56 close the emulator-verifiable UI-201–208 matrices. Remaining gaps are explicitly the expanded cross-API rerun, live Firebase, physical-device evidence and Play release operations.
+The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C31 formally rebased the contract from `main@1d9d19e` to `main@1cf8aef`; C32–C34 closed the three resulting Android parity gaps, C37–C41 closed fresh matched Patient History streak, Caregiver Today status and entry/auth UI-002–005, C42–C48 closed UI-101–106, C49–C56 closed the emulator-verifiable UI-201–208 matrices, and C57 passed the complete current 259-test suite on API 26/33/35 (777/777). Remaining gaps are explicitly live Firebase, physical-device evidence and Play release operations.
 
 ## 2. What is reusable
 
@@ -75,9 +75,8 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 
 ## 6. Next execution order
 
-1. Rerun the expanded 259-test instrumentation suite on API 26, API 33 and API 35. C56 passes 259/259 on API 35; the older C36 cross-API checkpoint remains 187/187 per API (561/561).
-2. H07 supply Android Firebase values and capture privacy-reviewed DebugView, Realtime, Events and Explore evidence.
-3. I02 complete physical FCM/Doze/process-death, TalkBack/font/dark/rotation and browser/share checks.
-4. Complete signed Play closed-test/release gates and perform the final main rebaseline.
+1. H07 supply Android Firebase values and capture privacy-reviewed DebugView, Realtime, Events and Explore evidence.
+2. I02 complete physical FCM/Doze/process-death, TalkBack/font/dark/rotation and browser/share checks.
+3. Complete signed Play closed-test/release gates and perform the final main rebaseline.
 
 Do not claim a rebaselined row complete until its new-baseline contract and evidence pass.

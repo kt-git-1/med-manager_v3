@@ -155,6 +155,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C54 Close the UI-206 Caregiver History current-runtime residual with patient failure/no-patient/selection, month loading/failure, populated calendar/timeline, day loading/empty/failure, backfill confirmation and updating light plus dark and largest-text pairs; preserve header/month context through loading and recovery.
 - [x] C55 Reconcile UI-207 PDF reachability against current iOS, prove the initial-release billing-off and Patient-mode absence contracts, replace the clipped horizontal preset strip with the native menu pattern, align exact copy and two-page A4 report semantics, recover from on-device generation/share failures, and record lock/picker/dark-200%/render evidence.
 - [x] C56 Reconcile UI-208 Settings against current `main@3e52fb2`: move zero-patient creation behind its CTA/sheet, disable blank submission, add the immediate post-create code guide, replace multiple-patient radio rows with a menu and missing-selection guidance, suppress patient-scoped push at zero patients, and refresh light/dark/200% evidence.
+- [x] C57 Rerun the complete expanded 259-test suite on API 26/33/35; repair compact-viewport lazy-list reachability assumptions without narrowing UI behavior, then pass 777/777 plus JVM 186/186, Lint and Debug/Release assembly.
 - [x] C34 Accept strict caregiver `DOSE_MISSED` payloads alongside `DOSE_TAKEN` and verify identical exact-date/slot History routing.
 - [x] C35 Rerun the full API/JVM/lint/build/API-35 matrix and close all C31 `RECHECK_REQUIRED` rows.
 - [ ] C06 Complete full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification.
@@ -226,7 +227,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 - [x] Final C35 rebaseline fetch: `origin/main@1cf8aef` exactly matches the C31 pin and is the second parent already merged into `android-dev` (2026-07-15); no additional merge required.
 - [x] Resolve all `RECHECK_REQUIRED` rows; remaining `PARTIAL` rows are explicitly external/visual/device release gates.
-- [x] Current cross-version API 26/33/35 matrix passes the expanded suite at 187/187 per API (561/561) with 0 skipped/failed after the C31–C35 rebaseline. Historical API-35 large-phone coverage also passes 108/108; physical devices remain separate.
+- [x] Current cross-version API 26/33/35 matrix passes the complete suite at 259/259 per API (777/777) with 0 skipped/failed after C57. Historical API-35 large-phone coverage also passes 108/108; physical devices remain separate.
 - [ ] Physical-device matrix.
 - [ ] Notification Doze/delivery/tap/process-death tests.
 - [x] Automated font 2.0, dark mode, compact/standard/large phone, semantics and rotation/configuration tests.
@@ -244,4 +245,4 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Immediate next item
 
-Execute the **Gate I physical-device and Play release matrix** using `play-release-runbook.md` once its external inputs exist. C56 closes the final emulator-verifiable UI-208 residual, so the next local checkpoint is the expanded 259-test API 26/33/35 rerun. Production Firebase values, a release-owner-managed upload key, Play Console access and physical devices remain required; do not mark device-only rows verified from emulator evidence.
+Execute the **Gate I physical-device and Play release matrix** using `play-release-runbook.md` once its external inputs exist. C57 closes the expanded 259-test API 26/33/35 rerun at 777/777. Production Firebase values, a release-owner-managed upload key, Play Console access and physical devices remain required; do not mark device-only rows verified from emulator evidence.
