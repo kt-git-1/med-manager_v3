@@ -50,19 +50,29 @@ export async function createDoseRecordIdempotent(
   const withinTime =
     record.takenAt.getTime() <= record.scheduledAt.getTime() + DOSE_MISSED_WINDOW_MS;
 
-  const doseEvent = await createDoseRecordEvent({
-    patientId: record.patientId,
-    scheduledAt: record.scheduledAt,
-    takenAt: record.takenAt,
-    withinTime,
-    displayName: patient.displayName,
-    medicationName: medication?.name,
-    isPrn: medication?.isPrn ?? false
-  });
-
-  // Await notification work so serverless runtimes do not stop before FCM send completes.
   const dateKey = getLocalDateKey(record.scheduledAt, DEFAULT_TIMEZONE);
   const slot = resolveSlot(record.scheduledAt.toISOString(), DEFAULT_TIMEZONE);
+  const [doseEvent] = await Promise.all([
+    createDoseRecordEvent({
+      patientId: record.patientId,
+      scheduledAt: record.scheduledAt,
+      takenAt: record.takenAt,
+      withinTime,
+      displayName: patient.displayName,
+      medicationName: medication?.name,
+      isPrn: medication?.isPrn ?? false
+    }),
+    medication
+      ? applyInventoryDeltaForDoseRecord({
+          patientId: record.patientId,
+          medicationId: record.medicationId,
+          delta: -medication.doseCountPerIntake,
+          reason: "TAKEN_CREATE"
+        })
+      : Promise.resolve()
+  ]);
+
+  // Preserve the existing guarantee that push is attempted only after the inventory update.
   await notifyCaregiversOfDoseTaken({
     patientId: record.patientId,
     displayName: patient.displayName,
@@ -75,25 +85,18 @@ export async function createDoseRecordIdempotent(
     isPrn: medication?.isPrn ?? false
   });
 
-  if (medication) {
-    await applyInventoryDeltaForDoseRecord({
-      patientId: record.patientId,
-      medicationId: record.medicationId,
-      delta: -medication.doseCountPerIntake,
-      reason: "TAKEN_CREATE"
-    });
-  }
-
   return record;
 }
 
 export async function deleteDoseRecord(key: DoseRecordKey): Promise<DoseRecord | null> {
-  const existing = await getDoseRecordByKey(key);
+  const [existing, medication] = await Promise.all([
+    getDoseRecordByKey(key),
+    getMedicationRecordForPatient(key.patientId, key.medicationId)
+  ]);
   if (!existing) {
     return null;
   }
   const deleted = await deleteDoseRecordByKey(key);
-  const medication = await getMedicationRecordForPatient(existing.patientId, existing.medicationId);
   if (medication) {
     await applyInventoryDeltaForDoseRecord({
       patientId: existing.patientId,
