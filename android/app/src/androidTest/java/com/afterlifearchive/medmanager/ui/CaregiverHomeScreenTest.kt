@@ -7,10 +7,12 @@ import androidx.core.view.WindowCompat
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -151,7 +153,8 @@ class CaregiverHomeScreenTest {
         composeRule.onNodeWithTag("caregiver-tab-today").assertIsDisplayed()
         composeRule.onNodeWithText("さくらさんを見守り中").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
-        composeRule.onNodeWithTag("caregiver-create-submit").assertIsNotEnabled()
+        composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-linking-code-issue"))
+        composeRule.onNodeWithTag("caregiver-linking-code-issue").assertIsNotEnabled()
         composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-logout"))
         composeRule.onNodeWithTag("caregiver-logout").assertIsEnabled()
     }
@@ -162,11 +165,12 @@ class CaregiverHomeScreenTest {
         composeRule.waitUntil(5_000) { repository.state.value.hasLoaded && !repository.state.value.loading }
 
         composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
-        composeRule.onNodeWithTag("caregiver-create-submit").assertIsEnabled()
+        composeRule.onNodeWithTag("caregiver-register-patient").performClick()
+        composeRule.onNodeWithTag("caregiver-create-sheet").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-create-submit").assertIsNotEnabled()
         composeRule.onNodeWithTag("caregiver-create-name").performTextReplacement("x".repeat(51))
         composeRule.onNodeWithTag("caregiver-create-name").assertTextContains("x".repeat(51))
-        composeRule.onNodeWithTag("caregiver-settings-list")
-            .performScrollToNode(hasTestTag("caregiver-create-submit"))
+        composeRule.onNodeWithTag("caregiver-create-submit").assertIsEnabled()
         composeRule.onNodeWithTag("caregiver-create-submit").performClick()
         composeRule.waitUntil(5_000) { repository.state.value.createError == CaregiverCreateError.TOO_LONG }
         composeRule.onNodeWithTag("caregiver-create-error", useUnmergedTree = true).assertIsDisplayed()
@@ -208,7 +212,80 @@ class CaregiverHomeScreenTest {
         composeRule.onNodeWithText("見守る方の名前を登録").assertIsDisplayed()
         composeRule.onNodeWithText("連携コードを発行").assertIsDisplayed()
         composeRule.onNodeWithText("本人モードの端末でコードを入力").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-register-patient").assertIsDisplayed()
         writeScreenshotFixture(composeRule.onRoot().captureToImage(), "android-ui-208-caregiver-settings-empty-light.png")
+    }
+
+    @Test
+    fun noPatientStateOmitsPatientScopedPushSettings() {
+        val storage = TestSelectionStorage()
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val repository = CaregiverPatientRepository(CaregiverPatientDataSource { emptyList() }, selection)
+        val pushRepository = CaregiverPushRepository(
+            dataSource = object : CaregiverPushDataSource {
+                override suspend fun register(token: String) = Unit
+                override suspend fun unregister(token: String) = Unit
+            },
+            tokenSource = object : CaregiverPushTokenSource {
+                override val configured = true
+                override fun setAutoInitEnabled(enabled: Boolean) = Unit
+                override suspend fun token() = "fixture-token"
+            },
+            storage = TestPushStorage(),
+        )
+        composeRule.setContent {
+            MedicationAppTheme { CaregiverHomeScreen(repository, pushRepository = pushRepository, tutorialEnabled = false) }
+        }
+        composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onAllNodesWithTag("caregiver-push-settings").assertCountEquals(0)
+    }
+
+    @Test
+    fun multiplePatientsUseMenuAndExplainMissingSelection() {
+        val (repository, _) = setContent(listOf(CaregiverPatient("p1", "さくら"), CaregiverPatient("p2", "ゆうき")))
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-patient-picker").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-settings-selection-required").assertIsDisplayed()
+        composeRule.onNodeWithText("上のプルダウンから患者を選んでください").assertIsDisplayed()
+        writeDeviceScreenshotFixture("android-ui-208-caregiver-settings-selection-light-matched.png")
+
+        composeRule.onNodeWithTag("caregiver-patient-picker").performClick()
+        composeRule.onNodeWithTag("caregiver-patient-p2").performClick()
+        composeRule.onNodeWithTag("caregiver-patient-picker").assertTextContains("ゆうき")
+        composeRule.onAllNodesWithTag("caregiver-settings-selection-required").assertCountEquals(0)
+        composeRule.runOnIdle { assertEquals("p2", repository.state.value.selectedPatientId) }
+    }
+
+    @Test
+    fun successfulCreationClosesSheetAndOffersImmediateCodeIssue() {
+        val storage = TestSelectionStorage()
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val repository = CaregiverPatientRepository(
+            object : CaregiverPatientDataSource {
+                override suspend fun listPatients() = emptyList<CaregiverPatient>()
+                override suspend fun createPatient(displayName: String) = CaregiverPatient("created", displayName)
+                override suspend fun issueLinkingCode(patientId: String) = CaregiverLinkingCode("123456", "2026-07-16T12:00:00Z")
+            },
+            selection,
+        )
+        composeRule.setContent { MedicationAppTheme { CaregiverHomeScreen(repository, tutorialEnabled = false) } }
+        composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-register-patient").performClick()
+        composeRule.onNodeWithTag("caregiver-create-sheet").assertIsDisplayed()
+        writeDeviceScreenshotFixture("android-ui-208-caregiver-create-sheet-light-matched.png")
+        composeRule.onNodeWithTag("caregiver-create-name").performTextInput("さくら")
+        composeRule.onNodeWithTag("caregiver-create-submit").performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.selectedPatientId == "created" }
+        composeRule.onAllNodesWithTag("caregiver-create-sheet").assertCountEquals(0)
+        composeRule.onNodeWithTag("caregiver-post-create-guide").assertIsDisplayed()
+        composeRule.onNodeWithText("次は連携コードを発行").assertIsDisplayed()
+        writeDeviceScreenshotFixture("android-ui-208-caregiver-post-create-guide-light-matched.png")
+
+        composeRule.onNodeWithTag("caregiver-post-create-issue").performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.linkingCode != null }
+        composeRule.onNodeWithTag("caregiver-linking-code-sheet").assertIsDisplayed()
     }
 
     @Test
@@ -295,13 +372,10 @@ class CaregiverHomeScreenTest {
         composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
 
         composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
-        composeRule.onNodeWithTag("caregiver-settings-list")
-            .performScrollToNode(hasTestTag("caregiver-create-name"))
+        composeRule.onNodeWithTag("caregiver-register-patient").performClick()
         composeRule.onNodeWithTag("caregiver-create-name").performTextInput("さくら")
         composeRule.onNodeWithTag("caregiver-create-name").assertTextContains("さくら")
         composeRule.waitForIdle()
-        composeRule.onNodeWithTag("caregiver-settings-list")
-            .performScrollToNode(hasTestTag("caregiver-create-submit"))
         composeRule.onNodeWithTag("caregiver-create-submit").assertIsEnabled().performClick()
         composeRule.waitUntil(5_000) { repository.state.value.creating }
         composeRule.onNodeWithTag("caregiver-settings-updating").assertIsDisplayed()
@@ -365,7 +439,10 @@ class CaregiverHomeScreenTest {
     fun settingsExposesExplicitPushControlAndConfigurationState() {
         val storage = TestSelectionStorage()
         val selection = CaregiverSelectionRepository(storage).also { it.restore() }
-        val patientRepository = CaregiverPatientRepository(CaregiverPatientDataSource { emptyList() }, selection)
+        val patientRepository = CaregiverPatientRepository(
+            CaregiverPatientDataSource { listOf(CaregiverPatient("patient-1", "さくら")) },
+            selection,
+        )
         val pushRepository = CaregiverPushRepository(
             dataSource = object : CaregiverPushDataSource {
                 override suspend fun register(token: String) = Unit

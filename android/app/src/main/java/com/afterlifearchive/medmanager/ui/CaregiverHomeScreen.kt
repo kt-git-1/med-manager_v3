@@ -64,6 +64,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -72,7 +76,6 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Switch
@@ -415,7 +418,7 @@ private fun CaregiverPatientSelectionScreen(
     val pushState = pushRepository?.state?.collectAsStateWithLifecycle()?.value
     val analyticsState = analyticsService?.state?.collectAsStateWithLifecycle()?.value
     val patientActionsEnabled = enabled && !state.refreshFailed
-    val updating = state.creating || state.savingSlotTimes || state.issuingLinkingCode ||
+    val updating = state.savingSlotTimes || state.issuingLinkingCode ||
         state.destructiveActionInProgress || pushState?.syncing == true
     val pushPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) scope.launch { pushRepository?.enable() }
@@ -427,6 +430,9 @@ private fun CaregiverPatientSelectionScreen(
     var bedtime by rememberSaveable { mutableStateOf("21:00") }
     var confirmation by rememberSaveable { mutableStateOf<String?>(null) }
     var showingSlotTimes by rememberSaveable { mutableStateOf(false) }
+    var showingCreate by rememberSaveable { mutableStateOf(false) }
+    var showingPostCreateGuide by rememberSaveable { mutableStateOf(false) }
+    val createSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val linkingCodeSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val slotTimesSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val listState = rememberLazyListState()
@@ -438,8 +444,9 @@ private fun CaregiverPatientSelectionScreen(
         bedtime = times.bedtime
     }
     LaunchedEffect(tutorialFocusTag, state.patients.size, selectedPatient?.id) {
+        if (tutorialFocusTag == "caregiver-create-name" && state.patients.isEmpty()) showingCreate = true
         val targetIndex = when (tutorialFocusTag) {
-            "caregiver-create-name" -> if (state.patients.isEmpty()) 2 else 1
+            "caregiver-create-name" -> null
             "caregiver-slot-times" -> if (selectedPatient != null) 3 else 1
             "caregiver-linking-code" -> if (selectedPatient != null) 2 else 1
             else -> null
@@ -481,23 +488,9 @@ private fun CaregiverPatientSelectionScreen(
         }
         if (!state.loading && !state.loadFailed) {
         if (!state.loading && !state.loadFailed && state.patients.isEmpty()) item {
-            CaregiverSettingsEmptyState(Modifier.testTag("caregiver-settings-empty"))
-        }
-        if (!state.loading && !state.loadFailed && (state.patients.isEmpty() || state.refreshFailed)) item {
-            CaregiverCreatePatientCard(
-                displayName = displayName,
-                onDisplayNameChange = { displayName = it },
-                error = state.createError,
-                enabled = patientActionsEnabled && !state.creating,
-                creating = state.creating,
-                onCreate = {
-                    scope.launch {
-                        if (repository.createPatient(displayName)) {
-                            displayName = ""
-                            analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.CAREGIVER_PATIENT_CREATED)
-                        }
-                    }
-                },
+            CaregiverSettingsEmptyState(
+                onCreate = { showingCreate = true },
+                modifier = Modifier.testTag("caregiver-settings-empty"),
             )
         }
         if (state.patients.isNotEmpty()) item {
@@ -505,6 +498,18 @@ private fun CaregiverPatientSelectionScreen(
                 state = state,
                 enabled = patientActionsEnabled,
                 onSelect = repository::selectPatient,
+            )
+        }
+        if (showingPostCreateGuide && selectedPatient != null) item {
+            CaregiverPostCreateCodeGuide(
+                enabled = patientActionsEnabled && !state.issuingLinkingCode,
+                onIssue = {
+                    showingPostCreateGuide = false
+                    scope.launch {
+                        if (repository.issueLinkingCode()) analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.LINK_CODE_ISSUED)
+                    }
+                },
+                onClose = { showingPostCreateGuide = false },
             )
         }
         if (selectedPatient != null) item {
@@ -521,13 +526,16 @@ private fun CaregiverPatientSelectionScreen(
                 onDelete = { confirmation = "delete" },
             )
         }
+        if (state.patients.size > 1 && selectedPatient == null) item {
+            CaregiverPatientSelectionRequiredCard()
+        }
         if (selectedPatient != null) item {
             CaregiverSlotTimesEntryCard(
                 enabled = patientActionsEnabled,
                 onOpen = { showingSlotTimes = true },
             )
         }
-        if (pushRepository != null && pushState != null) item {
+        if (state.patients.isNotEmpty() && pushRepository != null && pushState != null) item {
             Card(
                 Modifier.fillMaxWidth().testTag("caregiver-push-settings"),
                 shape = RoundedCornerShape(18.dp),
@@ -677,6 +685,52 @@ private fun CaregiverPatientSelectionScreen(
         }
         if (updating) CaregiverSettingsUpdatingOverlay()
     }
+    if (showingCreate) {
+        ModalBottomSheet(
+            onDismissRequest = { if (!state.creating) showingCreate = false },
+            sheetState = createSheetState,
+            modifier = Modifier.testTag("caregiver-create-sheet"),
+        ) {
+            Box(Modifier.fillMaxWidth()) {
+                Column(
+                    Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp).padding(bottom = 32.dp)
+                        .testTag("caregiver-create-sheet-content"),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(stringResource(R.string.caregiver_create_patient), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.caregiver_create_patient_message), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        TextButton(
+                            onClick = { showingCreate = false },
+                            enabled = !state.creating,
+                            modifier = Modifier.testTag("caregiver-create-close"),
+                        ) { Text(stringResource(R.string.common_close)) }
+                    }
+                    CaregiverCreatePatientCard(
+                        displayName = displayName,
+                        onDisplayNameChange = { displayName = it },
+                        error = state.createError,
+                        enabled = patientActionsEnabled && !state.creating,
+                        creating = state.creating,
+                        onCreate = {
+                            scope.launch {
+                                if (repository.createPatient(displayName)) {
+                                    displayName = ""
+                                    showingCreate = false
+                                    showingPostCreateGuide = true
+                                    analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.CAREGIVER_PATIENT_CREATED)
+                                }
+                            }
+                        },
+                    )
+                }
+                if (state.creating) CaregiverSettingsUpdatingOverlay()
+            }
+        }
+    }
     state.linkingCode?.let { code ->
         ModalBottomSheet(
             onDismissRequest = repository::dismissLinkingCode,
@@ -754,12 +808,14 @@ private fun CaregiverPatientSelectionScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CaregiverPatientSelectionCard(
     state: CaregiverPatientState,
     enabled: Boolean,
     onSelect: (String) -> Unit,
 ) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
     Card(
         Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
@@ -775,13 +831,43 @@ private fun CaregiverPatientSelectionCard(
                 ),
                 icon = Icons.Rounded.Group,
             )
-            state.patients.forEach { patient ->
-                val selected = patient.id == state.selectedPatientId
+            if (state.patients.size > 1) {
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { if (enabled) expanded = !expanded },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    val selected = state.selectedPatient
+                    OutlinedTextField(
+                        value = selected?.displayName ?: stringResource(R.string.caregiver_patient_select_placeholder),
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(stringResource(R.string.caregiver_settings_patient_title)) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                        modifier = Modifier.fillMaxWidth()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                            .testTag("caregiver-patient-picker"),
+                    )
+                    ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        state.patients.forEach { patient ->
+                            DropdownMenuItem(
+                                text = { Text(patient.displayName) },
+                                onClick = {
+                                    onSelect(patient.id)
+                                    expanded = false
+                                },
+                                modifier = Modifier.testTag("caregiver-patient-${patient.id}"),
+                            )
+                        }
+                    }
+                }
+            } else {
+                val patient = state.patients.single()
                 Row(
                     Modifier.fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(MedicationTheme.colors.primaryTealText.copy(alpha = if (selected) 0.10f else 0.04f))
-                        .selectable(selected, enabled = enabled) { onSelect(patient.id) }
+                        .background(MedicationTheme.colors.primaryTealText.copy(alpha = 0.10f))
+                        .selectable(true, enabled = enabled) { onSelect(patient.id) }
                         .padding(horizontal = 12.dp, vertical = 10.dp)
                         .testTag("caregiver-patient-${patient.id}"),
                     verticalAlignment = Alignment.CenterVertically,
@@ -791,17 +877,13 @@ private fun CaregiverPatientSelectionCard(
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (selected) MedicationTheme.colors.primaryTealText else MaterialTheme.colorScheme.onSurface,
+                        color = MedicationTheme.colors.primaryTealText,
                     )
-                    if (selected) {
-                        Icon(
-                            Icons.Rounded.CheckCircle,
-                            contentDescription = stringResource(R.string.caregiver_patient_selected),
-                            tint = MedicationTheme.colors.primaryTealText,
-                        )
-                    } else {
-                        RadioButton(selected = false, onClick = null)
-                    }
+                    Icon(
+                        Icons.Rounded.CheckCircle,
+                        contentDescription = stringResource(R.string.caregiver_patient_selected),
+                        tint = MedicationTheme.colors.primaryTealText,
+                    )
                 }
             }
         }
@@ -1008,7 +1090,7 @@ private fun CaregiverSettingsLoadingState() {
 }
 
 @Composable
-private fun CaregiverSettingsEmptyState(modifier: Modifier = Modifier) {
+private fun CaregiverSettingsEmptyState(onCreate: () -> Unit, modifier: Modifier = Modifier) {
     Card(
         modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
@@ -1028,6 +1110,70 @@ private fun CaregiverSettingsEmptyState(modifier: Modifier = Modifier) {
             CaregiverSettingsOnboardingStep(1, stringResource(R.string.caregiver_empty_step_register))
             CaregiverSettingsOnboardingStep(2, stringResource(R.string.caregiver_empty_step_code))
             CaregiverSettingsOnboardingStep(3, stringResource(R.string.caregiver_empty_step_share))
+            Button(
+                onClick = onCreate,
+                modifier = Modifier.fillMaxWidth().height(50.dp).testTag("caregiver-register-patient"),
+            ) {
+                Icon(Icons.Rounded.Person, contentDescription = null)
+                Spacer(Modifier.size(8.dp))
+                Text(stringResource(R.string.caregiver_register_patient))
+            }
+        }
+    }
+}
+
+@Composable
+private fun CaregiverPostCreateCodeGuide(
+    enabled: Boolean,
+    onIssue: () -> Unit,
+    onClose: () -> Unit,
+) {
+    Card(
+        Modifier.fillMaxWidth().testTag("caregiver-post-create-guide"),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MedicationTheme.colors.orange.copy(alpha = 0.42f)),
+    ) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            CaregiverSettingsSectionHeader(
+                title = stringResource(R.string.caregiver_post_create_guide_title),
+                message = stringResource(R.string.caregiver_post_create_guide_message),
+                icon = Icons.Rounded.Link,
+                tint = MedicationTheme.colors.orange,
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(
+                    onClick = onIssue,
+                    enabled = enabled,
+                    colors = ButtonDefaults.buttonColors(containerColor = MedicationTheme.colors.orange),
+                    modifier = Modifier.weight(1f).height(44.dp).testTag("caregiver-post-create-issue"),
+                ) {
+                    Icon(Icons.Rounded.Link, contentDescription = null)
+                    Spacer(Modifier.size(6.dp))
+                    Text(stringResource(R.string.caregiver_linking_code_issue))
+                }
+                OutlinedButton(
+                    onClick = onClose,
+                    enabled = enabled,
+                    modifier = Modifier.height(44.dp).testTag("caregiver-post-create-close"),
+                ) { Text(stringResource(R.string.common_close)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CaregiverPatientSelectionRequiredCard() {
+    Card(
+        Modifier.fillMaxWidth().testTag("caregiver-settings-selection-required"),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MedicationTheme.colors.cardStroke),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(Icons.Rounded.Group, contentDescription = null, tint = MedicationTheme.colors.primaryTealText, modifier = Modifier.size(38.dp))
+            Text(stringResource(R.string.caregiver_patient_select_required_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.caregiver_patient_select_required_message), color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
         }
     }
 }
@@ -1082,7 +1228,7 @@ private fun CaregiverCreatePatientCard(
             )
             Button(
                 onClick = onCreate,
-                enabled = enabled,
+                enabled = enabled && displayName.trim().isNotEmpty(),
                 modifier = Modifier.fillMaxWidth().testTag("caregiver-create-submit"),
             ) {
                 Text(stringResource(if (creating) R.string.caregiver_creating_patient else R.string.caregiver_create_patient_action))
@@ -1096,17 +1242,18 @@ private fun CaregiverSettingsSectionHeader(
     title: String,
     message: String,
     icon: ImageVector = Icons.Rounded.Person,
+    tint: Color = MedicationTheme.colors.primaryTealText,
 ) {
     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(
             Modifier.size(34.dp).clip(CircleShape)
-                .background(MedicationTheme.colors.primaryTealText.copy(alpha = 0.12f)),
+                .background(tint.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 icon,
                 contentDescription = null,
-                tint = MedicationTheme.colors.primaryTealText,
+                tint = tint,
                 modifier = Modifier.size(19.dp),
             )
         }

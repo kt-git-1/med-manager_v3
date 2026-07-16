@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="common_close">閉じる</string>
     <string name="common_ok">OK</string>
     <string name="app_name">お薬見守り</string>
     <string name="patient_link_title">連携コード</string>
@@ -293,6 +294,12 @@
     <string name="caregiver_empty_step_register">見守る方の名前を登録</string>
     <string name="caregiver_empty_step_code">連携コードを発行</string>
     <string name="caregiver_empty_step_share">本人モードの端末でコードを入力</string>
+    <string name="caregiver_register_patient">患者を登録する</string>
+    <string name="caregiver_post_create_guide_title">次は連携コードを発行</string>
+    <string name="caregiver_post_create_guide_message">登録した方のカードにある「コード発行」から、本人モードで入力する6桁コードを作れます。</string>
+    <string name="caregiver_patient_select_placeholder">未選択</string>
+    <string name="caregiver_patient_select_required_title">患者が未選択です</string>
+    <string name="caregiver_patient_select_required_message">上のプルダウンから患者を選んでください</string>
     <string name="caregiver_no_selection_title">患者が未選択です</string>
     <string name="caregiver_no_selection_message">設定から対象患者を選んでください。</string>
     <string name="caregiver_selection_required_title">見守る方を選択してください</string>
