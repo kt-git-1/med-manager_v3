@@ -7,7 +7,7 @@ This directory is the source of truth for the Android port. Android work is isol
 - Reference product: `main@1cf8aef`
 - Android baseline merge: `android-dev@1b38208`
 - Baseline date: 2026-07-14
-- Current action: continue UI-205 caregiver inventory-detail residuals before the Gate I physical-device and Play Internal/Closed runbook; C42–C48 complete UI-101–106, C49 closes UI-201, C50 closes UI-202, C51 closes UI-203 and C52 closes the emulator-verifiable UI-204 lifecycle/list/filter/dark/adaptive matrix, while live Firebase, physical devices and release-owner signing remain external prerequisites
+- Current action: continue UI-206 caregiver History residuals before the Gate I physical-device and Play Internal/Closed runbook; C42–C48 complete UI-101–106 and C49–C53 close the emulator-verifiable UI-201–205 current-runtime matrices, while live Firebase, physical devices and release-owner signing remain external prerequisites
 
 ## Authority order
 

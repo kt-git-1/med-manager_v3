@@ -411,6 +411,7 @@
     <string name="caregiver_inventory_refill_three_weeks">3週間</string>
     <string name="caregiver_inventory_refill_custom">+入力</string>
     <string name="caregiver_inventory_refill_action">補充</string>
+    <string name="caregiver_inventory_refill_confirm_action">補充する</string>
     <string name="caregiver_inventory_correction_section">在庫を修正（誤入力の修正）</string>
     <string name="caregiver_inventory_correction_quantity">修正後の在庫数</string>
     <string name="caregiver_inventory_correction_action">修正する</string>
@@ -428,6 +429,7 @@
     <string name="caregiver_inventory_refilled">補充を記録しました</string>
     <string name="caregiver_inventory_corrected">残数を修正しました</string>
     <string name="caregiver_inventory_failed">在庫を更新できませんでした。もう一度お試しください。</string>
+    <string name="caregiver_inventory_detail_failed">取得に失敗しました</string>
     <string name="caregiver_selected_patient">%1$sさんを見守り中</string>
     <string name="caregiver_preview_patient_name">さくら</string>
     <string name="caregiver_patient_selected">選択中</string>

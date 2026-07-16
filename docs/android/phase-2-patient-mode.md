@@ -321,6 +321,14 @@ This selector foundation is connected to inventory-backed production candidates 
 - iOS caps its root at `.xLarge`; Android keeps empty and populated content scroll-reachable at true 200%. Physical TalkBack, OEM and real-API verification remain Gate I.
 - Focused Inventory List coverage passes 18/18 on API 35. The expanded API-35 suite passes 236/236, JVM passes 186/186, and Debug assembly/Lint pass.
 
+## 2026-07-16 C53 Caregiver Inventory Detail calibration
+
+- Ten deterministic current-iOS/Android pairs under `evidence/c53-20260716/` cover scheduled top/lower, PRN, tracking off, refill/correction confirmation, failed correction and blocking update in light mode plus dark and adaptive text.
+- Status copy/color and refill/correction availability now derive from the live tracking toggle and current quantity/day threshold. Refill presets expose selected semantics/colors, and custom entry explicitly moves focus to its field.
+- Mutation failure remains on the detail route below the attempted operation and retries that exact request. The blocking update surface uses the production app illustration and current progress hierarchy.
+- Native Back/dismissal, symbols, switches and confirmation geometry remain platform conventions. iOS caps its root at `.xLarge`; Android keeps all actions scroll-reachable at true 200%. Physical TalkBack, OEM and real-API verification remain Gate I.
+- Focused Inventory Detail coverage passes 25/25 on API 35. The expanded API-35 suite passes 243/243, JVM passes 186/186, and Debug assembly/Lint pass.
+
 ## Phase 2D notification routing and patient tutorial
 
 ### XP-002 exact notification destination

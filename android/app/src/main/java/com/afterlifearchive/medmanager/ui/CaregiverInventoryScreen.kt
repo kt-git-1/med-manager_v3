@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -70,10 +71,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -96,6 +101,7 @@ import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import kotlinx.coroutines.launch
 
 private enum class InventoryFilter { ALL, LOW, OUT }
+private enum class InventoryDetailStatus { AVAILABLE, LOW, OUT, UNCONFIGURED }
 private sealed interface InventoryDetailRetryAction {
     data object SaveSettings : InventoryDetailRetryAction
     data class Refill(val amount: Double) : InventoryDetailRetryAction
@@ -435,10 +441,15 @@ private fun CaregiverInventoryUpdatingOverlay() {
         }.testTag("caregiver-inventory-updating"),
         contentAlignment = Alignment.Center,
     ) {
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))) {
-            Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                CircularProgressIndicator(modifier = Modifier.size(44.dp), color = MedicationTheme.colors.primaryTealText)
-                Text(stringResource(R.string.patient_today_updating), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+        ) {
+            Column(Modifier.width(172.dp).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Image(painter = painterResource(R.drawable.app_image), contentDescription = null, modifier = Modifier.size(64.dp).clip(RoundedCornerShape(14.dp)))
+                CircularProgressIndicator(modifier = Modifier.size(38.dp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f), strokeWidth = 4.dp)
+                Text(stringResource(R.string.patient_today_updating), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -463,10 +474,14 @@ private fun CaregiverInventoryDetail(
     var confirmRefill by remember { mutableStateOf<Double?>(null) }
     var confirmCorrection by remember { mutableStateOf<Double?>(null) }
     var retryAction by remember { mutableStateOf<InventoryDetailRetryAction?>(null) }
+    val refillFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
     val scope = rememberCoroutineScope()
     val refill = refillText.toDoubleOrNull()
     val correction = correctionText.toDoubleOrNull()
-    val tint = if (item.needsAction) MedicationTheme.colors.orange else MaterialTheme.colorScheme.primary
+    val detailStatus = inventoryDetailStatus(item, inventoryEnabled)
+    val tint = inventoryDetailStatusTint(detailStatus)
+    val headerAccent = if (detailStatus == InventoryDetailStatus.LOW || detailStatus == InventoryDetailStatus.OUT) MedicationTheme.colors.caregiverRed else MaterialTheme.colorScheme.primary
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).testTag("caregiver-inventory-detail")) {
         Box(Modifier.fillMaxWidth().height(58.dp).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
@@ -491,14 +506,14 @@ private fun CaregiverInventoryDetail(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
         item {
-            InventoryCard(if (item.needsAction) MedicationTheme.colors.caregiverRed else MaterialTheme.colorScheme.primary) {
+            InventoryCard(headerAccent) {
                 Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     InventoryMedicationIllustration(tint, item.isPrn, size = 56)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(item.name, fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold, maxLines = 3)
                         Text(inventoryDailySummary(item), fontSize = 17.sp, lineHeight = 22.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                     }
-                    InventoryDetailStatusBadge(item, tint)
+                    InventoryDetailStatusBadge(detailStatus, tint)
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
@@ -521,26 +536,6 @@ private fun CaregiverInventoryDetail(
             }
         }
         if (refreshFailed) item { CaregiverStaleDataCard("caregiver-inventory-detail-stale", onRetry) }
-        if (failed) item {
-            InventoryCard(MaterialTheme.colorScheme.error) {
-                Text(stringResource(R.string.caregiver_inventory_failed), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-                if (retryAction != null) Button(
-                    onClick = {
-                        val action = retryAction ?: return@Button
-                        scope.launch {
-                            val succeeded = when (action) {
-                                InventoryDetailRetryAction.SaveSettings -> repository.updateSettings(patientId, item, inventoryEnabled)
-                                is InventoryDetailRetryAction.Refill -> repository.refill(patientId, item, action.amount)
-                                is InventoryDetailRetryAction.Correction -> repository.correct(patientId, item, action.quantity)
-                            }
-                            if (succeeded) onClose()
-                        }
-                    },
-                    modifier = Modifier.testTag("inventory-retry"),
-                ) { Text(stringResource(R.string.common_retry)) }
-            }
-        }
-        message?.let { item { Text(inventoryMutationText(it), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) } }
         item { InventoryDetailSectionTitle(stringResource(R.string.caregiver_inventory_settings_section)) }
         item {
             InventoryCard {
@@ -557,11 +552,22 @@ private fun CaregiverInventoryDetail(
                     listOf(7 to R.string.caregiver_inventory_refill_week, 14 to R.string.caregiver_inventory_refill_two_weeks, 21 to R.string.caregiver_inventory_refill_three_weeks).forEach { (days, label) ->
                         InventoryPresetButton(
                             title = stringResource(label),
+                            selected = refill != null && refill == plannedRefill(item, days),
                             onClick = { refillText = formatInventoryNumber(plannedRefill(item, days)) },
                             enabled = enabled && !updating,
+                            modifier = Modifier.testTag("inventory-refill-preset-$days"),
                         )
                     }
-                    InventoryPresetButton(title = stringResource(R.string.caregiver_inventory_refill_custom), onClick = { refillText = "" }, enabled = enabled && !updating)
+                    InventoryPresetButton(
+                        title = stringResource(R.string.caregiver_inventory_refill_custom),
+                        selected = false,
+                        onClick = {
+                            refillFocusRequester.requestFocus()
+                            keyboardController?.show()
+                        },
+                        enabled = enabled && !updating,
+                        modifier = Modifier.testTag("inventory-refill-custom"),
+                    )
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                 InventoryDetailQuantityInput(
@@ -570,11 +576,11 @@ private fun CaregiverInventoryDetail(
                     onValueChange = { refillText = it },
                     enabled = enabled && !updating,
                     showUnit = false,
-                    modifier = Modifier.testTag("inventory-refill-amount"),
+                    modifier = Modifier.focusRequester(refillFocusRequester).testTag("inventory-refill-amount"),
                 )
                 Button(
                     onClick = { if (refill != null && refill > 0) confirmRefill = refill },
-                    enabled = enabled && !updating && item.inventoryEnabled && refill != null && refill > 0,
+                    enabled = enabled && !updating && inventoryEnabled && refill != null && refill > 0,
                     shape = RoundedCornerShape(18.dp),
                     modifier = Modifier.fillMaxWidth().height(58.dp).testTag("inventory-refill"),
                 ) {
@@ -598,13 +604,36 @@ private fun CaregiverInventoryDetail(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                 Button(
                     onClick = { if (correction != null && correction >= 0) confirmCorrection = correction },
-                    enabled = enabled && !updating && item.inventoryEnabled && correction != null && correction >= 0,
+                    enabled = enabled && !updating && inventoryEnabled && correction != null && correction >= 0,
                     colors = ButtonDefaults.buttonColors(containerColor = MedicationTheme.colors.orange),
                     shape = RoundedCornerShape(18.dp),
                     modifier = Modifier.fillMaxWidth().height(58.dp).testTag("inventory-correction"),
                 ) { Text(stringResource(R.string.caregiver_inventory_correction_action), fontSize = 20.sp, fontWeight = FontWeight.Bold) }
             }
         }
+        if (failed) item {
+            InventoryCard(MaterialTheme.colorScheme.error) {
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Icon(Icons.Rounded.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(36.dp))
+                    Text(stringResource(R.string.caregiver_inventory_detail_failed), color = MaterialTheme.colorScheme.error, fontSize = 17.sp, lineHeight = 23.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+                    if (retryAction != null) Button(
+                        onClick = {
+                            val action = retryAction ?: return@Button
+                            scope.launch {
+                                val succeeded = when (action) {
+                                    InventoryDetailRetryAction.SaveSettings -> repository.updateSettings(patientId, item, inventoryEnabled)
+                                    is InventoryDetailRetryAction.Refill -> repository.refill(patientId, item, action.amount)
+                                    is InventoryDetailRetryAction.Correction -> repository.correct(patientId, item, action.quantity)
+                                }
+                                if (succeeded) onClose()
+                            }
+                        },
+                        modifier = Modifier.testTag("inventory-retry"),
+                    ) { Text(stringResource(R.string.common_retry)) }
+                }
+            }
+        }
+        message?.let { item { Text(inventoryMutationText(it), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) } }
         item { Spacer(Modifier.height(24.dp)) }
         }
     }
@@ -624,7 +653,7 @@ private fun CaregiverInventoryDetail(
                     enabled = enabled && !updating,
                     modifier = Modifier.testTag("inventory-refill-confirm"),
                 ) {
-                    Text(stringResource(R.string.caregiver_inventory_refill_action))
+                    Text(stringResource(R.string.caregiver_inventory_refill_confirm_action))
                 }
             },
         )
@@ -652,23 +681,52 @@ private fun CaregiverInventoryDetail(
 }
 
 @Composable
-private fun InventoryDetailStatusBadge(item: CaregiverInventoryItem, tint: Color) {
-    val icon = when {
-        item.out -> Icons.Rounded.Cancel
-        item.low -> Icons.Rounded.Warning
-        item.periodEnded -> Icons.Rounded.EventBusy
-        !item.inventoryEnabled -> Icons.Rounded.Error
-        else -> Icons.Rounded.CheckCircle
+private fun InventoryDetailStatusBadge(status: InventoryDetailStatus, tint: Color) {
+    val statusText = inventoryDetailStatusText(status)
+    val icon = when (status) {
+        InventoryDetailStatus.OUT -> Icons.Rounded.Cancel
+        InventoryDetailStatus.LOW -> Icons.Rounded.Warning
+        InventoryDetailStatus.UNCONFIGURED -> Icons.Rounded.Error
+        InventoryDetailStatus.AVAILABLE -> Icons.Rounded.CheckCircle
     }
     Row(
-        Modifier.clip(CircleShape).background(tint.copy(alpha = 0.13f)).padding(horizontal = 10.dp, vertical = 6.dp),
+        Modifier.clip(CircleShape).background(tint.copy(alpha = 0.13f)).padding(horizontal = 10.dp, vertical = 6.dp)
+            .semantics { contentDescription = statusText }
+            .testTag("inventory-detail-status"),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
-        Text(inventoryStatusText(item), color = tint, fontSize = 12.sp, lineHeight = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Text(statusText, color = tint, fontSize = 12.sp, lineHeight = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1)
     }
 }
+
+private fun inventoryDetailStatus(item: CaregiverInventoryItem, enabled: Boolean): InventoryDetailStatus {
+    if (!enabled) return InventoryDetailStatus.UNCONFIGURED
+    if ((item.daysRemaining != null && item.daysRemaining <= 0) || (item.daysRemaining == null && item.inventoryQuantity <= 0)) {
+        return InventoryDetailStatus.OUT
+    }
+    if (item.inventoryLowThreshold > 0 && item.daysRemaining != null && item.daysRemaining <= item.inventoryLowThreshold) {
+        return InventoryDetailStatus.LOW
+    }
+    return InventoryDetailStatus.AVAILABLE
+}
+
+@Composable
+private fun inventoryDetailStatusTint(status: InventoryDetailStatus): Color = when (status) {
+    InventoryDetailStatus.AVAILABLE -> MaterialTheme.colorScheme.primary
+    InventoryDetailStatus.LOW -> MedicationTheme.colors.orange
+    InventoryDetailStatus.OUT -> MedicationTheme.colors.caregiverRed
+    InventoryDetailStatus.UNCONFIGURED -> MaterialTheme.colorScheme.onSurfaceVariant
+}
+
+@Composable
+private fun inventoryDetailStatusText(status: InventoryDetailStatus): String = stringResource(when (status) {
+    InventoryDetailStatus.AVAILABLE -> R.string.caregiver_inventory_status_available
+    InventoryDetailStatus.LOW -> R.string.caregiver_inventory_status_low
+    InventoryDetailStatus.OUT -> R.string.caregiver_inventory_status_out
+    InventoryDetailStatus.UNCONFIGURED -> R.string.caregiver_inventory_status_unconfigured
+})
 
 @Composable
 private fun InventoryDetailSectionTitle(title: String) {
@@ -676,13 +734,13 @@ private fun InventoryDetailSectionTitle(title: String) {
 }
 
 @Composable
-private fun InventoryPresetButton(title: String, onClick: () -> Unit, enabled: Boolean) {
+private fun InventoryPresetButton(title: String, selected: Boolean, onClick: () -> Unit, enabled: Boolean, modifier: Modifier = Modifier) {
     TextButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = Modifier.height(38.dp).clip(CircleShape).background(MedicationTheme.colors.elevatedBackground),
+        modifier = modifier.height(38.dp).clip(CircleShape).background(if (selected) MedicationTheme.colors.caregiverBlue else MedicationTheme.colors.caregiverBlue.copy(alpha = 0.12f)).semantics { this.selected = selected },
     ) {
-        Text(title, color = MedicationTheme.colors.caregiverBlue, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold)
+        Text(title, color = if (selected) Color.White else MedicationTheme.colors.caregiverBlue, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold)
     }
 }
 

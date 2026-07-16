@@ -12,6 +12,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
@@ -277,6 +278,98 @@ class CaregiverInventoryScreenTest {
     }
 
     @Test
+    fun inventoryDetailScheduledTopAndLowerMatchCurrentIos() {
+        val activity = openDetail(mutableListOf(item("low", "血圧の薬 5 mg", 4.0, low = true)))
+
+        composeRule.onNodeWithText("1日1回（1錠ずつ）").assertIsDisplayed()
+        composeRule.onNodeWithTag("inventory-detail-status").assertIsDisplayed()
+        captureDevice(activity, "android-ui-205-caregiver-inventory-detail-scheduled-top-light-matched.png")
+
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction"))
+        composeRule.onNodeWithTag("inventory-correction").assertIsDisplayed()
+        captureDevice(activity, "android-ui-205-caregiver-inventory-detail-scheduled-lower-light-matched.png")
+    }
+
+    @Test
+    fun inventoryDetailPrnStateMatchesCurrentIos() {
+        val prnActivity = openDetail(mutableListOf(item("prn", "痛いときの薬", 8.0, isPrn = true)))
+        composeRule.onNodeWithText("1回 1錠").assertIsDisplayed()
+        captureDevice(prnActivity, "android-ui-205-caregiver-inventory-detail-prn-light-matched.png")
+    }
+
+    @Test
+    fun inventoryDetailDisabledStateUsesTheLiveToggleValue() {
+        val disabledActivity = openDetail(mutableListOf(item("off", "整腸剤", 10.0, enabled = false)))
+        composeRule.onNodeWithText("未設定").assertIsDisplayed()
+        captureDevice(disabledActivity, "android-ui-205-caregiver-inventory-detail-disabled-light-matched.png")
+        composeRule.onNodeWithTag("inventory-enabled").performClick()
+        composeRule.onNodeWithText("在庫あり").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-refill-preset-7"))
+        composeRule.onNodeWithTag("inventory-refill-preset-7").performClick().assertIsSelected()
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-refill"))
+        composeRule.onNodeWithTag("inventory-refill").assertIsEnabled()
+    }
+
+    @Test
+    fun inventoryDetailConfirmationsMatchCurrentIos() {
+        val refillActivity = openDetail(mutableListOf(item("low", "血圧の薬 5 mg", 4.0, low = true)))
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-refill-preset-7"))
+        composeRule.onNodeWithTag("inventory-refill-preset-7").performClick().assertIsSelected()
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-refill"))
+        composeRule.onNodeWithTag("inventory-refill").performClick()
+        composeRule.onNodeWithTag("inventory-refill-confirm").assertIsDisplayed()
+        captureDevice(refillActivity, "android-ui-205-caregiver-inventory-detail-refill-confirm-light-matched.png")
+        composeRule.onNodeWithText("キャンセル").performClick()
+
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction"))
+        composeRule.onNodeWithTag("inventory-correction").performClick()
+        composeRule.onNodeWithTag("inventory-correction-confirm").assertIsDisplayed()
+        captureDevice(refillActivity, "android-ui-205-caregiver-inventory-detail-correction-confirm-light-matched.png")
+    }
+
+    @Test
+    fun inventoryDetailUpdatingOverlayMatchesCurrentIos() {
+        val original = item("low", "血圧の薬 5 mg", 4.0, low = true)
+        val gate = CompletableDeferred<Unit>()
+        val source = object : CaregiverInventoryDataSource {
+            override suspend fun list(patientId: String) = listOf(original)
+            override suspend fun update(patientId: String, medicationId: String, enabled: Boolean, quantity: Double?) = original
+            override suspend fun adjust(patientId: String, medicationId: String, reason: String, delta: Double?, absoluteQuantity: Double?): CaregiverInventoryItem {
+                gate.await()
+                return original.copy(inventoryQuantity = original.inventoryQuantity + (delta ?: 0.0), low = false)
+            }
+        }
+        val patient = CaregiverPatient("p1", "田中 花子")
+        val activity = setScreen(CaregiverInventoryRepository(source, MutationFreshnessStore()), CaregiverPatientState(listOf(patient), patient.id))
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-item-low").fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithTag("caregiver-inventory-item-low").performClick()
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-refill-preset-7"))
+        composeRule.onNodeWithTag("inventory-refill-preset-7").performClick()
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-refill"))
+        composeRule.onNodeWithTag("inventory-refill").performClick()
+        composeRule.onNodeWithTag("inventory-refill-confirm").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-updating").fetchSemanticsNodes().isNotEmpty() }
+        captureDevice(activity, "android-ui-205-caregiver-inventory-detail-updating-light-matched.png")
+        gate.complete(Unit)
+    }
+
+    @Test
+    fun inventoryDetailDarkRemainsReachable() {
+        val darkActivity = openDetail(mutableListOf(item("low", "血圧の薬 5 mg", 4.0, low = true)), darkTheme = true)
+        captureDevice(darkActivity, "android-ui-205-caregiver-inventory-detail-scheduled-dark-matched.png", darkTheme = true)
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction"))
+        composeRule.onNodeWithTag("inventory-correction").assertIsDisplayed()
+    }
+
+    @Test
+    fun inventoryDetailTwoHundredPercentRemainsReachable() {
+        val adaptiveActivity = openDetail(mutableListOf(item("low", "血圧の薬 5 mg", 4.0, low = true)), fontScale = 2f)
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction"))
+        composeRule.onNodeWithTag("inventory-correction").assertIsDisplayed()
+        captureDevice(adaptiveActivity, "android-ui-205-caregiver-inventory-detail-scheduled-font-2.0-matched.png")
+    }
+
+    @Test
     fun detailRefillAndCorrectionRequireConfirmationAndUseAuthoritativeValues() {
         setContent(mutableListOf(item("low", "少ない薬", 2.0, low = true)))
         composeRule.onNodeWithTag("caregiver-inventory-item-low").performClick()
@@ -341,7 +434,7 @@ class CaregiverInventoryScreenTest {
         }
         val repository = CaregiverInventoryRepository(source, MutationFreshnessStore())
         val patient = CaregiverPatient("p1", "さくら")
-        composeRule.setContent { MedicationAppTheme { CaregiverInventoryScreen(repository, CaregiverPatientState(listOf(patient), patient.id), true, {}) } }
+        val activity = setScreen(repository, CaregiverPatientState(listOf(patient), patient.id))
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-item-low").fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag("caregiver-inventory-list").performScrollToNode(hasTestTag("caregiver-inventory-item-low"))
         composeRule.onNodeWithTag("caregiver-inventory-item-low").assertIsDisplayed().performClick()
@@ -355,6 +448,7 @@ class CaregiverInventoryScreenTest {
         composeRule.waitUntil(5_000) { repository.state.value.mutationFailed }
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-retry"))
         composeRule.onNodeWithTag("caregiver-inventory-detail").assertIsDisplayed()
+        captureDevice(activity, "android-ui-205-caregiver-inventory-detail-failure-light-matched.png")
         composeRule.onNodeWithTag("inventory-retry").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-list").fetchSemanticsNodes().isNotEmpty() }
     }
@@ -412,6 +506,21 @@ class CaregiverInventoryScreenTest {
             darkTheme = darkTheme,
             fontScale = fontScale,
         )
+    }
+
+    private fun openDetail(
+        initial: MutableList<CaregiverInventoryItem>,
+        darkTheme: Boolean = false,
+        fontScale: Float = 1f,
+    ): Activity {
+        val activity = setContent(initial, darkTheme = darkTheme, fontScale = fontScale)
+        val medicationId = initial.single().medicationId
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-list").fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithTag("caregiver-inventory-list").performScrollToNode(hasTestTag("caregiver-inventory-item-$medicationId"))
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-item-$medicationId").fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithTag("caregiver-inventory-item-$medicationId").performClick()
+        composeRule.onNodeWithTag("caregiver-inventory-detail").assertIsDisplayed()
+        return activity
     }
 
     private fun setScreen(
@@ -476,8 +585,9 @@ class CaregiverInventoryScreenTest {
         low: Boolean = false,
         out: Boolean = false,
         periodEnded: Boolean = false,
+        isPrn: Boolean = false,
     ) = CaregiverInventoryItem(
-        id, name, false, 1.0, enabled, quantity, 3, periodEnded, low, out, 1.0,
+        id, name, isPrn, 1.0, enabled, quantity, 3, periodEnded, low, out, if (isPrn) null else 1.0,
         7.0, 14.0, 21.0, quantity.toInt(), "2026-07-18",
     )
 
