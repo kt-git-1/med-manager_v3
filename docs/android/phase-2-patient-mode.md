@@ -313,6 +313,14 @@ This selector foundation is connected to inventory-backed production candidates 
 - Native navigation, date/switch controls, symbols and confirmation geometry remain platform conventions. iOS caps its root at `.xLarge`; Android keeps the full form scroll-reachable at true 200%. Physical TalkBack, OEM IME and real-API verification remain Gate I.
 - Focused Medication Form coverage passes 24/24 on API 35. The expanded API-35 suite passes 228/228, JVM passes 186/186, and Debug assembly/Lint pass.
 
+## 2026-07-16 C52 Caregiver Inventory List calibration
+
+- Twelve deterministic current-iOS/Android pairs under `evidence/c52-20260716/` cover loading, failure, no patient, selection required, empty, populated, blank out-filter and ended/unconfigured lower content in light mode plus empty/populated dark and adaptive states.
+- Patient lifecycle states now use the current shared caregiver recovery hierarchy and production Home-shell callbacks. Inventory selection uses the box identity; the empty card uses the current medicine illustration, three color-coded setup steps and large primary action.
+- The out-of-stock filter includes enabled zero-stock medicines even after their period ends, matching current iOS. Summary, priority guide, section ordering, quick refill and named detail behavior remain intact.
+- iOS caps its root at `.xLarge`; Android keeps empty and populated content scroll-reachable at true 200%. Physical TalkBack, OEM and real-API verification remain Gate I.
+- Focused Inventory List coverage passes 18/18 on API 35. The expanded API-35 suite passes 236/236, JVM passes 186/186, and Debug assembly/Lint pass.
+
 ## Phase 2D notification routing and patient tutorial
 
 ### XP-002 exact notification destination

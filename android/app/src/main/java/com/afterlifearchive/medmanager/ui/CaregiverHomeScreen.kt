@@ -236,6 +236,7 @@ fun CaregiverHomeScreen(
                                 if (tutorialStep >= 0) caregiverTutorialFocusTag(tutorialStep) else postTutorialFocusTag,
                                 onOpenMedications = { selectTab(CaregiverTab.MEDICATIONS) },
                                 onOpenPatients = { selectTab(CaregiverTab.SETTINGS) },
+                                onRetryPatients = { scope.launch { repository.refresh() } },
                                 onCreatePatient = {
                                     selectTab(CaregiverTab.SETTINGS)
                                     postTutorialFocusTag = "caregiver-create-name"
@@ -294,6 +295,7 @@ private fun CaregiverTabContent(
     tutorialFocusTag: String?,
     onOpenMedications: () -> Unit,
     onOpenPatients: () -> Unit,
+    onRetryPatients: () -> Unit,
     onCreatePatient: () -> Unit,
 ) {
     when (tab) {
@@ -306,13 +308,23 @@ private fun CaregiverTabContent(
                 onReturnToLogin = onLogout,
                 onOpenPatients = onOpenPatients,
                 onCreatePatient = onCreatePatient,
+                onRetryPatients = onRetryPatients,
             )
         } else CaregiverFeatureLanding(tab, state, repository, visible)
         CaregiverTab.TODAY -> if (todayRepository != null) {
             CaregiverTodayScreen(todayRepository, state, visible, onOpenMedications, onLogout)
         } else CaregiverFeatureLanding(tab, state, repository, visible)
         CaregiverTab.INVENTORY -> if (inventoryRepository != null) {
-            CaregiverInventoryScreen(inventoryRepository, state, visible, onOpenMedications)
+            CaregiverInventoryScreen(
+                repository = inventoryRepository,
+                patientState = state,
+                enabled = visible,
+                onOpenMedications = onOpenMedications,
+                onReturnToLogin = onLogout,
+                onOpenPatients = onOpenPatients,
+                onCreatePatient = onCreatePatient,
+                onRetryPatients = onRetryPatients,
+            )
         } else CaregiverFeatureLanding(tab, state, repository, visible)
         CaregiverTab.HISTORY -> if (historyRepository != null) {
             CaregiverHistoryScreen(historyRepository, state, visible, reportRepository = reportRepository)

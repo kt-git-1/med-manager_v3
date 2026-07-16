@@ -150,6 +150,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C49 Close the UI-201 Caregiver Today exceptional-state residual with loading/error/empty/PRN confirmation light, empty/PRN dark and largest-text pairs; replace the stale compact empty/error and bottom-sheet PRN surfaces with the current iOS onboarding, recovery and full navigation contracts.
 - [x] C50 Close the UI-202 Caregiver Medication List current-runtime residual with loading/error/no-patient/no-selection/empty/populated/filter-empty light, empty/populated dark and largest-text pairs; align recovery actions, empty onboarding and blank filtered results with current iOS.
 - [x] C51 Close the UI-203 Caregiver Medication Form current-runtime residual with add/edit/PRN/weekly/validation/delete-confirmation light plus dark and largest-text pairs; align period/schedule hierarchy, creation-only inventory, exact validation and destructive actions with current iOS.
+- [x] C52 Close the UI-204 Caregiver Inventory List current-runtime residual with loading/error/no-patient/no-selection/empty/populated/filter-empty/lower-content light plus empty/populated dark and largest-text pairs; align recovery routing, empty onboarding, out-filter semantics and adaptive reachability with current iOS.
 - [x] C34 Accept strict caregiver `DOSE_MISSED` payloads alongside `DOSE_TAKEN` and verify identical exact-date/slot History routing.
 - [x] C35 Rerun the full API/JVM/lint/build/API-35 matrix and close all C31 `RECHECK_REQUIRED` rows.
 - [ ] C06 Complete full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification.
@@ -239,4 +240,4 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Immediate next item
 
-Execute the **Gate I physical-device and Play release matrix** using `play-release-runbook.md` once its external inputs exist. Until then, continue the emulator-verifiable caregiver matrix in screen order: C51 closes UI-203, so UI-204 Inventory List is next. Production Firebase values, a release-owner-managed upload key, Play Console access and physical devices remain required; do not mark device-only rows verified from emulator evidence.
+Execute the **Gate I physical-device and Play release matrix** using `play-release-runbook.md` once its external inputs exist. Until then, continue the emulator-verifiable caregiver matrix in screen order: C52 closes UI-204, so UI-205 Inventory Detail is next. Production Firebase values, a release-owner-managed upload key, Play Console access and physical devices remain required; do not mark device-only rows verified from emulator evidence.

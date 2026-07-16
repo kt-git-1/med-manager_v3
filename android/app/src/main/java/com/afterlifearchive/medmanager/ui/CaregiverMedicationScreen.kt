@@ -125,6 +125,7 @@ internal fun CaregiverMedicationScreen(
     onReturnToLogin: () -> Unit = {},
     onOpenPatients: () -> Unit = {},
     onCreatePatient: () -> Unit = {},
+    onRetryPatients: () -> Unit = onOpenPatients,
 ) {
     val state by repository.state.collectAsStateWithLifecycle()
     val freshness by repository.freshness.collectAsStateWithLifecycle()
@@ -161,7 +162,7 @@ internal fun CaregiverMedicationScreen(
         patientState.loading && patientState.patients.isEmpty() -> CaregiverMedicationLoadingState()
         patientState.loadFailed -> CaregiverDataUnavailableState(
             enabled = enabled,
-            onRetry = onOpenPatients,
+            onRetry = onRetryPatients,
             onReturnToLogin = onReturnToLogin,
             testTagPrefix = "caregiver-medication-patients",
         )

@@ -96,10 +96,16 @@ internal fun CaregiverNoPatientState(enabled: Boolean, onCreatePatient: () -> Un
 }
 
 @Composable
-internal fun CaregiverPatientSelectionRequiredState(enabled: Boolean, onOpenPatients: () -> Unit, testTagPrefix: String) {
+internal fun CaregiverPatientSelectionRequiredState(
+    enabled: Boolean,
+    onOpenPatients: () -> Unit,
+    testTagPrefix: String,
+    icon: ImageVector = Icons.Rounded.Medication,
+    usePillsGlyph: Boolean = true,
+) {
     CaregiverBlockingStateCard(
-        icon = Icons.Rounded.Medication,
-        usePillsGlyph = true,
+        icon = icon,
+        usePillsGlyph = usePillsGlyph,
         title = stringResource(R.string.caregiver_selection_required_title),
         message = stringResource(R.string.caregiver_selection_required_message),
         testTag = "$testTagPrefix-selection-required",
