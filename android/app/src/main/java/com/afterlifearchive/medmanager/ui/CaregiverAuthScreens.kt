@@ -139,8 +139,8 @@ fun CaregiverAuthChoiceScreen(onLogin: () -> Unit, onSignup: () -> Unit, onBack:
         item { CaregiverHeader(stringResource(R.string.caregiver_auth_title), stringResource(R.string.caregiver_auth_subtitle)) }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                AuthChoiceCard(Icons.Rounded.ArrowCircleRight, stringResource(R.string.caregiver_auth_login), stringResource(R.string.caregiver_auth_login_subtitle), AuthTeal, onLogin)
-                AuthChoiceCard(Icons.Rounded.PersonAdd, stringResource(R.string.caregiver_auth_signup), stringResource(R.string.caregiver_auth_signup_subtitle), AuthOrange, onSignup)
+                AuthChoiceCard(Icons.Rounded.ArrowCircleRight, stringResource(R.string.caregiver_auth_login), stringResource(R.string.caregiver_auth_login_subtitle), AuthTeal, "caregiver-auth-choice-login", onLogin)
+                AuthChoiceCard(Icons.Rounded.PersonAdd, stringResource(R.string.caregiver_auth_signup), stringResource(R.string.caregiver_auth_signup_subtitle), AuthOrange, "caregiver-auth-choice-signup", onSignup)
             }
         }
         item { AuthBackButton(stringResource(R.string.caregiver_auth_reselect_mode), onBack) }
@@ -148,9 +148,9 @@ fun CaregiverAuthChoiceScreen(onLogin: () -> Unit, onSignup: () -> Unit, onBack:
 }
 
 @Composable
-private fun AuthChoiceCard(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String, tint: Color, onClick: () -> Unit) {
+private fun AuthChoiceCard(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String, tint: Color, testTag: String, onClick: () -> Unit) {
     val shape = RoundedCornerShape(18.dp)
-    Surface(onClick = onClick, modifier = Modifier.fillMaxWidth().border(1.5.dp, tint.copy(alpha = 0.55f), shape), shape = shape, color = MaterialTheme.colorScheme.surface) {
+    Surface(onClick = onClick, modifier = Modifier.fillMaxWidth().border(1.5.dp, tint.copy(alpha = 0.55f), shape).testTag(testTag), shape = shape, color = MaterialTheme.colorScheme.surface) {
         Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Box(Modifier.size(54.dp).background(tint.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) {
                 Icon(icon, null, tint = tint, modifier = Modifier.size(28.dp))

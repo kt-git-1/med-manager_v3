@@ -50,7 +50,8 @@ class PatientAdaptiveUiTest(private val fontScale: Float) {
 
         composeRule.onNodeWithText("次に飲むお薬").assertIsDisplayed()
         composeRule.onNodeWithTag("patient-today-primary-bulk-record").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithTag("patient-today-planned").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-list").performScrollToNode(hasTestTag("patient-today-planned"))
+        composeRule.onNodeWithTag("patient-today-planned").assertIsDisplayed()
     }
 
     @Test

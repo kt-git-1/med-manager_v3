@@ -55,7 +55,7 @@ class CaregiverAuthFlowScreenTest {
         composeRule.onNodeWithText("Password").assertIsDisplayed()
 
         composeRule.onNodeWithContentDescription("戻る").performClick()
-        composeRule.onNodeWithText("新規登録").performClick()
+        composeRule.onNodeWithText("新規登録").performScrollTo().performClick()
         composeRule.onNodeWithText("家族アカウント作成").assertIsDisplayed()
         composeRule.onNodeWithText("メールアドレス").assertIsDisplayed()
         composeRule.onNodeWithText("パスワード（6文字以上）").assertIsDisplayed()
@@ -168,13 +168,14 @@ class CaregiverAuthFlowScreenTest {
         val repository = authRepository()
         val activity = render(repository, fontScale = 2f, darkTheme = true)
 
-        composeRule.onNodeWithText("新規登録").performClick()
+        composeRule.onNodeWithTag("caregiver-auth-choice-signup").performScrollTo().performClick()
         captureDevice(activity, "android-ui-005-caregiver-signup-empty-dark-font-2.0.png", darkTheme = true)
         composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag(AUTH_CONFIRMATION_TAG).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithTag(AUTH_NAVIGATION_BACK_TAG).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_FORM_LIST_TAG).performScrollToIndex(0)
+        composeRule.onNodeWithTag(AUTH_NAVIGATION_BACK_TAG).assertIsDisplayed()
     }
 
     @Test

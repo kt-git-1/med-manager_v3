@@ -19,6 +19,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.hasTestTag
@@ -250,7 +251,7 @@ class CaregiverMedicationScreenTest {
     @Test
     fun addFormCapturesCurrentIosBasicSchedulePrnAndWeeklyStates() {
         val activity = setContent(emptyList())
-        composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
+        composeRule.onNodeWithTag("caregiver-medication-empty-add").performScrollTo().performClick()
 
         composeRule.onNodeWithTag("medication-editor-hero").assertIsDisplayed()
         composeRule.onNodeWithText("基本情報").assertIsDisplayed()
@@ -267,6 +268,7 @@ class CaregiverMedicationScreenTest {
         composeRule.onNodeWithText("頓服は決まった時間には出さず", substring = true).assertIsDisplayed()
         captureDevice(activity, "android-ui-203-caregiver-medication-form-prn-light-matched.png")
 
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-kind-scheduled"))
         composeRule.onNodeWithTag("medication-kind-scheduled").performClick()
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-frequency-weekly"))
         composeRule.onNodeWithTag("medication-frequency-weekly").performClick()
@@ -322,7 +324,7 @@ class CaregiverMedicationScreenTest {
     @Test
     fun addFormSaveRemainsReachableAtTwoHundredPercent() {
         val activity = setContent(emptyList(), slotTimes = iosDefaultSlotTimes(), fontScale = 2f)
-        composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
+        composeRule.onNodeWithTag("caregiver-medication-empty-add").performScrollTo().performClick()
 
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-save"))
         composeRule.onNodeWithTag("medication-save").assertIsDisplayed()

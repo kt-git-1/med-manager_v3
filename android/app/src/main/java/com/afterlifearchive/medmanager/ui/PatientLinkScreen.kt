@@ -99,7 +99,8 @@ fun PatientLinkContent(
     val codeA11yLabel = stringResource(R.string.patient_link_a11y_code)
     val submitA11yLabel = stringResource(R.string.patient_link_a11y_submit)
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(colors.background).safeDrawingPadding(),
+        modifier = Modifier.fillMaxSize().background(colors.background).safeDrawingPadding()
+            .testTag("patient-link-list"),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, top = 48.dp, end = 20.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(25.dp),
     ) {
@@ -168,7 +169,9 @@ fun PatientLinkContent(
         item {
             Surface(
                 onClick = onBack,
-                modifier = Modifier.fillMaxWidth().height(56.dp).border(1.dp, colors.primary.copy(alpha = 0.18f), RoundedCornerShape(16.dp)),
+                modifier = Modifier.fillMaxWidth().height(56.dp)
+                    .border(1.dp, colors.primary.copy(alpha = 0.18f), RoundedCornerShape(16.dp))
+                    .testTag("patient-link-back"),
                 shape = RoundedCornerShape(16.dp),
                 color = colors.surface.copy(alpha = 0.75f),
             ) {

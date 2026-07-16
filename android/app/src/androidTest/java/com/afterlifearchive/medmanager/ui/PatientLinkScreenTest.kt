@@ -13,6 +13,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -20,6 +21,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.unit.Density
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
@@ -157,9 +159,9 @@ class PatientLinkScreenTest {
             .performScrollTo()
             .assertIsDisplayed()
             .assertIsEnabled()
-        composeRule.onNodeWithText("モードを選び直す")
-            .performScrollTo()
-            .assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-link-list")
+            .performScrollToNode(hasTestTag("patient-link-back"))
+        composeRule.onNodeWithTag("patient-link-back").assertIsDisplayed()
         captureFixture("android-ui-002-patient-link-network-error-font-2.0.png")
     }
 

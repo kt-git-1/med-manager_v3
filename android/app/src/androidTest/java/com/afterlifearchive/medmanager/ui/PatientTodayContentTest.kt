@@ -18,6 +18,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -91,12 +92,16 @@ class PatientTodayContentTest {
         }
 
         composeRule.onNodeWithText("次に飲むお薬").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-list")
+            .performScrollToNode(hasText("在庫不足のお薬が1件あります"))
         composeRule.onAllNodesWithText("在庫不足のお薬が1件あります").onFirst().assertIsDisplayed()
         composeRule.runOnIdle { normalizeStatusBar(activity) }
         SystemClock.sleep(250)
         writeDeviceScreenshotFixture("android-ui-101-patient-inventory-partial-light.png")
         composeRule.onNodeWithText("この時間のお薬を飲んだ").performClick()
-        composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("patient-today-list")
+            .performScrollToNode(hasTestTag("patient-today-prn-entry"))
+        composeRule.onNodeWithTag("patient-today-prn-entry").assertIsDisplayed().performClick()
         composeRule.onNodeWithText("飲んだ薬を選んでください").assertIsDisplayed()
         composeRule.onNodeWithText("頭痛薬 1錠").assertIsDisplayed()
         composeRule.onNodeWithText("痛い時").assertIsDisplayed()
@@ -167,6 +172,8 @@ class PatientTodayContentTest {
         val activity = showMatchedAdaptiveToday(fontScale = 2f)
 
         composeRule.onNodeWithText("7月15日（水）").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-list")
+            .performScrollToNode(hasTestTag("patient-today-primary-bulk-record"))
         composeRule.onNodeWithTag("patient-today-primary-bulk-record").assertIsDisplayed()
         composeRule.runOnIdle { normalizeStatusBar(activity) }
         SystemClock.sleep(250)
