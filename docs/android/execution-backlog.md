@@ -157,6 +157,8 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C56 Reconcile UI-208 Settings against current `main@3e52fb2`: move zero-patient creation behind its CTA/sheet, disable blank submission, add the immediate post-create code guide, replace multiple-patient radio rows with a menu and missing-selection guidance, suppress patient-scoped push at zero patients, and refresh light/dark/200% evidence.
 - [x] C57 Rerun the complete expanded 259-test suite on API 26/33/35; repair compact-viewport lazy-list reachability assumptions without narrowing UI behavior, then pass 777/777 plus JVM 186/186, Lint and Debug/Release assembly.
 - [x] C58 Merge `main@3e52fb2`, review the complete API/iOS delta, preserve API push ordering after parallel history/inventory effects, and match current iOS nonblocking Patient/Caregiver post-record reconciliation plus overdue-delete `MISSED` restoration.
+- [x] C59 Align the master plan/completion audit to `main@3e52fb2`, close the superseded C01 umbrella row, add the missing privacy-first Firebase live-verification runbook and prove release runtime/signing gates fail closed while secret-free asset/APK checks pass.
+- [x] C60 Define the executable physical-device gate across old-supported, current-reference and non-Google OEM targets, including notifications/FCM/Doze/process state, TalkBack/adaptive UI, session/backup, browser/share, destructive/network and exact-artifact evidence rows.
 - [x] C34 Accept strict caregiver `DOSE_MISSED` payloads alongside `DOSE_TAKEN` and verify identical exact-date/slot History routing.
 - [x] C35 Rerun the full API/JVM/lint/build/API-35 matrix and close all C31 `RECHECK_REQUIRED` rows.
 - [ ] V01 Complete the remaining physical TalkBack traversal, physical matched dark/large-text checks and OEM-device verification; C06 already closes the emulator-verifiable matrix.
@@ -229,10 +231,10 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C58 rebaseline: `main@3e52fb2` is merged into `android-dev` at `2fb4a9f`; the complete eight-file API/iOS delta and its tests were reviewed (2026-07-16).
 - [x] Resolve all `RECHECK_REQUIRED` rows; remaining `PARTIAL` rows are explicitly external/visual/device release gates.
 - [x] Current cross-version API 26/33/35 matrix passes the complete suite at 259/259 per API (777/777) with 0 skipped/failed after C57. Historical API-35 large-phone coverage also passes 108/108; physical devices remain separate.
-- [ ] Physical-device matrix.
-- [ ] Notification Doze/delivery/tap/process-death tests.
+- [ ] Execute the C60 `physical-device-matrix.md` on the required old-supported, current reference and current non-Google OEM targets; the matrix/proof format itself is complete.
+- [ ] Execute its Patient notification and Caregiver FCM Doze/delivery/tap/task-removal/process-reclamation rows on the exact Play Internal artifact.
 - [x] Automated font 2.0, dark mode, compact/standard/large phone, semantics and rotation/configuration tests.
-- [ ] Physical TalkBack traversal and OEM configuration/lifecycle tests.
+- [ ] Execute the C60 full TalkBack traversal and OEM configuration/lifecycle rows; do not promote emulator semantics evidence to a physical pass.
 - [x] Security, dependency, privacy and initial performance reviews; external dependency upgrades and signed-release profiling remain recorded residuals.
 - [x] Add a secret-free, fail-closed production signing configuration and Play release runbook.
 - [x] Make the signed-AAB task fail closed on incomplete production Firebase/runtime configuration and add repeatable application-ID/SDK/permission/16-KB APK+ELF compatibility inspection (`i04-play-preflight-20260715.md`).

@@ -33,6 +33,7 @@ An Android shortcut never overrides a backend rule or an intentional iOS product
 - [UI fidelity specification](./ui-fidelity-spec.md)
 - [Current gap audit](./current-gap-audit.md)
 - [Firebase Analytics verification](./firebase-analytics.md)
+- [Physical-device verification matrix](./physical-device-matrix.md)
 - [Play release runbook](./play-release-runbook.md)
 - [Phase 0 foundation](./phase-0-foundation.md)
 - [Phase 1 session/API notes](./phase-1-session-api.md)

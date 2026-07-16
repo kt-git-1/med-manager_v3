@@ -78,7 +78,7 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 ## 6. Next execution order
 
 1. H07 supply Android Firebase values and capture privacy-reviewed DebugView, Realtime, Events and Explore evidence.
-2. I02 complete physical FCM/Doze/process-death, TalkBack/font/dark/rotation and browser/share checks.
+2. I02 execute `physical-device-matrix.md` across old-supported, current-reference and non-Google OEM targets, including FCM/Doze/process-state, TalkBack/font/dark/rotation and browser/share rows.
 3. Complete signed Play closed-test/release gates and perform the final main rebaseline.
 
 Do not claim a rebaselined row complete until its new-baseline contract and evidence pass.

@@ -161,11 +161,12 @@ This is a verification/repair phase, not a declaration that earlier code is auto
 5. Data safety and health-app declarations
 6. Signed internal/closed test, feedback repair and rollout plan
 
-### Current checkpoint — C59 (2026-07-16)
+### Current checkpoint — C60 (2026-07-16)
 
 - R0–C4 and the automated portion of X1 are implemented against `main@3e52fb2`.
 - Current iOS/Android emulator-verifiable UI states are recorded through C56; C57 passes the complete 259-test suite on API 26/33/35, and C58 revalidates current post-record behavior.
 - The repeatable privacy-first Firebase procedure is `firebase-analytics.md`; live Console evidence still requires the four Android Firebase values and a physical device.
+- The physical release procedure is `physical-device-matrix.md`; its row-level evidence still requires old-supported, current-reference and non-Google OEM targets plus the exact signed Play Internal artifact.
 - V1 remains open for physical-device/Doze/TalkBack/OEM evidence, a release-owner signed AAB, Play Internal/Closed testing, Console declarations and the final pre-merge main rebaseline.
 
 ## 7. Automated quality gates
