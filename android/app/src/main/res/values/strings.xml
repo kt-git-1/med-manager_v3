@@ -295,6 +295,10 @@
     <string name="caregiver_empty_step_share">本人モードの端末でコードを入力</string>
     <string name="caregiver_no_selection_title">患者が未選択です</string>
     <string name="caregiver_no_selection_message">設定から対象患者を選んでください。</string>
+    <string name="caregiver_selection_required_title">見守る方を選択してください</string>
+    <string name="caregiver_selection_required_message">連携・設定タブで対象を選ぶと、今日の予定・薬・在庫・履歴を確認できます。</string>
+    <string name="caregiver_open_patients">連携・設定を開く</string>
+    <string name="caregiver_return_login">ログイン画面に戻る</string>
     <string name="caregiver_today_title">今日の服薬</string>
     <string name="caregiver_today_watching">%1$sさんを見守り中</string>
     <string name="caregiver_today_patient_name">%1$sさん</string>
@@ -322,7 +326,6 @@
     <string name="caregiver_today_empty_step_schedule">朝・昼・夜・眠前などの時間を設定</string>
     <string name="caregiver_today_empty_step_record">今日画面で服薬状況を確認・記録</string>
     <string name="caregiver_today_empty_action">薬を登録する</string>
-    <string name="caregiver_today_return_login">ログイン画面に戻る</string>
     <string name="caregiver_today_slot_morning">朝</string>
     <string name="caregiver_today_slot_noon">昼</string>
     <string name="caregiver_today_slot_evening">夕</string>
@@ -524,8 +527,6 @@
     <string name="caregiver_medication_section_prn">頓服</string>
     <string name="caregiver_medication_section_ended_scheduled">期間終了（定時）</string>
     <string name="caregiver_medication_section_ended_prn">期間終了（頓服）</string>
-    <string name="caregiver_medication_filter_empty_title">該当する薬はありません</string>
-    <string name="caregiver_medication_filter_empty_message">別のフィルターを選んでください。</string>
     <string name="caregiver_medication_type_scheduled">定時</string>
     <string name="caregiver_medication_type_prn">頓服</string>
     <string name="caregiver_medication_type_ended">終了</string>

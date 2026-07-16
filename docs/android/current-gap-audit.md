@@ -6,7 +6,7 @@
 
 ## 1. Executive result
 
-The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C31 formally rebased the contract from `main@1d9d19e` to `main@1cf8aef`; C32–C34 closed the three resulting Android parity gaps, C35/C36 passed the current regression matrices, C37–C41 closed fresh matched Patient History streak, Caregiver Today status and entry/auth UI-002–005, C42–C48 closed UI-101–106, and C49 closes the emulator-verifiable UI-201 Caregiver Today exceptional/dark/adaptive matrix. Remaining gaps are explicitly live Firebase, caregiver UI-202+ residuals, physical-device evidence and Play release operations.
+The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C31 formally rebased the contract from `main@1d9d19e` to `main@1cf8aef`; C32–C34 closed the three resulting Android parity gaps, C35/C36 passed the current regression matrices, C37–C41 closed fresh matched Patient History streak, Caregiver Today status and entry/auth UI-002–005, C42–C48 closed UI-101–106, C49 closes UI-201 and C50 closes the emulator-verifiable UI-202 Caregiver Medication List exceptional/dark/adaptive matrix. Remaining gaps are explicitly live Firebase, caregiver UI-203+ residuals, physical-device evidence and Play release operations.
 
 ## 2. What is reusable
 
@@ -69,13 +69,13 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Patient Today | IMPLEMENTED / physical verify | C42/C43 close the current-runtime light Today exceptional pairs; C44 closes dose detail and C45 closes patient PRN across same-data content, loading, failure, insufficient, dark and largest-text pairs. Post-record reminder/history/inventory revisions and success/failure preservation are covered; physical TalkBack/OEM/lifecycle evidence remains |
 | Patient History/Settings | IMPLEMENTED / physical verify | C37 closes streak, C46 closes UI-104, C47 removes stale UI-105 reachability, and C48 closes UI-106 top/lower/permission/confirmation light plus dark/maximum-text pairs. Server-first logout intentionally remains stricter than current iOS; physical permission/browser/session/TalkBack evidence remains |
 | Patient notification/tutorial | IMPLEMENTED / physical verify | Next-day rebuild, loaded-tab lifetime, routing and tutorial actions are covered; physical permission/tap/TalkBack remain |
-| Caregiver mode | IMPLEMENTED / re-visualize | C37 closes status-first Today and C49 closes its loading/error/empty/PRN, dark and adaptive matrix. UI-202+ exceptional/adaptive flows and physical FCM/TalkBack evidence remain |
+| Caregiver mode | IMPLEMENTED / re-visualize | C37/C49 close Caregiver Today and C50 closes Medication List loading/error/no-patient/no-selection/empty/filter-empty, dark and adaptive states. UI-203+ exceptional/adaptive flows and physical FCM/TalkBack evidence remain |
 | Analytics/privacy parity | PARTIAL | Code and automated privacy gates complete; Firebase Console evidence awaits environment configuration |
 | Physical release verification | NOT_STARTED | Emulator evidence is not release proof |
 
 ## 6. Next execution order
 
-1. Close UI-202 Caregiver Medication List exceptional/dark/adaptive pairs, then continue UI-203+ in screen order. C49 has completed UI-201; the C36 187-test API 26/33/35 matrix remains recorded at 561/561.
+1. Close UI-203 Caregiver Medication Form exceptional/dark/adaptive pairs, then continue UI-204+ in screen order. C50 has completed UI-202; the C36 187-test API 26/33/35 matrix remains recorded at 561/561.
 2. H07 supply Android Firebase values and capture privacy-reviewed DebugView, Realtime, Events and Explore evidence.
 3. I02 complete physical FCM/Doze/process-death, TalkBack/font/dark/rotation and browser/share checks.
 4. Complete signed Play closed-test/release gates and perform the final main rebaseline.

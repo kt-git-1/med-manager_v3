@@ -80,7 +80,7 @@ class CaregiverAdaptiveUiTest {
                 CaregiverMedicationScreen(medicationRepository, patientState, enabled = true)
             }
         }
-        composeRule.onNodeWithTag("caregiver-medication-add").performClick()
+        composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
         composeRule.onNodeWithTag("caregiver-medication-form")
             .performScrollToNode(hasTestTag("medication-save"))
         composeRule.onNodeWithTag("medication-save").assertIsDisplayed()

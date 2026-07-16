@@ -114,6 +114,9 @@ internal fun CaregiverMedicationScreen(
     repository: CaregiverMedicationRepository,
     patientState: CaregiverPatientState,
     enabled: Boolean,
+    onReturnToLogin: () -> Unit = {},
+    onOpenPatients: () -> Unit = {},
+    onCreatePatient: () -> Unit = {},
 ) {
     val state by repository.state.collectAsStateWithLifecycle()
     val freshness by repository.freshness.collectAsStateWithLifecycle()
@@ -147,28 +150,30 @@ internal fun CaregiverMedicationScreen(
     }
 
     when {
-        patientState.loading && patientState.patients.isEmpty() -> CaregiverMedicationCentered { CircularProgressIndicator() }
-        patientState.loadFailed -> CaregiverMedicationMessage(
-            stringResource(R.string.caregiver_data_unavailable_title),
-            stringResource(R.string.caregiver_data_unavailable_message),
+        patientState.loading && patientState.patients.isEmpty() -> CaregiverMedicationLoadingState()
+        patientState.loadFailed -> CaregiverDataUnavailableState(
+            enabled = enabled,
+            onRetry = onOpenPatients,
+            onReturnToLogin = onReturnToLogin,
+            testTagPrefix = "caregiver-medication-patients",
         )
-        patientState.patients.isEmpty() -> CaregiverMedicationMessage(
-            stringResource(R.string.caregiver_no_patient_title),
-            stringResource(R.string.caregiver_no_patient_message),
+        patientState.patients.isEmpty() -> CaregiverNoPatientState(
+            enabled = enabled,
+            onCreatePatient = onCreatePatient,
+            testTagPrefix = "caregiver-medication",
         )
-        selected == null -> CaregiverMedicationMessage(
-            stringResource(R.string.caregiver_no_selection_title),
-            stringResource(R.string.caregiver_no_selection_message),
+        selected == null -> CaregiverPatientSelectionRequiredState(
+            enabled = enabled,
+            onOpenPatients = onOpenPatients,
+            testTagPrefix = "caregiver-medication",
         )
         state.loading -> CaregiverMedicationLoadingState()
-        state.loadFailed -> CaregiverMedicationMessage(
-            stringResource(R.string.caregiver_data_unavailable_title),
-            stringResource(R.string.caregiver_data_unavailable_message),
-        ) {
-            Button(onClick = { scope.launch { repository.load(selected.id) } }, enabled = enabled) {
-                Text(stringResource(R.string.common_retry))
-            }
-        }
+        state.loadFailed -> CaregiverDataUnavailableState(
+            enabled = enabled,
+            onRetry = { scope.launch { repository.load(selected.id) } },
+            onReturnToLogin = onReturnToLogin,
+            testTagPrefix = "caregiver-medication",
+        )
         else -> Box(Modifier.fillMaxSize()) {
             CaregiverMedicationList(
                 items = state.items,
@@ -235,16 +240,18 @@ private fun CaregiverMedicationList(
                         maxLines = 1,
                     )
                 }
-                Button(
-                    onClick = onAdd,
-                    enabled = enabled,
-                    modifier = Modifier.height(44.dp).testTag("caregiver-medication-add"),
-                    shape = CircleShape,
-                    contentPadding = PaddingValues(horizontal = 14.dp),
-                ) {
-                    Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(6.dp))
-                    Text(stringResource(R.string.caregiver_medication_add_compact), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                if (items.isNotEmpty()) {
+                    Button(
+                        onClick = onAdd,
+                        enabled = enabled,
+                        modifier = Modifier.height(44.dp).testTag("caregiver-medication-add"),
+                        shape = CircleShape,
+                        contentPadding = PaddingValues(horizontal = 14.dp),
+                    ) {
+                        Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.size(6.dp))
+                        Text(stringResource(R.string.caregiver_medication_add_compact), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
@@ -273,12 +280,6 @@ private fun CaregiverMedicationList(
                     )
                 }
             }
-        }
-        if (items.isNotEmpty() && visible.isEmpty()) item {
-            CaregiverMedicationMessage(
-                stringResource(R.string.caregiver_medication_filter_empty_title),
-                stringResource(R.string.caregiver_medication_filter_empty_message),
-            )
         }
         val sections = when (filter) {
             CaregiverMedicationFilter.ALL -> listOf(
@@ -504,42 +505,55 @@ private fun CaregiverMedicationEmptyCard(onAdd: () -> Unit, enabled: Boolean) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
     ) {
-        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Top) {
-                Box(Modifier.size(62.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.Medication, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(34.dp))
+                Box(
+                    Modifier.size(64.dp).clip(CircleShape)
+                        .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f), MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))))
+                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    MedicationPillsGlyph(MaterialTheme.colorScheme.primary, Modifier.size(34.dp))
                 }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Text(stringResource(R.string.caregiver_medication_empty_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text(stringResource(R.string.caregiver_medication_empty_message), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(stringResource(R.string.caregiver_medication_empty_title), fontSize = 24.sp, lineHeight = 30.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.caregiver_medication_empty_message), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 18.sp, lineHeight = 25.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
-            CaregiverMedicationOnboardingStep(1, stringResource(R.string.caregiver_medication_empty_step_name))
-            CaregiverMedicationOnboardingStep(2, stringResource(R.string.caregiver_medication_empty_step_schedule))
-            CaregiverMedicationOnboardingStep(3, stringResource(R.string.caregiver_medication_empty_step_inventory))
-            Button(onClick = onAdd, enabled = enabled, modifier = Modifier.fillMaxWidth().height(50.dp).testTag("caregiver-medication-empty-add")) {
+            CaregiverMedicationOnboardingStep(1, stringResource(R.string.caregiver_medication_empty_step_name), null, MaterialTheme.colorScheme.primary)
+            CaregiverMedicationOnboardingStep(2, stringResource(R.string.caregiver_medication_empty_step_schedule), Icons.Rounded.Schedule, MedicationTheme.colors.caregiverBlue)
+            CaregiverMedicationOnboardingStep(3, stringResource(R.string.caregiver_medication_empty_step_inventory), Icons.Rounded.Inventory2, MedicationTheme.colors.orange)
+            Button(onClick = onAdd, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp).testTag("caregiver-medication-empty-add"), shape = RoundedCornerShape(14.dp)) {
                 Icon(Icons.Rounded.Add, contentDescription = null)
                 Spacer(Modifier.size(6.dp))
-                Text(stringResource(R.string.caregiver_medication_add))
+                Text(stringResource(R.string.caregiver_medication_add), fontSize = 17.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
 }
 
 @Composable
-private fun CaregiverMedicationOnboardingStep(number: Int, label: String) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Box(Modifier.size(30.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.13f)), contentAlignment = Alignment.Center) {
-            Text(number.toString(), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+private fun CaregiverMedicationOnboardingStep(number: Int, label: String, icon: ImageVector?, tint: Color) {
+    Row(
+        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f), RoundedCornerShape(14.dp)).padding(horizontal = 12.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(Modifier.size(24.dp).clip(CircleShape).background(tint), contentAlignment = Alignment.Center) {
+            Text(number.toString(), color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
         }
-        Text(label, fontWeight = FontWeight.SemiBold)
+        Box(Modifier.size(34.dp).clip(CircleShape).background(tint.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+            if (icon == null) Text("ああ", color = tint, fontSize = 13.sp, fontWeight = FontWeight.Black)
+            else Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(19.dp))
+        }
+        Text(label, modifier = Modifier.weight(1f), fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold)
     }
 }
 
 @Composable
 private fun CaregiverMedicationLoadingState() {
     CaregiverMedicationCentered {
-        CircularProgressIndicator(modifier = Modifier.size(52.dp))
+        CircularProgressIndicator(modifier = Modifier.size(38.dp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f), strokeWidth = 4.dp)
         Text(stringResource(R.string.patient_today_loading), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("caregiver-medication-loading"))
     }
 }
@@ -1120,15 +1134,6 @@ private fun medicationSchedule(item: PatientMedication, slotTimes: CaregiverSlot
     val days = item.regimenDaysOfWeek.orEmpty()
     return if (days.isEmpty()) stringResource(R.string.caregiver_medication_schedule_daily, timeText)
     else stringResource(R.string.caregiver_medication_schedule_weekly, days.mapNotNull(DAY_LABELS::get).joinToString("・"), timeText)
-}
-
-@Composable
-private fun CaregiverMedicationMessage(title: String, message: String, action: (@Composable () -> Unit)? = null) {
-    CaregiverMedicationCentered {
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-        Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-        action?.invoke()
-    }
 }
 
 @Composable

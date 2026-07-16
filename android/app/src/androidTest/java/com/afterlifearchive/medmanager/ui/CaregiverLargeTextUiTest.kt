@@ -99,8 +99,8 @@ class CaregiverLargeTextUiTest(private val darkTheme: Boolean) {
         }
         composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
         composeRule.onNodeWithTag("caregiver-medication-list")
-            .performScrollToNode(hasTestTag("caregiver-medication-add"))
-        composeRule.onNodeWithTag("caregiver-medication-add").performClick()
+            .performScrollToNode(hasTestTag("caregiver-medication-empty-add"))
+        composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
         composeRule.onNodeWithTag("caregiver-medication-form")
             .performScrollToNode(hasTestTag("medication-save"))
         composeRule.onNodeWithTag("medication-save").assertIsDisplayed()

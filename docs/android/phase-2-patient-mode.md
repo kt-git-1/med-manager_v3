@@ -297,6 +297,14 @@ This selector foundation is connected to inventory-backed production candidates 
 - PRN now opens as a full navigation surface rather than a bottom sheet. The card uses the shared orange capsule, exact strength/count/instruction copy and teal proxy-record action; mutation failure remains in-route, success alone dismisses, and Back clears transient feedback.
 - Native alert geometry and Android's explicit route Back remain platform conventions. iOS caps its root at `.xLarge`, while Android keeps both exceptional surfaces reachable at true 200% font scale. Physical TalkBack and real-API verification remain Gate I.
 
+## 2026-07-16 C50 Caregiver Medication List calibration
+
+- Eleven deterministic current-iOS/Android pairs under `evidence/c50-20260716/` cover loading, failure, no patient, selection required, empty, populated and blank ended-filter light states plus empty/populated dark and adaptive states.
+- Loading is neutral; initial failure exposes Retry and return-to-login; patient exceptional states route to registration or patient settings through the production Caregiver Home shell.
+- Empty Medication List now has one Add action, the current large pills identity and exact three illustrated setup rows. A filter with no matching rows stays blank below the metrics and filters, matching current iOS.
+- iOS caps its root at `.xLarge`; Android preserves true 200% scroll reachability. Native SF Symbol/Material icon geometry is accepted. Physical TalkBack, OEM and real-API verification remain Gate I.
+- Focused Medication List and Home-shell suites pass 19/19 and 17/17; the expanded API-35 suite passes 223/223, JVM passes 186/186, and Debug assembly/Lint pass.
+
 ## Phase 2D notification routing and patient tutorial
 
 ### XP-002 exact notification destination

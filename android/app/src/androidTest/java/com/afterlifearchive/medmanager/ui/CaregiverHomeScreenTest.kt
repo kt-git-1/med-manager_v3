@@ -27,6 +27,8 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverLinkingCode
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationDataSource
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryRepository
 import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
@@ -98,6 +100,33 @@ class CaregiverHomeScreenTest {
         composeRule.onNodeWithTag("caregiver-feature-state").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
         composeRule.onNodeWithTag("caregiver-settings-empty").assertIsDisplayed()
+    }
+
+    @Test
+    fun medicationNoPatientActionOpensRegistrationInSettings() {
+        val storage = TestSelectionStorage()
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val patientRepository = CaregiverPatientRepository(CaregiverPatientDataSource { emptyList() }, selection)
+        val medicationRepository = CaregiverMedicationRepository(
+            CaregiverMedicationDataSource { emptyList() },
+            MutationFreshnessStore(),
+        )
+        composeRule.setContent {
+            MedicationAppTheme {
+                CaregiverHomeScreen(
+                    repository = patientRepository,
+                    medicationRepository = medicationRepository,
+                    tutorialEnabled = false,
+                )
+            }
+        }
+        composeRule.waitUntil(5_000) { patientRepository.state.value.hasLoaded }
+
+        composeRule.onNodeWithTag("caregiver-tab-medications").performClick()
+        composeRule.onNodeWithTag("caregiver-medication-create-patient").performClick()
+
+        composeRule.onNodeWithTag("caregiver-content-settings").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-create-name").assertIsDisplayed()
     }
 
     @Test

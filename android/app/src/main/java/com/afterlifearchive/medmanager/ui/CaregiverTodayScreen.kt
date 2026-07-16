@@ -33,10 +33,7 @@ import androidx.compose.material.icons.rounded.Bed
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.LocalHospital
 import androidx.compose.material.icons.rounded.Medication
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Warning
-import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material.icons.rounded.WbTwilight
 import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material3.Button
@@ -58,7 +55,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -126,10 +122,11 @@ internal fun CaregiverTodayScreen(
             stringResource(R.string.caregiver_no_selection_message),
         )
         state.loading -> CaregiverTodayLoadingState()
-        state.loadFailed -> CaregiverTodayUnavailableState(
+        state.loadFailed -> CaregiverDataUnavailableState(
             enabled = enabled,
             onRetry = { scope.launch { repository.load(selected.id) } },
             onReturnToLogin = onReturnToLogin,
+            testTagPrefix = "caregiver-today",
         )
         else -> Box(Modifier.fillMaxSize()) {
             CaregiverTodayContent(
@@ -466,39 +463,6 @@ private fun CaregiverTodayLoadingState() {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.testTag("caregiver-today-loading"),
         )
-    }
-}
-
-@Composable
-private fun CaregiverTodayUnavailableState(enabled: Boolean, onRetry: () -> Unit, onReturnToLogin: () -> Unit) {
-    Box(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 24.dp).testTag("caregiver-today-unavailable"),
-        contentAlignment = Alignment.Center,
-    ) {
-        val shape = RoundedCornerShape(20.dp)
-        Column(
-            modifier = Modifier.fillMaxWidth().shadow(12.dp, shape).background(MaterialTheme.colorScheme.surface.copy(alpha = 0.96f), shape).padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Icon(Icons.Rounded.WifiOff, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(44.dp))
-            Text(stringResource(R.string.caregiver_data_unavailable_title), fontSize = 20.sp, lineHeight = 25.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
-            Text(stringResource(R.string.caregiver_data_unavailable_message), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 17.sp, lineHeight = 23.sp, textAlign = TextAlign.Center)
-            Button(onClick = onRetry, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp).testTag("caregiver-today-retry"), shape = RoundedCornerShape(14.dp)) {
-                Icon(Icons.Rounded.Refresh, contentDescription = null)
-                Spacer(Modifier.size(8.dp))
-                Text(stringResource(R.string.common_retry), fontSize = 17.sp, fontWeight = FontWeight.Bold)
-            }
-            TextButton(
-                onClick = onReturnToLogin,
-                enabled = enabled,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f), RoundedCornerShape(14.dp)).testTag("caregiver-today-return-login"),
-            ) {
-                Icon(Icons.Rounded.Person, contentDescription = null)
-                Spacer(Modifier.size(8.dp))
-                Text(stringResource(R.string.caregiver_today_return_login), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-            }
-        }
     }
 }
 

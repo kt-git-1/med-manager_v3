@@ -235,6 +235,11 @@ fun CaregiverHomeScreen(
                                 onAccountDeleted,
                                 if (tutorialStep >= 0) caregiverTutorialFocusTag(tutorialStep) else postTutorialFocusTag,
                                 onOpenMedications = { selectTab(CaregiverTab.MEDICATIONS) },
+                                onOpenPatients = { selectTab(CaregiverTab.SETTINGS) },
+                                onCreatePatient = {
+                                    selectTab(CaregiverTab.SETTINGS)
+                                    postTutorialFocusTag = "caregiver-create-name"
+                                },
                             )
                         }
                     }
@@ -288,6 +293,8 @@ private fun CaregiverTabContent(
     onAccountDeleted: () -> Unit,
     tutorialFocusTag: String?,
     onOpenMedications: () -> Unit,
+    onOpenPatients: () -> Unit,
+    onCreatePatient: () -> Unit,
 ) {
     when (tab) {
         CaregiverTab.SETTINGS -> CaregiverPatientSelectionScreen(state, repository, pushRepository, analyticsService, visible, onLogout, onAccountDeleted, tutorialFocusTag)
@@ -296,6 +303,9 @@ private fun CaregiverTabContent(
                 repository = medicationRepository,
                 patientState = state,
                 enabled = visible,
+                onReturnToLogin = onLogout,
+                onOpenPatients = onOpenPatients,
+                onCreatePatient = onCreatePatient,
             )
         } else CaregiverFeatureLanding(tab, state, repository, visible)
         CaregiverTab.TODAY -> if (todayRepository != null) {
