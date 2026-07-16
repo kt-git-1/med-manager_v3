@@ -63,7 +63,7 @@ class CaregiverMedicationScreenTest {
 
     @Test
     fun selectedPatientWithNoMedicationShowsCanonicalEmptyState() {
-        val activity = setContent(emptyList())
+        val activity = setContent(emptyList(), slotTimes = iosDefaultSlotTimes())
 
         composeRule.onNodeWithText("薬がありません").assertIsDisplayed()
         composeRule.onNodeWithText("まず1つ目の薬を登録しましょう。", substring = true).assertIsDisplayed()
@@ -248,6 +248,88 @@ class CaregiverMedicationScreenTest {
     }
 
     @Test
+    fun addFormCapturesCurrentIosBasicSchedulePrnAndWeeklyStates() {
+        val activity = setContent(emptyList())
+        composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
+
+        composeRule.onNodeWithTag("medication-editor-hero").assertIsDisplayed()
+        composeRule.onNodeWithText("基本情報").assertIsDisplayed()
+        captureDevice(activity, "android-ui-203-caregiver-medication-form-add-basic-light-matched.png")
+
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-frequency-daily"))
+        composeRule.onNodeWithText("本人画面に出す時間を選択").assertIsDisplayed()
+        composeRule.onNodeWithText("時間帯").assertIsDisplayed()
+        captureDevice(activity, "android-ui-203-caregiver-medication-form-add-schedule-light-matched.png")
+
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-kind-prn"))
+        composeRule.onNodeWithTag("medication-kind-prn").performClick()
+        composeRule.onNodeWithTag("medication-prn-instructions").assertIsDisplayed()
+        composeRule.onNodeWithText("頓服は決まった時間には出さず", substring = true).assertIsDisplayed()
+        captureDevice(activity, "android-ui-203-caregiver-medication-form-prn-light-matched.png")
+
+        composeRule.onNodeWithTag("medication-kind-scheduled").performClick()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-frequency-weekly"))
+        composeRule.onNodeWithTag("medication-frequency-weekly").performClick()
+        composeRule.onNodeWithTag("medication-day-mon").performClick()
+        composeRule.onNodeWithTag("medication-slot-morning").performClick()
+        captureDevice(activity, "android-ui-203-caregiver-medication-form-weekly-light-matched.png")
+    }
+
+    @Test
+    fun editFormCapturesTopLowerAndDeleteConfirmationStates() {
+        val activity = setContent(
+            listOf(medication("scheduled", "アムロジピン", false, null, 12.0, listOf("08:00", "19:00"))),
+            slotTimes = iosDefaultSlotTimes(),
+        )
+        composeRule.onNodeWithTag("caregiver-medication-edit-scheduled").performClick()
+
+        composeRule.onNodeWithTag("medication-name").assertTextEquals("アムロジピン")
+        composeRule.onNodeWithTag("medication-editor-hero").assertIsDisplayed()
+        captureDevice(activity, "android-ui-203-caregiver-medication-form-edit-basic-light-matched.png")
+
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-delete"))
+        composeRule.onNodeWithTag("medication-inventory").assertDoesNotExist()
+        composeRule.onNodeWithTag("medication-delete").assertIsDisplayed()
+        captureDevice(activity, "android-ui-203-caregiver-medication-form-edit-lower-light-matched.png")
+
+        composeRule.onNodeWithTag("medication-delete").performClick()
+        composeRule.onNodeWithTag("medication-delete-dialog").assertIsDisplayed()
+        captureDevice(activity, "android-ui-203-caregiver-medication-form-delete-confirm-light-matched.png")
+    }
+
+    @Test
+    fun validationFailureUsesCurrentIosErrorHierarchy() {
+        val activity = setContent(emptyList(), slotTimes = iosDefaultSlotTimes())
+        composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-save"))
+        composeRule.onNodeWithTag("medication-save").performClick()
+
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-validation-errors"))
+        composeRule.onNodeWithTag("medication-validation-errors").assertIsDisplayed()
+        composeRule.onNodeWithText("薬名は必須です", substring = true).assertIsDisplayed()
+        captureDevice(activity, "android-ui-203-caregiver-medication-form-validation-light-matched.png")
+    }
+
+    @Test
+    fun addFormMatchesCurrentIosInDarkMode() {
+        val activity = setContent(emptyList(), slotTimes = iosDefaultSlotTimes(), darkTheme = true)
+        composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
+
+        composeRule.onNodeWithTag("medication-editor-hero").assertIsDisplayed()
+        captureDevice(activity, "android-ui-203-caregiver-medication-form-add-basic-dark-matched.png", darkTheme = true)
+    }
+
+    @Test
+    fun addFormSaveRemainsReachableAtTwoHundredPercent() {
+        val activity = setContent(emptyList(), slotTimes = iosDefaultSlotTimes(), fontScale = 2f)
+        composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
+
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-save"))
+        composeRule.onNodeWithTag("medication-save").assertIsDisplayed()
+        captureDevice(activity, "android-ui-203-caregiver-medication-form-add-font-2.0-matched.png")
+    }
+
+    @Test
     fun failedRefreshKeepsMedicationVisibleAndDisablesEditing() {
         var fail = false
         val repository = CaregiverMedicationRepository(
@@ -283,8 +365,9 @@ class CaregiverMedicationScreenTest {
         composeRule.onNodeWithTag("medication-prn-instructions").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-save"))
         composeRule.onNodeWithTag("medication-save").performClick()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-validation-errors"))
         composeRule.onNodeWithTag("medication-validation-errors").assertIsDisplayed()
-        composeRule.onNodeWithText("薬の名前を入力してください", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("薬名は必須です", substring = true).assertIsDisplayed()
     }
 
     @Test
@@ -384,6 +467,7 @@ class CaregiverMedicationScreenTest {
     }
 
     private fun scheduled() = medication("scheduled", "アムロジピン", false, null, 12.0, listOf("08:00", "18:00"))
+    private fun iosDefaultSlotTimes() = CaregiverSlotTimes("08:00", "13:00", "19:00", "22:00")
     private fun prn() = medication("prn", "ロキソニン", true, null, 0.0, null)
     private fun ended() = medication("ended", "終了薬", false, Instant.parse("2026-01-01T00:00:00Z"), 0.0, listOf("12:00"))
 

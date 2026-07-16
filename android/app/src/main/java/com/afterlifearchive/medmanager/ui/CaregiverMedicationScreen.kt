@@ -25,6 +25,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -41,10 +42,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Edit
@@ -55,6 +61,7 @@ import androidx.compose.material.icons.rounded.LocalHospital
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Science
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -98,6 +105,7 @@ import com.afterlifearchive.medmanager.data.patient.PatientMedication
 import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.launch
 import android.app.DatePickerDialog
@@ -669,106 +677,147 @@ private fun CaregiverMedicationEditor(
                     },
                     modifier = Modifier.testTag("medication-kind-prn"),
                 )
+                if (draft.isPrn) {
+                    OutlinedTextField(
+                        value = draft.prnInstructions,
+                        onValueChange = { draft = draft.copy(prnInstructions = it) },
+                        modifier = Modifier.fillMaxWidth().testTag("medication-prn-instructions"),
+                        label = { Text(stringResource(R.string.caregiver_medication_form_prn_instructions)) },
+                        minLines = 2,
+                        maxLines = 4,
+                        shape = RoundedCornerShape(14.dp),
+                    )
+                }
             }
+            Text(
+                stringResource(if (draft.isPrn) R.string.caregiver_medication_form_prn_help else R.string.caregiver_medication_form_scheduled_help),
+                modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 12.dp),
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
-        if (draft.isPrn) item {
-            OutlinedTextField(
-                value = draft.prnInstructions,
-                onValueChange = { draft = draft.copy(prnInstructions = it) },
-                modifier = Modifier.fillMaxWidth().testTag("medication-prn-instructions"),
-                label = { Text(stringResource(R.string.caregiver_medication_form_prn_instructions)) },
-                minLines = 2,
+        item {
+            MedicationFormSectionHeader(stringResource(R.string.caregiver_medication_form_period), MedicationFormHeaderIcon.PERIOD)
+            Spacer(Modifier.height(8.dp))
+            MedicationPeriodCard(
+                draft = draft,
+                onStartDate = { pickDate(draft.startDate) { draft = draft.copy(startDate = it, endDate = draft.endDate?.coerceAtLeast(it)) } },
+                onEndDateEnabled = { enabled -> draft = draft.copy(endDate = if (enabled) draft.startDate else null) },
+                onEndDate = { pickDate(draft.endDate ?: draft.startDate) { draft = draft.copy(endDate = it) } },
             )
         }
         if (!draft.isPrn) item {
-            FormSection(stringResource(R.string.caregiver_medication_form_schedule)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            MedicationFormSectionHeader(stringResource(R.string.caregiver_medication_form_schedule), MedicationFormHeaderIcon.SCHEDULE)
+            Spacer(Modifier.height(8.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MedicationTheme.colors.cardStroke),
+            ) {
+                Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    MedicationScheduleGuide()
+                    Row(
+                        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f), RoundedCornerShape(9.dp)).padding(2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
                     MedicationChoiceChip(
                         selected = draft.scheduleFrequency == CaregiverScheduleFrequency.DAILY,
                         onClick = { draft = draft.copy(scheduleFrequency = CaregiverScheduleFrequency.DAILY, selectedDays = emptySet()) },
                         label = stringResource(R.string.caregiver_medication_form_daily),
-                        modifier = Modifier.testTag("medication-frequency-daily"),
+                        modifier = Modifier.weight(1f).testTag("medication-frequency-daily"),
+                        accent = MedicationTheme.colors.caregiverBlue,
                     )
                     MedicationChoiceChip(
                         selected = draft.scheduleFrequency == CaregiverScheduleFrequency.WEEKLY,
                         onClick = { draft = draft.copy(scheduleFrequency = CaregiverScheduleFrequency.WEEKLY) },
                         label = stringResource(R.string.caregiver_medication_form_weekly),
-                        modifier = Modifier.testTag("medication-frequency-weekly"),
+                        modifier = Modifier.weight(1f).testTag("medication-frequency-weekly"),
+                        accent = MedicationTheme.colors.caregiverBlue,
                     )
                 }
                 if (draft.scheduleFrequency == CaregiverScheduleFrequency.WEEKLY) {
-                    Text(stringResource(R.string.caregiver_medication_form_schedule_days), style = MaterialTheme.typography.labelLarge)
-                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text(stringResource(R.string.caregiver_medication_form_schedule_days), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                         CaregiverScheduleDay.entries.forEach { day ->
-                            MedicationChoiceChip(
-                                selected = day in draft.selectedDays,
-                                onClick = { draft = draft.copy(selectedDays = draft.selectedDays.toggle(day)) },
-                                label = DAY_LABELS.getValue(day.apiValue),
-                                modifier = Modifier.testTag("medication-day-${day.apiValue.lowercase()}")
-                            )
+                                MedicationWeekdayButton(day, day in draft.selectedDays, { draft = draft.copy(selectedDays = draft.selectedDays.toggle(day)) }, Modifier.weight(1f))
                         }
                     }
                 }
-                Text(stringResource(R.string.caregiver_medication_form_schedule_slots), style = MaterialTheme.typography.labelLarge)
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    CaregiverScheduleSlot.entries.forEach { slot ->
-                        val label = when (slot) {
-                            CaregiverScheduleSlot.MORNING -> R.string.caregiver_medication_form_slot_morning
-                            CaregiverScheduleSlot.NOON -> R.string.caregiver_medication_form_slot_noon
-                            CaregiverScheduleSlot.EVENING -> R.string.caregiver_medication_form_slot_evening
-                            CaregiverScheduleSlot.BEDTIME -> R.string.caregiver_medication_form_slot_bedtime
+                    Text(stringResource(R.string.caregiver_medication_form_schedule_slots), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    CaregiverScheduleSlot.entries.chunked(2).forEach { rowSlots ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            rowSlots.forEach { slot ->
+                                MedicationTimeSlotButton(
+                                    slot = slot,
+                                    time = slotTimes?.valueFor(slot).orEmpty(),
+                                    selected = slot in draft.selectedSlots,
+                                    onClick = { draft = draft.copy(selectedSlots = draft.selectedSlots.toggle(slot)) },
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
                         }
-                        MedicationChoiceChip(
-                            selected = slot in draft.selectedSlots,
-                            onClick = { draft = draft.copy(selectedSlots = draft.selectedSlots.toggle(slot)) },
-                            label = stringResource(label),
-                            modifier = Modifier.testTag("medication-slot-${slot.apiValue}"),
-                        )
                     }
+                }
+            }
+            Text(
+                stringResource(R.string.caregiver_medication_form_schedule_help),
+                modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 12.dp),
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (medication == null) item {
+            MedicationFormSectionHeader(stringResource(R.string.caregiver_medication_form_inventory_section), MedicationFormHeaderIcon.INVENTORY)
+            Spacer(Modifier.height(8.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MedicationTheme.colors.cardStroke),
+            ) {
+                Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.caregiver_medication_form_inventory), modifier = Modifier.weight(1f), fontSize = 16.sp)
+                    MedicationInlineField(
+                        value = draft.inventoryCount,
+                        placeholder = "0",
+                        onValueChange = { draft = draft.copy(inventoryCount = it) },
+                        modifier = Modifier.width(72.dp).testTag("medication-inventory"),
+                        keyboardType = KeyboardType.Decimal,
+                        textAlign = TextAlign.End,
+                        contentPadding = PaddingValues(vertical = 14.dp),
+                    )
                 }
             }
         }
         item {
-            FormSection(stringResource(R.string.caregiver_medication_form_start_date)) {
-                OutlinedButton(onClick = { pickDate(draft.startDate) { draft = draft.copy(startDate = it) } }, modifier = Modifier.fillMaxWidth().testTag("medication-start-date")) {
-                    Text(draft.startDate.toString())
-                }
-                OutlinedButton(onClick = { pickDate(draft.endDate ?: draft.startDate) { draft = draft.copy(endDate = it) } }, modifier = Modifier.fillMaxWidth().testTag("medication-end-date")) {
-                    Text(draft.endDate?.toString() ?: stringResource(R.string.caregiver_medication_form_end_date))
-                }
-                if (draft.endDate != null) TextButton(onClick = { draft = draft.copy(endDate = null) }) {
-                    Text(stringResource(R.string.caregiver_medication_form_no_end_date))
-                }
+            MedicationFormSectionHeader(stringResource(R.string.caregiver_medication_form_notes_section), MedicationFormHeaderIcon.NOTES)
+            Spacer(Modifier.height(8.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MedicationTheme.colors.cardStroke),
+            ) {
+                MedicationInlineField(
+                    value = draft.notes,
+                    placeholder = stringResource(R.string.caregiver_medication_form_notes),
+                    onValueChange = { draft = draft.copy(notes = it) },
+                    modifier = Modifier.fillMaxWidth().testTag("medication-notes"),
+                    leading = { Icon(Icons.Rounded.Description, contentDescription = null, tint = MedicationTheme.colors.orange, modifier = Modifier.size(18.dp)) },
+                )
             }
-        }
-        item {
-            OutlinedTextField(
-                value = draft.inventoryCount,
-                onValueChange = { draft = draft.copy(inventoryCount = it) },
-                modifier = Modifier.fillMaxWidth().testTag("medication-inventory"),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                label = { Text(stringResource(R.string.caregiver_medication_form_inventory)) },
-                supportingText = { Text(stringResource(R.string.caregiver_medication_form_inventory_support)) },
-            )
-        }
-        item {
-            OutlinedTextField(
-                value = draft.notes,
-                onValueChange = { draft = draft.copy(notes = it) },
-                modifier = Modifier.fillMaxWidth().testTag("medication-notes"),
-                label = { Text(stringResource(R.string.caregiver_medication_form_notes)) },
-                minLines = 3,
-            )
         }
         if (errors.isNotEmpty()) item {
-            Text(errors.joinToString("\n") { "・${it.message}" }, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("medication-validation-errors"))
+            MedicationFormErrorCard(errors.joinToString("\n") { it.message }, "medication-validation-errors")
         }
         if (saveFailed) item {
-            Text(stringResource(R.string.caregiver_medication_form_error), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("medication-save-error"))
+            MedicationFormErrorCard(stringResource(R.string.caregiver_medication_form_error), "medication-save-error")
         }
         if (deleteFailed) item {
-            Text(stringResource(R.string.caregiver_medication_delete_error), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("medication-delete-error"))
+            MedicationFormErrorCard(stringResource(R.string.caregiver_medication_delete_error), "medication-delete-error")
         }
         item {
             Button(
@@ -785,16 +834,18 @@ private fun CaregiverMedicationEditor(
                     }
                 },
                 enabled = enabled && !submitting,
-                modifier = Modifier.fillMaxWidth().testTag("medication-save"),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp).testTag("medication-save"),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MedicationTheme.colors.caregiverBlue),
             ) {
                 Text(stringResource(if (submitting) R.string.caregiver_medication_form_saving else R.string.caregiver_medication_form_save))
             }
             if (medication != null) {
                 Spacer(Modifier.height(12.dp))
-                OutlinedButton(
+                TextButton(
                     onClick = { showingDeleteConfirm = true },
                     enabled = enabled && !submitting && !deleting,
-                    modifier = Modifier.fillMaxWidth().testTag("medication-delete"),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp).background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f), RoundedCornerShape(14.dp)).testTag("medication-delete"),
                 ) {
                     Text(stringResource(R.string.caregiver_medication_delete), color = MaterialTheme.colorScheme.error)
                 }
@@ -839,21 +890,6 @@ private fun CaregiverMedicationEditor(
 }
 
 @Composable
-private fun FormSection(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-    ) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            content()
-        }
-    }
-}
-
-@Composable
 private fun MedicationEditorHero(isNew: Boolean, draft: CaregiverMedicationDraft) {
     val accent = if (draft.isPrn) MedicationTheme.colors.orange else MedicationTheme.colors.primaryTealText
     Card(
@@ -865,7 +901,8 @@ private fun MedicationEditorHero(isNew: Boolean, draft: CaregiverMedicationDraft
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 Box(Modifier.size(54.dp).clip(RoundedCornerShape(16.dp)).background(accent.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
-                    MedicationPillsGlyph(accent, Modifier.size(38.dp))
+                    if (isNew) MedicationPillsGlyph(accent, Modifier.size(38.dp))
+                    else Icon(Icons.Rounded.Edit, contentDescription = null, tint = accent, modifier = Modifier.size(38.dp))
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
@@ -907,7 +944,7 @@ private fun MedicationProgressPill(label: String, complete: Boolean, color: Colo
     }
 }
 
-private enum class MedicationFormHeaderIcon { PILLS, TYPE }
+private enum class MedicationFormHeaderIcon { PILLS, TYPE, PERIOD, SCHEDULE, INVENTORY, NOTES }
 private enum class MedicationFormTypeIcon { SCHEDULED, PRN }
 
 @Composable
@@ -917,9 +954,137 @@ private fun MedicationFormSectionHeader(title: String, icon: MedicationFormHeade
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        if (icon == MedicationFormHeaderIcon.PILLS) MedicationPillsGlyph(MedicationTheme.colors.caregiverBlue, Modifier.size(17.dp))
-        else Icon(Icons.AutoMirrored.Rounded.FormatListBulleted, contentDescription = null, tint = MedicationTheme.colors.primaryTealText, modifier = Modifier.size(17.dp))
+        when (icon) {
+            MedicationFormHeaderIcon.PILLS -> MedicationPillsGlyph(MedicationTheme.colors.caregiverBlue, Modifier.size(17.dp))
+            MedicationFormHeaderIcon.TYPE -> Icon(Icons.AutoMirrored.Rounded.FormatListBulleted, contentDescription = null, tint = MedicationTheme.colors.primaryTealText, modifier = Modifier.size(17.dp))
+            MedicationFormHeaderIcon.PERIOD -> Icon(Icons.Rounded.CalendarMonth, contentDescription = null, tint = MedicationTheme.colors.caregiverBlue, modifier = Modifier.size(17.dp))
+            MedicationFormHeaderIcon.SCHEDULE -> Icon(Icons.Rounded.Schedule, contentDescription = null, tint = MedicationTheme.colors.primaryTealText, modifier = Modifier.size(17.dp))
+            MedicationFormHeaderIcon.INVENTORY -> Icon(Icons.Rounded.Inventory2, contentDescription = null, tint = MedicationTheme.colors.caregiverBlue, modifier = Modifier.size(17.dp))
+            MedicationFormHeaderIcon.NOTES -> Icon(Icons.Rounded.Description, contentDescription = null, tint = MedicationTheme.colors.orange, modifier = Modifier.size(17.dp))
+        }
         Text(title, fontSize = 14.sp, lineHeight = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun MedicationPeriodCard(
+    draft: CaregiverMedicationDraft,
+    onStartDate: () -> Unit,
+    onEndDateEnabled: (Boolean) -> Unit,
+    onEndDate: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MedicationTheme.colors.cardStroke),
+    ) {
+        Column {
+            MedicationDateRow(stringResource(R.string.caregiver_medication_form_start_date), draft.startDate, onStartDate, "medication-start-date")
+            MedicationFormDivider()
+            Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.caregiver_medication_form_end_date_enabled), modifier = Modifier.weight(1f), fontSize = 16.sp)
+                Switch(
+                    checked = draft.endDate != null,
+                    onCheckedChange = onEndDateEnabled,
+                    modifier = Modifier.testTag("medication-end-date-enabled"),
+                    colors = SwitchDefaults.colors(checkedTrackColor = Color(0xFF34C759)),
+                )
+            }
+            draft.endDate?.let { endDate ->
+                MedicationFormDivider()
+                MedicationDateRow(stringResource(R.string.caregiver_medication_form_end_date_label), endDate, onEndDate, "medication-end-date")
+            }
+        }
+    }
+}
+
+@Composable
+private fun MedicationDateRow(label: String, date: LocalDate, onClick: () -> Unit, testTag: String) {
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable(onClick = onClick).padding(horizontal = 14.dp).testTag(testTag),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, modifier = Modifier.weight(1f), fontSize = 16.sp)
+        Text(date.format(MEDICATION_DATE_FORMAT), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 16.sp)
+    }
+}
+
+@Composable
+private fun MedicationScheduleGuide() {
+    Row(
+        Modifier.fillMaxWidth().background(MedicationTheme.colors.primaryTealText.copy(alpha = 0.08f), RoundedCornerShape(16.dp)).padding(14.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Box(Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(MedicationTheme.colors.primaryTealText.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+            Icon(Icons.Rounded.NotificationsActive, contentDescription = null, tint = MedicationTheme.colors.primaryTealText, modifier = Modifier.size(19.dp))
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(stringResource(R.string.caregiver_medication_form_schedule_guide_title), fontSize = 17.sp, lineHeight = 21.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.caregiver_medication_form_schedule_guide_message), fontSize = 14.sp, lineHeight = 19.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun MedicationWeekdayButton(day: CaregiverScheduleDay, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(10.dp))
+            .background(if (selected) MedicationTheme.colors.caregiverBlue else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+            .clickable(onClick = onClick).testTag("medication-day-${day.apiValue.lowercase()}"),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(DAY_LABELS.getValue(day.apiValue), color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun MedicationTimeSlotButton(
+    slot: CaregiverScheduleSlot,
+    time: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val label = when (slot) {
+        CaregiverScheduleSlot.MORNING -> stringResource(R.string.caregiver_medication_form_slot_morning)
+        CaregiverScheduleSlot.NOON -> stringResource(R.string.caregiver_medication_form_slot_noon)
+        CaregiverScheduleSlot.EVENING -> stringResource(R.string.caregiver_medication_form_slot_evening)
+        CaregiverScheduleSlot.BEDTIME -> stringResource(R.string.caregiver_medication_form_slot_bedtime)
+    }
+    Row(
+        modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
+            .background(if (selected) MedicationTheme.colors.caregiverBlue.copy(alpha = 0.08f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f))
+            .border(if (selected) 1.5.dp else 0.dp, if (selected) MedicationTheme.colors.caregiverBlue.copy(alpha = 0.3f) else Color.Transparent, RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick).padding(horizontal = 12.dp).testTag("medication-slot-${slot.apiValue}"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        if (selected) Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = MedicationTheme.colors.caregiverBlue, modifier = Modifier.size(21.dp))
+        else Box(Modifier.size(19.dp).border(1.5.dp, MaterialTheme.colorScheme.onSurfaceVariant, CircleShape))
+        Column(Modifier.weight(1f)) {
+            Text(label, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            if (time.isNotEmpty()) Text(time, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun MedicationFormErrorCard(message: String, testTag: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth().testTag(testTag),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(
+            Modifier.fillMaxWidth().padding(24.dp).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f), RoundedCornerShape(14.dp)).padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Icon(Icons.Rounded.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(44.dp))
+            Text(message, color = MaterialTheme.colorScheme.error, fontSize = 17.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        }
     }
 }
 
@@ -1158,5 +1323,13 @@ else String.format(Locale.US, "%.2f", value).trimEnd('0').trimEnd('.')
 
 private fun <T> Set<T>.toggle(value: T): Set<T> = if (value in this) this - value else this + value
 
+private fun CaregiverSlotTimes.valueFor(slot: CaregiverScheduleSlot): String = when (slot) {
+    CaregiverScheduleSlot.MORNING -> morning
+    CaregiverScheduleSlot.NOON -> noon
+    CaregiverScheduleSlot.EVENING -> evening
+    CaregiverScheduleSlot.BEDTIME -> bedtime
+}
+
 private val TOKYO = ZoneId.of("Asia/Tokyo")
+private val MEDICATION_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/dd", Locale.JAPAN)
 private val DAY_LABELS = mapOf("MON" to "月", "TUE" to "火", "WED" to "水", "THU" to "木", "FRI" to "金", "SAT" to "土", "SUN" to "日")

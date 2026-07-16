@@ -81,12 +81,12 @@ data class CaregiverMedicationValidationError(
 )
 
 fun CaregiverMedicationDraft.validate(unknownDosageLabel: String = "不明"): List<CaregiverMedicationValidationError> = buildList {
-    if (name.isBlank()) add(CaregiverMedicationValidationError(CaregiverMedicationField.NAME, "薬の名前を入力してください"))
+    if (name.isBlank()) add(CaregiverMedicationValidationError(CaregiverMedicationField.NAME, "薬名は必須です"))
     if (dosageStrengthUnit.isBlank()) {
-        add(CaregiverMedicationValidationError(CaregiverMedicationField.DOSAGE_UNIT, "規格の単位を選択してください"))
+        add(CaregiverMedicationValidationError(CaregiverMedicationField.DOSAGE_UNIT, "用量は必須です"))
     } else if (dosageStrengthUnit != unknownDosageLabel) {
         if (dosageStrengthValue.isBlank()) {
-            add(CaregiverMedicationValidationError(CaregiverMedicationField.DOSAGE_VALUE, "規格の数値を入力してください"))
+            add(CaregiverMedicationValidationError(CaregiverMedicationField.DOSAGE_VALUE, "用量の数値を入力してください"))
         } else if (dosageStrengthValue.toPositiveDoubleOrNull() == null) {
             add(CaregiverMedicationValidationError(CaregiverMedicationField.DOSAGE_VALUE, "規格は0より大きい数値で入力してください"))
         }
@@ -105,7 +105,7 @@ fun CaregiverMedicationDraft.validate(unknownDosageLabel: String = "不明"): Li
     }
     if (!isPrn) {
         if (selectedSlots.isEmpty()) {
-            add(CaregiverMedicationValidationError(CaregiverMedicationField.SCHEDULE_SLOT, "服用する時間帯を1つ以上選択してください"))
+            add(CaregiverMedicationValidationError(CaregiverMedicationField.SCHEDULE_SLOT, "時間は1件以上選択してください"))
         }
         if (scheduleFrequency == CaregiverScheduleFrequency.WEEKLY && selectedDays.isEmpty()) {
             add(CaregiverMedicationValidationError(CaregiverMedicationField.SCHEDULE_DAY, "服用する曜日を1つ以上選択してください"))

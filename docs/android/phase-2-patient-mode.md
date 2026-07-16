@@ -305,6 +305,14 @@ This selector foundation is connected to inventory-backed production candidates 
 - iOS caps its root at `.xLarge`; Android preserves true 200% scroll reachability. Native SF Symbol/Material icon geometry is accepted. Physical TalkBack, OEM and real-API verification remain Gate I.
 - Focused Medication List and Home-shell suites pass 19/19 and 17/17; the expanded API-35 suite passes 223/223, JVM passes 186/186, and Debug assembly/Lint pass.
 
+## 2026-07-16 C51 Caregiver Medication Form calibration
+
+- Ten deterministic current-iOS/Android pairs under `evidence/c51-20260716/` cover add basic/schedule, PRN, weekday schedule, edit top/lower, delete confirmation, aggregate validation, dark mode and adaptive text.
+- Period now precedes schedule with the current start/end hierarchy. Scheduled medicine uses the guidance card, daily/weekday segment, seven equal weekday choices and 2 x 2 preset slot cards; PRN hides those controls and uses the exact current help contract.
+- Initial inventory is creation-only, edit retains notes plus save/delete, and common validation uses the current large centered warning hierarchy and exact messages.
+- Native navigation, date/switch controls, symbols and confirmation geometry remain platform conventions. iOS caps its root at `.xLarge`; Android keeps the full form scroll-reachable at true 200%. Physical TalkBack, OEM IME and real-API verification remain Gate I.
+- Focused Medication Form coverage passes 24/24 on API 35. The expanded API-35 suite passes 228/228, JVM passes 186/186, and Debug assembly/Lint pass.
+
 ## Phase 2D notification routing and patient tutorial
 
 ### XP-002 exact notification destination
