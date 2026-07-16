@@ -2,7 +2,7 @@
 
 **Captured:** 2026-07-16
 
-**iOS reference:** `staging@2b7d1fe` current `PDFExportButton`, lock, period picker, view model, generator, localized copy and `billingEnabled=false`
+**iOS reference:** final recheck against `main@3e52fb2`; `PDFExportButton`, lock, period picker, view model, generator, localized copy and `billingEnabled=false` are byte-identical to the initially audited `staging@2b7d1fe` and Android-worktree copies
 
 **Android baseline:** `android-dev@81ce0d9` plus the C55 change
 
