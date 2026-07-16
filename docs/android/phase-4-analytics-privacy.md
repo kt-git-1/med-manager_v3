@@ -10,10 +10,10 @@ The wrapper exposes fixed enums for iOS event names and parameters. A final sche
 
 Production wiring currently records mode selection, safe screen/tab usage, tutorial progress/completion and safe caregiver core actions. Purchase/paywall/auth/link event methods use the same fixed schema and can be attached only to their corresponding real action outcomes; no render-time mutation event is permitted.
 
-The public privacy policy now states that consent can be changed from both roles. `docs/firebase-analytics.md` contains Android runtime configuration, DebugView commands, Realtime/Events/Explore checks and a Play Data safety input basis.
+The public privacy policy now states that consent can be changed from both roles. `docs/android/firebase-analytics.md` contains Android runtime configuration, consent-off/on/reset controls, DebugView commands, the exact safe event matrix, Realtime/Events/Explore checks and the required H07 evidence format.
 
 Automated coverage proves default-off behavior, explicit enable, disable/reset, environment suppression, enum event output and rejection of patient-ID/free-text/unknown/out-of-range payloads. Compose coverage proves first-decision UI, both decision actions at 200% font scale, opt-out persistence and the shared Caregiver Settings toggle. Historical Gate H/Gate I counts remain valid evidence for those commits; C57 is the current Android gate at JVM 186/186 and instrumentation 259/259 on each of API 26/33/35 (777/777). Debug/Release assembly and Lint pass after the current compatibility rerun.
 
 ## Remaining external verification
 
-The current local environment has none of the four Android Firebase values. Therefore DebugView, then Realtime/Events/Explore evidence cannot be honestly marked complete yet. After values are supplied, follow `docs/firebase-analytics.md`, capture the Console evidence without user/patient data, and only then upgrade `XP-004` from `PARTIAL`.
+The current local environment has none of the four Android Firebase values. Therefore DebugView, then Realtime/Events/Explore evidence cannot be honestly marked complete yet. After values are supplied, follow `docs/android/firebase-analytics.md`, capture privacy-reviewed physical-device and Console evidence without user/patient data, and only then upgrade `XP-004` from `PARTIAL`.

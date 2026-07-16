@@ -1,8 +1,8 @@
 # Android Port Master Development Plan
 
-**Status:** Rebaselined; implementation recheck required
+**Status:** Local implementation complete; external release verification in progress
 **Development branch:** `android-dev`
-**Reference:** `main@1cf8aef`
+**Reference:** `main@3e52fb2`
 **Stack:** Kotlin, Jetpack Compose, Material 3
 
 ## 1. Outcome
@@ -69,7 +69,7 @@ Every slice follows this order:
 
 ### R0 — Baseline integrity and regression repair
 
-Goal: keep the Android foundation conformant with the explicitly pinned `main@1cf8aef` product contract before release verification.
+Goal: keep the Android foundation conformant with the explicitly pinned `main@3e52fb2` product contract before release verification.
 
 1. Add explicit per-request auth policies; make link exchange public/no-auth and non-invalidating.
 2. Add link-error localization fixtures and canonical UI mapping.
@@ -79,6 +79,7 @@ Goal: keep the Android foundation conformant with the explicitly pinned `main@1c
 6. Test next-day and month-boundary reminder retention.
 7. Preserve lazy tab instances/state and block hidden-tab input/accessibility.
 8. Recapture changed patient iOS states and recheck affected patient matrix rows.
+9. Preserve immediate Patient/Caregiver mutation feedback while authoritative post-write reconciliation runs outside the blocking UI path.
 
 **Exit:** all recheck rows return to at least `IMPLEMENTED`; build/test/lint pass; no new caregiver UI yet.
 
@@ -159,6 +160,13 @@ This is a verification/repair phase, not a declaration that earlier code is auto
 4. Security/privacy review and dependency scan
 5. Data safety and health-app declarations
 6. Signed internal/closed test, feedback repair and rollout plan
+
+### Current checkpoint — C59 (2026-07-16)
+
+- R0–C4 and the automated portion of X1 are implemented against `main@3e52fb2`.
+- Current iOS/Android emulator-verifiable UI states are recorded through C56; C57 passes the complete 259-test suite on API 26/33/35, and C58 revalidates current post-record behavior.
+- The repeatable privacy-first Firebase procedure is `firebase-analytics.md`; live Console evidence still requires the four Android Firebase values and a physical device.
+- V1 remains open for physical-device/Doze/TalkBack/OEM evidence, a release-owner signed AAB, Play Internal/Closed testing, Console declarations and the final pre-merge main rebaseline.
 
 ## 7. Automated quality gates
 

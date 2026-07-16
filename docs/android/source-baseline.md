@@ -47,7 +47,7 @@ The older feature specifications are intent documents, not always the current ru
 | History/PDF | History views/view model, PDF feature files, history routes |
 | Local patient reminders | notification feature files and notification tests |
 | Caregiver push | push settings, `DeviceTokenManager`, push routes, push tests |
-| Analytics/privacy | `AnalyticsService.swift`, `docs/firebase-analytics.md`, settings consent UI |
+| Analytics/privacy | `AnalyticsService.swift`, `docs/android/firebase-analytics.md`, settings consent UI |
 
 ## 4. Main changes since the previous Android baseline
 
@@ -105,4 +105,4 @@ Run this procedure whenever API or iOS behavior changes on `main`.
 - [x] Runtime/spec conflicts are explicitly identified.
 - [x] All affected Android contract tests have been updated (C32–C34 and C58).
 - [x] All affected Android implementation rows have passed recheck (C32–C35 and C58); explicitly separated physical-device evidence remains pending.
-- [ ] Current iOS reference screenshots have been captured for every scoped state.
+- [x] Current iOS source/runtime references have been captured for every emulator-verifiable scoped state through C37–C56; physical/TalkBack/OEM variants remain an explicit V1 gate.

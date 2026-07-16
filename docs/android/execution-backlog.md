@@ -102,7 +102,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Gate C — Current patient parity
 
-- [ ] C01 Re-capture remaining entry/auth and patient iOS states at `main@1cf8aef`.
+- [x] C01 Re-capture entry/auth and patient iOS states. The original `main@1cf8aef` umbrella item is superseded and closed by current-runtime C37–C48 evidence against the later `main@3e52fb2` baseline; UI-001–106 emulator-verifiable states now have explicit source/runtime evidence owners.
 - [x] C02 Reverify Mode Select, auth choice/login/signup/callback/resend.
 - [x] C02 Repair confirmation-resend lifecycle parity: separate in-flight progress and duplicate lock, with cooldown only after confirmation-required, success or 429.
 - [x] C02 Record the deterministic UI-002 six-digit, submitting, validation, expired, forbidden, network and rate-limit/fallback Android state matrix.
@@ -159,7 +159,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C58 Merge `main@3e52fb2`, review the complete API/iOS delta, preserve API push ordering after parallel history/inventory effects, and match current iOS nonblocking Patient/Caregiver post-record reconciliation plus overdue-delete `MISSED` restoration.
 - [x] C34 Accept strict caregiver `DOSE_MISSED` payloads alongside `DOSE_TAKEN` and verify identical exact-date/slot History routing.
 - [x] C35 Rerun the full API/JVM/lint/build/API-35 matrix and close all C31 `RECHECK_REQUIRED` rows.
-- [ ] C06 Complete full TalkBack traversal, matched iOS dark/large-text variants and physical-device verification.
+- [ ] V01 Complete the remaining physical TalkBack traversal, physical matched dark/large-text checks and OEM-device verification; C06 already closes the emulator-verifiable matrix.
 
 ## Gate D — Caregiver patient-management vertical slice
 
@@ -221,7 +221,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] Port only fixed event names/enum parameters from `AnalyticsService.swift`.
 - [x] Reject patient/caregiver IDs, medication data, dose status/time/date, inventory, email, free text, notification content and tokens at the wrapper boundary.
 - [x] Suppress in previews, screenshot fixtures and tests.
-- [ ] Verify DebugView, then Realtime/Events/Explore instructions in `docs/firebase-analytics.md`.
+- [ ] Execute the consent-off/on/reset, DebugView, Realtime, Events and Explore procedure in `docs/android/firebase-analytics.md` with production Android Firebase values and a physical device; the repeatable procedure itself is complete under C59.
 - [x] Align Play Data safety input basis and privacy policy with actual collection; final Console submission remains Gate I.
 
 ## Gate I — Release and merge

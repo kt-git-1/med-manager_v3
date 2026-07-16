@@ -8,6 +8,7 @@ This is the production handoff procedure for Gate I. It does not authorize creat
 - Rebaseline against the latest `origin/main` and resolve every new iOS/API change first.
 - Keep `BILLING_ENABLED=false` until a separate Google Play purchase contract is approved.
 - Create the Android app in Firebase and supply the four runtime values. Complete Analytics DebugView evidence before a production rollout.
+- Execute the privacy-reviewed consent-off/on/reset plus DebugView, Realtime, Events and Explore matrix in `firebase-analytics.md`; DebugView alone is not the acceptance gate.
 - Register and verify the production App Link domain.
 - Use Play App Signing. Store the upload-key keystore and passwords in an approved password manager/backup, never in Git or build logs.
 - Increment `versionCode` for every Play upload. Confirm `versionName` is the intended public version.
@@ -74,5 +75,5 @@ Before upload, also verify:
 
 - No production Android Firebase values are available locally, so DebugView/Realtime/Events/Explore evidence is pending.
 - No release-owner upload keystore has been selected, so a production-signed AAB cannot be produced here yet.
-- Only the API-35 emulator is currently attached; no physical-device result may be inferred from it.
+- No physical Android target was attached during the C59 audit; emulator availability may vary and no physical-device result may be inferred from it.
 - Physical-device, Play-installed Internal/Closed track and Console declaration evidence remain pending.
