@@ -241,20 +241,24 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
         isPrn: false
       };
     });
-    await createDoseRecordEvents(eventInputs);
-
-    await applyInventoryDeltasForDoseRecords({
-      patientId: input.patientId,
-      patientDisplayName: patient.displayName,
-      deltas: records.flatMap((record) => {
-        const medication = medicationById.get(record.medicationId);
-        if (!medication?.inventoryEnabled) return [];
-        return [{ medicationId: medication.id, quantity: medication.doseCountPerIntake }];
+    // These side effects do not depend on one another. Waiting for them in parallel
+    // preserves delivery/inventory guarantees while shortening the record response.
+    await Promise.all([
+      createDoseRecordEvents(eventInputs),
+      applyInventoryDeltasForDoseRecords({
+        patientId: input.patientId,
+        patientDisplayName: patient.displayName,
+        deltas: records.flatMap((record) => {
+          const medication = medicationById.get(record.medicationId);
+          if (!medication?.inventoryEnabled) return [];
+          return [{ medicationId: medication.id, quantity: medication.doseCountPerIntake }];
+        })
       })
-    });
+    ]);
 
     if (records.length > 0) {
-      // Await notification work so serverless runtimes do not stop before FCM send completes.
+      // Preserve the existing guarantee that push is attempted only after history and
+      // inventory side effects have both succeeded.
       await notifyCaregiversOfDoseTaken({
         patientId: input.patientId,
         displayName: patient.displayName,

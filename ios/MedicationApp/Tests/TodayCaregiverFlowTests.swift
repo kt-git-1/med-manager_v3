@@ -21,7 +21,10 @@ final class TodayCaregiverFlowTests: XCTestCase {
         configuration.protocolClasses = [CaregiverTodayURLProtocol.self]
         let urlSession = URLSession(configuration: configuration)
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        let sessionStore = SessionStore(userDefaults: defaults)
+        let sessionStore = SessionStore(
+            userDefaults: defaults,
+            secureStorage: CaregiverTodayTestSecureStorage()
+        )
         sessionStore.setMode(.caregiver)
         sessionStore.saveCaregiverSession(
             SupabaseSession(
@@ -78,6 +81,91 @@ final class TodayCaregiverFlowTests: XCTestCase {
 
         await fulfillment(of: [historyRefresh], timeout: 1)
     }
+
+    func testBulkRecordUpdatesTodayImmediatelyAfterMutationSucceeds() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [CaregiverTodayURLProtocol.self]
+        let urlSession = URLSession(configuration: configuration)
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        let sessionStore = SessionStore(
+            userDefaults: defaults,
+            secureStorage: CaregiverTodayTestSecureStorage()
+        )
+        sessionStore.setMode(.caregiver)
+        sessionStore.saveCaregiverSession(
+            SupabaseSession(
+                accessToken: "caregiver-token",
+                refreshToken: "refresh-token",
+                expiresIn: 3_600
+            )
+        )
+        sessionStore.setCurrentPatientId("patient-1")
+        let apiClient = APIClient(
+            baseURL: try XCTUnwrap(URL(string: "http://localhost:3000")),
+            sessionStore: sessionStore,
+            urlSession: urlSession
+        )
+
+        CaregiverTodayURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["content-type": "application/json"]
+            )!
+            if request.httpMethod == "POST",
+               request.url?.path == "/api/patients/patient-1/dose-records/slot" {
+                return (
+                    response,
+                    Data(
+                        #"{"updatedCount":1,"remainingCount":0,"insufficientCount":0,"totalPills":1,"medCount":1,"slotTime":"12:00","slotSummary":{"morning":"none","noon":"taken","evening":"none","bedtime":"none"},"recordingGroupId":"group-1"}"#.utf8
+                    )
+                )
+            }
+
+            if request.url?.path == "/api/patients/patient-1/inventory" {
+                return (response, Data(#"{"data":{"patientId":"patient-1","medications":[]}}"#.utf8))
+            }
+            return (response, Data(#"{"data":[]}"#.utf8))
+        }
+
+        let scheduledAt = try XCTUnwrap(
+            ISO8601DateFormatter().date(from: "2026-07-16T03:00:00Z")
+        )
+        let dose = ScheduleDoseDTO(
+            key: "patient-1:med-1:2026-07-16T03:00:00.000Z",
+            patientId: "patient-1",
+            medicationId: "med-1",
+            scheduledAt: scheduledAt,
+            effectiveStatus: .missed,
+            recordedByType: nil,
+            medicationSnapshot: MedicationSnapshotDTO(
+                name: "Test",
+                dosageText: "1 tablet",
+                doseCountPerIntake: 1,
+                dosageStrengthValue: 1,
+                dosageStrengthUnit: "tablet",
+                notes: nil
+            )
+        )
+        let viewModel = CaregiverTodayViewModel(apiClient: apiClient)
+        viewModel.items = [dose]
+        let mutationSucceeded = expectation(
+            forNotification: .doseRecordsUpdated,
+            object: nil
+        )
+
+        viewModel.recordDoses([dose], slot: .noon)
+
+        await fulfillment(of: [mutationSucceeded], timeout: 2)
+        for _ in 0..<5 where viewModel.isUpdating {
+            await Task.yield()
+        }
+        XCTAssertEqual(viewModel.items.first?.effectiveStatus, .taken)
+        XCTAssertEqual(viewModel.items.first?.recordedByType, .caregiver)
+        XCTAssertFalse(viewModel.isUpdating)
+        try await Task.sleep(for: .milliseconds(50))
+    }
 }
 
 private final class CaregiverTodayURLProtocol: URLProtocol {
@@ -102,4 +190,12 @@ private final class CaregiverTodayURLProtocol: URLProtocol {
     }
 
     override func stopLoading() {}
+}
+
+private final class CaregiverTodayTestSecureStorage: SessionSecureStorage {
+    private var values: [String: String] = [:]
+
+    func string(forKey key: String) -> String? { values[key] }
+    func setString(_ value: String, forKey key: String) { values[key] = value }
+    func removeString(forKey key: String) { values.removeValue(forKey: key) }
 }
