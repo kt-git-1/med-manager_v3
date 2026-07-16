@@ -282,6 +282,14 @@ The C17 UI-208 state/modal rebaseline closes the remaining Android Settings impl
 - Evidence exposed a white top safe-area in the dark caregiver shell. The shell root now paints `MaterialTheme.colorScheme.background`, fixing all five caregiver tabs rather than masking the issue in Settings alone.
 - Evidence and the scrolled account-actions capture are stored under `docs/android/evidence/c30-20260715/`.
 
+### C56 UI-208 current-runtime residual closure — 2026-07-16
+
+- Direct source audit against the clean parallel iOS `main@3e52fb2` found five residuals after C29/C30: inline zero-patient creation, no post-create code guide, expanded multiple-patient rows, no missing-selection guidance and patient-scoped push visibility with zero patients.
+- Android now opens patient creation from the empty-state CTA in a modal sheet, disables blank submission, keeps failure retry in the sheet and, after authoritative success, selects the created patient and inserts the exact `次は連携コードを発行` guide.
+- Multiple patients use a native exposed menu and the current no-selection state. One patient keeps the compact selected row; push controls render only when a patient exists. Analytics, legal/support and account controls remain usable without a patient.
+- Fresh API-35 evidence for loading, recovery, empty, create, selection, post-create, selected content, both sheets and dark 200% states is stored under `docs/android/evidence/c56-20260716/`.
+- Focused Settings passes 20/20, large-text caregiver coverage passes 10/10, the complete API-35 suite passes 259/259, JVM passes 186/186, and Debug/Release assembly plus Lint pass.
+
 ## C55 UI-207 PDF reachability and current-runtime reconciliation — 2026-07-16
 
 - Directly rechecked the final current iOS files at `main@3e52fb2` after the parallel iOS worktree advanced during C55; all seven PDF/copy/gate file hashes still match the audited `staging@2b7d1fe` and Android-worktree copies. `AppConstants.billingEnabled=false` and Android `BILLING_ENABLED=false` both remove the caregiver export entry in the initial release, while Patient mode never owns an export entry.
