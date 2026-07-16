@@ -70,6 +70,7 @@
 		73D859E7021BCA0DE1A38356 /* NotificationPreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E5797509D584B7B93F402B4 /* NotificationPreferencesStore.swift */; };
 		75545D2CC4BE7F58C85D198D /* PatientRevokeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2780958AD32B86D5FD3254D8 /* PatientRevokeView.swift */; };
 		75E9F2A01627779530212DA5 /* PatientReadOnlyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F65CEF9BC60A7F91DB1ACCE1 /* PatientReadOnlyView.swift */; };
+		768F7F37108096464CA098C4 /* SchedulingRefreshCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6AE74C5BF418CE3CD1FEEDC /* SchedulingRefreshCoordinatorTests.swift */; };
 		79086DA5E28FA9AC4F1444B5 /* RangeValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 927B3F96F63C7CE6B21DF755 /* RangeValidationTests.swift */; };
 		7DAC14085E8DD8685FC3355D /* PeriodPresetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F07AACBD56A6C13AC55D9B94 /* PeriodPresetTests.swift */; };
 		7DF3566583CE87FD843DC3D3 /* PatientCreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6170CD781DA4ADA047089FA3 /* PatientCreateView.swift */; };
@@ -269,6 +270,7 @@
 		C0C0A8C5F4DC619A7E070636 /* AuthServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthServiceTests.swift; sourceTree = "<group>"; };
 		C14C533AD6E811851375D3BA /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		C478A1F0A87BA5A6933C496E /* SessionStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStoreTests.swift; sourceTree = "<group>"; };
+		C6AE74C5BF418CE3CD1FEEDC /* SchedulingRefreshCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulingRefreshCoordinatorTests.swift; sourceTree = "<group>"; };
 		C864E2CD124754159C571F26 /* APIClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClientTests.swift; sourceTree = "<group>"; };
 		C9B95C565516F1191D20C297 /* CaregiverTodayViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverTodayViewModel.swift; sourceTree = "<group>"; };
 		CA6F94CB13A527CBF16D5854 /* PatientTodayViewModelPerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientTodayViewModelPerformanceTests.swift; sourceTree = "<group>"; };
@@ -568,6 +570,7 @@
 				BE09CCA2A275B0AA41324F09 /* NotificationSettingsTests.swift */,
 				1C1282AECEDEEF05EC919DE4 /* NotificationSettingsUITests.swift */,
 				030FF0398901FCE2AFC189D6 /* NotificationTapUITests.swift */,
+				C6AE74C5BF418CE3CD1FEEDC /* SchedulingRefreshCoordinatorTests.swift */,
 			);
 			path = Notifications;
 			sourceTree = "<group>";
@@ -1008,6 +1011,7 @@
 				DDE2DB568009CE9C1CD4B7CB /* PushDeepLinkTests.swift in Sources */,
 				79086DA5E28FA9AC4F1444B5 /* RangeValidationTests.swift in Sources */,
 				F6C825BED0D7EEB2CE3CCF28 /* ReminderSchedulingTests.swift in Sources */,
+				768F7F37108096464CA098C4 /* SchedulingRefreshCoordinatorTests.swift in Sources */,
 				9294808D59A7EBB3A7260373 /* SessionStoreTests.swift in Sources */,
 				223BB87103691943BF0BAC56 /* SlotCardRenderingTests.swift in Sources */,
 				9315A5D0E9689A9AD2EED834 /* TodayCaregiverFlowTests.swift in Sources */,
@@ -1097,7 +1101,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 40;
+				CURRENT_PROJECT_VERSION = 41;
 				DEVELOPMENT_TEAM = QSZR732YXD;
 				EMAIL_CONFIRMATION_REDIRECT_URL = "https://www.okusuri-mimamori.com/auth/confirmed";
 				INFOPLIST_FILE = App/Info.plist;
@@ -1238,7 +1242,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 40;
+				CURRENT_PROJECT_VERSION = 41;
 				DEVELOPMENT_TEAM = QSZR732YXD;
 				EMAIL_CONFIRMATION_REDIRECT_URL = "https://www.okusuri-mimamori.com/auth/confirmed";
 				ENABLE_TESTABILITY = YES;
@@ -1373,7 +1377,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 40;
+				CURRENT_PROJECT_VERSION = 41;
 				DEVELOPMENT_TEAM = QSZR732YXD;
 				EMAIL_CONFIRMATION_REDIRECT_URL = "https://www.okusuri-mimamori.com/auth/confirmed";
 				INFOPLIST_FILE = App/Info.plist;

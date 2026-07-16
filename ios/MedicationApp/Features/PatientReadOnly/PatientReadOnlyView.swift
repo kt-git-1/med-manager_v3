@@ -96,7 +96,9 @@ struct PatientReadOnlyView: View {
                     highlightedTab: currentTutorialTab
                 )
             }
-        }, overlay: schedulingCoordinator.isRefreshing ? AnyView(SchedulingRefreshOverlay()) : nil)
+        }, overlay: schedulingCoordinator.isRefreshing && schedulingCoordinator.blocksInteraction
+            ? AnyView(SchedulingRefreshOverlay())
+            : nil)
         .onReceive(notificationRouter.$target) { target in
             guard let target else { return }
             selectedTab = .today
