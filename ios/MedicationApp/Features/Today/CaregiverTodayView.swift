@@ -655,6 +655,7 @@ struct CaregiverTodayView: View {
 
 struct CaregiverTodayDebugPreview: View {
     @EnvironmentObject private var sessionStore: SessionStore
+    @State private var selectedTab: CaregiverTab = .today
 
     var body: some View {
         NavigationStack {
@@ -665,6 +666,15 @@ struct CaregiverTodayDebugPreview: View {
             )
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
+        }
+        .safeAreaInset(edge: .bottom) {
+            CaregiverBottomTabBar(
+                selectedTab: $selectedTab,
+                hasLowStock: false,
+                highlightedTab: nil
+            )
+            .padding(.horizontal, 12)
+            .padding(.bottom, 4)
         }
     }
 

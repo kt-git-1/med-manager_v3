@@ -1530,7 +1530,7 @@ private struct CaregiverTutorialSampleView: View {
     }
 }
 
-private struct CaregiverBottomTabBar: View {
+struct CaregiverBottomTabBar: View {
     @Binding var selectedTab: CaregiverTab
     var hasLowStock: Bool = false
     var highlightedTab: CaregiverTab?
