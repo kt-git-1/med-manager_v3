@@ -54,7 +54,7 @@ const caregiverScreenGuides = [
   {
     title: "「今日」画面",
     summary: "次に記録する時間と、今日どこまで服薬できたかを確認する画面です。",
-    image: "/screenshots/caregiver-today.png",
+    image: "/screenshots/caregiver-today.png?v=20260718",
     alt: "家族モードの今日の服薬画面全体",
     steps: [
       "次に記録する時間と、未記録のお薬を確認します。",
@@ -187,7 +187,7 @@ export default function GuidePage() {
             <figure className="app-screenshot family">
               <figcaption>家族モードの画面</figcaption>
               <img
-                src="/screenshots/caregiver-today.png"
+                src="/screenshots/caregiver-today.png?v=20260718"
                 alt="家族モードで今日の服薬を確認する実際の画面"
               />
             </figure>

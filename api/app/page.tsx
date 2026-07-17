@@ -68,7 +68,7 @@ export default function Home() {
             </figure>
             <figure className="app-screenshot family">
               <figcaption>家族モード</figcaption>
-              <img src="/screenshots/caregiver-today.png" alt="家族モードの今日の服薬画面" />
+              <img src="/screenshots/caregiver-today.png?v=20260718" alt="家族モードの今日の服薬画面" />
             </figure>
           </div>
         </div>
@@ -137,7 +137,7 @@ export default function Home() {
               </figure>
               <figure className="app-screenshot family">
                 <figcaption>家族用：服薬状況と未記録を確認</figcaption>
-                <img src="/screenshots/caregiver-today.png" alt="家族用の服薬状況確認画面" />
+                <img src="/screenshots/caregiver-today.png?v=20260718" alt="家族用の服薬状況確認画面" />
               </figure>
             </div>
           </div>
