@@ -23,7 +23,7 @@ application UI is not redrawn by the generator.
 These files are intended for the iPhone and iPad screenshot slots in App Store Connect. The layout uses short Japanese copy, app branding, and real application screens for the core release story:
 
 1. Caregiver mode and patient mode introduction
-2. One-tap scheduled dose recording
+2. Caregiver overview of today's dose status and missed doses
 3. Medication list management
 4. Inventory and refill awareness
 5. History sharing
