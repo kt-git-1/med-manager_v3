@@ -1101,7 +1101,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 41;
+				CURRENT_PROJECT_VERSION = 42;
 				DEVELOPMENT_TEAM = QSZR732YXD;
 				EMAIL_CONFIRMATION_REDIRECT_URL = "https://www.okusuri-mimamori.com/auth/confirmed";
 				INFOPLIST_FILE = App/Info.plist;
@@ -1242,7 +1242,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 41;
+				CURRENT_PROJECT_VERSION = 42;
 				DEVELOPMENT_TEAM = QSZR732YXD;
 				EMAIL_CONFIRMATION_REDIRECT_URL = "https://www.okusuri-mimamori.com/auth/confirmed";
 				ENABLE_TESTABILITY = YES;
@@ -1377,7 +1377,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 41;
+				CURRENT_PROJECT_VERSION = 42;
 				DEVELOPMENT_TEAM = QSZR732YXD;
 				EMAIL_CONFIRMATION_REDIRECT_URL = "https://www.okusuri-mimamori.com/auth/confirmed";
 				INFOPLIST_FILE = App/Info.plist;
