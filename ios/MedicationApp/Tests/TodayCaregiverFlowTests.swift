@@ -163,6 +163,7 @@ final class TodayCaregiverFlowTests: XCTestCase {
         }
         XCTAssertEqual(viewModel.items.first?.effectiveStatus, .taken)
         XCTAssertEqual(viewModel.items.first?.recordedByType, .caregiver)
+        XCTAssertEqual(viewModel.scrollToTopRequest, 1)
         XCTAssertFalse(viewModel.isUpdating)
         try await Task.sleep(for: .milliseconds(50))
     }

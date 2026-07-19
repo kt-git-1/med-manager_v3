@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct CaregiverTodayView: View {
+    private static let scrollTopID = "CaregiverTodayScrollTop"
+
     private let sessionStore: SessionStore
     private let onOpenPatients: () -> Void
     private let onOpenMedications: () -> Void
@@ -128,33 +130,47 @@ struct CaregiverTodayView: View {
                 }
             } else {
                 CaregiverScreenBackground {
-                    ScrollView {
-                        LazyVStack(spacing: 16) {
-                            if let headerView {
-                                headerView
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            LazyVStack(spacing: 16) {
+                                Color.clear
+                                    .frame(height: 1)
+                                    .id(Self.scrollTopID)
+                                if let headerView {
+                                    headerView
+                                }
+                                todayHeader
+                                if hasMissedDoses {
+                                    missedAlertCard
+                                }
+                                if !viewModel.items.isEmpty {
+                                    progressCard
+                                }
+                                if !viewModel.prnMedications.isEmpty {
+                                    prnEntryCard
+                                }
+                                if !viewModel.items.isEmpty {
+                                    todayScheduleTitle
+                                    timelineSection
+                                }
                             }
-                            todayHeader
-                            if hasMissedDoses {
-                                missedAlertCard
-                            }
-                            if !viewModel.items.isEmpty {
-                                progressCard
-                            }
-                            if !viewModel.prnMedications.isEmpty {
-                                prnEntryCard
-                            }
-                            if !viewModel.items.isEmpty {
-                                todayScheduleTitle
-                                timelineSection
+                            .padding(.horizontal, 20)
+                            .padding(.top, 16)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .safeAreaPadding(.bottom, 120)
+                        .refreshable {
+                            viewModel.load(showLoading: false)
+                        }
+                        .onChange(of: viewModel.scrollToTopRequest) { previousValue, newValue in
+                            guard newValue > previousValue else { return }
+                            Task { @MainActor in
+                                await Task.yield()
+                                withAnimation(.easeOut(duration: 0.25)) {
+                                    proxy.scrollTo(Self.scrollTopID, anchor: .top)
+                                }
                             }
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 16)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .safeAreaPadding(.bottom, 120)
-                    .refreshable {
-                        viewModel.load(showLoading: false)
                     }
                 }
             }

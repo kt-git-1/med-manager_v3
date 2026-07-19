@@ -9,6 +9,7 @@ final class CaregiverTodayViewModel: ObservableObject {
     @Published var isUpdating = false
     @Published var errorMessage: String?
     @Published var outOfStockMedicationIds: Set<String> = []
+    @Published private(set) var scrollToTopRequest = 0
 
     private let apiClient: APIClient
     private let dateFormatter: DateFormatter
@@ -86,6 +87,7 @@ final class CaregiverTodayViewModel: ObservableObject {
                     )
                 )
                 markDosesRecorded([dose])
+                requestScrollToTop()
                 notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("caregiver.today.recorded", comment: "Recorded"))
                 refreshAfterMutationInBackground()
@@ -125,6 +127,9 @@ final class CaregiverTodayViewModel: ObservableObject {
                     // The response does not identify which dose failed inventory validation.
                     // Wait for the authoritative schedule only for this uncommon partial-success case.
                     await refreshAfterMutation()
+                }
+                if result.updatedCount > 0 {
+                    requestScrollToTop()
                 }
             } catch {
                 showToastMessage(for: error)
@@ -190,6 +195,10 @@ final class CaregiverTodayViewModel: ObservableObject {
 
     private func notifyDoseRecordsUpdated() {
         NotificationCenter.default.post(name: .doseRecordsUpdated, object: nil)
+    }
+
+    private func requestScrollToTop() {
+        scrollToTopRequest += 1
     }
 
     private func showToastMessage(for error: Error) {
