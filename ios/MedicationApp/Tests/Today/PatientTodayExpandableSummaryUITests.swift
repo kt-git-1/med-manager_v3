@@ -13,6 +13,8 @@ final class PatientTodayExpandableSummaryUITests: XCTestCase {
         }
         XCTAssertTrue(toggle.waitForExistence(timeout: 3))
         XCTAssertTrue(toggle.isHittable)
+        XCTAssertTrue(app.staticTexts["眠前 23:00"].exists)
+        XCTAssertFalse(app.staticTexts["次は 眠前 23:00"].exists)
 
         toggle.tap()
         let medicationName = app.staticTexts["整腸剤 50 mg"]

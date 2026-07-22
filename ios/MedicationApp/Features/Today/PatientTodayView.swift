@@ -1017,7 +1017,7 @@ private struct PatientTodayCompactSummary: View {
                         slot: slot,
                         icon: "clock.fill",
                         color: PatientUI.blue,
-                        title: String(format: NSLocalizedString("patient.today.summary.next", comment: "Next slot"), slotTitle(slot), summary.slotTime),
+                        title: upcomingTitle(slot: slot, summary: summary),
                         detail: String(format: NSLocalizedString("patient.today.summary.medications", comment: "Medication count"), summary.medCount)
                     )
                 }
@@ -1039,6 +1039,21 @@ private struct PatientTodayCompactSummary: View {
     private func completedDetail(slot: NotificationSlot, summary: PatientTodayViewModel.SlotSummary) -> String {
         let actual = summary.takenAt.map(timeText) ?? summary.slotTime
         return String(format: NSLocalizedString("patient.today.summary.completed.detail", comment: "Completed detail"), slotTitle(slot), actual)
+    }
+
+    private func upcomingTitle(slot: NotificationSlot, summary: PatientTodayViewModel.SlotSummary) -> String {
+        if slot == .bedtime {
+            return String(
+                format: NSLocalizedString("patient.today.summary.slot", comment: "Scheduled slot"),
+                slotTitle(slot),
+                summary.slotTime
+            )
+        }
+        return String(
+            format: NSLocalizedString("patient.today.summary.next", comment: "Next slot"),
+            slotTitle(slot),
+            summary.slotTime
+        )
     }
 
     private func doses(for slot: NotificationSlot) -> [ScheduleDoseDTO] {

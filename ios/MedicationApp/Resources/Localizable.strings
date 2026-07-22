@@ -764,6 +764,7 @@
 "patient.today.summary.taken" = "服用済み";
 "patient.today.summary.late" = "飲み遅れ";
 "patient.today.summary.next" = "次は %@ %@";
+"patient.today.summary.slot" = "%@ %@";
 "patient.today.summary.medications" = "%d種類のお薬";
 "patient.today.summary.completed.detail" = "%@ %@に服用";
 "patient.today.next.header" = "次のお薬";
