@@ -775,6 +775,15 @@ struct CaregiverTodayView: View {
     }
 
     private func confirmSlotMessage(for confirmation: SlotRecordConfirmation) -> String {
+        if confirmation.doses.count == 1 {
+            let key = confirmation.doses[0].effectiveStatus == .missed
+                ? "caregiver.today.confirm.slot.single.missed.message"
+                : "caregiver.today.confirm.slot.single.message"
+            return String(
+                format: NSLocalizedString(key, comment: "Confirm a single slot dose"),
+                confirmation.slotTitle
+            )
+        }
         let key = confirmation.doses.contains { $0.effectiveStatus == .missed }
             ? "caregiver.today.confirm.slot.missed.message"
             : "caregiver.today.confirm.slot.message"
@@ -886,6 +895,15 @@ struct CaregiverTodayDebugPreview: View {
                 dosageText: "10 mg",
                 status: .taken,
                 recordedByType: .patient
+            ),
+            dose(
+                key: "preview-bedtime",
+                medicationId: "preview-bedtime-medication",
+                hour: 23,
+                name: "眠る前の薬",
+                dosageText: "1 mg",
+                status: .pending,
+                recordedByType: nil
             )
         ]
     }
@@ -1194,10 +1212,7 @@ private struct CaregiverTodayTimelineRow: View {
             if !row.recordableDoses.isEmpty {
                 Button(action: onRecordSlot) {
                     Label(
-                        String(
-                            format: NSLocalizedString("caregiver.today.timeline.recordSlot", comment: "Record slot"),
-                            row.recordableDoses.count
-                        ),
+                        recordSlotButtonTitle,
                         systemImage: "checkmark.circle.fill"
                     )
                     .font(.headline.weight(.bold))
@@ -1233,6 +1248,23 @@ private struct CaregiverTodayTimelineRow: View {
         case .none:
             return NSLocalizedString("patient.today.section.slot.other", comment: "Other")
         }
+    }
+
+    private var recordSlotButtonTitle: String {
+        let count = row.recordableDoses.count
+        if count == 1 {
+            return NSLocalizedString(
+                "caregiver.today.timeline.recordSlot.single",
+                comment: "Record one dose on behalf of the patient"
+            )
+        }
+        return String(
+            format: NSLocalizedString(
+                "caregiver.today.timeline.recordSlot.multiple",
+                comment: "Record multiple doses on behalf of the patient"
+            ),
+            count
+        )
     }
 
     private var iconName: String {

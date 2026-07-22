@@ -545,7 +545,8 @@
 "caregiver.today.timeline.noPlan" = "予定なし";
 "caregiver.today.timeline.multiple" = "%@ ほか%d種類";
 "caregiver.today.timeline.slotSummary" = "%d件の薬 / 未記録%d件";
-"caregiver.today.timeline.recordSlot" = "%d件をまとめて記録";
+"caregiver.today.timeline.recordSlot.single" = "代理で記録";
+"caregiver.today.timeline.recordSlot.multiple" = "%d件をまとめて代理で記録";
 "caregiver.today.timeline.taken" = "飲みました";
 "caregiver.today.timeline.pending" = "未記録";
 "caregiver.today.timeline.missed" = "飲み忘れ";
@@ -556,7 +557,9 @@
 "caregiver.today.confirm.message" = "%@の服用を代理で記録しますか？";
 "caregiver.today.confirm.missed.message" = "%@の飲み忘れを服用済みとして記録しますか？";
 "caregiver.today.confirm.slot.title" = "時間帯の服薬を記録";
+"caregiver.today.confirm.slot.single.message" = "%@のお薬を代理で記録しますか？";
 "caregiver.today.confirm.slot.message" = "%@の未記録%d件を代理でまとめて記録しますか？";
+"caregiver.today.confirm.slot.single.missed.message" = "%@の飲み忘れを代理で記録しますか？";
 "caregiver.today.confirm.slot.missed.message" = "%@の未記録・飲み忘れ%d件を代理でまとめて服用済みにしますか？";
 "caregiver.today.confirm.record" = "代理で記録する";
 "caregiver.today.delete.button" = "取り消す";

@@ -54,6 +54,15 @@ final class PatientTodayExpandableSummaryUITests: XCTestCase {
         }
         XCTAssertTrue(noonRecordButton.waitForExistence(timeout: 2))
         XCTAssertTrue(noonRecordButton.isHittable)
+        XCTAssertEqual(noonRecordButton.label, "2件をまとめて代理で記録")
+
+        let bedtimeRecordButton = app.buttons["CaregiverTodayRecordSlotButton.bedtime"]
+        for _ in 0..<4 where !bedtimeRecordButton.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(bedtimeRecordButton.waitForExistence(timeout: 2))
+        XCTAssertTrue(bedtimeRecordButton.isHittable)
+        XCTAssertEqual(bedtimeRecordButton.label, "代理で記録")
 
         let caregiverTodayScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         caregiverTodayScreenshot.name = "Caregiver today late record and proxy action"
