@@ -87,11 +87,21 @@ async function getLinkedCaregiverIds(patientId: string): Promise<string[]> {
 }
 
 function buildDoseRecordPayload(input: DoseRecordNotificationInput): ApnsPayload {
+  const patientName = input.displayName;
+  let body: string;
+  if (input.isPrn && input.medicationName) {
+    body = `${patientName}さんが${input.medicationName}（頓服）を服用しました`;
+  } else if (input.medicationName) {
+    body = `${patientName}さんが${input.medicationName}を服用しました`;
+  } else {
+    body = `${patientName}さんがお薬を服用しました`;
+  }
+
   return {
     aps: {
       alert: {
-        title: "お薬見守り",
-        body: "服薬状況が更新されました。"
+        title: "服薬記録",
+        body
       },
       sound: "default",
       "thread-id": `patient-${input.patientId}`
@@ -132,8 +142,17 @@ const slotLabels: Record<string, string> = {
   bedtime: "就寝前"
 };
 
-function buildDoseTakenBody(): string {
-  return "服薬状況が更新されました。";
+function buildDoseTakenBody(input: DoseTakenNotificationInput): string {
+  if (input.isPrn) {
+    return `${input.displayName}さんの頓服を記録しました`;
+  }
+
+  const slotLabel = slotLabels[input.slot];
+  if (slotLabel) {
+    return `${input.displayName}さんの${slotLabel}のお薬を記録しました`;
+  }
+
+  return `${input.displayName}さんのお薬を記録しました`;
 }
 
 /**
@@ -167,8 +186,8 @@ export async function notifyCaregiversOfDoseTaken(
 
     // Build FCM payload
     const notification: FcmNotification = {
-      title: "お薬見守り",
-      body: buildDoseTakenBody()
+      title: "服薬記録",
+      body: buildDoseTakenBody(input)
     };
 
     const data: FcmDataPayload = {

@@ -64,6 +64,24 @@
 
 final result: passed
 
+## 2026-07-22 上部進行表示の参照画像合わせ
+
+- Reference: `docs/design-qa/1.0.5-patient-today-progress-reference.png`
+- Implementation: `docs/design-qa/1.0.5-patient-today-progress.png`
+- Side-by-side: `docs/design-qa/1.0.5-patient-today-progress-comparison.png`
+- Device: iPhone 17e simulator, iOS 26.5
+- State: 朝は8:07に記録済み、昼は12:30の記録対象、夜・眠前は未記録
+
+### Verification
+
+- 見出しのアイコンをカレンダーへ変更した。
+- 朝・昼・夜・眠前を独立した縦カードにし、背面の接続線で一日の流れを表した。
+- 記録済みは緑のチェックと実記録時刻、現在対象はオレンジ、将来分は灰色で表示した。
+- 4カードすべてがiPhone 17eの横幅内に収まり、文字切れと横方向のはみ出しがない。
+- 参照画像と実装画面を同一画像内で比較し、情報順序、状態色、アイコン、時刻表示が一致することを確認した。
+
+final result: passed
+
 ---
 
 # Design QA: iOS 1.0.5 本人モード「今日」

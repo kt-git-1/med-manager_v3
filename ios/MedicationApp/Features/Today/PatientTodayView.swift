@@ -640,7 +640,7 @@ private struct PatientTodayListView: View {
                 PatientHeader(
                     title: NSLocalizedString("patient.readonly.today.title", comment: "Today title"),
                     subtitle: Self.weekdayFormatter.string(from: Date()),
-                    systemImage: "pills.fill"
+                    systemImage: "calendar"
                 )
 
                 if let inventoryWarning {
@@ -883,55 +883,92 @@ private struct PatientDayProgressStrip: View {
     let timeText: (Date) -> String
 
     var body: some View {
-        HStack(spacing: 6) {
-            ForEach(slots, id: \.rawValue) { slot in
-                VStack(spacing: 5) {
-                    ZStack {
-                        Circle()
-                            .fill(backgroundColor(for: slot))
-                            .frame(width: 38, height: 38)
-                        Image(systemName: symbol(for: slot))
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(foregroundColor(for: slot))
-                    }
-                    Text(slotTitle(slot))
-                        .font(.caption.weight(.bold))
-                    Text(detail(for: slot))
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(Color.readableSecondaryText)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+        ZStack {
+            GeometryReader { geometry in
+                let connectorWidth = max(0, geometry.size.width - 70)
+                let completedWidth = connectorWidth * CGFloat(completedConnectorCount) / CGFloat(slots.count - 1)
+
+                Capsule()
+                    .fill(Color.secondary.opacity(0.38))
+                    .frame(width: connectorWidth, height: 8)
+                    .position(x: geometry.size.width / 2, y: 72)
+
+                if completedWidth > 0 {
+                    Capsule()
+                        .fill(PatientUI.teal)
+                        .frame(width: completedWidth, height: 8)
+                        .position(x: 35 + completedWidth / 2, y: 72)
+                }
+            }
+
+            HStack(spacing: 10) {
+                ForEach(slots, id: \.rawValue) { slot in
+                    VStack(spacing: 8) {
+                        Text(slotTitle(slot))
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .foregroundStyle(accentColor(for: slot))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
+
+                        ZStack {
+                            Circle()
+                                .fill(iconBackgroundColor(for: slot))
+                                .frame(width: 52, height: 52)
+                            Image(systemName: symbol(for: slot))
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundStyle(.white)
                         }
-                .frame(maxWidth: .infinity)
+
+                        Text(detail(for: slot))
+                            .font(.system(size: 19, weight: .bold, design: .rounded))
+                            .foregroundStyle(accentColor(for: slot))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.68)
+                    }
+                    .padding(.vertical, 11)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 142)
+                    .background(PatientUI.cardBackground, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .stroke(borderColor(for: slot), lineWidth: 2)
+                    }
+                }
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(PatientUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay { RoundedRectangle(cornerRadius: 18).stroke(PatientUI.teal.opacity(0.55), lineWidth: 1.5) }
-        .shadow(color: PatientUI.cardShadow, radius: 12, y: 5)
+        .frame(height: 142)
         .accessibilityIdentifier("PatientTodayProgressStrip")
+    }
+
+    private var completedConnectorCount: Int {
+        min(
+            slots.prefix { summaries[$0]?.aggregateStatus == .taken }.count,
+            slots.count - 1
+        )
     }
 
     private func symbol(for slot: NotificationSlot) -> String {
         guard let summary = summaries[slot] else { return "minus" }
         if summary.aggregateStatus == .taken { return "checkmark" }
-        if slot == activeSlot { return summary.isLate ? "exclamationmark" : "clock" }
+        if slot == .bedtime { return "moon.fill" }
         return "clock"
     }
 
-    private func backgroundColor(for slot: NotificationSlot) -> Color {
-        guard let summary = summaries[slot] else { return Color.primary.opacity(0.06) }
+    private func accentColor(for slot: NotificationSlot) -> Color {
+        guard let summary = summaries[slot] else { return .secondary }
         if summary.aggregateStatus == .taken { return PatientUI.teal }
-        if slot == activeSlot { return summary.isLate ? PatientUI.orange.opacity(0.18) : PatientUI.blue.opacity(0.16) }
-        return Color.primary.opacity(0.06)
+        if slot == activeSlot { return PatientUI.orange }
+        return .secondary
     }
 
-    private func foregroundColor(for slot: NotificationSlot) -> Color {
-        guard let summary = summaries[slot] else { return .secondary }
-        if summary.aggregateStatus == .taken { return .white }
-        if slot == activeSlot { return summary.isLate ? PatientUI.orange : PatientUI.blue }
-        return .secondary
+    private func iconBackgroundColor(for slot: NotificationSlot) -> Color {
+        accentColor(for: slot).opacity(slot == activeSlot || summaries[slot]?.aggregateStatus == .taken ? 1 : 0.82)
+    }
+
+    private func borderColor(for slot: NotificationSlot) -> Color {
+        if summaries[slot]?.aggregateStatus == .taken { return PatientUI.teal }
+        if slot == activeSlot { return PatientUI.orange }
+        return Color.secondary.opacity(0.26)
     }
 
     private func detail(for slot: NotificationSlot) -> String {

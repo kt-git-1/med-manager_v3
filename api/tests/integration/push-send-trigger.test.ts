@@ -187,8 +187,8 @@ describe("notifyCaregiversOfDoseTaken — send trigger", () => {
     const data = firstCall[2];
 
     expect(token).toBe("fcm-token-a");
-    expect(notification.title).toBe("お薬見守り");
-    expect(notification.body).toBe("服薬状況が更新されました。");
+    expect(notification.title).toBe("服薬記録");
+    expect(notification.body).toBe("太郎さんの朝のお薬を記録しました");
     expect(data.type).toBe("DOSE_TAKEN");
     expect(data.patientId).toBe("patient-1");
     expect(data.date).toBe("2026-02-11");
@@ -196,7 +196,7 @@ describe("notifyCaregiversOfDoseTaken — send trigger", () => {
     expect(data.recordingGroupId).toBe("group-uuid-1");
   });
 
-  it("does not include health details or the patient name in the notification body", async () => {
+  it("includes the scheduled time slot when a late dose is recorded", async () => {
     const { notifyCaregiversOfDoseTaken } =
       await import("../../src/services/pushNotificationService");
 
@@ -211,9 +211,7 @@ describe("notifyCaregiversOfDoseTaken — send trigger", () => {
     });
 
     const notification = sendFcmMessageMock.mock.calls[0][1];
-    expect(notification.body).toBe("服薬状況が更新されました。");
-    expect(notification.body).not.toContain("花子");
-    expect(notification.body).not.toContain("夕");
+    expect(notification.body).toBe("花子さんの夕のお薬を記録しました");
   });
 
   it("does not send push to the caregiver who recorded on behalf of the patient", async () => {
