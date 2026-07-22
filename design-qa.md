@@ -63,3 +63,25 @@
 - 変更前のトップは濃緑の背景だったが、ユーザー指定どおり情報構成のみを復元し、背景・文字・実画面は新デザインを維持した。
 
 final result: passed
+
+---
+
+# Design QA: iOS 1.0.5 本人モード「今日」
+
+- Reference: `docs/design-qa/1.0.5-patient-today-reference.png`
+- Implementation: `docs/design-qa/1.0.5-patient-today.png`
+- Side-by-side: `docs/design-qa/1.0.5-patient-today-comparison.png`
+- Device: iPhone 17e simulator, iOS 26.5
+- State: 朝は8:07に記録済み、昼は予定12:30から1時間17分遅れ、夜・眠前は未記録
+
+## Verification
+
+- 朝・昼・夜・眠前の一日の進行状況が一目で分かる。
+- 現在対象の時間帯だけを大きく表示し、他の時間帯は下部の要約へ圧縮した。
+- 現在の時間帯に含まれる薬は折りたたまず、全件を初期表示する。
+- 予定時刻、遅れ時間、薬の種類・錠数、実際の記録時刻を同じカード内で確認できる。
+- 主操作ボタンと固定タブは初期表示内にあり、文字切れや横方向のはみ出しはない。
+- 既存のPatientUI配色、カード、角丸、文字サイズ、タブ構成を維持した。
+- 選択デザインの情報階層を維持しつつ、高齢者向けに薬ごとの行高とタップ対象を既存UI基準へ合わせた。
+
+final result: passed

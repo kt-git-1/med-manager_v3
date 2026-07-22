@@ -322,6 +322,9 @@
 "history.day.empty.message" = "この日の服用予定はありません";
 "history.status.pending" = "未記録";
 "history.status.taken" = "記録済み";
+"history.status.late" = "飲み遅れ";
+"history.schedule.format" = "予定 %@";
+"history.taken.format" = "服用 %@";
 "history.status.missed" = "飲み忘れ";
 "history.recordedBy.patient" = "本人が記録";
 "history.recordedBy.caregiver" = "家族が代理で記録";
@@ -754,6 +757,15 @@
 
 /* Slot Bulk Recording (0115) */
 "patient.today.slot.bulk.button" = "この時間のお薬を飲んだ";
+"patient.today.slot.bulk.button.actual" = "今飲んだ（%@）";
+"patient.today.slot.bulk.confirm.late.message" = "予定より%@です。今、実際に飲みましたか？";
+"patient.today.schedule.format" = "予定 %@";
+"patient.today.progress.title" = "今日のお薬";
+"patient.today.summary.taken" = "服用済み";
+"patient.today.summary.late" = "飲み遅れ";
+"patient.today.summary.next" = "次は %@ %@";
+"patient.today.summary.medications" = "%d種類のお薬";
+"patient.today.summary.completed.detail" = "%@ %@に服用";
 "patient.today.slot.bulk.confirm.title" = "%@のお薬を記録";
 "patient.today.slot.bulk.confirm.message" = "%@（%@）のお薬（%@種類 / 合計%@錠）を記録しますか？";
 "patient.today.slot.bulk.confirm.record" = "記録する";

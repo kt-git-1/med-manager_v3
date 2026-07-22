@@ -41,6 +41,7 @@
 		3CBD461BAAD1813E71A0BE0F /* FullScreenContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F15D54BA84F66FF4EAD48C3 /* FullScreenContainer.swift */; };
 		3DD1F9D4A03FC660F2992F63 /* InventoryBannerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C9D32B07C15C8E395FD13EC /* InventoryBannerUITests.swift */; };
 		3E0CA7EF3BF36238F3F92C9A /* PatientTodayNextSlotSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 760563D91262DCE4B5B9784B /* PatientTodayNextSlotSelector.swift */; };
+		3F07C43786FCA80969DDC1A7 /* MedicationRecordingPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84CDDB9E85C02DDB89454C80 /* MedicationRecordingPolicy.swift */; };
 		3F51C80C88632AC450E9771A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 80D730F32C311FB27644CE69 /* Assets.xcassets */; };
 		402A7BCF917FB5445A8E6089 /* InventoryOverlayUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C19CDEC56393186801A875F /* InventoryOverlayUITests.swift */; };
 		403B60DF0710DEE297E332E7 /* MedicationListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB55437B073B6E2D5D88F3AE /* MedicationListViewModelTests.swift */; };
@@ -140,6 +141,7 @@
 		F0ED32E7A0770A97F9A4FA40 /* HistoryMonthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B134FF18292ECF9ECAF6A505 /* HistoryMonthView.swift */; };
 		F2597592BCFB61DEE1FBE26A /* CaregiverBannerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E02C37A6DD54B4D396E3BF1 /* CaregiverBannerUITests.swift */; };
 		F3E0B8DEDD0ABF7BBAA831CB /* PatientDeleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F74453B88750CFF15FF0FC3F /* PatientDeleteView.swift */; };
+		F6A141A09DDD8C50035891DA /* MedicationRecordingPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E8F6D5A1932F8C211CC282 /* MedicationRecordingPolicyTests.swift */; };
 		F6C825BED0D7EEB2CE3CCF28 /* ReminderSchedulingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4FA16D48A97D298701D0C75 /* ReminderSchedulingTests.swift */; };
 		F9CE64F4A5806DDF2475ECF5 /* HistoryReportDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC586CEBAE4FA70F0688F003 /* HistoryReportDTO.swift */; };
 		FCE120E4D0D8CAE4A17E3089 /* PrnMedicationUiTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77F7DC653B91B6AF066B3FDE /* PrnMedicationUiTests.swift */; };
@@ -240,6 +242,7 @@
 		7DCBDC43794CD9B567EE94CB /* SchedulingRefreshCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulingRefreshCoordinator.swift; sourceTree = "<group>"; };
 		80D730F32C311FB27644CE69 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		816F71313F426FE0A622F4B3 /* MedicationFormViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationFormViewModel.swift; sourceTree = "<group>"; };
+		84CDDB9E85C02DDB89454C80 /* MedicationRecordingPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationRecordingPolicy.swift; sourceTree = "<group>"; };
 		8683B928A50870EAD3A284BB /* PDFExportPatientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFExportPatientTests.swift; sourceTree = "<group>"; };
 		891C730CACE8B439AA82280A /* PeriodPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodPickerSheet.swift; sourceTree = "<group>"; };
 		89294417BFFE97416FFE1361 /* PDFGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFGenerator.swift; sourceTree = "<group>"; };
@@ -276,6 +279,7 @@
 		CA6F94CB13A527CBF16D5854 /* PatientTodayViewModelPerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientTodayViewModelPerformanceTests.swift; sourceTree = "<group>"; };
 		CE69B91B4906C7A17F081989 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
 		D28A063A709CA9505F5504F9 /* InventoryEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryEmptyStateView.swift; sourceTree = "<group>"; };
+		D4E8F6D5A1932F8C211CC282 /* MedicationRecordingPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationRecordingPolicyTests.swift; sourceTree = "<group>"; };
 		D8FD22A7D92D4A09A9DFFF29 /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
 		D94AF112579478D93AF6A534 /* MedicationApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MedicationApp.entitlements; sourceTree = "<group>"; };
 		D99651621C933E0B2FDC5AB5 /* CaregiverPushSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverPushSettingsTests.swift; sourceTree = "<group>"; };
@@ -407,6 +411,7 @@
 			children = (
 				4F1B1CE3A0835AA4C3DF9464 /* CaregiverTodayView.swift */,
 				C9B95C565516F1191D20C297 /* CaregiverTodayViewModel.swift */,
+				84CDDB9E85C02DDB89454C80 /* MedicationRecordingPolicy.swift */,
 				760563D91262DCE4B5B9784B /* PatientTodayNextSlotSelector.swift */,
 				4BFCE7D6BD887889F4A80FEA /* PatientTodayView.swift */,
 				BC838D43F2A137E7A3B47E88 /* PatientTodayViewModel.swift */,
@@ -650,6 +655,7 @@
 				1936DBB41CFB0907EE79DBF6 /* MedicationFormValidationTests.swift */,
 				F793F0C9A8BBA67CA9C46326 /* MedicationFormViewModelTests.swift */,
 				EB55437B073B6E2D5D88F3AE /* MedicationListViewModelTests.swift */,
+				D4E8F6D5A1932F8C211CC282 /* MedicationRecordingPolicyTests.swift */,
 				7A42ADC235670AD205259290 /* PatientManagementViewModelTests.swift */,
 				CA6F94CB13A527CBF16D5854 /* PatientTodayViewModelPerformanceTests.swift */,
 				B4FA16D48A97D298701D0C75 /* ReminderSchedulingTests.swift */,
@@ -940,6 +946,7 @@
 				07A122CD68554DEF139F0929 /* MedicationFormView.swift in Sources */,
 				9CD32F9777E00CA402463257 /* MedicationFormViewModel.swift in Sources */,
 				D427E43F32FD2C23CA3BB00A /* MedicationListView.swift in Sources */,
+				3F07C43786FCA80969DDC1A7 /* MedicationRecordingPolicy.swift in Sources */,
 				E865934EDE6E1079E23D6398 /* ModeSelectView.swift in Sources */,
 				D7E1632209BA541EECCC1B80 /* NavigationHeaderView.swift in Sources */,
 				6F09CF04BF188B5161EA6460 /* NotificationDeepLinkRouter.swift in Sources */,
@@ -994,6 +1001,7 @@
 				5DFE8FD36CAEB373DF8D79D7 /* MedicationFormValidationTests.swift in Sources */,
 				48CB1ABF9F105E0E095F3EA4 /* MedicationFormViewModelTests.swift in Sources */,
 				403B60DF0710DEE297E332E7 /* MedicationListViewModelTests.swift in Sources */,
+				F6A141A09DDD8C50035891DA /* MedicationRecordingPolicyTests.swift in Sources */,
 				B75901EA0B24EE45AD401EC3 /* NotificationDeepLinkTests.swift in Sources */,
 				1B0FA4537B34C4ACA955D160 /* NotificationPlanBuilderTests.swift in Sources */,
 				8961919C4BD866DB7FF627B8 /* NotificationSchedulerTests.swift in Sources */,
@@ -1109,7 +1117,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.4;
+				MARKETING_VERSION = 1.0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.afterlifearchive.medmanager;
 				SDKROOT = iphoneos;
 				SUPABASE_ANON_KEY = sb_publishable_7hGwwBAmU55gsNVbMw8IAg_KgS2GyaM;
@@ -1251,7 +1259,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.4;
+				MARKETING_VERSION = 1.0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.afterlifearchive.medmanager;
 				SDKROOT = iphoneos;
 				SUPABASE_ANON_KEY = sb_publishable_nVf6RMV1tUkg8ew7BJLVnw_YDnUMRra;
@@ -1385,7 +1393,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.4;
+				MARKETING_VERSION = 1.0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.afterlifearchive.medmanager;
 				SDKROOT = iphoneos;
 				SUPABASE_ANON_KEY = sb_publishable_7hGwwBAmU55gsNVbMw8IAg_KgS2GyaM;

@@ -78,6 +78,7 @@ struct HistoryDayItemDTO: Decodable, Equatable {
     let dosageText: String
     let doseCountPerIntake: Double
     let scheduledAt: Date
+    let takenAt: Date?
     let slot: HistorySlotDTO
     let effectiveStatus: HistoryDoseStatusDTO
     let recordedByType: RecordedByTypeDTO?

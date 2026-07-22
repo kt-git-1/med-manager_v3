@@ -65,6 +65,7 @@ final class TodayCaregiverFlowTests: XCTestCase {
             patientId: "patient-1",
             medicationId: "med-1",
             scheduledAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T04:00:00Z")),
+            takenAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T04:05:00Z")),
             effectiveStatus: .taken,
             recordedByType: .caregiver,
             medicationSnapshot: MedicationSnapshotDTO(
@@ -137,6 +138,7 @@ final class TodayCaregiverFlowTests: XCTestCase {
             patientId: "patient-1",
             medicationId: "med-1",
             scheduledAt: scheduledAt,
+            takenAt: nil,
             effectiveStatus: .missed,
             recordedByType: nil,
             medicationSnapshot: MedicationSnapshotDTO(

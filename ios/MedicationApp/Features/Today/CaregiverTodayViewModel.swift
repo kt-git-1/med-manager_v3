@@ -254,6 +254,7 @@ final class CaregiverTodayViewModel: ObservableObject {
             patientId: dose.patientId,
             medicationId: dose.medicationId,
             scheduledAt: dose.scheduledAt,
+            takenAt: status == .taken ? Date() : nil,
             effectiveStatus: status,
             recordedByType: recordedByType,
             medicationSnapshot: dose.medicationSnapshot

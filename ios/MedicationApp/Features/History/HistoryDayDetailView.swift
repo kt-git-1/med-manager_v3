@@ -70,7 +70,9 @@ struct HistoryDayDetailView: View {
                         switch item {
                         case .scheduled(let dose):
                             HistoryDayRow(
-                                timeText: HistoryDayDetailView.timeFormatter.string(from: dose.scheduledAt),
+                                scheduledTimeText: HistoryDayDetailView.timeFormatter.string(from: dose.scheduledAt),
+                                takenTimeText: dose.takenAt.map { HistoryDayDetailView.timeFormatter.string(from: $0) },
+                                isLate: dose.takenAt.map { $0.timeIntervalSince(dose.scheduledAt) >= 60 * 60 } ?? false,
                                 slotText: slotTitle(for: dose.slot),
                                 slotColor: slotColor(for: dose.slot),
                                 name: dose.medicationName,
@@ -219,7 +221,9 @@ enum HistoryDayDetailStyle {
 }
 
 private struct HistoryDayRow: View {
-    let timeText: String
+    let scheduledTimeText: String
+    let takenTimeText: String?
+    let isLate: Bool
     let slotText: String
     let slotColor: Color
     let name: String
@@ -236,7 +240,7 @@ private struct HistoryDayRow: View {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
-                        Text(timeText)
+                        Text(primaryTimeText)
                             .font(style == .patient ? .title3.weight(.bold) : .headline)
                         Text(slotText)
                             .font(.caption.weight(.bold))
@@ -250,6 +254,11 @@ private struct HistoryDayRow: View {
                         .font(style == .patient ? .title3.weight(.bold) : .title3.weight(.semibold))
                         .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
+                    if takenTimeText != nil {
+                        Text(String(format: NSLocalizedString("history.schedule.format", comment: "Scheduled time"), scheduledTimeText))
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.readableSecondaryText)
+                    }
                     if let recordedByText {
                         HistoryRecordedByLabel(text: recordedByText, style: style)
                     }
@@ -298,10 +307,17 @@ private struct HistoryDayRow: View {
         case .pending:
             return NSLocalizedString("history.status.pending", comment: "History pending")
         case .taken:
-            return NSLocalizedString("history.status.taken", comment: "History taken")
+            return isLate
+                ? NSLocalizedString("history.status.late", comment: "History late")
+                : NSLocalizedString("history.status.taken", comment: "History taken")
         case .missed:
             return NSLocalizedString("history.status.missed", comment: "History missed")
         }
+    }
+
+    private var primaryTimeText: String {
+        guard let takenTimeText else { return scheduledTimeText }
+        return String(format: NSLocalizedString("history.taken.format", comment: "Actual taken time"), takenTimeText)
     }
 
     @ViewBuilder
@@ -342,6 +358,7 @@ private struct HistoryDayRow: View {
         case .missed:
             return style == .patient ? PatientUI.red : Color.red
         case .taken:
+            if isLate { return style == .patient ? PatientUI.orange : Color.orange }
             return style == .patient ? PatientUI.teal : Color.green
         case .pending:
             return Color.primary
@@ -353,6 +370,7 @@ private struct HistoryDayRow: View {
         case .missed:
             return (style == .patient ? PatientUI.red : Color.red).opacity(0.15)
         case .taken:
+            if isLate { return (style == .patient ? PatientUI.orange : Color.orange).opacity(0.15) }
             return (style == .patient ? PatientUI.teal : Color.green).opacity(0.15)
         case .pending:
             return Color.primary.opacity(0.06)

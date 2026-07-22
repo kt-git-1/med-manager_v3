@@ -8,6 +8,7 @@ describe("dose recording patient contract", () => {
         patientId: "patient-1",
         medicationId: "med-1",
         scheduledAt: "2026-02-02T08:00:00.000Z",
+        takenAt: "2026-02-02T08:05:00.000Z",
         effectiveStatus: "taken",
         medicationSnapshot: {
           name: "Medication A",
@@ -26,6 +27,7 @@ describe("dose recording patient contract", () => {
           patientId: "patient-1",
           medicationId: "med-1",
           scheduledAt: "2026-02-02T08:00:00.000Z",
+          takenAt: "2026-02-02T08:05:00.000Z",
           effectiveStatus: "taken",
           medicationSnapshot: {
             name: "Medication A",

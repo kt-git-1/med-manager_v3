@@ -752,6 +752,7 @@ struct CaregiverTodayDebugPreview: View {
             patientId: "preview-patient",
             medicationId: medicationId,
             scheduledAt: scheduledAt,
+            takenAt: status == .taken ? scheduledAt.addingTimeInterval(5 * 60) : nil,
             effectiveStatus: status,
             recordedByType: recordedByType,
             medicationSnapshot: MedicationSnapshotDTO(
