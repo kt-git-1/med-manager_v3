@@ -179,8 +179,10 @@
 "medication.form.section.notes" = "メモ";
 "medication.detail.notes.empty" = "メモはありません";
 "medication.form.name" = "薬名";
+"medication.form.name.placeholder" = "例：血圧の薬";
 "medication.form.dosage.value" = "用量";
 "medication.form.dosage.unit" = "単位";
+"medication.form.dosage.label" = "薬の強さ";
 "medication.form.dose.count" = "1回に飲む量";
 "medication.form.prn.toggle" = "頓服（必要時に服用）";
 "medication.form.prn.instructions" = "頓服の説明（任意）";
@@ -207,9 +209,19 @@
 "medication.form.schedule.weekly" = "曜日指定";
 "medication.form.schedule.weekdays" = "曜日";
 "medication.form.schedule.times" = "時間帯";
+"medication.form.schedule.timingTitle" = "飲むタイミング";
+"medication.form.schedule.dailyCount" = "1日%d回";
 "medication.form.schedule.unset" = "スケジュール未設定";
 "medication.form.inventory.count" = "在庫数（錠）";
 "medication.form.inventory.unit" = "在庫単位";
+"medication.form.inventory.calculator.title" = "お薬の数量";
+"medication.form.inventory.supplyDays.question" = "何日分ですか？";
+"medication.form.inventory.supplyDays.unit" = "日分";
+"medication.form.inventory.initial" = "登録時の在庫";
+"medication.form.inventory.calculator.empty" = "1回に飲む量・時間帯・日数を入力すると、登録時の在庫を自動計算します。";
+"medication.form.inventory.calculator.help" = "飲む量とタイミングから自動で計算します。計算後の錠数は修正できます。";
+"medication.form.inventory.calculator.help.short" = "飲む量とタイミングから自動で計算します";
+"medication.form.additionalSettings" = "薬の種類・期間・メモ";
 "medication.form.notes" = "メモ";
 "medication.form.patient.readonly" = "本人として使う画面では編集できません";
 "medication.form.patient.required" = "対象患者を選択してください";
@@ -639,6 +651,11 @@
 /* Medication form - additional */
 "medication.form.title.edit" = "薬を編集";
 "medication.form.title.add" = "新しい薬を追加";
+"medication.form.title.register" = "お薬を登録";
+"medication.form.progress.step" = "登録内容";
+"medication.form.register.guide" = "薬の情報と飲み方を入力します";
+"medication.form.register.help" = "薬の袋や説明書を見ながら、上から順番に入力してください。";
+"medication.form.submit.register" = "この内容で登録";
 "medication.form.validation.name.required" = "薬名は必須です";
 "medication.form.validation.dosage.required" = "用量は必須です";
 "medication.form.validation.dosage.value.required" = "用量の数値を入力してください";

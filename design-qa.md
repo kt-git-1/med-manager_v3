@@ -1,59 +1,61 @@
-# Caregiver late-record and grouped-history design QA
+# Medication registration image-to-code QA
 
 ## Evidence
 
-- Source visual truth: `/Users/kaito/.codex/generated_images/019f5a2c-62d4-7b23-b53d-61601c7e2b02/exec-9a9885a1-628d-47e1-8d96-3325af444d4a.png`
-- Current-history structural reference: `/Users/kaito/Desktop/Screenshot 2026-07-22 at 18.17.31.png`
-- Today implementation screenshot: `/tmp/caregiver-today-implementation.jpeg`
-- History implementation screenshot: `/tmp/caregiver-history-implementation.jpeg`
-- Expanded-history interaction screenshot: `/tmp/caregiver-redesign-attachments-final/78188E3D-A3AF-4A6D-B309-84253DF2A20B.png`
-- Proxy-recording interaction screenshot: `/tmp/caregiver-redesign-attachments-final/2BA67594-E745-4D14-9408-1E7DF8AC38F2.png`
-- Combined full-view comparison: `/tmp/caregiver-design-qa-comparison.jpg`
-- Viewport: iPhone 17e simulator, 390 x 844 points.
-- Source pixels: 1700 x 925 design board containing two app screens.
-- Implementation pixels: 410 x 867 simulator-window captures for the full-view comparison; 1170 x 2532 at 3x density for focused interaction captures.
-- Density normalization: the combined comparison preserves source aspect ratio and scales both simulator-window captures to equal heights. Focused captures are compared at native 3x density.
-- State: caregiver Today with one late patient record and one proxy-recordable slot; caregiver History on 2026-07-22 with noon expanded.
+- Source visual truth: `/Users/kaito/.codex/generated_images/019f5a2c-62d4-7b23-b53d-61601c7e2b02/exec-b97df027-12e0-4ef7-a921-1c557ef3e5d6.png`
+- Final implementation screenshot: `/tmp/medication-form-true-final-top.png`
+- Full-view comparison: `/tmp/medication-form-true-final-comparison.png`
+- Focused lower-state screenshot: `/tmp/medform-compact-final-attachments-2116/A9BDFB88-25E4-4E65-872D-A72463A73E13.png`
+- Viewport: iPhone 17e simulator, portrait, 390 x 844 points at 3x density.
+- Source pixels: 853 x 1844. Implementation pixels: 1170 x 2532.
+- Normalization: source resized to 1170 x 2532 and compared beside the 3x simulator capture.
+- State: scheduled medication, `血圧の薬 5 mg`, one tablet per intake, morning and evening, 30-day supply, calculated inventory 60 tablets.
 
 ## Findings
 
 - No actionable P0, P1, or P2 mismatch remains.
-- The implementation intentionally differs from the generated reference by showing the proxy-record action only on an unrecorded, recordable slot. The generated image incorrectly placed the action on recorded slots; preserving the production eligibility condition is the accepted product constraint.
-- The History screen preserves the existing selected-date summary and bottom navigation. Only the list below the second date heading changes to grouped 朝・昼・夜・眠前 rows, matching the clarified scope.
-- Recorded History groups are compact by default and expand on tap. The source board depicts expanded rows, while the implementation interaction was verified separately in the focused capture and UI test. This is an accepted responsive-density choice for the 390-point viewport.
+- The three primary regions now follow the selected image in the same order and hierarchy: `基本情報`, `飲むタイミング`, `お薬の数量`, followed by `この内容で登録`.
+- Production-only medication type, weekday, period, and memo controls remain available below the primary flow in a collapsed `薬の種類・期間・メモ` disclosure. They do not alter the selected visual's primary composition.
+- The real iPhone viewport permits a small vertical scroll to reach every trailing control. This preserves native text rendering and touch targets while keeping the visible composition aligned with the source.
 
 ## Required fidelity surfaces
 
-- Fonts and typography: existing SwiftUI system typography, weights, Japanese wrapping, and accessibility-friendly sizes are retained. The late summary wraps to two lines on the real viewport but remains readable and does not clip.
-- Spacing and layout rhythm: 16–20 point page margins, 10–16 point group spacing, rounded existing caregiver cards, and persistent bottom navigation remain consistent. No control is hidden by overflow.
-- Colors and visual tokens: existing `CaregiverUI` and slot colors are reused. Late records are orange, taken records teal, pending records gray, and missed records remain red.
-- Image quality and asset fidelity: existing SF Symbols and `MedicationSymbolView` are reused at native resolution. No raster placeholder, improvised SVG, or new decorative asset is introduced.
-- Copy and content: scheduled time, actual record time, delay duration, and recorder are visible. `本人が記録` and `家族が代理で記録` remain distinct.
+- Fonts and typography: native Japanese system text is used with fixed display sizes for the reference header and calculator. Weight and hierarchy match the source; no clipping or truncation was observed.
+- Spacing and layout rhythm: margins, card order, compact card padding, timing grid, formula row, quantity result, and registration button were aligned against the normalized full-view comparison.
+- Colors and visual tokens: the existing app teal, orange, pale blue background, white cards, gray secondary text, and subtle borders/shadows match the source palette.
+- Image quality and asset fidelity: all icons are native SF Symbols at device resolution. No placeholder, improvised raster, emoji, or custom SVG was introduced.
+- Copy and content: `お薬を登録`, `薬の情報と飲み方を入力します`, `基本情報`, `飲むタイミング`, `お薬の数量`, `登録時の在庫`, and `この内容で登録` are present. The concept-only `1 / 3` indicator was intentionally removed because the production flow is not a three-step wizard.
 
 ## Interaction evidence
 
-- Focused unit tests: 9 passed, including exact actual-time aggregation, 5時間21分 late calculation, partial-record preservation, proxy bulk recording, and history-refresh behavior.
-- Focused UI tests: 2 passed.
-  - Today shows the late summary and actual time; the recorded morning slot has no proxy button; the unrecorded noon slot retains a hittable proxy-record button.
-  - History exposes all four time-period groups; tapping noon reveals both medicines and the actual time and delay.
+- Focused unit tests: 11 passed with 0 failures.
+  - Daily, fractional-dose, weekly selected-day, PRN, and recalculation behavior remain covered.
+- Focused UI test: 1 passed with 0 failures.
+- Verifies the corrected header and primary sections.
+  - Verifies 30 days, formula terms `1錠`, `2回`, `30日`, calculated inventory `60`, and the registration action.
+- Staging simulator build: passed.
 
 ## Comparison history
 
-- Initial implementation build failed because grouped DTO rows lacked stable SwiftUI identifiers. Fixed by adding stable composite `historyRowID` values; the next build passed.
-- Initial UI-test queries assumed SwiftUI element types and failed to locate flattened accessibility nodes. Fixed by querying the combined accessible labels and retested; both targeted UI tests passed.
-- Post-fix visual evidence is recorded in the expanded-history and proxy-recording screenshots above.
+- Initial implementation had P1 visual drift: an extra introduction card, oversized form rows, medication type and period mixed into the main flow, and a fixed action covering the quantity card.
+- First correction replaced the long Form layout with the selected image's three-card hierarchy and moved production-only fields into a collapsed disclosure.
+- Second correction removed the fixed material action, restored the image's inline registration action, changed `時間帯` to `飲むタイミング`, matched the orange outline clock treatment, and restored the horizontal calculation divider.
+- Final correction reduced card padding, field height, typography, and calculator spacing. The normalized final comparison shows the same composition and all primary content without overlap.
+- Product correction removed the misleading `1 / 3` label because registration is completed on one scrolling screen.
 
 ## Follow-up polish
 
-- [P3] The Today late-summary sentence wraps after `本人` on the narrow real viewport. A later copy-polish pass could split the time and recorder into separate semantic lines, but the current layout is readable and complete.
+- [P3] SF Symbol artwork differs slightly from the generated concept's illustrative icon glyphs, while retaining the same semantic shape and color.
+- [P3] The native `mg` picker includes the platform chevron, which is required to communicate that the unit can be changed.
 
 ## Implementation checklist
 
-- [x] Preserve proxy recording eligibility and confirmation flow.
-- [x] Show late status, actual time, delay, and recorder in caregiver Today.
-- [x] Preserve the existing History summary and bottom navigation.
-- [x] Group the selected day's scheduled medicines by time period.
-- [x] Make time-period rows expandable and retain missed-dose backfill.
-- [x] Pass build, unit tests, focused UI tests, and visual comparison.
+- [x] Match the selected header and back action.
+- [x] Match the compact basic-information card.
+- [x] Match the four timing choices and selected states.
+- [x] Match the 30-day calculation and 60-tablet result.
+- [x] Place the registration action after the quantity card without overlap.
+- [x] Preserve scheduled, weekly, PRN, editing, date, memo, and delete behavior.
+- [x] Pass unit, UI, visual, and Staging-build verification.
 
 final result: passed

@@ -387,12 +387,16 @@ struct MedicationListView: View {
             viewModel.load(showLoading: viewModel.items.isEmpty)
         }
         .sheet(isPresented: $showingCreate) {
-            MedicationFormView(sessionStore: sessionStore, onSuccess: showToast)
-                .environmentObject(sessionStore)
+            NavigationStack {
+                MedicationFormView(sessionStore: sessionStore, onSuccess: showToast)
+                    .environmentObject(sessionStore)
+            }
         }
         .sheet(item: $selectedMedication) { medication in
-            MedicationFormView(sessionStore: sessionStore, medication: medication, onSuccess: showToast)
-                .environmentObject(sessionStore)
+            NavigationStack {
+                MedicationFormView(sessionStore: sessionStore, medication: medication, onSuccess: showToast)
+                    .environmentObject(sessionStore)
+            }
         }
         .onChange(of: showingCreate) { _, isPresented in
             if !isPresented {

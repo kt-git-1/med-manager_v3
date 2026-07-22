@@ -68,6 +68,7 @@
 		70FD8898FEB01E58F01D76DB /* CaregiverPushUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AF6AFD1B47BE0E49B16EFD8 /* CaregiverPushUITests.swift */; };
 		72244D32BB08C28815AD5624 /* PaywallUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCC18253215BD74074A8CB36 /* PaywallUITests.swift */; };
 		736A57035E5FAB697D158DD0 /* StateViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53F3D10B0283F083999CFCEF /* StateViews.swift */; };
+		73A5F1A5B456F2E0A822CA80 /* MedicationFormRegistrationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F98DAC506708AFCD1A35CB /* MedicationFormRegistrationUITests.swift */; };
 		73D859E7021BCA0DE1A38356 /* NotificationPreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E5797509D584B7B93F402B4 /* NotificationPreferencesStore.swift */; };
 		75545D2CC4BE7F58C85D198D /* PatientRevokeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2780958AD32B86D5FD3254D8 /* PatientRevokeView.swift */; };
 		75E9F2A01627779530212DA5 /* PatientReadOnlyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F65CEF9BC60A7F91DB1ACCE1 /* PatientReadOnlyView.swift */; };
@@ -224,6 +225,7 @@
 		53F3D10B0283F083999CFCEF /* StateViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateViews.swift; sourceTree = "<group>"; };
 		559F7D05EAC2932241E20F4E /* CaregiverSessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaregiverSessionController.swift; sourceTree = "<group>"; };
 		55D848B099AC94BF91C18A12 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
+		55F98DAC506708AFCD1A35CB /* MedicationFormRegistrationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationFormRegistrationUITests.swift; sourceTree = "<group>"; };
 		59803E8F1DB8D7C07E6285E5 /* PrnOverlayUiTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrnOverlayUiTests.swift; sourceTree = "<group>"; };
 		5A1C86D4E584FBC8DFCE97D4 /* HistoryClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryClient.swift; sourceTree = "<group>"; };
 		5E7A3EACBB80753166EEC714 /* ReminderBannerPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderBannerPresenter.swift; sourceTree = "<group>"; };
@@ -655,6 +657,7 @@
 				50CC3E300E058B7C790B9BD6 /* HistoryOverlayTests.swift */,
 				08D4DBCBF2CE5522633BB90C /* Info.plist */,
 				2E8719E81A7A2F1E42E06B7E /* LinkCodeErrorMessageTests.swift */,
+				55F98DAC506708AFCD1A35CB /* MedicationFormRegistrationUITests.swift */,
 				1936DBB41CFB0907EE79DBF6 /* MedicationFormValidationTests.swift */,
 				F793F0C9A8BBA67CA9C46326 /* MedicationFormViewModelTests.swift */,
 				EB55437B073B6E2D5D88F3AE /* MedicationListViewModelTests.swift */,
@@ -892,6 +895,7 @@
 				E57191284924C8022CD75D8D /* InventoryEmptyStateUITests.swift in Sources */,
 				87F9F1FB48BD67EB2C107CBB /* InventoryListDetailUITests.swift in Sources */,
 				402A7BCF917FB5445A8E6089 /* InventoryOverlayUITests.swift in Sources */,
+				73A5F1A5B456F2E0A822CA80 /* MedicationFormRegistrationUITests.swift in Sources */,
 				14547BC051DEB1ADBCC808FF /* NotificationSettingsUITests.swift in Sources */,
 				087064BF30ABBD3F6E58DEF9 /* NotificationTapUITests.swift in Sources */,
 				6807F0C55C28A3CFB9265692 /* PDFExportUITests.swift in Sources */,
