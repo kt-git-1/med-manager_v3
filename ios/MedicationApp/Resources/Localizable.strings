@@ -774,6 +774,8 @@
 "patient.today.summary.completed.detail" = "%@ %@に服用";
 "patient.today.next.header" = "次のお薬";
 "patient.today.summary.section.title" = "今日の記録";
+"patient.today.summary.empty.title" = "まだ服用記録はありません";
+"patient.today.summary.empty.message" = "お薬を飲んで記録すると、ここに表示されます";
 "patient.today.summary.show" = "薬の内容を見る";
 "patient.today.summary.hide" = "薬の内容を閉じる";
 "patient.today.slot.bulk.confirm.title" = "%@のお薬を記録";

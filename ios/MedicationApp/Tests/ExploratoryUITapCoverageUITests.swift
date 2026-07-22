@@ -319,7 +319,8 @@ private struct QAContext {
             caregiverToken: caregiverToken,
             medicationId: medicationId,
             startDate: todayString(),
-            dayOfWeek: todayDayOfWeek()
+            dayOfWeek: todayDayOfWeek(),
+            times: ["08:00", "12:30", "19:00", "23:50"]
         )
         let code = try await issueLinkingCode(
             apiBaseURL: apiBaseURL,
@@ -472,7 +473,8 @@ private struct QAContext {
         caregiverToken: String,
         medicationId: String,
         startDate: String,
-        dayOfWeek: String
+        dayOfWeek: String,
+        times: [String]
     ) async throws {
         _ = try await jsonRequest(
             url: "\(apiBaseURL)/api/medications/\(medicationId)/regimens",
@@ -481,7 +483,7 @@ private struct QAContext {
             body: [
                 "timezone": "Asia/Tokyo",
                 "startDate": startDate,
-                "times": ["23:50"],
+                "times": times,
                 "daysOfWeek": [dayOfWeek]
             ]
         )

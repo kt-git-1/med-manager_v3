@@ -997,6 +997,29 @@ private struct PatientTodayCompactSummary: View {
             Text(NSLocalizedString("patient.today.summary.section.title", comment: "Today status section title"))
                 .font(.title2.weight(.bold))
 
+            if completedSlots.isEmpty {
+                PatientCard(accent: PatientUI.blue) {
+                    HStack(alignment: .center, spacing: 14) {
+                        Image(systemName: "clock.badge.questionmark.fill")
+                            .font(.system(size: 27, weight: .bold))
+                            .foregroundStyle(PatientUI.blue)
+                            .frame(width: 52, height: 52)
+                            .background(PatientUI.blue.opacity(0.12), in: Circle())
+
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(NSLocalizedString("patient.today.summary.empty.title", comment: "No dose records title"))
+                                .font(.title3.weight(.bold))
+                                .foregroundStyle(.primary)
+                            Text(NSLocalizedString("patient.today.summary.empty.message", comment: "No dose records message"))
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(Color.readableSecondaryText)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+                .accessibilityIdentifier("PatientTodayEmptyRecordState")
+            }
+
             ForEach(completedSlots, id: \.rawValue) { slot in
                 if let summary = summaries[slot] {
                     expandableCard(
