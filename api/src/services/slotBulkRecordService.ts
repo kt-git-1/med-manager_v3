@@ -21,9 +21,9 @@ import { applyInventoryDeltasForDoseRecords } from "./medicationService";
 import { DEFAULT_TIMEZONE, DOSE_MISSED_WINDOW_MS, INTL_PARSE_LOCALE } from "../constants";
 import { randomUUID } from "crypto";
 
-/** Patient can record from 30 min before slot time to 60 min after. */
+/** Patient can record from 30 min before slot time until 04:00 the following day. */
 const RECORDING_WINDOW_BEFORE_MS = 30 * 60 * 1000;
-const RECORDING_WINDOW_AFTER_MS = 60 * 60 * 1000;
+const RECORDING_DEADLINE_AFTER_DAY_START_MS = 4 * 60 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -121,8 +121,9 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
   if (recordedByType === "PATIENT" && slotDoses.length > 0) {
     const firstScheduledAt = new Date(slotDoses[0].scheduledAt).getTime();
     const windowOpen = firstScheduledAt - RECORDING_WINDOW_BEFORE_MS;
-    const windowClose = firstScheduledAt + RECORDING_WINDOW_AFTER_MS;
-    if (now.getTime() < windowOpen || now.getTime() > windowClose) {
+    const { to: nextLocalDayStart } = getDayRange(new Date(firstScheduledAt), tz);
+    const windowClose = nextLocalDayStart.getTime() + RECORDING_DEADLINE_AFTER_DAY_START_MS;
+    if (now.getTime() < windowOpen || now.getTime() >= windowClose) {
       const slotSummary = buildSlotSummary(allDoses, tz, input.customSlotTimes);
       return {
         updatedCount: 0,

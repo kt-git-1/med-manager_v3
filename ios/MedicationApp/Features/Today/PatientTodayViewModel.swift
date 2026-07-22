@@ -349,6 +349,8 @@ final class PatientTodayViewModel: ObservableObject {
                     showToast(NSLocalizedString("patient.today.slot.bulk.partialSuccess", comment: "Bulk partially recorded"), kind: .warning)
                 } else if result.insufficientCount > 0 {
                     showToast(NSLocalizedString("patient.today.inventory.insufficient", comment: "Insufficient inventory"), kind: .warning)
+                } else if result.updatedCount == 0 && !recordableDoses.isEmpty {
+                    showToast(NSLocalizedString("patient.today.slot.bulk.noChange", comment: "No doses recorded"), kind: .warning)
                 } else {
                     showToast(NSLocalizedString("patient.today.slot.bulk.success", comment: "Bulk recorded"))
                 }

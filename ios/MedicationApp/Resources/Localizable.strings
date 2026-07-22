@@ -786,6 +786,7 @@
 "patient.today.slot.bulk.perDose" = "1回%@錠";
 "patient.today.slot.bulk.success" = "記録しました";
 "patient.today.slot.bulk.partialSuccess" = "記録できる薬だけ記録しました。在庫不足の薬があります";
+"patient.today.slot.bulk.noChange" = "記録できませんでした。画面を更新して、もう一度お試しください";
 "patient.today.slot.bulk.remaining" = "残り%d件";
 
 /* Push Notification Settings (012) */

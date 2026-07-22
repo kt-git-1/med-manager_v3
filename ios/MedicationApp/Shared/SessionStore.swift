@@ -133,7 +133,10 @@ final class SessionStore: ObservableObject {
             saveCaregiverToken(caregiverToken)
         }
         if let patientToken = env["UITEST_PATIENT_TOKEN"], !patientToken.isEmpty {
-            savePatientToken(patientToken)
+            let expiresAt = env["UITEST_PATIENT_EXPIRES_AT"]
+                .flatMap(TimeInterval.init)
+                .map(Date.init(timeIntervalSince1970:))
+            savePatientToken(patientToken, expiresAt: expiresAt)
         }
         if let currentPatientId = env["UITEST_CURRENT_PATIENT_ID"], !currentPatientId.isEmpty {
             setCurrentPatientId(currentPatientId)
