@@ -366,16 +366,23 @@ struct InventoryDetailView: View {
     }
 
     private func amountInput(value: Binding<Double>, field: InventoryField) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 4) {
-            TextField("0", value: value, formatter: numberFormatter)
-                .font(.system(size: 36, weight: .bold, design: .rounded))
-                .foregroundStyle(CaregiverUI.tealDark)
-                .multilineTextAlignment(.trailing)
-                .keyboardType(.decimalPad)
-                .focused($focusedField, equals: field)
-                .frame(minWidth: 70)
-            Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
-                .font(.headline.weight(.bold))
+        VStack(alignment: .leading, spacing: 3) {
+            Text(NSLocalizedString("caregiver.inventory.edit.afterRefill", comment: "Reserved quantity label space"))
+                .font(.caption.weight(.bold))
+                .hidden()
+                .accessibilityHidden(true)
+
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                TextField("0", value: value, formatter: numberFormatter)
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .foregroundStyle(CaregiverUI.tealDark)
+                    .multilineTextAlignment(.trailing)
+                    .keyboardType(.decimalPad)
+                    .focused($focusedField, equals: field)
+                    .frame(minWidth: 70)
+                Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
+                    .font(.subheadline.weight(.bold))
+            }
         }
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity)

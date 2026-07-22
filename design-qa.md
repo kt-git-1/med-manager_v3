@@ -118,3 +118,24 @@ final result: passed
 - [x] Pass build, interaction, and visual comparison checks.
 
 final result: passed
+
+---
+
+# Inventory quantity baseline alignment QA
+
+## Evidence
+
+- Reported screenshot: `/Users/kaito/Desktop/Screenshot 2026-07-23 at 0.53.26.png`
+- Corrected simulator screenshot: `/tmp/inventory-alignment-final.png`
+- Focused before-and-after comparison: `/tmp/inventory-quantity-alignment-focused-comparison.png`
+- State: 14-tablet refill resulting in 18 tablets.
+
+## Findings
+
+- No actionable P0, P1, or P2 issue remains.
+- Both quantity cards remain exactly 76 points high.
+- Both sides now reserve the same caption-row height and use the same number/unit baseline.
+- The hidden reserved caption is excluded from accessibility, so VoiceOver does not announce duplicate content.
+- Focused UI test passed after the alignment change.
+
+final result: passed
