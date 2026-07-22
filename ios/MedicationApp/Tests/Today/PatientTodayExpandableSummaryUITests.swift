@@ -105,4 +105,35 @@ final class PatientTodayExpandableSummaryUITests: XCTestCase {
         caregiverHistoryScreenshot.lifetime = .keepAlways
         add(caregiverHistoryScreenshot)
     }
+
+    func testInventoryDetailSeparatesRefillAndCorrectionActions() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-InventoryDetailRedesignPreview"]
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["在庫を編集"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["血圧の薬 5 mg"].exists)
+        XCTAssertTrue(app.staticTexts["何をしますか？"].exists)
+
+        let refillAction = app.buttons["InventoryEditActionRefill"]
+        let correctionAction = app.buttons["InventoryEditActionCorrection"]
+        XCTAssertTrue(refillAction.exists)
+        XCTAssertTrue(correctionAction.exists)
+        XCTAssertTrue(app.descendants(matching: .any)["InventoryRefillEditor"].exists)
+
+        correctionAction.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["InventoryCorrectionEditor"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["数え直した残数"].exists)
+
+        refillAction.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["InventoryRefillEditor"].waitForExistence(timeout: 2))
+        app.buttons["14日分"].tap()
+        XCTAssertTrue(app.staticTexts["補充後"].exists)
+        XCTAssertTrue(app.staticTexts["18"].exists)
+
+        let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        screenshot.name = "Inventory detail redesign"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
 }

@@ -59,3 +59,62 @@
 - [x] Pass unit, UI, visual, and Staging-build verification.
 
 final result: passed
+
+---
+
+# Inventory editing image-to-code QA
+
+## Evidence
+
+- Source visual truth: `/Users/kaito/.codex/generated_images/019f5a2c-62d4-7b23-b53d-61601c7e2b02/exec-6d99f155-d90e-4751-a80a-2448dddde596.png`
+- Final implementation screenshot: `/tmp/inventory-redesign-preview-final.png`
+- Full-view comparison: `/tmp/inventory-redesign-comparison-final.png`
+- Viewport: iPhone 17e simulator, portrait, 390 x 844 points at 3x density.
+- Source pixels: 853 x 1844. Implementation pixels: 1170 x 2532.
+- Comparison normalization: both images fitted to 390 x 844 and placed side by side.
+- State: caregiver inventory edit, scheduled medication `血圧の薬 5 mg`, current stock 4 tablets, about 4 days remaining, refill action selected, 14-day preset producing 18 tablets after refill.
+
+## Findings
+
+- No actionable P0, P1, or P2 mismatch remains.
+- The selected option's hierarchy is preserved: compact medication summary, explicit action choice, refill presets, before-and-after stock, and a single confirmation action.
+- Native iOS status and navigation bars use more vertical space than the generated concept. Content density was reduced so the confirmation button remains visible above the persistent caregiver tab bar.
+- The correction flow uses the same action-first shell and swaps only the editor content, avoiding simultaneous refill and replacement controls.
+
+## Required fidelity surfaces
+
+- Typography: native Japanese system type keeps the same bold hierarchy for the title, medication name, question, actions, and numeric results without truncation.
+- Spacing and layout: card order, compact header metrics, two action rows, four refill choices, 14-to-18 result row, and confirmation action match the selected composition.
+- Colors: the existing caregiver teal identifies refill and selection; orange identifies stock correction; pale blue background, white cards, and gray supporting copy remain consistent with the app.
+- Assets: production SF Symbols and the existing inventory illustration component are used at device resolution. No placeholder or improvised raster asset was introduced.
+- Navigation: inventory detail is a pushed destination, so the existing caregiver bottom tab bar remains visible as requested.
+
+## Interaction evidence
+
+- Staging simulator build: passed.
+- Focused UI test: passed with 0 failures.
+- Verified refill and correction can be selected independently.
+- Verified the 14-day preset and the calculated after-refill quantity of 18 tablets.
+- Existing refill, correction, inventory enablement, confirmation, and API methods are retained.
+
+## Comparison history
+
+- Pass 1 P2: the medication header wrapped, action cards were too tall, and the numeric refill result began below the initial viewport.
+- Pass 2: compacted the header, removed the extra status badge, shortened action rows, and initialized the realistic 14-day suggestion. The result and confirmation action became visible, but the button edge met the tab overlay.
+- Final pass: reduced inter-section spacing so the complete confirmation button is visible above the bottom navigation without reducing touch target sizes.
+
+## Follow-up polish
+
+- [P3] The generated package illustration is represented by the app's existing medication inventory illustration to preserve visual consistency and production asset quality.
+- [P3] The native status bar is present in the implementation and absent from the generated concept.
+
+## Implementation checklist
+
+- [x] Separate refill and stock-recount actions.
+- [x] Show current stock and estimated remaining days.
+- [x] Provide 7-, 14-, and 21-day presets plus direct input.
+- [x] Show the resulting stock before confirmation.
+- [x] Preserve the caregiver bottom tab bar.
+- [x] Pass build, interaction, and visual comparison checks.
+
+final result: passed

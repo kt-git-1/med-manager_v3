@@ -10,7 +10,9 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if isPatientTodayV105PreviewActive {
+            if isInventoryDetailRedesignPreviewActive {
+                InventoryDetailDebugPreview()
+            } else if isPatientTodayV105PreviewActive {
                 PatientTodayV105DebugPreview()
             } else if isCaregiverHistoryV105PreviewActive {
                 CaregiverHistoryV105DebugPreview()
@@ -131,6 +133,14 @@ struct RootView: View {
     private var isPatientTodayV105PreviewActive: Bool {
         #if targetEnvironment(simulator)
         ProcessInfo.processInfo.arguments.contains("-PatientTodayV105Preview")
+        #else
+        false
+        #endif
+    }
+
+    private var isInventoryDetailRedesignPreviewActive: Bool {
+        #if targetEnvironment(simulator)
+        ProcessInfo.processInfo.arguments.contains("-InventoryDetailRedesignPreview")
         #else
         false
         #endif
