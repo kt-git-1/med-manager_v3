@@ -307,7 +307,7 @@ struct HistoryDayDetailView: View {
     }
 }
 
-#if DEBUG
+#if targetEnvironment(simulator)
 struct CaregiverHistoryV105DebugPreview: View {
     @StateObject private var viewModel: HistoryViewModel
     @State private var selectedTab: CaregiverTab = .history
