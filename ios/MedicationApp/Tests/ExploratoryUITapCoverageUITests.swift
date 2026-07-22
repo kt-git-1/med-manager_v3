@@ -58,6 +58,28 @@ final class ExploratoryUITapCoverageTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["今日のお薬"].waitForExistence(timeout: 10))
     }
 
+    func testPatientRecentHistoryRowExpandsToShowMedicationDetails() throws {
+        let app = launchedApp(mode: "patient")
+
+        handleSystemPermissionPrompts(in: app)
+        XCTAssertTrue(app.staticTexts["今日のお薬"].waitForExistence(timeout: 30), app.debugDescription)
+
+        tapTab("履歴", in: app)
+        XCTAssertTrue(app.staticTexts["最近の記録"].waitForExistence(timeout: 20), app.debugDescription)
+
+        let dateKey = todayString()
+        let row = app.buttons["PatientRecentHistoryRow-\(dateKey)"]
+        XCTAssertTrue(row.waitForExistence(timeout: 10), app.debugDescription)
+        for _ in 0..<6 where !row.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(row.isHittable, app.debugDescription)
+        row.tap()
+
+        XCTAssertTrue(app.staticTexts[qaContext.medicationName].waitForExistence(timeout: 10), app.debugDescription)
+        XCTAssertTrue(app.images["chevron.up"].firstMatch.exists, app.debugDescription)
+    }
+
     func testCaregiverCanRegisterForPushNotifications() throws {
         let app = launchedApp(mode: "caregiver")
 

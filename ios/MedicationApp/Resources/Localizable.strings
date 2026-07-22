@@ -237,6 +237,11 @@
 "patient.history.week.encouragement.streak" = "連続で記録できています。とても良いペースです。";
 "patient.history.week.encouragement.streakStrong" = "記録が続いています。すばらしいです。この調子で体調の変化を見守っていきましょう。";
 "patient.history.recent.title" = "最近の記録";
+"patient.history.recent.expandHint" = "時間帯ごとの服用履歴を開きます";
+"patient.history.recent.collapseHint" = "時間帯ごとの服用履歴を閉じます";
+"patient.history.recent.empty" = "この日の服用履歴はありません";
+"patient.history.recent.late.format" = "飲み遅れ %@";
+"patient.history.recent.prn" = "必要な時のお薬";
 "patient.history.today.progress.title" = "今日の進捗";
 "patient.history.today.progress.format" = "%d/%d回分 記録済み";
 "patient.history.today.progress.noSchedule" = "今日は予定がありません";
