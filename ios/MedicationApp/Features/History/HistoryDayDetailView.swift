@@ -32,6 +32,7 @@ struct HistoryDayDetailView: View {
     var onRecordMissedDose: (HistoryDayItemDTO) -> Void = { _ in }
     @State private var doseToBackfill: HistoryDayItemDTO?
     @State private var showingBackfillConfirmation = false
+    @State private var expandedSlotKeys: Set<String> = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -65,39 +66,7 @@ struct HistoryDayDetailView: View {
                 )
                 .accessibilityIdentifier("HistoryDayEmptyState")
             } else {
-                VStack(spacing: 12) {
-                    ForEach(timelineItems) { item in
-                        switch item {
-                        case .scheduled(let dose):
-                            HistoryDayRow(
-                                scheduledTimeText: HistoryDayDetailView.timeFormatter.string(from: dose.scheduledAt),
-                                takenTimeText: dose.takenAt.map { HistoryDayDetailView.timeFormatter.string(from: $0) },
-                                isLate: dose.takenAt.map { $0.timeIntervalSince(dose.scheduledAt) >= 60 * 60 } ?? false,
-                                slotText: slotTitle(for: dose.slot),
-                                slotColor: slotColor(for: dose.slot),
-                                name: dose.medicationName,
-                                dosage: dose.dosageText,
-                                status: dose.effectiveStatus,
-                                recordedByText: recordedByText(for: dose),
-                                isHighlighted: isSlotHighlighted(dose.slot),
-                                style: style,
-                                canBackfill: style == .caregiver && dose.effectiveStatus == .missed,
-                                onBackfill: {
-                                    doseToBackfill = dose
-                                    showingBackfillConfirmation = true
-                                }
-                            )
-                        case .prn(let record):
-                            HistoryDayPrnRow(
-                                timeText: HistoryDayDetailView.timeFormatter.string(from: record.takenAt),
-                                name: record.medicationName,
-                                quantity: record.quantityTaken,
-                                recordedByText: recordedByText(for: record.actorType),
-                                style: style
-                            )
-                        }
-                    }
-                }
+                timelineContent
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -122,6 +91,79 @@ struct HistoryDayDetailView: View {
             )
         }
         .accessibilityIdentifier("HistoryDayDetailView")
+        .onChange(of: viewModel.day?.date) { _, _ in
+            expandedSlotKeys = Set(
+                slotGroups
+                    .filter { $0.status == .taken || isSlotHighlighted($0.slot) }
+                    .map { $0.slot.rawValue }
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var timelineContent: some View {
+        if style == .caregiver {
+            VStack(spacing: 10) {
+                ForEach(slotGroups) { group in
+                    CaregiverHistorySlotGroupView(
+                        group: group,
+                        isExpanded: expandedSlotKeys.contains(group.slot.rawValue),
+                        isHighlighted: isSlotHighlighted(group.slot),
+                        slotTitle: slotTitle(for: group.slot),
+                        slotColor: slotColor(for: group.slot),
+                        scheduledTimeText: HistoryDayDetailView.timeFormatter.string(from: group.scheduledAt),
+                        takenTimeText: group.takenAt.map { HistoryDayDetailView.timeFormatter.string(from: $0) },
+                        recordedByText: recordedByText(for: group),
+                        delayText: delayText(for: group),
+                        onToggle: { toggleSlot(group.slot) },
+                        onBackfill: { dose in
+                            doseToBackfill = dose
+                            showingBackfillConfirmation = true
+                        }
+                    )
+                }
+
+                ForEach(prnItems, id: \.historyRowID) { record in
+                    HistoryDayPrnRow(
+                        timeText: HistoryDayDetailView.timeFormatter.string(from: record.takenAt),
+                        name: record.medicationName,
+                        quantity: record.quantityTaken,
+                        recordedByText: recordedByText(for: record.actorType),
+                        style: style
+                    )
+                }
+            }
+        } else {
+            VStack(spacing: 12) {
+                ForEach(timelineItems) { item in
+                    switch item {
+                    case .scheduled(let dose):
+                        HistoryDayRow(
+                            scheduledTimeText: HistoryDayDetailView.timeFormatter.string(from: dose.scheduledAt),
+                            takenTimeText: dose.takenAt.map { HistoryDayDetailView.timeFormatter.string(from: $0) },
+                            isLate: dose.takenAt.map { $0.timeIntervalSince(dose.scheduledAt) >= 60 * 60 } ?? false,
+                            slotText: slotTitle(for: dose.slot),
+                            slotColor: slotColor(for: dose.slot),
+                            name: dose.medicationName,
+                            dosage: dose.dosageText,
+                            status: dose.effectiveStatus,
+                            recordedByText: recordedByText(for: dose),
+                            isHighlighted: isSlotHighlighted(dose.slot),
+                            style: style,
+                            canBackfill: false
+                        )
+                    case .prn(let record):
+                        HistoryDayPrnRow(
+                            timeText: HistoryDayDetailView.timeFormatter.string(from: record.takenAt),
+                            name: record.medicationName,
+                            quantity: record.quantityTaken,
+                            recordedByText: recordedByText(for: record.actorType),
+                            style: style
+                        )
+                    }
+                }
+            }
+        }
     }
 
     private var dayTitle: String {
@@ -142,6 +184,56 @@ struct HistoryDayDetailView: View {
             }
             return left.sortName.localizedCompare(right.sortName) == .orderedAscending
         }
+    }
+
+    private var slotGroups: [HistoryDaySlotGroup] {
+        let doses = viewModel.day?.doses ?? []
+        return HistorySlotDTO.allCases.compactMap { slot in
+            let slotDoses = doses.filter { $0.slot == slot }
+            return slotDoses.isEmpty ? nil : HistoryDaySlotGroup(slot: slot, doses: slotDoses)
+        }
+    }
+
+    private var prnItems: [PrnHistoryItemDTO] {
+        (viewModel.day?.prnItems ?? []).sorted {
+            if $0.takenAt != $1.takenAt { return $0.takenAt < $1.takenAt }
+            return $0.medicationName.localizedCompare($1.medicationName) == .orderedAscending
+        }
+    }
+
+    private func toggleSlot(_ slot: HistorySlotDTO) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            if expandedSlotKeys.contains(slot.rawValue) {
+                expandedSlotKeys.remove(slot.rawValue)
+            } else {
+                expandedSlotKeys.insert(slot.rawValue)
+            }
+        }
+    }
+
+    private func delayText(for group: HistoryDaySlotGroup) -> String? {
+        guard group.isLate else { return nil }
+        let totalMinutes = Int(group.maximumDelay / 60)
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if hours > 0, minutes > 0 {
+            return String(format: NSLocalizedString("history.delay.hoursMinutes", comment: "Delay hours and minutes"), hours, minutes)
+        }
+        if hours > 0 {
+            return String(format: NSLocalizedString("history.delay.hours", comment: "Delay hours"), hours)
+        }
+        return String(format: NSLocalizedString("history.delay.minutes", comment: "Delay minutes"), minutes)
+    }
+
+    private func recordedByText(for group: HistoryDaySlotGroup) -> String? {
+        guard !group.recordedByTypes.isEmpty else { return nil }
+        if group.recordedByTypes.count > 1 {
+            return NSLocalizedString("history.recordedBy.mixed", comment: "Mixed recorders")
+        }
+        guard let actor = group.recordedByTypes.first else {
+            return NSLocalizedString("history.recordedBy.unknown", comment: "Unknown recorder")
+        }
+        return recordedByText(for: actor)
     }
 
     private func retryLoad() {
@@ -215,9 +307,351 @@ struct HistoryDayDetailView: View {
     }
 }
 
+#if DEBUG
+struct CaregiverHistoryV105DebugPreview: View {
+    @StateObject private var viewModel: HistoryViewModel
+    @State private var selectedTab: CaregiverTab = .history
+    private let selectedDate: Date
+
+    init() {
+        let sessionStore = SessionStore()
+        sessionStore.setMode(.caregiver)
+        let client = APIClient(baseURL: URL(string: "http://localhost")!, sessionStore: sessionStore)
+        let model = HistoryViewModel(apiClient: client, sessionStore: sessionStore)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let data = Data(Self.previewJSON.utf8)
+        model.day = try? decoder.decode(HistoryDayResponseDTO.self, from: data)
+        _viewModel = StateObject(wrappedValue: model)
+        selectedDate = ISO8601DateFormatter().date(from: "2026-07-22T03:00:00Z") ?? Date()
+    }
+
+    var body: some View {
+        ZStack {
+            CaregiverUI.background.ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    CaregiverCard {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("選択中の日付")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(Color.readableSecondaryText)
+                            Text("7月22日（水）")
+                                .font(.title3.weight(.bold))
+                            Text("2/4回分 記録済み")
+                                .font(.title2.weight(.bold))
+                            Text("まだ記録されていない服薬があります。未来の予定は未記録として表示されます。")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.readableSecondaryText)
+                            HStack(spacing: 10) {
+                                CaregiverStatusPill(text: "記録済み 2回分", color: CaregiverUI.teal, systemImage: "checkmark.circle.fill")
+                                CaregiverStatusPill(text: "未記録 2回分", color: CaregiverUI.orange, systemImage: "clock.fill")
+                            }
+                        }
+                    }
+
+                    HistoryDayDetailView(
+                        viewModel: viewModel,
+                        selectedDate: selectedDate,
+                        style: .caregiver
+                    )
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 120)
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            CaregiverBottomTabBar(selectedTab: $selectedTab, hasLowStock: false, highlightedTab: nil)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 4)
+        }
+    }
+
+    private static let previewJSON = #"""
+    {
+      "date": "2026-07-22",
+      "doses": [
+        {"medicationId":"morning-1","medicationName":"朝・昼・夜 確認用のお薬","dosageText":"1錠","doseCountPerIntake":1,"scheduledAt":"2026-07-21T23:00:00Z","takenAt":"2026-07-22T08:21:00Z","slot":"morning","effectiveStatus":"taken","recordedByType":"patient"},
+        {"medicationId":"noon-1","medicationName":"カルボシステイン","dosageText":"500 mg","doseCountPerIntake":1,"scheduledAt":"2026-07-22T03:30:00Z","takenAt":"2026-07-22T08:51:00Z","slot":"noon","effectiveStatus":"taken","recordedByType":"patient"},
+        {"medicationId":"noon-2","medicationName":"整腸剤","dosageText":"50 mg","doseCountPerIntake":1,"scheduledAt":"2026-07-22T03:30:00Z","takenAt":"2026-07-22T08:51:00Z","slot":"noon","effectiveStatus":"taken","recordedByType":"patient"},
+        {"medicationId":"evening-1","medicationName":"夕食後の薬","dosageText":"1錠","doseCountPerIntake":1,"scheduledAt":"2026-07-22T10:00:00Z","takenAt":null,"slot":"evening","effectiveStatus":"pending","recordedByType":null},
+        {"medicationId":"bedtime-1","medicationName":"眠前の薬","dosageText":"1錠","doseCountPerIntake":1,"scheduledAt":"2026-07-22T14:50:00Z","takenAt":null,"slot":"bedtime","effectiveStatus":"pending","recordedByType":null}
+      ],
+      "prnItems": []
+    }
+    """#
+}
+#endif
+
 enum HistoryDayDetailStyle {
     case caregiver
     case patient
+}
+
+struct HistoryDaySlotGroup: Identifiable, Equatable {
+    let slot: HistorySlotDTO
+    let doses: [HistoryDayItemDTO]
+
+    var id: String { slot.rawValue }
+
+    var scheduledAt: Date {
+        doses.map(\.scheduledAt).min() ?? .distantPast
+    }
+
+    var takenAt: Date? {
+        doses.compactMap(\.takenAt).max()
+    }
+
+    var status: HistoryDoseStatusDTO {
+        if doses.allSatisfy({ $0.effectiveStatus == .taken }) { return .taken }
+        if doses.contains(where: { $0.effectiveStatus == .missed }) { return .missed }
+        return .pending
+    }
+
+    var isPartiallyTaken: Bool {
+        let takenCount = doses.filter { $0.effectiveStatus == .taken }.count
+        return takenCount > 0 && takenCount < doses.count
+    }
+
+    var maximumDelay: TimeInterval {
+        doses.compactMap { dose in
+            guard let takenAt = dose.takenAt else { return nil }
+            return max(0, takenAt.timeIntervalSince(dose.scheduledAt))
+        }.max() ?? 0
+    }
+
+    var isLate: Bool {
+        maximumDelay >= MedicationRecordingPolicy.lateThresholdSeconds
+    }
+
+    var recordedByTypes: Set<RecordedByTypeDTO> {
+        Set(doses.compactMap(\.recordedByType))
+    }
+}
+
+private struct CaregiverHistorySlotGroupView: View {
+    let group: HistoryDaySlotGroup
+    let isExpanded: Bool
+    let isHighlighted: Bool
+    let slotTitle: String
+    let slotColor: Color
+    let scheduledTimeText: String
+    let takenTimeText: String?
+    let recordedByText: String?
+    let delayText: String?
+    let onToggle: () -> Void
+    let onBackfill: (HistoryDayItemDTO) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button(action: onToggle) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 10) {
+                        Image(systemName: slotIconName)
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 34, height: 34)
+                            .background(slotColor, in: Circle())
+
+                        Text(slotTitle)
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(slotColor)
+                        Text(String(format: NSLocalizedString("history.schedule.format", comment: "Scheduled time"), scheduledTimeText))
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+
+                        Spacer(minLength: 4)
+
+                        CaregiverStatusPill(
+                            text: statusText,
+                            color: statusColor,
+                            systemImage: statusIconName
+                        )
+
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if let takenTimeText {
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 10) { recordingDetails(takenTimeText: takenTimeText) }
+                            VStack(alignment: .leading, spacing: 6) { recordingDetails(takenTimeText: takenTimeText) }
+                        }
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("CaregiverHistorySlotHeader.\(group.slot.rawValue)")
+
+            if isExpanded {
+                Divider()
+                    .padding(.vertical, 10)
+
+                VStack(spacing: 8) {
+                    ForEach(group.doses.sorted(by: doseSort), id: \.historyRowID) { dose in
+                        CaregiverHistoryMedicationRow(
+                            dose: dose,
+                            canBackfill: dose.effectiveStatus == .missed,
+                            onBackfill: { onBackfill(dose) }
+                        )
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .padding(14)
+        .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(isHighlighted ? slotColor : slotColor.opacity(0.38), lineWidth: isHighlighted ? 2 : 1)
+        }
+        .shadow(color: CaregiverUI.cardShadow, radius: 7, y: 3)
+        .accessibilityIdentifier("CaregiverHistorySlotGroup.\(group.slot.rawValue)")
+    }
+
+    @ViewBuilder
+    private func recordingDetails(takenTimeText: String) -> some View {
+        Label(
+            String(format: NSLocalizedString("caregiver.today.actualTime.format", comment: "Actual record time"), takenTimeText),
+            systemImage: "clock.fill"
+        )
+        .font(.caption.weight(.bold))
+        .foregroundStyle(group.isLate ? CaregiverUI.orange : CaregiverUI.tealDark)
+
+        if let delayText {
+            Text(delayText)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(CaregiverUI.orange)
+        }
+
+        if let recordedByText {
+            Label(recordedByText, systemImage: "person.crop.circle.badge.checkmark")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(CaregiverUI.tealDark)
+        }
+    }
+
+    private var statusText: String {
+        if group.isPartiallyTaken {
+            return NSLocalizedString("history.status.partial", comment: "Partially recorded")
+        }
+        switch group.status {
+        case .taken:
+            return group.isLate
+                ? NSLocalizedString("history.status.late", comment: "Late")
+                : NSLocalizedString("history.status.taken", comment: "Taken")
+        case .missed:
+            return NSLocalizedString("history.status.missed", comment: "Missed")
+        case .pending:
+            return NSLocalizedString("history.status.pending", comment: "Pending")
+        }
+    }
+
+    private var statusColor: Color {
+        if group.isPartiallyTaken { return CaregiverUI.orange }
+        if group.isLate { return CaregiverUI.orange }
+        switch group.status {
+        case .taken: return CaregiverUI.teal
+        case .missed: return CaregiverUI.red
+        case .pending: return .gray
+        }
+    }
+
+    private var statusIconName: String? {
+        if group.isPartiallyTaken { return "exclamationmark" }
+        if group.isLate { return "clock.badge.exclamationmark.fill" }
+        switch group.status {
+        case .taken: return "checkmark"
+        case .missed: return "exclamationmark"
+        case .pending: return "clock"
+        }
+    }
+
+    private var slotIconName: String {
+        switch group.slot {
+        case .morning: return "sunrise.fill"
+        case .noon: return "sun.max.fill"
+        case .evening: return "moon.fill"
+        case .bedtime: return "bed.double.fill"
+        }
+    }
+
+    private func doseSort(_ lhs: HistoryDayItemDTO, _ rhs: HistoryDayItemDTO) -> Bool {
+        lhs.medicationName.localizedCompare(rhs.medicationName) == .orderedAscending
+    }
+}
+
+private struct CaregiverHistoryMedicationRow: View {
+    let dose: HistoryDayItemDTO
+    let canBackfill: Bool
+    let onBackfill: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                MedicationSymbolView(tint: statusColor)
+                    .frame(width: 30, height: 30)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(displayName)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count"), AppConstants.formatDecimal(dose.doseCountPerIntake)))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.readableSecondaryText)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: statusIconName)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 26, height: 26)
+                    .background(statusColor, in: Circle())
+            }
+
+            if canBackfill {
+                Button(action: onBackfill) {
+                    Label(NSLocalizedString("history.day.backfill.button", comment: "Backfill button"), systemImage: "checkmark.circle.fill")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 42)
+                        .background(CaregiverUI.teal, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .background(CaregiverUI.elevatedBackground.opacity(0.78), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(CaregiverUI.cardStroke, lineWidth: 1)
+        }
+    }
+
+    private var displayName: String {
+        let dosage = dose.dosageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return dosage.isEmpty ? dose.medicationName : "\(dose.medicationName) \(dosage)"
+    }
+
+    private var statusColor: Color {
+        switch dose.effectiveStatus {
+        case .taken: return CaregiverUI.teal
+        case .missed: return CaregiverUI.red
+        case .pending: return .gray
+        }
+    }
+
+    private var statusIconName: String {
+        switch dose.effectiveStatus {
+        case .taken: return "checkmark"
+        case .missed: return "exclamationmark"
+        case .pending: return "clock"
+        }
+    }
 }
 
 private struct HistoryDayRow: View {

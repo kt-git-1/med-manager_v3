@@ -12,6 +12,8 @@ struct RootView: View {
         Group {
             if isPatientTodayV105PreviewActive {
                 PatientTodayV105DebugPreview()
+            } else if isCaregiverHistoryV105PreviewActive {
+                CaregiverHistoryV105DebugPreview()
             } else if isPatientHistoryAchievementPreviewActive {
                 PatientHistoryAchievementPreview()
             } else if isCaregiverTodayPreviewActive {
@@ -105,6 +107,14 @@ struct RootView: View {
     private var isCaregiverTodayPreviewActive: Bool {
         #if targetEnvironment(simulator)
         ProcessInfo.processInfo.arguments.contains("-CaregiverTodayPreview")
+        #else
+        false
+        #endif
+    }
+
+    private var isCaregiverHistoryV105PreviewActive: Bool {
+        #if targetEnvironment(simulator)
+        ProcessInfo.processInfo.arguments.contains("-CaregiverHistoryV105Preview")
         #else
         false
         #endif

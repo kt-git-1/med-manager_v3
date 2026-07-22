@@ -6,7 +6,7 @@ enum HistoryDoseStatusDTO: String, Decodable, Equatable {
     case missed
 }
 
-enum HistorySlotDTO: String, Decodable, Equatable {
+enum HistorySlotDTO: String, Decodable, Equatable, Hashable, CaseIterable {
     case morning
     case noon
     case evening
@@ -82,6 +82,10 @@ struct HistoryDayItemDTO: Decodable, Equatable {
     let slot: HistorySlotDTO
     let effectiveStatus: HistoryDoseStatusDTO
     let recordedByType: RecordedByTypeDTO?
+
+    var historyRowID: String {
+        "\(medicationId)-\(scheduledAt.timeIntervalSince1970)"
+    }
 }
 
 struct PrnHistoryItemDTO: Decodable, Equatable {
@@ -90,6 +94,10 @@ struct PrnHistoryItemDTO: Decodable, Equatable {
     let takenAt: Date
     let quantityTaken: Double
     let actorType: PrnActorTypeDTO
+
+    var historyRowID: String {
+        "\(medicationId)-\(takenAt.timeIntervalSince1970)"
+    }
 }
 
 struct HistoryDayResponseDTO: Decodable, Equatable {

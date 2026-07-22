@@ -1,105 +1,59 @@
-# デザイン検証記録
+# Caregiver late-record and grouped-history design QA
 
-## 基準にしたデザイン
+## Evidence
 
-- 採用案（3枚目の縦型手順レイアウト＋1枚目の暖色系背景）: `/Users/kaito/.codex/generated_images/019f630f-5b32-7080-be96-4c6765d13d27/exec-3750483d-0978-4801-a512-878639afb40f.png`
-- 実装対象: トップ、詳しい使い方、プライバシーポリシー、利用規約、サポート、メール確認完了
-- 主な閲覧者: 高齢の本人を支える40〜60代の家族
+- Source visual truth: `/Users/kaito/.codex/generated_images/019f5a2c-62d4-7b23-b53d-61601c7e2b02/exec-9a9885a1-628d-47e1-8d96-3325af444d4a.png`
+- Current-history structural reference: `/Users/kaito/Desktop/Screenshot 2026-07-22 at 18.17.31.png`
+- Today implementation screenshot: `/tmp/caregiver-today-implementation.jpeg`
+- History implementation screenshot: `/tmp/caregiver-history-implementation.jpeg`
+- Expanded-history interaction screenshot: `/tmp/caregiver-redesign-attachments-final/78188E3D-A3AF-4A6D-B309-84253DF2A20B.png`
+- Proxy-recording interaction screenshot: `/tmp/caregiver-redesign-attachments-final/2BA67594-E745-4D14-9408-1E7DF8AC38F2.png`
+- Combined full-view comparison: `/tmp/caregiver-design-qa-comparison.jpg`
+- Viewport: iPhone 17e simulator, 390 x 844 points.
+- Source pixels: 1700 x 925 design board containing two app screens.
+- Implementation pixels: 410 x 867 simulator-window captures for the full-view comparison; 1170 x 2532 at 3x density for focused interaction captures.
+- Density normalization: the combined comparison preserves source aspect ratio and scales both simulator-window captures to equal heights. Focused captures are compared at native 3x density.
+- State: caregiver Today with one late patient record and one proxy-recordable slot; caregiver History on 2026-07-22 with noon expanded.
 
-## 比較条件と証跡
+## Findings
 
-- パソコン: 1440 × 1024
-- スマートフォン: 390 × 844
-- 比較画像: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-redesign-qa/guide-reference-vs-pass2.png`
-- 使い方（パソコン）: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-redesign-qa/guide-desktop-pass2.png`
-- 使い方（スマートフォン）: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-redesign-qa/guide-mobile-viewport.png`
-- トップ（パソコン）: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-redesign-qa/home-desktop-final.png`
-- トップ（スマートフォン）: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-redesign-qa/home-mobile-final2.png`
-- 規約系の代表確認: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-redesign-qa/privacy-desktop-final.png`
-- 今回の比較画像: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-guide-step-screens/reference-vs-steps-final.png`
-- 最初の手順（パソコン）: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-guide-step-screens/guide-steps-desktop-final.png`
-- 最初の手順（スマートフォン）: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-guide-step-screens/guide-steps-mobile.png`
-- 変更前の公開トップ: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/home-restored-qa/home-production-source.png`
-- 構成復元後のトップ（パソコン）: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/home-restored-qa/home-desktop.png`
-- 構成復元後のトップ（スマートフォン）: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/home-restored-qa/home-mobile.png`
-- 変更前と復元後の比較: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/home-restored-qa/source-vs-new-home.png`
+- No actionable P0, P1, or P2 mismatch remains.
+- The implementation intentionally differs from the generated reference by showing the proxy-record action only on an unrecorded, recordable slot. The generated image incorrectly placed the action on recorded slots; preserving the production eligibility condition is the accepted product constraint.
+- The History screen preserves the existing selected-date summary and bottom navigation. Only the list below the second date heading changes to grouped 朝・昼・夜・眠前 rows, matching the clarified scope.
+- Recorded History groups are compact by default and expand on tap. The source board depicts expanded rows, while the implementation interaction was verified separately in the focused capture and UI test. This is an accepted responsive-density choice for the 390-point viewport.
 
-## 目視比較
+## Required fidelity surfaces
 
-- 文字: 深緑の大見出し、太い日本語見出し、18pxの本文を基準に統一した。
-- 余白: セクション間を広く取り、読み進める順序が分かる縦型構成にした。
-- 色: 暖かいクリーム背景、深緑の主要操作、家族モードを示すオレンジを全ページで共通化した。
-- 画像: 作り物の画面ではなく、iPhone版アプリから取得した本人モード・家族モードの実画面を使用した。
-- 内容: 英語の小見出しを廃止し、本人／家族／連携の説明を日本語で具体化した。
-- ナビゲーション: ヘッダーは「使い方」だけに整理し、本人モード・家族モード・連携のしくみへの細分化リンクを廃止した。
-- 手順画像: お薬登録、連携コード入力、服薬確認・記録の各操作に対応する実画面を配置した。
-- 画像の見切れ: すべてのアプリ画像を自然な縦横比で表示し、`object-fit: cover` と高さ上限による下端の切り取りを廃止した。
-- トップ構成: 変更前の「概要、画面例、メール確認案内、ダウンロード、規約・サポート」の情報順序を復元し、新デザインの色・文字・余白だけを適用した。
+- Fonts and typography: existing SwiftUI system typography, weights, Japanese wrapping, and accessibility-friendly sizes are retained. The late summary wraps to two lines on the real viewport but remains readable and does not clip.
+- Spacing and layout rhythm: 16–20 point page margins, 10–16 point group spacing, rounded existing caregiver cards, and persistent bottom navigation remain consistent. No control is hidden by overflow.
+- Colors and visual tokens: existing `CaregiverUI` and slot colors are reused. Late records are orange, taken records teal, pending records gray, and missed records remain red.
+- Image quality and asset fidelity: existing SF Symbols and `MedicationSymbolView` are reused at native resolution. No raster placeholder, improvised SVG, or new decorative asset is introduced.
+- Copy and content: scheduled time, actual record time, delay duration, and recorder are visible. `本人が記録` and `家族が代理で記録` remain distinct.
 
-## 修正履歴
+## Interaction evidence
 
-1. 初回比較では「使い方」ページの主見出しが4行になり、採用案より視線移動が増えていた。
-2. 意味の切れ目で改行し、パソコンの文字サイズを48pxに調整した。
-3. 2回目の比較で、見出しのまとまり、画面画像の位置、最初の手順への流れが改善したことを確認した。
-4. 利用者確認で、ヘッダー項目の細分化、最初の手順に操作画面がないこと、端末画像の下端が切れることをP1として再確認した。
-5. ヘッダーを「使い方」1項目へ整理し、3手順へ操作別の実画面を追加し、全画像を高さ自動・自然比率へ変更した。
-6. 修正後の比較では、パソコン1440 × 1024、スマートフォン390 × 844の両方で横スクロールがなく、画像の表示比率が元画像と一致することを確認した。
-7. 利用者確認で、ナビゲーションの意図を「本人モード・家族モード・連携のしくみだけを使い方へ集約」と再確認し、他の案内まで削除した状態をP1とした。また、トップの情報構成変更もP1とした。
-8. 「はじめ方、使い方、プライバシー、利用規約、サポート」を復元し、本人・家族・連携の個別リンクは追加しなかった。トップは変更前の公開画面と旧コードを基準に情報順序を復元した。
-9. 変更前と復元後を横並びで比較し、主見出し、説明、ダウンロード導線、画面例、後続セクションの階層が維持され、新しい暖色背景・深緑・実画面へ置き換わっていることを確認した。
+- Focused unit tests: 9 passed, including exact actual-time aggregation, 5時間21分 late calculation, partial-record preservation, proxy bulk recording, and history-refresh behavior.
+- Focused UI tests: 2 passed.
+  - Today shows the late summary and actual time; the recorded morning slot has no proxy button; the unrecorded noon slot retains a hittable proxy-record button.
+  - History exposes all four time-period groups; tapping noon reveals both medicines and the actual time and delay.
 
-## 動作・表示確認
+## Comparison history
 
-- パソコン・スマートフォンとも横スクロールなし。
-- トップ、使い方、プライバシー、メール確認完了でブラウザ警告・エラーなし。
-- ヘッダー内は「はじめ方、使い方、プライバシー、利用規約、サポート」であることを確認。本人モード・家族モード・連携のしくみの個別リンクはなし。
-- 実画面画像は上端から下端まで縦横比を維持して表示。3手順の画像は1206 × 2622の実画像を使用。
-- 型検査、静的解析、本番ビルドを通過。
+- Initial implementation build failed because grouped DTO rows lacked stable SwiftUI identifiers. Fixed by adding stable composite `historyRowID` values; the next build passed.
+- Initial UI-test queries assumed SwiftUI element types and failed to locate flattened accessibility nodes. Fixed by querying the combined accessible labels and retested; both targeted UI tests passed.
+- Post-fix visual evidence is recorded in the expanded-history and proxy-recording screenshots above.
 
-## 残した差分
+## Follow-up polish
 
-- 実装版の最上部は採用案よりやや高い。本文18pxと実画面の視認性を優先した意図的な差分であり、対象利用者にとっての読みやすさを損なわないため許容した。
-- 採用案の最初の手順には操作別画像がなかったが、今回の利用者要望により各行右側へ実画面を追加した。背景色、番号、見出し階層、横罫線は採用案を維持している。
-- 変更前のトップは濃緑の背景だったが、ユーザー指定どおり情報構成のみを復元し、背景・文字・実画面は新デザインを維持した。
+- [P3] The Today late-summary sentence wraps after `本人` on the narrow real viewport. A later copy-polish pass could split the time and recorder into separate semantic lines, but the current layout is readable and complete.
 
-final result: passed
+## Implementation checklist
 
-## 2026-07-22 上部進行表示の参照画像合わせ
-
-- Reference: `docs/design-qa/1.0.5-patient-today-progress-reference.png`
-- Implementation: `docs/design-qa/1.0.5-patient-today-progress.png`
-- Side-by-side: `docs/design-qa/1.0.5-patient-today-progress-comparison.png`
-- Device: iPhone 17e simulator, iOS 26.5
-- State: 朝は8:07に記録済み、昼は12:30の記録対象、夜・眠前は未記録
-
-### Verification
-
-- 見出しのアイコンをカレンダーへ変更した。
-- 朝・昼・夜・眠前を独立した縦カードにし、背面の接続線で一日の流れを表した。
-- 記録済みは緑のチェックと実記録時刻、現在対象はオレンジ、将来分は灰色で表示した。
-- 4カードすべてがiPhone 17eの横幅内に収まり、文字切れと横方向のはみ出しがない。
-- 参照画像と実装画面を同一画像内で比較し、情報順序、状態色、アイコン、時刻表示が一致することを確認した。
-
-final result: passed
-
----
-
-# Design QA: iOS 1.0.5 本人モード「今日」
-
-- Reference: `docs/design-qa/1.0.5-patient-today-reference.png`
-- Implementation: `docs/design-qa/1.0.5-patient-today.png`
-- Side-by-side: `docs/design-qa/1.0.5-patient-today-comparison.png`
-- Device: iPhone 17e simulator, iOS 26.5
-- State: 朝は8:07に記録済み、昼は予定12:30から1時間17分遅れ、夜・眠前は未記録
-
-## Verification
-
-- 朝・昼・夜・眠前の一日の進行状況が一目で分かる。
-- 現在対象の時間帯だけを大きく表示し、他の時間帯は下部の要約へ圧縮した。
-- 現在の時間帯に含まれる薬は折りたたまず、全件を初期表示する。
-- 予定時刻、遅れ時間、薬の種類・錠数、実際の記録時刻を同じカード内で確認できる。
-- 主操作ボタンと固定タブは初期表示内にあり、文字切れや横方向のはみ出しはない。
-- 既存のPatientUI配色、カード、角丸、文字サイズ、タブ構成を維持した。
-- 選択デザインの情報階層を維持しつつ、高齢者向けに薬ごとの行高とタップ対象を既存UI基準へ合わせた。
+- [x] Preserve proxy recording eligibility and confirmation flow.
+- [x] Show late status, actual time, delay, and recorder in caregiver Today.
+- [x] Preserve the existing History summary and bottom navigation.
+- [x] Group the selected day's scheduled medicines by time period.
+- [x] Make time-period rows expandable and retain missed-dose backfill.
+- [x] Pass build, unit tests, focused UI tests, and visual comparison.
 
 final result: passed

@@ -140,11 +140,14 @@ struct CaregiverTodayView: View {
                                     headerView
                                 }
                                 todayHeader
+                                if hasLateRecordedDoses {
+                                    lateRecordAlertCard
+                                }
                                 if hasMissedDoses {
                                     missedAlertCard
                                 }
                                 if !viewModel.items.isEmpty {
-                                    progressCard
+                                    statusOverviewCard
                                 }
                                 if !viewModel.prnMedications.isEmpty {
                                     prnEntryCard
@@ -283,6 +286,63 @@ struct CaregiverTodayView: View {
             }
         }
         .accessibilityIdentifier("CaregiverTodayMissedAlertCard")
+    }
+
+    private var lateRecordAlertCard: some View {
+        CaregiverCard(accent: CaregiverUI.orange) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "clock.badge.exclamationmark.fill")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(CaregiverUI.orange, in: Circle())
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(lateRecordAlertTitle)
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(CaregiverUI.orange)
+                    Text(lateRecordAlertMessage)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let row = lateRecordedTimelineRows.first {
+                        Text(delayText(for: row))
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(CaregiverUI.orange)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("CaregiverTodayLateRecordAlertCard")
+    }
+
+    private var statusOverviewCard: some View {
+        CaregiverCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(NSLocalizedString("caregiver.today.overview.title", comment: "Today medication overview"))
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.primary)
+
+                HStack(spacing: 0) {
+                    ForEach(timelineRows) { row in
+                        CaregiverTodaySlotStatusCell(
+                            slotTitle: slotTitle(for: row.slot),
+                            displayTime: row.takenAt.map { viewModel.timeText(for: $0) } ?? row.timeText,
+                            iconName: overviewIconName(for: row),
+                            color: overviewColor(for: row),
+                            isLate: row.isLate
+                        )
+                        if row.id != timelineRows.last?.id {
+                            Divider()
+                                .frame(height: 58)
+                        }
+                    }
+                }
+            }
+        }
+        .accessibilityIdentifier("CaregiverTodayStatusOverview")
     }
 
     private var progressCard: some View {
@@ -438,6 +498,10 @@ struct CaregiverTodayView: View {
         let slotColor: Color
         let recordableDoses: [ScheduleDoseDTO]
         let hasOutOfStock: Bool
+        let scheduledAt: Date?
+        let takenAt: Date?
+        let recordedByType: RecordedByTypeDTO?
+        let isLate: Bool
     }
 
     private var timelineRows: [TimelineRow] {
@@ -447,6 +511,10 @@ struct CaregiverTodayView: View {
                 .filter { slot(for: $0) == slotValue }
                 .sorted { $0.scheduledAt < $1.scheduledAt }
             let representative = doses.sorted { $0.scheduledAt < $1.scheduledAt }.first
+            let takenDoses = doses.filter { $0.effectiveStatus == .taken && $0.takenAt != nil }
+            let actualTakenAt = takenDoses.compactMap(\.takenAt).max()
+            let scheduledAt = representative?.scheduledAt
+            let actors = Set(takenDoses.compactMap(\.recordedByType))
             let recordableDoses = doses.filter {
                 $0.effectiveStatus != .taken
                     && !viewModel.isMedicationOutOfStock($0.medicationId)
@@ -460,7 +528,13 @@ struct CaregiverTodayView: View {
                 statusColor: statusColor(for: doses),
                 slotColor: caregiverSlotColor(for: slotValue),
                 recordableDoses: recordableDoses,
-                hasOutOfStock: doses.contains { viewModel.isMedicationOutOfStock($0.medicationId) }
+                hasOutOfStock: doses.contains { viewModel.isMedicationOutOfStock($0.medicationId) },
+                scheduledAt: scheduledAt,
+                takenAt: actualTakenAt,
+                recordedByType: actors.count == 1 ? actors.first : nil,
+                isLate: scheduledAt.flatMap { scheduled in
+                    actualTakenAt.map { MedicationRecordingPolicy.isLate(scheduledAt: scheduled, takenAt: $0) }
+                } ?? false
             )
         }
     }
@@ -512,6 +586,74 @@ struct CaregiverTodayView: View {
         scheduledTimelineRows.filter { row in
             row.doses.contains { $0.effectiveStatus == .missed }
         }
+    }
+
+    private var lateRecordedTimelineRows: [TimelineRow] {
+        scheduledTimelineRows.filter(\.isLate)
+    }
+
+    private var hasLateRecordedDoses: Bool {
+        !lateRecordedTimelineRows.isEmpty
+    }
+
+    private var lateRecordAlertTitle: String {
+        String(
+            format: NSLocalizedString("caregiver.today.lateAlert.title", comment: "Late record alert title"),
+            lateRecordedTimelineRows.count
+        )
+    }
+
+    private var lateRecordAlertMessage: String {
+        guard let row = lateRecordedTimelineRows.first, let takenAt = row.takenAt else { return "" }
+        let formatKey = lateRecordedTimelineRows.count == 1
+            ? "caregiver.today.lateAlert.single"
+            : "caregiver.today.lateAlert.multiple"
+        return String(
+            format: NSLocalizedString(formatKey, comment: "Late record alert message"),
+            slotTitle(for: row.slot),
+            row.timeText,
+            viewModel.timeText(for: takenAt),
+            recordedByText(for: row.recordedByType)
+        )
+    }
+
+    private func delayText(for row: TimelineRow) -> String {
+        guard let scheduledAt = row.scheduledAt, let takenAt = row.takenAt else { return "" }
+        let totalMinutes = max(0, Int(takenAt.timeIntervalSince(scheduledAt) / 60))
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if hours > 0, minutes > 0 {
+            return String(format: NSLocalizedString("history.delay.hoursMinutes", comment: "Delay hours and minutes"), hours, minutes)
+        }
+        if hours > 0 {
+            return String(format: NSLocalizedString("history.delay.hours", comment: "Delay hours"), hours)
+        }
+        return String(format: NSLocalizedString("history.delay.minutes", comment: "Delay minutes"), minutes)
+    }
+
+    private func recordedByText(for actor: RecordedByTypeDTO?) -> String {
+        switch actor {
+        case .patient:
+            return NSLocalizedString("history.recordedBy.patient", comment: "Patient recorded")
+        case .caregiver:
+            return NSLocalizedString("history.recordedBy.caregiver", comment: "Caregiver recorded")
+        case .none:
+            return NSLocalizedString("history.recordedBy.unknown", comment: "Unknown recorder")
+        }
+    }
+
+    private func overviewColor(for row: TimelineRow) -> Color {
+        if row.isLate { return CaregiverUI.orange }
+        if row.doses.allSatisfy({ $0.effectiveStatus == .taken }) { return CaregiverUI.teal }
+        if row.doses.contains(where: { $0.effectiveStatus == .missed }) { return CaregiverUI.red }
+        return .gray
+    }
+
+    private func overviewIconName(for row: TimelineRow) -> String {
+        if row.isLate { return "clock.badge.exclamationmark.fill" }
+        if row.doses.allSatisfy({ $0.effectiveStatus == .taken }) { return "checkmark" }
+        if row.doses.contains(where: { $0.effectiveStatus == .missed }) { return "exclamationmark" }
+        return "ellipsis"
     }
 
     private var missedAlertMessage: String {
@@ -584,6 +726,12 @@ struct CaregiverTodayView: View {
             return NSLocalizedString("caregiver.today.timeline.noPlan", comment: "No plan")
         }
         if doses.allSatisfy({ $0.effectiveStatus == .taken }) {
+            if doses.contains(where: { dose in
+                guard let takenAt = dose.takenAt else { return false }
+                return MedicationRecordingPolicy.isLate(scheduledAt: dose.scheduledAt, takenAt: takenAt)
+            }) {
+                return NSLocalizedString("history.status.late", comment: "Late dose")
+            }
             return NSLocalizedString("caregiver.today.timeline.taken", comment: "Taken")
         }
         if doses.allSatisfy({ $0.effectiveStatus == .missed }) {
@@ -597,6 +745,12 @@ struct CaregiverTodayView: View {
             return .gray
         }
         if doses.allSatisfy({ $0.effectiveStatus == .taken }) {
+            if doses.contains(where: { dose in
+                guard let takenAt = dose.takenAt else { return false }
+                return MedicationRecordingPolicy.isLate(scheduledAt: dose.scheduledAt, takenAt: takenAt)
+            }) {
+                return CaregiverUI.orange
+            }
             return CaregiverUI.teal
         }
         if doses.allSatisfy({ $0.effectiveStatus == .missed }) {
@@ -702,8 +856,9 @@ struct CaregiverTodayDebugPreview: View {
                 hour: 8,
                 name: "血圧の薬",
                 dosageText: "5 mg",
-                status: .missed,
-                recordedByType: nil
+                status: .taken,
+                recordedByType: .patient,
+                takenAfterMinutes: 321
             ),
             dose(
                 key: "preview-noon-1",
@@ -742,7 +897,8 @@ struct CaregiverTodayDebugPreview: View {
         name: String,
         dosageText: String,
         status: DoseStatusDTO,
-        recordedByType: RecordedByTypeDTO?
+        recordedByType: RecordedByTypeDTO?,
+        takenAfterMinutes: Int = 5
     ) -> ScheduleDoseDTO {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = AppConstants.defaultTimeZone
@@ -752,7 +908,7 @@ struct CaregiverTodayDebugPreview: View {
             patientId: "preview-patient",
             medicationId: medicationId,
             scheduledAt: scheduledAt,
-            takenAt: status == .taken ? scheduledAt.addingTimeInterval(5 * 60) : nil,
+            takenAt: status == .taken ? scheduledAt.addingTimeInterval(TimeInterval(takenAfterMinutes * 60)) : nil,
             effectiveStatus: status,
             recordedByType: recordedByType,
             medicationSnapshot: MedicationSnapshotDTO(
@@ -1006,6 +1162,17 @@ private struct CaregiverTodayTimelineRow: View {
                 )
             }
 
+            if let takenAt = row.takenAt {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) {
+                        recordingDetails(takenAt: takenAt)
+                    }
+                    VStack(alignment: .leading, spacing: 6) {
+                        recordingDetails(takenAt: takenAt)
+                    }
+                }
+            }
+
             VStack(spacing: 8) {
                 if row.doses.isEmpty {
                     Text(NSLocalizedString("caregiver.today.timeline.noDose", comment: "No dose"))
@@ -1090,8 +1257,71 @@ private struct CaregiverTodayTimelineRow: View {
         return nil
     }
 
+    @ViewBuilder
+    private func recordingDetails(takenAt: Date) -> some View {
+        Label(
+            String(
+                format: NSLocalizedString("caregiver.today.actualTime.format", comment: "Actual record time"),
+                timeText(for: takenAt)
+            ),
+            systemImage: "clock.fill"
+        )
+        .font(.caption.weight(.bold))
+        .foregroundStyle(row.isLate ? CaregiverUI.orange : CaregiverUI.tealDark)
+
+        if let actor = row.recordedByType {
+            Label(recordedByText(for: actor), systemImage: "person.crop.circle.badge.checkmark")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(CaregiverUI.tealDark)
+        }
+    }
+
+    private func timeText(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeZone = AppConstants.defaultTimeZone
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: date)
+    }
+
+    private func recordedByText(for actor: RecordedByTypeDTO) -> String {
+        switch actor {
+        case .patient:
+            return NSLocalizedString("history.recordedBy.patient", comment: "Patient recorded")
+        case .caregiver:
+            return NSLocalizedString("history.recordedBy.caregiver", comment: "Caregiver recorded")
+        }
+    }
+
     private func isOutOfStockDose(_ dose: ScheduleDoseDTO) -> Bool {
         isOutOfStock && dose.effectiveStatus != .taken && !row.recordableDoses.contains(where: { $0.id == dose.id })
+    }
+}
+
+private struct CaregiverTodaySlotStatusCell: View {
+    let slotTitle: String
+    let displayTime: String
+    let iconName: String
+    let color: Color
+    let isLate: Bool
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Text(slotTitle)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(isLate ? CaregiverUI.orange : .secondary)
+                .lineLimit(1)
+            Image(systemName: iconName)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 30, height: 30)
+                .background(color, in: Circle())
+            Text(displayTime)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(isLate ? CaregiverUI.orange : .primary)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
     }
 }
 
