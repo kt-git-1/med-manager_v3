@@ -348,6 +348,9 @@ private struct PatientTutorialSampleView: View {
 
             PatientCard(accent: PatientUI.teal) {
                 VStack(alignment: .leading, spacing: 16) {
+                    Text(NSLocalizedString("patient.today.next.header", comment: "Next medications header"))
+                        .font(.title2.weight(.bold))
+
                     HStack(alignment: .center, spacing: 16) {
                         Image(systemName: "clock.fill")
                             .font(.system(size: 34, weight: .bold))
@@ -355,12 +358,12 @@ private struct PatientTutorialSampleView: View {
                             .frame(width: 66, height: 66)
                             .background(PatientUI.teal.opacity(0.12), in: Circle())
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("昼のお薬")
+                            Text("夜のお薬")
                                 .font(.system(size: 32, weight: .bold, design: .rounded))
                                 .foregroundStyle(PatientUI.tealDark)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.72)
-                            Text(String(format: NSLocalizedString("patient.today.schedule.format", comment: "Scheduled time"), "12:30"))
+                            Text(String(format: NSLocalizedString("patient.today.schedule.format", comment: "Scheduled time"), "19:00"))
                                 .font(.headline.weight(.bold))
                                 .foregroundStyle(Color.readableSecondaryText)
                         }
@@ -375,15 +378,8 @@ private struct PatientTutorialSampleView: View {
                     .font(.body.weight(.semibold))
                     .foregroundStyle(Color.readableSecondaryText)
 
-                    Label("1時間17分遅れ", systemImage: "clock.badge.exclamationmark")
-                        .font(.title3.weight(.bold))
-                        .foregroundStyle(PatientUI.orange)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 12)
-                        .background(PatientUI.orange.opacity(0.12), in: Capsule())
-
                     VStack(spacing: 10) {
-                        sampleSlotMedicationRow(name: "血圧の薬 5 mg", pills: "1", status: .pending)
+                        sampleSlotMedicationRow(name: "夕食後の薬 10 mg", pills: "1", status: .pending)
                         sampleSlotMedicationRow(name: "胃薬", pills: "1", status: .pending)
                     }
 
@@ -393,6 +389,50 @@ private struct PatientTutorialSampleView: View {
                         .frame(maxWidth: .infinity)
                         .frame(minHeight: 72)
                         .background(PatientUI.teal, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
+            }
+
+            Text(NSLocalizedString("patient.today.summary.section.title", comment: "Today status section title"))
+                .font(.title2.weight(.bold))
+
+            PatientCard(accent: PatientUI.orange) {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 14) {
+                        Image(systemName: "clock.badge.exclamationmark.fill")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 54, height: 54)
+                            .background(PatientUI.orange, in: Circle())
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(NSLocalizedString("patient.today.summary.late.unrecorded", comment: "Late unrecorded dose"))
+                                .font(.title3.weight(.bold))
+                                .foregroundStyle(PatientUI.orange)
+                            Text(String(
+                                format: NSLocalizedString("patient.today.summary.late.detail", comment: "Late slot detail"),
+                                "昼",
+                                "12:30",
+                                "1時間17分遅れ"
+                            ))
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(Color.readableSecondaryText)
+                        }
+                        Spacer(minLength: 0)
+                    }
+
+                    Text(NSLocalizedString("patient.today.summary.late.guide", comment: "Late recording guide"))
+                        .font(.body.weight(.semibold))
+
+                    VStack(spacing: 10) {
+                        sampleSlotMedicationRow(name: "血圧の薬 5 mg", pills: "1", status: .missed)
+                        sampleSlotMedicationRow(name: "胃薬", pills: "1", status: .missed)
+                    }
+
+                    Label(String(format: NSLocalizedString("patient.today.slot.bulk.button.actual", comment: "Record now"), "13:47"), systemImage: "checkmark.circle.fill")
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 64)
+                        .background(PatientUI.orange, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
             }
 
@@ -414,23 +454,6 @@ private struct PatientTutorialSampleView: View {
                 }
             }
 
-            PatientCard(accent: PatientUI.blue) {
-                HStack(spacing: 14) {
-                    Image(systemName: "clock.fill")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(PatientUI.blue)
-                        .frame(width: 52, height: 52)
-                        .background(PatientUI.blue.opacity(0.12), in: Circle())
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(String(format: NSLocalizedString("patient.today.summary.next", comment: "Next slot"), "夜", "19:00"))
-                            .font(.title3.weight(.bold))
-                        Text(String(format: NSLocalizedString("patient.today.summary.medications", comment: "Medication count"), 2))
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(Color.readableSecondaryText)
-                    }
-                    Spacer(minLength: 0)
-                }
-            }
         }
     }
 

@@ -404,6 +404,7 @@ private struct PatientTodayRootView: View {
                 scheduledAt: scheduledAt,
                 remainingCount: summary.remainingCount,
                 isWithinRecordingWindow: summary.isWithinRecordingWindow,
+                isLate: summary.isLate,
                 hasRecordableInventory: summary.hasRecordableInventory
             )
         }
@@ -661,8 +662,11 @@ private struct PatientTodayListView: View {
                     activeSlot: nextSlotSection?.slot,
                     slotTitle: slotTitle,
                     timeText: timeText,
+                    delayText: viewModel.delayText,
+                    isUpdating: viewModel.isUpdating,
                     isOutOfStock: isOutOfStock,
-                    onPresentDetail: onPresentDetail
+                    onPresentDetail: onPresentDetail,
+                    onBulkRecord: onBulkRecord
                 )
             }
             .padding(.horizontal, 20)
@@ -745,6 +749,21 @@ private struct PatientTodayListView: View {
                 }
             }
             .id(PatientTodayScrollTarget.nextSlot(slot))
+        } else if hasLateUnrecordedSlot {
+            PatientCard(accent: PatientUI.orange) {
+                HStack(spacing: 16) {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .font(.system(size: 42, weight: .bold))
+                        .foregroundStyle(PatientUI.orange)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(NSLocalizedString("patient.today.next.overdue.title", comment: "No upcoming dose title"))
+                            .font(.title2.weight(.bold))
+                        Text(NSLocalizedString("patient.today.next.overdue.message", comment: "Record late doses below"))
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
         } else {
             PatientCard(accent: PatientUI.teal) {
                 HStack(spacing: 16) {
@@ -777,6 +796,7 @@ private struct PatientTodayListView: View {
                 scheduledAt: scheduledAt,
                 remainingCount: summary.remainingCount,
                 isWithinRecordingWindow: summary.isWithinRecordingWindow,
+                isLate: summary.isLate,
                 hasRecordableInventory: summary.hasRecordableInventory
             )
         }
@@ -784,6 +804,14 @@ private struct PatientTodayListView: View {
             return nil
         }
         return slotSections.first { $0.slot == nextSlot }
+    }
+
+    private var hasLateUnrecordedSlot: Bool {
+        slotSummaries.values.contains { summary in
+            summary.remainingCount > 0
+                && summary.isLate
+                && summary.isWithinRecordingWindow
+        }
     }
 
     private var inventoryWarning: PatientInventoryWarning? {
@@ -988,8 +1016,11 @@ private struct PatientTodayCompactSummary: View {
     let activeSlot: NotificationSlot?
     let slotTitle: (NotificationSlot?) -> String
     let timeText: (Date) -> String
+    let delayText: (TimeInterval) -> String
+    let isUpdating: Bool
     let isOutOfStock: (String) -> Bool
     let onPresentDetail: (ScheduleDoseDTO) -> Void
+    let onBulkRecord: (NotificationSlot) -> Void
     @State private var expandedSlots = Set<NotificationSlot>()
 
     var body: some View {
@@ -997,7 +1028,7 @@ private struct PatientTodayCompactSummary: View {
             Text(NSLocalizedString("patient.today.summary.section.title", comment: "Today status section title"))
                 .font(.title2.weight(.bold))
 
-            if completedSlots.isEmpty {
+            if completedSlots.isEmpty && lateSlots.isEmpty {
                 PatientCard(accent: PatientUI.blue) {
                     HStack(alignment: .center, spacing: 14) {
                         Image(systemName: "clock.badge.questionmark.fill")
@@ -1020,6 +1051,13 @@ private struct PatientTodayCompactSummary: View {
                 .accessibilityIdentifier("PatientTodayEmptyRecordState")
             }
 
+            ForEach(lateSlots, id: \.rawValue) { slot in
+                if let summary = summaries[slot] {
+                    lateRecordCard(slot: slot, summary: summary)
+                        .id(slot.rawValue)
+                }
+            }
+
             ForEach(completedSlots, id: \.rawValue) { slot in
                 if let summary = summaries[slot] {
                     expandableCard(
@@ -1031,18 +1069,7 @@ private struct PatientTodayCompactSummary: View {
                             : NSLocalizedString("patient.today.summary.taken", comment: "Taken"),
                         detail: completedDetail(slot: slot, summary: summary)
                     )
-                }
-            }
-
-            ForEach(upcomingSlots, id: \.rawValue) { slot in
-                if let summary = summaries[slot] {
-                    expandableCard(
-                        slot: slot,
-                        icon: "clock.fill",
-                        color: PatientUI.blue,
-                        title: upcomingTitle(slot: slot, summary: summary),
-                        detail: String(format: NSLocalizedString("patient.today.summary.medications", comment: "Medication count"), summary.medCount)
-                    )
+                    .id(slot.rawValue)
                 }
             }
         }
@@ -1052,10 +1079,13 @@ private struct PatientTodayCompactSummary: View {
         slots.filter { summaries[$0]?.aggregateStatus == .taken }
     }
 
-    private var upcomingSlots: [NotificationSlot] {
+    private var lateSlots: [NotificationSlot] {
         slots.filter { slot in
             guard slot != activeSlot, let summary = summaries[slot] else { return false }
-            return summary.aggregateStatus != .taken && summary.scheduledAt > Date()
+            return summary.aggregateStatus != .taken
+                && summary.remainingCount > 0
+                && summary.isLate
+                && summary.isWithinRecordingWindow
         }
     }
 
@@ -1064,23 +1094,81 @@ private struct PatientTodayCompactSummary: View {
         return String(format: NSLocalizedString("patient.today.summary.completed.detail", comment: "Completed detail"), slotTitle(slot), actual)
     }
 
-    private func upcomingTitle(slot: NotificationSlot, summary: PatientTodayViewModel.SlotSummary) -> String {
-        if slot == .bedtime {
-            return String(
-                format: NSLocalizedString("patient.today.summary.slot", comment: "Scheduled slot"),
-                slotTitle(slot),
-                summary.slotTime
-            )
-        }
-        return String(
-            format: NSLocalizedString("patient.today.summary.next", comment: "Next slot"),
-            slotTitle(slot),
-            summary.slotTime
-        )
-    }
-
     private func doses(for slot: NotificationSlot) -> [ScheduleDoseDTO] {
         slotSections.first { $0.slot == slot }?.items ?? []
+    }
+
+    private func lateRecordCard(
+        slot: NotificationSlot,
+        summary: PatientTodayViewModel.SlotSummary
+    ) -> some View {
+        PatientCard(accent: PatientUI.orange) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 14) {
+                    Image(systemName: "clock.badge.exclamationmark.fill")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 54, height: 54)
+                        .background(PatientUI.orange, in: Circle())
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(NSLocalizedString("patient.today.summary.late.unrecorded", comment: "Late unrecorded dose"))
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(PatientUI.orange)
+                        Text(String(
+                            format: NSLocalizedString("patient.today.summary.late.detail", comment: "Late slot detail"),
+                            slotTitle(slot),
+                            summary.slotTime,
+                            delayText(summary.delaySeconds)
+                        ))
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Color.readableSecondaryText)
+                    }
+                    Spacer(minLength: 0)
+                }
+
+                Text(NSLocalizedString("patient.today.summary.late.guide", comment: "Late recording guide"))
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                VStack(spacing: 10) {
+                    ForEach(unrecordedDoses(for: slot)) { dose in
+                        SlotMedicationRow(
+                            dose: dose,
+                            isInventoryInsufficient: isOutOfStock(dose.medicationId)
+                        )
+                        .contentShape(Rectangle())
+                        .onTapGesture { onPresentDetail(dose) }
+                    }
+                }
+
+                Button {
+                    onBulkRecord(slot)
+                } label: {
+                    Label(
+                        String(
+                            format: NSLocalizedString("patient.today.slot.bulk.button.actual", comment: "Record now"),
+                            timeText(summary.currentTime)
+                        ),
+                        systemImage: "checkmark.circle.fill"
+                    )
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 62)
+                    .background(PatientUI.orange, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .disabled(isUpdating || !summary.isWithinRecordingWindow || !summary.hasRecordableInventory)
+                .opacity(isUpdating || !summary.isWithinRecordingWindow || !summary.hasRecordableInventory ? 0.55 : 1)
+                .accessibilityIdentifier("PatientTodayLateRecordButton-\(slot.rawValue)")
+            }
+        }
+    }
+
+    private func unrecordedDoses(for slot: NotificationSlot) -> [ScheduleDoseDTO] {
+        doses(for: slot).filter { $0.effectiveStatus != .taken }
     }
 
     private func expandableCard(

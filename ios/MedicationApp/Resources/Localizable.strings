@@ -773,11 +773,16 @@
 "patient.today.summary.medications" = "%d種類のお薬";
 "patient.today.summary.completed.detail" = "%@ %@に服用";
 "patient.today.next.header" = "次のお薬";
+"patient.today.next.overdue.title" = "今日の予定は終了です";
+"patient.today.next.overdue.message" = "飲み遅れたお薬は、下の「今日の記録」から記録できます";
 "patient.today.summary.section.title" = "今日の記録";
 "patient.today.summary.empty.title" = "まだ服用記録はありません";
 "patient.today.summary.empty.message" = "お薬を飲んで記録すると、ここに表示されます";
 "patient.today.summary.show" = "薬の内容を見る";
 "patient.today.summary.hide" = "薬の内容を閉じる";
+"patient.today.summary.late.unrecorded" = "飲み遅れのお薬";
+"patient.today.summary.late.detail" = "%@ %@・%@";
+"patient.today.summary.late.guide" = "今飲んだ場合は、ここから記録してください";
 "patient.today.slot.bulk.confirm.title" = "%@のお薬を記録";
 "patient.today.slot.bulk.confirm.message" = "%@（%@）のお薬（%@種類 / 合計%@錠）を記録しますか？";
 "patient.today.slot.bulk.confirm.record" = "記録する";

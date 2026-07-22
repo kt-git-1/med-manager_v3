@@ -6,6 +6,7 @@ struct PatientTodayNextSlotSelector {
         let scheduledAt: Date
         let remainingCount: Int
         let isWithinRecordingWindow: Bool
+        let isLate: Bool
         let hasRecordableInventory: Bool
     }
 
@@ -14,7 +15,10 @@ struct PatientTodayNextSlotSelector {
             .filter { candidate in
                 candidate.remainingCount > 0
                     && candidate.hasRecordableInventory
-                    && (candidate.isWithinRecordingWindow || candidate.scheduledAt >= now)
+                    && (
+                        candidate.scheduledAt >= now
+                            || (candidate.isWithinRecordingWindow && !candidate.isLate)
+                    )
             }
             .sorted { lhs, rhs in
                 lhs.scheduledAt < rhs.scheduledAt

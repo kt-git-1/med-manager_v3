@@ -13,7 +13,8 @@ final class PatientTodayNextSlotSelectorTests: XCTestCase {
                     slot: .noon,
                     scheduledAt: noon,
                     remainingCount: 2,
-                    isWithinRecordingWindow: false,
+                    isWithinRecordingWindow: true,
+                    isLate: true,
                     hasRecordableInventory: true
                 ),
                 .init(
@@ -21,6 +22,7 @@ final class PatientTodayNextSlotSelectorTests: XCTestCase {
                     scheduledAt: evening,
                     remainingCount: 1,
                     isWithinRecordingWindow: true,
+                    isLate: false,
                     hasRecordableInventory: true
                 )
             ],
@@ -42,6 +44,7 @@ final class PatientTodayNextSlotSelectorTests: XCTestCase {
                     scheduledAt: noon,
                     remainingCount: 2,
                     isWithinRecordingWindow: false,
+                    isLate: true,
                     hasRecordableInventory: true
                 ),
                 .init(
@@ -49,6 +52,7 @@ final class PatientTodayNextSlotSelectorTests: XCTestCase {
                     scheduledAt: bedtime,
                     remainingCount: 1,
                     isWithinRecordingWindow: false,
+                    isLate: false,
                     hasRecordableInventory: true
                 )
             ],
@@ -69,6 +73,7 @@ final class PatientTodayNextSlotSelectorTests: XCTestCase {
                     scheduledAt: noon,
                     remainingCount: 2,
                     isWithinRecordingWindow: false,
+                    isLate: true,
                     hasRecordableInventory: true
                 )
             ],
@@ -90,6 +95,7 @@ final class PatientTodayNextSlotSelectorTests: XCTestCase {
                     scheduledAt: noon,
                     remainingCount: 1,
                     isWithinRecordingWindow: false,
+                    isLate: false,
                     hasRecordableInventory: false
                 ),
                 .init(
@@ -97,6 +103,7 @@ final class PatientTodayNextSlotSelectorTests: XCTestCase {
                     scheduledAt: evening,
                     remainingCount: 1,
                     isWithinRecordingWindow: false,
+                    isLate: false,
                     hasRecordableInventory: true
                 )
             ],
@@ -117,6 +124,7 @@ final class PatientTodayNextSlotSelectorTests: XCTestCase {
                     scheduledAt: noon,
                     remainingCount: 1,
                     isWithinRecordingWindow: false,
+                    isLate: false,
                     hasRecordableInventory: false
                 )
             ],
@@ -124,6 +132,36 @@ final class PatientTodayNextSlotSelectorTests: XCTestCase {
         )
 
         XCTAssertNil(selected)
+    }
+
+    func testKeepsCurrentSlotBeforeItBecomesLate() {
+        let now = tokyoDate(year: 2026, month: 6, day: 8, hour: 13, minute: 59)
+        let noon = tokyoDate(year: 2026, month: 6, day: 8, hour: 13, minute: 0)
+        let evening = tokyoDate(year: 2026, month: 6, day: 8, hour: 19, minute: 0)
+
+        let selected = PatientTodayNextSlotSelector.selectSlot(
+            from: [
+                .init(
+                    slot: .noon,
+                    scheduledAt: noon,
+                    remainingCount: 1,
+                    isWithinRecordingWindow: true,
+                    isLate: false,
+                    hasRecordableInventory: true
+                ),
+                .init(
+                    slot: .evening,
+                    scheduledAt: evening,
+                    remainingCount: 1,
+                    isWithinRecordingWindow: false,
+                    isLate: false,
+                    hasRecordableInventory: true
+                )
+            ],
+            now: now
+        )
+
+        XCTAssertEqual(selected, .noon)
     }
 
     private func tokyoDate(year: Int, month: Int, day: Int, hour: Int, minute: Int) -> Date {
