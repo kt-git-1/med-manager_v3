@@ -62,6 +62,35 @@ final result: passed
 
 ---
 
+# Medication form inline validation QA
+
+## Evidence
+
+- Reported screenshot: `/Users/kaito/Desktop/Screenshot 2026-07-23 at 17.24.21.png`
+- Corrected simulator screenshot: `/tmp/medication-validation-attachments-pass2/F298A818-ED78-4E87-AEF4-8BDDC705F2B1.png`
+- Before-and-after comparison: `/tmp/medication-inline-validation-comparison.png`
+- State: scheduled medication with morning, noon, and evening selected; 14-day supply; dosage strength unit intentionally left unselected.
+
+## Findings
+
+- No actionable P0, P1, or P2 issue remains.
+- The dosage validation now appears directly below the medication name/strength/unit row instead of below the submit action and additional-settings disclosure.
+- The invalid input row receives a two-point red outline and the error uses a compact red message with an alert icon.
+- Submitting invalid input scrolls the first invalid section into view.
+- Schedule errors appear inside the timing card; weekday and end-date errors appear inside the expanded additional-settings card.
+- Network and API errors remain compact and are displayed immediately above the submit button.
+
+## Interaction evidence
+
+- Invalid-dosage focused UI test: passed.
+- Existing automatic-inventory UI test: passed.
+- Existing medication-form validation unit tests: passed.
+- Staging simulator build: passed.
+
+final result: passed
+
+---
+
 # Inventory editing image-to-code QA
 
 ## Evidence

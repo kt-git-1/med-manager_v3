@@ -44,6 +44,32 @@ final class MedicationFormRegistrationUITests: XCTestCase {
         add(screenshot)
     }
 
+    func testValidationErrorAppearsBesideDosageAndScrollsToField() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-MedicationFormValidationPreview"]
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["お薬を登録"].waitForExistence(timeout: 10), app.debugDescription)
+
+        let submitButton = app.buttons["この内容で登録"]
+        for _ in 0..<8 where !submitButton.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(submitButton.isHittable, app.debugDescription)
+        submitButton.tap()
+
+        let inlineError = app.descendants(matching: .any)["MedicationBasicValidationError"]
+        XCTAssertTrue(inlineError.waitForExistence(timeout: 3), app.debugDescription)
+        XCTAssertTrue(app.staticTexts["用量は必須です"].isHittable, app.debugDescription)
+        XCTAssertTrue(app.staticTexts["基本情報"].isHittable, app.debugDescription)
+        XCTAssertFalse(app.descendants(matching: .any)["MedicationSubmissionError"].exists)
+
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "Medication dosage inline validation"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
     func testOpenCaregiverHomeWithEnvironmentCredentials() throws {
         let environment = ProcessInfo.processInfo.environment
         guard let email = environment["MED_UI_CAREGIVER_EMAIL"],

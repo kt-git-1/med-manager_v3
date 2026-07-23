@@ -7,6 +7,7 @@ struct MedicationFormView: View {
     @State private var hasEndDate = false
     @State private var showingDeleteConfirm = false
     @State private var showsAdditionalSettings = false
+    @State private var showsValidationErrors = false
     private let onSuccess: ((String) -> Void)?
     private let dosageUnits = ["", NSLocalizedString("common.dosage.unknown", comment: "Unknown dosage"), "mg", "g", "μg", "mL", "IU", "mEq", "%", "滴", "包", "枚", "吸入"]
 
@@ -29,14 +30,19 @@ struct MedicationFormView: View {
             existingMedication: medication,
             preferencesStore: prefs
         )
-        #if DEBUG
-        if marketingPreview {
+        #if targetEnvironment(simulator)
+        if marketingPreview || ProcessInfo.processInfo.arguments.contains("-MedicationFormValidationPreview") {
             viewModel.name = "血圧の薬"
             viewModel.dosageStrengthValue = "5"
             viewModel.dosageStrengthUnit = "mg"
             viewModel.doseCountPerIntake = "1"
-            viewModel.supplyDays = "30"
-            viewModel.selectedTimeSlots = [.morning, .evening]
+            viewModel.supplyDays = ProcessInfo.processInfo.arguments.contains("-MedicationFormValidationPreview") ? "14" : "30"
+            viewModel.selectedTimeSlots = ProcessInfo.processInfo.arguments.contains("-MedicationFormValidationPreview")
+                ? [.morning, .noon, .evening]
+                : [.morning, .evening]
+            if ProcessInfo.processInfo.arguments.contains("-MedicationFormValidationPreview") {
+                viewModel.dosageStrengthUnit = ""
+            }
             viewModel.recalculateInventoryFromSupplyDays()
             viewModel.notes = "朝食後・夕食後"
         }
@@ -46,56 +52,64 @@ struct MedicationFormView: View {
 
     var body: some View {
         let isCaregiverMissingPatient = sessionStore.mode == .caregiver && sessionStore.currentPatientId == nil
-        ScrollView {
-            VStack(spacing: 10) {
-                referenceHeader
-                referenceBasicCard
+        ScrollViewReader { scrollProxy in
+            ScrollView {
+                VStack(spacing: 10) {
+                    referenceHeader
+                    referenceBasicCard
+                        .id(MedicationFormScrollTarget.basic)
 
-                if !viewModel.isPrn {
-                    referenceScheduleCard
-                }
+                    if !viewModel.isPrn {
+                        referenceScheduleCard
+                            .id(MedicationFormScrollTarget.schedule)
+                    }
 
-                if !viewModel.isEditing {
-                    if viewModel.isPrn {
-                        referenceManualInventoryCard
-                    } else {
-                        referenceSupplyCalculatorCard
+                    if !viewModel.isEditing {
+                        if viewModel.isPrn {
+                            referenceManualInventoryCard
+                        } else {
+                            referenceSupplyCalculatorCard
+                        }
+                    }
+
+                    if let errorMessage = viewModel.errorMessage {
+                        compactFormError(message: errorMessage)
+                            .padding(.horizontal, 16)
+                    }
+
+                    if sessionStore.mode != .patient {
+                        VStack {
+                            saveButton(
+                                isCaregiverMissingPatient: isCaregiverMissingPatient,
+                                scrollProxy: scrollProxy
+                            )
+                        }
+                        .padding(.horizontal, 16)
+                    }
+
+                    additionalSettingsCard
+                        .id(MedicationFormScrollTarget.additional)
+
+                    if isCaregiverMissingPatient {
+                        Text(NSLocalizedString("medication.form.patient.required", comment: "Patient required"))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 18)
+                    }
+
+                    if sessionStore.mode == .patient {
+                        Text(NSLocalizedString("medication.form.patient.readonly", comment: "Read-only message"))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 18)
+                    } else if viewModel.isEditing {
+                        VStack {
+                            deleteButton(isCaregiverMissingPatient: isCaregiverMissingPatient)
+                        }
+                        .padding(.horizontal, 18)
                     }
                 }
-
-                if sessionStore.mode != .patient {
-                    VStack {
-                        saveButton(isCaregiverMissingPatient: isCaregiverMissingPatient)
-                    }
-                    .padding(.horizontal, 16)
-                }
-
-                additionalSettingsCard
-
-                if let errorMessage = viewModel.errorMessage {
-                    ErrorStateView(message: errorMessage)
-                        .padding(.horizontal, 18)
-                }
-
-                if isCaregiverMissingPatient {
-                    Text(NSLocalizedString("medication.form.patient.required", comment: "Patient required"))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 18)
-                }
-
-                if sessionStore.mode == .patient {
-                    Text(NSLocalizedString("medication.form.patient.readonly", comment: "Read-only message"))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 18)
-                } else if viewModel.isEditing {
-                    VStack {
-                        deleteButton(isCaregiverMissingPatient: isCaregiverMissingPatient)
-                    }
-                    .padding(.horizontal, 18)
-                }
+                .padding(.top, 6)
+                .padding(.bottom, 24)
             }
-            .padding(.top, 6)
-            .padding(.bottom, 24)
         }
         .navigationTitle("")
         .navigationBarHidden(true)
@@ -240,7 +254,20 @@ struct MedicationFormView: View {
                 .padding(.horizontal, 14)
                 .frame(minHeight: 40)
                 .background(Color.white.opacity(0.82), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay { RoundedRectangle(cornerRadius: 10).stroke(CaregiverUI.cardStroke, lineWidth: 1.2) }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(
+                            basicValidationMessages.isEmpty ? CaregiverUI.cardStroke : CaregiverUI.red,
+                            lineWidth: basicValidationMessages.isEmpty ? 1.2 : 2
+                        )
+                }
+
+                if !basicValidationMessages.isEmpty {
+                    inlineValidationMessages(
+                        basicValidationMessages,
+                        identifier: "MedicationBasicValidationError"
+                    )
+                }
             }
 
             Divider()
@@ -279,6 +306,13 @@ struct MedicationFormView: View {
                 ForEach(ScheduleTimeSlot.allCases) { slot in
                     referenceTimingButton(slot)
                 }
+            }
+
+            if !scheduleValidationMessages.isEmpty {
+                inlineValidationMessages(
+                    scheduleValidationMessages,
+                    identifier: "MedicationScheduleValidationError"
+                )
             }
 
             Text(String(format: NSLocalizedString("medication.form.schedule.dailyCount", comment: "Daily dose count"), viewModel.dosesPerDay))
@@ -484,6 +518,13 @@ struct MedicationFormView: View {
                 }
                 TextField(NSLocalizedString("medication.form.notes", comment: "Notes"), text: $viewModel.notes)
                     .textFieldStyle(.roundedBorder)
+
+                if !additionalValidationMessages.isEmpty {
+                    inlineValidationMessages(
+                        additionalValidationMessages,
+                        identifier: "MedicationAdditionalValidationError"
+                    )
+                }
             }
             .padding(.top, 10)
         } label: {
@@ -1080,11 +1121,118 @@ struct MedicationFormView: View {
             .frame(width: 20)
     }
 
+    // MARK: - Validation
+
+    private var visibleValidationMessages: [String] {
+        showsValidationErrors ? viewModel.validate() : []
+    }
+
+    private var basicValidationMessages: [String] {
+        validationMessages(for: [
+            "medication.form.validation.name.required",
+            "medication.form.validation.dosage.required",
+            "medication.form.validation.dosage.value.required"
+        ])
+    }
+
+    private var scheduleValidationMessages: [String] {
+        validationMessages(for: ["medication.form.validation.timeSlot.required"])
+    }
+
+    private var additionalValidationMessages: [String] {
+        validationMessages(for: [
+            "medication.form.validation.endDate.invalid",
+            "medication.form.validation.weekday.required"
+        ])
+    }
+
+    private func validationMessages(for keys: [String]) -> [String] {
+        let messages = Set(keys.map { NSLocalizedString($0, comment: "Medication form validation") })
+        return visibleValidationMessages.filter(messages.contains)
+    }
+
+    private func firstValidationTarget(for messages: [String]) -> MedicationFormScrollTarget? {
+        let basicMessages = Set([
+            NSLocalizedString("medication.form.validation.name.required", comment: "Name required"),
+            NSLocalizedString("medication.form.validation.dosage.required", comment: "Dosage required"),
+            NSLocalizedString("medication.form.validation.dosage.value.required", comment: "Dosage value required")
+        ])
+        if messages.contains(where: basicMessages.contains) {
+            return .basic
+        }
+
+        let scheduleMessage = NSLocalizedString(
+            "medication.form.validation.timeSlot.required",
+            comment: "Time slot required"
+        )
+        if messages.contains(scheduleMessage) {
+            return .schedule
+        }
+
+        return messages.isEmpty ? nil : .additional
+    }
+
+    private func inlineValidationMessages(_ messages: [String], identifier: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(messages, id: \.self) { message in
+                Label(message, systemImage: "exclamationmark.circle.fill")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .font(.subheadline.weight(.bold))
+        .foregroundStyle(CaregiverUI.red)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(CaregiverUI.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(CaregiverUI.red.opacity(0.35), lineWidth: 1)
+        }
+        .accessibilityIdentifier(identifier)
+    }
+
+    private func compactFormError(message: String) -> some View {
+        Label(message, systemImage: "exclamationmark.triangle.fill")
+            .font(.subheadline.weight(.bold))
+            .foregroundStyle(CaregiverUI.red)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(CaregiverUI.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(CaregiverUI.red.opacity(0.35), lineWidth: 1)
+            }
+            .accessibilityIdentifier("MedicationSubmissionError")
+    }
+
     // MARK: - Buttons
 
     @ViewBuilder
-    private func saveButton(isCaregiverMissingPatient: Bool) -> some View {
+    private func saveButton(
+        isCaregiverMissingPatient: Bool,
+        scrollProxy: ScrollViewProxy
+    ) -> some View {
         Button {
+            let validationMessages = viewModel.validate()
+            guard validationMessages.isEmpty else {
+                viewModel.errorMessage = nil
+                showsValidationErrors = true
+                let target = firstValidationTarget(for: validationMessages)
+                if target == .additional {
+                    showsAdditionalSettings = true
+                }
+                DispatchQueue.main.async {
+                    guard let target else { return }
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        scrollProxy.scrollTo(target, anchor: .top)
+                    }
+                }
+                return
+            }
+
+            showsValidationErrors = false
+            viewModel.errorMessage = nil
             Task {
                 let saved = await viewModel.submit()
                 if saved {
@@ -1151,4 +1299,10 @@ struct MedicationFormView: View {
     private var updatingOverlay: some View {
         SchedulingRefreshOverlay()
     }
+}
+
+private enum MedicationFormScrollTarget: Hashable {
+    case basic
+    case schedule
+    case additional
 }

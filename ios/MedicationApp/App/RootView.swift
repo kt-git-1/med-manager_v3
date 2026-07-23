@@ -99,8 +99,9 @@ struct RootView: View {
     }
 
     private var isMedicationFormMarketingPreviewActive: Bool {
-        #if DEBUG
+        #if targetEnvironment(simulator)
         ProcessInfo.processInfo.arguments.contains("-MedicationFormMarketingScreenshot")
+            || ProcessInfo.processInfo.arguments.contains("-MedicationFormValidationPreview")
         #else
         false
         #endif
