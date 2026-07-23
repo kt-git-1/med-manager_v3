@@ -527,7 +527,7 @@
 "caregiver.inventory.actions.correction" = "在庫を修正（誤入力の修正）";
 "caregiver.inventory.actions.correction.button" = "修正する";
 "caregiver.inventory.refill.confirm.title" = "在庫を補充しますか？";
-"caregiver.inventory.refill.confirm.message" = "%@ を +%@個（%@→%@）";
+"caregiver.inventory.refill.confirm.message" = "%@に%@錠を補充します（現在%@錠→補充後%@錠）";
 "caregiver.inventory.correction.title" = "在庫を修正";
 "caregiver.inventory.correction.message" = "在庫を%@個に変更しますか？（補充ではなく修正です）";
 "caregiver.inventory.banner.low" = "%@：%@の在庫が少なくなりました（残り%@）";

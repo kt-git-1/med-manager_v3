@@ -72,6 +72,12 @@ struct InventoryDetailView: View {
 
             if viewModel.isUpdating {
                 SchedulingRefreshOverlay()
+                    .zIndex(3)
+            }
+
+            if showRefillConfirm, let amount = pendingRefillAmount {
+                refillConfirmationOverlay(amount: amount)
+                    .zIndex(2)
             }
         }
         .navigationTitle(NSLocalizedString("caregiver.inventory.edit.title", comment: "Edit inventory title"))
@@ -97,29 +103,6 @@ struct InventoryDetailView: View {
                 }
             }
         }
-        .confirmationDialog(
-            NSLocalizedString("caregiver.inventory.refill.confirm.title", comment: "Refill confirm title"),
-            isPresented: $showRefillConfirm,
-            presenting: pendingRefillAmount
-        ) { amount in
-            Button(NSLocalizedString("caregiver.inventory.detail.refill.action", comment: "Refill action")) {
-                Task { await applyRefill(amount: amount) }
-            }
-            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {}
-        } message: { amount in
-            Text(
-                String(
-                    format: NSLocalizedString(
-                        "caregiver.inventory.refill.confirm.message",
-                        comment: "Refill confirm message"
-                    ),
-                    item.name,
-                    AppConstants.formatDecimal(amount),
-                    AppConstants.formatDecimal(quantity),
-                    AppConstants.formatDecimal(quantity + amount)
-                )
-            )
-        }
         .alert(
             NSLocalizedString("caregiver.inventory.correction.title", comment: "Correction confirm title"),
             isPresented: $showCorrectionConfirm
@@ -139,6 +122,113 @@ struct InventoryDetailView: View {
                 )
             )
         }
+    }
+
+    private func refillConfirmationOverlay(amount: Double) -> some View {
+        ZStack {
+            Color.black.opacity(0.28)
+                .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                Image(systemName: "shippingbox.fill")
+                    .font(.system(size: 30, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 58, height: 58)
+                    .background(CaregiverUI.teal, in: Circle())
+
+                VStack(spacing: 6) {
+                    Text(NSLocalizedString("caregiver.inventory.refill.confirm.title", comment: "Refill confirm title"))
+                        .font(.title2.weight(.bold))
+                    Text(item.name)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(NSLocalizedString("caregiver.inventory.edit.refill.thisTime", comment: "This refill"))
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.secondary)
+                    Text(AppConstants.formatDecimal(max(0, amount)))
+                        .font(.system(size: 30, weight: .bold, design: .rounded))
+                        .foregroundStyle(CaregiverUI.teal)
+                    Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
+                        .font(.headline.weight(.bold))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(CaregiverUI.teal.opacity(0.08), in: Capsule())
+
+                HStack(spacing: 10) {
+                    confirmationQuantity(
+                        label: NSLocalizedString("caregiver.inventory.edit.currentStock", comment: "Current stock"),
+                        value: quantity,
+                        tint: .secondary
+                    )
+                    Image(systemName: "arrow.right")
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(.secondary)
+                    confirmationQuantity(
+                        label: NSLocalizedString("caregiver.inventory.edit.afterRefill", comment: "After refill"),
+                        value: quantity + max(0, amount),
+                        tint: CaregiverUI.teal
+                    )
+                }
+
+                HStack(spacing: 10) {
+                    Button(NSLocalizedString("common.cancel", comment: "Cancel")) {
+                        pendingRefillAmount = nil
+                        showRefillConfirm = false
+                    }
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                    Button(NSLocalizedString("caregiver.inventory.detail.refill.action", comment: "Refill action")) {
+                        showRefillConfirm = false
+                        Task { await applyRefill(amount: amount) }
+                    }
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(CaregiverUI.teal, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(22)
+            .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(CaregiverUI.teal.opacity(0.25), lineWidth: 1.2)
+            }
+            .shadow(color: Color.black.opacity(0.22), radius: 24, y: 10)
+            .padding(.horizontal, 26)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("InventoryRefillConfirmation")
+        .accessibilityAddTraits(.isModal)
+    }
+
+    private func confirmationQuantity(label: String, value: Double, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(AppConstants.formatDecimal(max(0, value)))
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(tint)
+                Text(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))
+                    .font(.subheadline.weight(.bold))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .frame(height: 74)
+        .background(tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private var inventoryHeader: some View {

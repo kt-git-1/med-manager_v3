@@ -133,6 +133,31 @@ final class PatientTodayExpandableSummaryUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["補充後の在庫"].exists)
         XCTAssertTrue(app.staticTexts["18"].exists)
 
+        let confirmButton = app.buttons["この内容で補充"]
+        for _ in 0..<3 where !confirmButton.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(confirmButton.isHittable)
+        confirmButton.tap()
+
+        let confirmation = app.descendants(matching: .any)["InventoryRefillConfirmation"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["在庫を補充しますか？"].exists)
+        XCTAssertTrue(app.staticTexts["血圧の薬 5 mg"].exists)
+        XCTAssertTrue(app.staticTexts["今回補充"].exists)
+        XCTAssertTrue(app.staticTexts["現在の在庫"].exists)
+        XCTAssertTrue(app.staticTexts["補充後の在庫"].exists)
+        XCTAssertTrue(app.buttons["キャンセル"].exists)
+        XCTAssertTrue(app.buttons["補充する"].exists)
+
+        let confirmationScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        confirmationScreenshot.name = "Inventory refill confirmation"
+        confirmationScreenshot.lifetime = .keepAlways
+        add(confirmationScreenshot)
+
+        app.buttons["キャンセル"].tap()
+        XCTAssertTrue(confirmation.waitForNonExistence(timeout: 2))
+
         let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         screenshot.name = "Inventory detail redesign"
         screenshot.lifetime = .keepAlways
