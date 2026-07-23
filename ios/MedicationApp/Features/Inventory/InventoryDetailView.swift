@@ -276,9 +276,25 @@ struct InventoryDetailView: View {
     private var refillEditor: some View {
         CaregiverCard {
             VStack(alignment: .leading, spacing: 16) {
-                Text(NSLocalizedString("caregiver.inventory.edit.refill.amount", comment: "Refill amount title"))
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(CaregiverUI.tealDark)
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text(NSLocalizedString("caregiver.inventory.edit.refill.amount", comment: "Refill amount title"))
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(CaregiverUI.tealDark)
+
+                    Spacer(minLength: 4)
+
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(NSLocalizedString("caregiver.inventory.edit.currentStock", comment: "Current stock"))
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.secondary)
+                        Text("\(AppConstants.formatDecimal(max(0, quantity)))\(NSLocalizedString("caregiver.inventory.unit", comment: "Inventory unit"))")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(CaregiverUI.tealDark)
+                    }
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
+                    .background(CaregiverUI.teal.opacity(0.08), in: Capsule())
+                }
 
                 HStack(spacing: 8) {
                     refillPresetButton(title: "7日分", amount: plannedRefillAmount(days: 7))
@@ -299,7 +315,12 @@ struct InventoryDetailView: View {
                 Divider()
 
                 HStack(spacing: 12) {
-                    amountInput(value: $refillAmount, field: .refillAmount)
+                    amountInput(
+                        label: NSLocalizedString("caregiver.inventory.edit.refill.thisTime", comment: "This refill"),
+                        value: $refillAmount,
+                        field: .refillAmount,
+                        tint: CaregiverUI.teal
+                    )
 
                     Image(systemName: "arrow.right")
                         .font(.title3.weight(.bold))
@@ -348,7 +369,12 @@ struct InventoryDetailView: View {
                     Image(systemName: "arrow.right")
                         .font(.title3.weight(.bold))
                         .foregroundStyle(.secondary)
-                    amountInput(value: $correctionQuantity, field: .correctionQuantity)
+                    amountInput(
+                        label: NSLocalizedString("caregiver.inventory.edit.afterCorrection", comment: "After correction"),
+                        value: $correctionQuantity,
+                        field: .correctionQuantity,
+                        tint: CaregiverUI.orange
+                    )
                 }
 
                 CaregiverPrimaryButton(
@@ -365,17 +391,21 @@ struct InventoryDetailView: View {
         .accessibilityIdentifier("InventoryCorrectionEditor")
     }
 
-    private func amountInput(value: Binding<Double>, field: InventoryField) -> some View {
+    private func amountInput(
+        label: String,
+        value: Binding<Double>,
+        field: InventoryField,
+        tint: Color
+    ) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(NSLocalizedString("caregiver.inventory.edit.afterRefill", comment: "Reserved quantity label space"))
+            Text(label)
                 .font(.caption.weight(.bold))
-                .hidden()
-                .accessibilityHidden(true)
+                .foregroundStyle(tint)
 
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 TextField("0", value: value, formatter: numberFormatter)
                     .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .foregroundStyle(CaregiverUI.tealDark)
+                    .foregroundStyle(tint)
                     .multilineTextAlignment(.trailing)
                     .keyboardType(.decimalPad)
                     .focused($focusedField, equals: field)
@@ -387,10 +417,10 @@ struct InventoryDetailView: View {
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity)
         .frame(height: 76)
-        .background(AppTheme.elevatedBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(tint.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(CaregiverUI.cardStroke, lineWidth: 1)
+                .stroke(tint.opacity(0.5), lineWidth: 1.4)
         }
     }
 

@@ -509,11 +509,14 @@
 "caregiver.inventory.edit.correction.title" = "残数を数え直した";
 "caregiver.inventory.edit.correction.message" = "今ある錠数に置き換えます";
 "caregiver.inventory.edit.refill.amount" = "補充する錠数";
-"caregiver.inventory.edit.afterRefill" = "補充後";
+"caregiver.inventory.edit.currentStock" = "現在の在庫";
+"caregiver.inventory.edit.refill.thisTime" = "今回補充";
+"caregiver.inventory.edit.afterRefill" = "補充後の在庫";
 "caregiver.inventory.edit.refill.confirm" = "この内容で補充";
 "caregiver.inventory.edit.correction.amount" = "数え直した残数";
 "caregiver.inventory.edit.correction.help" = "紛失や数え間違いを直す時だけ、現在の残数を入力してください。";
 "caregiver.inventory.edit.beforeCorrection" = "変更前";
+"caregiver.inventory.edit.afterCorrection" = "数え直し後";
 "caregiver.inventory.edit.correction.confirm" = "この残数に修正";
 "common.days.unit" = "日";
 "common.back" = "戻る";

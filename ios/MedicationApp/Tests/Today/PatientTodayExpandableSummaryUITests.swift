@@ -128,7 +128,9 @@ final class PatientTodayExpandableSummaryUITests: XCTestCase {
         refillAction.tap()
         XCTAssertTrue(app.descendants(matching: .any)["InventoryRefillEditor"].waitForExistence(timeout: 2))
         app.buttons["14日分"].tap()
-        XCTAssertTrue(app.staticTexts["補充後"].exists)
+        XCTAssertTrue(app.staticTexts["現在の在庫"].exists)
+        XCTAssertTrue(app.staticTexts["今回補充"].exists)
+        XCTAssertTrue(app.staticTexts["補充後の在庫"].exists)
         XCTAssertTrue(app.staticTexts["18"].exists)
 
         let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())

@@ -168,3 +168,31 @@ final result: passed
 - Focused UI test passed after the alignment change.
 
 final result: passed
+
+---
+
+# Inventory refill quantity context QA
+
+## Evidence
+
+- Reported screenshot: `/Users/kaito/Desktop/Screenshot 2026-07-23 at 17.25.24.png`
+- Corrected simulator screenshot: `/tmp/inventory-refill-context-final.png`
+- Before-and-after comparison: `/tmp/inventory-refill-context-comparison.png`
+- State: current stock 4 tablets, 14-day refill of 14 tablets, resulting stock 18 tablets.
+
+## Findings
+
+- No actionable P0, P1, or P2 issue remains.
+- The editor header now shows the current stock in context.
+- The editable quantity is explicitly labelled `今回補充`.
+- The calculated total is explicitly labelled `補充後の在庫`.
+- The editable card uses a teal outline and light tint while keeping the same height and numeric baseline as the result card.
+- The correction flow uses the same pattern with `変更前` and `数え直し後`.
+
+## Interaction evidence
+
+- Focused refill/correction UI test: passed.
+- Staging simulator build: passed.
+- The 7-, 14-, 21-day presets and direct-entry control remain available.
+
+final result: passed
