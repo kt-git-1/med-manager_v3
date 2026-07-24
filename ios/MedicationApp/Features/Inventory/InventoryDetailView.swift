@@ -97,10 +97,9 @@ struct InventoryDetailView: View {
                 }
             }
         }
-        .confirmationDialog(
+        .alert(
             NSLocalizedString("caregiver.inventory.refill.confirm.title", comment: "Refill confirm title"),
-            isPresented: $showRefillConfirm,
-            titleVisibility: .visible
+            isPresented: $showRefillConfirm
         ) {
             Button(NSLocalizedString("caregiver.inventory.detail.refill.action", comment: "Refill action")) {
                 guard let amount = pendingRefillAmount else { return }

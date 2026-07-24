@@ -148,13 +148,14 @@ final class PatientTodayExpandableSummaryUITests: XCTestCase {
                 .exists
         )
         XCTAssertTrue(app.buttons["補充する"].exists)
+        XCTAssertTrue(app.buttons["キャンセル"].exists)
 
         let confirmationScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         confirmationScreenshot.name = "Inventory refill confirmation"
         confirmationScreenshot.lifetime = .keepAlways
         add(confirmationScreenshot)
 
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95)).tap()
+        app.buttons["キャンセル"].tap()
         XCTAssertTrue(app.staticTexts["在庫を補充しますか？"].waitForNonExistence(timeout: 2))
 
         let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
