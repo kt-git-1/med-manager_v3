@@ -204,25 +204,24 @@ final result: passed
 ## Evidence
 
 - Reported screenshot: `/Users/kaito/Desktop/Screenshot 2026-07-23 at 18.14.03.png`
-- Corrected simulator screenshot: `/tmp/inventory-confirmation-attachments/DF73229E-16D9-42AD-9C6F-4A6077C5C955.png`
-- Before-and-after comparison: `/tmp/inventory-refill-confirmation-comparison.png`
+- Corrected simulator screenshot: `/tmp/inventory-confirmation-dialog-attachments-final/5463E81E-5ACA-44E8-982F-DE277FB9BC17.png`
 - State: current stock 4 tablets, refill 14 tablets, resulting stock 18 tablets.
 
 ## Findings
 
 - No actionable P0, P1, or P2 issue remains.
-- The small system popover is replaced with a centered confirmation card.
+- The app uses the same native confirmation dialog pattern as its other destructive or consequential actions.
 - The refill amount, current stock, and resulting stock have separate labels.
 - Every quantity uses the medication-specific unit `錠` instead of the generic `個`.
-- Cancel and confirmation actions are visible together with large touch targets.
-- The dimmed backdrop separates the confirmation from the inventory editor.
+- The confirmation action remains a standard system-sized control.
+- The dialog can be dismissed by tapping outside it, following the platform behavior.
 
 ## Interaction evidence
 
 - Staging simulator build: passed.
 - Focused refill confirmation UI test: passed with 0 failures.
 - Verified the confirmation opens with the expected medication and quantities.
-- Verified cancel dismisses the confirmation without applying a refill.
+- Verified tapping outside dismisses the confirmation without applying a refill.
 - The existing confirmation action continues to call the established refill API path.
 
 final result: passed

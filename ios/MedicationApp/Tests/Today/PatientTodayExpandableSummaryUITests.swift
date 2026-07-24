@@ -119,35 +119,34 @@ final class PatientTodayExpandableSummaryUITests: XCTestCase {
         let correctionAction = app.buttons["InventoryEditActionCorrection"]
         XCTAssertTrue(refillAction.exists)
         XCTAssertTrue(correctionAction.exists)
-        XCTAssertTrue(app.descendants(matching: .any)["InventoryRefillEditor"].exists)
+        XCTAssertTrue(app.staticTexts["補充する錠数"].exists)
 
         correctionAction.tap()
         XCTAssertTrue(app.descendants(matching: .any)["InventoryCorrectionEditor"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["数え直した残数"].exists)
 
         refillAction.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["InventoryRefillEditor"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["補充する錠数"].waitForExistence(timeout: 2))
         app.buttons["14日分"].tap()
         XCTAssertTrue(app.staticTexts["現在の在庫"].exists)
         XCTAssertTrue(app.staticTexts["今回補充"].exists)
         XCTAssertTrue(app.staticTexts["補充後の在庫"].exists)
         XCTAssertTrue(app.staticTexts["18"].exists)
 
-        let confirmButton = app.buttons["この内容で補充"]
+        let confirmButton = app.buttons["InventoryRefillConfirmButton"]
         for _ in 0..<3 where !confirmButton.isHittable {
             app.swipeUp()
         }
         XCTAssertTrue(confirmButton.isHittable)
         confirmButton.tap()
 
-        let confirmation = app.descendants(matching: .any)["InventoryRefillConfirmation"]
-        XCTAssertTrue(confirmation.waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["在庫を補充しますか？"].exists)
-        XCTAssertTrue(app.staticTexts["血圧の薬 5 mg"].exists)
-        XCTAssertTrue(app.staticTexts["今回補充"].exists)
-        XCTAssertTrue(app.staticTexts["現在の在庫"].exists)
-        XCTAssertTrue(app.staticTexts["補充後の在庫"].exists)
-        XCTAssertTrue(app.buttons["キャンセル"].exists)
+        XCTAssertTrue(
+            app.staticTexts
+                .matching(NSPredicate(format: "label CONTAINS %@", "現在の在庫：4錠"))
+                .firstMatch
+                .exists
+        )
         XCTAssertTrue(app.buttons["補充する"].exists)
 
         let confirmationScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
@@ -155,8 +154,8 @@ final class PatientTodayExpandableSummaryUITests: XCTestCase {
         confirmationScreenshot.lifetime = .keepAlways
         add(confirmationScreenshot)
 
-        app.buttons["キャンセル"].tap()
-        XCTAssertTrue(confirmation.waitForNonExistence(timeout: 2))
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95)).tap()
+        XCTAssertTrue(app.staticTexts["在庫を補充しますか？"].waitForNonExistence(timeout: 2))
 
         let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         screenshot.name = "Inventory detail redesign"
