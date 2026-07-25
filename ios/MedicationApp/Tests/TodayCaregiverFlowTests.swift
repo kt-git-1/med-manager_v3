@@ -169,6 +169,23 @@ final class TodayCaregiverFlowTests: XCTestCase {
         XCTAssertFalse(viewModel.isUpdating)
         try await Task.sleep(for: .milliseconds(50))
     }
+
+    func testOverviewShowsNoPlanInsteadOfTakenForEmptySlot() {
+        let state = CaregiverTodayOverviewState.resolve(statuses: [], isLate: false)
+
+        XCTAssertEqual(state, .noPlan)
+        XCTAssertEqual(state.iconName, "minus")
+    }
+
+    func testOverviewShowsTakenOnlyWhenScheduledDosesAreTaken() {
+        let state = CaregiverTodayOverviewState.resolve(
+            statuses: [.taken, .taken],
+            isLate: false
+        )
+
+        XCTAssertEqual(state, .taken)
+        XCTAssertEqual(state.iconName, "checkmark")
+    }
 }
 
 private final class CaregiverTodayURLProtocol: URLProtocol {

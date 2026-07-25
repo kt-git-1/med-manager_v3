@@ -1,5 +1,36 @@
 import SwiftUI
 
+enum CaregiverTodayOverviewState: Equatable {
+    case noPlan
+    case late
+    case taken
+    case missed
+    case pending
+
+    static func resolve(statuses: [DoseStatusDTO?], isLate: Bool) -> Self {
+        guard !statuses.isEmpty else { return .noPlan }
+        if isLate { return .late }
+        if statuses.allSatisfy({ $0 == .taken }) { return .taken }
+        if statuses.contains(where: { $0 == .missed }) { return .missed }
+        return .pending
+    }
+
+    var iconName: String {
+        switch self {
+        case .noPlan:
+            return "minus"
+        case .late:
+            return "clock.badge.exclamationmark.fill"
+        case .taken:
+            return "checkmark"
+        case .missed:
+            return "exclamationmark"
+        case .pending:
+            return "ellipsis"
+        }
+    }
+}
+
 struct CaregiverTodayView: View {
     private static let scrollTopID = "CaregiverTodayScrollTop"
 
@@ -643,17 +674,27 @@ struct CaregiverTodayView: View {
     }
 
     private func overviewColor(for row: TimelineRow) -> Color {
-        if row.isLate { return CaregiverUI.orange }
-        if row.doses.allSatisfy({ $0.effectiveStatus == .taken }) { return CaregiverUI.teal }
-        if row.doses.contains(where: { $0.effectiveStatus == .missed }) { return CaregiverUI.red }
-        return .gray
+        switch overviewState(for: row) {
+        case .late:
+            return CaregiverUI.orange
+        case .taken:
+            return CaregiverUI.teal
+        case .missed:
+            return CaregiverUI.red
+        case .noPlan, .pending:
+            return .gray
+        }
     }
 
     private func overviewIconName(for row: TimelineRow) -> String {
-        if row.isLate { return "clock.badge.exclamationmark.fill" }
-        if row.doses.allSatisfy({ $0.effectiveStatus == .taken }) { return "checkmark" }
-        if row.doses.contains(where: { $0.effectiveStatus == .missed }) { return "exclamationmark" }
-        return "ellipsis"
+        overviewState(for: row).iconName
+    }
+
+    private func overviewState(for row: TimelineRow) -> CaregiverTodayOverviewState {
+        CaregiverTodayOverviewState.resolve(
+            statuses: row.doses.map(\.effectiveStatus),
+            isLate: row.isLate
+        )
     }
 
     private var missedAlertMessage: String {
