@@ -199,9 +199,7 @@ export default function GuidePage() {
         <header className="content-width guide-section-header">
           <p className="section-label">使い方 1｜最初の準備</p>
           <h2>最初に行う3つの手順</h2>
-          <p>
-            家族がお薬を登録し、本人の端末と連携して、今日のお薬を確認できるようにします。
-          </p>
+          <p>家族がお薬を登録し、本人の端末と連携して、今日のお薬を確認できるようにします。</p>
         </header>
         <div className="steps-list">
           <article className="step-row family-step">

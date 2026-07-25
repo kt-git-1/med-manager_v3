@@ -79,8 +79,9 @@ async function getOrCreateSharedPatient(request: Parameters<typeof test>[0]["req
   throw new Error("Unable to create or reuse E2E patient");
 }
 
-const dayOfWeekByIndex = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] as const;
-const dayOfWeekByShortName: Record<string, (typeof dayOfWeekByIndex)[number]> = {
+type DayOfWeek = "SUN" | "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT";
+
+const dayOfWeekByShortName: Record<string, DayOfWeek> = {
   Sun: "SUN",
   Mon: "MON",
   Tue: "TUE",

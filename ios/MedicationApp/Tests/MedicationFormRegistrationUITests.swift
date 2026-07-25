@@ -47,6 +47,9 @@ final class MedicationFormRegistrationUITests: XCTestCase {
     func testValidationErrorAppearsBesideDosageAndScrollsToField() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-MedicationFormValidationPreview"]
+        app.launchEnvironment["UITEST_SESSION_BOOTSTRAP"] = "1"
+        app.launchEnvironment["UITEST_MODE"] = "caregiver"
+        app.launchEnvironment["UITEST_CURRENT_PATIENT_ID"] = "qa-validation-preview-patient"
         app.launch()
 
         XCTAssertTrue(app.staticTexts["お薬を登録"].waitForExistence(timeout: 10), app.debugDescription)

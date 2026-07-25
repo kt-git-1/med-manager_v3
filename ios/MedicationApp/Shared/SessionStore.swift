@@ -123,7 +123,7 @@ final class SessionStore: ObservableObject {
     }
 
     private func applyUITestSessionOverridesIfNeeded() {
-        #if DEBUG
+        #if targetEnvironment(simulator)
         let env = ProcessInfo.processInfo.environment
         guard env["UITEST_SESSION_BOOTSTRAP"] == "1" else { return }
 
@@ -152,7 +152,7 @@ final class SessionStore: ObservableObject {
         #endif
     }
 
-    #if DEBUG
+    #if targetEnvironment(simulator)
     private func clearSessionForUITestBootstrap() {
         caregiverToken = nil
         patientToken = nil
