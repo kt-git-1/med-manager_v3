@@ -28,6 +28,11 @@
 "common.logout" = "ログアウト";
 "common.toast.updated" = "更新しました";
 "caregiver.timePreset.toast.updated" = "時間を更新しました";
+"caregiver.timePreset.validation.title" = "時間の順番を確認してください";
+"caregiver.timePreset.validation.invalid" = "朝・昼・夜・眠前の時間を正しく設定してください。";
+"caregiver.timePreset.validation.noon" = "昼の時間は朝より後に設定してください。";
+"caregiver.timePreset.validation.evening" = "夜の時間は昼より後に設定してください。";
+"caregiver.timePreset.validation.bedtime" = "眠前の時間は夜より後に設定してください。";
 "caregiver.inventory.toast.saved" = "在庫情報を保存しました";
 "caregiver.inventory.toast.refilled" = "薬を補充しました";
 
