@@ -172,6 +172,9 @@ struct CaregiverHomeView: View {
         .onReceive(notificationRouter.$target) { newTarget in
             guard let target = newTarget,
                   sessionStore.mode == .caregiver else { return }
+            if let patientId = target.patientId {
+                sessionStore.setCurrentPatientId(patientId)
+            }
             selectedTab = .history
             deepLinkTarget = target
             notificationRouter.clear()
@@ -379,7 +382,8 @@ struct CaregiverHomeView: View {
         notificationRouter.routeFromRemotePush(userInfo: [
             "type": "DOSE_TAKEN",
             "date": date,
-            "slot": slot
+            "slot": slot,
+            "patientId": env["UITEST_REMOTE_PUSH_PATIENT_ID"] ?? ""
         ])
         #endif
     }

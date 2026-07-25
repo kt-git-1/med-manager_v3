@@ -119,16 +119,22 @@ final class ExploratoryUITapCoverageTests: XCTestCase {
         let relaunched = launchedApp(
             mode: "caregiver",
             simulatedRemotePushDate: todayString(),
-            simulatedRemotePushSlot: "bedtime"
+            simulatedRemotePushSlot: "bedtime",
+            currentPatientId: ""
         )
         handleSystemPermissionPrompts(in: relaunched)
         XCTAssertTrue(relaunched.staticTexts["服薬履歴"].waitForExistence(timeout: 20), relaunched.debugDescription)
+        let selectedPatientName = relaunched.staticTexts.matching(
+            NSPredicate(format: "label BEGINSWITH %@", qaContext.patientName)
+        ).firstMatch
+        XCTAssertTrue(selectedPatientName.waitForExistence(timeout: 20), relaunched.debugDescription)
     }
 
     private func launchedApp(
         mode: String,
         simulatedRemotePushDate: String? = nil,
-        simulatedRemotePushSlot: String? = nil
+        simulatedRemotePushSlot: String? = nil,
+        currentPatientId: String? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         var environment = [
@@ -139,13 +145,14 @@ final class ExploratoryUITapCoverageTests: XCTestCase {
             "UITEST_MODE": mode,
             "UITEST_CAREGIVER_TOKEN": mode == "caregiver" ? qaContext.caregiverJWT : "",
             "UITEST_PATIENT_TOKEN": mode == "patient" ? qaContext.patientToken : "",
-            "UITEST_CURRENT_PATIENT_ID": qaContext.patientId,
+            "UITEST_CURRENT_PATIENT_ID": currentPatientId ?? qaContext.patientId,
             "UITEST_MARK_TUTORIALS_SEEN": "1",
             "UITEST_MOCK_PUSH": "1"
         ]
         if let simulatedRemotePushDate, let simulatedRemotePushSlot {
             environment["UITEST_REMOTE_PUSH_DATE"] = simulatedRemotePushDate
             environment["UITEST_REMOTE_PUSH_SLOT"] = simulatedRemotePushSlot
+            environment["UITEST_REMOTE_PUSH_PATIENT_ID"] = qaContext.patientId
         }
         app.launchEnvironment = environment
         app.launch()
@@ -301,7 +308,7 @@ private struct QAContext {
             password: password
         )
         let caregiverToken = "caregiver-\(jwt)"
-        let patientName = "UITap QA Patient"
+        let patientName = (try? env("UITEST_PATIENT_NAME")) ?? "UITap QA Patient"
         let medicationName = "UITap QA Medication \(Int(Date().timeIntervalSince1970))"
         let patientId = try await getOrCreatePatient(
             apiBaseURL: apiBaseURL,
