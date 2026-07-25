@@ -15,7 +15,11 @@ struct RootView: View {
             } else if isPatientTodayV105PreviewActive {
                 PatientTodayV105DebugPreview()
             } else if isCaregiverHistoryV105PreviewActive {
+                #if targetEnvironment(simulator)
                 CaregiverHistoryV105DebugPreview()
+                #else
+                EmptyView()
+                #endif
             } else if isPatientHistoryAchievementPreviewActive {
                 PatientHistoryAchievementPreview()
             } else if isCaregiverTodayPreviewActive {
