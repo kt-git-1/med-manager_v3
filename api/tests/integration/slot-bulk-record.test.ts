@@ -534,8 +534,28 @@ describe("slot bulk record integration", () => {
       }
     });
 
-    it("keeps the recording window restriction for patient recordings", async () => {
+    it("allows a patient to record a missed dose later the same day", async () => {
       vi.setSystemTime(new Date("2026-02-11T01:00:00.000Z"));
+      mockScheduleDoses = makeMorningDoses("missed");
+      const { bulkRecordSlot } = await import("../../src/services/slotBulkRecordService");
+
+      try {
+        const result = await bulkRecordSlot({
+          patientId: "patient-1",
+          date: "2026-02-11",
+          slot: "morning",
+          recordedByType: "PATIENT"
+        });
+
+        expect(result.updatedCount).toBe(3);
+        expect(result.remainingCount).toBe(0);
+      } finally {
+        vi.setSystemTime(new Date("2026-02-10T22:30:00.000Z"));
+      }
+    });
+
+    it("rejects a patient recording at 04:00 the following day", async () => {
+      vi.setSystemTime(new Date("2026-02-11T19:00:00.000Z"));
       mockScheduleDoses = makeMorningDoses("missed");
       const { bulkRecordSlot } = await import("../../src/services/slotBulkRecordService");
 

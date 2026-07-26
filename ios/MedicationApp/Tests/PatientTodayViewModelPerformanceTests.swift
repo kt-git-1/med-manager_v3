@@ -70,6 +70,7 @@ final class PatientTodayViewModelPerformanceTests: XCTestCase {
                 patientId: "patient-1",
                 medicationId: "med-1",
                 scheduledAt: scheduledAt,
+                takenAt: nil,
                 effectiveStatus: .pending,
                 recordedByType: nil,
                 medicationSnapshot: MedicationSnapshotDTO(

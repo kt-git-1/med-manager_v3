@@ -5,6 +5,7 @@ build/
 coverage/
 test-results/
 playwright-report/
+.vercel/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml

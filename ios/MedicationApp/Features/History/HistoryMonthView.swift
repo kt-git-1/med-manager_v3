@@ -383,6 +383,14 @@ struct HistoryMonthView: View {
         formatter.dateFormat = "M月d日（E）"
         return formatter
     }()
+    private static let patientRecentTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = HistoryMonthView.calendar
+        formatter.timeZone = HistoryMonthView.historyTimeZone
+        formatter.locale = AppConstants.japaneseLocale
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
 
     private let sessionStore: SessionStore
     private let entitlementStore: EntitlementStore?
@@ -394,6 +402,7 @@ struct HistoryMonthView: View {
     @State private var displayedMonth: Date
     @State private var selectedDate: Date?
     @State private var showRetentionLock = false
+    @State private var expandedRecentDateKey: String?
     @Binding var deepLinkTarget: NotificationDeepLinkTarget?
     @State private var highlightedSlot: NotificationSlot?
 
@@ -678,32 +687,64 @@ struct HistoryMonthView: View {
 
                 ForEach(recentHistoryDates, id: \.self) { date in
                     PatientCard {
-                        HStack(alignment: .center, spacing: 14) {
-                            Image(systemName: patientHistoryIconName(for: date))
-                                .font(.system(size: 26, weight: .bold))
-                                .foregroundStyle(patientHistoryAccent(for: date))
-                                .frame(width: 54, height: 54)
-                                .background(patientHistoryAccent(for: date).opacity(0.12), in: Circle())
+                        VStack(alignment: .leading, spacing: 0) {
+                            Button {
+                                toggleRecentHistoryDetail(for: date)
+                            } label: {
+                                HStack(alignment: .center, spacing: 14) {
+                                    Image(systemName: patientHistoryIconName(for: date))
+                                        .font(.system(size: 26, weight: .bold))
+                                        .foregroundStyle(patientHistoryAccent(for: date))
+                                        .frame(width: 54, height: 54)
+                                        .background(patientHistoryAccent(for: date).opacity(0.12), in: Circle())
 
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(patientHistoryDateTitle(for: date))
-                                    .font(.title3.weight(.bold))
-                                    .foregroundStyle(.primary)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.76)
-                                Text(patientHistorySubtitle(for: date))
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(Color.readableSecondaryText)
-                                    .lineLimit(2)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(patientHistoryDateTitle(for: date))
+                                            .font(.title3.weight(.bold))
+                                            .foregroundStyle(.primary)
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.76)
+                                        Text(patientHistorySubtitle(for: date))
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(Color.readableSecondaryText)
+                                            .lineLimit(2)
+                                    }
+
+                                    Spacer(minLength: 0)
+
+                                    VStack(alignment: .trailing, spacing: 8) {
+                                        PatientStatusPill(
+                                            text: patientHistoryStatusText(for: date),
+                                            color: patientHistoryStatusColor(for: date),
+                                            systemImage: patientHistoryStatusIcon(for: date)
+                                        )
+
+                                        Image(systemName: isRecentHistoryExpanded(for: date) ? "chevron.up" : "chevron.down")
+                                            .font(.body.weight(.bold))
+                                            .foregroundStyle(PatientUI.teal)
+                                            .frame(width: 32, height: 24)
+                                    }
+                                }
+                                .contentShape(Rectangle())
                             }
-
-                            Spacer(minLength: 0)
-
-                            PatientStatusPill(
-                                text: patientHistoryStatusText(for: date),
-                                color: patientHistoryStatusColor(for: date),
-                                systemImage: patientHistoryStatusIcon(for: date)
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("PatientRecentHistoryRow-\(HistoryMonthView.dateKeyFormatter.string(from: date))")
+                            .accessibilityHint(
+                                NSLocalizedString(
+                                    isRecentHistoryExpanded(for: date)
+                                        ? "patient.history.recent.collapseHint"
+                                        : "patient.history.recent.expandHint",
+                                    comment: "Recent history row action hint"
+                                )
                             )
+
+                            if isRecentHistoryExpanded(for: date) {
+                                Divider()
+                                    .padding(.vertical, 16)
+
+                                patientRecentHistoryDetail(for: date)
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                            }
                         }
                     }
                 }
@@ -1066,6 +1107,289 @@ struct HistoryMonthView: View {
             format: NSLocalizedString("patient.history.subtitle.slots", comment: "Slot summary"),
             activeSlots.joined(separator: "・")
         )
+    }
+
+    private func isRecentHistoryExpanded(for date: Date) -> Bool {
+        expandedRecentDateKey == HistoryMonthView.dateKeyFormatter.string(from: date)
+    }
+
+    private func toggleRecentHistoryDetail(for date: Date) {
+        let dateKey = HistoryMonthView.dateKeyFormatter.string(from: date)
+        if expandedRecentDateKey == dateKey {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                expandedRecentDateKey = nil
+            }
+            return
+        }
+
+        withAnimation(.easeInOut(duration: 0.2)) {
+            expandedRecentDateKey = dateKey
+        }
+        viewModel.loadDay(date: dateKey)
+    }
+
+    @ViewBuilder
+    private func patientRecentHistoryDetail(for date: Date) -> some View {
+        let dateKey = HistoryMonthView.dateKeyFormatter.string(from: date)
+
+        if viewModel.isLoadingDay && viewModel.day?.date != dateKey {
+            HStack(spacing: 10) {
+                ProgressView()
+                Text(NSLocalizedString("common.loading", comment: "Loading recent history"))
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color.readableSecondaryText)
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.vertical, 8)
+        } else if let errorMessage = viewModel.dayErrorMessage, viewModel.day?.date != dateKey {
+            VStack(spacing: 12) {
+                Text(errorMessage)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(PatientUI.red)
+                    .multilineTextAlignment(.center)
+
+                Button(NSLocalizedString("common.retry", comment: "Retry")) {
+                    viewModel.loadDay(date: dateKey)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(PatientUI.teal)
+            }
+            .frame(maxWidth: .infinity)
+        } else if let day = viewModel.day, day.date == dateKey {
+            let populatedSlots = patientRecentSlots(from: day.doses)
+            if populatedSlots.isEmpty && day.prnItems.isEmpty {
+                Text(NSLocalizedString("patient.history.recent.empty", comment: "No recent dose history"))
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color.readableSecondaryText)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 8)
+            } else {
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(Array(populatedSlots.enumerated()), id: \.offset) { index, entry in
+                        if index > 0 {
+                            Divider()
+                        }
+                        patientRecentSlotDetail(slot: entry.slot, doses: entry.doses)
+                    }
+
+                    if !day.prnItems.isEmpty {
+                        if !populatedSlots.isEmpty {
+                            Divider()
+                        }
+                        patientRecentPrnDetail(day.prnItems)
+                    }
+                }
+                .accessibilityIdentifier("PatientRecentHistoryDetail-\(dateKey)")
+            }
+        } else {
+            HStack(spacing: 10) {
+                ProgressView()
+                Text(NSLocalizedString("common.loading", comment: "Loading recent history"))
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color.readableSecondaryText)
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.vertical, 8)
+        }
+    }
+
+    private func patientRecentSlots(
+        from doses: [HistoryDayItemDTO]
+    ) -> [(slot: HistorySlotDTO, doses: [HistoryDayItemDTO])] {
+        let slots: [HistorySlotDTO] = [.morning, .noon, .evening, .bedtime]
+        return slots.compactMap { slot in
+            let slotDoses = doses
+                .filter { $0.slot == slot }
+                .sorted { $0.scheduledAt < $1.scheduledAt }
+            return slotDoses.isEmpty ? nil : (slot, slotDoses)
+        }
+    }
+
+    private func patientRecentSlotDetail(
+        slot: HistorySlotDTO,
+        doses: [HistoryDayItemDTO]
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: patientRecentSlotIcon(for: slot))
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(patientRecentSlotColor(for: slot))
+                    .frame(width: 34, height: 34)
+                    .background(patientRecentSlotColor(for: slot).opacity(0.12), in: Circle())
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(patientRecentSlotTitle(for: slot))
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.primary)
+                    if let scheduledAt = doses.first?.scheduledAt {
+                        Text(
+                            String(
+                                format: NSLocalizedString("history.schedule.format", comment: "Scheduled time"),
+                                Self.patientRecentTimeFormatter.string(from: scheduledAt)
+                            )
+                        )
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.readableSecondaryText)
+                    }
+                }
+
+                Spacer(minLength: 0)
+
+                PatientStatusPill(
+                    text: patientRecentSlotStatusText(doses),
+                    color: patientRecentSlotStatusColor(doses),
+                    systemImage: patientRecentSlotStatusIcon(doses)
+                )
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(Array(doses.enumerated()), id: \.offset) { _, dose in
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "pills.fill")
+                            .font(.body)
+                            .foregroundStyle(patientRecentSlotColor(for: slot))
+                            .frame(width: 22)
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(dose.medicationName)
+                                .font(.body.weight(.bold))
+                                .foregroundStyle(.primary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            if !dose.dosageText.isEmpty {
+                                Text(dose.dosageText)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(Color.readableSecondaryText)
+                            }
+                        }
+
+                        Spacer(minLength: 8)
+
+                        Text(patientRecentDoseStatusText(dose))
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(patientRecentDoseStatusColor(dose))
+                            .multilineTextAlignment(.trailing)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+            .padding(.leading, 4)
+        }
+    }
+
+    private func patientRecentPrnDetail(_ items: [PrnHistoryItemDTO]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(
+                NSLocalizedString("patient.history.recent.prn", comment: "As-needed medication"),
+                systemImage: "cross.case.fill"
+            )
+            .font(.headline.weight(.bold))
+            .foregroundStyle(PatientUI.indigo)
+
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                HStack(alignment: .top, spacing: 10) {
+                    Text(item.medicationName)
+                        .font(.body.weight(.bold))
+                        .foregroundStyle(.primary)
+                    Spacer(minLength: 8)
+                    Text(
+                        String(
+                            format: NSLocalizedString("history.taken.format", comment: "Taken time"),
+                            Self.patientRecentTimeFormatter.string(from: item.takenAt)
+                        )
+                    )
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(PatientUI.teal)
+                }
+            }
+        }
+    }
+
+    private func patientRecentSlotTitle(for slot: HistorySlotDTO) -> String {
+        switch slot {
+        case .morning: return NSLocalizedString("history.slot.morning", comment: "Morning")
+        case .noon: return NSLocalizedString("history.slot.noon", comment: "Noon")
+        case .evening: return NSLocalizedString("history.slot.evening", comment: "Evening")
+        case .bedtime: return NSLocalizedString("history.slot.bedtime", comment: "Bedtime")
+        }
+    }
+
+    private func patientRecentSlotIcon(for slot: HistorySlotDTO) -> String {
+        switch slot {
+        case .morning: return "sunrise.fill"
+        case .noon: return "sun.max.fill"
+        case .evening: return "sunset.fill"
+        case .bedtime: return "moon.stars.fill"
+        }
+    }
+
+    private func patientRecentSlotColor(for slot: HistorySlotDTO) -> Color {
+        switch slot {
+        case .morning: return AppConstants.slotColor(for: .morning)
+        case .noon: return AppConstants.slotColor(for: .noon)
+        case .evening: return AppConstants.slotColor(for: .evening)
+        case .bedtime: return AppConstants.slotColor(for: .bedtime)
+        }
+    }
+
+    private func patientRecentSlotStatusText(_ doses: [HistoryDayItemDTO]) -> String {
+        if doses.contains(where: { $0.effectiveStatus == .missed }) {
+            return NSLocalizedString("history.status.missed", comment: "Missed")
+        }
+        if doses.contains(where: { $0.effectiveStatus == .pending }) {
+            return NSLocalizedString("history.status.pending", comment: "Pending")
+        }
+        return NSLocalizedString("history.status.taken", comment: "Taken")
+    }
+
+    private func patientRecentSlotStatusColor(_ doses: [HistoryDayItemDTO]) -> Color {
+        if doses.contains(where: { $0.effectiveStatus == .missed }) { return PatientUI.red }
+        if doses.contains(where: { $0.effectiveStatus == .pending }) { return PatientUI.orange }
+        return PatientUI.teal
+    }
+
+    private func patientRecentSlotStatusIcon(_ doses: [HistoryDayItemDTO]) -> String {
+        if doses.contains(where: { $0.effectiveStatus == .missed }) { return "exclamationmark" }
+        if doses.contains(where: { $0.effectiveStatus == .pending }) { return "clock" }
+        return "checkmark"
+    }
+
+    private func patientRecentDoseStatusText(_ dose: HistoryDayItemDTO) -> String {
+        switch dose.effectiveStatus {
+        case .taken:
+            guard let takenAt = dose.takenAt else {
+                return NSLocalizedString("history.status.taken", comment: "Taken")
+            }
+            let time = Self.patientRecentTimeFormatter.string(from: takenAt)
+            if takenAt.timeIntervalSince(dose.scheduledAt) >= 60 * 60 {
+                return String(
+                    format: NSLocalizedString("patient.history.recent.late.format", comment: "Late taken time"),
+                    time
+                )
+            }
+            return String(
+                format: NSLocalizedString("history.taken.format", comment: "Taken time"),
+                time
+            )
+        case .missed:
+            return NSLocalizedString("history.status.missed", comment: "Missed")
+        case .pending:
+            if dose.scheduledAt > Date() {
+                return String(
+                    format: NSLocalizedString("history.schedule.format", comment: "Scheduled time"),
+                    Self.patientRecentTimeFormatter.string(from: dose.scheduledAt)
+                )
+            }
+            return NSLocalizedString("history.status.pending", comment: "Pending")
+        }
+    }
+
+    private func patientRecentDoseStatusColor(_ dose: HistoryDayItemDTO) -> Color {
+        switch dose.effectiveStatus {
+        case .taken: return PatientUI.teal
+        case .missed: return PatientUI.red
+        case .pending: return dose.scheduledAt > Date() ? PatientUI.blue : PatientUI.orange
+        }
     }
 
     private var calendarSection: some View {

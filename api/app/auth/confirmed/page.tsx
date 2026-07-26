@@ -20,10 +20,16 @@ export default function AuthConfirmedPage() {
       <section className="confirmed-hero" aria-labelledby="confirmed-title">
         <div className="content-width confirmed-hero-inner">
           <div className="confirmed-message">
-            <span className="confirmed-check" aria-hidden="true">✓</span>
+            <span className="confirmed-check" aria-hidden="true">
+              ✓
+            </span>
             <div>
               <p className="section-label">家族アカウントの登録</p>
-              <h1 id="confirmed-title">メール確認が<br />完了しました</h1>
+              <h1 id="confirmed-title">
+                メール確認が
+                <br />
+                完了しました
+              </h1>
               <p className="confirmed-lead">
                 登録したメールアドレスで、家族モードにログインできます。続きはお薬見守りアプリで行ってください。
               </p>
@@ -55,7 +61,9 @@ export default function AuthConfirmedPage() {
       <section className="confirmed-steps" aria-labelledby="confirmed-steps-title">
         <div className="content-width">
           <p className="section-label">次にすること</p>
-          <h2 className="section-title" id="confirmed-steps-title">アプリで利用を始めるまで</h2>
+          <h2 className="section-title" id="confirmed-steps-title">
+            アプリで利用を始めるまで
+          </h2>
           <p className="confirmed-section-intro">次の3つの手順で、すぐに見守りを始められます。</p>
           <ol>
             {steps.map(([title, body], index) => (

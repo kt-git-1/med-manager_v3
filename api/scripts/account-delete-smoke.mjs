@@ -8,9 +8,12 @@ const { Pool } = pg;
 const baseUrl = (process.env.API_BASE_URL || "https://www.okusuri-mimamori.com").replace(/\/$/, "");
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const anonKey = process.env.SUPABASE_ANON_KEY;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!process.env.DATABASE_URL || !supabaseUrl || !anonKey) {
-  throw new Error("Missing DATABASE_URL, SUPABASE_URL, or SUPABASE_ANON_KEY");
+if (!process.env.DATABASE_URL || !supabaseUrl || !anonKey || !serviceRoleKey) {
+  throw new Error(
+    "Missing DATABASE_URL, SUPABASE_URL, SUPABASE_ANON_KEY, or SUPABASE_SERVICE_ROLE_KEY"
+  );
 }
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -33,6 +36,24 @@ async function supabase(method, path, body) {
   return { status: response.status, payload };
 }
 
+async function supabaseAdmin(method, path, body) {
+  const response = await fetch(`${supabaseUrl}${path}`, {
+    method,
+    headers: {
+      "content-type": "application/json",
+      apikey: serviceRoleKey,
+      authorization: `Bearer ${serviceRoleKey}`
+    },
+    body: body === undefined ? undefined : JSON.stringify(body)
+  });
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
+  if (!response.ok) {
+    throw new Error(`Supabase Admin ${method} ${path} failed with ${response.status}`);
+  }
+  return { status: response.status, payload };
+}
+
 async function api(method, path, accessToken, body) {
   const response = await fetch(`${baseUrl}${path}`, {
     method,
@@ -50,24 +71,6 @@ async function api(method, path, accessToken, body) {
     throw error;
   }
   return { status: response.status, payload };
-}
-
-async function findAuthUserId(email) {
-  const { rows } = await pool.query(
-    "select id::text from auth.users where email = $1 order by created_at desc limit 1",
-    [email]
-  );
-  return rows[0]?.id;
-}
-
-async function confirmAuthUser(userId, email) {
-  await pool.query(
-    `update auth.users
-       set email_confirmed_at = coalesce(email_confirmed_at, now()),
-           updated_at = now()
-     where id = $1::uuid and email = $2`,
-    [userId, email]
-  );
 }
 
 async function deleteAuthUser(userId) {
@@ -96,16 +99,17 @@ try {
   const password = `${randomBytes(18).toString("base64url")}aA1!`;
   const result = [];
 
-  const signup = await supabase("POST", "/auth/v1/signup", { email, password });
-  const userId = signup.payload?.user?.id || (await findAuthUserId(email));
+  const signup = await supabaseAdmin("POST", "/auth/v1/admin/users", {
+    email,
+    password,
+    email_confirm: true
+  });
+  const userId = signup.payload?.id || signup.payload?.user?.id;
   if (!userId) {
-    throw new Error("signup missing auth user id");
+    throw new Error("admin user creation missing auth user id");
   }
   smokeUserId = userId;
-  result.push({ step: "auth_signup", status: signup.status });
-
-  await confirmAuthUser(userId, email);
-  result.push({ step: "auth_confirm_via_db", status: 200 });
+  result.push({ step: "auth_admin_create", status: signup.status });
 
   const login = await supabase("POST", "/auth/v1/token?grant_type=password", { email, password });
   const accessToken = login.payload?.access_token;

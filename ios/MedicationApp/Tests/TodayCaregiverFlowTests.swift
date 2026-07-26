@@ -65,6 +65,7 @@ final class TodayCaregiverFlowTests: XCTestCase {
             patientId: "patient-1",
             medicationId: "med-1",
             scheduledAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T04:00:00Z")),
+            takenAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T04:05:00Z")),
             effectiveStatus: .taken,
             recordedByType: .caregiver,
             medicationSnapshot: MedicationSnapshotDTO(
@@ -137,6 +138,7 @@ final class TodayCaregiverFlowTests: XCTestCase {
             patientId: "patient-1",
             medicationId: "med-1",
             scheduledAt: scheduledAt,
+            takenAt: nil,
             effectiveStatus: .missed,
             recordedByType: nil,
             medicationSnapshot: MedicationSnapshotDTO(
@@ -163,8 +165,26 @@ final class TodayCaregiverFlowTests: XCTestCase {
         }
         XCTAssertEqual(viewModel.items.first?.effectiveStatus, .taken)
         XCTAssertEqual(viewModel.items.first?.recordedByType, .caregiver)
+        XCTAssertEqual(viewModel.scrollToTopRequest, 1)
         XCTAssertFalse(viewModel.isUpdating)
         try await Task.sleep(for: .milliseconds(50))
+    }
+
+    func testOverviewShowsNoPlanInsteadOfTakenForEmptySlot() {
+        let state = CaregiverTodayOverviewState.resolve(statuses: [], isLate: false)
+
+        XCTAssertEqual(state, .noPlan)
+        XCTAssertEqual(state.iconName, "minus")
+    }
+
+    func testOverviewShowsTakenOnlyWhenScheduledDosesAreTaken() {
+        let state = CaregiverTodayOverviewState.resolve(
+            statuses: [.taken, .taken],
+            isLate: false
+        )
+
+        XCTAssertEqual(state, .taken)
+        XCTAssertEqual(state.iconName, "checkmark")
     }
 }
 
