@@ -83,6 +83,12 @@ struct RootView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .authFailure)) { _ in
+            #if DEBUG
+            guard !ProcessInfo.processInfo.arguments.contains(where: {
+                $0.hasPrefix("-CaregiverMarketingScreenshot.")
+                    || $0.hasPrefix("-PatientMarketingScreenshot.")
+            }) else { return }
+            #endif
             globalBannerPresenter.show(
                 message: NSLocalizedString("common.error.unexpected", comment: "Unexpected error"),
                 duration: 6

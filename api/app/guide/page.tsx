@@ -17,24 +17,25 @@ const sharingRows = [
 const patientScreenGuides = [
   {
     title: "「今日のお薬」画面",
-    summary: "次に飲む時間・お薬・1回量を確認し、飲んだことを記録する毎日の画面です。",
-    image: "/screenshots/patient-today.png",
+    summary: "今日の時間帯を一覧で見ながら、今飲むお薬と飲み遅れたお薬を確認・記録する画面です。",
+    image: "/screenshots/patient-today.png?v=20260726",
     alt: "本人モードの今日のお薬画面全体",
     steps: [
-      "次に飲む時間と、お薬の名前・1回量を確認します。",
-      "飲み終えたら、大きな「この時間のお薬を飲んだ」ボタンを押します。",
+      "朝・昼・夜・眠前の記録状況と、次に飲むお薬を確認します。",
+      "飲み終えたら「今飲んだ」ボタンを押します。記録には実際に押した時刻が残ります。",
+      "飲み遅れたお薬は「今日の記録」から、実際に飲んだ時に記録できます。",
       "痛い時などに飲む薬は「必要な時のお薬」から記録します。"
     ]
   },
   {
     title: "「履歴」画面",
-    summary: "今日と今週の記録状況を見て、飲めた日や未記録の予定を確認する画面です。",
-    image: "/screenshots/patient-history-demo.png",
+    summary: "今日と今週の記録に加えて、服薬記録を続けられた日数を確認する画面です。",
+    image: "/screenshots/patient-history-demo.png?v=20260726",
     alt: "本人モードの履歴画面全体",
     steps: [
       "画面下の「履歴」を押します。",
       "今日の進み具合と、残っている回数を確認します。",
-      "最近の記録から、日ごとの服薬状況を振り返ります。"
+      "「連続記録」と今週の記録日数から、日々の積み重ねを確認します。"
     ]
   },
   {
@@ -53,13 +54,13 @@ const patientScreenGuides = [
 const caregiverScreenGuides = [
   {
     title: "「今日」画面",
-    summary: "次に記録する時間と、今日どこまで服薬できたかを確認する画面です。",
-    image: "/screenshots/caregiver-today.png?v=20260718",
+    summary: "本人が飲めているか、飲み遅れや未記録がないかを時間帯ごとに確認する画面です。",
+    image: "/screenshots/caregiver-today.png?v=20260726",
     alt: "家族モードの今日の服薬画面全体",
     steps: [
-      "次に記録する時間と、未記録のお薬を確認します。",
-      "本人のそばにいる時は、同じ時間帯のお薬をまとめて代理記録できます。",
-      "進み具合の表示で、今日の記録済み回数を確認します。"
+      "今日の服薬状況で、朝・昼・夜・眠前の状態を確認します。",
+      "飲み遅れた場合は、予定時刻と実際の記録時刻を確認できます。",
+      "本人のそばにいる時は、未記録のお薬を「代理で記録」できます。"
     ]
   },
   {
@@ -85,14 +86,25 @@ const caregiverScreenGuides = [
     ]
   },
   {
+    title: "「在庫を編集」画面",
+    summary: "受け取ったお薬の補充と、数え直した残数への変更を目的別に行う画面です。",
+    image: "/screenshots/caregiver-inventory-detail.png?v=20260726",
+    alt: "家族モードの在庫を補充・編集する画面全体",
+    steps: [
+      "「薬を補充した」または「残数を数え直した」を選びます。",
+      "補充では7日分・14日分・21日分を選ぶか、錠数を直接入力します。",
+      "現在の在庫と変更後の在庫を確認してから反映します。"
+    ]
+  },
+  {
     title: "「履歴」画面",
-    summary: "記録済み・飲み忘れ・未記録を、カレンダーと日別の一覧で確認する画面です。",
-    image: "/screenshots/caregiver-history.png",
+    summary: "選んだ日の服薬を時間帯ごとにまとめ、予定時刻・実際の記録時刻・記録者を確認する画面です。",
+    image: "/screenshots/caregiver-history.png?v=20260726",
     alt: "家族モードの服薬履歴画面全体",
     steps: [
       "画面下の「履歴」を押します。",
       "カレンダーの日付を押して、その日の記録を表示します。",
-      "色分けを見ながら、記録済み・飲み忘れ・未記録を確認します。"
+      "時間帯を押すと、飲み遅れ・実際の記録時刻・その時間帯のお薬を確認できます。"
     ]
   },
   {
@@ -108,13 +120,13 @@ const caregiverScreenGuides = [
   },
   {
     title: "お薬の登録画面",
-    summary: "お薬の名前、1回量、飲む回数と時間を登録する画面です。",
-    image: "/screenshots/caregiver-medication-form.png",
+    summary: "お薬の名前・1回量・飲む時間・処方された日数を、順番に登録する画面です。",
+    image: "/screenshots/caregiver-medication-form.png?v=20260726",
     alt: "家族モードのお薬登録画面全体",
     steps: [
       "「薬」画面から新しいお薬の追加を選びます。",
       "お薬の名前・用量・1回量を入力します。",
-      "朝・昼・夜・眠前など、飲む時間を設定して保存します。"
+      "朝・昼・夜・眠前と日数を設定すると、登録時の在庫が自動計算されます。"
     ]
   }
 ];
@@ -180,14 +192,14 @@ export default function GuidePage() {
             <figure className="app-screenshot">
               <figcaption>本人モードの画面</figcaption>
               <img
-                src="/screenshots/patient-today.png"
+                src="/screenshots/patient-today.png?v=20260726"
                 alt="本人モードで次に飲むお薬を確認する実際の画面"
               />
             </figure>
             <figure className="app-screenshot family">
               <figcaption>家族モードの画面</figcaption>
               <img
-                src="/screenshots/caregiver-today.png?v=20260718"
+                src="/screenshots/caregiver-today.png?v=20260726"
                 alt="家族モードで今日の服薬を確認する実際の画面"
               />
             </figure>
@@ -215,7 +227,7 @@ export default function GuidePage() {
             </div>
             <figure className="step-shot family-shot">
               <img
-                src="/screenshots/caregiver-medication-form.png"
+                src="/screenshots/caregiver-medication-form.png?v=20260726"
                 alt="家族モードで新しいお薬の名前、用量、飲む回数を登録する実際の画面"
               />
               <figcaption>家族モードのお薬登録画面</figcaption>
@@ -257,7 +269,7 @@ export default function GuidePage() {
             </div>
             <figure className="step-shot">
               <img
-                src="/screenshots/patient-today.png"
+                src="/screenshots/patient-today.png?v=20260726"
                 alt="本人モードで今日飲むお薬を確認して記録する実際の画面"
               />
               <figcaption>本人モードの服薬確認・記録画面</figcaption>
@@ -285,9 +297,9 @@ export default function GuidePage() {
             <p className="section-label" style={{ color: "var(--orange)" }}>
               使い方 3｜家族モード
             </p>
-            <h2 className="section-title">6つの画面で、予定・記録・在庫を管理</h2>
+            <h2 className="section-title">7つの画面で、予定・記録・在庫を管理</h2>
             <p className="section-lead">
-              家族モードは「今日」「薬」「在庫」「履歴」「設定」と、お薬の登録画面を使います。確認する目的ごとに画面を切り替えます。
+              家族モードは「今日」「薬」「在庫」「履歴」「設定」と、お薬の登録・在庫編集画面を使います。確認する目的ごとに画面を切り替えます。
             </p>
           </header>
           <ScreenGuideGrid screens={caregiverScreenGuides} family />
