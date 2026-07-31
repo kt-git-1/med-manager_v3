@@ -416,6 +416,8 @@ private struct PatientTodayRootView: View {
 }
 
 private enum PatientTodayScrollTarget {
+    static let top = "PatientTodayScrollTop"
+
     static func nextSlot(_ slot: NotificationSlot) -> String {
         "nextSlot-\(slot.rawValue)"
     }
@@ -498,6 +500,15 @@ private struct PatientTodayBaseView: View {
                             proxy.scrollTo(target, anchor: .center)
                         }
                         pendingScrollTarget = nil
+                    }
+                    .onChange(of: viewModel.scrollToTopRequest) { previousValue, newValue in
+                        guard newValue > previousValue else { return }
+                        Task { @MainActor in
+                            await Task.yield()
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                proxy.scrollTo(PatientTodayScrollTarget.top, anchor: .top)
+                            }
+                        }
                     }
                 }
             }
@@ -633,6 +644,10 @@ private struct PatientTodayListView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
+                Color.clear
+                    .frame(height: 1)
+                    .id(PatientTodayScrollTarget.top)
+
                 PatientHeader(
                     title: NSLocalizedString("patient.readonly.today.title", comment: "Today title"),
                     subtitle: Self.weekdayFormatter.string(from: Date()),
