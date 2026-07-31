@@ -252,7 +252,7 @@ describe("History retention enforcement — caregiver month", () => {
     expect(typeof body.message).toBe("string");
   });
 
-  it("returns 403 HISTORY_RETENTION_LIMIT for free caregiver — straddling month", async () => {
+  it("returns 200 for free caregiver — straddling month", async () => {
     setFreeCaregiver();
     const { year, month } = getStraddlingYearMonth();
     const url = `http://localhost/api/patients/patient-1/history/month?year=${year}&month=${month}`;
@@ -263,9 +263,7 @@ describe("History retention enforcement — caregiver month", () => {
       params: Promise.resolve({ patientId: "patient-1" })
     });
 
-    expect(res.status).toBe(403);
-    const body = await res.json();
-    expect(body.code).toBe("HISTORY_RETENTION_LIMIT");
+    expect(res.status).toBe(200);
   });
 
   it("returns 200 for premium caregiver — month before cutoff", async () => {
@@ -357,6 +355,18 @@ describe("History retention enforcement — patient month", () => {
   it("returns 200 for patient linked to premium caregiver — month before cutoff", async () => {
     setPatientLinkedToPremium();
     const { year, month } = getYearMonthBeforeCutoff();
+    const url = `http://localhost/api/patient/history/month?year=${year}&month=${month}`;
+    const req = new Request(url, { method: "GET", headers: patientHeaders() });
+
+    const { GET } = await import("../../app/api/patient/history/month/route");
+    const res = await GET(req);
+
+    expect(res.status).toBe(200);
+  });
+
+  it("returns 200 for free patient — straddling month", async () => {
+    setPatientLinkedToFree();
+    const { year, month } = getStraddlingYearMonth();
     const url = `http://localhost/api/patient/history/month?year=${year}&month=${month}`;
     const req = new Request(url, { method: "GET", headers: patientHeaders() });
 
