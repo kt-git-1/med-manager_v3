@@ -98,7 +98,8 @@ const caregiverScreenGuides = [
   },
   {
     title: "「履歴」画面",
-    summary: "選んだ日の服薬を時間帯ごとにまとめ、予定時刻・実際の記録時刻・記録者を確認する画面です。",
+    summary:
+      "選んだ日の服薬を時間帯ごとにまとめ、予定時刻・実際の記録時刻・記録者を確認する画面です。",
     image: "/screenshots/caregiver-history.png?v=20260726",
     alt: "家族モードの服薬履歴画面全体",
     steps: [
