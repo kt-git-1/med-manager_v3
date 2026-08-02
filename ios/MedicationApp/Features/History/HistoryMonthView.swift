@@ -1,5 +1,15 @@
 import SwiftUI
 
+enum HistoryRetentionPresentationPolicy {
+    static func shouldPresentLock(
+        isLocked: Bool,
+        billingEnabled: Bool,
+        isCaregiverMonthLimitedToCurrent: Bool
+    ) -> Bool {
+        isLocked && billingEnabled && !isCaregiverMonthLimitedToCurrent
+    }
+}
+
 struct PatientHistoryAchievementPreview: View {
     private var isFirstDayPreview: Bool {
         ProcessInfo.processInfo.arguments.contains("-PatientHistoryAchievementPreview.firstDay")
@@ -534,11 +544,18 @@ struct HistoryMonthView: View {
             viewModel.loadDay(date: HistoryMonthView.dateKeyFormatter.string(from: date))
         }
         .onChange(of: viewModel.retentionLocked) { _, locked in
-            if locked && isCaregiverMonthLimitedToCurrent {
+            let shouldPresent = HistoryRetentionPresentationPolicy.shouldPresentLock(
+                isLocked: locked,
+                billingEnabled: AppConstants.billingEnabled,
+                isCaregiverMonthLimitedToCurrent: isCaregiverMonthLimitedToCurrent
+            )
+            if locked && !shouldPresent {
                 showRetentionLock = false
-                _ = clampDisplayedMonthIfNeeded(animated: true)
+                if isCaregiverMonthLimitedToCurrent {
+                    _ = clampDisplayedMonthIfNeeded(animated: true)
+                }
             } else {
-                showRetentionLock = locked
+                showRetentionLock = shouldPresent
             }
         }
         .fullScreenCover(isPresented: $showRetentionLock) {

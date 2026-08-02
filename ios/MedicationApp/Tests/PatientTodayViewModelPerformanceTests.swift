@@ -92,6 +92,7 @@ final class PatientTodayViewModelPerformanceTests: XCTestCase {
         XCTAssertFalse(viewModel.isUpdating)
         XCTAssertEqual(viewModel.items.first?.effectiveStatus, .taken)
         XCTAssertEqual(viewModel.items.first?.recordedByType, .patient)
+        XCTAssertEqual(viewModel.scrollToTopRequest, 1)
 
         // Let the deliberately slow background data refresh finish before teardown.
         try await Task.sleep(for: .seconds(1))

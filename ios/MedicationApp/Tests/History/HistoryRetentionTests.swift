@@ -7,6 +7,26 @@ import XCTest
 
 @MainActor
 final class HistoryRetentionTests: XCTestCase {
+    func testRetentionLockIsHiddenWhileBillingIsDisabled() {
+        XCTAssertFalse(
+            HistoryRetentionPresentationPolicy.shouldPresentLock(
+                isLocked: true,
+                billingEnabled: false,
+                isCaregiverMonthLimitedToCurrent: false
+            )
+        )
+    }
+
+    func testRetentionLockCanAppearAfterBillingIsEnabled() {
+        XCTAssertTrue(
+            HistoryRetentionPresentationPolicy.shouldPresentLock(
+                isLocked: true,
+                billingEnabled: true,
+                isCaregiverMonthLimitedToCurrent: false
+            )
+        )
+    }
+
 
     // MARK: - Cutoff Date Calculation
 

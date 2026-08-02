@@ -112,9 +112,9 @@ export async function checkRetentionForDay(
 
 /**
  * Checks retention for a month endpoint.
- * Computes the first day of the requested month (YYYY-MM-01).
- * If `firstDayOfMonth < cutoffDate` and the user is not premium, throws
- * HistoryRetentionError (MVP straddling rule: entire month is locked).
+ * A month is blocked only when its last day is before the cutoff date.
+ * Months that overlap the free retention window must remain available so the
+ * current month does not become inaccessible near the end of the month.
  */
 export async function checkRetentionForMonth(
   year: number,
@@ -123,10 +123,11 @@ export async function checkRetentionForMonth(
   sessionId: string
 ): Promise<void> {
   const cutoff = getCutoffDate();
-  const firstDayOfMonth = `${year}-${String(month).padStart(2, "0")}-01`;
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const lastDayOfMonth = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
-  if (firstDayOfMonth >= cutoff) {
-    return; // month starts on or after cutoff — allowed
+  if (lastDayOfMonth >= cutoff) {
+    return; // at least part of the month is within the allowed range
   }
 
   const premium =

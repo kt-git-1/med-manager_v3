@@ -16,6 +16,7 @@ final class PatientTodayViewModel: ObservableObject {
     @Published var outOfStockMedicationIds: Set<String> = []
     @Published var insufficientInventoryMedicationIds: Set<String> = []
     @Published var confirmSlot: NotificationSlot?
+    @Published private(set) var scrollToTopRequest = 0
 
     private let apiClient: APIClient
     private let nowProvider: () -> Date
@@ -115,6 +116,7 @@ final class PatientTodayViewModel: ObservableObject {
                     )
                 )
                 markDosesRecorded([dose])
+                requestScrollToTop()
                 AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
                 showToast(NSLocalizedString("patient.today.recorded", comment: "Recorded"))
                 refreshNotificationsAfterScheduledDoseRecord()
@@ -158,6 +160,7 @@ final class PatientTodayViewModel: ObservableObject {
                 notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("patient.today.prn.recorded", comment: "PRN recorded"))
                 onSuccess()
+                requestScrollToTop()
                 refreshAfterMutationInBackground()
             } catch {
                 showToastMessage(for: error)
@@ -362,6 +365,9 @@ final class PatientTodayViewModel: ObservableObject {
                     // includes counts, not the medication IDs that were recorded.
                     try await refreshTodayData()
                 }
+                if result.updatedCount > 0 {
+                    requestScrollToTop()
+                }
             } catch {
                 showToastMessage(for: error)
             }
@@ -379,6 +385,10 @@ final class PatientTodayViewModel: ObservableObject {
 
     private func notifyDoseRecordsUpdated() {
         NotificationCenter.default.post(name: .doseRecordsUpdated, object: nil)
+    }
+
+    private func requestScrollToTop() {
+        scrollToTopRequest += 1
     }
 
     private func refreshAfterMutationInBackground() {
