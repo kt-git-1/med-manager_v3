@@ -96,9 +96,17 @@ final class PatientManagementViewModel: ObservableObject {
                 isPatientLimitExceeded = true
                 return false
             }
+            AnalyticsService.shared.logCoreActionFailed(
+                .caregiverPatientCreated,
+                reason: AnalyticsService.failureReason(for: error)
+            )
             errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
             return false
         } catch {
+            AnalyticsService.shared.logCoreActionFailed(
+                .caregiverPatientCreated,
+                reason: AnalyticsService.failureReason(for: error)
+            )
             errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
             return false
         }
@@ -109,6 +117,10 @@ final class PatientManagementViewModel: ObservableObject {
             issuedCode = try await apiClient.issueLinkingCode(patientId: patientId)
             AnalyticsService.shared.logCoreActionCompleted(.linkCodeIssued)
         } catch {
+            AnalyticsService.shared.logCoreActionFailed(
+                .linkCodeIssued,
+                reason: AnalyticsService.failureReason(for: error)
+            )
             errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
         }
     }

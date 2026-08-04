@@ -69,6 +69,11 @@ struct PatientLinkCodeView: View {
                     }
                 )
                 .buttonStyle(.plain)
+                .simultaneousGesture(
+                    TapGesture().onEnded {
+                        AnalyticsService.shared.logPatientLinkCodeShareTapped()
+                    }
+                )
             }
 
             // Expiration

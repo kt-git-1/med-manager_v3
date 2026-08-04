@@ -449,11 +449,16 @@ struct CaregiverHomeView: View {
     }
 
     private func requestNotificationAuthorization() async -> Bool {
-        await withCheckedContinuation { continuation in
-            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-                continuation.resume(returning: granted)
+        let outcome: (granted: Bool, unavailable: Bool) = await withCheckedContinuation { continuation in
+            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+                continuation.resume(returning: (granted, error != nil))
             }
         }
+        AnalyticsService.shared.logNotificationPermissionResult(
+            outcome.unavailable ? .unavailable : (outcome.granted ? .authorized : .denied),
+            surface: .notifications
+        )
+        return outcome.granted
     }
 
     private func registerCaregiverPushDeviceIfPossible() async {
