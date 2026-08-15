@@ -8,6 +8,7 @@ data class NextSlotCandidate(
     val remainingCount: Int,
     val isWithinRecordingWindow: Boolean,
     val hasRecordableInventory: Boolean,
+    val isLate: Boolean = false,
 )
 
 object PatientTodayNextSlotSelector {
@@ -16,7 +17,8 @@ object PatientTodayNextSlotSelector {
             .filter { candidate ->
                 candidate.remainingCount > 0 &&
                     candidate.hasRecordableInventory &&
-                    (candidate.isWithinRecordingWindow || !candidate.scheduledAt.isBefore(now))
+                    (!candidate.scheduledAt.isBefore(now) ||
+                        (candidate.isWithinRecordingWindow && !candidate.isLate))
             }
             .minByOrNull(NextSlotCandidate::scheduledAt)
             ?.slot

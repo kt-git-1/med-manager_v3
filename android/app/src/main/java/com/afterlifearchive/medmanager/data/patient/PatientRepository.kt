@@ -56,6 +56,7 @@ enum class PatientMaintenanceWarning {
 class PatientRepository(
     private val api: PatientDataSource,
     private val freshnessStore: MutationFreshnessStore = MutationFreshnessStore(),
+    private val nowProvider: () -> Instant = Instant::now,
 ) {
     private val mutableState = MutableStateFlow(PatientUiState())
     val state: StateFlow<PatientUiState> = mutableState.asStateFlow()
@@ -189,8 +190,9 @@ class PatientRepository(
         return runCatching { api.recordDose(dose) }
             .fold(
                 onSuccess = {
+                    val takenAt = nowProvider()
                     val updated = mutableState.value.doses.map {
-                        if (it.key == dose.key) it.copy(status = DoseStatus.TAKEN) else it
+                        if (it.key == dose.key) it.copy(status = DoseStatus.TAKEN, takenAt = takenAt) else it
                     }
                     mutableState.value = mutableState.value.copy(
                         doses = updated,
@@ -213,6 +215,7 @@ class PatientRepository(
         return runCatching { api.recordSlot(date.toString(), slot) }
             .fold(
                 onSuccess = { result ->
+                    val takenAt = nowProvider()
                     val message = when {
                         result.updatedCount > 0 && result.insufficientCount > 0 -> PatientUserMessage.SlotPartial(result.updatedCount, result.insufficientCount)
                         result.insufficientCount > 0 -> PatientUserMessage.InventoryInsufficient
@@ -221,7 +224,7 @@ class PatientRepository(
                     }
                     val updated = mutableState.value.doses.map { dose ->
                         if (result.updatedCount > 0 && dose.slot == slot && dose.status != DoseStatus.TAKEN && !mutableState.value.insufficientMedicationIds.contains(dose.medicationId)) {
-                            dose.copy(status = DoseStatus.TAKEN)
+                            dose.copy(status = DoseStatus.TAKEN, takenAt = takenAt)
                         } else dose
                     }
                     mutableState.value = mutableState.value.copy(doses = updated, updatingSlot = null, message = message)
@@ -283,8 +286,9 @@ class PatientRepository(
                     slot = slot,
                     scheduledAt = scheduledAt,
                     remainingCount = remaining.size,
-                    isWithinRecordingWindow = now >= scheduledAt.minusSeconds(30 * 60) && now <= scheduledAt.plusSeconds(60 * 60),
+                    isWithinRecordingWindow = MedicationRecordingPolicy.isRecordable(scheduledAt, now),
                     hasRecordableInventory = remaining.any { !state.insufficientMedicationIds.contains(it.medicationId) },
+                    isLate = MedicationRecordingPolicy.isLate(scheduledAt, now),
                 )
             },
             now,

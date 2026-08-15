@@ -227,8 +227,9 @@ class CaregiverTodayRepository(
         mutableState.value = current.copy(updatingDoseKey = dose.key, mutationError = null, mutationMessage = null)
         return try {
             dataSource.recordDose(patientId, dose)
+            val takenAt = now()
             val updated = mutableState.value.doses.map {
-                if (it.key == dose.key) it.copy(status = DoseStatus.TAKEN, recordedByType = RecordedByType.CAREGIVER) else it
+                if (it.key == dose.key) it.copy(status = DoseStatus.TAKEN, recordedByType = RecordedByType.CAREGIVER, takenAt = takenAt) else it
             }.sortedWith(doseComparator)
             mutableState.value = mutableState.value.copy(
                 doses = updated,
@@ -259,7 +260,7 @@ class CaregiverTodayRepository(
                 DoseStatus.PENDING
             }
             val updated = mutableState.value.doses.map {
-                if (it.key == dose.key) it.copy(status = restoredStatus, recordedByType = null) else it
+                if (it.key == dose.key) it.copy(status = restoredStatus, recordedByType = null, takenAt = null) else it
             }.sortedWith(doseComparator)
             mutableState.value = mutableState.value.copy(
                 doses = updated,
@@ -293,12 +294,13 @@ class CaregiverTodayRepository(
         )
         return try {
             val result = dataSource.recordSlot(patientId, date, slot)
+            val takenAt = now()
             val locallyRecordableKeys = candidates
                 .filterNot { it.medicationId in current.outOfStockMedicationIds }
                 .take(result.updatedCount)
                 .mapTo(mutableSetOf(), PatientDose::key)
             val updated = mutableState.value.doses.map {
-                if (it.key in locallyRecordableKeys) it.copy(status = DoseStatus.TAKEN, recordedByType = RecordedByType.CAREGIVER) else it
+                if (it.key in locallyRecordableKeys) it.copy(status = DoseStatus.TAKEN, recordedByType = RecordedByType.CAREGIVER, takenAt = takenAt) else it
             }.sortedWith(doseComparator)
             val message = when {
                 result.updatedCount > 0 && result.insufficientCount > 0 -> CaregiverTodayMutationMessage.SLOT_PARTIAL

@@ -79,12 +79,14 @@ class PatientRepositoryTest {
     fun recordingDoseUpdatesVisibleStatusWithoutWaitingForReload() = runTest {
         val source = FakePatientDataSource()
         val freshness = MutationFreshnessStore()
-        val repository = PatientRepository(source, freshness)
+        val takenAt = Instant.parse("2026-07-13T08:51:00Z")
+        val repository = PatientRepository(source, freshness, nowProvider = { takenAt })
         repository.loadToday()
 
         repository.record(repository.state.value.doses.single())
 
         assertEquals(DoseStatus.TAKEN, repository.state.value.doses.single().status)
+        assertEquals(takenAt, repository.state.value.doses.single().takenAt)
         assertEquals(PatientUserMessage.DoseRecorded, repository.state.value.message)
         assertEquals(1, source.recordCount)
         assertEquals(1, freshness.revisions.value.dose)
@@ -124,12 +126,14 @@ class PatientRepositoryTest {
     fun partialBulkSuccessOnlyMarksRecordableMedicationTaken() = runTest {
         val source = PartialBulkPatientDataSource()
         val freshness = MutationFreshnessStore()
-        val repository = PatientRepository(source, freshness)
+        val takenAt = Instant.parse("2026-07-13T08:51:00Z")
+        val repository = PatientRepository(source, freshness, nowProvider = { takenAt })
         repository.loadToday()
 
         repository.recordSlot(MedicationSlot.MORNING, java.time.LocalDate.parse("2026-07-13"))
 
         assertEquals(DoseStatus.TAKEN, repository.state.value.doses.first { it.medicationId == "enough" }.status)
+        assertEquals(takenAt, repository.state.value.doses.first { it.medicationId == "enough" }.takenAt)
         assertEquals(DoseStatus.PENDING, repository.state.value.doses.first { it.medicationId == "short" }.status)
         assertEquals(PatientUserMessage.SlotPartial(1, 1), repository.state.value.message)
         assertNull(repository.state.value.updatingSlot)

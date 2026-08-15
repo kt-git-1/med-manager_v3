@@ -22,6 +22,32 @@ class PatientTodayNextSlotSelectorTest {
     }
 
     @Test
+    fun lateRecordableSlotDoesNotDisplaceUpcomingSlot() {
+        val selected = PatientTodayNextSlotSelector.select(
+            listOf(
+                candidate(MedicationSlot.NOON, "2026-06-08T04:00:00Z", withinWindow = true, late = true),
+                candidate(MedicationSlot.EVENING, "2026-06-08T12:00:00Z"),
+            ),
+            now,
+        )
+
+        assertEquals(MedicationSlot.EVENING, selected)
+    }
+
+    @Test
+    fun currentSlotRemainsNextUntilOneHourLateThreshold() {
+        val selected = PatientTodayNextSlotSelector.select(
+            listOf(
+                candidate(MedicationSlot.NOON, "2026-06-08T09:30:00Z", withinWindow = true, late = false),
+                candidate(MedicationSlot.EVENING, "2026-06-08T12:00:00Z"),
+            ),
+            now,
+        )
+
+        assertEquals(MedicationSlot.NOON, selected)
+    }
+
+    @Test
     fun skipsPastClosedSlotAndSelectsFutureSlot() {
         val selected = PatientTodayNextSlotSelector.select(
             listOf(
@@ -66,5 +92,6 @@ class PatientTodayNextSlotSelectorTest {
         remaining: Int = 1,
         withinWindow: Boolean = false,
         inventory: Boolean = true,
-    ) = NextSlotCandidate(slot, Instant.parse(at), remaining, withinWindow, inventory)
+        late: Boolean = false,
+    ) = NextSlotCandidate(slot, Instant.parse(at), remaining, withinWindow, inventory, late)
 }

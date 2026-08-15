@@ -53,6 +53,20 @@ class PatientApiContractTest {
     }
 
     @Test
+    fun todayParsesActualTakenTimeForLateDosePresentation() = runTest {
+        val fixture = TODAY_FIXTURE.replace(
+            "\"effectiveStatus\":\"missed\"",
+            "\"takenAt\":\"2026-07-13T08:51:00Z\",\"effectiveStatus\":\"taken\"",
+        )
+        val api = PatientApi(ApiClient("https://example.test/", { null }, transport = ContractTransport(HttpResponse(200, fixture))))
+
+        val dose = api.today().single()
+
+        assertEquals(DoseStatus.TAKEN, dose.status)
+        assertEquals(Instant.parse("2026-07-13T08:51:00Z"), dose.takenAt)
+    }
+
+    @Test
     fun todayIgnoresForwardCompatibleUnknownFields() = runTest {
         val fixture = TODAY_FIXTURE
             .replace("{\"data\"", "{\"futureTopLevel\":true,\"data\"")
@@ -192,6 +206,7 @@ class PatientApiContractTest {
         assertEquals(RecordedByType.CAREGIVER, detail.doses.single().recordedByType)
         assertEquals(MedicationSlot.NOON, detail.doses.single().slot)
         assertEquals(DoseStatus.TAKEN, detail.doses.single().status)
+        assertEquals(Instant.parse("2026-07-13T08:51:00Z"), detail.doses.single().takenAt)
         assertEquals(PrnActorType.PATIENT, detail.prnItems.single().actorType)
         assertEquals(1.5, detail.prnItems.single().quantityTaken, 0.0)
         assertTrue(transport.requests.single().url.endsWith("/api/patient/history/day?date=2026-07-13"))
@@ -211,7 +226,7 @@ class PatientApiContractTest {
         const val MEDICATIONS_FIXTURE = """{"data":[{"id":"medication-1","patientId":"patient-1","name":"頓服薬","dosageText":"1回1錠","doseCountPerIntake":1.0,"dosageStrengthValue":10.0,"dosageStrengthUnit":"mg","notes":null,"isPrn":true,"prnInstructions":"痛い時","startDate":"2026-07-01T00:00:00Z","endDate":null,"inventoryCount":0.5,"inventoryUnit":"錠","inventoryEnabled":true,"inventoryQuantity":0.5,"inventoryOut":true,"isActive":true,"isArchived":false,"nextScheduledAt":null,"regimenTimes":["07:30","18:45"],"regimenDaysOfWeek":["MON","WED"]}]}"""
         const val BULK_FIXTURE = """{"updatedCount":2,"remainingCount":1,"insufficientCount":1,"totalPills":3.5,"medCount":3,"slotTime":"12:15","slotSummary":{"morning":"taken","noon":"pending","evening":"none","bedtime":"none"},"recordingGroupId":"group-1"}"""
         const val HISTORY_MONTH_FIXTURE = """{"year":2026,"month":7,"days":[{"date":"2026-07-13","slotSummary":{"morning":"taken","noon":"missed","evening":"pending","bedtime":"none"}}],"prnCountByDay":{"2026-07-13":2}}"""
-        const val HISTORY_DAY_FIXTURE = """{"date":"2026-07-13","doses":[{"medicationId":"med-1","medicationName":"血圧薬","dosageText":"1錠","doseCountPerIntake":1.0,"scheduledAt":"2026-07-13T03:15:00Z","slot":"noon","effectiveStatus":"taken","recordedByType":"caregiver"}],"prnItems":[{"medicationId":"prn-1","medicationName":"頭痛薬","takenAt":"2026-07-13T05:00:00Z","quantityTaken":1.5,"actorType":"patient"}]}"""
+        const val HISTORY_DAY_FIXTURE = """{"date":"2026-07-13","doses":[{"medicationId":"med-1","medicationName":"血圧薬","dosageText":"1錠","doseCountPerIntake":1.0,"scheduledAt":"2026-07-13T03:15:00Z","takenAt":"2026-07-13T08:51:00Z","slot":"noon","effectiveStatus":"taken","recordedByType":"caregiver"}],"prnItems":[{"medicationId":"prn-1","medicationName":"頭痛薬","takenAt":"2026-07-13T05:00:00Z","quantityTaken":1.5,"actorType":"patient"}]}"""
     }
 }
 

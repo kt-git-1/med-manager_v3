@@ -73,6 +73,7 @@ data class PatientDose(
     val dosageStrengthUnit: String = "",
     val notes: String? = null,
     val slot: MedicationSlot? = null,
+    val takenAt: Instant? = null,
 )
 
 data class PatientMedication(
@@ -134,6 +135,7 @@ data class HistoryScheduledDose(
     val slot: MedicationSlot,
     val status: DoseStatus,
     val recordedByType: RecordedByType?,
+    val takenAt: Instant? = null,
 )
 
 enum class PrnActorType { PATIENT, CAREGIVER }
