@@ -1,6 +1,6 @@
 # Android Port Master Development Plan
 
-**Status:** iOS 1.0.6 parity rebaseline in progress
+**Status:** iOS 1.0.6 emulator parity complete; physical/release gates open
 **Development branch:** `android-dev`
 **Reference:** published iOS 1.0.6 Build 51, `main@432b34c`
 **Stack:** Kotlin, Jetpack Compose, Material 3
@@ -69,7 +69,7 @@ Every slice follows this order:
 
 ### R0 — Baseline integrity and regression repair
 
-Goal: keep the Android foundation conformant with the explicitly pinned `main@3e52fb2` product contract before release verification.
+Goal: keep the Android foundation conformant with the explicitly pinned published `main@432b34c` product contract before release verification.
 
 1. Add explicit per-request auth policies; make link exchange public/no-auth and non-invalidating.
 2. Add link-error localization fixtures and canonical UI mapping.
@@ -161,10 +161,10 @@ This is a verification/repair phase, not a declaration that earlier code is auto
 5. Data safety and health-app declarations
 6. Signed internal/closed test, feedback repair and rollout plan
 
-### Current checkpoint — C60 (2026-07-16)
+### Current checkpoint — C62 (2026-08-15)
 
-- R0–C4 and the automated portion of X1 are implemented against `main@3e52fb2`.
-- Current iOS/Android emulator-verifiable UI states are recorded through C56; C57 passes the complete 259-test suite on API 26/33/35, and C58 revalidates current post-record behavior.
+- R0–C4 and the automated portion of X1 are implemented against published `main@432b34c`.
+- C62 reopens the initial C61 conclusion with a direct source audit and closes the remaining expandable History, Today summary, medication form, inventory and synthetic tutorial-sample gaps. The current suite passes 202/202 JVM tests, Lint and 267/267 UI tests on API 26/33/35.
 - The repeatable privacy-first Firebase procedure is `firebase-analytics.md`; live Console evidence still requires the four Android Firebase values and a physical device.
 - The physical release procedure is `physical-device-matrix.md`; its row-level evidence still requires old-supported, current-reference and non-Google OEM targets plus the exact signed Play Internal artifact.
 - V1 remains open for physical-device/Doze/TalkBack/OEM evidence, a release-owner signed AAB, Play Internal/Closed testing, Console declarations and the final pre-merge main rebaseline.

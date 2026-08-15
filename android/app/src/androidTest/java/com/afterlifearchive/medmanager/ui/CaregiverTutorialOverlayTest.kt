@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -60,6 +61,10 @@ class CaregiverTutorialOverlayTest {
         }
 
         composeRule.onNodeWithText("今日の予定を確認").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-tutorial-sample").assertIsDisplayed()
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("血圧の薬", substring = true).fetchSemanticsNodes().isNotEmpty()
+        }
         composeRule.onNodeWithTag("caregiver-tutorial-next").performClick()
         composeRule.onNodeWithText("薬を登録・編集").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-content-medications").assertIsDisplayed()

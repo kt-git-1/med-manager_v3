@@ -98,6 +98,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.hideFromAccessibility
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -151,13 +152,14 @@ fun CaregiverHomeScreen(
     onAccountDeleted: () -> Unit = {},
     tutorialEnabled: Boolean = true,
     requestNotificationPermission: (() -> Unit)? = null,
+    initialTab: CaregiverTab = CaregiverTab.TODAY,
 ) {
     val state by repository.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val tutorialPreferences = remember { context.getSharedPreferences("caregiver_tutorial", Context.MODE_PRIVATE) }
-    var selectedTabName by rememberSaveable { mutableStateOf(CaregiverTab.TODAY.name) }
-    var loadedTabNames by rememberSaveable { mutableStateOf(setOf(CaregiverTab.TODAY.name)) }
+    var selectedTabName by rememberSaveable { mutableStateOf(initialTab.name) }
+    var loadedTabNames by rememberSaveable { mutableStateOf(setOf(initialTab.name)) }
     var tutorialStep by rememberSaveable {
         mutableStateOf(if (tutorialEnabled && !tutorialPreferences.getBoolean("seen", false)) 0 else -1)
     }
@@ -203,7 +205,10 @@ fun CaregiverHomeScreen(
     }
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Column(Modifier.fillMaxSize().safeDrawingPadding().testTag("caregiver-home")) {
+        Column(
+            Modifier.fillMaxSize().safeDrawingPadding().testTag("caregiver-home")
+                .then(if (tutorialStep >= 0) Modifier.clearAndSetSemantics { } else Modifier),
+        ) {
             if (state.refreshFailed) {
                 CaregiverStaleDataCard(
                     testTag = "caregiver-patient-stale",
@@ -260,6 +265,11 @@ fun CaregiverHomeScreen(
                         modifier = Modifier.testTag("caregiver-tab-${tab.name.lowercase()}"),
                     )
                 }
+            }
+        }
+        if (tutorialStep >= 0) {
+            Box(Modifier.fillMaxSize().testTag("caregiver-tutorial-sample")) {
+                CaregiverModePreview(initialTab = caregiverTutorialTab(tutorialStep))
             }
         }
         if (tutorialStep >= 0) {

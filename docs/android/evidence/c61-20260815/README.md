@@ -15,6 +15,10 @@
 - `2b36337`: enforced strict patient slot-time ordering.
 - `d9696f7`: added the published medication supply calculator.
 - `f5811fa`: matched the published action-first inventory editor.
+- `6a1d1f2`: replaced Patient History summary-only cards with the published expandable inline detail.
+- `9f6b1c6`: matched the published compact Patient Today and exact Caregiver Today summaries plus grouped Caregiver History.
+- `74c3d1f`: matched the published medication registration flow.
+- C62 working checkpoint: completed the direct source audit with published medication defaults, inventory detail styling/reachability and canonical synthetic Patient/Caregiver tutorial sample layers.
 
 ## Implemented contract
 
@@ -32,13 +36,13 @@
 | Gate | Result |
 |---|---|
 | API contract and typecheck | 322 tests passed at the C61 baseline |
-| Android JVM unit tests | passed |
+| Android JVM unit tests | 202/202 passed |
 | Android Lint | passed |
-| API 35 instrumentation | 265/265 passed |
-| API 33 instrumentation | 265/265 passed |
-| API 26 instrumentation | 265/265 passed |
+| API 35 instrumentation | 267/267 passed |
+| API 33 instrumentation | 267/267 passed |
+| API 26 instrumentation | 267/267 passed |
 
-The cross-API run also removed test-clock drift by explicitly loading each fixed history fixture month, and made compact-height tests scroll to lazy inventory settings before interaction. These are test-harness corrections; they do not relax production behavior.
+The post-C61 run also exposed and removed API 26 timing assumptions around lazy medication schedules, keyboard-covered inventory confirmation and PDF validation. The tests now wait for authoritative Compose state and explicitly dismiss the IME where appropriate; production inventory detail also applies IME padding so actions remain reachable.
 
 All fixtures use synthetic patients, medication names and timestamps. No identity, token or production medical data is stored in this evidence.
 

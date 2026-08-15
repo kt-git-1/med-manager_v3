@@ -1,6 +1,7 @@
 package com.afterlifearchive.medmanager.ui
 
 import android.app.Activity
+import android.view.KeyEvent
 import android.os.SystemClock
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
@@ -39,6 +40,7 @@ import org.junit.Assert.assertTrue
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.CompletableDeferred
 import androidx.core.view.WindowCompat
+import androidx.test.platform.app.InstrumentationRegistry
 
 class CaregiverInventoryScreenTest {
     @get:Rule
@@ -391,9 +393,12 @@ class CaregiverInventoryScreenTest {
         composeRule.onNodeWithTag("inventory-refill-amount").performTextReplacement("5")
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("inventory-refill-amount").assertTextEquals("5")
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+        composeRule.waitForIdle()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-refill"))
         composeRule.onNodeWithTag("inventory-refill").assertIsDisplayed()
         composeRule.onNodeWithTag("inventory-refill").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("inventory-refill-confirm").fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag("inventory-refill-confirm").assertIsDisplayed()
         composeRule.onNodeWithTag("inventory-refill-confirm").performClick()
         composeRule.waitUntil(10_000) { composeRule.onAllNodesWithTag("caregiver-inventory-detail").fetchSemanticsNodes().isEmpty() }
@@ -407,8 +412,11 @@ class CaregiverInventoryScreenTest {
         composeRule.onNodeWithTag("inventory-action-correction").performClick()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction-quantity"))
         composeRule.onNodeWithTag("inventory-correction-quantity").performTextReplacement("4")
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+        composeRule.waitForIdle()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction"))
         composeRule.onNodeWithTag("inventory-correction").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("inventory-correction-confirm").fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithText("在庫を4個に変更しますか？（補充ではなく修正です）").assertIsDisplayed()
         composeRule.onNodeWithTag("inventory-correction-confirm").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-list").fetchSemanticsNodes().isNotEmpty() }

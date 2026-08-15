@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -483,7 +484,7 @@ private fun CaregiverInventoryDetail(
     val correction = correctionText.toDoubleOrNull()
     val detailStatus = inventoryDetailStatus(item, inventoryEnabled)
     val tint = inventoryDetailStatusTint(detailStatus)
-    val headerAccent = if (detailStatus == InventoryDetailStatus.LOW || detailStatus == InventoryDetailStatus.OUT) MedicationTheme.colors.caregiverRed else MaterialTheme.colorScheme.primary
+    val headerAccent = if (detailStatus == InventoryDetailStatus.LOW || detailStatus == InventoryDetailStatus.OUT) MedicationTheme.colors.orange else MaterialTheme.colorScheme.primary
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).testTag("caregiver-inventory-detail")) {
         Box(Modifier.fillMaxWidth().height(58.dp).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
@@ -504,7 +505,7 @@ private fun CaregiverInventoryDetail(
         }
 
         LazyColumn(
-            Modifier.weight(1f).padding(horizontal = 16.dp).testTag("caregiver-inventory-detail-scroll"),
+            Modifier.weight(1f).padding(horizontal = 16.dp).imePadding().testTag("caregiver-inventory-detail-scroll"),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
         item {
@@ -876,9 +877,9 @@ private fun InventoryPresetButton(title: String, selected: Boolean, onClick: () 
     TextButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.height(38.dp).clip(CircleShape).background(if (selected) MedicationTheme.colors.caregiverBlue else MedicationTheme.colors.caregiverBlue.copy(alpha = 0.12f)).semantics { this.selected = selected },
+        modifier = modifier.height(38.dp).clip(CircleShape).background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)).semantics { this.selected = selected },
     ) {
-        Text(title, color = if (selected) Color.White else MedicationTheme.colors.caregiverBlue, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold)
+        Text(title, color = if (selected) Color.White else MaterialTheme.colorScheme.primary, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold)
     }
 }
 

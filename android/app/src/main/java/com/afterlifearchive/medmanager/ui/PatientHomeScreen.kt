@@ -373,6 +373,7 @@ fun PatientHomeScreen(
     }
 
     Scaffold(
+        modifier = if (tutorialStep >= 0) Modifier.clearAndSetSemantics { } else Modifier,
         containerColor = PatientBackground,
         bottomBar = {
             PatientBottomTabBar(selectedTab = tab, onSelect = navigation::selectTab)
@@ -529,6 +530,17 @@ fun PatientHomeScreen(
                 loading = state.detailLoading,
                 error = state.detailError,
                 onRetry = { scope.launch { repository.loadDoseDetail(dose.medicationId) } },
+            )
+        }
+    }
+    if (tutorialStep >= 0) {
+        Box(Modifier.fillMaxSize().testTag("patient-tutorial-sample")) {
+            PatientModePreview(
+                initialTab = when (tutorialStep) {
+                    1 -> PatientTab.HISTORY
+                    2 -> PatientTab.SETTINGS
+                    else -> PatientTab.TODAY
+                },
             )
         }
     }

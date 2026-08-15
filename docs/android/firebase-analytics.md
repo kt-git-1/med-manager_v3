@@ -2,7 +2,7 @@
 
 **Status:** implementation and automated privacy gates complete; live Firebase/physical-device evidence pending
 **Package:** `com.afterlifearchive.medmanager`
-**Source baseline:** `main@3e52fb2`
+**Source baseline:** published app baseline `main@432b34c`; privacy-first Analytics contract retained from the pre-publication Android plan
 **Owner gate:** H07 / `XP-004`
 
 This is the canonical procedure for validating the Android Analytics transport. It does not authorize adding Firebase values to Git, enabling collection without consent, or logging health/identity data. Console screenshots are evidence only when they show the exact build and event contract below.

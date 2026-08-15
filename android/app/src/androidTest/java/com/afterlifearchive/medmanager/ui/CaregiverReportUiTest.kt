@@ -3,6 +3,7 @@ package com.afterlifearchive.medmanager.ui
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
+import android.view.KeyEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.platform.app.InstrumentationRegistry
 import com.afterlifearchive.medmanager.CaregiverPdfReportGenerator
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryReport
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverReportDataSource
@@ -68,6 +70,11 @@ class CaregiverReportUiTest {
         composeRule.onNodeWithTag("caregiver-pdf-preset-picker").performClick()
         composeRule.onNodeWithTag("caregiver-pdf-preset-custom").performClick()
         composeRule.onNodeWithTag("caregiver-pdf-to").performTextReplacement(LocalDate.now(TOKYO).plusDays(1).toString())
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+        composeRule.waitForIdle()
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithTag("caregiver-pdf-validation").fetchSemanticsNodes().isNotEmpty()
+        }
         composeRule.onNodeWithTag("caregiver-pdf-validation").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("終了日は今日以前を指定してください").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-pdf-generate").performScrollTo().assertIsNotEnabled()

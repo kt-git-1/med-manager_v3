@@ -98,6 +98,10 @@ C61 merged the complete published source into `android-dev`; it did not copy iso
 | Caregiver push routing | Select the payload's linked patient before opening the exact destination. Scheduled-dose push copy keeps the time-slot label even when late. | Verified: the strict payload route selects the linked patient before opening exact History date/slot; API push copy remains server-authoritative. |
 | History availability | Current history remains reachable without a billing prompt under the initial billing-off release policy. | Verified in the billing-off cross-API regression. |
 
+### C62 corrective source-level audit
+
+The first C61 conclusion was reopened after direct Swift/Kotlin comparison showed that several Android tests still asserted older layouts. The corrective audit replaced those assumptions with the published expandable Patient History, compact Patient Today and exact Caregiver Today summaries, grouped Caregiver History, blank new-medication dose-count default, inventory detail colors and synthetic tutorial sample screens. The final matrix passes 202/202 JVM tests, Lint and 267/267 instrumentation tests on API 26, 33 and 35.
+
 The later staging-only privacy-safe Analytics change and Build 52 are not part of this published baseline and must enter through a future explicit rebaseline if released.
 
 ## 5. Rebaseline procedure
@@ -121,5 +125,5 @@ Run this procedure whenever API or iOS behavior changes on `main`.
 - [x] The main delta was reviewed across API, iOS, and tests.
 - [x] Runtime/spec conflicts are explicitly identified.
 - [x] All affected Android contract tests have been updated for actual-time/late-dose behavior, slot ordering, medication supply calculation, action-first inventory editing and patient-first push routing.
-- [x] All affected emulator-verifiable Android implementation rows passed JVM/Lint plus 265/265 UI tests on API 26, 33 and 35. Physical/TalkBack/OEM evidence remains the separate V01 gate.
+- [x] All affected emulator-verifiable Android implementation rows passed 202/202 JVM tests, Lint and 267/267 UI tests on API 26, 33 and 35 after the C62 corrective source-level audit. Physical/TalkBack/OEM evidence remains the separate V01 gate.
 - [x] Current iOS source/runtime references have been captured for every emulator-verifiable scoped state through C37–C56; physical/TalkBack/OEM variants remain an explicit V1 gate.

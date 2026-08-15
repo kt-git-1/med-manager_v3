@@ -9,6 +9,11 @@ import org.junit.Test
 class CaregiverMedicationFormTest {
 
     @Test
+    fun newMedicationUsesThePublishedEmptyDoseField() {
+        assertEquals("", CaregiverMedicationDraft().doseCountPerIntake)
+    }
+
+    @Test
     fun dailySupplyDaysCalculateInitialInventory() {
         val draft = CaregiverMedicationDraft(
             doseCountPerIntake = "1.5",

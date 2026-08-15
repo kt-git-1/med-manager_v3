@@ -254,6 +254,7 @@ class CaregiverMedicationScreenTest {
     fun scheduledSupplyDaysCalculateEditableInitialInventory() {
         setContent(emptyList(), slotTimes = iosDefaultSlotTimes())
         composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
+        composeRule.onNodeWithTag("medication-dose-count").performTextInput("1")
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-slot-morning"))
         composeRule.onNodeWithTag("medication-slot-morning").performClick()
         composeRule.onNodeWithTag("medication-slot-evening").performClick()
@@ -294,6 +295,8 @@ class CaregiverMedicationScreenTest {
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-frequency-weekly"))
         composeRule.onNodeWithTag("medication-frequency-weekly").performClick()
         composeRule.onNodeWithTag("medication-day-mon").performClick()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-slot-morning"))
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("medication-slot-morning").fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag("medication-slot-morning").performClick()
         captureDevice(activity, "android-ui-203-caregiver-medication-form-weekly-light-matched.png")
     }
@@ -430,6 +433,8 @@ class CaregiverMedicationScreenTest {
         composeRule.onNodeWithTag("medication-frequency-weekly").performClick()
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-day-mon"))
         composeRule.onNodeWithTag("medication-day-mon").assertExists().performSemanticsAction(SemanticsActions.OnClick)
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-slot-morning"))
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("medication-slot-morning").fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag("medication-slot-morning").assertExists().performSemanticsAction(SemanticsActions.OnClick)
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-kind-prn"))
         composeRule.onNodeWithTag("medication-kind-prn").performClick()

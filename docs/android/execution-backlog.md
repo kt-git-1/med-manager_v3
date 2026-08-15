@@ -1,6 +1,6 @@
 # Android Ordered Execution Backlog
 
-**Baseline:** `main@3e52fb2`
+**Baseline:** published iOS 1.0.6 Build 51, `main@432b34c`
 **Work branch:** `android-dev`
 **Rule:** Work top to bottom. A later item may start only when its dependency/gate is satisfied.
 
@@ -160,6 +160,7 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 - [x] C59 Align the master plan/completion audit to `main@3e52fb2`, close the superseded C01 umbrella row, add the missing privacy-first Firebase live-verification runbook and prove release runtime/signing gates fail closed while secret-free asset/APK checks pass.
 - [x] C60 Define the executable physical-device gate across old-supported, current-reference and non-Google OEM targets, including notifications/FCM/Doze/process state, TalkBack/adaptive UI, session/backup, browser/share, destructive/network and exact-artifact evidence rows.
 - [x] C61 Rebaseline to the published iOS 1.0.6 Build 51 at `main@432b34c`: merge the full source, validate the 322-test API contract, port actual-time/late-dose behavior across Patient Today/History and Caregiver Today, complete medication form/inventory/push-routing parity, and pass 265/265 UI tests on API 26/33/35 plus JVM/Lint.
+- [x] C62 Reopen C61 with a complete published-source audit instead of relying on legacy screenshot tests: match expandable Patient History, compact Patient Today, exact Caregiver Today, grouped Caregiver History, published medication registration defaults, inventory detail styling/reachability and synthetic tutorial sample layers; pass 202/202 JVM tests, Lint and 267/267 UI tests on API 26/33/35.
 - [x] C34 Accept strict caregiver `DOSE_MISSED` payloads alongside `DOSE_TAKEN` and verify identical exact-date/slot History routing.
 - [x] C35 Rerun the full API/JVM/lint/build/API-35 matrix and close all C31 `RECHECK_REQUIRED` rows.
 - [ ] V01 Complete the remaining physical TalkBack traversal, physical matched dark/large-text checks and OEM-device verification; C06 already closes the emulator-verifiable matrix.
@@ -249,4 +250,4 @@ Functional/JVM/Compose/instrumentation gates pass, including production-componen
 
 ## Immediate next item
 
-Execute the **Gate I physical-device and Play release matrix** using `play-release-runbook.md` once its external inputs exist. C57 closes the expanded 259-test API 26/33/35 rerun at 777/777, and C58 revalidates the changed post-record/API contract against `main@3e52fb2`. Production Firebase values, a release-owner-managed upload key, Play Console access and physical devices remain required; do not mark device-only rows verified from emulator evidence.
+Execute the **Gate I physical-device and Play release matrix** using `play-release-runbook.md` once its external inputs exist. C62 closes the current published-source audit with 202/202 JVM tests, Lint and 267/267 UI tests on each of API 26/33/35 (801/801 total). Production Firebase values, a release-owner-managed upload key, Play Console access and physical devices remain required; do not mark device-only rows verified from emulator evidence.

@@ -88,6 +88,8 @@ class PatientTutorialOverlayTest {
         }
 
         composeRule.onNodeWithText("1/4").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-tutorial-sample").assertIsDisplayed()
+        composeRule.onNodeWithText("次のお薬").assertIsDisplayed()
         composeRule.onNodeWithTag("patient-tutorial-next").performClick()
         composeRule.onNodeWithText("2/4").assertIsDisplayed()
         composeRule.onNodeWithTag("patient-history-list").assertIsDisplayed()

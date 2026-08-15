@@ -11,7 +11,7 @@ data class CaregiverMedicationDraft(
     val name: String = "",
     val dosageStrengthValue: String = "",
     val dosageStrengthUnit: String = "",
-    val doseCountPerIntake: String = "1",
+    val doseCountPerIntake: String = "",
     val startDate: LocalDate = LocalDate.now(Tokyo),
     val endDate: LocalDate? = null,
     val notes: String = "",
