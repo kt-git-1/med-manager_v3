@@ -63,6 +63,8 @@ class CaregiverHistoryScreenTest {
         composeRule.onNodeWithTag("caregiver-history-day-$date").performClick()
         composeRule.waitUntil(5_000) { repository.state.value.dayDetail != null }
         composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("history-dose-morning"))
+        composeRule.onNodeWithTag("caregiver-history-slot-header-morning").performClick()
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("caregiver-history-medication-med-1"))
         composeRule.onNodeWithText("薬A 1錠").assertIsDisplayed()
         composeRule.onNodeWithTag("history-backfill-med-1").performClick()
         composeRule.onNodeWithText("薬Aを服用済みとして記録します。").assertIsDisplayed()
@@ -102,11 +104,52 @@ class CaregiverHistoryScreenTest {
         composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(androidx.compose.ui.test.hasText("頓服: 頭痛薬"))
         composeRule.onNodeWithText("頓服: 頭痛薬").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("history-dose-morning"))
+        composeRule.onNodeWithTag("caregiver-history-slot-header-morning").performClick()
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("caregiver-history-medication-med-1"))
         composeRule.onNodeWithText("薬A 1錠").assertIsDisplayed()
         writeScreenshotFixture(
             composeRule.onRoot().captureToImage(),
             "android-ui-206-caregiver-history-day-timeline-light.png",
         )
+    }
+
+    @Test
+    fun selectedDayGroupsSlotsExpandsTakenAndShowsPartialState() {
+        val date = LocalDate.of(2026, 7, 1)
+        val detail = HistoryDayDetail(
+            date.toString(),
+            listOf(
+                HistoryScheduledDose("noon-a", "カルボシステイン", "500 mg", 1.0, Instant.parse("2026-07-01T03:30:00Z"), MedicationSlot.NOON, DoseStatus.TAKEN, com.afterlifearchive.medmanager.data.patient.RecordedByType.PATIENT, Instant.parse("2026-07-01T08:51:00Z")),
+                HistoryScheduledDose("noon-b", "整腸剤", "50 mg", 1.0, Instant.parse("2026-07-01T03:30:00Z"), MedicationSlot.NOON, DoseStatus.TAKEN, com.afterlifearchive.medmanager.data.patient.RecordedByType.CAREGIVER, Instant.parse("2026-07-01T08:51:00Z")),
+                HistoryScheduledDose("evening-a", "夕食後の薬", "1錠", 1.0, Instant.parse("2026-07-01T10:00:00Z"), MedicationSlot.EVENING, DoseStatus.TAKEN, com.afterlifearchive.medmanager.data.patient.RecordedByType.PATIENT, Instant.parse("2026-07-01T10:05:00Z")),
+                HistoryScheduledDose("evening-b", "胃薬", "1錠", 1.0, Instant.parse("2026-07-01T10:00:00Z"), MedicationSlot.EVENING, DoseStatus.PENDING, null),
+            ),
+            emptyList(),
+        )
+        val repository = CaregiverHistoryRepository(object : CaregiverHistoryDataSource {
+            override suspend fun month(patientId: String, yearMonth: YearMonth) = listOf(
+                HistoryDay(date.toString(), HistoryStatus.NONE, HistoryStatus.TAKEN, HistoryStatus.PENDING, HistoryStatus.NONE, 0),
+            )
+            override suspend fun day(patientId: String, date: LocalDate) = detail
+            override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
+        }, MutationFreshnessStore())
+        runBlocking {
+            repository.loadMonth("p1", YearMonth.from(date))
+            repository.loadDay("p1", date)
+        }
+        setContent(repository)
+
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("caregiver-history-medication-noon-a"))
+        composeRule.onNodeWithText("カルボシステイン 500 mg").assertIsDisplayed()
+        composeRule.onNodeWithText("実際 17:51").assertIsDisplayed()
+        composeRule.onNodeWithText("5時間21分遅れ").assertIsDisplayed()
+        composeRule.onNodeWithText("本人・家族が記録").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("caregiver-history-slot-header-evening"))
+        composeRule.onNodeWithText("一部記録").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-history-slot-header-evening").performClick()
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("caregiver-history-medication-evening-b"))
+        composeRule.onNodeWithText("胃薬 1錠").assertIsDisplayed()
     }
 
     @Test
@@ -359,6 +402,8 @@ class CaregiverHistoryScreenTest {
         source.recordGate = CompletableDeferred()
         val activity = setContent(repository)
         composeRule.waitUntil(5_000) { repository.state.value.dayDetail != null }
+        composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("caregiver-history-slot-header-morning"))
+        composeRule.onNodeWithTag("caregiver-history-slot-header-morning").performClick()
         composeRule.onNodeWithTag("caregiver-history-month").performScrollToNode(hasTestTag("history-backfill-med-1"))
         composeRule.onNodeWithTag("history-backfill-med-1").performClick()
         composeRule.onNodeWithTag("caregiver-history-backfill-confirm").performClick()

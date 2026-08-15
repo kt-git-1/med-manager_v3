@@ -427,6 +427,14 @@ fun PatientHomeScreen(
                     retentionCutoffDate = state.retentionCutoffDate,
                     retentionDays = state.retentionDays,
                     onRetry = { scope.launch { repository.loadHistory() } },
+                    dayDetail = state.historyDayDetail,
+                    dayLoading = state.historyDayLoading,
+                    dayError = state.historyDayError?.let { patientUserMessageText(it) },
+                    dayRetentionCutoffDate = state.historyDayRetentionCutoffDate,
+                    dayRetentionDays = state.historyDayRetentionDays,
+                    onExpandRecentDate = { date -> scope.launch { repository.loadHistoryDay(date) } },
+                    onCollapseRecentDate = repository::clearHistoryDay,
+                    onRetryRecentDate = { date -> scope.launch { repository.loadHistoryDay(date) } },
                 )
                 PatientTab.SETTINGS -> SettingsContent(
                     loading = state.loading,

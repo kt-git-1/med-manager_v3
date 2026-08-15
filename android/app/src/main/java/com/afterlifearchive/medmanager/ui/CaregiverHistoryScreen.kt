@@ -29,8 +29,14 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.Bed
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.MedicalServices
 import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material.icons.rounded.WbTwilight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -47,6 +53,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,8 +75,12 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverReportRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
 import com.afterlifearchive.medmanager.data.patient.HistoryDay
+import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.HistoryScheduledDose
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
+import com.afterlifearchive.medmanager.data.patient.MedicationRecordingPolicy
+import com.afterlifearchive.medmanager.data.patient.MedicationSlot
+import com.afterlifearchive.medmanager.data.patient.RecordedByType
 import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import java.time.LocalDate
 import java.time.YearMonth
@@ -219,6 +230,14 @@ private fun CaregiverHistoryMonth(
 ) {
     val now = LocalDate.now(ZoneId.of("Asia/Tokyo"))
     val currentMonth = YearMonth.from(now)
+    val slotGroups = remember(dayDetail) { caregiverHistorySlotGroups(dayDetail?.doses.orEmpty()) }
+    var expandedSlotKeys by rememberSaveable(selectedDate?.toString()) { mutableStateOf(emptySet<String>()) }
+    LaunchedEffect(dayDetail?.date) {
+        if (dayDetail != null) {
+            expandedSlotKeys = slotGroups.filter { it.status == DoseStatus.TAKEN }.mapTo(mutableSetOf()) { it.slot.name }
+            highlightedSlot?.let { expandedSlotKeys = expandedSlotKeys + it.name }
+        }
+    }
     LazyColumn(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 16.dp).testTag("caregiver-history-month"),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 12.dp, bottom = 120.dp),
@@ -299,11 +318,19 @@ private fun CaregiverHistoryMonth(
                             CaregiverHistoryDayEmptyState()
                         }
                     }
-                    items(patientHistoryTimelineItems(dayDetail), key = PatientHistoryTimelineItem::key) { item ->
-                        when (item) {
-                            is PatientHistoryTimelineItem.Scheduled -> HistoryScheduledDoseRow(item.dose, highlightedSlot == item.dose.slot, onRecordMissed, HistoryDayRowStyle.CAREGIVER)
-                            is PatientHistoryTimelineItem.Prn -> PrnHistoryRow(item.item, HistoryDayRowStyle.CAREGIVER)
-                        }
+                    items(slotGroups, key = { it.slot.name }) { group ->
+                        CaregiverHistorySlotGroupCard(
+                            group = group,
+                            expanded = group.slot.name in expandedSlotKeys,
+                            highlighted = highlightedSlot == group.slot,
+                            onToggle = {
+                                expandedSlotKeys = if (group.slot.name in expandedSlotKeys) expandedSlotKeys - group.slot.name else expandedSlotKeys + group.slot.name
+                            },
+                            onRecordMissed = onRecordMissed,
+                        )
+                    }
+                    items(dayDetail.prnItems.sortedBy { it.takenAt }, key = { "prn:${it.medicationId}:${it.takenAt}" }) { record ->
+                        PrnHistoryRow(record, HistoryDayRowStyle.CAREGIVER)
                     }
                 }
             }
@@ -312,6 +339,187 @@ private fun CaregiverHistoryMonth(
         item { Spacer(Modifier.height(24.dp)) }
     }
 }
+
+private data class CaregiverHistorySlotGroup(
+    val slot: MedicationSlot,
+    val doses: List<HistoryScheduledDose>,
+) {
+    val scheduledAt = doses.minOf(HistoryScheduledDose::scheduledAt)
+    val takenAt = doses.mapNotNull(HistoryScheduledDose::takenAt).maxOrNull()
+    val status: DoseStatus = when {
+        doses.all { it.status == DoseStatus.TAKEN } -> DoseStatus.TAKEN
+        doses.any { it.status == DoseStatus.MISSED } -> DoseStatus.MISSED
+        else -> DoseStatus.PENDING
+    }
+    val partiallyTaken = doses.count { it.status == DoseStatus.TAKEN } in 1 until doses.size
+    val maximumDelaySeconds = doses.mapNotNull { dose -> dose.takenAt?.let { MedicationRecordingPolicy.delaySeconds(dose.scheduledAt, it) } }.maxOrNull() ?: 0L
+    val late = maximumDelaySeconds >= MedicationRecordingPolicy.LATE_THRESHOLD_SECONDS
+    val recordedByTypes = doses.mapNotNull(HistoryScheduledDose::recordedByType).toSet()
+}
+
+private fun caregiverHistorySlotGroups(doses: List<HistoryScheduledDose>): List<CaregiverHistorySlotGroup> =
+    MedicationSlot.entries.mapNotNull { slot ->
+        doses.filter { it.slot == slot }.takeIf(List<HistoryScheduledDose>::isNotEmpty)?.let { CaregiverHistorySlotGroup(slot, it) }
+    }
+
+@Composable
+private fun CaregiverHistorySlotGroupCard(
+    group: CaregiverHistorySlotGroup,
+    expanded: Boolean,
+    highlighted: Boolean,
+    onToggle: () -> Unit,
+    onRecordMissed: (HistoryScheduledDose) -> Unit,
+) {
+    val slotColor = caregiverHistorySlotColor(group.slot)
+    val statusColor = when {
+        group.partiallyTaken || group.late -> MedicationTheme.colors.orange
+        group.status == DoseStatus.TAKEN -> MaterialTheme.colorScheme.primary
+        group.status == DoseStatus.MISSED -> MedicationTheme.colors.caregiverRed
+        else -> HistoryPendingGray
+    }
+    val statusText = when {
+        group.partiallyTaken -> stringResource(R.string.history_status_partial)
+        group.late -> stringResource(R.string.patient_status_late)
+        else -> stringResource(when (group.status) {
+            DoseStatus.TAKEN -> R.string.patient_status_taken
+            DoseStatus.MISSED -> R.string.patient_status_missed
+            DoseStatus.PENDING -> R.string.patient_status_pending
+        })
+    }
+    val recorderText = when {
+        group.recordedByTypes.size > 1 -> stringResource(R.string.history_recorded_by_mixed)
+        group.recordedByTypes.singleOrNull() == RecordedByType.PATIENT -> stringResource(R.string.patient_history_recorded_by_patient)
+        group.recordedByTypes.singleOrNull() == RecordedByType.CAREGIVER -> stringResource(R.string.patient_history_recorded_by_caregiver)
+        else -> null
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth().shadow(3.dp, RoundedCornerShape(16.dp))
+            .testTag(if (highlighted) "history-dose-highlighted-${group.slot.name.lowercase()}" else "history-dose-${group.slot.name.lowercase()}"),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(if (highlighted) 2.dp else 1.dp, slotColor.copy(alpha = if (highlighted) 1f else 0.38f)),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(14.dp).testTag("caregiver-history-slot-group-${group.slot.name.lowercase()}")) {
+            Column(
+                Modifier.fillMaxWidth().clickable(onClick = onToggle).testTag("caregiver-history-slot-header-${group.slot.name.lowercase()}"),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(Modifier.size(34.dp).background(slotColor, CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(caregiverHistorySlotIcon(group.slot), contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    }
+                    Text(caregiverHistorySlotTitle(group.slot), color = slotColor, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.history_schedule_format, caregiverHistoryTime(group.scheduledAt)), modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                    Row(
+                        Modifier.background(statusColor.copy(alpha = 0.13f), CircleShape).padding(horizontal = 8.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    ) {
+                        Icon(when (group.status) {
+                            DoseStatus.TAKEN -> Icons.Rounded.CheckCircle
+                            DoseStatus.MISSED -> Icons.Rounded.Warning
+                            DoseStatus.PENDING -> Icons.Rounded.AccessTime
+                        }, contentDescription = null, tint = statusColor, modifier = Modifier.size(14.dp))
+                        Text(statusText, color = statusColor, fontSize = 12.sp, lineHeight = 15.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Icon(if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                group.takenAt?.let { takenAt ->
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(stringResource(R.string.caregiver_today_actual_time, caregiverHistoryTime(takenAt)), color = if (group.late) MedicationTheme.colors.orange else MedicationTheme.colors.primaryTealText, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        if (group.late) Text(caregiverHistoryDelay(group.maximumDelaySeconds), color = MedicationTheme.colors.orange, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        recorderText?.let { Text(it, color = MedicationTheme.colors.primaryTealText, fontWeight = FontWeight.Bold, fontSize = 12.sp) }
+                    }
+                }
+            }
+            if (expanded) {
+                androidx.compose.material3.HorizontalDivider(Modifier.padding(vertical = 10.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    group.doses.sortedBy(HistoryScheduledDose::medicationName).forEach { dose ->
+                        CaregiverHistoryMedicationRow(dose, onRecordMissed)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CaregiverHistoryMedicationRow(dose: HistoryScheduledDose, onRecordMissed: (HistoryScheduledDose) -> Unit) {
+    val statusColor = when (dose.status) {
+        DoseStatus.TAKEN -> MaterialTheme.colorScheme.primary
+        DoseStatus.MISSED -> MedicationTheme.colors.caregiverRed
+        DoseStatus.PENDING -> HistoryPendingGray
+    }
+    val dosage = dose.dosageText.trim()
+    Column(
+        Modifier.fillMaxWidth().background(MedicationTheme.colors.elevatedBackground.copy(alpha = 0.78f), RoundedCornerShape(12.dp))
+            .border(1.dp, MedicationTheme.colors.cardStroke, RoundedCornerShape(12.dp)).padding(horizontal = 10.dp, vertical = 9.dp)
+            .testTag("caregiver-history-medication-${dose.medicationId}"),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(Modifier.size(30.dp).background(statusColor.copy(alpha = 0.14f), CircleShape), contentAlignment = Alignment.Center) {
+                Icon(Icons.Rounded.MedicalServices, contentDescription = null, tint = statusColor, modifier = Modifier.size(17.dp))
+            }
+            Column(Modifier.weight(1f)) {
+                Text(if (dosage.isEmpty() || dosage == "不明") dose.medicationName else "${dose.medicationName} $dosage", fontWeight = FontWeight.Bold)
+                Text("1回${formatHistoryQuantity(dose.doseCountPerIntake)}錠", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            }
+            Box(Modifier.size(26.dp).background(statusColor, CircleShape), contentAlignment = Alignment.Center) {
+                Icon(when (dose.status) {
+                    DoseStatus.TAKEN -> Icons.Rounded.CheckCircle
+                    DoseStatus.MISSED -> Icons.Rounded.Warning
+                    DoseStatus.PENDING -> Icons.Rounded.AccessTime
+                }, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+            }
+        }
+        if (dose.status == DoseStatus.MISSED) {
+            Button(onClick = { onRecordMissed(dose) }, modifier = Modifier.fillMaxWidth().height(42.dp).testTag("history-backfill-${dose.medicationId}")) {
+                Text(stringResource(R.string.caregiver_history_backfill_action), fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun caregiverHistorySlotTitle(slot: MedicationSlot): String = stringResource(when (slot) {
+    MedicationSlot.MORNING -> R.string.patient_slot_morning
+    MedicationSlot.NOON -> R.string.patient_slot_noon
+    MedicationSlot.EVENING -> R.string.patient_slot_evening
+    MedicationSlot.BEDTIME -> R.string.patient_slot_bedtime
+})
+
+@Composable
+private fun caregiverHistorySlotColor(slot: MedicationSlot): Color = when (slot) {
+    MedicationSlot.MORNING -> MedicationTheme.colors.slotMorning
+    MedicationSlot.NOON -> MedicationTheme.colors.slotNoon
+    MedicationSlot.EVENING -> MedicationTheme.colors.slotEvening
+    MedicationSlot.BEDTIME -> MedicationTheme.colors.slotBedtime
+}
+
+private fun caregiverHistorySlotIcon(slot: MedicationSlot): ImageVector = when (slot) {
+    MedicationSlot.MORNING -> Icons.Rounded.WbTwilight
+    MedicationSlot.NOON -> Icons.Rounded.LightMode
+    MedicationSlot.EVENING -> Icons.Rounded.DarkMode
+    MedicationSlot.BEDTIME -> Icons.Rounded.Bed
+}
+
+private fun caregiverHistoryTime(instant: java.time.Instant) = instant.atZone(ZoneId.of("Asia/Tokyo")).format(DateTimeFormatter.ofPattern("HH:mm"))
+
+@Composable
+private fun caregiverHistoryDelay(seconds: Long): String {
+    val minutes = seconds.coerceAtLeast(0L) / 60
+    val hours = minutes / 60
+    val remainder = minutes % 60
+    return when {
+        hours > 0 && remainder > 0 -> stringResource(R.string.history_delay_hours_minutes, hours, remainder)
+        hours > 0 -> stringResource(R.string.history_delay_hours, hours)
+        else -> stringResource(R.string.history_delay_minutes, minutes)
+    }
+}
+
+private fun formatHistoryQuantity(value: Double): String = if (value % 1.0 == 0.0) value.toInt().toString() else String.format(Locale.US, "%.1f", value)
 
 @Composable
 private fun CaregiverHistoryMonthNavigation(

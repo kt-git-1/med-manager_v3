@@ -176,6 +176,11 @@
     <string name="patient_history_week_streak">連続で記録できています。とても良いペースです。</string>
     <string name="patient_history_week_streak_strong">記録が続いています。すばらしいです。この調子で体調の変化を見守っていきましょう。</string>
     <string name="patient_history_recent_title">最近の記録</string>
+    <string name="patient_history_recent_expand_hint">時間帯ごとの服用履歴を開きます</string>
+    <string name="patient_history_recent_collapse_hint">時間帯ごとの服用履歴を閉じます</string>
+    <string name="patient_history_recent_empty">この日の服用履歴はありません</string>
+    <string name="patient_history_recent_late_format">飲み遅れ %1$s</string>
+    <string name="patient_history_recent_prn">必要な時のお薬</string>
     <string name="patient_history_today_format">今日 %1$s</string>
     <string name="patient_history_yesterday_format">昨日 %1$s</string>
     <string name="patient_history_slots_format">%1$sのお薬</string>
@@ -212,6 +217,12 @@
     <string name="patient_history_prn_name_format">%1$s: %2$s</string>
     <string name="patient_history_scheduled_section">予定されたお薬</string>
     <string name="history_schedule_format">予定 %1$s</string>
+    <string name="history_taken_format">服用 %1$s</string>
+    <string name="history_status_partial">一部記録</string>
+    <string name="history_recorded_by_mixed">本人・家族が記録</string>
+    <string name="history_delay_hours_minutes">%1$d時間%2$d分遅れ</string>
+    <string name="history_delay_hours">%1$d時間遅れ</string>
+    <string name="history_delay_minutes">%1$d分遅れ</string>
     <string name="history_actual_time_format">実際 %1$s</string>
     <string name="patient_history_prn_section">頓服</string>
     <string name="patient_history_recorded_by_patient">本人が記録</string>

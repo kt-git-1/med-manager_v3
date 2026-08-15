@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
@@ -19,6 +20,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.unit.Density
 import androidx.core.view.WindowCompat
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
@@ -69,6 +71,57 @@ class PatientHistoryContentTest {
             composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasText(text))
             composeRule.onNodeWithText(text).assertIsDisplayed()
         }
+    }
+
+    @Test
+    fun recentHistoryExpandsLoadsExactDayAndCollapses() {
+        val now = LocalDate.parse("2026-07-14")
+        val detailState = mutableStateOf<HistoryDayDetail?>(null)
+        var requestedDate: LocalDate? = null
+        var collapsed = 0
+        val detail = HistoryDayDetail(
+            now.toString(),
+            listOf(
+                HistoryScheduledDose(
+                    "late", "血圧薬", "1錠", 1.0,
+                    Instant.parse("2026-07-14T03:00:00Z"), MedicationSlot.NOON,
+                    DoseStatus.TAKEN, RecordedByType.PATIENT,
+                    takenAt = Instant.parse("2026-07-14T04:25:00Z"),
+                ),
+            ),
+            listOf(PrnHistoryItem("prn", "頭痛薬", Instant.parse("2026-07-14T05:00:00Z"), 1.0, PrnActorType.PATIENT)),
+        )
+        composeRule.setContent {
+            MedicationAppTheme {
+                HistoryContent(
+                    days = listOf(HistoryDay(now.toString(), HistoryStatus.NONE, HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, 1)),
+                    loading = false,
+                    error = null,
+                    retentionCutoffDate = null,
+                    retentionDays = null,
+                    onRetry = {},
+                    now = now,
+                    dayDetail = detailState.value,
+                    onExpandRecentDate = { date -> requestedDate = date; detailState.value = detail },
+                    onCollapseRecentDate = { collapsed += 1; detailState.value = null },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasTestTag("patient-recent-history-toggle-$now"))
+        composeRule.onNodeWithTag("patient-recent-history-toggle-$now").performClick()
+        composeRule.runOnIdle { org.junit.Assert.assertEquals(now, requestedDate) }
+        composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasText("飲み遅れ 13:25"))
+        composeRule.onNodeWithText("飲み遅れ 13:25").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasText("必要な時のお薬"))
+        composeRule.onNodeWithText("必要な時のお薬").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasText("頭痛薬"))
+        composeRule.onNodeWithText("頭痛薬").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasTestTag("patient-recent-history-toggle-$now"))
+        composeRule.onNodeWithTag("patient-recent-history-toggle-$now").performClick()
+        composeRule.runOnIdle { org.junit.Assert.assertEquals(1, collapsed) }
+        composeRule.onNodeWithTag("patient-recent-history-detail-$now").assertDoesNotExist()
     }
 
     @Test

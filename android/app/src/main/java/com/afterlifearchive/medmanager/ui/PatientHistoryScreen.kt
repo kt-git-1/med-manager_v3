@@ -26,7 +26,10 @@ import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.EventAvailable
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material.icons.rounded.Verified
@@ -89,6 +92,14 @@ internal fun HistoryContent(
     onRetry: () -> Unit,
     now: LocalDate = LocalDate.now(ZoneId.of("Asia/Tokyo")),
     streak: PatientHistoryStreak? = null,
+    dayDetail: HistoryDayDetail? = null,
+    dayLoading: Boolean = false,
+    dayError: String? = null,
+    dayRetentionCutoffDate: String? = null,
+    dayRetentionDays: Int? = null,
+    onExpandRecentDate: (LocalDate) -> Unit = {},
+    onCollapseRecentDate: () -> Unit = {},
+    onRetryRecentDate: (LocalDate) -> Unit = {},
 ) {
     val retentionStateKey = "$retentionCutoffDate:$retentionDays"
     var retentionDismissed by rememberSaveable(retentionStateKey) { mutableStateOf(false) }
@@ -105,6 +116,7 @@ internal fun HistoryContent(
     val weekDates = patientHistoryWeekDates(now)
     val weeklyRecorded = weekDates.count { patientSimpleStatus(byDate[it.toString()]) == PatientSimpleHistoryStatus.TAKEN }
     val consecutiveTaken = patientHistoryConsecutiveTaken(weekDates, now, byDate)
+    var expandedRecentDateKey by rememberSaveable { mutableStateOf<String?>(null) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag("patient-history-list"),
@@ -120,7 +132,29 @@ internal fun HistoryContent(
             item { PatientWeekHistoryCard(weekDates, byDate, weeklyRecorded, consecutiveTaken, now) }
             item { Text(stringResource(R.string.patient_history_recent_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
             items(listOf(now, now.minusDays(1)), key = LocalDate::toString) { date ->
-                PatientRecentHistoryCard(date, byDate[date.toString()], now)
+                val dateKey = date.toString()
+                val expanded = expandedRecentDateKey == dateKey
+                PatientRecentHistoryCard(
+                    date = date,
+                    day = byDate[dateKey],
+                    now = now,
+                    expanded = expanded,
+                    detail = dayDetail?.takeIf { it.date == dateKey },
+                    loading = expanded && dayLoading,
+                    error = dayError.takeIf { expanded },
+                    retentionCutoffDate = dayRetentionCutoffDate.takeIf { expanded },
+                    retentionDays = dayRetentionDays,
+                    onToggle = {
+                        if (expanded) {
+                            expandedRecentDateKey = null
+                            onCollapseRecentDate()
+                        } else {
+                            expandedRecentDateKey = dateKey
+                            onExpandRecentDate(date)
+                        }
+                    },
+                    onRetry = { onRetryRecentDate(date) },
+                )
             }
         }
         item { Spacer(Modifier.height(104.dp)) }
@@ -391,7 +425,19 @@ private fun PatientWeekDay(date: LocalDate, day: HistoryDay?, now: LocalDate, mo
 }
 
 @Composable
-private fun PatientRecentHistoryCard(date: LocalDate, day: HistoryDay?, now: LocalDate) {
+private fun PatientRecentHistoryCard(
+    date: LocalDate,
+    day: HistoryDay?,
+    now: LocalDate,
+    expanded: Boolean,
+    detail: HistoryDayDetail?,
+    loading: Boolean,
+    error: String?,
+    retentionCutoffDate: String?,
+    retentionDays: Int?,
+    onToggle: () -> Unit,
+    onRetry: () -> Unit,
+) {
     val status = patientSimpleStatus(day)
     val accent = patientSimpleStatusColor(status, false)
     val icon = when (status) {
@@ -402,31 +448,158 @@ private fun PatientRecentHistoryCard(date: LocalDate, day: HistoryDay?, now: Loc
     }
     val formatted = date.format(DateTimeFormatter.ofPattern("M月d日（E）", Locale.JAPANESE))
     val title = stringResource(if (date == now) R.string.patient_history_today_format else R.string.patient_history_yesterday_format, formatted)
+    val statusText = patientSimpleStatusText(status)
+    val actionHint = stringResource(if (expanded) R.string.patient_history_recent_collapse_hint else R.string.patient_history_recent_expand_hint)
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().testTag("patient-recent-history-$date"),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
-        Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Box(Modifier.size(54.dp).background(accent.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) {
-                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(28.dp))
+        Column(Modifier.fillMaxWidth()) {
+            Row(
+                Modifier.fillMaxWidth().clickable(onClick = onToggle).padding(18.dp)
+                    .semantics { contentDescription = "$title、$statusText、$actionHint" }
+                    .testTag("patient-recent-history-toggle-$date"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Box(Modifier.size(54.dp).background(accent.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(28.dp))
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(patientHistorySubtitle(day), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                }
+                HistoryStatusPill(
+                    statusText,
+                    accent,
+                    when (status) {
+                        PatientSimpleHistoryStatus.TAKEN -> Icons.Rounded.CheckCircle
+                        PatientSimpleHistoryStatus.MISSED -> Icons.Rounded.Warning
+                        PatientSimpleHistoryStatus.PENDING, PatientSimpleHistoryStatus.NONE -> null
+                    },
+                )
+                Icon(if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown, contentDescription = null, tint = PatientTeal)
             }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Text(patientHistorySubtitle(day), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+            if (expanded) {
+                androidx.compose.material3.HorizontalDivider(Modifier.padding(horizontal = 18.dp))
+                PatientRecentHistoryDetail(
+                    date = date,
+                    detail = detail,
+                    loading = loading,
+                    error = error,
+                    retentionCutoffDate = retentionCutoffDate,
+                    retentionDays = retentionDays,
+                    onRetry = onRetry,
+                )
             }
-            HistoryStatusPill(
-                patientSimpleStatusText(status),
-                accent,
-                when (status) {
-                    PatientSimpleHistoryStatus.TAKEN -> Icons.Rounded.CheckCircle
-                    PatientSimpleHistoryStatus.MISSED -> Icons.Rounded.Warning
-                    PatientSimpleHistoryStatus.PENDING, PatientSimpleHistoryStatus.NONE -> null
-                },
-            )
         }
     }
+}
+
+@Composable
+private fun PatientRecentHistoryDetail(
+    date: LocalDate,
+    detail: HistoryDayDetail?,
+    loading: Boolean,
+    error: String?,
+    retentionCutoffDate: String?,
+    retentionDays: Int?,
+    onRetry: () -> Unit,
+) {
+    Column(
+        Modifier.fillMaxWidth().padding(18.dp).testTag("patient-recent-history-detail-$date"),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        when {
+            loading && detail == null -> {
+                CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally), color = PatientTeal)
+                Text(stringResource(R.string.patient_today_loading), modifier = Modifier.align(Alignment.CenterHorizontally), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            retentionCutoffDate != null -> RetentionLockCard(retentionCutoffDate, retentionDays ?: 30)
+            error != null -> {
+                Text(error, modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold)
+                Button(onClick = onRetry, modifier = Modifier.align(Alignment.CenterHorizontally).testTag("patient-recent-history-retry-$date")) {
+                    Text(stringResource(R.string.common_retry))
+                }
+            }
+            detail == null -> {
+                CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally), color = PatientTeal)
+            }
+            detail.doses.isEmpty() && detail.prnItems.isEmpty() -> {
+                Text(stringResource(R.string.patient_history_recent_empty), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+            }
+            else -> {
+                MedicationSlot.entries.forEach { slot ->
+                    val doses = detail.doses.filter { it.slot == slot }.sortedBy { it.scheduledAt }
+                    if (doses.isNotEmpty()) PatientRecentSlotDetail(slot, doses)
+                }
+                if (detail.prnItems.isNotEmpty()) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Rounded.Medication, contentDescription = null, tint = Color(0xFF5856D6))
+                        Text(stringResource(R.string.patient_history_recent_prn), fontWeight = FontWeight.Bold, color = Color(0xFF5856D6))
+                    }
+                    detail.prnItems.sortedBy { it.takenAt }.forEach { item ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(item.medicationName, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.history_taken_format, historyTime(item.takenAt)), color = PatientTeal, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PatientRecentSlotDetail(slot: MedicationSlot, doses: List<HistoryScheduledDose>) {
+    val color = historySlotColor(slot)
+    val groupStatus = when {
+        doses.any { it.status == DoseStatus.MISSED } -> DoseStatus.MISSED
+        doses.any { it.status == DoseStatus.PENDING } -> DoseStatus.PENDING
+        else -> DoseStatus.TAKEN
+    }
+    Column(Modifier.fillMaxWidth().testTag("patient-recent-slot-${slot.name.lowercase()}"), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(Modifier.size(34.dp).background(color.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) {
+                Icon(Icons.Rounded.AccessTime, contentDescription = null, tint = color, modifier = Modifier.size(19.dp))
+            }
+            Column(Modifier.weight(1f)) {
+                Text(patientSlotTitle(slot), fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.history_schedule_format, historyTime(doses.first().scheduledAt)), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+            }
+            HistoryStatusPill(patientDoseStatusText(groupStatus), historyDoseColor(groupStatus))
+        }
+        doses.forEach { dose ->
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(Icons.Rounded.Medication, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(dose.medicationName, fontWeight = FontWeight.Bold)
+                    if (dose.dosageText.isNotBlank()) Text(dose.dosageText, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Text(patientRecentDoseStatus(dose), color = patientRecentDoseStatusColor(dose), fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
+            }
+        }
+    }
+}
+
+@Composable
+private fun patientRecentDoseStatus(dose: HistoryScheduledDose): String = when (dose.status) {
+    DoseStatus.TAKEN -> dose.takenAt?.let { takenAt ->
+        val time = historyTime(takenAt)
+        if (MedicationRecordingPolicy.isLate(dose.scheduledAt, takenAt)) stringResource(R.string.patient_history_recent_late_format, time)
+        else stringResource(R.string.history_taken_format, time)
+    } ?: patientDoseStatusText(dose.status)
+    DoseStatus.MISSED -> patientDoseStatusText(dose.status)
+    DoseStatus.PENDING -> if (dose.scheduledAt.isAfter(Instant.now())) stringResource(R.string.history_schedule_format, historyTime(dose.scheduledAt)) else patientDoseStatusText(dose.status)
+}
+
+@Composable
+private fun patientRecentDoseStatusColor(dose: HistoryScheduledDose): Color = when (dose.status) {
+    DoseStatus.TAKEN -> PatientTeal
+    DoseStatus.MISSED -> MaterialTheme.colorScheme.error
+    DoseStatus.PENDING -> if (dose.scheduledAt.isAfter(Instant.now())) Color(0xFF3478F6) else Color(0xFFF36A00)
 }
 
 @Composable
