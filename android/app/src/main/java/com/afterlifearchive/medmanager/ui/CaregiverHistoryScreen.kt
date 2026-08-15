@@ -484,10 +484,10 @@ private fun CaregiverHistoryMedicationRow(dose: HistoryScheduledDose, onRecordMi
 
 @Composable
 private fun caregiverHistorySlotTitle(slot: MedicationSlot): String = stringResource(when (slot) {
-    MedicationSlot.MORNING -> R.string.patient_slot_morning
-    MedicationSlot.NOON -> R.string.patient_slot_noon
-    MedicationSlot.EVENING -> R.string.patient_slot_evening
-    MedicationSlot.BEDTIME -> R.string.patient_slot_bedtime
+    MedicationSlot.MORNING -> R.string.patient_slot_morning_short
+    MedicationSlot.NOON -> R.string.patient_slot_noon_short
+    MedicationSlot.EVENING -> R.string.patient_slot_evening_short
+    MedicationSlot.BEDTIME -> R.string.patient_slot_bedtime_short
 })
 
 @Composable

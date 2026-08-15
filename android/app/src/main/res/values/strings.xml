@@ -370,8 +370,8 @@
     <string name="caregiver_today_empty_action">薬を登録する</string>
     <string name="caregiver_today_slot_morning">朝</string>
     <string name="caregiver_today_slot_noon">昼</string>
-    <string name="caregiver_today_slot_evening">夕</string>
-    <string name="caregiver_today_slot_bedtime">寝る前</string>
+    <string name="caregiver_today_slot_evening">夜</string>
+    <string name="caregiver_today_slot_bedtime">眠前</string>
     <string name="caregiver_today_recorded_by_patient">本人が記録</string>
     <string name="caregiver_today_recorded_by_caregiver">家族が代理で記録</string>
     <string name="caregiver_today_record_individual">この薬を服用済みにする</string>
@@ -612,7 +612,7 @@
     <string name="caregiver_medication_edit_accessibility">%1$sを編集</string>
     <string name="caregiver_medication_add_title">薬を追加</string>
     <string name="caregiver_medication_add_compact">追加</string>
-    <string name="caregiver_medication_form_hero_new">新しい薬を追加</string>
+    <string name="caregiver_medication_form_hero_new">お薬を登録</string>
     <string name="caregiver_medication_form_hero_edit">薬の情報を編集</string>
     <string name="caregiver_medication_form_hero_scheduled">定時薬として、今日の予定と通知に反映します</string>
     <string name="caregiver_medication_form_hero_prn">頓服として、必要時の記録欄に表示します</string>
@@ -626,7 +626,8 @@
     <string name="caregiver_medication_form_scheduled_help">定時薬は、本人画面の今日の予定に時間ごとに表示されます。</string>
     <string name="caregiver_medication_form_prn_help">頓服は決まった時間には出さず、本人画面の必要時の記録に表示されます。</string>
     <string name="caregiver_medication_form_name">薬の名前</string>
-    <string name="caregiver_medication_form_strength">規格</string>
+    <string name="caregiver_medication_form_name_placeholder">例：血圧の薬</string>
+    <string name="caregiver_medication_form_strength">薬の強さ</string>
     <string name="caregiver_medication_form_strength_value">数値</string>
     <string name="caregiver_medication_form_strength_unit">単位</string>
     <string name="caregiver_medication_form_dose_count">1回に飲む量（錠）</string>
@@ -649,6 +650,12 @@
     <string name="caregiver_medication_form_inventory_initial">登録時の在庫</string>
     <string name="caregiver_medication_form_inventory_calculator_empty">1回に飲む量・時間帯・日数を入力すると、登録時の在庫を自動計算します。</string>
     <string name="caregiver_medication_form_inventory_calculator_help">飲む量とタイミングから自動で計算します。計算後の錠数は修正できます。</string>
+    <string name="caregiver_medication_form_inventory_calculator_help_short">飲む量とタイミングから自動で計算します</string>
+    <string name="caregiver_medication_form_register_guide">薬の情報と飲み方を入力します</string>
+    <string name="caregiver_medication_form_register_help">薬の袋や説明書を見ながら、上から順番に入力してください。</string>
+    <string name="caregiver_medication_form_timing_title">飲むタイミング</string>
+    <string name="caregiver_medication_form_additional_settings">薬の種類・期間・メモ</string>
+    <string name="caregiver_medication_form_register_submit">この内容で登録</string>
     <string name="caregiver_medication_form_daily_count">1日%1$d回</string>
     <string name="caregiver_medication_form_save">保存</string>
     <string name="caregiver_medication_form_saving">保存中…</string>
@@ -666,7 +673,7 @@
     <string name="caregiver_medication_form_slot_morning">朝</string>
     <string name="caregiver_medication_form_slot_noon">昼</string>
     <string name="caregiver_medication_form_slot_evening">夜</string>
-    <string name="caregiver_medication_form_slot_bedtime">寝る前</string>
+    <string name="caregiver_medication_form_slot_bedtime">眠前</string>
     <string name="caregiver_medication_delete">薬を削除する</string>
     <string name="caregiver_medication_delete_confirm_title">薬を削除しますか？</string>
     <string name="caregiver_medication_delete_confirm_message">この操作は取り消せません。</string>

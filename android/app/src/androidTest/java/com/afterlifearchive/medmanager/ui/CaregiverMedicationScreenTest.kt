@@ -240,7 +240,7 @@ class CaregiverMedicationScreenTest {
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-slot-morning"))
         composeRule.onNodeWithTag("medication-slot-morning").performClick()
         composeRule.onNodeWithTag("medication-slot-evening").performClick()
-        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-editor-hero"))
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasText("お薬を登録"))
         activity.runOnUiThread {
             activity.currentFocus?.clearFocus()
             (activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
@@ -273,19 +273,20 @@ class CaregiverMedicationScreenTest {
         val activity = setContent(emptyList())
         composeRule.onNodeWithTag("caregiver-medication-empty-add").performScrollTo().performClick()
 
-        composeRule.onNodeWithTag("medication-editor-hero").assertIsDisplayed()
+        composeRule.onNodeWithText("お薬を登録").assertIsDisplayed()
+        composeRule.onNodeWithText("薬の情報と飲み方を入力します").assertIsDisplayed()
         composeRule.onNodeWithText("基本情報").assertIsDisplayed()
         captureDevice(activity, "android-ui-203-caregiver-medication-form-add-basic-light-matched.png")
 
-        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-frequency-daily"))
-        composeRule.onNodeWithText("本人画面に出す時間を選択").assertIsDisplayed()
-        composeRule.onNodeWithText("時間帯").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-slot-morning"))
+        composeRule.onNodeWithText("飲むタイミング").assertIsDisplayed()
         captureDevice(activity, "android-ui-203-caregiver-medication-form-add-schedule-light-matched.png")
 
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-additional-settings-toggle"))
+        composeRule.onNodeWithTag("medication-additional-settings-toggle").performClick()
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-kind-prn"))
         composeRule.onNodeWithTag("medication-kind-prn").performClick()
         composeRule.onNodeWithTag("medication-prn-instructions").assertIsDisplayed()
-        composeRule.onNodeWithText("頓服は決まった時間には出さず", substring = true).assertIsDisplayed()
         captureDevice(activity, "android-ui-203-caregiver-medication-form-prn-light-matched.png")
 
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-kind-scheduled"))
@@ -306,7 +307,7 @@ class CaregiverMedicationScreenTest {
         composeRule.onNodeWithTag("caregiver-medication-edit-scheduled").performClick()
 
         composeRule.onNodeWithTag("medication-name").assertTextEquals("アムロジピン")
-        composeRule.onNodeWithTag("medication-editor-hero").assertIsDisplayed()
+        composeRule.onNodeWithText("薬を編集").assertIsDisplayed()
         captureDevice(activity, "android-ui-203-caregiver-medication-form-edit-basic-light-matched.png")
 
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-delete"))
@@ -337,7 +338,7 @@ class CaregiverMedicationScreenTest {
         val activity = setContent(emptyList(), slotTimes = iosDefaultSlotTimes(), darkTheme = true)
         composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
 
-        composeRule.onNodeWithTag("medication-editor-hero").assertIsDisplayed()
+        composeRule.onNodeWithText("お薬を登録").assertIsDisplayed()
         captureDevice(activity, "android-ui-203-caregiver-medication-form-add-basic-dark-matched.png", darkTheme = true)
     }
 
@@ -380,6 +381,8 @@ class CaregiverMedicationScreenTest {
 
         composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
         composeRule.onNodeWithTag("caregiver-medication-form").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-additional-settings-toggle"))
+        composeRule.onNodeWithTag("medication-additional-settings-toggle").performClick()
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-kind-prn"))
         composeRule.onNodeWithTag("medication-kind-prn").performClick()
         composeRule.waitForIdle()
@@ -421,6 +424,8 @@ class CaregiverMedicationScreenTest {
         setContent(emptyList())
         composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
 
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-additional-settings-toggle"))
+        composeRule.onNodeWithTag("medication-additional-settings-toggle").performClick()
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-frequency-weekly"))
         composeRule.onNodeWithTag("medication-frequency-weekly").performClick()
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-day-mon"))

@@ -566,7 +566,7 @@ private fun PatientRecentSlotDetail(slot: MedicationSlot, doses: List<HistorySch
                 Icon(Icons.Rounded.AccessTime, contentDescription = null, tint = color, modifier = Modifier.size(19.dp))
             }
             Column(Modifier.weight(1f)) {
-                Text(patientSlotTitle(slot), fontWeight = FontWeight.Bold)
+                Text(patientSlotShortTitle(slot), fontWeight = FontWeight.Bold)
                 Text(stringResource(R.string.history_schedule_format, historyTime(doses.first().scheduledAt)), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
             }
             HistoryStatusPill(patientDoseStatusText(groupStatus), historyDoseColor(groupStatus))
@@ -929,7 +929,7 @@ internal fun HistoryScheduledDoseRow(
                         style = MaterialTheme.typography.titleMedium,
                     )
                     Text(
-                        patientSlotTitle(dose.slot),
+                        patientSlotShortTitle(dose.slot),
                         modifier = Modifier.background(slotColor.copy(alpha = 0.16f), RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 3.dp),
                         color = slotColor,
                         style = MaterialTheme.typography.labelMedium,

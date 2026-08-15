@@ -70,7 +70,7 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithText("飲み忘れが1回分あります").assertIsDisplayed()
         composeRule.onNodeWithText("頓服薬が1件あります").assertIsDisplayed()
         composeRule.onNodeWithText("飲み忘れがあります").assertIsDisplayed()
-        composeRule.onNodeWithText("夕 19:00の服薬が飲み忘れになっています。下の今日の予定で確認できます").assertIsDisplayed()
+        composeRule.onNodeWithText("夜 19:00の服薬が飲み忘れになっています。下の今日の予定で確認できます").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-today-primary-record").assertDoesNotExist()
         captureDevice(activity, "android-ui-201-caregiver-today-light.png")
         composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-timeline-noon"))

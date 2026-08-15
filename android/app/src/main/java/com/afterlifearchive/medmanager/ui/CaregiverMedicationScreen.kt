@@ -49,10 +49,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Bed
+import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Description
-import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.EventBusy
 import androidx.compose.material.icons.automirrored.rounded.FormatListBulleted
@@ -62,6 +64,8 @@ import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Science
 import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material.icons.rounded.WbTwilight
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -601,6 +605,7 @@ private fun CaregiverMedicationEditor(
     var showingDeleteConfirm by rememberSaveable(medication?.id) { mutableStateOf(false) }
     var deleting by rememberSaveable(medication?.id) { mutableStateOf(false) }
     var deleteFailed by rememberSaveable(medication?.id) { mutableStateOf(false) }
+    var additionalExpanded by rememberSaveable(medication?.id) { mutableStateOf(false) }
     val errors = if (submitted) draft.validate() else emptyList()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -627,20 +632,22 @@ private fun CaregiverMedicationEditor(
         item {
             Spacer(Modifier.height(8.dp))
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                TextButton(
+                IconButton(
                     onClick = onClose,
                     enabled = !submitting,
                     modifier = Modifier.align(Alignment.CenterStart),
-                ) { Text(stringResource(R.string.caregiver_medication_form_cancel)) }
-                Text(
-                    stringResource(if (medication == null) R.string.caregiver_medication_form_hero_new else R.string.caregiver_medication_edit),
-                    fontSize = 17.sp,
-                    lineHeight = 22.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.common_back), tint = MedicationTheme.colors.primaryTealText) }
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        stringResource(if (medication == null) R.string.caregiver_medication_form_hero_new else R.string.caregiver_medication_edit),
+                        fontSize = 22.sp,
+                        lineHeight = 27.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(stringResource(R.string.caregiver_medication_form_register_guide), fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                }
             }
         }
-        item { MedicationEditorHero(medication == null, draft) }
         item {
             MedicationFormSectionHeader(stringResource(R.string.caregiver_medication_form_basic), MedicationFormHeaderIcon.PILLS)
             Spacer(Modifier.height(8.dp))
@@ -661,143 +668,21 @@ private fun CaregiverMedicationEditor(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        item {
-            MedicationFormSectionHeader(stringResource(R.string.caregiver_medication_form_kind), MedicationFormHeaderIcon.TYPE)
-            Spacer(Modifier.height(8.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                MedicationTypeChoice(
-                    title = stringResource(R.string.caregiver_medication_type_scheduled_title),
-                    subtitle = stringResource(R.string.caregiver_medication_type_scheduled_subtitle),
-                    selected = !draft.isPrn,
-                    accent = MedicationTheme.colors.primaryTealText,
-                    icon = MedicationFormTypeIcon.SCHEDULED,
-                    onClick = { acceptDraft(draft.copy(isPrn = false)) },
-                    modifier = Modifier.testTag("medication-kind-scheduled"),
-                )
-                MedicationTypeChoice(
-                    title = stringResource(R.string.caregiver_medication_type_prn_title),
-                    subtitle = stringResource(R.string.caregiver_medication_type_prn_subtitle),
-                    selected = draft.isPrn,
-                    accent = MedicationTheme.colors.orange,
-                    icon = MedicationFormTypeIcon.PRN,
-                    onClick = {
-                        draft = draft.copy(
-                            isPrn = true,
-                            supplyDays = "",
-                            scheduleFrequency = CaregiverScheduleFrequency.DAILY,
-                            selectedDays = emptySet(),
-                            selectedSlots = emptySet(),
-                        )
-                    },
-                    modifier = Modifier.testTag("medication-kind-prn"),
-                )
-                if (draft.isPrn) {
-                    OutlinedTextField(
-                        value = draft.prnInstructions,
-                        onValueChange = { draft = draft.copy(prnInstructions = it) },
-                        modifier = Modifier.fillMaxWidth().testTag("medication-prn-instructions"),
-                        label = { Text(stringResource(R.string.caregiver_medication_form_prn_instructions)) },
-                        minLines = 2,
-                        maxLines = 4,
-                        shape = RoundedCornerShape(14.dp),
-                    )
-                }
-            }
-            Text(
-                stringResource(if (draft.isPrn) R.string.caregiver_medication_form_prn_help else R.string.caregiver_medication_form_scheduled_help),
-                modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 12.dp),
-                fontSize = 13.sp,
-                lineHeight = 18.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        item {
-            MedicationFormSectionHeader(stringResource(R.string.caregiver_medication_form_period), MedicationFormHeaderIcon.PERIOD)
-            Spacer(Modifier.height(8.dp))
-            MedicationPeriodCard(
-                draft = draft,
-                onStartDate = { pickDate(draft.startDate) { acceptDraft(draft.copy(startDate = it, endDate = draft.endDate?.coerceAtLeast(it))) } },
-                onEndDateEnabled = { enabled -> draft = draft.copy(endDate = if (enabled) draft.startDate else null) },
-                onEndDate = { pickDate(draft.endDate ?: draft.startDate) { draft = draft.copy(endDate = it) } },
-            )
-        }
         if (!draft.isPrn) item {
-            MedicationFormSectionHeader(stringResource(R.string.caregiver_medication_form_schedule), MedicationFormHeaderIcon.SCHEDULE)
-            Spacer(Modifier.height(8.dp))
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MedicationTheme.colors.cardStroke),
-            ) {
-                Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    MedicationScheduleGuide()
-                    Row(
-                        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f), RoundedCornerShape(9.dp)).padding(2.dp),
-                        horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                    MedicationChoiceChip(
-                        selected = draft.scheduleFrequency == CaregiverScheduleFrequency.DAILY,
-                        onClick = { acceptDraft(draft.copy(scheduleFrequency = CaregiverScheduleFrequency.DAILY, selectedDays = emptySet())) },
-                        label = stringResource(R.string.caregiver_medication_form_daily),
-                        modifier = Modifier.weight(1f).testTag("medication-frequency-daily"),
-                        accent = MedicationTheme.colors.caregiverBlue,
-                    )
-                    MedicationChoiceChip(
-                        selected = draft.scheduleFrequency == CaregiverScheduleFrequency.WEEKLY,
-                        onClick = { acceptDraft(draft.copy(scheduleFrequency = CaregiverScheduleFrequency.WEEKLY)) },
-                        label = stringResource(R.string.caregiver_medication_form_weekly),
-                        modifier = Modifier.weight(1f).testTag("medication-frequency-weekly"),
-                        accent = MedicationTheme.colors.caregiverBlue,
-                    )
-                }
-                if (draft.scheduleFrequency == CaregiverScheduleFrequency.WEEKLY) {
-                        Text(stringResource(R.string.caregiver_medication_form_schedule_days), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        CaregiverScheduleDay.entries.forEach { day ->
-                                MedicationWeekdayButton(day, day in draft.selectedDays, { acceptDraft(draft.copy(selectedDays = draft.selectedDays.toggle(day))) }, Modifier.weight(1f))
-                        }
-                    }
-                }
-                    Text(stringResource(R.string.caregiver_medication_form_schedule_slots), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    CaregiverScheduleSlot.entries.chunked(2).forEach { rowSlots ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            rowSlots.forEach { slot ->
-                                MedicationTimeSlotButton(
-                                    slot = slot,
-                                    time = slotTimes?.valueFor(slot).orEmpty(),
-                                    selected = slot in draft.selectedSlots,
-                                    onClick = { acceptDraft(draft.copy(selectedSlots = draft.selectedSlots.toggle(slot))) },
-                                    modifier = Modifier.weight(1f),
-                                )
-                            }
-                        }
-                    }
-                    Text(
-                        stringResource(R.string.caregiver_medication_form_daily_count, draft.dosesPerDay),
-                        modifier = Modifier.fillMaxWidth().background(MedicationTheme.colors.orange.copy(alpha = 0.1f), RoundedCornerShape(50)).padding(vertical = 8.dp),
-                        color = MedicationTheme.colors.orange,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-            }
-            MedicationInlineValidationErrors(
-                errors.filter { it.field.name in setOf("SCHEDULE_SLOT", "SCHEDULE_DAY") },
-                "medication-schedule-validation-errors",
+            MedicationPublishedTimingCard(
+                draft = draft,
+                slotTimes = slotTimes,
+                onSlot = { slot -> acceptDraft(draft.copy(selectedSlots = draft.selectedSlots.toggle(slot))) },
             )
-            Text(
-                stringResource(R.string.caregiver_medication_form_schedule_help),
-                modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 12.dp),
-                fontSize = 13.sp,
-                lineHeight = 18.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            MedicationInlineValidationErrors(
+                errors.filter { it.field.name == "SCHEDULE_SLOT" },
+                "medication-schedule-validation-errors",
             )
         }
         if (medication == null) item {
-            MedicationFormSectionHeader(stringResource(R.string.caregiver_medication_form_inventory_section), MedicationFormHeaderIcon.INVENTORY)
-            Spacer(Modifier.height(8.dp))
             if (draft.isPrn) {
+                MedicationFormSectionHeader(stringResource(R.string.caregiver_medication_form_inventory_section), MedicationFormHeaderIcon.INVENTORY)
+                Spacer(Modifier.height(8.dp))
                 MedicationManualInventoryCard(draft.inventoryCount) { draft = draft.copy(inventoryCount = it) }
             } else {
                 MedicationSupplyCalculator(
@@ -810,24 +695,6 @@ private fun CaregiverMedicationEditor(
                 errors.filter { it.field.name == "INVENTORY_COUNT" },
                 "medication-inventory-validation-errors",
             )
-        }
-        item {
-            MedicationFormSectionHeader(stringResource(R.string.caregiver_medication_form_notes_section), MedicationFormHeaderIcon.NOTES)
-            Spacer(Modifier.height(8.dp))
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MedicationTheme.colors.cardStroke),
-            ) {
-                MedicationInlineField(
-                    value = draft.notes,
-                    placeholder = stringResource(R.string.caregiver_medication_form_notes),
-                    onValueChange = { draft = draft.copy(notes = it) },
-                    modifier = Modifier.fillMaxWidth().testTag("medication-notes"),
-                    leading = { Icon(Icons.Rounded.Description, contentDescription = null, tint = MedicationTheme.colors.orange, modifier = Modifier.size(18.dp)) },
-                )
-            }
         }
         val remainingErrors = errors.filter { it.field.name == "END_DATE" }
         if (remainingErrors.isNotEmpty()) item {
@@ -844,7 +711,9 @@ private fun CaregiverMedicationEditor(
                 onClick = {
                     submitted = true
                     saveFailed = false
-                    if (draft.validate().isEmpty()) {
+                    val validation = draft.validate()
+                    if (validation.any { it.field.name in setOf("SCHEDULE_DAY", "END_DATE") }) additionalExpanded = true
+                    if (validation.isEmpty()) {
                         submitting = true
                         scope.launch {
                             val result = repository.save(patientId, medication?.id, draft)
@@ -858,8 +727,26 @@ private fun CaregiverMedicationEditor(
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MedicationTheme.colors.caregiverBlue),
             ) {
-                Text(stringResource(if (submitting) R.string.caregiver_medication_form_saving else R.string.caregiver_medication_form_save))
+                Text(
+                    stringResource(
+                        when {
+                            submitting -> R.string.caregiver_medication_form_saving
+                            medication == null -> R.string.caregiver_medication_form_register_submit
+                            else -> R.string.caregiver_medication_form_save
+                        },
+                    ),
+                )
             }
+            Spacer(Modifier.height(12.dp))
+            MedicationAdditionalSettingsCard(
+                expanded = additionalExpanded,
+                draft = draft,
+                errors = errors,
+                onExpandedChange = { additionalExpanded = it },
+                onDraftChange = ::acceptDraft,
+                onStartDate = { pickDate(draft.startDate) { acceptDraft(draft.copy(startDate = it, endDate = draft.endDate?.coerceAtLeast(it))) } },
+                onEndDate = { pickDate(draft.endDate ?: draft.startDate) { draft = draft.copy(endDate = it) } },
+            )
             if (medication != null) {
                 Spacer(Modifier.height(12.dp))
                 TextButton(
@@ -910,57 +797,162 @@ private fun CaregiverMedicationEditor(
 }
 
 @Composable
-private fun MedicationEditorHero(isNew: Boolean, draft: CaregiverMedicationDraft) {
-    val accent = if (draft.isPrn) MedicationTheme.colors.orange else MedicationTheme.colors.primaryTealText
+private fun MedicationPublishedTimingCard(
+    draft: CaregiverMedicationDraft,
+    slotTimes: CaregiverSlotTimes?,
+    onSlot: (CaregiverScheduleSlot) -> Unit,
+) {
     Card(
-        modifier = Modifier.fillMaxWidth().shadow(12.dp, RoundedCornerShape(20.dp), ambientColor = MedicationTheme.colors.caregiverCardShadow, spotColor = MedicationTheme.colors.caregiverCardShadow).testTag("medication-editor-hero"),
-        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.2.dp, accent.copy(alpha = 0.24f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MedicationTheme.colors.cardStroke),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
     ) {
-        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                Box(Modifier.size(54.dp).clip(RoundedCornerShape(16.dp)).background(accent.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
-                    if (isNew) MedicationPillsGlyph(accent, Modifier.size(38.dp))
-                    else Icon(Icons.Rounded.Edit, contentDescription = null, tint = accent, modifier = Modifier.size(38.dp))
-                }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        if (isNew || draft.name.isBlank()) stringResource(if (isNew) R.string.caregiver_medication_form_hero_new else R.string.caregiver_medication_form_hero_edit) else draft.name,
-                        fontSize = 22.sp,
-                        lineHeight = 27.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 2,
-                    )
-                    Text(
-                        stringResource(if (draft.isPrn) R.string.caregiver_medication_form_hero_prn else R.string.caregiver_medication_form_hero_scheduled),
-                        fontSize = 15.sp,
-                        lineHeight = 20.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+        Column(Modifier.fillMaxWidth().padding(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(Icons.Rounded.Schedule, contentDescription = null, tint = MedicationTheme.colors.orange, modifier = Modifier.size(28.dp))
+                Text(stringResource(R.string.caregiver_medication_form_timing_title), fontSize = 19.sp, fontWeight = FontWeight.Bold)
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CaregiverScheduleSlot.entries.forEach { slot ->
+                    val selected = slot in draft.selectedSlots
+                    val (label, icon) = when (slot) {
+                        CaregiverScheduleSlot.MORNING -> stringResource(R.string.caregiver_medication_form_slot_morning) to Icons.Rounded.WbTwilight
+                        CaregiverScheduleSlot.NOON -> stringResource(R.string.caregiver_medication_form_slot_noon) to Icons.Rounded.LightMode
+                        CaregiverScheduleSlot.EVENING -> stringResource(R.string.caregiver_medication_form_slot_evening) to Icons.Rounded.DarkMode
+                        CaregiverScheduleSlot.BEDTIME -> stringResource(R.string.caregiver_medication_form_slot_bedtime) to Icons.Rounded.Bed
+                    }
+                    Column(
+                        Modifier.weight(1f).heightIn(min = 66.dp).clip(RoundedCornerShape(10.dp))
+                            .background(if (selected) MedicationTheme.colors.primaryTealText.copy(alpha = 0.06f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
+                            .border(if (selected) 1.7.dp else 1.1.dp, if (selected) MedicationTheme.colors.primaryTealText else MedicationTheme.colors.cardStroke, RoundedCornerShape(10.dp))
+                            .clickable { onSlot(slot) }.padding(vertical = 7.dp).testTag("medication-slot-${slot.apiValue}"),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically),
+                    ) {
+                        Text(label, fontSize = 15.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold, color = if (selected) MedicationTheme.colors.primaryTealText else MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(icon, contentDescription = slotTimes?.valueFor(slot), tint = if (selected) MedicationTheme.colors.primaryTealText else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(21.dp))
+                    }
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MedicationProgressPill("薬名", draft.name.isNotBlank(), MedicationTheme.colors.primaryTealText)
-                MedicationProgressPill("用量", draft.dosageStrengthUnit.isNotBlank(), MedicationTheme.colors.caregiverBlue)
-                MedicationProgressPill("予定", draft.isPrn || draft.selectedSlots.isNotEmpty(), accent)
-            }
+            Text(
+                stringResource(R.string.caregiver_medication_form_daily_count, draft.dosesPerDay),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                color = MedicationTheme.colors.orange,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
 
 @Composable
-private fun MedicationProgressPill(label: String, complete: Boolean, color: Color) {
-    val foreground = if (complete) color else MaterialTheme.colorScheme.onSurfaceVariant
-    Row(
-        Modifier.clip(CircleShape).background(foreground.copy(alpha = 0.12f)).padding(horizontal = 9.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
+private fun MedicationAdditionalSettingsCard(
+    expanded: Boolean,
+    draft: CaregiverMedicationDraft,
+    errors: List<CaregiverMedicationValidationError>,
+    onExpandedChange: (Boolean) -> Unit,
+    onDraftChange: (CaregiverMedicationDraft) -> Unit,
+    onStartDate: () -> Unit,
+    onEndDate: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth().testTag("medication-additional-settings"),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MedicationTheme.colors.cardStroke),
     ) {
-        if (complete) Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = foreground, modifier = Modifier.size(15.dp))
-        else Box(Modifier.size(13.dp).border(1.5.dp, foreground, CircleShape))
-        Text(label, color = foreground, fontSize = 12.sp, lineHeight = 15.sp, fontWeight = FontWeight.Bold)
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(
+                Modifier.fillMaxWidth().clickable { onExpandedChange(!expanded) }.testTag("medication-additional-settings-toggle"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Icon(Icons.AutoMirrored.Rounded.FormatListBulleted, contentDescription = null, tint = MedicationTheme.colors.primaryTealText)
+                Text(stringResource(R.string.caregiver_medication_form_additional_settings), modifier = Modifier.weight(1f), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                Icon(if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown, contentDescription = null)
+            }
+            if (expanded) {
+                MedicationTypeChoice(
+                    title = stringResource(R.string.caregiver_medication_type_scheduled_title),
+                    subtitle = stringResource(R.string.caregiver_medication_type_scheduled_subtitle),
+                    selected = !draft.isPrn,
+                    accent = MedicationTheme.colors.primaryTealText,
+                    icon = MedicationFormTypeIcon.SCHEDULED,
+                    onClick = { onDraftChange(draft.copy(isPrn = false)) },
+                    modifier = Modifier.testTag("medication-kind-scheduled"),
+                )
+                MedicationTypeChoice(
+                    title = stringResource(R.string.caregiver_medication_type_prn_title),
+                    subtitle = stringResource(R.string.caregiver_medication_type_prn_subtitle),
+                    selected = draft.isPrn,
+                    accent = MedicationTheme.colors.orange,
+                    icon = MedicationFormTypeIcon.PRN,
+                    onClick = {
+                        onDraftChange(draft.copy(isPrn = true, supplyDays = "", scheduleFrequency = CaregiverScheduleFrequency.DAILY, selectedDays = emptySet(), selectedSlots = emptySet()))
+                    },
+                    modifier = Modifier.testTag("medication-kind-prn"),
+                )
+                if (!draft.isPrn) {
+                    Row(
+                        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f), RoundedCornerShape(9.dp)).padding(2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        MedicationChoiceChip(
+                            selected = draft.scheduleFrequency == CaregiverScheduleFrequency.DAILY,
+                            onClick = { onDraftChange(draft.copy(scheduleFrequency = CaregiverScheduleFrequency.DAILY, selectedDays = emptySet())) },
+                            label = stringResource(R.string.caregiver_medication_form_daily),
+                            modifier = Modifier.weight(1f).testTag("medication-frequency-daily"),
+                            accent = MedicationTheme.colors.caregiverBlue,
+                        )
+                        MedicationChoiceChip(
+                            selected = draft.scheduleFrequency == CaregiverScheduleFrequency.WEEKLY,
+                            onClick = { onDraftChange(draft.copy(scheduleFrequency = CaregiverScheduleFrequency.WEEKLY)) },
+                            label = stringResource(R.string.caregiver_medication_form_weekly),
+                            modifier = Modifier.weight(1f).testTag("medication-frequency-weekly"),
+                            accent = MedicationTheme.colors.caregiverBlue,
+                        )
+                    }
+                    if (draft.scheduleFrequency == CaregiverScheduleFrequency.WEEKLY) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                            CaregiverScheduleDay.entries.forEach { day ->
+                                MedicationWeekdayButton(day, day in draft.selectedDays, { onDraftChange(draft.copy(selectedDays = draft.selectedDays.toggle(day))) }, Modifier.weight(1f))
+                            }
+                        }
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = draft.prnInstructions,
+                        onValueChange = { onDraftChange(draft.copy(prnInstructions = it)) },
+                        modifier = Modifier.fillMaxWidth().testTag("medication-prn-instructions"),
+                        label = { Text(stringResource(R.string.caregiver_medication_form_prn_instructions)) },
+                        minLines = 2,
+                        maxLines = 4,
+                        shape = RoundedCornerShape(14.dp),
+                    )
+                }
+                MedicationPeriodCard(
+                    draft = draft,
+                    onStartDate = onStartDate,
+                    onEndDateEnabled = { enabled -> onDraftChange(draft.copy(endDate = if (enabled) draft.startDate else null)) },
+                    onEndDate = onEndDate,
+                )
+                OutlinedTextField(
+                    value = draft.notes,
+                    onValueChange = { onDraftChange(draft.copy(notes = it)) },
+                    modifier = Modifier.fillMaxWidth().testTag("medication-notes"),
+                    label = { Text(stringResource(R.string.caregiver_medication_form_notes)) },
+                    maxLines = 3,
+                    shape = RoundedCornerShape(12.dp),
+                )
+                MedicationInlineValidationErrors(
+                    errors.filter { it.field.name in setOf("SCHEDULE_DAY", "END_DATE") },
+                    "medication-additional-validation-errors",
+                )
+            }
+        }
     }
 }
 
@@ -1031,23 +1023,6 @@ private fun MedicationDateRow(label: String, date: LocalDate, onClick: () -> Uni
 }
 
 @Composable
-private fun MedicationScheduleGuide() {
-    Row(
-        Modifier.fillMaxWidth().background(MedicationTheme.colors.primaryTealText.copy(alpha = 0.08f), RoundedCornerShape(16.dp)).padding(14.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.Top,
-    ) {
-        Box(Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(MedicationTheme.colors.primaryTealText.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
-            Icon(Icons.Rounded.NotificationsActive, contentDescription = null, tint = MedicationTheme.colors.primaryTealText, modifier = Modifier.size(19.dp))
-        }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(stringResource(R.string.caregiver_medication_form_schedule_guide_title), fontSize = 17.sp, lineHeight = 21.sp, fontWeight = FontWeight.Bold)
-            Text(stringResource(R.string.caregiver_medication_form_schedule_guide_message), fontSize = 14.sp, lineHeight = 19.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
-@Composable
 private fun MedicationWeekdayButton(day: CaregiverScheduleDay, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(10.dp))
@@ -1056,37 +1031,6 @@ private fun MedicationWeekdayButton(day: CaregiverScheduleDay, selected: Boolean
         contentAlignment = Alignment.Center,
     ) {
         Text(DAY_LABELS.getValue(day.apiValue), color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-private fun MedicationTimeSlotButton(
-    slot: CaregiverScheduleSlot,
-    time: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val label = when (slot) {
-        CaregiverScheduleSlot.MORNING -> stringResource(R.string.caregiver_medication_form_slot_morning)
-        CaregiverScheduleSlot.NOON -> stringResource(R.string.caregiver_medication_form_slot_noon)
-        CaregiverScheduleSlot.EVENING -> stringResource(R.string.caregiver_medication_form_slot_evening)
-        CaregiverScheduleSlot.BEDTIME -> stringResource(R.string.caregiver_medication_form_slot_bedtime)
-    }
-    Row(
-        modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
-            .background(if (selected) MedicationTheme.colors.caregiverBlue.copy(alpha = 0.08f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f))
-            .border(if (selected) 1.5.dp else 0.dp, if (selected) MedicationTheme.colors.caregiverBlue.copy(alpha = 0.3f) else Color.Transparent, RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick).padding(horizontal = 12.dp).testTag("medication-slot-${slot.apiValue}"),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        if (selected) Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = MedicationTheme.colors.caregiverBlue, modifier = Modifier.size(21.dp))
-        else Box(Modifier.size(19.dp).border(1.5.dp, MaterialTheme.colorScheme.onSurfaceVariant, CircleShape))
-        Column(Modifier.weight(1f)) {
-            Text(label, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            if (time.isNotEmpty()) Text(time, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
     }
 }
 
@@ -1161,7 +1105,7 @@ private fun MedicationSupplyCalculator(
                 Text("錠", color = MedicationTheme.colors.orange, fontWeight = FontWeight.Bold)
             }
             Text(
-                stringResource(R.string.caregiver_medication_form_inventory_calculator_help),
+                stringResource(R.string.caregiver_medication_form_inventory_calculator_help_short),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 textAlign = TextAlign.Center,
@@ -1241,35 +1185,37 @@ private fun MedicationBasicInformation(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = androidx.compose.foundation.BorderStroke(1.dp, if (nameIsError) MaterialTheme.colorScheme.error.copy(alpha = 0.7f) else MedicationTheme.colors.cardStroke),
     ) {
-        Column {
-            MedicationInlineField(
-                value = draft.name,
-                placeholder = stringResource(R.string.caregiver_medication_form_name),
-                onValueChange = { onDraftChange(draft.copy(name = it)) },
-                modifier = Modifier.fillMaxWidth().testTag("medication-name"),
-                leading = { Icon(Icons.Rounded.Edit, contentDescription = null, tint = MedicationTheme.colors.caregiverBlue, modifier = Modifier.size(18.dp)) },
-            )
-            MedicationFormDivider()
-            Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.Science, contentDescription = null, tint = MedicationTheme.colors.orange, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(12.dp))
+        Column(Modifier.fillMaxWidth().padding(10.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Text(stringResource(R.string.caregiver_medication_form_name), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+            Row(
+                Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f), RoundedCornerShape(10.dp))
+                    .border(if (nameIsError) 2.dp else 1.2.dp, if (nameIsError) MaterialTheme.colorScheme.error else MedicationTheme.colors.cardStroke, RoundedCornerShape(10.dp)),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                MedicationInlineField(
+                    value = draft.name,
+                    placeholder = stringResource(R.string.caregiver_medication_form_name_placeholder),
+                    onValueChange = { onDraftChange(draft.copy(name = it)) },
+                    modifier = Modifier.weight(1f).testTag("medication-name"),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+                )
                 MedicationInlineField(
                     value = draft.dosageStrengthValue,
-                    placeholder = stringResource(R.string.caregiver_medication_form_strength_value),
+                    placeholder = "5",
                     onValueChange = { onDraftChange(draft.copy(dosageStrengthValue = it)) },
-                    modifier = Modifier.weight(1f).testTag("medication-strength-value"),
+                    modifier = Modifier.width(52.dp).testTag("medication-strength-value"),
                     enabled = draft.dosageStrengthUnit != "不明",
                     keyboardType = KeyboardType.Decimal,
-                    contentPadding = PaddingValues(vertical = 14.dp),
+                    textAlign = TextAlign.End,
+                    contentPadding = PaddingValues(vertical = 12.dp),
                 )
-                Box(Modifier.height(22.dp).width(1.dp).background(MaterialTheme.colorScheme.outline))
-                Box(Modifier.width(108.dp)) {
+                Box(Modifier.width(104.dp)) {
                     MedicationInlineField(
                         value = draft.dosageStrengthUnit,
                         placeholder = stringResource(R.string.caregiver_medication_form_strength_unit),
                         onValueChange = { unit -> onDraftChange(draft.copy(dosageStrengthUnit = unit, dosageStrengthValue = if (unit == "不明") "" else draft.dosageStrengthValue)) },
                         modifier = Modifier.fillMaxWidth().testTag("medication-strength-unit"),
-                        contentPadding = PaddingValues(start = 14.dp, top = 14.dp, bottom = 14.dp),
+                        contentPadding = PaddingValues(start = 8.dp, top = 12.dp, bottom = 12.dp),
                         trailing = {
                             IconButton(
                                 onClick = { unitMenuExpanded = true },
@@ -1291,28 +1237,20 @@ private fun MedicationBasicInformation(
                     }
                 }
             }
-            MedicationFormDivider()
-            Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                MedicationPillsGlyph(MedicationTheme.colors.primaryTealText, Modifier.size(18.dp))
-                Spacer(Modifier.width(12.dp))
-                Text(stringResource(R.string.caregiver_medication_form_dose_count_short), modifier = Modifier.weight(1f), fontSize = 16.sp)
+            HorizontalDivider(Modifier.padding(vertical = 2.dp))
+            Text(stringResource(R.string.caregiver_medication_form_dose_count_short), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MedicationInlineField(
                     value = draft.doseCountPerIntake,
-                    placeholder = "0",
+                    placeholder = "1",
                     onValueChange = { onDraftChange(draft.copy(doseCountPerIntake = it)) },
-                    modifier = Modifier.width(48.dp).testTag("medication-dose-count"),
+                    modifier = Modifier.width(116.dp).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f), RoundedCornerShape(10.dp))
+                        .border(1.2.dp, MedicationTheme.colors.cardStroke, RoundedCornerShape(10.dp)).testTag("medication-dose-count"),
                     keyboardType = KeyboardType.Decimal,
-                    textAlign = TextAlign.End,
+                    textAlign = TextAlign.Center,
                     contentPadding = PaddingValues(vertical = 12.dp),
                 )
-                IconButton(
-                    onClick = { onDraftChange(draft.copy(doseCountPerIntake = adjustDose(draft.doseCountPerIntake, -0.5))) },
-                    modifier = Modifier.size(34.dp).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(topStart = 7.dp, bottomStart = 7.dp)),
-                ) { Icon(Icons.Rounded.Remove, contentDescription = "減らす", modifier = Modifier.size(18.dp)) }
-                IconButton(
-                    onClick = { onDraftChange(draft.copy(doseCountPerIntake = adjustDose(draft.doseCountPerIntake, 0.5))) },
-                    modifier = Modifier.size(34.dp).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(topEnd = 7.dp, bottomEnd = 7.dp)),
-                ) { Icon(Icons.Rounded.Add, contentDescription = "増やす", modifier = Modifier.size(18.dp)) }
+                Text(stringResource(R.string.caregiver_medication_inventory_unit), fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -1390,8 +1328,6 @@ private fun MedicationTypeChoice(
         else Box(Modifier.size(21.dp).border(1.5.dp, MaterialTheme.colorScheme.onSurfaceVariant, CircleShape))
     }
 }
-
-private fun adjustDose(value: String, delta: Double): String = formatMedicationNumber(((value.toDoubleOrNull() ?: 0.0) + delta).coerceIn(0.0, 999.0))
 
 @Composable
 private fun MedicationChoiceChip(
