@@ -110,6 +110,7 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverCreateError
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimesValidationError
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverLinkingCode
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayRepository
@@ -764,10 +765,11 @@ private fun CaregiverPatientSelectionScreen(
                     bedtime = bedtime,
                     enabled = patientActionsEnabled && !state.savingSlotTimes,
                     saveFailed = state.slotTimesSaveFailed,
-                    onMorning = { morning = it },
-                    onNoon = { noon = it },
-                    onEvening = { evening = it },
-                    onBedtime = { bedtime = it },
+                    validationError = state.slotTimesValidationError,
+                    onMorning = { repository.clearSlotTimesValidationError(); morning = it },
+                    onNoon = { repository.clearSlotTimesValidationError(); noon = it },
+                    onEvening = { repository.clearSlotTimesValidationError(); evening = it },
+                    onBedtime = { repository.clearSlotTimesValidationError(); bedtime = it },
                     onSave = {
                         scope.launch {
                             if (repository.updateSelectedPatientSlotTimes(CaregiverSlotTimes(morning, noon, evening, bedtime))) {
@@ -1416,6 +1418,7 @@ private fun CaregiverSlotTimesCard(
     bedtime: String,
     enabled: Boolean,
     saveFailed: Boolean,
+    validationError: CaregiverSlotTimesValidationError?,
     onMorning: (String) -> Unit,
     onNoon: (String) -> Unit,
     onEvening: (String) -> Unit,
@@ -1435,6 +1438,18 @@ private fun CaregiverSlotTimesCard(
             CaregiverTimeRow(R.string.caregiver_slot_noon, noon, enabled, onNoon)
             CaregiverTimeRow(R.string.caregiver_slot_evening, evening, enabled, onEvening)
             CaregiverTimeRow(R.string.caregiver_slot_bedtime, bedtime, enabled, onBedtime)
+            validationError?.let {
+                Text(
+                    stringResource(R.string.caregiver_slot_times_validation_title),
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    caregiverSlotTimesValidationMessage(it),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.testTag("caregiver-slot-times-validation-error"),
+                )
+            }
             if (saveFailed) Text(stringResource(R.string.caregiver_slot_times_save_failed), color = MaterialTheme.colorScheme.error)
             Button(onClick = onSave, enabled = enabled, modifier = Modifier.fillMaxWidth().testTag("caregiver-slot-times-save")) {
                 Text(stringResource(R.string.caregiver_slot_times_save))
@@ -1442,6 +1457,16 @@ private fun CaregiverSlotTimesCard(
         }
     }
 }
+
+@Composable
+private fun caregiverSlotTimesValidationMessage(error: CaregiverSlotTimesValidationError): String = stringResource(
+    when (error) {
+        CaregiverSlotTimesValidationError.INVALID -> R.string.caregiver_slot_times_validation_invalid
+        CaregiverSlotTimesValidationError.NOON -> R.string.caregiver_slot_times_validation_noon
+        CaregiverSlotTimesValidationError.EVENING -> R.string.caregiver_slot_times_validation_evening
+        CaregiverSlotTimesValidationError.BEDTIME -> R.string.caregiver_slot_times_validation_bedtime
+    },
+)
 
 @Composable
 private fun CaregiverTimeRow(label: Int, value: String, enabled: Boolean, onValue: (String) -> Unit) {

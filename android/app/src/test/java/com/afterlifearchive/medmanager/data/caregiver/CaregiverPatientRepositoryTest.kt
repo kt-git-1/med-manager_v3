@@ -210,7 +210,38 @@ class CaregiverPatientRepositoryTest {
 
         assertFalse(repository.updateSelectedPatientSlotTimes(CaregiverSlotTimes("24:00", "12:00", "18:00", "21:00")))
         assertEquals(0, calls)
-        assertTrue(repository.state.value.slotTimesSaveFailed)
+        assertFalse(repository.state.value.slotTimesSaveFailed)
+        assertEquals(CaregiverSlotTimesValidationError.INVALID, repository.state.value.slotTimesValidationError)
+    }
+
+    @Test
+    fun slotTimeOrderRejectsEachNonIncreasingBoundaryWithoutMutation() = runTest {
+        val storage = FakeStorage().apply { currentPatientId = "old" }
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        var calls = 0
+        val source = object : CaregiverPatientDataSource {
+            override suspend fun listPatients() = listOf(patient("old", "あおい"))
+            override suspend fun updateSlotTimes(patientId: String, slotTimes: CaregiverSlotTimes): CaregiverSlotTimes {
+                calls += 1
+                return slotTimes
+            }
+        }
+        val repository = CaregiverPatientRepository(source, selection)
+        repository.refresh()
+
+        val cases = listOf(
+            CaregiverSlotTimes("08:00", "08:00", "18:00", "21:00") to CaregiverSlotTimesValidationError.NOON,
+            CaregiverSlotTimes("08:00", "12:00", "11:59", "21:00") to CaregiverSlotTimesValidationError.EVENING,
+            CaregiverSlotTimes("08:00", "12:00", "18:00", "18:00") to CaregiverSlotTimesValidationError.BEDTIME,
+        )
+        cases.forEach { (times, expected) ->
+            assertFalse(repository.updateSelectedPatientSlotTimes(times))
+            assertEquals(expected, repository.state.value.slotTimesValidationError)
+        }
+        assertEquals(0, calls)
+
+        repository.clearSlotTimesValidationError()
+        assertNull(repository.state.value.slotTimesValidationError)
     }
 
     @Test

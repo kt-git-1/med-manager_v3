@@ -27,6 +27,8 @@ data class CaregiverSlotTimes(
     val bedtime: String,
 )
 
+enum class CaregiverSlotTimesValidationError { INVALID, NOON, EVENING, BEDTIME }
+
 data class CaregiverLinkingCode(val code: String, val expiresAt: String)
 
 data class CaregiverPatientState(
@@ -41,6 +43,7 @@ data class CaregiverPatientState(
     val createError: CaregiverCreateError? = null,
     val savingSlotTimes: Boolean = false,
     val slotTimesSaveFailed: Boolean = false,
+    val slotTimesValidationError: CaregiverSlotTimesValidationError? = null,
     val linkingCode: CaregiverLinkingCode? = null,
     val issuingLinkingCode: Boolean = false,
     val linkingCodeFailed: Boolean = false,
@@ -192,11 +195,19 @@ class CaregiverPatientRepository(
             return false
         }
         val patientId = mutableState.value.selectedPatientId ?: return false
-        if (!slotTimes.isValid()) {
-            mutableState.value = mutableState.value.copy(slotTimesSaveFailed = true)
+        val validationError = validateCaregiverSlotTimes(slotTimes)
+        if (validationError != null) {
+            mutableState.value = mutableState.value.copy(
+                slotTimesSaveFailed = false,
+                slotTimesValidationError = validationError,
+            )
             return false
         }
-        mutableState.value = mutableState.value.copy(savingSlotTimes = true, slotTimesSaveFailed = false)
+        mutableState.value = mutableState.value.copy(
+            savingSlotTimes = true,
+            slotTimesSaveFailed = false,
+            slotTimesValidationError = null,
+        )
         return try {
             val saved = dataSource.updateSlotTimes(patientId, slotTimes)
             mutableState.value = mutableState.value.copy(
@@ -209,8 +220,18 @@ class CaregiverPatientRepository(
             true
         } catch (error: Exception) {
             if (error is CancellationException) throw error
-            mutableState.value = mutableState.value.copy(savingSlotTimes = false, slotTimesSaveFailed = true)
+            mutableState.value = mutableState.value.copy(
+                savingSlotTimes = false,
+                slotTimesSaveFailed = true,
+                slotTimesValidationError = null,
+            )
             false
+        }
+    }
+
+    fun clearSlotTimesValidationError() {
+        if (mutableState.value.slotTimesValidationError != null) {
+            mutableState.value = mutableState.value.copy(slotTimesValidationError = null)
         }
     }
 
@@ -355,8 +376,25 @@ private data class CaregiverSlotTimesDto(
 
 private fun CaregiverSlotTimes.toDto() = CaregiverSlotTimesDto(morning, noon, evening, bedtime)
 
-private fun CaregiverSlotTimes.isValid(): Boolean = listOf(morning, noon, evening, bedtime).all {
-    TIME_PATTERN.matches(it)
+fun validateCaregiverSlotTimes(slotTimes: CaregiverSlotTimes): CaregiverSlotTimesValidationError? {
+    val values = listOf(slotTimes.morning, slotTimes.noon, slotTimes.evening, slotTimes.bedtime)
+    if (!values.all(TIME_PATTERN::matches)) return CaregiverSlotTimesValidationError.INVALID
+
+    fun minutes(value: String): Int {
+        val (hour, minute) = value.split(':').map(String::toInt)
+        return hour * 60 + minute
+    }
+
+    val morning = minutes(slotTimes.morning)
+    val noon = minutes(slotTimes.noon)
+    val evening = minutes(slotTimes.evening)
+    val bedtime = minutes(slotTimes.bedtime)
+    return when {
+        noon <= morning -> CaregiverSlotTimesValidationError.NOON
+        evening <= noon -> CaregiverSlotTimesValidationError.EVENING
+        bedtime <= evening -> CaregiverSlotTimesValidationError.BEDTIME
+        else -> null
+    }
 }
 
 private val TIME_PATTERN = Regex("(?:[01]\\d|2[0-3]):[0-5]\\d")

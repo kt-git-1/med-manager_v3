@@ -468,6 +468,11 @@
     <string name="caregiver_slot_times_detail">朝・昼・夕・寝る前の基準時刻を設定します</string>
     <string name="caregiver_slot_times_save">時間を保存</string>
     <string name="caregiver_slot_times_save_failed">時間を保存できませんでした。もう一度お試しください。</string>
+    <string name="caregiver_slot_times_validation_title">時間の順番を確認してください</string>
+    <string name="caregiver_slot_times_validation_invalid">朝・昼・夜・眠前の時間を正しく設定してください。</string>
+    <string name="caregiver_slot_times_validation_noon">昼の時間は朝より後に設定してください。</string>
+    <string name="caregiver_slot_times_validation_evening">夜の時間は昼より後に設定してください。</string>
+    <string name="caregiver_slot_times_validation_bedtime">眠前の時間は夜より後に設定してください。</string>
     <string name="caregiver_linking_code_title">連携コード</string>
     <string name="caregiver_linking_code_subtitle">患者にこのコードを伝えてください</string>
     <string name="caregiver_linking_code_detail">本人モードで入力する6桁コードを発行します。コードは15分間有効です。</string>

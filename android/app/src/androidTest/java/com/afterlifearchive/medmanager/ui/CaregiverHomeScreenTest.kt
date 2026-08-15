@@ -352,6 +352,25 @@ class CaregiverHomeScreenTest {
     }
 
     @Test
+    fun slotTimePresetShowsPublishedIosOrderValidation() {
+        val (repository, _) = setContent(
+            listOf(CaregiverPatient("patient-1", "さくら", CaregiverSlotTimes("08:00", "08:00", "18:00", "21:00"))),
+        )
+        composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
+
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-slot-times"))
+        composeRule.onNodeWithTag("caregiver-slot-times").performClick()
+        composeRule.onNodeWithTag("caregiver-slot-times-sheet-content").performScrollToNode(hasTestTag("caregiver-slot-times-save"))
+        composeRule.onNodeWithTag("caregiver-slot-times-save").performClick()
+        composeRule.onNodeWithTag("caregiver-slot-times-sheet-content").performScrollToNode(hasTestTag("caregiver-slot-times-validation-error"))
+
+        composeRule.onNodeWithText("時間の順番を確認してください").assertIsDisplayed()
+        composeRule.onNodeWithText("昼の時間は朝より後に設定してください。").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-slot-times-sheet").assertIsDisplayed()
+    }
+
+    @Test
     fun settingsBlocksTheScreenWhileCreatingPatient() {
         val release = CompletableDeferred<Unit>()
         val storage = TestSelectionStorage()
