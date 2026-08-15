@@ -163,16 +163,19 @@ internal fun CaregiverTodayScreen(
     if (confirmation != null && selected != null) {
         val recordable = confirmation.second.filter { it.status != DoseStatus.TAKEN }
         val includesMissed = recordable.any { it.status == DoseStatus.MISSED }
+        val confirmationMessage = when {
+            recordable.size == 1 && includesMissed -> R.string.caregiver_today_confirm_slot_single_missed_message
+            recordable.size == 1 -> R.string.caregiver_today_confirm_slot_single_message
+            includesMissed -> R.string.caregiver_today_confirm_slot_missed_message
+            else -> R.string.caregiver_today_confirm_slot_message
+        }
         AlertDialog(
             onDismissRequest = { slotToConfirm = null },
             title = { Text(stringResource(R.string.caregiver_today_confirm_slot_title)) },
             text = {
                 Text(
-                    stringResource(
-                        if (includesMissed) R.string.caregiver_today_confirm_slot_missed_message else R.string.caregiver_today_confirm_slot_message,
-                        slotLabel(confirmation.first),
-                        recordable.size,
-                    ),
+                    if (recordable.size == 1) stringResource(confirmationMessage, slotLabel(confirmation.first))
+                    else stringResource(confirmationMessage, slotLabel(confirmation.first), recordable.size),
                 )
             },
             dismissButton = {
@@ -342,7 +345,7 @@ private fun CaregiverTodayContent(
                             if (takenAt != null) {
                                 Text(
                                     stringResource(
-                                        R.string.caregiver_today_late_message,
+                                        if (lateRows.size == 1) R.string.caregiver_today_late_message_single else R.string.caregiver_today_late_message_multiple,
                                         slotLabel(slot),
                                         caregiverTime(scheduledAt),
                                         caregiverTime(takenAt),
@@ -671,6 +674,7 @@ private fun CaregiverTimelineCard(
     }
     val actualTakenAt = doses.mapNotNull(PatientDose::takenAt).maxOrNull()
     val scheduledAt = doses.minOfOrNull(PatientDose::scheduledAt)
+    val recordedByType = doses.filter { it.status == DoseStatus.TAKEN }.mapNotNull(PatientDose::recordedByType).distinct().singleOrNull()
     val isLate = actualTakenAt != null && scheduledAt != null && MedicationRecordingPolicy.isLate(scheduledAt, actualTakenAt)
     val tint = when (status) {
         DoseStatus.TAKEN -> if (isLate) MedicationTheme.colors.orange else MaterialTheme.colorScheme.primary
@@ -723,12 +727,8 @@ private fun CaregiverTimelineCard(
                         color = if (isLate) MedicationTheme.colors.orange else MedicationTheme.colors.primaryTealText,
                         fontWeight = FontWeight.Bold,
                     )
-                    if (isLate) {
-                        Text(
-                            caregiverDelayText(MedicationRecordingPolicy.delaySeconds(scheduledAt, actualTakenAt)),
-                            color = MedicationTheme.colors.orange,
-                            fontWeight = FontWeight.Bold,
-                        )
+                    recordedByType?.let {
+                        Text(caregiverRecordedBy(it), color = MedicationTheme.colors.primaryTealText, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -765,7 +765,12 @@ private fun CaregiverTimelineCard(
                     if (updatingSlot == slot) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 3.dp, color = MaterialTheme.colorScheme.onPrimary)
                     else Icon(Icons.Rounded.CheckCircle, contentDescription = null)
                     Spacer(Modifier.size(6.dp))
-                    Text(stringResource(R.string.caregiver_today_timeline_record_slot, recordable.size), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        if (recordable.size == 1) stringResource(R.string.caregiver_today_timeline_record_slot_single)
+                        else stringResource(R.string.caregiver_today_timeline_record_slot_multiple, recordable.size),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
             }
         }

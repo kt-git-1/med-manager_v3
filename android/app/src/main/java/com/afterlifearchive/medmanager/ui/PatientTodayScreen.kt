@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,8 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Error
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.LocalHospital
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.Warning
@@ -114,6 +117,16 @@ internal fun TodayContent(
     val grouped = doses.groupBy { it.slot ?: PatientSlotTimes.DEFAULT.resolve(it.scheduledAt) }
     val nextDoses = nextSlot?.let { grouped[it] }.orEmpty()
     val takenCount = doses.count { it.status == DoseStatus.TAKEN }
+    val completedSlots = MedicationSlot.entries.filter { slot ->
+        grouped[slot].orEmpty().let { it.isNotEmpty() && it.all { dose -> dose.status == DoseStatus.TAKEN } }
+    }
+    val lateSlots = MedicationSlot.entries.filter { slot ->
+        val slotDoses = grouped[slot].orEmpty()
+        val scheduledAt = slotDoses.minOfOrNull(PatientDose::scheduledAt)
+        slot != nextSlot && scheduledAt != null && slotDoses.any { it.status != DoseStatus.TAKEN } &&
+            MedicationRecordingPolicy.isRecordable(scheduledAt, now) && MedicationRecordingPolicy.isLate(scheduledAt, now)
+    }
+    val compactSummarySlots = lateSlots + completedSlots
     val insufficientMedicationNames = buildList {
         val seenMedicationIds = mutableSetOf<String>()
         doses.forEach { dose ->
@@ -138,21 +151,13 @@ internal fun TodayContent(
         if (error != null) index += 1
         if (message != null) index += 1
         if (maintenanceWarning != null) index += 1
+        index += 1 // progress
+        val nextHeroIndex = index
         index += 1
         if (prnMedications.isNotEmpty()) index += 1
-        index += 1
-        if (!loading && error == null && doses.isEmpty()) index += 1
-        var result: Int? = null
-        for (slot in MedicationSlot.entries) {
-            val slotDoses = grouped[slot].orEmpty()
-            if (slotDoses.isEmpty()) continue
-            if (slot == target) {
-                result = index
-                break
-            }
-            index += 1 + slotDoses.size
-        }
-        result
+        index += 1 // summary title
+        if (target == nextSlot) nextHeroIndex
+        else compactSummarySlots.indexOf(target).takeIf { it >= 0 }?.let(index::plus)
     }
 
     LaunchedEffect(prnSuccessRevision) {
@@ -227,19 +232,12 @@ internal fun TodayContent(
             }
 
             item {
-                Row(
+                Text(
+                    stringResource(R.string.patient_today_record_section_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.fillMaxWidth().testTag("patient-today-planned"),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(stringResource(R.string.patient_today_record_section_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.weight(1f))
-                    Text(
-                        stringResource(R.string.patient_today_progress, takenCount, doses.size),
-                        modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(50)).padding(horizontal = 14.dp, vertical = 7.dp),
-                        color = PatientTeal,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                )
             }
 
             if (!loading && error == null && doses.isEmpty()) {
@@ -254,35 +252,29 @@ internal fun TodayContent(
                 }
             }
 
-            MedicationSlot.entries.forEach { slot ->
-                val slotDoses = grouped[slot].orEmpty()
-                if (slotDoses.isEmpty()) return@forEach
-                val remaining = slotDoses.filter { it.status != DoseStatus.TAKEN }
-                val insufficient = remaining.count { medications[it.medicationId]?.isInsufficientForDose == true }
-                val scheduledAt = slotDoses.minOf(PatientDose::scheduledAt)
-                val isWithinRecordingWindow = MedicationRecordingPolicy.isRecordable(scheduledAt, now)
-                val isLate = MedicationRecordingPolicy.isLate(scheduledAt, now)
-                item {
-                    SlotHeader(
+            if (!loading && error == null && doses.isNotEmpty() && compactSummarySlots.isEmpty()) {
+                item { PatientTodayEmptyRecordCard() }
+            }
+            lateSlots.forEach { slot ->
+                item(key = "patient-today-late-${slot.name}") {
+                    PatientTodayLateRecordCard(
                         slot = slot,
-                        isNext = slot == nextSlot,
-                        recordableCount = if (isWithinRecordingWindow) remaining.size - insufficient else 0,
-                        insufficientCount = insufficient,
-                        isWithinRecordingWindow = isWithinRecordingWindow,
-                        isLate = isLate,
-                        updating = updatingSlot == slot || screenUpdating,
+                        doses = grouped[slot].orEmpty(),
+                        medications = medications,
+                        now = now,
+                        updating = screenUpdating,
                         onRecordSlot = onRecordSlot,
+                        onDetail = onDetail,
                     )
                 }
-                items(slotDoses, key = PatientDose::key) { dose ->
-                    DoseCard(
-                        dose,
-                        updatingKey == dose.key,
-                        screenUpdating,
-                        medications[dose.medicationId]?.isInsufficientForDose == true,
-                        onRecord,
-                        onRemind,
-                        onDetail,
+            }
+            completedSlots.forEach { slot ->
+                item(key = "patient-today-completed-${slot.name}") {
+                    PatientTodayCompletedSlotCard(
+                        slot = slot,
+                        doses = grouped[slot].orEmpty(),
+                        medications = medications,
+                        onDetail = onDetail,
                     )
                 }
             }
@@ -787,6 +779,171 @@ private fun PrnEntryCard(count: Int, onClick: () -> Unit) {
                 Text(stringResource(R.string.patient_prn_entry_message, count), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
             }
             Text("›", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun PatientTodayEmptyRecordCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth().testTag("patient-today-empty-record-state"),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.5.dp, MedicationTheme.colors.caregiverBlue.copy(alpha = 0.55f)),
+    ) {
+        Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Box(Modifier.size(52.dp).background(MedicationTheme.colors.caregiverBlue.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) {
+                Icon(Icons.Rounded.AccessTime, contentDescription = null, tint = MedicationTheme.colors.caregiverBlue, modifier = Modifier.size(28.dp))
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text(stringResource(R.string.patient_today_summary_empty_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.patient_today_summary_empty_message), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PatientTodayLateRecordCard(
+    slot: MedicationSlot,
+    doses: List<PatientDose>,
+    medications: Map<String, PatientMedication>,
+    now: Instant,
+    updating: Boolean,
+    onRecordSlot: (MedicationSlot) -> Unit,
+    onDetail: (PatientDose) -> Unit,
+) {
+    val scheduledAt = doses.minOf(PatientDose::scheduledAt)
+    val unrecorded = doses.filter { it.status != DoseStatus.TAKEN }
+    val recordable = unrecorded.filter { medications[it.medicationId]?.isInsufficientForDose != true }
+    Card(
+        modifier = Modifier.fillMaxWidth().testTag("patient-today-slot-${slot.name.lowercase()}"),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.5.dp, PatientOrange.copy(alpha = 0.55f)),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Box(Modifier.size(54.dp).background(PatientOrange, CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.Warning, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.patient_today_late_unrecorded), color = PatientOrange, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(
+                        stringResource(
+                            R.string.patient_today_summary_late_detail,
+                            patientSlotShortTitle(slot),
+                            instantTimeText(scheduledAt),
+                            delayText(MedicationRecordingPolicy.delaySeconds(scheduledAt, now)),
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+            Text(stringResource(R.string.patient_today_summary_late_guide), fontWeight = FontWeight.SemiBold)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                unrecorded.forEach { dose ->
+                    PatientTodayCompactDoseRow(dose, medications[dose.medicationId]?.isInsufficientForDose == true) { onDetail(dose) }
+                }
+            }
+            Button(
+                onClick = { onRecordSlot(slot) },
+                enabled = !updating && recordable.isNotEmpty(),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 62.dp).testTag("patient-today-late-record-${slot.name.lowercase()}"),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PatientOrange),
+            ) {
+                Icon(Icons.Rounded.CheckCircle, contentDescription = null)
+                Spacer(Modifier.size(8.dp))
+                Text(stringResource(R.string.patient_today_bulk_action_actual, instantTimeText(now)), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PatientTodayCompletedSlotCard(
+    slot: MedicationSlot,
+    doses: List<PatientDose>,
+    medications: Map<String, PatientMedication>,
+    onDetail: (PatientDose) -> Unit,
+) {
+    var expanded by rememberSaveable(slot.name) { mutableStateOf(false) }
+    val scheduledAt = doses.minOf(PatientDose::scheduledAt)
+    val takenAt = doses.mapNotNull(PatientDose::takenAt).maxOrNull()
+    val isLate = takenAt?.let { MedicationRecordingPolicy.isLate(scheduledAt, it) } == true
+    val color = if (isLate) PatientOrange else PatientTeal
+    Card(
+        modifier = Modifier.fillMaxWidth().testTag("patient-today-slot-${slot.name.lowercase()}"),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.5.dp, color.copy(alpha = 0.55f)),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                Modifier.fillMaxWidth().clickable { expanded = !expanded }.testTag("patient-today-summary-toggle-${slot.name.lowercase()}"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Box(Modifier.size(52.dp).background(color.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = color, modifier = Modifier.size(28.dp))
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(if (isLate) R.string.patient_status_late else R.string.patient_today_summary_taken), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(
+                        stringResource(R.string.patient_today_summary_completed_detail, patientSlotShortTitle(slot), instantTimeText(takenAt ?: scheduledAt)),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(stringResource(if (expanded) R.string.patient_today_summary_hide else R.string.patient_today_summary_show), color = color, fontWeight = FontWeight.Bold)
+                }
+                Icon(if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown, contentDescription = null, tint = color)
+            }
+            if (expanded) {
+                androidx.compose.material3.HorizontalDivider()
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    doses.forEach { dose ->
+                        PatientTodayCompactDoseRow(dose, medications[dose.medicationId]?.isInsufficientForDose == true) { onDetail(dose) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PatientTodayCompactDoseRow(dose: PatientDose, inventoryInsufficient: Boolean, onClick: () -> Unit) {
+    val dosage = dose.dosageText.trim()
+    val displayName = if (dosage.isEmpty() || dosage == "不明") dose.medicationName else "${dose.medicationName} $dosage"
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().testTag("patient-today-summary-dose-${dose.key}"),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(displayName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(R.string.patient_prn_dose_count, formatPatientAmount(dose.doseCount)), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                if (inventoryInsufficient && dose.status != DoseStatus.TAKEN) Text(stringResource(R.string.patient_inventory_insufficient), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+            }
+            Icon(
+                when {
+                    inventoryInsufficient && dose.status != DoseStatus.TAKEN -> Icons.Rounded.Error
+                    dose.status == DoseStatus.TAKEN -> Icons.Rounded.CheckCircle
+                    else -> Icons.Rounded.RadioButtonUnchecked
+                },
+                contentDescription = null,
+                tint = when {
+                    inventoryInsufficient && dose.status != DoseStatus.TAKEN -> MaterialTheme.colorScheme.error
+                    dose.status == DoseStatus.TAKEN -> PatientTeal
+                    else -> MaterialTheme.colorScheme.outline
+                },
+            )
         }
     }
 }

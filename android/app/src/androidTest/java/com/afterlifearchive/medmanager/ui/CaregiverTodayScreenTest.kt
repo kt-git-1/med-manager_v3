@@ -140,11 +140,11 @@ class CaregiverTodayScreenTest {
             ),
         )
 
-        composeRule.onNodeWithText("飲み遅れの記録が1件あります").assertIsDisplayed()
-        composeRule.onNodeWithText("昼（予定 12:00）は実際 13:25に記録されました。家族が代理で記録").assertIsDisplayed()
+        composeRule.onNodeWithText("飲み遅れが1回ありました").assertIsDisplayed()
+        composeRule.onNodeWithText("昼 12:00予定 → 13:25に家族が代理で記録").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-timeline-noon"))
         composeRule.onNodeWithText("実際 13:25").assertIsDisplayed()
-        composeRule.onNodeWithText("1時間25分遅れ").assertIsDisplayed()
+        composeRule.onNodeWithText("家族が代理で記録").assertIsDisplayed()
         composeRule.onNodeWithText("飲み遅れ").assertIsDisplayed()
     }
 
@@ -187,7 +187,7 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithText("未記録").assertIsDisplayed()
         composeRule.onNodeWithText("次に記録").assertDoesNotExist()
         composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-slot-action-noon"))
-        composeRule.onNodeWithText("2件をまとめて記録").assertIsDisplayed()
+        composeRule.onNodeWithText("2件をまとめて代理で記録").assertIsDisplayed()
         composeRule.onNodeWithText("この時間帯の2件を記録").assertDoesNotExist()
         composeRule.onNodeWithTag("caregiver-today-dose-action-morning").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-today-dose-action-noon-1").assertDoesNotExist()
@@ -335,7 +335,7 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-slot-action-morning"))
         composeRule.onNodeWithTag("caregiver-today-slot-action-morning").performClick()
         composeRule.onNodeWithTag("caregiver-today-slot-dialog").assertIsDisplayed()
-        composeRule.onNodeWithText("朝の未記録・飲み忘れ1件を代理で", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("朝の飲み忘れを代理で記録しますか？").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-today-slot-confirm").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-mutation-message"))

@@ -139,8 +139,8 @@ class CaregiverAccessibilityTest {
 
         composeRule.waitUntil(5_000) { todayRepository.state.value.hasLoaded }
         composeRule.onNodeWithTag("caregiver-today-list")
-            .performScrollToNode(hasText("1件をまとめて記録"))
-        composeRule.onNodeWithText("1件をまとめて記録").assertIsDisplayed().performClick()
+            .performScrollToNode(hasText("代理で記録"))
+        composeRule.onNodeWithText("代理で記録").assertIsDisplayed().performClick()
         composeRule.onNodeWithTag("caregiver-today-slot-confirm").performClick()
         composeRule.waitUntil(5_000) { todayRepository.state.value.doses.single().status == DoseStatus.TAKEN }
         composeRule.onNodeWithTag("caregiver-today-list")

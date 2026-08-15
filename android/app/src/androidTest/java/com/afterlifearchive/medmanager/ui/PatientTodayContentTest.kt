@@ -43,6 +43,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
@@ -91,7 +94,7 @@ class PatientTodayContentTest {
             }
         }
 
-        composeRule.onNodeWithText("次に飲むお薬").assertIsDisplayed()
+        composeRule.onNodeWithText("次のお薬").assertIsDisplayed()
         composeRule.onNodeWithTag("patient-today-list")
             .performScrollToNode(hasText("在庫不足のお薬が1件あります"))
         composeRule.onAllNodesWithText("在庫不足のお薬が1件あります").onFirst().assertIsDisplayed()
@@ -138,22 +141,19 @@ class PatientTodayContentTest {
     }
 
     @Test
-    fun plannedDoseStatusesUseCurrentIosCopy() {
+    fun compactSummaryUsesPublishedEmptyAndExpandableCompletedStates() {
         showTodayState(
             doses = listOf(
-                dose("taken", DoseStatus.TAKEN),
-                dose("missed", DoseStatus.MISSED),
-                dose("pending", DoseStatus.PENDING),
+                dose("taken", DoseStatus.TAKEN).copy(takenAt = Instant.parse("2026-07-13T23:07:00Z")),
             ),
         )
 
-        listOf("記録済み", "飲み忘れ", "未記録").forEach { status ->
-            composeRule.onNodeWithTag("patient-today-list").performScrollToNode(hasText(status))
-            composeRule.onNodeWithText(status).assertIsDisplayed()
-        }
-        listOf("服用済み", "未達", "未服用").forEach { staleStatus ->
-            composeRule.onAllNodesWithText(staleStatus).assertCountEquals(0)
-        }
+        composeRule.onNodeWithTag("patient-today-list").performScrollToNode(hasTestTag("patient-today-summary-toggle-morning"))
+        composeRule.onNodeWithText("服用済み").assertIsDisplayed()
+        composeRule.onNodeWithText("朝 08:07に服用").assertIsDisplayed()
+        composeRule.onNodeWithText("薬の内容を見る").performClick()
+        composeRule.onNodeWithText("薬の内容を閉じる").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-summary-dose-dose-taken").assertIsDisplayed()
     }
 
     @Test
@@ -191,9 +191,10 @@ class PatientTodayContentTest {
         }
 
         composeRule.onNodeWithText("今日の予定は終了です").assertIsDisplayed()
-        composeRule.onNodeWithTag("patient-today-list").performScrollToNode(hasText("飲み遅れ・未記録"))
-        composeRule.onNodeWithText("飲み遅れ・未記録").assertIsDisplayed()
-        composeRule.onNodeWithText("この時間帯をまとめて記録（1件）").performClick()
+        composeRule.onNodeWithTag("patient-today-list").performScrollToNode(hasText("飲み遅れのお薬"))
+        composeRule.onNodeWithText("飲み遅れのお薬").assertIsDisplayed()
+        composeRule.onNodeWithText("昼 12:00・2時間15分遅れ").assertIsDisplayed()
+        composeRule.onNodeWithText("今飲んだ（14:15）").performClick()
         composeRule.runOnIdle { assertEquals(MedicationSlot.NOON, recordedSlot) }
     }
 
@@ -208,10 +209,10 @@ class PatientTodayContentTest {
             ),
         )
 
-        composeRule.onNodeWithTag("patient-today-list").performScrollToNode(hasText("実際 09:25"))
-        composeRule.onNodeWithText("実際 09:25").assertIsDisplayed()
-        composeRule.onNodeWithText("1時間25分遅れ").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-list").performScrollToNode(hasTestTag("patient-today-summary-toggle-morning"))
         composeRule.onNodeWithText("飲み遅れ").assertIsDisplayed()
+        composeRule.onNodeWithText("朝 09:25に服用").assertIsDisplayed()
+        composeRule.onNodeWithText("薬の内容を見る").assertIsDisplayed()
     }
 
     @Test
@@ -444,21 +445,31 @@ class PatientTodayContentTest {
     @Test
     fun productionNotificationTargetScrollsToExactSlotWithoutReplacingNextDose() {
         lateinit var activity: Activity
+        val scheduledBase = Instant.ofEpochSecond(((Instant.now().epochSecond / 60) + 10) * 60)
+        val bedtimeAt = scheduledBase.plusSeconds(600)
+        val tokyo = ZoneId.of("Asia/Tokyo")
+        val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+        val dynamicSlotTimes = PatientSlotTimes(
+            morning = "08:00",
+            noon = "13:00",
+            evening = scheduledBase.atZone(tokyo).format(timeFormatter),
+            bedtime = bedtimeAt.atZone(tokyo).format(timeFormatter),
+        )
         val bedtime = dose("bedtime", DoseStatus.PENDING).copy(
             key = "dose-bedtime",
             medicationName = "胃薬",
             slot = MedicationSlot.BEDTIME,
-            scheduledAt = Instant.parse("2026-07-15T18:00:00Z"),
+            scheduledAt = bedtimeAt,
         )
         val evening = dose("evening", DoseStatus.PENDING).copy(
             key = "dose-evening",
             medicationName = "夕食後のお薬",
             slot = MedicationSlot.EVENING,
-            scheduledAt = Instant.parse("2026-07-16T10:00:00Z"),
+            scheduledAt = scheduledBase,
         )
         val repository = PatientRepository(object : PatientDataSource {
             override suspend fun today() = listOf(bedtime, evening)
-            override suspend fun slotTimes() = PatientSlotTimes.DEFAULT
+            override suspend fun slotTimes() = dynamicSlotTimes
             override suspend fun medications() = listOf(
                 medication("bedtime", 10.0).copy(name = "胃薬"),
                 medication("evening", 10.0).copy(name = "夕食後のお薬"),
@@ -468,7 +479,7 @@ class PatientTodayContentTest {
             override suspend fun history(year: Int, month: Int) = emptyList<HistoryDay>()
             override suspend fun revokeSession() = Unit
         })
-        repository.handleNotificationTarget("2026-07-16", "evening")
+        repository.handleNotificationTarget(LocalDate.now(tokyo).toString(), "evening")
 
         composeRule.setContent {
             MedicationAppTheme {
@@ -480,12 +491,12 @@ class PatientTodayContentTest {
         composeRule.waitUntil(timeoutMillis = 5_000) {
             repository.state.value.doses.size == 2 && repository.state.value.notificationTarget == null
         }
-        composeRule.onNodeWithTag("patient-today-slot-evening").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-next").assertIsDisplayed()
         composeRule.onNodeWithTag("history-day-detail-list").assertDoesNotExist()
         composeRule.runOnIdle {
             assertEquals(
-                MedicationSlot.BEDTIME,
-                repository.nextActionSlot(Instant.parse("2026-07-15T18:15:00Z")),
+                MedicationSlot.EVENING,
+                repository.nextActionSlot(Instant.now()),
             )
         }
         composeRule.runOnIdle { normalizeStatusBar(activity) }

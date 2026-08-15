@@ -45,7 +45,7 @@ class PatientTutorialOverlayTest {
         }
 
         composeRule.onNodeWithText("今日のお薬").assertIsDisplayed()
-        composeRule.onNodeWithText("飲むお薬を確認します。飲んだら「飲んだ」を押します。").assertIsDisplayed()
+        composeRule.onNodeWithText("次に飲むお薬を確認します。飲んだら「今飲んだ」を押します。飲み遅れたお薬も今日の記録から残せます。").assertIsDisplayed()
         composeRule.onNodeWithText("1/4").assertIsDisplayed()
         composeRule.onNodeWithText("次へ").performClick()
         composeRule.runOnIdle { assertEquals(1, nextCount) }
