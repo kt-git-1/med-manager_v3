@@ -272,7 +272,7 @@ class CaregiverInventoryScreenTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-item-low").fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag("caregiver-inventory-item-low").performClick()
         composeRule.onNodeWithTag("caregiver-inventory-detail").assertIsDisplayed()
-        composeRule.onNodeWithText("在庫").assertIsDisplayed()
+        composeRule.onNodeWithText("在庫を編集").assertIsDisplayed()
         composeRule.onNodeWithText("夕食後のお薬").assertIsDisplayed()
         captureDevice(activity, "android-ui-205-caregiver-inventory-detail-source-calibrated-light.png")
     }
@@ -281,10 +281,14 @@ class CaregiverInventoryScreenTest {
     fun inventoryDetailScheduledTopAndLowerMatchCurrentIos() {
         val activity = openDetail(mutableListOf(item("low", "血圧の薬 5 mg", 4.0, low = true)))
 
-        composeRule.onNodeWithText("1日1回（1錠ずつ）").assertIsDisplayed()
-        composeRule.onNodeWithTag("inventory-detail-status").assertIsDisplayed()
+        composeRule.onNodeWithText("何をしますか？").assertIsDisplayed()
+        composeRule.onNodeWithTag("inventory-action-refill").assertIsSelected()
+        composeRule.onNodeWithTag("inventory-refill-editor").assertExists()
+        composeRule.onNodeWithTag("inventory-correction-editor").assertDoesNotExist()
         captureDevice(activity, "android-ui-205-caregiver-inventory-detail-scheduled-top-light-matched.png")
 
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-action-correction"))
+        composeRule.onNodeWithTag("inventory-action-correction").performClick().assertIsSelected()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction"))
         composeRule.onNodeWithTag("inventory-correction").assertIsDisplayed()
         captureDevice(activity, "android-ui-205-caregiver-inventory-detail-scheduled-lower-light-matched.png")
@@ -293,17 +297,16 @@ class CaregiverInventoryScreenTest {
     @Test
     fun inventoryDetailPrnStateMatchesCurrentIos() {
         val prnActivity = openDetail(mutableListOf(item("prn", "痛いときの薬", 8.0, isPrn = true)))
-        composeRule.onNodeWithText("1回 1錠").assertIsDisplayed()
+        composeRule.onNodeWithTag("inventory-refill-amount").assertTextEquals("14")
         captureDevice(prnActivity, "android-ui-205-caregiver-inventory-detail-prn-light-matched.png")
     }
 
     @Test
     fun inventoryDetailDisabledStateUsesTheLiveToggleValue() {
         val disabledActivity = openDetail(mutableListOf(item("off", "整腸剤", 10.0, enabled = false)))
-        composeRule.onNodeWithText("未設定").assertIsDisplayed()
+        composeRule.onNodeWithText("—", useUnmergedTree = true).assertExists()
         captureDevice(disabledActivity, "android-ui-205-caregiver-inventory-detail-disabled-light-matched.png")
         composeRule.onNodeWithTag("inventory-enabled").performClick()
-        composeRule.onNodeWithText("在庫あり").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-refill-preset-7"))
         composeRule.onNodeWithTag("inventory-refill-preset-7").performClick().assertIsSelected()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-refill"))
@@ -321,6 +324,8 @@ class CaregiverInventoryScreenTest {
         captureDevice(refillActivity, "android-ui-205-caregiver-inventory-detail-refill-confirm-light-matched.png")
         composeRule.onNodeWithText("キャンセル").performClick()
 
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-action-correction"))
+        composeRule.onNodeWithTag("inventory-action-correction").performClick()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction"))
         composeRule.onNodeWithTag("inventory-correction").performClick()
         composeRule.onNodeWithTag("inventory-correction-confirm").assertIsDisplayed()
@@ -357,6 +362,8 @@ class CaregiverInventoryScreenTest {
     fun inventoryDetailDarkRemainsReachable() {
         val darkActivity = openDetail(mutableListOf(item("low", "血圧の薬 5 mg", 4.0, low = true)), darkTheme = true)
         captureDevice(darkActivity, "android-ui-205-caregiver-inventory-detail-scheduled-dark-matched.png", darkTheme = true)
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-action-correction"))
+        composeRule.onNodeWithTag("inventory-action-correction").performClick()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction"))
         composeRule.onNodeWithTag("inventory-correction").assertIsDisplayed()
     }
@@ -364,6 +371,8 @@ class CaregiverInventoryScreenTest {
     @Test
     fun inventoryDetailTwoHundredPercentRemainsReachable() {
         val adaptiveActivity = openDetail(mutableListOf(item("low", "血圧の薬 5 mg", 4.0, low = true)), fontScale = 2f)
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-action-correction"))
+        composeRule.onNodeWithTag("inventory-action-correction").performClick()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction"))
         composeRule.onNodeWithTag("inventory-correction").assertIsDisplayed()
         captureDevice(adaptiveActivity, "android-ui-205-caregiver-inventory-detail-scheduled-font-2.0-matched.png")
@@ -374,9 +383,8 @@ class CaregiverInventoryScreenTest {
         setContent(mutableListOf(item("low", "少ない薬", 2.0, low = true)))
         composeRule.onNodeWithTag("caregiver-inventory-item-low").performClick()
 
-        composeRule.onNodeWithText("1日1回（1錠ずつ）").assertIsDisplayed()
-        composeRule.onNodeWithText("残り").assertIsDisplayed()
-        composeRule.onNodeWithText("在庫設定").assertIsDisplayed()
+        composeRule.onNodeWithText("何をしますか？").assertIsDisplayed()
+        composeRule.onNodeWithTag("inventory-refill-amount").assertTextEquals("14")
 
         composeRule.onNodeWithTag("caregiver-inventory-detail").performScrollToNode(hasTestTag("inventory-refill-amount"))
         composeRule.onNodeWithTag("inventory-refill-amount").performTextReplacement("5")
@@ -394,6 +402,8 @@ class CaregiverInventoryScreenTest {
         composeRule.onNodeWithTag("caregiver-inventory-item-low").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-inventory-item-low").performClick()
         composeRule.waitUntil(10_000) { composeRule.onAllNodesWithTag("caregiver-inventory-detail").fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-action-correction"))
+        composeRule.onNodeWithTag("inventory-action-correction").performClick()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction-quantity"))
         composeRule.onNodeWithTag("inventory-correction-quantity").performTextReplacement("4")
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction"))
@@ -439,6 +449,8 @@ class CaregiverInventoryScreenTest {
         composeRule.onNodeWithTag("caregiver-inventory-list").performScrollToNode(hasTestTag("caregiver-inventory-item-low"))
         composeRule.onNodeWithTag("caregiver-inventory-item-low").assertIsDisplayed().performClick()
         composeRule.waitUntil(10_000) { composeRule.onAllNodesWithTag("caregiver-inventory-detail").fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-action-correction"))
+        composeRule.onNodeWithTag("inventory-action-correction").performClick()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction-quantity"))
         composeRule.onNodeWithTag("inventory-correction-quantity").performTextReplacement("4")
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction"))
