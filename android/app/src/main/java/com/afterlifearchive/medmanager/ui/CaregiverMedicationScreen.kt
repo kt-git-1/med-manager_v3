@@ -100,12 +100,13 @@ import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationDraft
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationValidationError
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationValidationMessage
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverScheduleDay
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverScheduleFrequency
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverScheduleSlot
 import com.afterlifearchive.medmanager.data.caregiver.validate
 import com.afterlifearchive.medmanager.data.caregiver.dosesPerDay
-import com.afterlifearchive.medmanager.data.caregiver.inventoryCalculationDescription
+import com.afterlifearchive.medmanager.data.caregiver.inventoryCalculation
 import com.afterlifearchive.medmanager.data.caregiver.recalculateInventory
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
@@ -698,7 +699,10 @@ private fun CaregiverMedicationEditor(
         }
         val remainingErrors = errors.filter { it.field.name == "END_DATE" }
         if (remainingErrors.isNotEmpty()) item {
-            MedicationFormErrorCard(remainingErrors.joinToString("\n") { it.message }, "medication-validation-errors")
+            MedicationFormErrorCard(
+                stringResource(remainingErrors.first().message.stringResourceId()),
+                "medication-validation-errors",
+            )
         }
         if (saveFailed) item {
             MedicationFormErrorCard(stringResource(R.string.caregiver_medication_form_error), "medication-save-error")
@@ -1070,7 +1074,7 @@ private fun MedicationSupplyCalculator(
                 Text(stringResource(R.string.caregiver_medication_form_supply_days_unit), fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
 
-            val calculation = draft.inventoryCalculationDescription()
+            val calculation = draft.inventoryCalculation()
             if (calculation == null) {
                 Text(
                     stringResource(R.string.caregiver_medication_form_inventory_calculator_empty),
@@ -1080,7 +1084,17 @@ private fun MedicationSupplyCalculator(
                 )
             } else {
                 Text(
-                    calculation,
+                    stringResource(
+                        if (calculation.frequency == CaregiverScheduleFrequency.DAILY) {
+                            R.string.caregiver_medication_form_inventory_calculation_daily
+                        } else {
+                            R.string.caregiver_medication_form_inventory_calculation_weekly
+                        },
+                        calculation.dose,
+                        calculation.dosesPerDay,
+                        calculation.scheduledDays,
+                        calculation.total,
+                    ),
                     modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(10.dp)).padding(10.dp),
                     color = MedicationTheme.colors.primaryTealText,
                     fontWeight = FontWeight.Bold,
@@ -1148,10 +1162,26 @@ private fun MedicationInlineValidationErrors(errors: List<CaregiverMedicationVal
         errors.distinctBy(CaregiverMedicationValidationError::message).forEach { error ->
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top) {
                 Icon(Icons.Rounded.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(17.dp))
-                Text(error.message, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
+                Text(
+                    stringResource(error.message.stringResourceId()),
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.SemiBold,
+                )
             }
         }
     }
+}
+
+private fun CaregiverMedicationValidationMessage.stringResourceId(): Int = when (this) {
+    CaregiverMedicationValidationMessage.NAME_REQUIRED -> R.string.caregiver_medication_validation_name_required
+    CaregiverMedicationValidationMessage.DOSAGE_UNIT_REQUIRED -> R.string.caregiver_medication_validation_dosage_unit_required
+    CaregiverMedicationValidationMessage.DOSAGE_VALUE_REQUIRED -> R.string.caregiver_medication_validation_dosage_value_required
+    CaregiverMedicationValidationMessage.DOSAGE_VALUE_INVALID -> R.string.caregiver_medication_validation_dosage_value_invalid
+    CaregiverMedicationValidationMessage.DOSE_COUNT_INVALID -> R.string.caregiver_medication_validation_dose_count_invalid
+    CaregiverMedicationValidationMessage.END_DATE_INVALID -> R.string.caregiver_medication_validation_end_date_invalid
+    CaregiverMedicationValidationMessage.INVENTORY_COUNT_INVALID -> R.string.caregiver_medication_validation_inventory_count_invalid
+    CaregiverMedicationValidationMessage.SCHEDULE_SLOT_REQUIRED -> R.string.caregiver_medication_validation_schedule_slot_required
+    CaregiverMedicationValidationMessage.SCHEDULE_DAY_REQUIRED -> R.string.caregiver_medication_validation_schedule_day_required
 }
 
 @Composable

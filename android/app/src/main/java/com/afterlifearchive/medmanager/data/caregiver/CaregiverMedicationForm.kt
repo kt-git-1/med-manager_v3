@@ -61,16 +61,25 @@ fun CaregiverMedicationDraft.calculatedInventoryCount(): Double? {
     return dose * dosesPerDay * scheduledDays
 }
 
-fun CaregiverMedicationDraft.inventoryCalculationDescription(): String? {
+data class CaregiverInventoryCalculation(
+    val dose: String,
+    val dosesPerDay: Int,
+    val scheduledDays: Int,
+    val total: String,
+    val frequency: CaregiverScheduleFrequency,
+)
+
+fun CaregiverMedicationDraft.inventoryCalculation(): CaregiverInventoryCalculation? {
     val count = calculatedInventoryCount() ?: return null
     val days = supplyDays.toIntOrNull() ?: return null
     val dose = doseCountPerIntake.toDoubleOrNull() ?: return null
-    val finalTerm = if (scheduleFrequency == CaregiverScheduleFrequency.DAILY) {
-        "${days}日"
-    } else {
-        "服用日${scheduledDayCount(days)}日"
-    }
-    return "${dose.formValue()}錠 × ${dosesPerDay}回 × $finalTerm = ${count.formValue()}錠"
+    return CaregiverInventoryCalculation(
+        dose = dose.formValue(),
+        dosesPerDay = dosesPerDay,
+        scheduledDays = scheduledDayCount(days),
+        total = count.formValue(),
+        frequency = scheduleFrequency,
+    )
 }
 
 fun CaregiverMedicationDraft.recalculateInventory(): CaregiverMedicationDraft {
@@ -119,38 +128,50 @@ enum class CaregiverMedicationField {
 
 data class CaregiverMedicationValidationError(
     val field: CaregiverMedicationField,
-    val message: String,
+    val message: CaregiverMedicationValidationMessage,
 )
 
+enum class CaregiverMedicationValidationMessage {
+    NAME_REQUIRED,
+    DOSAGE_UNIT_REQUIRED,
+    DOSAGE_VALUE_REQUIRED,
+    DOSAGE_VALUE_INVALID,
+    DOSE_COUNT_INVALID,
+    END_DATE_INVALID,
+    INVENTORY_COUNT_INVALID,
+    SCHEDULE_SLOT_REQUIRED,
+    SCHEDULE_DAY_REQUIRED,
+}
+
 fun CaregiverMedicationDraft.validate(unknownDosageLabel: String = "不明"): List<CaregiverMedicationValidationError> = buildList {
-    if (name.isBlank()) add(CaregiverMedicationValidationError(CaregiverMedicationField.NAME, "薬名は必須です"))
+    if (name.isBlank()) add(CaregiverMedicationValidationError(CaregiverMedicationField.NAME, CaregiverMedicationValidationMessage.NAME_REQUIRED))
     if (dosageStrengthUnit.isBlank()) {
-        add(CaregiverMedicationValidationError(CaregiverMedicationField.DOSAGE_UNIT, "用量は必須です"))
+        add(CaregiverMedicationValidationError(CaregiverMedicationField.DOSAGE_UNIT, CaregiverMedicationValidationMessage.DOSAGE_UNIT_REQUIRED))
     } else if (dosageStrengthUnit != unknownDosageLabel) {
         if (dosageStrengthValue.isBlank()) {
-            add(CaregiverMedicationValidationError(CaregiverMedicationField.DOSAGE_VALUE, "用量の数値を入力してください"))
+            add(CaregiverMedicationValidationError(CaregiverMedicationField.DOSAGE_VALUE, CaregiverMedicationValidationMessage.DOSAGE_VALUE_REQUIRED))
         } else if (dosageStrengthValue.toPositiveDoubleOrNull() == null) {
-            add(CaregiverMedicationValidationError(CaregiverMedicationField.DOSAGE_VALUE, "規格は0より大きい数値で入力してください"))
+            add(CaregiverMedicationValidationError(CaregiverMedicationField.DOSAGE_VALUE, CaregiverMedicationValidationMessage.DOSAGE_VALUE_INVALID))
         }
     }
     if (doseCountPerIntake.isNotBlank() && doseCountPerIntake.toPositiveDoubleOrNull() == null) {
-        add(CaregiverMedicationValidationError(CaregiverMedicationField.DOSE_COUNT, "1回量は0より大きい数値で入力してください"))
+        add(CaregiverMedicationValidationError(CaregiverMedicationField.DOSE_COUNT, CaregiverMedicationValidationMessage.DOSE_COUNT_INVALID))
     }
     if (endDate?.isBefore(startDate) == true) {
-        add(CaregiverMedicationValidationError(CaregiverMedicationField.END_DATE, "終了日は開始日以降にしてください"))
+        add(CaregiverMedicationValidationError(CaregiverMedicationField.END_DATE, CaregiverMedicationValidationMessage.END_DATE_INVALID))
     }
     if (inventoryCount.isNotBlank()) {
         val value = inventoryCount.toDoubleOrNull()
         if (value == null || !value.isFinite() || value < 0) {
-            add(CaregiverMedicationValidationError(CaregiverMedicationField.INVENTORY_COUNT, "在庫数は0以上の数値で入力してください"))
+            add(CaregiverMedicationValidationError(CaregiverMedicationField.INVENTORY_COUNT, CaregiverMedicationValidationMessage.INVENTORY_COUNT_INVALID))
         }
     }
     if (!isPrn) {
         if (selectedSlots.isEmpty()) {
-            add(CaregiverMedicationValidationError(CaregiverMedicationField.SCHEDULE_SLOT, "時間は1件以上選択してください"))
+            add(CaregiverMedicationValidationError(CaregiverMedicationField.SCHEDULE_SLOT, CaregiverMedicationValidationMessage.SCHEDULE_SLOT_REQUIRED))
         }
         if (scheduleFrequency == CaregiverScheduleFrequency.WEEKLY && selectedDays.isEmpty()) {
-            add(CaregiverMedicationValidationError(CaregiverMedicationField.SCHEDULE_DAY, "服用する曜日を1つ以上選択してください"))
+            add(CaregiverMedicationValidationError(CaregiverMedicationField.SCHEDULE_DAY, CaregiverMedicationValidationMessage.SCHEDULE_DAY_REQUIRED))
         }
     }
 }

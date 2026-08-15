@@ -651,6 +651,8 @@
     <string name="caregiver_medication_form_inventory_calculator_empty">1回に飲む量・時間帯・日数を入力すると、登録時の在庫を自動計算します。</string>
     <string name="caregiver_medication_form_inventory_calculator_help">飲む量とタイミングから自動で計算します。計算後の錠数は修正できます。</string>
     <string name="caregiver_medication_form_inventory_calculator_help_short">飲む量とタイミングから自動で計算します</string>
+    <string name="caregiver_medication_form_inventory_calculation_daily">%1$s錠 × %2$d回 × %3$d日 = %4$s錠</string>
+    <string name="caregiver_medication_form_inventory_calculation_weekly">%1$s錠 × %2$d回 × 服用日%3$d日 = %4$s錠</string>
     <string name="caregiver_medication_form_register_guide">薬の情報と飲み方を入力します</string>
     <string name="caregiver_medication_form_register_help">薬の袋や説明書を見ながら、上から順番に入力してください。</string>
     <string name="caregiver_medication_form_timing_title">飲むタイミング</string>
@@ -662,6 +664,15 @@
     <string name="caregiver_medication_form_cancel">キャンセル</string>
     <string name="caregiver_medication_form_error">保存できませんでした。通信状態を確認して、もう一度お試しください。</string>
     <string name="caregiver_medication_form_required">必須</string>
+    <string name="caregiver_medication_validation_name_required">薬名は必須です</string>
+    <string name="caregiver_medication_validation_dosage_unit_required">用量は必須です</string>
+    <string name="caregiver_medication_validation_dosage_value_required">用量の数値を入力してください</string>
+    <string name="caregiver_medication_validation_dosage_value_invalid">規格は0より大きい数値で入力してください</string>
+    <string name="caregiver_medication_validation_dose_count_invalid">1回量は0より大きい数値で入力してください</string>
+    <string name="caregiver_medication_validation_end_date_invalid">終了日は開始日以降にしてください</string>
+    <string name="caregiver_medication_validation_inventory_count_invalid">在庫数は0以上の数値で入力してください</string>
+    <string name="caregiver_medication_validation_schedule_slot_required">時間は1件以上選択してください</string>
+    <string name="caregiver_medication_validation_schedule_day_required">服用する曜日を1つ以上選択してください</string>
     <string name="caregiver_medication_form_schedule">スケジュール</string>
     <string name="caregiver_medication_form_schedule_help">ここでは朝・昼・夜・眠前の時間帯を選びます。各時間帯の時刻は、連携・設定の「時間プリセット設定」で変更できます。</string>
     <string name="caregiver_medication_form_schedule_guide_title">本人画面に出す時間を選択</string>

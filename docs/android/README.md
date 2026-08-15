@@ -7,7 +7,7 @@ This directory is the source of truth for the Android port. Android work is isol
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
 - Android baseline merge: `android-dev@36a6d4d`
 - Baseline date: 2026-08-15
-- Current action: C63 corrects the final tutorial-fidelity assumption found by direct Swift/Kotlin comparison. Android now renders dedicated, non-interactive Patient (4 steps) and Caregiver (10 steps) sample screens with the published fixed data, copy and compact guided overlay instead of reusing production screens with injected repositories. The complete gate passes 202/202 JVM tests, Lint and 272/272 UI tests on API 26/33/35. H07 live Firebase, physical devices, Play Console access and release-owner signing remain external prerequisites.
+- Current action: C64 completes a requirement-by-requirement local audit after C63. All 63 implementation rows are covered and the remaining six `PARTIAL` rows require Firebase/physical-device/Play-owner evidence. The audit also replaced medication-form validation/calculator display strings crossing from the data layer with typed codes/models rendered through `strings.xml`. JVM 202/202, Lint, Debug/Release assembly, Release APK compatibility, Play assets, API 35 full UI 272/272 and the affected medication-form slice 25/25 on API 26/33/35 pass. H07 live Firebase, physical devices, Play Console access and release-owner signing remain external prerequisites.
 
 ## Authority order
 

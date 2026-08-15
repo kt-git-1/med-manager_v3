@@ -106,6 +106,10 @@ The first C61 conclusion was reopened after direct Swift/Kotlin comparison showe
 
 The C62 tutorial conclusion was reopened after direct comparison with the private published `PatientTutorialSampleView`, `CaregiverTutorialSampleView` and shared `GuidedTutorialOverlay`. Published iOS renders dedicated simplified fixtures; it does not inject synthetic repositories into production tabs. Android now follows that contract with three Patient sample destinations mapped across four steps, ten Caregiver sample destinations, exact fixed Japanese copy/data, matching role icons and a compact bottom guide card. The active live screen remains hidden from interaction and accessibility. Light fixtures for all 14 steps were visually inspected; dedicated dark/200% reachability and tutorial action tests pass. The complete matrix passes 202/202 JVM tests, Lint and 272/272 instrumentation tests on API 26, 33 and 35 (816/816).
 
+### C64 local completion audit
+
+C64 enumerated all 69 parity rows against current sources, tests and release verifiers. Sixty-three implementation rows are complete; the six remaining `PARTIAL` rows require live Firebase, physical-device/TalkBack/OEM or release-owner Play evidence and are not treated as missing emulator implementation. The audit found one local boundary defect: medication validation and supply-calculation presentation text crossed from the data layer as Japanese strings. It now crosses as typed validation codes and calculation values, with the Compose layer selecting `strings.xml` resources. JVM 202/202, Lint, Debug/Release assembly, Release APK compatibility, Play asset validation, API 35 UI 272/272 and the affected medication-form class 25/25 on API 26/33/35 pass after the correction.
+
 The later staging-only privacy-safe Analytics change and Build 52 are not part of this published baseline and must enter through a future explicit rebaseline if released.
 
 ## 5. Rebaseline procedure

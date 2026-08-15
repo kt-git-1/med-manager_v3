@@ -23,7 +23,10 @@ class CaregiverMedicationFormTest {
 
         assertEquals(2, draft.dosesPerDay)
         assertEquals(90.0, draft.calculatedInventoryCount())
-        assertEquals("1.5錠 × 2回 × 30日 = 90錠", draft.inventoryCalculationDescription())
+        assertEquals(
+            CaregiverInventoryCalculation("1.5", 2, 30, "90", CaregiverScheduleFrequency.DAILY),
+            draft.inventoryCalculation(),
+        )
         assertEquals("90", draft.recalculateInventory().inventoryCount)
     }
 
@@ -39,7 +42,10 @@ class CaregiverMedicationFormTest {
         )
 
         assertEquals(6.0, draft.calculatedInventoryCount())
-        assertEquals("1錠 × 2回 × 服用日3日 = 6錠", draft.inventoryCalculationDescription())
+        assertEquals(
+            CaregiverInventoryCalculation("1", 2, 3, "6", CaregiverScheduleFrequency.WEEKLY),
+            draft.inventoryCalculation(),
+        )
     }
 
     @Test
@@ -72,6 +78,25 @@ class CaregiverMedicationFormTest {
                 CaregiverMedicationField.SCHEDULE_SLOT,
             ),
             errors.map { it.field }.toSet(),
+        )
+        assertEquals(
+            setOf(
+                CaregiverMedicationValidationMessage.NAME_REQUIRED,
+                CaregiverMedicationValidationMessage.DOSAGE_VALUE_INVALID,
+                CaregiverMedicationValidationMessage.DOSE_COUNT_INVALID,
+                CaregiverMedicationValidationMessage.END_DATE_INVALID,
+                CaregiverMedicationValidationMessage.INVENTORY_COUNT_INVALID,
+                CaregiverMedicationValidationMessage.SCHEDULE_SLOT_REQUIRED,
+            ),
+            errors.map { it.message }.toSet(),
+        )
+        assertEquals(
+            CaregiverMedicationValidationMessage.DOSAGE_UNIT_REQUIRED,
+            CaregiverMedicationDraft(name = "薬", isPrn = true).validate().single().message,
+        )
+        assertEquals(
+            CaregiverMedicationValidationMessage.DOSAGE_VALUE_REQUIRED,
+            CaregiverMedicationDraft(name = "薬", dosageStrengthUnit = "mg", isPrn = true).validate().single().message,
         )
     }
 
@@ -126,7 +151,12 @@ class CaregiverMedicationFormTest {
             scheduleFrequency = CaregiverScheduleFrequency.WEEKLY,
             selectedSlots = setOf(CaregiverScheduleSlot.BEDTIME),
         )
-        assertTrue(draft.validate().any { it.field == CaregiverMedicationField.SCHEDULE_DAY })
+        assertTrue(
+            draft.validate().any {
+                it.field == CaregiverMedicationField.SCHEDULE_DAY &&
+                    it.message == CaregiverMedicationValidationMessage.SCHEDULE_DAY_REQUIRED
+            },
+        )
 
         val selected = draft.copy(selectedDays = setOf(CaregiverScheduleDay.FRI, CaregiverScheduleDay.MON))
         assertTrue(selected.validate().isEmpty())
