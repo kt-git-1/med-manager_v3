@@ -44,6 +44,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import org.junit.Rule
 import org.junit.Test
+import kotlinx.coroutines.runBlocking
 
 class CaregiverAdaptiveUiTest {
     @get:Rule
@@ -121,6 +122,9 @@ class CaregiverAdaptiveUiTest {
         composeRule.onNodeWithTag("caregiver-inventory-list").performScrollToNode(hasTestTag("caregiver-inventory-item-med-1"))
         composeRule.onNodeWithTag("caregiver-inventory-item-med-1").assertIsDisplayed().performClick()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll")
+            .performScrollToNode(hasTestTag("inventory-action-correction"))
+        composeRule.onNodeWithTag("inventory-action-correction").performClick()
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll")
             .performScrollToNode(hasTestTag("inventory-correction"))
         composeRule.onNodeWithTag("inventory-correction").assertIsDisplayed()
     }
@@ -140,6 +144,7 @@ class CaregiverAdaptiveUiTest {
 
             override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
         }, MutationFreshnessStore())
+        runBlocking { historyRepository.loadMonth("p1", YearMonth.from(date)) }
         composeRule.setContent {
             FontScaled(1.3f) {
                 CaregiverHistoryScreen(historyRepository, patientState, enabled = true)

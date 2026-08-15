@@ -94,9 +94,9 @@ C61 merged the complete published source into `android-dev`; it did not copy iso
 | Patient next action | A late-but-recordable slot remains in `今日の記録`, while a later upcoming slot owns `次のお薬`. | Implemented in the selector and Patient Today UI. |
 | Patient Today and history | Show four-slot progress, actual record time, delay, late state and post-record scroll-to-top. | Implemented; API 35 Patient Today 27/27 and History 19/19 UI tests passed. |
 | Caregiver Today | Show actual record time, late status, recorder and a late-dose alert without blocking proxy actions. | Implemented; API 35 Caregiver Today 20/20 UI tests passed. |
-| Medication form and inventory | Guided medication entry, inventory calculator, field-local validation and redesigned inventory editing. Slot times must be strictly morning &lt; noon &lt; evening &lt; bedtime. | Recheck required; next C61 slices. |
-| Caregiver push routing | Select the payload's linked patient before opening the exact destination. Scheduled-dose push copy keeps the time-slot label even when late. | Recheck required; next C61 slice. |
-| History availability | Current history remains reachable without a billing prompt under the initial billing-off release policy. | Existing behavior retained; final C61 regression required. |
+| Medication form and inventory | Guided medication entry, inventory calculator, field-local validation and redesigned inventory editing. Slot times must be strictly morning &lt; noon &lt; evening &lt; bedtime. | Implemented: strict slot ordering, scheduled-supply calculator and the action-first refill/correction editor match the published flow. |
+| Caregiver push routing | Select the payload's linked patient before opening the exact destination. Scheduled-dose push copy keeps the time-slot label even when late. | Verified: the strict payload route selects the linked patient before opening exact History date/slot; API push copy remains server-authoritative. |
+| History availability | Current history remains reachable without a billing prompt under the initial billing-off release policy. | Verified in the billing-off cross-API regression. |
 
 The later staging-only privacy-safe Analytics change and Build 52 are not part of this published baseline and must enter through a future explicit rebaseline if released.
 
@@ -120,6 +120,6 @@ Run this procedure whenever API or iOS behavior changes on `main`.
 - [x] `android-dev` contains published `main@432b34c` through the C61 merge checkpoint `36a6d4d`.
 - [x] The main delta was reviewed across API, iOS, and tests.
 - [x] Runtime/spec conflicts are explicitly identified.
-- [ ] All affected Android contract tests have been updated. Actual-time/late-dose contracts are complete; medication slot order, form/inventory and push routing are still in C61.
-- [ ] All affected Android implementation rows have passed recheck. Patient Today/History and Caregiver Today are complete on API 35; remaining C61 and cross-API/physical evidence are pending.
+- [x] All affected Android contract tests have been updated for actual-time/late-dose behavior, slot ordering, medication supply calculation, action-first inventory editing and patient-first push routing.
+- [x] All affected emulator-verifiable Android implementation rows passed JVM/Lint plus 265/265 UI tests on API 26, 33 and 35. Physical/TalkBack/OEM evidence remains the separate V01 gate.
 - [x] Current iOS source/runtime references have been captured for every emulator-verifiable scoped state through C37–C56; physical/TalkBack/OEM variants remain an explicit V1 gate.

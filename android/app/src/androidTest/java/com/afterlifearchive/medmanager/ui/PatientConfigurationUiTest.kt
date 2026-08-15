@@ -4,8 +4,10 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.afterlifearchive.medmanager.MainActivity
@@ -39,6 +41,7 @@ class PatientConfigurationUiTest {
     }
 
     private fun assertTodayShell() {
+        composeRule.onNodeWithTag("patient-today-list").performScrollToNode(hasTestTag("patient-today-next"))
         composeRule.onNodeWithTag("patient-today-next").assertIsDisplayed()
     }
 

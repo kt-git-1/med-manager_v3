@@ -38,6 +38,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import org.junit.Rule
 import org.junit.Test
+import kotlinx.coroutines.runBlocking
 
 class CaregiverAccessibilityTest {
     @get:Rule
@@ -63,6 +64,7 @@ class CaregiverAccessibilityTest {
 
             override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
         }, MutationFreshnessStore())
+        runBlocking { repository.loadMonth("p1", YearMonth.from(date)) }
         val patient = CaregiverPatient("p1", "さくら")
 
         composeRule.setContent {

@@ -6,7 +6,7 @@
 
 ## 1. Executive result
 
-The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C61 safely merged published `main@432b34c` into `android-dev` and revalidated the 322-test API contract. Android now parses actual `takenAt`, applies the exact -30 minute/next Tokyo day 04:00 recording window and one-hour late threshold, excludes late recordable slots from the next-action hero, and displays actual/late state in Patient Today, Patient History and Caregiver Today. The refreshed medication form, inventory editing and caregiver push selection/routing remain the open C61 product-parity slices; live Firebase, physical-device evidence and Play release operations remain separate external gates.
+The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C61 safely merged published `main@432b34c` into `android-dev` and revalidated the 322-test API contract. Android now parses actual `takenAt`, applies the exact -30 minute/next Tokyo day 04:00 recording window and one-hour late threshold, excludes late recordable slots from the next-action hero, and displays actual/late state in Patient Today, Patient History and Caregiver Today. The published medication form, strict slot ordering, supply calculator, action-first inventory editor and patient-first caregiver push route are implemented. JVM/Lint and 265/265 UI tests pass on API 26, 33 and 35; live Firebase, physical-device evidence and Play release operations remain separate external gates.
 
 ## 2. What is reusable
 

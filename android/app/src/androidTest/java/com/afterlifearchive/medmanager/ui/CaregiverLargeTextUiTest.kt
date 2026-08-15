@@ -54,6 +54,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import org.junit.Rule
 import org.junit.Test
+import kotlinx.coroutines.runBlocking
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
@@ -141,6 +142,9 @@ class CaregiverLargeTextUiTest(private val darkTheme: Boolean) {
             .performScrollToNode(hasTestTag("caregiver-inventory-item-med-1"))
         composeRule.onNodeWithTag("caregiver-inventory-item-med-1").performClick()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll")
+            .performScrollToNode(hasTestTag("inventory-action-correction"))
+        composeRule.onNodeWithTag("inventory-action-correction").performClick()
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll")
             .performScrollToNode(hasTestTag("inventory-correction"))
         composeRule.onNodeWithTag("inventory-correction").assertIsDisplayed()
         captureDarkFixture("android-caregiver-inventory-detail-dark-font-2.0.png")
@@ -159,6 +163,7 @@ class CaregiverLargeTextUiTest(private val darkTheme: Boolean) {
 
             override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
         }, MutationFreshnessStore())
+        runBlocking { repository.loadMonth("p1", YearMonth.from(date)) }
 
         composeRule.setContent {
             CaregiverLargeText(darkTheme) {

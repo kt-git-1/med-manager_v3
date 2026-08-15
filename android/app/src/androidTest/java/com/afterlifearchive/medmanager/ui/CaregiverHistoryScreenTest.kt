@@ -123,6 +123,7 @@ class CaregiverHistoryScreenTest {
             }
             override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
         }, MutationFreshnessStore())
+        runBlocking { repository.loadMonth("p1", YearMonth.from(date)) }
         val activity = setContent(repository)
         composeRule.waitUntil(5_000) { repository.state.value.monthLoaded }
 
@@ -144,6 +145,7 @@ class CaregiverHistoryScreenTest {
             override suspend fun day(patientId: String, date: LocalDate) = HistoryDayDetail(date.toString(), emptyList(), emptyList())
             override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
         }, MutationFreshnessStore())
+        runBlocking { repository.loadMonth("p1", YearMonth.from(date)) }
         val activity = setContent(repository)
         composeRule.waitUntil(5_000) { repository.state.value.monthLoaded }
 
@@ -170,6 +172,7 @@ class CaregiverHistoryScreenTest {
             }
             override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
         }, MutationFreshnessStore())
+        runBlocking { repository.loadMonth("p1", YearMonth.from(date)) }
         val activity = setContent(repository)
         composeRule.waitUntil(5_000) { repository.state.value.monthLoaded }
 
@@ -447,7 +450,9 @@ class CaregiverHistoryScreenTest {
 
     private fun repository(date: LocalDate, slot: MedicationSlot = MedicationSlot.MORNING): Pair<CaregiverHistoryRepository, MutableHistorySource> {
         val source = MutableHistorySource(date, slot)
-        return CaregiverHistoryRepository(source, MutationFreshnessStore()) to source
+        val repository = CaregiverHistoryRepository(source, MutationFreshnessStore())
+        runBlocking { repository.loadMonth("p1", YearMonth.from(date)) }
+        return repository to source
     }
 
     @Suppress("DEPRECATION")

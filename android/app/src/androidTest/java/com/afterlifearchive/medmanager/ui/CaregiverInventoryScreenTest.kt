@@ -306,6 +306,7 @@ class CaregiverInventoryScreenTest {
         val disabledActivity = openDetail(mutableListOf(item("off", "整腸剤", 10.0, enabled = false)))
         composeRule.onNodeWithText("—", useUnmergedTree = true).assertExists()
         captureDevice(disabledActivity, "android-ui-205-caregiver-inventory-detail-disabled-light-matched.png")
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-enabled"))
         composeRule.onNodeWithTag("inventory-enabled").performClick()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-refill-preset-7"))
         composeRule.onNodeWithTag("inventory-refill-preset-7").performClick().assertIsSelected()
@@ -421,6 +422,7 @@ class CaregiverInventoryScreenTest {
         setContent(mutableListOf(item("off", "未設定薬", 0.0, enabled = false)))
         composeRule.onNodeWithTag("caregiver-inventory-item-off").performClick()
 
+        composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-enabled"))
         composeRule.onNodeWithTag("inventory-enabled").performClick()
         composeRule.onNodeWithTag("inventory-save-settings").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-list").fetchSemanticsNodes().isNotEmpty() }

@@ -1,38 +1,47 @@
-# C61 published iOS 1.0.6 rebaseline
+# C61 — Published iOS 1.0.6 Android rebaseline
 
-**Date:** 2026-08-15
+## Baseline
 
-**Reference:** published iOS 1.0.6 Build 51, `main@432b34c`
-
-**Android branch:** `android-dev`
-
-**Baseline merge:** `36a6d4d`
+- Published product: iOS 1.0.6 Build 51
+- Source: `main@432b34c`
+- Android merge checkpoint: `36a6d4d`
+- Development branch: `android-dev`
 
 ## Completed checkpoints
 
-- `36a6d4d`: merged the complete published main source into Android without editing the parallel iOS worktree.
-- `89ecbfa`: added `takenAt` wire/domain mapping, the Tokyo recording policy and next-slot late-dose selection contract.
-- `3e724c3`: matched Patient Today progress, actual-time, late-dose, next-action and post-record scroll behavior.
-- `e849a42`: exposed scheduled/actual/delay/late information in Patient History.
-- `972b511`: added Caregiver Today late alert, recorder information and actual-time timeline state.
+- `36a6d4d`: merged the complete published main source without editing the parallel iOS worktree.
+- `89ecbfa`: added `takenAt`, the Tokyo recording policy and next-slot late-dose selection contract.
+- `3e724c3`, `e849a42`, `972b511`: matched Patient Today, Patient History and Caregiver Today actual-time/late behavior.
+- `2b36337`: enforced strict patient slot-time ordering.
+- `d9696f7`: added the published medication supply calculator.
+- `f5811fa`: matched the published action-first inventory editor.
 
-## Verification
+## Implemented contract
+
+- optional actual dose time (`takenAt`) and the exact 60-minute late threshold;
+- patient recording window from 30 minutes before schedule until the following Tokyo day at 04:00, exclusive;
+- late recordable doses retained in today's status while the later upcoming slot owns the next-action card;
+- actual time, delay and late-state presentation in Patient Today, Patient History and Caregiver Today;
+- strict morning < noon < evening < bedtime patient slot-time validation;
+- scheduled-medication supply calculator with editable calculated initial inventory;
+- action-first inventory editor with a suggested 14-day refill, 7/14/21-day presets, before/after values and isolated correction flow;
+- caregiver push selection of the payload patient before exact History date/slot navigation.
+
+## Automated evidence
 
 | Gate | Result |
 |---|---|
-| API after merge | 71 files / 322 tests passed; TypeScript typecheck passed |
-| Android JVM | `:app:testDebugUnitTest` passed |
-| Android lint | `:app:lintDebug` passed |
-| Patient Today API 35 | 27/27 Compose tests passed |
-| Patient History API 35 | 19/19 Compose tests passed |
-| Caregiver Today API 35 | 20/20 Compose tests passed |
+| API contract and typecheck | 322 tests passed at the C61 baseline |
+| Android JVM unit tests | passed |
+| Android Lint | passed |
+| API 35 instrumentation | 265/265 passed |
+| API 33 instrumentation | 265/265 passed |
+| API 26 instrumentation | 265/265 passed |
 
-All fixtures use synthetic patients, medication names and timestamps. No identity, token or medical production data is stored in this evidence.
+The cross-API run also removed test-clock drift by explicitly loading each fixed history fixture month, and made compact-height tests scroll to lazy inventory settings before interaction. These are test-harness corrections; they do not relax production behavior.
 
-## Remaining C61 work
+All fixtures use synthetic patients, medication names and timestamps. No identity, token or production medical data is stored in this evidence.
 
-1. Strict slot-order validation in Android form/domain UI.
-2. Published guided medication form and inventory calculator hierarchy.
-3. Redesigned caregiver inventory editing.
-4. Caregiver push patient selection before exact routing.
-5. Full API/JVM/lint/build and API 26/33/35 regression, followed by updated visual evidence.
+## Remaining release gates
+
+C61 closes emulator-verifiable parity only. H07 live privacy-reviewed Firebase evidence, V01 physical TalkBack/OEM/notification/process-state testing, release-owner signing and Play Console validation remain mandatory before store release.

@@ -24,6 +24,7 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.semantics.SemanticsActions
@@ -259,6 +260,8 @@ class CaregiverMedicationScreenTest {
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-supply-days"))
         composeRule.onNodeWithTag("medication-supply-days").performTextInput("30")
 
+        composeRule.onNodeWithTag("caregiver-medication-form")
+            .performScrollToNode(hasText("1錠 × 2回 × 30日 = 60錠"))
         composeRule.onNodeWithText("1錠 × 2回 × 30日 = 60錠").assertIsDisplayed()
         composeRule.onNodeWithTag("medication-inventory").assertTextEquals("60")
         composeRule.onNodeWithTag("medication-inventory").performTextReplacement("62")
