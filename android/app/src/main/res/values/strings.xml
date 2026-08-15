@@ -69,10 +69,17 @@
     <string name="patient_today_next_title">次に飲むお薬</string>
     <string name="patient_today_next_done_title">今日のお薬は記録済みです</string>
     <string name="patient_today_next_done_message">必要な記録は完了しています</string>
+    <string name="patient_today_next_overdue_title">今日の予定は終了です</string>
+    <string name="patient_today_next_overdue_message">飲み遅れたお薬は下の「今日の記録」から記録できます</string>
     <string name="patient_today_planned_title">今日のお薬</string>
+    <string name="patient_today_record_section_title">今日の記録</string>
     <string name="patient_today_progress">%1$d/%2$d</string>
     <string name="patient_today_bulk_summary">合計%1$s錠（%2$d種類）</string>
     <string name="patient_today_bulk_action">この時間のお薬を飲んだ</string>
+    <string name="patient_today_bulk_action_actual">今飲んだ（%1$s）</string>
+    <string name="patient_today_schedule_format">予定 %1$s</string>
+    <string name="patient_today_actual_time_format">実際 %1$s</string>
+    <string name="patient_today_late_unrecorded">飲み遅れ・未記録</string>
     <string name="patient_prn_section">必要な時のお薬</string>
     <string name="patient_prn_entry_message">痛い時・つらい時などに飲む薬が%1$d件あります</string>
     <string name="patient_prn_sheet_title">必要な時のお薬</string>
@@ -90,6 +97,7 @@
     <string name="patient_today_empty_title">今日のお薬はありません</string>
     <string name="patient_today_empty_message">ゆっくりお過ごしください</string>
     <string name="patient_status_taken">記録済み</string>
+    <string name="patient_status_late">飲み遅れ</string>
     <string name="patient_status_missed">飲み忘れ</string>
     <string name="patient_status_pending">未記録</string>
     <string name="patient_inventory_check">在庫を確認してください</string>

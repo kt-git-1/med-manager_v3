@@ -98,7 +98,7 @@ class PatientTodayContentTest {
         composeRule.runOnIdle { normalizeStatusBar(activity) }
         SystemClock.sleep(250)
         writeDeviceScreenshotFixture("android-ui-101-patient-inventory-partial-light.png")
-        composeRule.onNodeWithText("この時間のお薬を飲んだ").performClick()
+        composeRule.onNodeWithTag("patient-today-primary-bulk-record").performClick()
         composeRule.onNodeWithTag("patient-today-list")
             .performScrollToNode(hasTestTag("patient-today-prn-entry"))
         composeRule.onNodeWithTag("patient-today-prn-entry").assertIsDisplayed().performClick()
@@ -154,6 +154,64 @@ class PatientTodayContentTest {
         listOf("服用済み", "未達", "未服用").forEach { staleStatus ->
             composeRule.onAllNodesWithText(staleStatus).assertCountEquals(0)
         }
+    }
+
+    @Test
+    fun lateDoseRemainsRecordableUntilNextTokyoDayFourAm() {
+        val lateDose = dose("late", DoseStatus.PENDING).copy(
+            scheduledAt = Instant.parse("2026-07-14T03:00:00Z"),
+            slot = MedicationSlot.NOON,
+        )
+        var recordedSlot: MedicationSlot? = null
+        composeRule.setContent {
+            MedicationAppTheme {
+                Box(Modifier.fillMaxSize().background(PatientBackground).safeDrawingPadding()) {
+                    TodayContent(
+                        doses = listOf(lateDose),
+                        loading = false,
+                        updatingKey = null,
+                        error = null,
+                        message = null,
+                        maintenanceWarning = null,
+                        medications = mapOf("late" to medication("late", 10.0)),
+                        nextSlot = null,
+                        updatingSlot = null,
+                        prnMedications = emptyList(),
+                        updatingPrnMedicationId = null,
+                        onRetry = {},
+                        onRecord = {},
+                        onDetail = {},
+                        onRecordSlot = { recordedSlot = it },
+                        onRecordPrn = {},
+                        onRemind = {},
+                        now = Instant.parse("2026-07-14T05:15:00Z"),
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithText("今日の予定は終了です").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-list").performScrollToNode(hasText("飲み遅れ・未記録"))
+        composeRule.onNodeWithText("飲み遅れ・未記録").assertIsDisplayed()
+        composeRule.onNodeWithText("この時間帯をまとめて記録（1件）").performClick()
+        composeRule.runOnIdle { assertEquals(MedicationSlot.NOON, recordedSlot) }
+    }
+
+    @Test
+    fun recordedLateDoseShowsActualTimeAndDelay() {
+        showTodayState(
+            doses = listOf(
+                dose("late", DoseStatus.TAKEN).copy(
+                    scheduledAt = Instant.parse("2026-07-13T23:00:00Z"),
+                    takenAt = Instant.parse("2026-07-14T00:25:00Z"),
+                ),
+            ),
+        )
+
+        composeRule.onNodeWithTag("patient-today-list").performScrollToNode(hasText("実際 09:25"))
+        composeRule.onNodeWithText("実際 09:25").assertIsDisplayed()
+        composeRule.onNodeWithText("1時間25分遅れ").assertIsDisplayed()
+        composeRule.onNodeWithText("飲み遅れ").assertIsDisplayed()
     }
 
     @Test

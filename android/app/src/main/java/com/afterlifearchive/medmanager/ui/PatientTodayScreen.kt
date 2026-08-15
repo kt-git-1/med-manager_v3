@@ -65,6 +65,7 @@ import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
+import com.afterlifearchive.medmanager.data.patient.MedicationRecordingPolicy
 import com.afterlifearchive.medmanager.data.patient.PatientDose
 import com.afterlifearchive.medmanager.data.patient.PatientMedication
 import com.afterlifearchive.medmanager.data.patient.PatientSlotTimes
@@ -129,6 +130,7 @@ internal fun TodayContent(
     val screenUpdating = refreshing || updatingKey != null || updatingSlot != null
     var showPrnSheet by rememberSaveable { mutableStateOf(false) }
     var observedPrnSuccessRevision by rememberSaveable { mutableStateOf(prnSuccessRevision) }
+    var observedTakenCount by rememberSaveable { mutableStateOf(takenCount) }
     val listState = rememberLazyListState()
     val targetItemIndex = scrollTargetSlot?.let { target ->
         var index = 1
@@ -167,6 +169,13 @@ internal fun TodayContent(
         }
     }
 
+    LaunchedEffect(takenCount) {
+        if (takenCount > observedTakenCount) {
+            listState.animateScrollToItem(0)
+        }
+        observedTakenCount = takenCount
+    }
+
     Box(Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
@@ -183,6 +192,13 @@ internal fun TodayContent(
             maintenanceWarning?.let { item { PatientNoticeCard(it, MaterialTheme.colorScheme.tertiaryContainer, null) } }
 
             item {
+                PatientDayProgressStrip(
+                    grouped = grouped,
+                    nextSlot = nextSlot,
+                )
+            }
+
+            item {
                 NextDoseHeroCard(
                     slot = nextSlot,
                     doses = nextDoses,
@@ -190,6 +206,12 @@ internal fun TodayContent(
                     loading = screenUpdating,
                     updating = nextSlot != null && updatingSlot == nextSlot,
                     now = now,
+                    hasLateUnrecordedSlot = grouped.values.any { slotDoses ->
+                        val scheduledAt = slotDoses.minOfOrNull(PatientDose::scheduledAt) ?: return@any false
+                        slotDoses.any { it.status != DoseStatus.TAKEN } &&
+                            MedicationRecordingPolicy.isRecordable(scheduledAt, now) &&
+                            MedicationRecordingPolicy.isLate(scheduledAt, now)
+                    },
                     onRecordSlot = onRecordSlot,
                     onDetail = onDetail,
                 )
@@ -209,7 +231,7 @@ internal fun TodayContent(
                     modifier = Modifier.fillMaxWidth().testTag("patient-today-planned"),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(stringResource(R.string.patient_today_planned_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.patient_today_record_section_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.weight(1f))
                     Text(
                         stringResource(R.string.patient_today_progress, takenCount, doses.size),
@@ -238,7 +260,8 @@ internal fun TodayContent(
                 val remaining = slotDoses.filter { it.status != DoseStatus.TAKEN }
                 val insufficient = remaining.count { medications[it.medicationId]?.isInsufficientForDose == true }
                 val scheduledAt = slotDoses.minOf(PatientDose::scheduledAt)
-                val isWithinRecordingWindow = now >= scheduledAt.minusSeconds(30 * 60) && now <= scheduledAt.plusSeconds(60 * 60)
+                val isWithinRecordingWindow = MedicationRecordingPolicy.isRecordable(scheduledAt, now)
+                val isLate = MedicationRecordingPolicy.isLate(scheduledAt, now)
                 item {
                     SlotHeader(
                         slot = slot,
@@ -246,6 +269,7 @@ internal fun TodayContent(
                         recordableCount = if (isWithinRecordingWindow) remaining.size - insufficient else 0,
                         insufficientCount = insufficient,
                         isWithinRecordingWindow = isWithinRecordingWindow,
+                        isLate = isLate,
                         updating = updatingSlot == slot || screenUpdating,
                         onRecordSlot = onRecordSlot,
                     )
@@ -542,6 +566,56 @@ private fun PatientTodayHeader(date: String) {
     }
 }
 
+private val PatientOrange = Color(0xFFF36A00)
+
+@Composable
+private fun PatientDayProgressStrip(
+    grouped: Map<MedicationSlot, List<PatientDose>>,
+    nextSlot: MedicationSlot?,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().testTag("patient-today-progress-strip"),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        MedicationSlot.entries.forEach { slot ->
+            val slotDoses = grouped[slot].orEmpty()
+            val completed = slotDoses.isNotEmpty() && slotDoses.all { it.status == DoseStatus.TAKEN }
+            val takenAt = slotDoses.mapNotNull(PatientDose::takenAt).maxOrNull()
+            val accent = when {
+                completed -> PatientTeal
+                slot == nextSlot -> PatientOrange
+                else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            }
+            Card(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.5.dp, accent.copy(alpha = if (slot == nextSlot || completed) 0.8f else 0.25f)),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 126.dp).padding(horizontal = 4.dp, vertical = 10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+                ) {
+                    Text(patientSlotShortTitle(slot), color = accent, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                    Box(Modifier.size(44.dp).background(accent, CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(
+                            if (completed) Icons.Rounded.CheckCircle else Icons.Rounded.AccessTime,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(26.dp),
+                        )
+                    }
+                    val detail = takenAt?.let(::instantTimeText)
+                        ?: slotDoses.minOfOrNull(PatientDose::scheduledAt)?.let(::instantTimeText)
+                        ?: "—"
+                    Text(detail, color = accent, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun NextDoseHeroCard(
     slot: MedicationSlot?,
@@ -550,6 +624,7 @@ private fun NextDoseHeroCard(
     loading: Boolean,
     updating: Boolean,
     now: Instant,
+    hasLateUnrecordedSlot: Boolean,
     onRecordSlot: (MedicationSlot) -> Unit,
     onDetail: (PatientDose) -> Unit,
 ) {
@@ -563,10 +638,23 @@ private fun NextDoseHeroCard(
     ) {
         if (slot == null || doses.isEmpty()) {
             Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = PatientTeal, modifier = Modifier.size(46.dp))
+                Icon(
+                    if (hasLateUnrecordedSlot) Icons.Rounded.Warning else Icons.Rounded.CheckCircle,
+                    contentDescription = null,
+                    tint = if (hasLateUnrecordedSlot) PatientOrange else PatientTeal,
+                    modifier = Modifier.size(46.dp),
+                )
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(stringResource(R.string.patient_today_next_done_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text(stringResource(R.string.patient_today_next_done_message), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        stringResource(if (hasLateUnrecordedSlot) R.string.patient_today_next_overdue_title else R.string.patient_today_next_done_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        stringResource(if (hasLateUnrecordedSlot) R.string.patient_today_next_overdue_message else R.string.patient_today_next_done_message),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 }
             }
             return@Card
@@ -575,7 +663,8 @@ private fun NextDoseHeroCard(
         val remaining = doses.filter { it.status != DoseStatus.TAKEN }
         val insufficient = remaining.count { medications[it.medicationId]?.isInsufficientForDose == true }
         val scheduledAt = doses.minOf(PatientDose::scheduledAt)
-        val withinWindow = now >= scheduledAt.minusSeconds(30 * 60) && now <= scheduledAt.plusSeconds(60 * 60)
+        val withinWindow = MedicationRecordingPolicy.isRecordable(scheduledAt, now)
+        val isLate = MedicationRecordingPolicy.isLate(scheduledAt, now)
         val recordableCount = remaining.size - insufficient
         Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(stringResource(R.string.patient_today_next_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -596,6 +685,14 @@ private fun NextDoseHeroCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.SemiBold,
             )
+            if (isLate) {
+                Text(
+                    delayText(MedicationRecordingPolicy.delaySeconds(scheduledAt, now)),
+                    modifier = Modifier.background(PatientOrange.copy(alpha = 0.12f), RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 8.dp),
+                    color = PatientOrange,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 doses.forEach { dose ->
                     val inventoryInsufficient = medications[dose.medicationId]?.isInsufficientForDose == true
@@ -655,7 +752,11 @@ private fun NextDoseHeroCard(
             ) {
                 Icon(Icons.Rounded.CheckCircle, contentDescription = null)
                 Spacer(Modifier.size(8.dp))
-                Text(stringResource(R.string.patient_today_bulk_action), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(R.string.patient_today_bulk_action_actual, instantTimeText(now)),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
             }
             if (insufficient > 0) Text(stringResource(R.string.patient_slot_insufficient_count, insufficient), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
             if (!withinWindow) Text(stringResource(R.string.patient_slot_wait_for_window), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -833,6 +934,8 @@ private fun DoseCard(
     onDetail: (PatientDose) -> Unit,
 ) {
     val taken = dose.status == DoseStatus.TAKEN
+    val takenAt = dose.takenAt
+    val late = takenAt?.let { MedicationRecordingPolicy.isLate(dose.scheduledAt, it) } == true
     Card(
         onClick = { onDetail(dose) },
         modifier = Modifier.fillMaxWidth(),
@@ -851,15 +954,34 @@ private fun DoseCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(dose.dosageText, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(timeText(dose), color = PatientTeal, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        stringResource(R.string.patient_today_schedule_format, timeText(dose)),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    takenAt?.let {
+                        Text(
+                            stringResource(R.string.patient_today_actual_time_format, instantTimeText(it)),
+                            color = if (late) PatientOrange else PatientTeal,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                    takenAt?.takeIf { late }?.let { actual ->
+                        Text(
+                            delayText(MedicationRecordingPolicy.delaySeconds(dose.scheduledAt, actual)),
+                            color = PatientOrange,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 }
                 val statusText = when {
+                    late -> stringResource(R.string.patient_status_late)
                     taken -> stringResource(R.string.patient_status_taken)
                     inventoryInsufficient -> stringResource(R.string.patient_inventory_insufficient)
                     dose.status == DoseStatus.MISSED -> stringResource(R.string.patient_status_missed)
                     else -> stringResource(R.string.patient_status_pending)
                 }
-                Text(statusText, color = if (taken) PatientTeal else MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                Text(statusText, color = if (late) PatientOrange else if (taken) PatientTeal else MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
             }
             if (!taken) {
                 Spacer(Modifier.height(18.dp))
@@ -1099,12 +1221,13 @@ private fun SlotHeader(
     recordableCount: Int,
     insufficientCount: Int,
     isWithinRecordingWindow: Boolean,
+    isLate: Boolean,
     updating: Boolean,
     onRecordSlot: (MedicationSlot) -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().testTag("patient-today-slot-${slot.name.lowercase()}"),
-        colors = CardDefaults.cardColors(containerColor = if (isNext) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = if (isLate) PatientOrange.copy(alpha = 0.08f) else if (isNext) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(18.dp),
     ) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1112,6 +1235,9 @@ private fun SlotHeader(
                 Text(patientSlotShortTitle(slot), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = patientTodaySlotColor(slot))
                 Spacer(Modifier.weight(1f))
                 if (isNext) Text(stringResource(R.string.patient_next_slot), color = PatientTeal, fontWeight = FontWeight.Bold)
+            }
+            if (isLate && isWithinRecordingWindow) {
+                Text(stringResource(R.string.patient_today_late_unrecorded), color = PatientOrange, fontWeight = FontWeight.Bold)
             }
             if (insufficientCount > 0) {
                 Text(stringResource(R.string.patient_slot_insufficient_count, insufficientCount), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
@@ -1151,3 +1277,18 @@ private fun patientTodaySlotTitle(slot: MedicationSlot): String = stringResource
 private fun timeText(dose: PatientDose): String = dose.scheduledAt
     .atZone(ZoneId.of("Asia/Tokyo"))
     .format(DateTimeFormatter.ofPattern("HH:mm"))
+
+private fun instantTimeText(instant: Instant): String = instant
+    .atZone(ZoneId.of("Asia/Tokyo"))
+    .format(DateTimeFormatter.ofPattern("HH:mm"))
+
+private fun delayText(seconds: Long): String {
+    val minutes = seconds.coerceAtLeast(0L) / 60L
+    val hours = minutes / 60L
+    val remainingMinutes = minutes % 60L
+    return when {
+        hours > 0 && remainingMinutes > 0 -> "${hours}時間${remainingMinutes}分遅れ"
+        hours > 0 -> "${hours}時間遅れ"
+        else -> "${minutes}分遅れ"
+    }
+}
