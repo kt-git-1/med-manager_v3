@@ -219,6 +219,29 @@ class PatientHistoryContentTest {
     }
 
     @Test
+    fun dayDetailShowsActualTimeAndLateStatus() {
+        showDayDetail(
+            detail = HistoryDayDetail(
+                "2026-07-13",
+                listOf(
+                    HistoryScheduledDose(
+                        "late", "血圧薬", "1錠", 1.0,
+                        Instant.parse("2026-07-13T03:00:00Z"), MedicationSlot.NOON,
+                        DoseStatus.TAKEN, RecordedByType.PATIENT,
+                        takenAt = Instant.parse("2026-07-13T04:25:00Z"),
+                    ),
+                ),
+                emptyList(),
+            ),
+        )
+
+        composeRule.onNodeWithText("予定 12:00").assertIsDisplayed()
+        composeRule.onNodeWithText("実際 13:25").assertIsDisplayed()
+        composeRule.onNodeWithText("1時間25分遅れ").assertIsDisplayed()
+        composeRule.onNodeWithText("飲み遅れ").assertIsDisplayed()
+    }
+
+    @Test
     fun dayDetailShowsEmptyContract() {
         showDayDetail(detail = HistoryDayDetail("2026-07-13", emptyList(), emptyList()))
 

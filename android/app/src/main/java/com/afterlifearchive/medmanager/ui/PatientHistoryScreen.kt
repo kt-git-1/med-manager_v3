@@ -65,6 +65,7 @@ import com.afterlifearchive.medmanager.data.patient.HistoryScheduledDose
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
 import com.afterlifearchive.medmanager.data.patient.HistoryStreakTodayStatus
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
+import com.afterlifearchive.medmanager.data.patient.MedicationRecordingPolicy
 import com.afterlifearchive.medmanager.data.patient.PrnActorType
 import com.afterlifearchive.medmanager.data.patient.PrnHistoryItem
 import com.afterlifearchive.medmanager.data.patient.RecordedByType
@@ -727,7 +728,8 @@ internal fun HistoryScheduledDoseRow(
 ) {
     val isPatientStyle = style == HistoryDayRowStyle.PATIENT
     val slotColor = historySlotColor(dose.slot)
-    val statusColor = historyDoseColor(dose.status)
+    val isLate = dose.takenAt?.let { MedicationRecordingPolicy.isLate(dose.scheduledAt, it) } == true
+    val statusColor = if (isLate) Color(0xFFF36A00) else historyDoseColor(dose.status)
     val dosage = dose.dosageText.trim()
     val displayName = if (dosage.isEmpty() || dosage == "不明") dose.medicationName else "${dose.medicationName} $dosage"
     Card(
@@ -748,7 +750,11 @@ internal fun HistoryScheduledDoseRow(
         Row(Modifier.fillMaxWidth().padding(if (isPatientStyle) 16.dp else 14.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(historyTime(dose.scheduledAt), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.history_schedule_format, historyTime(dose.scheduledAt)),
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
                     Text(
                         patientSlotTitle(dose.slot),
                         modifier = Modifier.background(slotColor.copy(alpha = 0.16f), RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 3.dp),
@@ -758,6 +764,22 @@ internal fun HistoryScheduledDoseRow(
                     )
                 }
                 Text(displayName, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                dose.takenAt?.let { takenAt ->
+                    Text(
+                        stringResource(R.string.history_actual_time_format, historyTime(takenAt)),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (isLate) Color(0xFFF36A00) else PatientTeal,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    if (isLate) {
+                        Text(
+                            historyDelayText(MedicationRecordingPolicy.delaySeconds(dose.scheduledAt, takenAt)),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color(0xFFF36A00),
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
                 dose.recordedByType?.let {
                     Text(
                         stringResource(if (it == RecordedByType.PATIENT) R.string.patient_history_recorded_by_patient else R.string.patient_history_recorded_by_caregiver),
@@ -769,7 +791,7 @@ internal fun HistoryScheduledDoseRow(
             }
             if (isPatientStyle) {
                 Text(
-                    patientDoseStatusText(dose.status),
+                    if (isLate) stringResource(R.string.patient_status_late) else patientDoseStatusText(dose.status),
                     modifier = Modifier.background(statusColor.copy(alpha = 0.15f), RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 4.dp),
                     color = statusColor,
                     style = MaterialTheme.typography.labelMedium,
@@ -887,3 +909,14 @@ private fun historySlotColor(slot: MedicationSlot): Color = when (slot) {
 }
 
 private fun historyTime(instant: Instant) = instant.atZone(ZoneId.of("Asia/Tokyo")).format(DateTimeFormatter.ofPattern("HH:mm"))
+
+private fun historyDelayText(seconds: Long): String {
+    val minutes = seconds.coerceAtLeast(0L) / 60L
+    val hours = minutes / 60L
+    val remainder = minutes % 60L
+    return when {
+        hours > 0 && remainder > 0 -> "${hours}時間${remainder}分遅れ"
+        hours > 0 -> "${hours}時間遅れ"
+        else -> "${minutes}分遅れ"
+    }
+}

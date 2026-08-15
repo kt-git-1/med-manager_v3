@@ -210,6 +210,8 @@
     <string name="patient_history_day_error">読み込みに失敗しました。再試行してください。</string>
     <string name="patient_history_prn_name_format">%1$s: %2$s</string>
     <string name="patient_history_scheduled_section">予定されたお薬</string>
+    <string name="history_schedule_format">予定 %1$s</string>
+    <string name="history_actual_time_format">実際 %1$s</string>
     <string name="patient_history_prn_section">頓服</string>
     <string name="patient_history_recorded_by_patient">本人が記録</string>
     <string name="patient_history_recorded_by_caregiver">家族が代理で記録</string>
