@@ -129,6 +129,26 @@ class CaregiverTodayScreenTest {
     }
 
     @Test
+    fun lateRecordedDoseShowsAlertActualTimeAndActor() {
+        setContent(
+            doses = listOf(
+                dose(
+                    "late", DoseStatus.TAKEN, "2026-07-15T03:00:00Z",
+                    "血圧の薬", "5 mg", RecordedByType.CAREGIVER,
+                    takenAt = Instant.parse("2026-07-15T04:25:00Z"),
+                ),
+            ),
+        )
+
+        composeRule.onNodeWithText("飲み遅れの記録が1件あります").assertIsDisplayed()
+        composeRule.onNodeWithText("昼（予定 12:00）は実際 13:25に記録されました。家族が代理で記録").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-timeline-noon"))
+        composeRule.onNodeWithText("実際 13:25").assertIsDisplayed()
+        composeRule.onNodeWithText("1時間25分遅れ").assertIsDisplayed()
+        composeRule.onNodeWithText("飲み遅れ").assertIsDisplayed()
+    }
+
+    @Test
     fun currentIosDebugPreviewRemainsReadableInDarkMaximumText() {
         val activity = setContent(
             patientName = "なおみ",
@@ -540,6 +560,7 @@ class CaregiverTodayScreenTest {
         medicationName: String = "薬$id",
         dosageText: String = "5 mg",
         recordedByType: RecordedByType? = null,
+        takenAt: Instant? = null,
     ) = PatientDose(
         key = id,
         medicationId = id,
@@ -550,6 +571,7 @@ class CaregiverTodayScreenTest {
         doseCount = 1.0,
         patientId = "patient-1",
         recordedByType = recordedByType,
+        takenAt = takenAt,
     )
 
     private fun medication() = PatientMedication(

@@ -78,6 +78,7 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayMutationErro
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayMutationMessage
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
+import com.afterlifearchive.medmanager.data.patient.MedicationRecordingPolicy
 import com.afterlifearchive.medmanager.data.patient.PatientDose
 import com.afterlifearchive.medmanager.data.patient.PatientMedication
 import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
@@ -261,6 +262,9 @@ private fun CaregiverTodayContent(
     val missedRows = missedSlotRows.size
     val pendingRows = rows.count { (_, items) -> items.any { it.status == DoseStatus.PENDING } }
     val takenRows = rows.count { (_, items) -> items.all { it.status == DoseStatus.TAKEN } }
+    val lateRows = rows.filter { (_, items) ->
+        items.any { dose -> dose.takenAt?.let { MedicationRecordingPolicy.isLate(dose.scheduledAt, it) } == true }
+    }
     val colors = MedicationTheme.colors
 
     LazyColumn(
@@ -322,6 +326,33 @@ private fun CaregiverTodayContent(
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.SemiBold,
                             )
+                        }
+                    }
+                }
+            }
+            if (lateRows.isNotEmpty()) item {
+                val (slot, lateDoses) = lateRows.first()
+                val scheduledAt = lateDoses.minOf(PatientDose::scheduledAt)
+                val takenAt = lateDoses.mapNotNull(PatientDose::takenAt).maxOrNull()
+                TodayCard(colors.orange, Modifier.testTag("caregiver-today-late-alert")) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+                        TodayIcon(Icons.Rounded.AccessTime, colors.orange)
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(stringResource(R.string.caregiver_today_late_title, lateRows.size), color = colors.orange, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                            if (takenAt != null) {
+                                Text(
+                                    stringResource(
+                                        R.string.caregiver_today_late_message,
+                                        slotLabel(slot),
+                                        caregiverTime(scheduledAt),
+                                        caregiverTime(takenAt),
+                                        caregiverRecordedBy(lateDoses.mapNotNull(PatientDose::recordedByType).distinct().singleOrNull()),
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
                         }
                     }
                 }
@@ -638,8 +669,11 @@ private fun CaregiverTimelineCard(
         doses.all { it.status == DoseStatus.MISSED } -> DoseStatus.MISSED
         else -> DoseStatus.PENDING
     }
+    val actualTakenAt = doses.mapNotNull(PatientDose::takenAt).maxOrNull()
+    val scheduledAt = doses.minOfOrNull(PatientDose::scheduledAt)
+    val isLate = actualTakenAt != null && scheduledAt != null && MedicationRecordingPolicy.isLate(scheduledAt, actualTakenAt)
     val tint = when (status) {
-        DoseStatus.TAKEN -> MaterialTheme.colorScheme.primary
+        DoseStatus.TAKEN -> if (isLate) MedicationTheme.colors.orange else MaterialTheme.colorScheme.primary
         DoseStatus.MISSED -> MedicationTheme.colors.caregiverRed
         DoseStatus.PENDING -> MedicationTheme.colors.orange
         null -> MaterialTheme.colorScheme.onSurfaceVariant
@@ -668,7 +702,7 @@ private fun CaregiverTimelineCard(
                     text = when {
                         hasOutOfStock -> stringResource(R.string.patient_inventory_insufficient)
                         status == null -> stringResource(R.string.caregiver_today_timeline_no_plan)
-                        status == DoseStatus.TAKEN -> stringResource(R.string.caregiver_today_timeline_taken)
+                        status == DoseStatus.TAKEN -> stringResource(if (isLate) R.string.patient_status_late else R.string.caregiver_today_timeline_taken)
                         status == DoseStatus.MISSED -> stringResource(R.string.caregiver_today_timeline_missed)
                         else -> stringResource(R.string.caregiver_today_timeline_pending)
                     },
@@ -680,6 +714,23 @@ private fun CaregiverTimelineCard(
                         else -> null
                     },
                 )
+            }
+
+            if (actualTakenAt != null && scheduledAt != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.caregiver_today_actual_time, caregiverTime(actualTakenAt)),
+                        color = if (isLate) MedicationTheme.colors.orange else MedicationTheme.colors.primaryTealText,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    if (isLate) {
+                        Text(
+                            caregiverDelayText(MedicationRecordingPolicy.delaySeconds(scheduledAt, actualTakenAt)),
+                            color = MedicationTheme.colors.orange,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
             }
 
             if (doses.isEmpty()) {
@@ -916,6 +967,27 @@ private fun CaregiverTodayMessage(title: String, message: String, action: (@Comp
         Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
         action?.invoke()
     }
+}
+
+private fun caregiverTime(instant: java.time.Instant): String = instant
+    .atZone(ZoneId.of("Asia/Tokyo"))
+    .format(DateTimeFormatter.ofPattern("HH:mm"))
+
+private fun caregiverDelayText(seconds: Long): String {
+    val minutes = seconds.coerceAtLeast(0L) / 60L
+    val hours = minutes / 60L
+    val remainder = minutes % 60L
+    return when {
+        hours > 0 && remainder > 0 -> "${hours}時間${remainder}分遅れ"
+        hours > 0 -> "${hours}時間遅れ"
+        else -> "${minutes}分遅れ"
+    }
+}
+
+private fun caregiverRecordedBy(type: com.afterlifearchive.medmanager.data.patient.RecordedByType?): String = when (type) {
+    com.afterlifearchive.medmanager.data.patient.RecordedByType.PATIENT -> "本人が記録"
+    com.afterlifearchive.medmanager.data.patient.RecordedByType.CAREGIVER -> "家族が代理で記録"
+    null -> "記録者不明"
 }
 
 @Composable

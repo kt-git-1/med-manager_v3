@@ -324,6 +324,9 @@
     <string name="caregiver_today_progress_pending">未記録が%1$d回分あります</string>
     <string name="caregiver_today_progress_missed">飲み忘れが%1$d回分あります</string>
     <string name="caregiver_today_progress_done">今日の服薬はすべて記録済みです</string>
+    <string name="caregiver_today_late_title">飲み遅れの記録が%1$d件あります</string>
+    <string name="caregiver_today_late_message">%1$s（予定 %2$s）は実際 %3$sに記録されました。%4$s</string>
+    <string name="caregiver_today_actual_time">実際 %1$s</string>
     <string name="caregiver_today_missed_title">飲み忘れがあります</string>
     <string name="caregiver_today_missed_message">%1$dつの時間帯を確認してください。</string>
     <string name="caregiver_today_missed_message_single">%1$s %2$sの服薬が飲み忘れになっています。下の今日の予定で確認できます</string>
