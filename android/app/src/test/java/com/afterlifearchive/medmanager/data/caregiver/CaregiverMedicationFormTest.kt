@@ -7,6 +7,44 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CaregiverMedicationFormTest {
+
+    @Test
+    fun dailySupplyDaysCalculateInitialInventory() {
+        val draft = CaregiverMedicationDraft(
+            doseCountPerIntake = "1.5",
+            supplyDays = "30",
+            selectedSlots = setOf(CaregiverScheduleSlot.MORNING, CaregiverScheduleSlot.EVENING),
+        )
+
+        assertEquals(2, draft.dosesPerDay)
+        assertEquals(90.0, draft.calculatedInventoryCount())
+        assertEquals("1.5錠 × 2回 × 30日 = 90錠", draft.inventoryCalculationDescription())
+        assertEquals("90", draft.recalculateInventory().inventoryCount)
+    }
+
+    @Test
+    fun weeklySupplyDaysCountOnlySelectedCalendarDays() {
+        val draft = CaregiverMedicationDraft(
+            doseCountPerIntake = "1",
+            supplyDays = "7",
+            startDate = LocalDate.parse("2026-08-17"), // Monday
+            scheduleFrequency = CaregiverScheduleFrequency.WEEKLY,
+            selectedDays = setOf(CaregiverScheduleDay.MON, CaregiverScheduleDay.WED, CaregiverScheduleDay.FRI),
+            selectedSlots = setOf(CaregiverScheduleSlot.MORNING, CaregiverScheduleSlot.NOON),
+        )
+
+        assertEquals(6.0, draft.calculatedInventoryCount())
+        assertEquals("1錠 × 2回 × 服用日3日 = 6錠", draft.inventoryCalculationDescription())
+    }
+
+    @Test
+    fun calculatorClearsScheduledInventoryWhenInputsAreIncompleteButLeavesPrnManualValue() {
+        val scheduled = CaregiverMedicationDraft(supplyDays = "30", inventoryCount = "20")
+        val prn = scheduled.copy(isPrn = true)
+
+        assertEquals("", scheduled.recalculateInventory().inventoryCount)
+        assertEquals("20", prn.recalculateInventory().inventoryCount)
+    }
     @Test
     fun requiredAndNumericRulesAreReportedTogether() {
         val errors = CaregiverMedicationDraft(

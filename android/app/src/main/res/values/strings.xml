@@ -601,6 +601,13 @@
     <string name="caregiver_medication_form_inventory">在庫数（錠）</string>
     <string name="caregiver_medication_form_inventory_section">在庫</string>
     <string name="caregiver_medication_form_inventory_support">未入力の場合は在庫管理を開始しません。</string>
+    <string name="caregiver_medication_form_inventory_calculator_title">お薬の数量</string>
+    <string name="caregiver_medication_form_supply_days_question">何日分ですか？</string>
+    <string name="caregiver_medication_form_supply_days_unit">日分</string>
+    <string name="caregiver_medication_form_inventory_initial">登録時の在庫</string>
+    <string name="caregiver_medication_form_inventory_calculator_empty">1回に飲む量・時間帯・日数を入力すると、登録時の在庫を自動計算します。</string>
+    <string name="caregiver_medication_form_inventory_calculator_help">飲む量とタイミングから自動で計算します。計算後の錠数は修正できます。</string>
+    <string name="caregiver_medication_form_daily_count">1日%1$d回</string>
     <string name="caregiver_medication_form_save">保存</string>
     <string name="caregiver_medication_form_saving">保存中…</string>
     <string name="caregiver_medication_form_cancel">キャンセル</string>

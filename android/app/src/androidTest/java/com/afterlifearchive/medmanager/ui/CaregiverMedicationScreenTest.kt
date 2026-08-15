@@ -22,6 +22,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.performSemanticsAction
@@ -249,6 +250,22 @@ class CaregiverMedicationScreenTest {
     }
 
     @Test
+    fun scheduledSupplyDaysCalculateEditableInitialInventory() {
+        setContent(emptyList(), slotTimes = iosDefaultSlotTimes())
+        composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-slot-morning"))
+        composeRule.onNodeWithTag("medication-slot-morning").performClick()
+        composeRule.onNodeWithTag("medication-slot-evening").performClick()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-supply-days"))
+        composeRule.onNodeWithTag("medication-supply-days").performTextInput("30")
+
+        composeRule.onNodeWithText("1錠 × 2回 × 30日 = 60錠").assertIsDisplayed()
+        composeRule.onNodeWithTag("medication-inventory").assertTextEquals("60")
+        composeRule.onNodeWithTag("medication-inventory").performTextReplacement("62")
+        composeRule.onNodeWithTag("medication-inventory").assertTextEquals("62")
+    }
+
+    @Test
     fun addFormCapturesCurrentIosBasicSchedulePrnAndWeeklyStates() {
         val activity = setContent(emptyList())
         composeRule.onNodeWithTag("caregiver-medication-empty-add").performScrollTo().performClick()
@@ -306,8 +323,8 @@ class CaregiverMedicationScreenTest {
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-save"))
         composeRule.onNodeWithTag("medication-save").performClick()
 
-        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-validation-errors"))
-        composeRule.onNodeWithTag("medication-validation-errors").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-basic-validation-errors"))
+        composeRule.onNodeWithTag("medication-basic-validation-errors").assertIsDisplayed()
         composeRule.onNodeWithText("薬名は必須です", substring = true).assertIsDisplayed()
         captureDevice(activity, "android-ui-203-caregiver-medication-form-validation-light-matched.png")
     }
@@ -367,8 +384,8 @@ class CaregiverMedicationScreenTest {
         composeRule.onNodeWithTag("medication-prn-instructions").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-save"))
         composeRule.onNodeWithTag("medication-save").performClick()
-        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-validation-errors"))
-        composeRule.onNodeWithTag("medication-validation-errors").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-medication-form").performScrollToNode(hasTestTag("medication-basic-validation-errors"))
+        composeRule.onNodeWithTag("medication-basic-validation-errors").assertIsDisplayed()
         composeRule.onNodeWithText("薬名は必須です", substring = true).assertIsDisplayed()
     }
 

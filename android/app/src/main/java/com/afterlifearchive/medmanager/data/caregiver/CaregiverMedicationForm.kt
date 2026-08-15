@@ -18,6 +18,7 @@ data class CaregiverMedicationDraft(
     val isPrn: Boolean = false,
     val prnInstructions: String = "",
     val inventoryCount: String = "",
+    val supplyDays: String = "",
     val scheduleFrequency: CaregiverScheduleFrequency = CaregiverScheduleFrequency.DAILY,
     val selectedDays: Set<CaregiverScheduleDay> = emptySet(),
     val selectedSlots: Set<CaregiverScheduleSlot> = emptySet(),
@@ -44,6 +45,47 @@ data class CaregiverMedicationDraft(
                 }
             }.toSet(),
         )
+    }
+}
+
+val CaregiverMedicationDraft.dosesPerDay: Int
+    get() = if (isPrn) 0 else selectedSlots.size
+
+fun CaregiverMedicationDraft.calculatedInventoryCount(): Double? {
+    if (isPrn) return null
+    val days = supplyDays.toIntOrNull()?.takeIf { it > 0 } ?: return null
+    val dose = doseCountPerIntake.toPositiveDoubleOrNull() ?: return null
+    if (dosesPerDay == 0) return null
+    val scheduledDays = scheduledDayCount(days)
+    if (scheduledDays == 0) return null
+    return dose * dosesPerDay * scheduledDays
+}
+
+fun CaregiverMedicationDraft.inventoryCalculationDescription(): String? {
+    val count = calculatedInventoryCount() ?: return null
+    val days = supplyDays.toIntOrNull() ?: return null
+    val dose = doseCountPerIntake.toDoubleOrNull() ?: return null
+    val finalTerm = if (scheduleFrequency == CaregiverScheduleFrequency.DAILY) {
+        "${days}日"
+    } else {
+        "服用日${scheduledDayCount(days)}日"
+    }
+    return "${dose.formValue()}錠 × ${dosesPerDay}回 × $finalTerm = ${count.formValue()}錠"
+}
+
+fun CaregiverMedicationDraft.recalculateInventory(): CaregiverMedicationDraft {
+    if (isPrn) return this
+    val calculated = calculatedInventoryCount()
+    return copy(inventoryCount = calculated?.formValue().orEmpty())
+}
+
+private fun CaregiverMedicationDraft.scheduledDayCount(days: Int): Int {
+    if (scheduleFrequency == CaregiverScheduleFrequency.DAILY) return days
+    if (selectedDays.isEmpty()) return 0
+    return (0 until days).count { offset ->
+        val day = startDate.plusDays(offset.toLong())
+        val scheduleDay = CaregiverScheduleDay.valueOf(day.dayOfWeek.name.take(3))
+        scheduleDay in selectedDays
     }
 }
 

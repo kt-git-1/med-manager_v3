@@ -95,10 +95,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationDraft
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationValidationError
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverScheduleDay
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverScheduleFrequency
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverScheduleSlot
 import com.afterlifearchive.medmanager.data.caregiver.validate
+import com.afterlifearchive.medmanager.data.caregiver.dosesPerDay
+import com.afterlifearchive.medmanager.data.caregiver.inventoryCalculationDescription
+import com.afterlifearchive.medmanager.data.caregiver.recalculateInventory
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
 import com.afterlifearchive.medmanager.data.patient.PatientMedication
@@ -601,6 +605,10 @@ private fun CaregiverMedicationEditor(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
+    fun acceptDraft(next: CaregiverMedicationDraft) {
+        draft = if (medication == null && !next.isPrn) next.recalculateInventory() else next
+    }
+
     fun pickDate(initial: LocalDate, onDate: (LocalDate) -> Unit) {
         DatePickerDialog(
             context,
@@ -639,7 +647,11 @@ private fun CaregiverMedicationEditor(
             MedicationBasicInformation(
                 draft = draft,
                 nameIsError = errors.any { it.field.name == "NAME" },
-                onDraftChange = { draft = it },
+                onDraftChange = ::acceptDraft,
+            )
+            MedicationInlineValidationErrors(
+                errors.filter { it.field.name in setOf("NAME", "DOSAGE_VALUE", "DOSAGE_UNIT", "DOSE_COUNT") },
+                "medication-basic-validation-errors",
             )
             Text(
                 stringResource(R.string.caregiver_medication_form_basic_help),
@@ -659,7 +671,7 @@ private fun CaregiverMedicationEditor(
                     selected = !draft.isPrn,
                     accent = MedicationTheme.colors.primaryTealText,
                     icon = MedicationFormTypeIcon.SCHEDULED,
-                    onClick = { draft = draft.copy(isPrn = false) },
+                    onClick = { acceptDraft(draft.copy(isPrn = false)) },
                     modifier = Modifier.testTag("medication-kind-scheduled"),
                 )
                 MedicationTypeChoice(
@@ -671,6 +683,7 @@ private fun CaregiverMedicationEditor(
                     onClick = {
                         draft = draft.copy(
                             isPrn = true,
+                            supplyDays = "",
                             scheduleFrequency = CaregiverScheduleFrequency.DAILY,
                             selectedDays = emptySet(),
                             selectedSlots = emptySet(),
@@ -703,7 +716,7 @@ private fun CaregiverMedicationEditor(
             Spacer(Modifier.height(8.dp))
             MedicationPeriodCard(
                 draft = draft,
-                onStartDate = { pickDate(draft.startDate) { draft = draft.copy(startDate = it, endDate = draft.endDate?.coerceAtLeast(it)) } },
+                onStartDate = { pickDate(draft.startDate) { acceptDraft(draft.copy(startDate = it, endDate = draft.endDate?.coerceAtLeast(it))) } },
                 onEndDateEnabled = { enabled -> draft = draft.copy(endDate = if (enabled) draft.startDate else null) },
                 onEndDate = { pickDate(draft.endDate ?: draft.startDate) { draft = draft.copy(endDate = it) } },
             )
@@ -725,14 +738,14 @@ private fun CaregiverMedicationEditor(
                     ) {
                     MedicationChoiceChip(
                         selected = draft.scheduleFrequency == CaregiverScheduleFrequency.DAILY,
-                        onClick = { draft = draft.copy(scheduleFrequency = CaregiverScheduleFrequency.DAILY, selectedDays = emptySet()) },
+                        onClick = { acceptDraft(draft.copy(scheduleFrequency = CaregiverScheduleFrequency.DAILY, selectedDays = emptySet())) },
                         label = stringResource(R.string.caregiver_medication_form_daily),
                         modifier = Modifier.weight(1f).testTag("medication-frequency-daily"),
                         accent = MedicationTheme.colors.caregiverBlue,
                     )
                     MedicationChoiceChip(
                         selected = draft.scheduleFrequency == CaregiverScheduleFrequency.WEEKLY,
-                        onClick = { draft = draft.copy(scheduleFrequency = CaregiverScheduleFrequency.WEEKLY) },
+                        onClick = { acceptDraft(draft.copy(scheduleFrequency = CaregiverScheduleFrequency.WEEKLY)) },
                         label = stringResource(R.string.caregiver_medication_form_weekly),
                         modifier = Modifier.weight(1f).testTag("medication-frequency-weekly"),
                         accent = MedicationTheme.colors.caregiverBlue,
@@ -742,7 +755,7 @@ private fun CaregiverMedicationEditor(
                         Text(stringResource(R.string.caregiver_medication_form_schedule_days), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                         CaregiverScheduleDay.entries.forEach { day ->
-                                MedicationWeekdayButton(day, day in draft.selectedDays, { draft = draft.copy(selectedDays = draft.selectedDays.toggle(day)) }, Modifier.weight(1f))
+                                MedicationWeekdayButton(day, day in draft.selectedDays, { acceptDraft(draft.copy(selectedDays = draft.selectedDays.toggle(day))) }, Modifier.weight(1f))
                         }
                     }
                 }
@@ -754,14 +767,25 @@ private fun CaregiverMedicationEditor(
                                     slot = slot,
                                     time = slotTimes?.valueFor(slot).orEmpty(),
                                     selected = slot in draft.selectedSlots,
-                                    onClick = { draft = draft.copy(selectedSlots = draft.selectedSlots.toggle(slot)) },
+                                    onClick = { acceptDraft(draft.copy(selectedSlots = draft.selectedSlots.toggle(slot))) },
                                     modifier = Modifier.weight(1f),
                                 )
                             }
                         }
                     }
+                    Text(
+                        stringResource(R.string.caregiver_medication_form_daily_count, draft.dosesPerDay),
+                        modifier = Modifier.fillMaxWidth().background(MedicationTheme.colors.orange.copy(alpha = 0.1f), RoundedCornerShape(50)).padding(vertical = 8.dp),
+                        color = MedicationTheme.colors.orange,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                    )
                 }
             }
+            MedicationInlineValidationErrors(
+                errors.filter { it.field.name in setOf("SCHEDULE_SLOT", "SCHEDULE_DAY") },
+                "medication-schedule-validation-errors",
+            )
             Text(
                 stringResource(R.string.caregiver_medication_form_schedule_help),
                 modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 12.dp),
@@ -773,25 +797,19 @@ private fun CaregiverMedicationEditor(
         if (medication == null) item {
             MedicationFormSectionHeader(stringResource(R.string.caregiver_medication_form_inventory_section), MedicationFormHeaderIcon.INVENTORY)
             Spacer(Modifier.height(8.dp))
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MedicationTheme.colors.cardStroke),
-            ) {
-                Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.caregiver_medication_form_inventory), modifier = Modifier.weight(1f), fontSize = 16.sp)
-                    MedicationInlineField(
-                        value = draft.inventoryCount,
-                        placeholder = "0",
-                        onValueChange = { draft = draft.copy(inventoryCount = it) },
-                        modifier = Modifier.width(72.dp).testTag("medication-inventory"),
-                        keyboardType = KeyboardType.Decimal,
-                        textAlign = TextAlign.End,
-                        contentPadding = PaddingValues(vertical = 14.dp),
-                    )
-                }
+            if (draft.isPrn) {
+                MedicationManualInventoryCard(draft.inventoryCount) { draft = draft.copy(inventoryCount = it) }
+            } else {
+                MedicationSupplyCalculator(
+                    draft = draft,
+                    onSupplyDaysChange = { acceptDraft(draft.copy(supplyDays = it.filter(Char::isDigit))) },
+                    onInventoryChange = { draft = draft.copy(inventoryCount = it) },
+                )
             }
+            MedicationInlineValidationErrors(
+                errors.filter { it.field.name == "INVENTORY_COUNT" },
+                "medication-inventory-validation-errors",
+            )
         }
         item {
             MedicationFormSectionHeader(stringResource(R.string.caregiver_medication_form_notes_section), MedicationFormHeaderIcon.NOTES)
@@ -811,8 +829,9 @@ private fun CaregiverMedicationEditor(
                 )
             }
         }
-        if (errors.isNotEmpty()) item {
-            MedicationFormErrorCard(errors.joinToString("\n") { it.message }, "medication-validation-errors")
+        val remainingErrors = errors.filter { it.field.name == "END_DATE" }
+        if (remainingErrors.isNotEmpty()) item {
+            MedicationFormErrorCard(remainingErrors.joinToString("\n") { it.message }, "medication-validation-errors")
         }
         if (saveFailed) item {
             MedicationFormErrorCard(stringResource(R.string.caregiver_medication_form_error), "medication-save-error")
@@ -1067,6 +1086,126 @@ private fun MedicationTimeSlotButton(
         Column(Modifier.weight(1f)) {
             Text(label, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             if (time.isNotEmpty()) Text(time, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun MedicationSupplyCalculator(
+    draft: CaregiverMedicationDraft,
+    onSupplyDaysChange: (String) -> Unit,
+    onInventoryChange: (String) -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth().testTag("medication-inventory-calculator"),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MedicationTheme.colors.primaryTealText.copy(alpha = 0.04f)),
+        border = androidx.compose.foundation.BorderStroke(1.2.dp, MedicationTheme.colors.primaryTealText.copy(alpha = 0.34f)),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(Modifier.size(30.dp).background(MedicationTheme.colors.primaryTealText, CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.CalendarMonth, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                }
+                Text(stringResource(R.string.caregiver_medication_form_inventory_calculator_title), fontSize = 19.sp, fontWeight = FontWeight.Bold)
+            }
+            Text(stringResource(R.string.caregiver_medication_form_supply_days_question), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+            Row(
+                Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                    .border(1.5.dp, MedicationTheme.colors.primaryTealText, RoundedCornerShape(12.dp)).padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                MedicationInlineField(
+                    value = draft.supplyDays,
+                    placeholder = "30",
+                    onValueChange = onSupplyDaysChange,
+                    modifier = Modifier.weight(1f).testTag("medication-supply-days"),
+                    keyboardType = KeyboardType.Number,
+                    contentPadding = PaddingValues(vertical = 12.dp),
+                )
+                Text(stringResource(R.string.caregiver_medication_form_supply_days_unit), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
+
+            val calculation = draft.inventoryCalculationDescription()
+            if (calculation == null) {
+                Text(
+                    stringResource(R.string.caregiver_medication_form_inventory_calculator_empty),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                )
+            } else {
+                Text(
+                    calculation,
+                    modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(10.dp)).padding(10.dp),
+                    color = MedicationTheme.colors.primaryTealText,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                )
+            }
+
+            Row(
+                Modifier.fillMaxWidth().background(MedicationTheme.colors.primaryTealText.copy(alpha = 0.08f), RoundedCornerShape(12.dp)).padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(stringResource(R.string.caregiver_medication_form_inventory_initial), modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, color = MedicationTheme.colors.primaryTealText)
+                MedicationInlineField(
+                    value = draft.inventoryCount,
+                    placeholder = "0",
+                    onValueChange = onInventoryChange,
+                    modifier = Modifier.width(96.dp).testTag("medication-inventory"),
+                    keyboardType = KeyboardType.Decimal,
+                    textAlign = TextAlign.End,
+                    contentPadding = PaddingValues(vertical = 14.dp),
+                )
+                Text("錠", color = MedicationTheme.colors.orange, fontWeight = FontWeight.Bold)
+            }
+            Text(
+                stringResource(R.string.caregiver_medication_form_inventory_calculator_help),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun MedicationManualInventoryCard(value: String, onValueChange: (String) -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MedicationTheme.colors.cardStroke),
+    ) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.caregiver_medication_form_inventory), modifier = Modifier.weight(1f), fontSize = 16.sp)
+            MedicationInlineField(
+                value = value,
+                placeholder = "0",
+                onValueChange = onValueChange,
+                modifier = Modifier.width(80.dp).testTag("medication-inventory"),
+                keyboardType = KeyboardType.Decimal,
+                textAlign = TextAlign.End,
+                contentPadding = PaddingValues(vertical = 14.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun MedicationInlineValidationErrors(errors: List<CaregiverMedicationValidationError>, testTag: String) {
+    if (errors.isEmpty()) return
+    Column(
+        Modifier.fillMaxWidth().padding(top = 8.dp).testTag(testTag),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        errors.distinctBy(CaregiverMedicationValidationError::message).forEach { error ->
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top) {
+                Icon(Icons.Rounded.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(17.dp))
+                Text(error.message, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
+            }
         }
     }
 }
