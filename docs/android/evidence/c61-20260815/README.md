@@ -18,7 +18,8 @@
 - `6a1d1f2`: replaced Patient History summary-only cards with the published expandable inline detail.
 - `9f6b1c6`: matched the published compact Patient Today and exact Caregiver Today summaries plus grouped Caregiver History.
 - `74c3d1f`: matched the published medication registration flow.
-- C62 working checkpoint: completed the direct source audit with published medication defaults, inventory detail styling/reachability and canonical synthetic Patient/Caregiver tutorial sample layers.
+- C62 working checkpoint: completed the direct source audit with published medication defaults and inventory detail styling/reachability.
+- C63 working checkpoint: corrected the tutorial contract after direct comparison with the published private Swift sample views. Android now has dedicated Patient/Caregiver fixture screens for all 14 steps, exact fixed copy/data, compact role-correct overlays and dark 200% action reachability. The light screenshot fixtures were visually inspected on API 35.
 
 ## Implemented contract
 
@@ -38,13 +39,13 @@
 | API contract and typecheck | 322 tests passed at the C61 baseline |
 | Android JVM unit tests | 202/202 passed |
 | Android Lint | passed |
-| API 35 instrumentation | 267/267 passed |
-| API 33 instrumentation | 267/267 passed |
-| API 26 instrumentation | 267/267 passed |
+| API 35 instrumentation | 272/272 passed (cold rerun after one isolated startup flake) |
+| API 33 instrumentation | 272/272 passed |
+| API 26 instrumentation | 272/272 passed |
 
 The post-C61 run also exposed and removed API 26 timing assumptions around lazy medication schedules, keyboard-covered inventory confirmation and PDF validation. The tests now wait for authoritative Compose state and explicitly dismiss the IME where appropriate; production inventory detail also applies IME padding so actions remain reachable.
 
-All fixtures use synthetic patients, medication names and timestamps. No identity, token or production medical data is stored in this evidence.
+All fixtures use synthetic patients, medication names and timestamps. The tutorial screenshots are test-runner artifacts and are not checked into Git. No identity, token or production medical data is stored in this evidence.
 
 ## Remaining release gates
 

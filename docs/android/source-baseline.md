@@ -100,7 +100,11 @@ C61 merged the complete published source into `android-dev`; it did not copy iso
 
 ### C62 corrective source-level audit
 
-The first C61 conclusion was reopened after direct Swift/Kotlin comparison showed that several Android tests still asserted older layouts. The corrective audit replaced those assumptions with the published expandable Patient History, compact Patient Today and exact Caregiver Today summaries, grouped Caregiver History, blank new-medication dose-count default, inventory detail colors and synthetic tutorial sample screens. The final matrix passes 202/202 JVM tests, Lint and 267/267 instrumentation tests on API 26, 33 and 35.
+The first C61 conclusion was reopened after direct Swift/Kotlin comparison showed that several Android tests still asserted older layouts. The corrective audit replaced those assumptions with the published expandable Patient History, compact Patient Today and exact Caregiver Today summaries, grouped Caregiver History, blank new-medication dose-count default and inventory detail colors. Its matrix passed 202/202 JVM tests, Lint and 267/267 instrumentation tests on API 26, 33 and 35.
+
+### C63 tutorial fidelity correction
+
+The C62 tutorial conclusion was reopened after direct comparison with the private published `PatientTutorialSampleView`, `CaregiverTutorialSampleView` and shared `GuidedTutorialOverlay`. Published iOS renders dedicated simplified fixtures; it does not inject synthetic repositories into production tabs. Android now follows that contract with three Patient sample destinations mapped across four steps, ten Caregiver sample destinations, exact fixed Japanese copy/data, matching role icons and a compact bottom guide card. The active live screen remains hidden from interaction and accessibility. Light fixtures for all 14 steps were visually inspected; dedicated dark/200% reachability and tutorial action tests pass. The complete matrix passes 202/202 JVM tests, Lint and 272/272 instrumentation tests on API 26, 33 and 35 (816/816).
 
 The later staging-only privacy-safe Analytics change and Build 52 are not part of this published baseline and must enter through a future explicit rebaseline if released.
 
@@ -125,5 +129,5 @@ Run this procedure whenever API or iOS behavior changes on `main`.
 - [x] The main delta was reviewed across API, iOS, and tests.
 - [x] Runtime/spec conflicts are explicitly identified.
 - [x] All affected Android contract tests have been updated for actual-time/late-dose behavior, slot ordering, medication supply calculation, action-first inventory editing and patient-first push routing.
-- [x] All affected emulator-verifiable Android implementation rows passed 202/202 JVM tests, Lint and 267/267 UI tests on API 26, 33 and 35 after the C62 corrective source-level audit. Physical/TalkBack/OEM evidence remains the separate V01 gate.
+- [x] All affected emulator-verifiable Android implementation rows passed 202/202 JVM tests, Lint and 272/272 UI tests on API 26, 33 and 35 after the C63 tutorial fidelity correction. Physical/TalkBack/OEM evidence remains the separate V01 gate.
 - [x] Current iOS source/runtime references have been captured for every emulator-verifiable scoped state through C37–C56; physical/TalkBack/OEM variants remain an explicit V1 gate.

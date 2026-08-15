@@ -269,7 +269,7 @@ fun CaregiverHomeScreen(
         }
         if (tutorialStep >= 0) {
             Box(Modifier.fillMaxSize().testTag("caregiver-tutorial-sample")) {
-                CaregiverModePreview(initialTab = caregiverTutorialTab(tutorialStep))
+                CaregiverTutorialSampleScreen(tutorialStep)
             }
         }
         if (tutorialStep >= 0) {

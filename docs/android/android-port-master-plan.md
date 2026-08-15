@@ -161,10 +161,10 @@ This is a verification/repair phase, not a declaration that earlier code is auto
 5. Data safety and health-app declarations
 6. Signed internal/closed test, feedback repair and rollout plan
 
-### Current checkpoint — C62 (2026-08-15)
+### Current checkpoint — C63 (2026-08-15)
 
 - R0–C4 and the automated portion of X1 are implemented against published `main@432b34c`.
-- C62 reopens the initial C61 conclusion with a direct source audit and closes the remaining expandable History, Today summary, medication form, inventory and synthetic tutorial-sample gaps. The current suite passes 202/202 JVM tests, Lint and 267/267 UI tests on API 26/33/35.
+- C62 reopened the initial C61 conclusion with a direct source audit and closed the expandable History, Today summary, medication form and inventory gaps. C63 then corrected the tutorial implementation after direct comparison with `PatientTutorialSampleView`, `CaregiverTutorialSampleView` and `GuidedTutorialOverlay`: Android now uses dedicated published sample screens for all 14 steps, exact fixed copy/data and the compact role-colored guide card. The current suite passes 202/202 JVM tests, Lint and 272/272 UI tests on API 26/33/35.
 - The repeatable privacy-first Firebase procedure is `firebase-analytics.md`; live Console evidence still requires the four Android Firebase values and a physical device.
 - The physical release procedure is `physical-device-matrix.md`; its row-level evidence still requires old-supported, current-reference and non-Google OEM targets plus the exact signed Play Internal artifact.
 - V1 remains open for physical-device/Doze/TalkBack/OEM evidence, a release-owner signed AAB, Play Internal/Closed testing, Console declarations and the final pre-merge main rebaseline.

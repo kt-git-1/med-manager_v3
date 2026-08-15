@@ -535,8 +535,8 @@ fun PatientHomeScreen(
     }
     if (tutorialStep >= 0) {
         Box(Modifier.fillMaxSize().testTag("patient-tutorial-sample")) {
-            PatientModePreview(
-                initialTab = when (tutorialStep) {
+            PatientTutorialSampleScreen(
+                tab = when (tutorialStep) {
                     1 -> PatientTab.HISTORY
                     2 -> PatientTab.SETTINGS
                     else -> PatientTab.TODAY

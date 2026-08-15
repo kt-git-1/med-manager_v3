@@ -1,17 +1,23 @@
 package com.afterlifearchive.medmanager.ui
 
+import android.os.SystemClock
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.unit.Density
 import androidx.test.platform.app.InstrumentationRegistry
@@ -42,14 +48,14 @@ class CaregiverTutorialOverlayTest {
         composeRule.onNodeWithText("家族の服薬状況を通知しますか？").assertIsDisplayed()
         composeRule.onNodeWithText("10/10").assertIsDisplayed()
         composeRule.onNodeWithText("あとで設定する").performClick()
-        composeRule.onNodeWithText("戻る").performClick()
+        composeRule.onNodeWithContentDescription("戻る").performClick()
         composeRule.onNodeWithText("通知をオンにする").performClick()
 
         assertTrue(skip == 1 && previous == 1 && next == 1)
     }
 
     @Test
-    fun homeTutorialMovesTheRealTabsAndPersistsSkip() {
+    fun homeTutorialMovesPublishedSamplesAndPersistsSkip() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val preferences = context.getSharedPreferences("caregiver_tutorial", android.content.Context.MODE_PRIVATE)
         preferences.edit().clear().commit()
@@ -67,11 +73,61 @@ class CaregiverTutorialOverlayTest {
         }
         composeRule.onNodeWithTag("caregiver-tutorial-next").performClick()
         composeRule.onNodeWithText("薬を登録・編集").assertIsDisplayed()
-        composeRule.onNodeWithTag("caregiver-content-medications").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-tutorial-sample-medications").assertIsDisplayed()
+        composeRule.onNodeWithText("残り18錠").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-tutorial-skip").performClick()
 
         composeRule.onAllNodesWithTag("caregiver-tutorial").assertCountEquals(0)
         assertTrue(preferences.getBoolean("seen", false))
+    }
+
+    @Test
+    fun publishedDedicatedSampleCoversAllTenTutorialSteps() {
+        val step = mutableIntStateOf(0)
+        composeRule.setContent {
+            MedicationAppTheme { CaregiverTutorialSampleScreen(step.intValue) }
+        }
+
+        val expected = listOf(
+            "caregiver-tutorial-sample-today" to "飲み遅れが1回ありました",
+            "caregiver-tutorial-sample-medications" to "残り18錠",
+            "caregiver-tutorial-sample-inventory" to "あと2日分",
+            "caregiver-tutorial-sample-history" to "6月10日（水）",
+            "caregiver-tutorial-sample-settings" to "通知を受け取る",
+            "caregiver-tutorial-sample-time-preset" to "朝・昼・夜・眠前の時刻を変更できます",
+            "caregiver-tutorial-sample-register" to "本人の名前を入力して保存します。",
+            "caregiver-tutorial-sample-issue-code" to "連携コードを発行",
+            "caregiver-tutorial-sample-share-code" to "有効期限: 今日 18:00",
+            "caregiver-tutorial-sample-notification" to "服薬記録をすぐ確認できます",
+        )
+        expected.forEachIndexed { index, (tag, text) ->
+            composeRule.runOnIdle { step.intValue = index }
+            composeRule.onNodeWithTag(tag).assertIsDisplayed()
+            composeRule.waitUntil(5_000) {
+                composeRule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty()
+            }
+        }
+    }
+
+    @Test
+    fun publishedDedicatedSampleReferenceFixturesCaptureAllTenSteps() {
+        val step = mutableIntStateOf(0)
+        composeRule.setContent {
+            MedicationAppTheme {
+                Box(Modifier.fillMaxSize()) {
+                    CaregiverTutorialSampleScreen(step.intValue)
+                    CaregiverTutorialOverlay(step.intValue, {}, {}, {})
+                }
+            }
+        }
+
+        val names = listOf("today", "medications", "inventory", "history", "settings", "time-preset", "register", "issue-code", "share-code", "notification")
+        names.forEachIndexed { index, name ->
+            composeRule.runOnIdle { step.intValue = index }
+            composeRule.onNodeWithTag("caregiver-tutorial-sample-$name").assertIsDisplayed()
+            SystemClock.sleep(120)
+            writeDeviceScreenshotFixture("android-ui-200-caregiver-tutorial-$name-light-matched.png")
+        }
     }
 
     @Test
@@ -88,6 +144,17 @@ class CaregiverTutorialOverlayTest {
         composeRule.onNodeWithTag("caregiver-tutorial-skip").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-tutorial-back").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-tutorial-next").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun dedicatedSettingsSampleRemainsScrollableInDarkMaximumText() {
+        composeRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = 2f)) {
+                MedicationAppTheme(darkTheme = true) { CaregiverTutorialSampleScreen(4) }
+            }
+        }
+
+        composeRule.onNodeWithText("通知を受け取る").performScrollTo().assertIsDisplayed()
     }
 
     @Test
