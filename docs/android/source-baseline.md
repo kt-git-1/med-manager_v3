@@ -1,10 +1,10 @@
 # Android Port Source Baseline
 
-**Baseline date:** 2026-07-16
+**Baseline date:** 2026-08-15
 **Development branch:** `android-dev`
-**Reference main commit:** `3e52fb2f5367052bae8e664eee2c1043de76c377` (`Bump iOS build to 40 for production TestFlight`)
-**Previous reference:** `1cf8aef5d214718a27175ae0e8290e079e66f922` (`Bump iOS build to 38 for production TestFlight`)
-**Baseline merge checkpoint:** C58 merge commit `2fb4a9f` containing `main@3e52fb2`
+**Reference main commit:** `432b34c` (`chore(ios): prepare production TestFlight build 51`), published iOS 1.0.6
+**Previous reference:** `3e52fb2f5367052bae8e664eee2c1043de76c377` (`Bump iOS build to 40 for production TestFlight`)
+**Baseline merge checkpoint:** C61 merge commit `36a6d4d` containing `main@432b34c`
 
 This file pins the source material used to reproduce the current product on Android. A later change on `main` does not silently change the Android contract. It starts a new rebaseline procedure.
 
@@ -83,6 +83,23 @@ C58 merged and reviewed the complete eight-file API/iOS delta rather than copyin
 | Caregiver post-record feedback | Individual, delete, PRN and fully successful slot-bulk mutations keep their optimistic result and success message interactive while authoritative data reloads. Partial slot-bulk remains visibly refreshing because server inventory results are authoritative. | Caregiver Today uses nonblocking same-patient reconciliation for complete success and preserves the existing visible recovery path for partial inventory results. Deleting a record restores `MISSED` when its scheduled time is over one hour past, otherwise `PENDING`, before reconciliation. |
 | Dose-write performance | API history/event and inventory effects run concurrently where independent, while caregiver push remains ordered after both succeed. Response payloads, errors, idempotency and inventory authority are unchanged. | No DTO or endpoint change. Android must not infer inventory locally; the complete API suite and typecheck are the contract gate. |
 
+### C61 delta: `main@3e52fb2..432b34c` (published iOS 1.0.6 Build 51)
+
+C61 merged the complete published source into `android-dev`; it did not copy isolated Swift files. The release contract added or materially changed these Android surfaces:
+
+| Change | Published contract | Android status |
+|---|---|---|
+| Actual dose time and late threshold | Today/history payloads include optional `takenAt`. A record is late at exactly 60 minutes or more after its scheduled time. | Implemented and contract-tested in the wire/domain boundary. |
+| Patient recording lifetime | A scheduled dose opens 30 minutes before its time and stays recordable until 04:00 at the start of the following Tokyo day, exclusive. | Implemented in one shared policy with boundary tests. |
+| Patient next action | A late-but-recordable slot remains in `今日の記録`, while a later upcoming slot owns `次のお薬`. | Implemented in the selector and Patient Today UI. |
+| Patient Today and history | Show four-slot progress, actual record time, delay, late state and post-record scroll-to-top. | Implemented; API 35 Patient Today 27/27 and History 19/19 UI tests passed. |
+| Caregiver Today | Show actual record time, late status, recorder and a late-dose alert without blocking proxy actions. | Implemented; API 35 Caregiver Today 20/20 UI tests passed. |
+| Medication form and inventory | Guided medication entry, inventory calculator, field-local validation and redesigned inventory editing. Slot times must be strictly morning &lt; noon &lt; evening &lt; bedtime. | Recheck required; next C61 slices. |
+| Caregiver push routing | Select the payload's linked patient before opening the exact destination. Scheduled-dose push copy keeps the time-slot label even when late. | Recheck required; next C61 slice. |
+| History availability | Current history remains reachable without a billing prompt under the initial billing-off release policy. | Existing behavior retained; final C61 regression required. |
+
+The later staging-only privacy-safe Analytics change and Build 52 are not part of this published baseline and must enter through a future explicit rebaseline if released.
+
 ## 5. Rebaseline procedure
 
 Run this procedure whenever API or iOS behavior changes on `main`.
@@ -100,9 +117,9 @@ Run this procedure whenever API or iOS behavior changes on `main`.
 
 ## 6. Baseline acceptance checklist
 
-- [x] `android-dev` contains `main@3e52fb2` through the C58 merge checkpoint `2fb4a9f`.
+- [x] `android-dev` contains published `main@432b34c` through the C61 merge checkpoint `36a6d4d`.
 - [x] The main delta was reviewed across API, iOS, and tests.
 - [x] Runtime/spec conflicts are explicitly identified.
-- [x] All affected Android contract tests have been updated (C32–C34 and C58).
-- [x] All affected Android implementation rows have passed recheck (C32–C35 and C58); explicitly separated physical-device evidence remains pending.
+- [ ] All affected Android contract tests have been updated. Actual-time/late-dose contracts are complete; medication slot order, form/inventory and push routing are still in C61.
+- [ ] All affected Android implementation rows have passed recheck. Patient Today/History and Caregiver Today are complete on API 35; remaining C61 and cross-API/physical evidence are pending.
 - [x] Current iOS source/runtime references have been captured for every emulator-verifiable scoped state through C37–C56; physical/TalkBack/OEM variants remain an explicit V1 gate.

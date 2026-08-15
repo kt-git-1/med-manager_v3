@@ -1,8 +1,8 @@
 # Android Port Master Development Plan
 
-**Status:** Local implementation complete; external release verification in progress
+**Status:** iOS 1.0.6 parity rebaseline in progress
 **Development branch:** `android-dev`
-**Reference:** `main@3e52fb2`
+**Reference:** published iOS 1.0.6 Build 51, `main@432b34c`
 **Stack:** Kotlin, Jetpack Compose, Material 3
 
 ## 1. Outcome

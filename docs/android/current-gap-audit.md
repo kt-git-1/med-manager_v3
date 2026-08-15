@@ -1,12 +1,12 @@
 # Android Current Gap Audit
 
-**Audit date:** 2026-07-16
-**Reference:** `main@3e52fb2`
+**Audit date:** 2026-08-15
+**Reference:** published iOS 1.0.6 Build 51, `main@432b34c`
 **Android branch:** `android-dev`
 
 ## 1. Executive result
 
-The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C31 formally rebased the contract to `main@1cf8aef`; C32–C34 closed its Android parity gaps, C37–C56 closed the current emulator-verifiable UI matrices, and C57 passed 259 tests on each of API 26/33/35 (777/777). C58 then merged `main@3e52fb2` and matched its nonblocking Patient/Caregiver post-record reconciliation and overdue-delete state while preserving the new API side-effect ordering. Remaining gaps are explicitly live Firebase, physical-device evidence and Play release operations.
+The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C61 safely merged published `main@432b34c` into `android-dev` and revalidated the 322-test API contract. Android now parses actual `takenAt`, applies the exact -30 minute/next Tokyo day 04:00 recording window and one-hour late threshold, excludes late recordable slots from the next-action hero, and displays actual/late state in Patient Today, Patient History and Caregiver Today. The refreshed medication form, inventory editing and caregiver push selection/routing remain the open C61 product-parity slices; live Firebase, physical-device evidence and Play release operations remain separate external gates.
 
 ## 2. What is reusable
 

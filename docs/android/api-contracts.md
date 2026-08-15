@@ -1,6 +1,6 @@
 # Android API and Session Contracts
 
-**Pinned reference:** `main@3e52fb2`
+**Pinned reference:** published iOS 1.0.6 Build 51, `main@432b34c`
 **Time zone:** `Asia/Tokyo` unless an endpoint explicitly carries another value
 **Machine dates:** `YYYY-MM-DD`; timestamps are ISO-8601
 
@@ -48,7 +48,7 @@ Typed domain errors:
 | API-003 | `DELETE /api/patient/session` | PATIENT, retry disabled | none | Revoke current patient-device session before local unlink |
 | API-004 | `GET /api/patients` | CAREGIVER | none | `{data:[{id,displayName,slotTimes}]}` |
 | API-005 | `POST /api/patients` | CAREGIVER | `{displayName}`; nonblank, max 50 | Created patient; server enforces patient count |
-| API-006 | `PATCH /api/patients/{patientId}` | CAREGIVER | `{slotTimes:{morning,noon,evening,bedtime}}` | Updated patient slot times |
+| API-006 | `PATCH /api/patients/{patientId}` | CAREGIVER | `{slotTimes:{morning,noon,evening,bedtime}}`; all `HH:mm` and strictly morning &lt; noon &lt; evening &lt; bedtime | Updated patient slot times |
 | API-007 | `POST /api/patients/{patientId}/linking-codes` | CAREGIVER | none | `{data:{code,expiresAt}}`; invalidates earlier active code and can reactivate a revoked link |
 | API-008 | `POST /api/patients/{patientId}/revoke` | CAREGIVER | none | Revokes active patient sessions but preserves patient data |
 | API-009 | `DELETE /api/patients/{patientId}` | CAREGIVER | none | Permanently deletes patient and dependent data; clear selection only after success |
@@ -72,18 +72,20 @@ Medication DTO fields required by Android include `id`, `patientId`, name/dosage
 
 | ID | Method/path | Policy | Key contract |
 |---|---|---|---|
-| API-030 | `GET /api/patient/today` | PATIENT | Current patient's schedule; optional slot-time query supported |
-| API-031 | `GET /api/patients/{patientId}/today` | CAREGIVER | Selected patient's schedule |
+| API-030 | `GET /api/patient/today` | PATIENT | Current patient's schedule including optional actual `takenAt`; optional slot-time query supported |
+| API-031 | `GET /api/patients/{patientId}/today` | CAREGIVER | Selected patient's schedule including optional actual `takenAt` |
 | API-032 | `GET /api/patient/slot-times` | PATIENT | Four validated `HH:mm` values |
 | API-033 | `POST /api/patient/dose-records` | PATIENT | `{medicationId,scheduledAt}`; patient cannot delete |
 | API-034 | `POST /api/patients/{patientId}/dose-records` | CAREGIVER | Caregiver proxy record |
 | API-035 | `DELETE /api/patients/{patientId}/dose-records?...` | CAREGIVER | Caregiver removes a taken record; inventory is compensated server-side |
-| API-036 | `POST /api/patient/dose-records/slot` | PATIENT | `{date,slot}` plus optional slot times; server enforces `scheduledAt-30m ... +60m` |
+| API-036 | `POST /api/patient/dose-records/slot` | PATIENT | `{date,slot}` plus optional slot times; recordable from `scheduledAt-30m` through the next Tokyo day at 04:00 exclusive |
 | API-037 | `POST /api/patients/{patientId}/dose-records/slot` | CAREGIVER | `{date,slot}`; caregiver may record older missed slots and is not blocked by patient window |
 | API-038 | `POST /api/patients/{patientId}/prn-dose-records` | PATIENT or authorized CAREGIVER | `{medicationId,takenAt?,quantityTaken?}`; returns record and optional inventory snapshot |
 | API-039 | `DELETE /api/patients/{patientId}/prn-dose-records/{id}` | CAREGIVER | Deletes caregiver-manageable PRN record |
 
 Schedule dose identity is `(patientId, medicationId, scheduledAt)` and the UI key is stable. Only taken records are stored; pending/missed are derived. Status ordering and aggregation follow current iOS/backend tests.
+
+`takenAt` is the actual record time, not the scheduled time. A scheduled dose is late when `takenAt - scheduledAt >= 60 minutes`; the boundary is inclusive. Android must retain scheduled and actual times separately in Today and day-history models.
 
 At `main@3e52fb2`, single-dose creation performs history/event creation and inventory decrement concurrently, and slot-bulk recording performs event creation and inventory deltas concurrently. Caregiver push is still awaited only after those effects have succeeded. This is a latency change, not an Android wire-contract change: responses, idempotency, partial-slot counts, `insufficient_inventory` behavior and server inventory authority remain unchanged.
 
@@ -128,11 +130,11 @@ Slot-bulk response is top-level:
 | API-044 | `GET /api/patients/{id}/history/report?from&to` | CAREGIVER | Patient, range and per-day slot/PRN report data; max 90 inclusive days |
 | API-045 | `GET /api/patient/history/streak` | PATIENT | `{ currentStreakDays: Int, isAtLeast: Boolean, todayStatus: complete|inProgress|missed|noSchedule }` |
 
-History month accepts current `days` and legacy `monthSummary`; day accepts current `doses` and legacy `dayDetails`. Android may support both for compatibility but tests must prefer the current response. Retention uses `[todayTokyo-29d, todayTokyo]` for free access, with the server deciding entitlement.
+History month accepts current `days` and legacy `monthSummary`; day accepts current `doses` and legacy `dayDetails`. Scheduled day details carry optional actual `takenAt`. Android may support both response envelopes for compatibility but tests must prefer the current response. Current history remains reachable under the published billing-off release policy; the server remains authoritative if retention/entitlement is enabled later.
 
 API-045 is supplementary to the ordinary history response. Its load or refresh failure hides/retains only the streak presentation and must not replace valid month/day history with an error. Android must parse the four `todayStatus` values strictly, preserve the server's `isAtLeast` qualifier, and refresh streak on History entry/refresh, slot-time changes, scheduled-dose mutations and selected patient-session changes.
 
-The production caregiver repository uses API-042/API-043 with caregiver auth and selected-patient isolation. A missed scheduled item may be backfilled only through confirmation-protected `POST /api/patients/{id}/dose-records`; local history and freshness change only after a successful response. Remote caregiver navigation accepts only `type=DOSE_TAKEN` or `type=DOSE_MISSED` plus a linked `patientId`, ISO local `date` and canonical `slot`; all other event types remain rejected.
+The production caregiver repository uses API-042/API-043 with caregiver auth and selected-patient isolation. A missed scheduled item may be backfilled only through confirmation-protected `POST /api/patients/{id}/dose-records`; local history and freshness change only after a successful response. Remote caregiver navigation accepts only `type=DOSE_TAKEN` or `type=DOSE_MISSED` plus a linked `patientId`, ISO local `date` and canonical `slot`; all other event types remain rejected. Before routing, the shell must select that linked `patientId`; it must never display another patient's currently selected data at the destination.
 
 PDF generation is on-device. Patient mode renders no PDF action. Android uses the system share sheet and a content URI, never a publicly writable raw file path.
 
