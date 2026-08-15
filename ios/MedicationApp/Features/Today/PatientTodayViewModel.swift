@@ -16,8 +16,10 @@ final class PatientTodayViewModel: ObservableObject {
     @Published var outOfStockMedicationIds: Set<String> = []
     @Published var insufficientInventoryMedicationIds: Set<String> = []
     @Published var confirmSlot: NotificationSlot?
+    @Published private(set) var scrollToTopRequest = 0
 
     private let apiClient: APIClient
+    private let nowProvider: () -> Date
     private let onScheduledDoseRecorded: @MainActor () async -> Void
     let preferencesStore: NotificationPreferencesStore
     private let dateFormatter: DateFormatter
@@ -31,9 +33,11 @@ final class PatientTodayViewModel: ObservableObject {
     init(
         apiClient: APIClient,
         preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore(),
+        nowProvider: @escaping () -> Date = Date.init,
         onScheduledDoseRecorded: @escaping @MainActor () async -> Void = {}
     ) {
         self.apiClient = apiClient
+        self.nowProvider = nowProvider
         self.preferencesStore = preferencesStore
         self.onScheduledDoseRecorded = onScheduledDoseRecorded
         self.dateFormatter = DateFormatter()
@@ -112,6 +116,7 @@ final class PatientTodayViewModel: ObservableObject {
                     )
                 )
                 markDosesRecorded([dose])
+                requestScrollToTop()
                 AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
                 showToast(NSLocalizedString("patient.today.recorded", comment: "Recorded"))
                 refreshNotificationsAfterScheduledDoseRecord()
@@ -155,6 +160,7 @@ final class PatientTodayViewModel: ObservableObject {
                 notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("patient.today.prn.recorded", comment: "PRN recorded"))
                 onSuccess()
+                requestScrollToTop()
                 refreshAfterMutationInBackground()
             } catch {
                 showToastMessage(for: error)
@@ -215,17 +221,18 @@ final class PatientTodayViewModel: ObservableObject {
 
     // MARK: - Slot Bulk Recording
 
-    /// Recording window: slot time −30 min to +60 min
-    private static let recordingWindowBeforeSeconds: TimeInterval = 30 * 60
-    private static let recordingWindowAfterSeconds: TimeInterval = 60 * 60
-
     struct SlotSummary {
         let totalPills: Double
         let medCount: Int
         let remainingCount: Int
         let slotTime: String
+        let scheduledAt: Date
+        let currentTime: Date
+        let takenAt: Date?
         let aggregateStatus: DoseStatusDTO
         let isWithinRecordingWindow: Bool
+        let isLate: Bool
+        let delaySeconds: TimeInterval
         let hasInsufficientInventory: Bool
         let hasRecordableInventory: Bool
     }
@@ -273,24 +280,34 @@ final class PatientTodayViewModel: ObservableObject {
                 aggregate = .taken
             }
 
-            // Recording window: scheduledAt −30 min … scheduledAt +60 min
-            let now = Date()
+            // Recording window: scheduledAt −30 min … next day 04:00
+            let now = nowProvider()
             let withinWindow: Bool
             if let firstScheduled = doses.first?.scheduledAt {
-                let windowOpen = firstScheduled.addingTimeInterval(-Self.recordingWindowBeforeSeconds)
-                let windowClose = firstScheduled.addingTimeInterval(Self.recordingWindowAfterSeconds)
-                withinWindow = now >= windowOpen && now <= windowClose
+                withinWindow = MedicationRecordingPolicy.isRecordable(
+                    scheduledAt: firstScheduled,
+                    now: now,
+                    calendar: calendar
+                )
             } else {
                 withinWindow = false
             }
 
+            let scheduledAt = doses.first?.scheduledAt ?? now
+            let takenAt = doses.compactMap(\.takenAt).max()
+            let delaySeconds = max(0, (takenAt ?? now).timeIntervalSince(scheduledAt))
             result[slot] = SlotSummary(
                 totalPills: totalPills,
                 medCount: medCount,
                 remainingCount: remaining,
                 slotTime: slotTime,
+                scheduledAt: scheduledAt,
+                currentTime: now,
+                takenAt: takenAt,
                 aggregateStatus: aggregate,
                 isWithinRecordingWindow: withinWindow,
+                isLate: MedicationRecordingPolicy.isLate(scheduledAt: scheduledAt, takenAt: takenAt ?? now),
+                delaySeconds: delaySeconds,
                 hasInsufficientInventory: hasInsufficientInventory,
                 hasRecordableInventory: hasRecordableInventory
             )
@@ -320,7 +337,7 @@ final class PatientTodayViewModel: ObservableObject {
         Task { @MainActor in
             defer { isUpdating = false }
             do {
-                let dateString = dateKeyFormatter.string(from: Date())
+                let dateString = dateKeyFormatter.string(from: nowProvider())
                 let result = try await apiClient.bulkRecordSlot(
                     date: dateString,
                     slot: slot.rawValue,
@@ -335,6 +352,8 @@ final class PatientTodayViewModel: ObservableObject {
                     showToast(NSLocalizedString("patient.today.slot.bulk.partialSuccess", comment: "Bulk partially recorded"), kind: .warning)
                 } else if result.insufficientCount > 0 {
                     showToast(NSLocalizedString("patient.today.inventory.insufficient", comment: "Insufficient inventory"), kind: .warning)
+                } else if result.updatedCount == 0 && !recordableDoses.isEmpty {
+                    showToast(NSLocalizedString("patient.today.slot.bulk.noChange", comment: "No doses recorded"), kind: .warning)
                 } else {
                     showToast(NSLocalizedString("patient.today.slot.bulk.success", comment: "Bulk recorded"))
                 }
@@ -345,6 +364,9 @@ final class PatientTodayViewModel: ObservableObject {
                     // Keep partial inventory results authoritative because the response only
                     // includes counts, not the medication IDs that were recorded.
                     try await refreshTodayData()
+                }
+                if result.updatedCount > 0 {
+                    requestScrollToTop()
                 }
             } catch {
                 showToastMessage(for: error)
@@ -363,6 +385,10 @@ final class PatientTodayViewModel: ObservableObject {
 
     private func notifyDoseRecordsUpdated() {
         NotificationCenter.default.post(name: .doseRecordsUpdated, object: nil)
+    }
+
+    private func requestScrollToTop() {
+        scrollToTopRequest += 1
     }
 
     private func refreshAfterMutationInBackground() {
@@ -385,6 +411,7 @@ final class PatientTodayViewModel: ObservableObject {
                 patientId: dose.patientId,
                 medicationId: dose.medicationId,
                 scheduledAt: dose.scheduledAt,
+                takenAt: nowProvider(),
                 effectiveStatus: .taken,
                 recordedByType: .patient,
                 medicationSnapshot: dose.medicationSnapshot
@@ -434,6 +461,18 @@ final class PatientTodayViewModel: ObservableObject {
 
     private func dateKey(for date: Date) -> String {
         dateKeyFormatter.string(from: date)
+    }
+
+    func recordingDeadline(for scheduledAt: Date) -> Date {
+        MedicationRecordingPolicy.deadline(for: scheduledAt, calendar: calendar)
+    }
+
+    func isLateRecord(scheduledAt: Date, takenAt: Date? = nil) -> Bool {
+        MedicationRecordingPolicy.isLate(scheduledAt: scheduledAt, takenAt: takenAt ?? nowProvider())
+    }
+
+    func delayText(for seconds: TimeInterval) -> String {
+        MedicationRecordingPolicy.delayText(for: seconds)
     }
 
     private func sortDose(_ lhs: ScheduleDoseDTO, _ rhs: ScheduleDoseDTO) -> Bool {

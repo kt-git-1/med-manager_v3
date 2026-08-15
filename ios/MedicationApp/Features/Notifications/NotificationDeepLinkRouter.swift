@@ -4,6 +4,13 @@ import UserNotifications
 struct NotificationDeepLinkTarget: Equatable, Sendable {
     let dateKey: String
     let slot: NotificationSlot
+    let patientId: String?
+
+    init(dateKey: String, slot: NotificationSlot, patientId: String? = nil) {
+        self.dateKey = dateKey
+        self.slot = slot
+        self.patientId = patientId
+    }
 }
 
 enum NotificationDeepLinkParser {
@@ -25,7 +32,10 @@ enum NotificationDeepLinkParser {
         guard isDateKey(dateKey) else { return nil }
         guard let slotString = userInfo["slot"] as? String,
               let slot = NotificationSlot(rawValue: slotString) else { return nil }
-        return NotificationDeepLinkTarget(dateKey: dateKey, slot: slot)
+        let patientId = (userInfo["patientId"] as? String).flatMap { value in
+            value.isEmpty ? nil : value
+        }
+        return NotificationDeepLinkTarget(dateKey: dateKey, slot: slot, patientId: patientId)
     }
 
     private static func isDateKey(_ value: String) -> Bool {

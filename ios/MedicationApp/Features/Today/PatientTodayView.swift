@@ -2,25 +2,33 @@ import SwiftUI
 
 struct PatientTodayView: View {
     private let sessionStore: SessionStore
+    private let loadDataOnAppear: Bool
     @StateObject private var viewModel: PatientTodayViewModel
     @Binding private var deepLinkTarget: NotificationDeepLinkTarget?
 
     init(
         sessionStore: SessionStore? = nil,
         preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore(),
+        previewItems: [ScheduleDoseDTO]? = nil,
+        nowProvider: @escaping () -> Date = Date.init,
         onScheduledDoseRecorded: @escaping @MainActor () async -> Void = {},
         deepLinkTarget: Binding<NotificationDeepLinkTarget?> = .constant(nil)
     ) {
         let store = sessionStore ?? SessionStore()
         self.sessionStore = store
+        self.loadDataOnAppear = previewItems == nil
         _deepLinkTarget = deepLinkTarget
         let baseURL = SessionStore.resolveBaseURL()
         let apiClient = APIClient(baseURL: baseURL, sessionStore: store)
         let viewModel = PatientTodayViewModel(
             apiClient: apiClient,
             preferencesStore: preferencesStore,
+            nowProvider: nowProvider,
             onScheduledDoseRecorded: onScheduledDoseRecorded
         )
+        if let previewItems {
+            viewModel.items = previewItems
+        }
         _viewModel = StateObject(wrappedValue: viewModel)
     }
 
@@ -28,8 +36,97 @@ struct PatientTodayView: View {
         PatientTodayRootView(
             sessionStore: sessionStore,
             viewModel: viewModel,
+            loadDataOnAppear: loadDataOnAppear,
             deepLinkTarget: $deepLinkTarget
         )
+    }
+}
+
+struct PatientTodayV105DebugPreview: View {
+    @EnvironmentObject private var sessionStore: SessionStore
+
+    var body: some View {
+        ZStack {
+            PatientScreenBackground()
+            PatientTodayView(
+                sessionStore: sessionStore,
+                previewItems: Self.previewItems,
+                nowProvider: { Self.previewNow }
+            )
+        }
+        .safeAreaInset(edge: .bottom) {
+            HStack(spacing: 12) {
+                previewTab("今日", systemImage: "calendar", selected: true)
+                previewTab("履歴", systemImage: "clock", selected: false)
+                previewTab("設定", systemImage: "gearshape", selected: false)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(PatientUI.cardBackground, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: 28).stroke(PatientUI.cardStroke) }
+            .shadow(color: PatientUI.cardShadow, radius: 14, y: 5)
+            .padding(.horizontal, 14)
+            .padding(.bottom, 8)
+        }
+    }
+
+    private func previewTab(_ title: String, systemImage: String, selected: Bool) -> some View {
+        VStack(spacing: 5) {
+            Image(systemName: systemImage).font(.title2.weight(.bold))
+            Text(title).font(.caption.weight(.bold))
+        }
+        .foregroundStyle(selected ? PatientUI.teal : Color.secondary)
+        .frame(maxWidth: .infinity)
+    }
+
+    private static var previewNow: Date {
+        date(hour: 13, minute: 47)
+    }
+
+    private static var previewItems: [ScheduleDoseDTO] {
+        [
+            dose(key: "morning-1", medicationId: "morning-med", hour: 8, minute: 0, name: "整腸剤", dosage: "50 mg", status: .taken, takenAt: date(hour: 8, minute: 7)),
+            dose(key: "noon-1", medicationId: "noon-blood", hour: 12, minute: 30, name: "血圧の薬", dosage: "5 mg", status: .missed),
+            dose(key: "noon-2", medicationId: "noon-stomach", hour: 12, minute: 30, name: "胃薬", dosage: "", status: .missed),
+            dose(key: "evening-1", medicationId: "evening-med", hour: 19, minute: 0, name: "夕食後の薬", dosage: "10 mg", status: .pending),
+            dose(key: "evening-2", medicationId: "evening-stomach", hour: 19, minute: 0, name: "胃薬", dosage: "", status: .pending),
+            dose(key: "bedtime-1", medicationId: "bedtime-med", hour: 23, minute: 0, name: "眠前薬", dosage: "1 mg", status: .pending)
+        ]
+    }
+
+    private static func dose(
+        key: String,
+        medicationId: String,
+        hour: Int,
+        minute: Int,
+        name: String,
+        dosage: String,
+        status: DoseStatusDTO,
+        takenAt: Date? = nil
+    ) -> ScheduleDoseDTO {
+        ScheduleDoseDTO(
+            key: key,
+            patientId: "preview-patient",
+            medicationId: medicationId,
+            scheduledAt: date(hour: hour, minute: minute),
+            takenAt: takenAt,
+            effectiveStatus: status,
+            recordedByType: status == .taken ? .patient : nil,
+            medicationSnapshot: MedicationSnapshotDTO(
+                name: name,
+                dosageText: dosage,
+                doseCountPerIntake: 1,
+                dosageStrengthValue: 1,
+                dosageStrengthUnit: "錠",
+                notes: nil
+            )
+        )
+    }
+
+    private static func date(hour: Int, minute: Int) -> Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = AppConstants.defaultTimeZone
+        return calendar.date(bySettingHour: hour, minute: minute, second: 0, of: Date()) ?? Date()
     }
 }
 
@@ -41,6 +138,7 @@ private struct PatientTodayRootView: View {
     }()
     let sessionStore: SessionStore
     @ObservedObject var viewModel: PatientTodayViewModel
+    let loadDataOnAppear: Bool
     @EnvironmentObject private var toastPresenter: ToastPresenter
     @Binding var deepLinkTarget: NotificationDeepLinkTarget?
     @State private var showingConfirm = false
@@ -79,6 +177,7 @@ private struct PatientTodayRootView: View {
         .modifier(
             PatientTodayLifecycleModifier(
                 viewModel: viewModel,
+                loadDataOnAppear: loadDataOnAppear,
                 onHandleDeepLink: handleDeepLinkIfNeeded
             )
         )
@@ -142,13 +241,8 @@ private struct PatientTodayRootView: View {
 
     private var slotSections: [SlotSection] {
         let orderedSlots: [NotificationSlot] = [.morning, .noon, .evening, .bedtime]
-        let summaries = viewModel.slotSummaries
         var sections: [SlotSection] = []
         for slotValue in orderedSlots {
-            // Hide fully-taken slots so the next actionable slot appears at the top
-            if let summary = summaries[slotValue], summary.aggregateStatus == .taken {
-                continue
-            }
             let items = viewModel.items.filter { slot(for: $0) == slotValue }
             if !items.isEmpty {
                 sections.append(SlotSection(id: slotValue.rawValue, slot: slotValue, items: items))
@@ -222,6 +316,12 @@ private struct PatientTodayRootView: View {
     private var bulkConfirmMessage: String {
         guard let slot = viewModel.confirmSlot else { return "" }
         let summary = viewModel.slotSummaries[slot]
+        if let summary, summary.isLate {
+            return String(
+                format: NSLocalizedString("patient.today.slot.bulk.confirm.late.message", comment: "Late dose confirmation"),
+                viewModel.delayText(for: summary.delaySeconds)
+            )
+        }
         return String(
             format: NSLocalizedString("patient.today.slot.bulk.confirm.message", comment: "Bulk confirm message"),
             slotTitle(for: slot),
@@ -304,6 +404,7 @@ private struct PatientTodayRootView: View {
                 scheduledAt: scheduledAt,
                 remainingCount: summary.remainingCount,
                 isWithinRecordingWindow: summary.isWithinRecordingWindow,
+                isLate: summary.isLate,
                 hasRecordableInventory: summary.hasRecordableInventory
             )
         }
@@ -315,6 +416,8 @@ private struct PatientTodayRootView: View {
 }
 
 private enum PatientTodayScrollTarget {
+    static let top = "PatientTodayScrollTop"
+
     static func nextSlot(_ slot: NotificationSlot) -> String {
         "nextSlot-\(slot.rawValue)"
     }
@@ -398,6 +501,15 @@ private struct PatientTodayBaseView: View {
                         }
                         pendingScrollTarget = nil
                     }
+                    .onChange(of: viewModel.scrollToTopRequest) { previousValue, newValue in
+                        guard newValue > previousValue else { return }
+                        Task { @MainActor in
+                            await Task.yield()
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                proxy.scrollTo(PatientTodayScrollTarget.top, anchor: .top)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -411,16 +523,21 @@ private struct PatientTodayBaseView: View {
 
 private struct PatientTodayLifecycleModifier: ViewModifier {
     @ObservedObject var viewModel: PatientTodayViewModel
+    let loadDataOnAppear: Bool
     let onHandleDeepLink: () -> Void
 
     func body(content: Content) -> some View {
         content
             .onAppear {
-                viewModel.handleAppear()
+                if loadDataOnAppear {
+                    viewModel.handleAppear()
+                }
                 onHandleDeepLink()
             }
             .onDisappear {
-                viewModel.handleDisappear()
+                if loadDataOnAppear {
+                    viewModel.handleDisappear()
+                }
             }
     }
 }
@@ -527,15 +644,26 @@ private struct PatientTodayListView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
+                Color.clear
+                    .frame(height: 1)
+                    .id(PatientTodayScrollTarget.top)
+
                 PatientHeader(
                     title: NSLocalizedString("patient.readonly.today.title", comment: "Today title"),
                     subtitle: Self.weekdayFormatter.string(from: Date()),
-                    systemImage: "pills.fill"
+                    systemImage: "calendar"
                 )
 
                 if let inventoryWarning {
                     PatientInventoryWarningCard(warning: inventoryWarning)
                 }
+
+                PatientDayProgressStrip(
+                    summaries: slotSummaries,
+                    slotTitle: slotTitle,
+                    activeSlot: nextSlotSection?.slot,
+                    timeText: timeText
+                )
 
                 nextDoseHeroCard
 
@@ -543,69 +671,18 @@ private struct PatientTodayListView: View {
                     prnEntryCard
                 }
 
-                HStack {
-                    Text(NSLocalizedString("patient.today.section.planned", comment: "Planned section"))
-                        .font(.title2.weight(.bold))
-                    Spacer()
-                    PatientStatusPill(
-                        text: progressText,
-                        color: nextSlotSection == nil ? PatientUI.teal : PatientUI.blue,
-                        systemImage: nextSlotSection == nil ? "checkmark" : nil
-                    )
-                }
-
-                ForEach(slotSections) { section in
-                    if let slot = section.slot, let summary = slotSummaries[slot] {
-                        SlotCardView(
-                            slot: slot,
-                            doses: section.items,
-                            summary: summary,
-                            slotColor: slotColor(slot),
-                            slotTitle: slotTitle(slot),
-                            isUpdating: viewModel.isUpdating,
-                            isOutOfStock: isOutOfStock,
-                            onRecord: { onBulkRecord(slot) },
-                            onPresentDetail: onPresentDetail
-                        )
-                        .id(section.id)
-                    } else {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(slotTitle(section.slot))
-                                .font(.title2.weight(.bold))
-                            ForEach(section.items) { dose in
-                                PatientTodayRow(
-                                    dose: dose,
-                                    timeText: timeText(dose.scheduledAt),
-                                    onRecord: { onConfirmDose(dose) },
-                                    isHighlighted: shouldHighlight(dose),
-                                    slotColor: slotColor(section.slot),
-                                    isOutOfStock: isOutOfStock(dose.medicationId)
-                                )
-                                .id(dose.key)
-                                .onTapGesture { onPresentDetail(dose) }
-                            }
-                        }
-                    }
-                }
-
-                if !takenItems.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(NSLocalizedString("patient.today.section.taken", comment: "Taken section"))
-                            .font(.title2.weight(.bold))
-                        ForEach(takenItems) { dose in
-                            PatientTodayRow(
-                                dose: dose,
-                                timeText: timeText(dose.scheduledAt),
-                                onRecord: { onConfirmDose(dose) },
-                                isHighlighted: shouldHighlight(dose),
-                                slotColor: nil,
-                                isOutOfStock: isOutOfStock(dose.medicationId)
-                            )
-                            .id(dose.key)
-                            .onTapGesture { onPresentDetail(dose) }
-                        }
-                    }
-                }
+                PatientTodayCompactSummary(
+                    summaries: slotSummaries,
+                    slotSections: slotSections,
+                    activeSlot: nextSlotSection?.slot,
+                    slotTitle: slotTitle,
+                    timeText: timeText,
+                    delayText: viewModel.delayText,
+                    isUpdating: viewModel.isUpdating,
+                    isOutOfStock: isOutOfStock,
+                    onPresentDetail: onPresentDetail,
+                    onBulkRecord: onBulkRecord
+                )
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)
@@ -619,27 +696,26 @@ private struct PatientTodayListView: View {
     @ViewBuilder
     private var nextDoseHeroCard: some View {
         if let nextSlotSection, let slot = nextSlotSection.slot, let summary = slotSummaries[slot] {
-            PatientCard(accent: slotColor(slot)) {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(NSLocalizedString("patient.today.next.title", comment: "Next dose title"))
-                        .font(.headline.weight(.bold))
-                        .foregroundStyle(.primary)
+            PatientCard(accent: summary.isLate ? PatientUI.orange : slotColor(slot)) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(NSLocalizedString("patient.today.next.header", comment: "Next medications header"))
+                        .font(.title2.weight(.bold))
 
-                    HStack(alignment: .center, spacing: 16) {
+                    HStack(alignment: .center, spacing: 14) {
                         Image(systemName: "clock.fill")
-                            .font(.system(size: 34, weight: .bold))
+                            .font(.system(size: 30, weight: .bold))
                             .foregroundStyle(PatientUI.tealDark)
-                            .frame(width: 66, height: 66)
+                            .frame(width: 58, height: 58)
                             .background(PatientUI.teal.opacity(0.12), in: Circle())
                         VStack(alignment: .leading, spacing: 6) {
                             Text("\(slotTitle(slot))のお薬")
-                                .font(.system(size: 32, weight: .bold, design: .rounded))
+                                .font(.system(size: 29, weight: .bold, design: .rounded))
                                 .foregroundStyle(PatientUI.tealDark)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.72)
-                            Text(summary.slotTime)
-                                .font(.title2.weight(.bold))
-                                .foregroundStyle(.secondary)
+                            Text(String(format: NSLocalizedString("patient.today.schedule.format", comment: "Scheduled time"), summary.slotTime))
+                                .font(.headline.weight(.bold))
+                                .foregroundStyle(Color.readableSecondaryText)
                         }
                         Spacer(minLength: 0)
                     }
@@ -651,6 +727,15 @@ private struct PatientTodayListView: View {
                     ))
                     .font(.body.weight(.semibold))
                     .foregroundStyle(.secondary)
+
+                    if summary.isLate && summary.aggregateStatus != .taken {
+                        Label(viewModel.delayText(for: summary.delaySeconds), systemImage: "clock.badge.exclamationmark")
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(PatientUI.orange)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 12)
+                            .background(PatientUI.orange.opacity(0.12), in: Capsule())
+                    }
 
                     VStack(spacing: 10) {
                         ForEach(nextSlotSection.items) { dose in
@@ -665,11 +750,11 @@ private struct PatientTodayListView: View {
                     Button {
                         onBulkRecord(slot)
                     } label: {
-                        Label(NSLocalizedString("patient.today.slot.bulk.button", comment: "Bulk record"), systemImage: "checkmark.circle.fill")
+                        Label(String(format: NSLocalizedString("patient.today.slot.bulk.button.actual", comment: "Record now"), timeText(summary.currentTime)), systemImage: "checkmark.circle.fill")
                             .font(.title2.weight(.bold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(minHeight: 72)
+                            .frame(minHeight: 64)
                             .background(PatientUI.teal, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                     }
                     .buttonStyle(.plain)
@@ -679,6 +764,21 @@ private struct PatientTodayListView: View {
                 }
             }
             .id(PatientTodayScrollTarget.nextSlot(slot))
+        } else if hasLateUnrecordedSlot {
+            PatientCard(accent: PatientUI.orange) {
+                HStack(spacing: 16) {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .font(.system(size: 42, weight: .bold))
+                        .foregroundStyle(PatientUI.orange)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(NSLocalizedString("patient.today.next.overdue.title", comment: "No upcoming dose title"))
+                            .font(.title2.weight(.bold))
+                        Text(NSLocalizedString("patient.today.next.overdue.message", comment: "Record late doses below"))
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
         } else {
             PatientCard(accent: PatientUI.teal) {
                 HStack(spacing: 16) {
@@ -711,6 +811,7 @@ private struct PatientTodayListView: View {
                 scheduledAt: scheduledAt,
                 remainingCount: summary.remainingCount,
                 isWithinRecordingWindow: summary.isWithinRecordingWindow,
+                isLate: summary.isLate,
                 hasRecordableInventory: summary.hasRecordableInventory
             )
         }
@@ -718,6 +819,14 @@ private struct PatientTodayListView: View {
             return nil
         }
         return slotSections.first { $0.slot == nextSlot }
+    }
+
+    private var hasLateUnrecordedSlot: Bool {
+        slotSummaries.values.contains { summary in
+            summary.remainingCount > 0
+                && summary.isLate
+                && summary.isWithinRecordingWindow
+        }
     }
 
     private var inventoryWarning: PatientInventoryWarning? {
@@ -807,6 +916,346 @@ private struct PatientInventoryWarning {
             format: NSLocalizedString("patient.today.inventory.warning.multiple", comment: "Multiple out-of-stock medications warning"),
             medicationCount
         )
+    }
+}
+
+private struct PatientDayProgressStrip: View {
+    private let slots: [NotificationSlot] = [.morning, .noon, .evening, .bedtime]
+    let summaries: [NotificationSlot: PatientTodayViewModel.SlotSummary]
+    let slotTitle: (NotificationSlot?) -> String
+    let activeSlot: NotificationSlot?
+    let timeText: (Date) -> String
+
+    var body: some View {
+        ZStack {
+            GeometryReader { geometry in
+                let connectorWidth = max(0, geometry.size.width - 70)
+                let completedWidth = connectorWidth * CGFloat(completedConnectorCount) / CGFloat(slots.count - 1)
+
+                Capsule()
+                    .fill(Color.secondary.opacity(0.38))
+                    .frame(width: connectorWidth, height: 8)
+                    .position(x: geometry.size.width / 2, y: 72)
+
+                if completedWidth > 0 {
+                    Capsule()
+                        .fill(PatientUI.teal)
+                        .frame(width: completedWidth, height: 8)
+                        .position(x: 35 + completedWidth / 2, y: 72)
+                }
+            }
+
+            HStack(spacing: 10) {
+                ForEach(slots, id: \.rawValue) { slot in
+                    VStack(spacing: 8) {
+                        Text(slotTitle(slot))
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .foregroundStyle(accentColor(for: slot))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
+
+                        ZStack {
+                            Circle()
+                                .fill(iconBackgroundColor(for: slot))
+                                .frame(width: 52, height: 52)
+                            Image(systemName: symbol(for: slot))
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundStyle(.white)
+                        }
+
+                        Text(detail(for: slot))
+                            .font(.system(size: 19, weight: .bold, design: .rounded))
+                            .foregroundStyle(accentColor(for: slot))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.68)
+                    }
+                    .padding(.vertical, 11)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 142)
+                    .background(PatientUI.cardBackground, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .stroke(borderColor(for: slot), lineWidth: 2)
+                    }
+                }
+            }
+        }
+        .frame(height: 142)
+        .accessibilityIdentifier("PatientTodayProgressStrip")
+    }
+
+    private var completedConnectorCount: Int {
+        min(
+            slots.prefix { summaries[$0]?.aggregateStatus == .taken }.count,
+            slots.count - 1
+        )
+    }
+
+    private func symbol(for slot: NotificationSlot) -> String {
+        guard let summary = summaries[slot] else { return "minus" }
+        if summary.aggregateStatus == .taken { return "checkmark" }
+        if slot == .bedtime { return "moon.fill" }
+        return "clock"
+    }
+
+    private func accentColor(for slot: NotificationSlot) -> Color {
+        guard let summary = summaries[slot] else { return .secondary }
+        if summary.aggregateStatus == .taken { return PatientUI.teal }
+        if slot == activeSlot { return PatientUI.orange }
+        return .secondary
+    }
+
+    private func iconBackgroundColor(for slot: NotificationSlot) -> Color {
+        accentColor(for: slot).opacity(slot == activeSlot || summaries[slot]?.aggregateStatus == .taken ? 1 : 0.82)
+    }
+
+    private func borderColor(for slot: NotificationSlot) -> Color {
+        if summaries[slot]?.aggregateStatus == .taken { return PatientUI.teal }
+        if slot == activeSlot { return PatientUI.orange }
+        return Color.secondary.opacity(0.26)
+    }
+
+    private func detail(for slot: NotificationSlot) -> String {
+        guard let summary = summaries[slot] else { return "—" }
+        if summary.aggregateStatus == .taken, let takenAt = summary.takenAt {
+            return timeText(takenAt)
+        }
+        return summary.slotTime
+    }
+}
+
+private struct PatientTodayCompactSummary: View {
+    private let slots: [NotificationSlot] = [.morning, .noon, .evening, .bedtime]
+    let summaries: [NotificationSlot: PatientTodayViewModel.SlotSummary]
+    let slotSections: [SlotSection]
+    let activeSlot: NotificationSlot?
+    let slotTitle: (NotificationSlot?) -> String
+    let timeText: (Date) -> String
+    let delayText: (TimeInterval) -> String
+    let isUpdating: Bool
+    let isOutOfStock: (String) -> Bool
+    let onPresentDetail: (ScheduleDoseDTO) -> Void
+    let onBulkRecord: (NotificationSlot) -> Void
+    @State private var expandedSlots = Set<NotificationSlot>()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(NSLocalizedString("patient.today.summary.section.title", comment: "Today status section title"))
+                .font(.title2.weight(.bold))
+
+            if completedSlots.isEmpty && lateSlots.isEmpty {
+                PatientCard(accent: PatientUI.blue) {
+                    HStack(alignment: .center, spacing: 14) {
+                        Image(systemName: "clock.badge.questionmark.fill")
+                            .font(.system(size: 27, weight: .bold))
+                            .foregroundStyle(PatientUI.blue)
+                            .frame(width: 52, height: 52)
+                            .background(PatientUI.blue.opacity(0.12), in: Circle())
+
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(NSLocalizedString("patient.today.summary.empty.title", comment: "No dose records title"))
+                                .font(.title3.weight(.bold))
+                                .foregroundStyle(.primary)
+                            Text(NSLocalizedString("patient.today.summary.empty.message", comment: "No dose records message"))
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(Color.readableSecondaryText)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+                .accessibilityIdentifier("PatientTodayEmptyRecordState")
+            }
+
+            ForEach(lateSlots, id: \.rawValue) { slot in
+                if let summary = summaries[slot] {
+                    lateRecordCard(slot: slot, summary: summary)
+                        .id(slot.rawValue)
+                }
+            }
+
+            ForEach(completedSlots, id: \.rawValue) { slot in
+                if let summary = summaries[slot] {
+                    expandableCard(
+                        slot: slot,
+                        icon: "checkmark.circle.fill",
+                        color: summary.isLate ? PatientUI.orange : PatientUI.teal,
+                        title: summary.isLate
+                            ? NSLocalizedString("patient.today.summary.late", comment: "Late dose")
+                            : NSLocalizedString("patient.today.summary.taken", comment: "Taken"),
+                        detail: completedDetail(slot: slot, summary: summary)
+                    )
+                    .id(slot.rawValue)
+                }
+            }
+        }
+    }
+
+    private var completedSlots: [NotificationSlot] {
+        slots.filter { summaries[$0]?.aggregateStatus == .taken }
+    }
+
+    private var lateSlots: [NotificationSlot] {
+        slots.filter { slot in
+            guard slot != activeSlot, let summary = summaries[slot] else { return false }
+            return summary.aggregateStatus != .taken
+                && summary.remainingCount > 0
+                && summary.isLate
+                && summary.isWithinRecordingWindow
+        }
+    }
+
+    private func completedDetail(slot: NotificationSlot, summary: PatientTodayViewModel.SlotSummary) -> String {
+        let actual = summary.takenAt.map(timeText) ?? summary.slotTime
+        return String(format: NSLocalizedString("patient.today.summary.completed.detail", comment: "Completed detail"), slotTitle(slot), actual)
+    }
+
+    private func doses(for slot: NotificationSlot) -> [ScheduleDoseDTO] {
+        slotSections.first { $0.slot == slot }?.items ?? []
+    }
+
+    private func lateRecordCard(
+        slot: NotificationSlot,
+        summary: PatientTodayViewModel.SlotSummary
+    ) -> some View {
+        PatientCard(accent: PatientUI.orange) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 14) {
+                    Image(systemName: "clock.badge.exclamationmark.fill")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 54, height: 54)
+                        .background(PatientUI.orange, in: Circle())
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(NSLocalizedString("patient.today.summary.late.unrecorded", comment: "Late unrecorded dose"))
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(PatientUI.orange)
+                        Text(String(
+                            format: NSLocalizedString("patient.today.summary.late.detail", comment: "Late slot detail"),
+                            slotTitle(slot),
+                            summary.slotTime,
+                            delayText(summary.delaySeconds)
+                        ))
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Color.readableSecondaryText)
+                    }
+                    Spacer(minLength: 0)
+                }
+
+                Text(NSLocalizedString("patient.today.summary.late.guide", comment: "Late recording guide"))
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                VStack(spacing: 10) {
+                    ForEach(unrecordedDoses(for: slot)) { dose in
+                        SlotMedicationRow(
+                            dose: dose,
+                            isInventoryInsufficient: isOutOfStock(dose.medicationId)
+                        )
+                        .contentShape(Rectangle())
+                        .onTapGesture { onPresentDetail(dose) }
+                    }
+                }
+
+                Button {
+                    onBulkRecord(slot)
+                } label: {
+                    Label(
+                        String(
+                            format: NSLocalizedString("patient.today.slot.bulk.button.actual", comment: "Record now"),
+                            timeText(summary.currentTime)
+                        ),
+                        systemImage: "checkmark.circle.fill"
+                    )
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 62)
+                    .background(PatientUI.orange, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .disabled(isUpdating || !summary.isWithinRecordingWindow || !summary.hasRecordableInventory)
+                .opacity(isUpdating || !summary.isWithinRecordingWindow || !summary.hasRecordableInventory ? 0.55 : 1)
+                .accessibilityIdentifier("PatientTodayLateRecordButton-\(slot.rawValue)")
+            }
+        }
+    }
+
+    private func unrecordedDoses(for slot: NotificationSlot) -> [ScheduleDoseDTO] {
+        doses(for: slot).filter { $0.effectiveStatus != .taken }
+    }
+
+    private func expandableCard(
+        slot: NotificationSlot,
+        icon: String,
+        color: Color,
+        title: String,
+        detail: String
+    ) -> some View {
+        let isExpanded = expandedSlots.contains(slot)
+
+        return PatientCard(accent: color) {
+            VStack(spacing: 12) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.22)) {
+                        if isExpanded {
+                            expandedSlots.remove(slot)
+                        } else {
+                            expandedSlots.insert(slot)
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 14) {
+                        Image(systemName: icon)
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundStyle(color)
+                            .frame(width: 52, height: 52)
+                            .background(color.opacity(0.12), in: Circle())
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(title)
+                                .font(.title3.weight(.bold))
+                                .foregroundStyle(Color.primary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.78)
+                            Text(detail)
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(Color.readableSecondaryText)
+                            Text(NSLocalizedString(
+                                isExpanded ? "patient.today.summary.hide" : "patient.today.summary.show",
+                                comment: "Toggle medication list"
+                            ))
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(color)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Image(systemName: "chevron.down")
+                            .font(.headline.weight(.bold))
+                            .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                        .foregroundStyle(color)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("PatientTodaySummaryToggle-\(slot.rawValue)")
+
+                if isExpanded {
+                    Divider()
+
+                    VStack(spacing: 10) {
+                        ForEach(doses(for: slot)) { dose in
+                            SlotMedicationRow(
+                                dose: dose,
+                                isInventoryInsufficient: dose.effectiveStatus != .taken && isOutOfStock(dose.medicationId)
+                            )
+                            .contentShape(Rectangle())
+                            .onTapGesture { onPresentDetail(dose) }
+                        }
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+        }
     }
 }
 
@@ -1135,7 +1584,7 @@ private struct SlotMedicationRow: View {
     }
 
     private var shouldHighlightAsProblem: Bool {
-        isInventoryInsufficient || dose.effectiveStatus == .missed
+        isInventoryInsufficient
     }
 
     private var medicationDisplayName: String {
@@ -1156,7 +1605,7 @@ private struct SlotMedicationRow: View {
         case .missed:
             Image(systemName: "exclamationmark.circle.fill")
                 .font(.title2)
-                .foregroundStyle(.red)
+                .foregroundStyle(PatientUI.orange)
         case .pending:
             Image(systemName: "circle")
                 .font(.title2)

@@ -196,7 +196,7 @@ describe("notifyCaregiversOfDoseTaken — send trigger", () => {
     expect(data.recordingGroupId).toBe("group-uuid-1");
   });
 
-  it("notification body contains displayName", async () => {
+  it("includes the scheduled time slot when a late dose is recorded", async () => {
     const { notifyCaregiversOfDoseTaken } =
       await import("../../src/services/pushNotificationService");
 

@@ -85,6 +85,7 @@ final class MedicationFormViewModel: ObservableObject {
     @Published var endDate: Date?
     @Published var notes = ""
     @Published var inventoryCount = ""
+    @Published var supplyDays = ""
     @Published var inventoryUnit = NSLocalizedString("common.unit.tablet", comment: "Tablet unit")
     @Published var isPrn = false
     @Published var prnInstructions = ""
@@ -106,6 +107,39 @@ final class MedicationFormViewModel: ObservableObject {
 
     var isEditing: Bool {
         existingMedication != nil
+    }
+
+    var dosesPerDay: Int {
+        isPrn ? 0 : selectedTimeSlots.count
+    }
+
+    var calculatedInventoryCount: Double? {
+        guard !isPrn,
+              let days = Int(supplyDays), days > 0,
+              let dose = Double(doseCountPerIntake), dose > 0,
+              dosesPerDay > 0 else {
+            return nil
+        }
+
+        let scheduledDays = scheduledDayCount(within: days)
+        guard scheduledDays > 0 else { return nil }
+        return dose * Double(dosesPerDay) * Double(scheduledDays)
+    }
+
+    var inventoryCalculationDescription: String? {
+        guard let days = Int(supplyDays), days > 0,
+              let dose = Double(doseCountPerIntake), dose > 0,
+              dosesPerDay > 0,
+              calculatedInventoryCount != nil else {
+            return nil
+        }
+
+        if scheduleFrequency == .daily {
+            return "\(AppConstants.formatDecimal(dose))錠 × \(dosesPerDay)回 × \(days)日"
+        }
+
+        let scheduledDays = scheduledDayCount(within: days)
+        return "\(AppConstants.formatDecimal(dose))錠 × \(dosesPerDay)回 × 服用日\(scheduledDays)日"
     }
 
     init(
@@ -176,6 +210,17 @@ final class MedicationFormViewModel: ObservableObject {
         ScheduleDay.allCases
             .filter { selectedDays.contains($0) }
             .map(\.rawValue)
+    }
+
+    func recalculateInventoryFromSupplyDays() {
+        guard !isEditing else { return }
+        guard let calculatedInventoryCount else {
+            if !isPrn {
+                inventoryCount = ""
+            }
+            return
+        }
+        inventoryCount = AppConstants.formatDecimal(calculatedInventoryCount)
     }
 
     func submit() async -> Bool {
@@ -379,5 +424,37 @@ final class MedicationFormViewModel: ObservableObject {
             return value
         }
         return "\(value) \(unit)"
+    }
+
+    private func scheduledDayCount(within days: Int) -> Int {
+        guard days > 0 else { return 0 }
+        guard scheduleFrequency == .weekly else { return days }
+        guard !selectedDays.isEmpty else { return 0 }
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone.current
+        let start = calendar.startOfDay(for: startDate)
+
+        return (0..<days).reduce(into: 0) { count, offset in
+            guard let date = calendar.date(byAdding: .day, value: offset, to: start),
+                  let scheduleDay = scheduleDay(for: calendar.component(.weekday, from: date)),
+                  selectedDays.contains(scheduleDay) else {
+                return
+            }
+            count += 1
+        }
+    }
+
+    private func scheduleDay(for calendarWeekday: Int) -> ScheduleDay? {
+        switch calendarWeekday {
+        case 1: return .sun
+        case 2: return .mon
+        case 3: return .tue
+        case 4: return .wed
+        case 5: return .thu
+        case 6: return .fri
+        case 7: return .sat
+        default: return nil
+        }
     }
 }

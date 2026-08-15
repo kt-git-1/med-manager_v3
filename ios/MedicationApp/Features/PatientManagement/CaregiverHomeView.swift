@@ -172,6 +172,9 @@ struct CaregiverHomeView: View {
         .onReceive(notificationRouter.$target) { newTarget in
             guard let target = newTarget,
                   sessionStore.mode == .caregiver else { return }
+            if let patientId = target.patientId {
+                sessionStore.setCurrentPatientId(patientId)
+            }
             selectedTab = .history
             deepLinkTarget = target
             notificationRouter.clear()
@@ -379,7 +382,8 @@ struct CaregiverHomeView: View {
         notificationRouter.routeFromRemotePush(userInfo: [
             "type": "DOSE_TAKEN",
             "date": date,
-            "slot": slot
+            "slot": slot,
+            "patientId": env["UITEST_REMOTE_PUSH_PATIENT_ID"] ?? ""
         ])
         #endif
     }
@@ -593,44 +597,55 @@ private struct CaregiverTutorialSampleView: View {
     private var tabContent: some View {
         switch tab {
         case .today:
-            CaregiverCard {
-                HStack(spacing: 16) {
-                    sampleProgressRing()
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(NSLocalizedString("caregiver.today.progress.title", comment: "Progress title"))
-                            .font(.headline.weight(.bold))
-                        Text("2/3回分 記録済み")
+            CaregiverCard(accent: CaregiverUI.orange) {
+                HStack(alignment: .top, spacing: 14) {
+                    Image(systemName: "clock.badge.exclamationmark.fill")
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 48, height: 48)
+                        .background(CaregiverUI.orange, in: Circle())
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("飲み遅れが1回ありました")
                             .font(.title3.weight(.bold))
-                            .foregroundStyle(CaregiverUI.tealDark)
-                        Text("未記録が1回分あります")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Color.readableSecondaryText)
+                            .foregroundStyle(CaregiverUI.orange)
+                        Text("朝 8:00予定 → 13:21に本人が記録")
+                            .font(.subheadline.weight(.bold))
+                        Text("5時間21分遅れ")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(CaregiverUI.orange)
                     }
                     Spacer(minLength: 0)
                 }
             }
-            Text(NSLocalizedString("caregiver.today.timeline.title", comment: "Timeline title"))
-                .font(.headline.weight(.bold))
-                .frame(maxWidth: .infinity, alignment: .leading)
             CaregiverCard {
-                VStack(spacing: 14) {
-                    HStack {
-                        Label("朝 8:00", systemImage: "sunrise.fill")
-                            .font(.headline.weight(.bold))
-                            .foregroundStyle(CaregiverUI.teal)
-                        Spacer()
-                        CaregiverStatusPill(text: "記録済み", color: CaregiverUI.teal, systemImage: "checkmark")
-                    }
-                    Divider()
-                    HStack {
-                        Label("昼 12:30", systemImage: "sun.max.fill")
-                            .font(.headline.weight(.bold))
-                            .foregroundStyle(CaregiverUI.orange)
-                        Spacer()
-                        CaregiverStatusPill(text: "未記録", color: CaregiverUI.orange)
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("今日の服薬状況")
+                        .font(.headline.weight(.bold))
+                    HStack(spacing: 4) {
+                        sampleTodayStatus(title: "朝", time: "13:21", symbol: "clock.badge.exclamationmark.fill", color: CaregiverUI.orange)
+                        sampleTodayStatus(title: "昼", time: "12:30", symbol: "ellipsis", color: .gray)
+                        sampleTodayStatus(title: "夜", time: "19:05", symbol: "checkmark", color: CaregiverUI.teal)
+                        sampleTodayStatus(title: "眠前", time: "23:00", symbol: "ellipsis", color: .gray)
                     }
                 }
             }
+            Text(NSLocalizedString("caregiver.today.timeline.title", comment: "Timeline title"))
+                .font(.title3.weight(.bold))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            sampleTodayScheduleCard(
+                slot: "朝",
+                scheduledTime: "8:00",
+                actualTime: "13:21",
+                medication: "血圧の薬 5 mg",
+                isRecorded: true
+            )
+            sampleTodayScheduleCard(
+                slot: "昼",
+                scheduledTime: "12:30",
+                actualTime: nil,
+                medication: "整腸剤 50 mg",
+                isRecorded: false
+            )
         case .medications:
             sampleMedicationMetrics()
             sampleFilterChips(items: [
@@ -674,8 +689,22 @@ private struct CaregiverTutorialSampleView: View {
             sampleInventoryListRow(name: "血圧の薬 5 mg", quantity: "4", unit: "錠", days: "あと2日分", help: "残り日数が少ないため、早めの補充が必要です。", color: CaregiverUI.orange, attention: true)
             sampleInventoryListRow(name: "整腸剤 50 mg", quantity: "10", unit: "錠", days: "あと5日分", help: "服薬記録に合わせて自動で減ります。", color: CaregiverUI.teal, attention: false)
         case .history:
-            sampleHistoryCalendarCard()
             sampleHistorySelectedDayCard()
+            sampleHistorySlotCard(
+                slot: "朝",
+                scheduledTime: "8:00",
+                actualTime: "13:21",
+                detail: "5時間21分遅れ",
+                color: CaregiverUI.orange
+            )
+            sampleHistorySlotCard(
+                slot: "昼",
+                scheduledTime: "12:30",
+                actualTime: nil,
+                detail: "未記録",
+                color: CaregiverUI.blue
+            )
+            sampleHistoryCalendarCard()
         case .patients:
             sampleSettingsSelectionCard()
             sampleSettingsPatientCard()
@@ -1261,7 +1290,7 @@ private struct CaregiverTutorialSampleView: View {
                     }
                     Spacer()
                 }
-                Text(String(format: NSLocalizedString("caregiver.history.summary.format", comment: "History summary"), 1, 3))
+                Text(String(format: NSLocalizedString("caregiver.history.summary.format", comment: "History summary"), 2, 4))
                     .font(.title2.weight(.bold))
                     .foregroundStyle(.primary)
                 Text(NSLocalizedString("history.selected.missedHelp", comment: "Missed help"))
@@ -1270,20 +1299,119 @@ private struct CaregiverTutorialSampleView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 8) {
                     CaregiverStatusPill(
-                        text: String(format: NSLocalizedString("caregiver.history.summary.taken", comment: "Taken count"), 1),
+                        text: String(format: NSLocalizedString("caregiver.history.summary.taken", comment: "Taken count"), 2),
                         color: CaregiverUI.teal,
                         systemImage: "checkmark.circle.fill"
                     )
                     CaregiverStatusPill(
-                        text: String(format: NSLocalizedString("caregiver.history.summary.pending", comment: "Pending count"), 1),
+                        text: String(format: NSLocalizedString("caregiver.history.summary.pending", comment: "Pending count"), 2),
                         color: .gray,
                         systemImage: "clock.fill"
                     )
+                }
+            }
+        }
+    }
+
+    private func sampleTodayStatus(
+        title: String,
+        time: String,
+        symbol: String,
+        color: Color
+    ) -> some View {
+        VStack(spacing: 7) {
+            Text(title)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(color)
+            Image(systemName: symbol)
+                .font(.headline.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 42, height: 42)
+                .background(color, in: Circle())
+            Text(time)
+                .font(.caption.weight(.bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func sampleTodayScheduleCard(
+        slot: String,
+        scheduledTime: String,
+        actualTime: String?,
+        medication: String,
+        isRecorded: Bool
+    ) -> some View {
+        CaregiverCard(accent: isRecorded ? CaregiverUI.teal : CaregiverUI.orange) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("\(slot) \(scheduledTime)")
+                        .font(.title3.weight(.bold))
+                    Spacer()
                     CaregiverStatusPill(
-                        text: String(format: NSLocalizedString("caregiver.history.summary.missed", comment: "Missed count"), 1),
-                        color: CaregiverUI.red,
-                        systemImage: "exclamationmark.triangle.fill"
+                        text: isRecorded ? "飲み遅れ" : "未記録",
+                        color: CaregiverUI.orange,
+                        systemImage: isRecorded ? "clock.badge.exclamationmark.fill" : "clock.fill"
                     )
+                }
+                if let actualTime {
+                    HStack(spacing: 8) {
+                        Label("実際 \(actualTime)", systemImage: "clock.fill")
+                            .foregroundStyle(CaregiverUI.orange)
+                        Label("本人が記録", systemImage: "person.crop.circle.badge.checkmark")
+                            .foregroundStyle(CaregiverUI.teal)
+                    }
+                    .font(.caption.weight(.bold))
+                }
+                sampleCompactDoseLine(
+                    name: medication,
+                    detail: "1回1錠",
+                    color: isRecorded ? CaregiverUI.teal : CaregiverUI.orange
+                )
+                if !isRecorded {
+                    samplePrimaryButton(
+                        title: "代理で記録",
+                        systemImage: "checkmark.circle.fill",
+                        color: CaregiverUI.teal
+                    )
+                }
+            }
+        }
+    }
+
+    private func sampleHistorySlotCard(
+        slot: String,
+        scheduledTime: String,
+        actualTime: String?,
+        detail: String,
+        color: Color
+    ) -> some View {
+        CaregiverCard(accent: color) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("\(slot) 予定 \(scheduledTime)")
+                        .font(.headline.weight(.bold))
+                    Spacer()
+                    CaregiverStatusPill(
+                        text: actualTime == nil ? "未記録" : "飲み遅れ",
+                        color: actualTime == nil ? .gray : CaregiverUI.orange,
+                        systemImage: actualTime == nil ? "clock.fill" : "clock.badge.exclamationmark.fill"
+                    )
+                }
+                if let actualTime {
+                    HStack(spacing: 8) {
+                        Label("実際 \(actualTime)", systemImage: "clock.fill")
+                        Text(detail)
+                        Label("本人が記録", systemImage: "person.crop.circle.badge.checkmark")
+                            .foregroundStyle(CaregiverUI.teal)
+                    }
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(CaregiverUI.orange)
+                } else {
+                    Text(detail)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.readableSecondaryText)
                 }
             }
         }
@@ -1530,7 +1658,7 @@ private struct CaregiverTutorialSampleView: View {
     }
 }
 
-private struct CaregiverBottomTabBar: View {
+struct CaregiverBottomTabBar: View {
     @Binding var selectedTab: CaregiverTab
     var hasLowStock: Bool = false
     var highlightedTab: CaregiverTab?

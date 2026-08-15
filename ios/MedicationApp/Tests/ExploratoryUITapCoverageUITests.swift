@@ -58,6 +58,28 @@ final class ExploratoryUITapCoverageTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["今日のお薬"].waitForExistence(timeout: 10))
     }
 
+    func testPatientRecentHistoryRowExpandsToShowMedicationDetails() throws {
+        let app = launchedApp(mode: "patient")
+
+        handleSystemPermissionPrompts(in: app)
+        XCTAssertTrue(app.staticTexts["今日のお薬"].waitForExistence(timeout: 30), app.debugDescription)
+
+        tapTab("履歴", in: app)
+        XCTAssertTrue(app.staticTexts["最近の記録"].waitForExistence(timeout: 20), app.debugDescription)
+
+        let dateKey = todayString()
+        let row = app.buttons["PatientRecentHistoryRow-\(dateKey)"]
+        XCTAssertTrue(row.waitForExistence(timeout: 10), app.debugDescription)
+        for _ in 0..<6 where !row.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(row.isHittable, app.debugDescription)
+        row.tap()
+
+        XCTAssertTrue(app.staticTexts[qaContext.medicationName].waitForExistence(timeout: 10), app.debugDescription)
+        XCTAssertTrue(app.images["chevron.up"].firstMatch.exists, app.debugDescription)
+    }
+
     func testCaregiverCanRegisterForPushNotifications() throws {
         let app = launchedApp(mode: "caregiver")
 
@@ -97,16 +119,22 @@ final class ExploratoryUITapCoverageTests: XCTestCase {
         let relaunched = launchedApp(
             mode: "caregiver",
             simulatedRemotePushDate: todayString(),
-            simulatedRemotePushSlot: "bedtime"
+            simulatedRemotePushSlot: "bedtime",
+            currentPatientId: ""
         )
         handleSystemPermissionPrompts(in: relaunched)
         XCTAssertTrue(relaunched.staticTexts["服薬履歴"].waitForExistence(timeout: 20), relaunched.debugDescription)
+        let selectedPatientName = relaunched.staticTexts.matching(
+            NSPredicate(format: "label BEGINSWITH %@", qaContext.patientName)
+        ).firstMatch
+        XCTAssertTrue(selectedPatientName.waitForExistence(timeout: 20), relaunched.debugDescription)
     }
 
     private func launchedApp(
         mode: String,
         simulatedRemotePushDate: String? = nil,
-        simulatedRemotePushSlot: String? = nil
+        simulatedRemotePushSlot: String? = nil,
+        currentPatientId: String? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         var environment = [
@@ -117,13 +145,14 @@ final class ExploratoryUITapCoverageTests: XCTestCase {
             "UITEST_MODE": mode,
             "UITEST_CAREGIVER_TOKEN": mode == "caregiver" ? qaContext.caregiverJWT : "",
             "UITEST_PATIENT_TOKEN": mode == "patient" ? qaContext.patientToken : "",
-            "UITEST_CURRENT_PATIENT_ID": qaContext.patientId,
+            "UITEST_CURRENT_PATIENT_ID": currentPatientId ?? qaContext.patientId,
             "UITEST_MARK_TUTORIALS_SEEN": "1",
             "UITEST_MOCK_PUSH": "1"
         ]
         if let simulatedRemotePushDate, let simulatedRemotePushSlot {
             environment["UITEST_REMOTE_PUSH_DATE"] = simulatedRemotePushDate
             environment["UITEST_REMOTE_PUSH_SLOT"] = simulatedRemotePushSlot
+            environment["UITEST_REMOTE_PUSH_PATIENT_ID"] = qaContext.patientId
         }
         app.launchEnvironment = environment
         app.launch()
@@ -279,7 +308,7 @@ private struct QAContext {
             password: password
         )
         let caregiverToken = "caregiver-\(jwt)"
-        let patientName = "UITap QA Patient"
+        let patientName = (try? env("UITEST_PATIENT_NAME")) ?? "UITap QA Patient"
         let medicationName = "UITap QA Medication \(Int(Date().timeIntervalSince1970))"
         let patientId = try await getOrCreatePatient(
             apiBaseURL: apiBaseURL,
@@ -297,7 +326,8 @@ private struct QAContext {
             caregiverToken: caregiverToken,
             medicationId: medicationId,
             startDate: todayString(),
-            dayOfWeek: todayDayOfWeek()
+            dayOfWeek: todayDayOfWeek(),
+            times: ["08:00", "12:30", "19:00", "23:50"]
         )
         let code = try await issueLinkingCode(
             apiBaseURL: apiBaseURL,
@@ -450,7 +480,8 @@ private struct QAContext {
         caregiverToken: String,
         medicationId: String,
         startDate: String,
-        dayOfWeek: String
+        dayOfWeek: String,
+        times: [String]
     ) async throws {
         _ = try await jsonRequest(
             url: "\(apiBaseURL)/api/medications/\(medicationId)/regimens",
@@ -459,7 +490,7 @@ private struct QAContext {
             body: [
                 "timezone": "Asia/Tokyo",
                 "startDate": startDate,
-                "times": ["23:50"],
+                "times": times,
                 "daysOfWeek": [dayOfWeek]
             ]
         )

@@ -6,7 +6,7 @@ enum DoseStatusDTO: String, Decodable {
     case missed
 }
 
-enum RecordedByTypeDTO: String, Decodable, Equatable {
+enum RecordedByTypeDTO: String, Decodable, Equatable, Hashable {
     case patient
     case caregiver
 }
@@ -25,6 +25,7 @@ struct ScheduleDoseDTO: Decodable, Identifiable, Equatable {
     let patientId: String
     let medicationId: String
     let scheduledAt: Date
+    let takenAt: Date?
     let effectiveStatus: DoseStatusDTO?
     let recordedByType: RecordedByTypeDTO?
     let medicationSnapshot: MedicationSnapshotDTO

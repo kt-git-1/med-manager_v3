@@ -153,4 +153,75 @@ final class MedicationFormViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.selectedTimeSlots.contains(.evening))
         XCTAssertTrue(viewModel.selectedDays.isEmpty)
     }
+
+    func testDailySupplyDaysCalculatesInitialInventory() {
+        let viewModel = makeViewModelWithDefaultSlots()
+        viewModel.doseCountPerIntake = "1"
+        viewModel.selectedTimeSlots = [.morning, .evening]
+        viewModel.scheduleFrequency = .daily
+        viewModel.supplyDays = "30"
+
+        viewModel.recalculateInventoryFromSupplyDays()
+
+        XCTAssertEqual(viewModel.calculatedInventoryCount, 60)
+        XCTAssertEqual(viewModel.inventoryCount, "60")
+        XCTAssertEqual(viewModel.inventoryCalculationDescription, "1錠 × 2回 × 30日")
+    }
+
+    func testFractionalDoseSupplyCalculationKeepsDecimalQuantity() {
+        let viewModel = makeViewModelWithDefaultSlots()
+        viewModel.doseCountPerIntake = "0.5"
+        viewModel.selectedTimeSlots = [.morning, .noon, .evening]
+        viewModel.supplyDays = "7"
+
+        viewModel.recalculateInventoryFromSupplyDays()
+
+        XCTAssertEqual(viewModel.calculatedInventoryCount, 10.5)
+        XCTAssertEqual(viewModel.inventoryCount, "10.5")
+    }
+
+    func testWeeklySupplyCalculationCountsOnlySelectedWeekdays() throws {
+        let viewModel = makeViewModelWithDefaultSlots()
+        viewModel.startDate = try XCTUnwrap(
+            Calendar(identifier: .gregorian).date(from: DateComponents(year: 2026, month: 7, day: 20))
+        )
+        viewModel.doseCountPerIntake = "1"
+        viewModel.selectedTimeSlots = [.morning, .evening]
+        viewModel.scheduleFrequency = .weekly
+        viewModel.selectedDays = [.mon, .wed, .fri]
+        viewModel.supplyDays = "7"
+
+        viewModel.recalculateInventoryFromSupplyDays()
+
+        XCTAssertEqual(viewModel.calculatedInventoryCount, 6)
+        XCTAssertEqual(viewModel.inventoryCount, "6")
+        XCTAssertEqual(viewModel.inventoryCalculationDescription, "1錠 × 2回 × 服用日3日")
+    }
+
+    func testPrnMedicationDoesNotAutoCalculateInventory() {
+        let viewModel = makeViewModelWithDefaultSlots()
+        viewModel.isPrn = true
+        viewModel.doseCountPerIntake = "1"
+        viewModel.selectedTimeSlots = [.morning]
+        viewModel.supplyDays = "30"
+
+        viewModel.recalculateInventoryFromSupplyDays()
+
+        XCTAssertNil(viewModel.calculatedInventoryCount)
+        XCTAssertTrue(viewModel.inventoryCount.isEmpty)
+    }
+
+    func testClearingSupplyDaysClearsPreviouslyCalculatedInventory() {
+        let viewModel = makeViewModelWithDefaultSlots()
+        viewModel.doseCountPerIntake = "1"
+        viewModel.selectedTimeSlots = [.morning, .evening]
+        viewModel.supplyDays = "30"
+        viewModel.recalculateInventoryFromSupplyDays()
+        XCTAssertEqual(viewModel.inventoryCount, "60")
+
+        viewModel.supplyDays = ""
+        viewModel.recalculateInventoryFromSupplyDays()
+
+        XCTAssertTrue(viewModel.inventoryCount.isEmpty)
+    }
 }

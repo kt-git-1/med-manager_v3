@@ -18,7 +18,7 @@ const features = [
   {
     label: "記録",
     title: "本人は今日のお薬を見て記録",
-    body: "本人画面には、次に飲むお薬と時間帯を大きく表示します。飲めたらボタンを押すだけで記録できます。"
+    body: "本人画面には、次に飲むお薬と今日の記録を分かりやすく表示します。飲み遅れた時も、実際に飲んだ時刻を記録できます。"
   },
   {
     label: "共有",
@@ -64,11 +64,17 @@ export default function Home() {
           <div className="screenshot-pair" aria-label="実際のアプリ画面">
             <figure className="app-screenshot">
               <figcaption>本人モード</figcaption>
-              <img src="/screenshots/patient-today.png" alt="本人モードの今日のお薬画面" />
+              <img
+                src="/screenshots/patient-today.png?v=20260726"
+                alt="本人モードの今日のお薬画面"
+              />
             </figure>
             <figure className="app-screenshot family">
               <figcaption>家族モード</figcaption>
-              <img src="/screenshots/caregiver-today.png" alt="家族モードの今日の服薬画面" />
+              <img
+                src="/screenshots/caregiver-today.png?v=20260726"
+                alt="家族モードの今日の服薬画面"
+              />
             </figure>
           </div>
         </div>
@@ -116,7 +122,7 @@ export default function Home() {
           <div className="home-demo-layout">
             <div>
               <p className="section-lead">
-                本人には次に飲むお薬と時間を分かりやすく表示します。家族は今日の進み具合や未記録の予定を確認できるため、声をかける時期を判断しやすくなります。
+                本人には次に飲むお薬と今日の記録を分かりやすく表示します。家族は予定時刻・実際の記録時刻・飲み遅れを確認できるため、声をかける時期を判断しやすくなります。
               </p>
               <div className="home-benefits">
                 {benefits.map(([title, description]) => (
@@ -133,11 +139,17 @@ export default function Home() {
             >
               <figure className="app-screenshot">
                 <figcaption>本人用：今日のお薬を確認して記録</figcaption>
-                <img src="/screenshots/patient-today.png" alt="本人用の服薬確認・記録画面" />
+                <img
+                  src="/screenshots/patient-today.png?v=20260726"
+                  alt="本人用の服薬確認・記録画面"
+                />
               </figure>
               <figure className="app-screenshot family">
                 <figcaption>家族用：服薬状況と未記録を確認</figcaption>
-                <img src="/screenshots/caregiver-today.png" alt="家族用の服薬状況確認画面" />
+                <img
+                  src="/screenshots/caregiver-today.png?v=20260726"
+                  alt="家族用の服薬状況確認画面"
+                />
               </figure>
             </div>
           </div>

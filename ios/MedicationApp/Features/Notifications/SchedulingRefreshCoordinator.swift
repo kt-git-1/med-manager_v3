@@ -7,9 +7,14 @@ final class SchedulingRefreshCoordinator: ObservableObject {
         case appForeground
         case settingsChange
         case doseRecorded
+
+        var blocksInteraction: Bool {
+            self == .settingsChange
+        }
     }
 
     @Published private(set) var isRefreshing: Bool = false
+    @Published private(set) var blocksInteraction: Bool = false
     @Published private(set) var errorMessage: String?
 
     private let planBuilder: NotificationPlanBuilder
@@ -35,7 +40,12 @@ final class SchedulingRefreshCoordinator: ObservableObject {
     ) async {
         guard !isRefreshing else { return }
         isRefreshing = true
+        blocksInteraction = trigger.blocksInteraction
         errorMessage = nil
+        defer {
+            blocksInteraction = false
+            isRefreshing = false
+        }
 
         do {
             var effectiveSlotTimes = slotTimes
@@ -70,7 +80,6 @@ final class SchedulingRefreshCoordinator: ObservableObject {
             errorMessage = error.localizedDescription
         }
 
-        isRefreshing = false
     }
 
     func cancelScheduledNotifications() async {

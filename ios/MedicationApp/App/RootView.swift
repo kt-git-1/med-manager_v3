@@ -10,7 +10,17 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if isPatientHistoryAchievementPreviewActive {
+            if isInventoryDetailRedesignPreviewActive {
+                InventoryDetailDebugPreview()
+            } else if isPatientTodayV105PreviewActive {
+                PatientTodayV105DebugPreview()
+            } else if isCaregiverHistoryV105PreviewActive {
+                #if targetEnvironment(simulator)
+                CaregiverHistoryV105DebugPreview()
+                #else
+                EmptyView()
+                #endif
+            } else if isPatientHistoryAchievementPreviewActive {
                 PatientHistoryAchievementPreview()
             } else if isCaregiverTodayPreviewActive {
                 CaregiverTodayDebugPreview()
@@ -73,6 +83,12 @@ struct RootView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .authFailure)) { _ in
+            #if DEBUG
+            guard !ProcessInfo.processInfo.arguments.contains(where: {
+                $0.hasPrefix("-CaregiverMarketingScreenshot.")
+                    || $0.hasPrefix("-PatientMarketingScreenshot.")
+            }) else { return }
+            #endif
             globalBannerPresenter.show(
                 message: NSLocalizedString("common.error.unexpected", comment: "Unexpected error"),
                 duration: 6
@@ -93,8 +109,9 @@ struct RootView: View {
     }
 
     private var isMedicationFormMarketingPreviewActive: Bool {
-        #if DEBUG
+        #if targetEnvironment(simulator)
         ProcessInfo.processInfo.arguments.contains("-MedicationFormMarketingScreenshot")
+            || ProcessInfo.processInfo.arguments.contains("-MedicationFormValidationPreview")
         #else
         false
         #endif
@@ -108,9 +125,33 @@ struct RootView: View {
         #endif
     }
 
+    private var isCaregiverHistoryV105PreviewActive: Bool {
+        #if targetEnvironment(simulator)
+        ProcessInfo.processInfo.arguments.contains("-CaregiverHistoryV105Preview")
+        #else
+        false
+        #endif
+    }
+
     private var isPatientHistoryAchievementPreviewActive: Bool {
         #if targetEnvironment(simulator)
         ProcessInfo.processInfo.arguments.contains { $0.hasPrefix("-PatientHistoryAchievementPreview") }
+        #else
+        false
+        #endif
+    }
+
+    private var isPatientTodayV105PreviewActive: Bool {
+        #if targetEnvironment(simulator)
+        ProcessInfo.processInfo.arguments.contains("-PatientTodayV105Preview")
+        #else
+        false
+        #endif
+    }
+
+    private var isInventoryDetailRedesignPreviewActive: Bool {
+        #if targetEnvironment(simulator)
+        ProcessInfo.processInfo.arguments.contains("-InventoryDetailRedesignPreview")
         #else
         false
         #endif

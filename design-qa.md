@@ -1,65 +1,227 @@
-# デザイン検証記録
+# Medication registration image-to-code QA
 
-## 基準にしたデザイン
+## Evidence
 
-- 採用案（3枚目の縦型手順レイアウト＋1枚目の暖色系背景）: `/Users/kaito/.codex/generated_images/019f630f-5b32-7080-be96-4c6765d13d27/exec-3750483d-0978-4801-a512-878639afb40f.png`
-- 実装対象: トップ、詳しい使い方、プライバシーポリシー、利用規約、サポート、メール確認完了
-- 主な閲覧者: 高齢の本人を支える40〜60代の家族
+- Source visual truth: `/Users/kaito/.codex/generated_images/019f5a2c-62d4-7b23-b53d-61601c7e2b02/exec-b97df027-12e0-4ef7-a921-1c557ef3e5d6.png`
+- Final implementation screenshot: `/tmp/medication-form-true-final-top.png`
+- Full-view comparison: `/tmp/medication-form-true-final-comparison.png`
+- Focused lower-state screenshot: `/tmp/medform-compact-final-attachments-2116/A9BDFB88-25E4-4E65-872D-A72463A73E13.png`
+- Viewport: iPhone 17e simulator, portrait, 390 x 844 points at 3x density.
+- Source pixels: 853 x 1844. Implementation pixels: 1170 x 2532.
+- Normalization: source resized to 1170 x 2532 and compared beside the 3x simulator capture.
+- State: scheduled medication, `血圧の薬 5 mg`, one tablet per intake, morning and evening, 30-day supply, calculated inventory 60 tablets.
 
-## 比較条件と証跡
+## Findings
 
-- パソコン: 1440 × 1024
-- スマートフォン: 390 × 844
-- 比較画像: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-redesign-qa/guide-reference-vs-pass2.png`
-- 使い方（パソコン）: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-redesign-qa/guide-desktop-pass2.png`
-- 使い方（スマートフォン）: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-redesign-qa/guide-mobile-viewport.png`
-- トップ（パソコン）: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-redesign-qa/home-desktop-final.png`
-- トップ（スマートフォン）: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-redesign-qa/home-mobile-final2.png`
-- 規約系の代表確認: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-redesign-qa/privacy-desktop-final.png`
-- 今回の比較画像: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-guide-step-screens/reference-vs-steps-final.png`
-- 最初の手順（パソコン）: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-guide-step-screens/guide-steps-desktop-final.png`
-- 最初の手順（スマートフォン）: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/site-guide-step-screens/guide-steps-mobile.png`
-- 変更前の公開トップ: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/home-restored-qa/home-production-source.png`
-- 構成復元後のトップ（パソコン）: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/home-restored-qa/home-desktop.png`
-- 構成復元後のトップ（スマートフォン）: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/home-restored-qa/home-mobile.png`
-- 変更前と復元後の比較: `/Users/kaito/.codex/visualizations/2026/07/14/019f630f-5b32-7080-be96-4c6765d13d27/home-restored-qa/source-vs-new-home.png`
+- No actionable P0, P1, or P2 mismatch remains.
+- The three primary regions now follow the selected image in the same order and hierarchy: `基本情報`, `飲むタイミング`, `お薬の数量`, followed by `この内容で登録`.
+- Production-only medication type, weekday, period, and memo controls remain available below the primary flow in a collapsed `薬の種類・期間・メモ` disclosure. They do not alter the selected visual's primary composition.
+- The real iPhone viewport permits a small vertical scroll to reach every trailing control. This preserves native text rendering and touch targets while keeping the visible composition aligned with the source.
 
-## 目視比較
+## Required fidelity surfaces
 
-- 文字: 深緑の大見出し、太い日本語見出し、18pxの本文を基準に統一した。
-- 余白: セクション間を広く取り、読み進める順序が分かる縦型構成にした。
-- 色: 暖かいクリーム背景、深緑の主要操作、家族モードを示すオレンジを全ページで共通化した。
-- 画像: 作り物の画面ではなく、iPhone版アプリから取得した本人モード・家族モードの実画面を使用した。
-- 内容: 英語の小見出しを廃止し、本人／家族／連携の説明を日本語で具体化した。
-- ナビゲーション: ヘッダーは「使い方」だけに整理し、本人モード・家族モード・連携のしくみへの細分化リンクを廃止した。
-- 手順画像: お薬登録、連携コード入力、服薬確認・記録の各操作に対応する実画面を配置した。
-- 画像の見切れ: すべてのアプリ画像を自然な縦横比で表示し、`object-fit: cover` と高さ上限による下端の切り取りを廃止した。
-- トップ構成: 変更前の「概要、画面例、メール確認案内、ダウンロード、規約・サポート」の情報順序を復元し、新デザインの色・文字・余白だけを適用した。
+- Fonts and typography: native Japanese system text is used with fixed display sizes for the reference header and calculator. Weight and hierarchy match the source; no clipping or truncation was observed.
+- Spacing and layout rhythm: margins, card order, compact card padding, timing grid, formula row, quantity result, and registration button were aligned against the normalized full-view comparison.
+- Colors and visual tokens: the existing app teal, orange, pale blue background, white cards, gray secondary text, and subtle borders/shadows match the source palette.
+- Image quality and asset fidelity: all icons are native SF Symbols at device resolution. No placeholder, improvised raster, emoji, or custom SVG was introduced.
+- Copy and content: `お薬を登録`, `薬の情報と飲み方を入力します`, `基本情報`, `飲むタイミング`, `お薬の数量`, `登録時の在庫`, and `この内容で登録` are present. The concept-only `1 / 3` indicator was intentionally removed because the production flow is not a three-step wizard.
 
-## 修正履歴
+## Interaction evidence
 
-1. 初回比較では「使い方」ページの主見出しが4行になり、採用案より視線移動が増えていた。
-2. 意味の切れ目で改行し、パソコンの文字サイズを48pxに調整した。
-3. 2回目の比較で、見出しのまとまり、画面画像の位置、最初の手順への流れが改善したことを確認した。
-4. 利用者確認で、ヘッダー項目の細分化、最初の手順に操作画面がないこと、端末画像の下端が切れることをP1として再確認した。
-5. ヘッダーを「使い方」1項目へ整理し、3手順へ操作別の実画面を追加し、全画像を高さ自動・自然比率へ変更した。
-6. 修正後の比較では、パソコン1440 × 1024、スマートフォン390 × 844の両方で横スクロールがなく、画像の表示比率が元画像と一致することを確認した。
-7. 利用者確認で、ナビゲーションの意図を「本人モード・家族モード・連携のしくみだけを使い方へ集約」と再確認し、他の案内まで削除した状態をP1とした。また、トップの情報構成変更もP1とした。
-8. 「はじめ方、使い方、プライバシー、利用規約、サポート」を復元し、本人・家族・連携の個別リンクは追加しなかった。トップは変更前の公開画面と旧コードを基準に情報順序を復元した。
-9. 変更前と復元後を横並びで比較し、主見出し、説明、ダウンロード導線、画面例、後続セクションの階層が維持され、新しい暖色背景・深緑・実画面へ置き換わっていることを確認した。
+- Focused unit tests: 11 passed with 0 failures.
+  - Daily, fractional-dose, weekly selected-day, PRN, and recalculation behavior remain covered.
+- Focused UI test: 1 passed with 0 failures.
+- Verifies the corrected header and primary sections.
+  - Verifies 30 days, formula terms `1錠`, `2回`, `30日`, calculated inventory `60`, and the registration action.
+- Staging simulator build: passed.
 
-## 動作・表示確認
+## Comparison history
 
-- パソコン・スマートフォンとも横スクロールなし。
-- トップ、使い方、プライバシー、メール確認完了でブラウザ警告・エラーなし。
-- ヘッダー内は「はじめ方、使い方、プライバシー、利用規約、サポート」であることを確認。本人モード・家族モード・連携のしくみの個別リンクはなし。
-- 実画面画像は上端から下端まで縦横比を維持して表示。3手順の画像は1206 × 2622の実画像を使用。
-- 型検査、静的解析、本番ビルドを通過。
+- Initial implementation had P1 visual drift: an extra introduction card, oversized form rows, medication type and period mixed into the main flow, and a fixed action covering the quantity card.
+- First correction replaced the long Form layout with the selected image's three-card hierarchy and moved production-only fields into a collapsed disclosure.
+- Second correction removed the fixed material action, restored the image's inline registration action, changed `時間帯` to `飲むタイミング`, matched the orange outline clock treatment, and restored the horizontal calculation divider.
+- Final correction reduced card padding, field height, typography, and calculator spacing. The normalized final comparison shows the same composition and all primary content without overlap.
+- Product correction removed the misleading `1 / 3` label because registration is completed on one scrolling screen.
 
-## 残した差分
+## Follow-up polish
 
-- 実装版の最上部は採用案よりやや高い。本文18pxと実画面の視認性を優先した意図的な差分であり、対象利用者にとっての読みやすさを損なわないため許容した。
-- 採用案の最初の手順には操作別画像がなかったが、今回の利用者要望により各行右側へ実画面を追加した。背景色、番号、見出し階層、横罫線は採用案を維持している。
-- 変更前のトップは濃緑の背景だったが、ユーザー指定どおり情報構成のみを復元し、背景・文字・実画面は新デザインを維持した。
+- [P3] SF Symbol artwork differs slightly from the generated concept's illustrative icon glyphs, while retaining the same semantic shape and color.
+- [P3] The native `mg` picker includes the platform chevron, which is required to communicate that the unit can be changed.
+
+## Implementation checklist
+
+- [x] Match the selected header and back action.
+- [x] Match the compact basic-information card.
+- [x] Match the four timing choices and selected states.
+- [x] Match the 30-day calculation and 60-tablet result.
+- [x] Place the registration action after the quantity card without overlap.
+- [x] Preserve scheduled, weekly, PRN, editing, date, memo, and delete behavior.
+- [x] Pass unit, UI, visual, and Staging-build verification.
+
+final result: passed
+
+---
+
+# Medication form inline validation QA
+
+## Evidence
+
+- Reported screenshot: `/Users/kaito/Desktop/Screenshot 2026-07-23 at 17.24.21.png`
+- Corrected simulator screenshot: `/tmp/medication-validation-attachments-pass2/F298A818-ED78-4E87-AEF4-8BDDC705F2B1.png`
+- Before-and-after comparison: `/tmp/medication-inline-validation-comparison.png`
+- State: scheduled medication with morning, noon, and evening selected; 14-day supply; dosage strength unit intentionally left unselected.
+
+## Findings
+
+- No actionable P0, P1, or P2 issue remains.
+- The dosage validation now appears directly below the medication name/strength/unit row instead of below the submit action and additional-settings disclosure.
+- The invalid input row receives a two-point red outline and the error uses a compact red message with an alert icon.
+- Submitting invalid input scrolls the first invalid section into view.
+- Schedule errors appear inside the timing card; weekday and end-date errors appear inside the expanded additional-settings card.
+- Network and API errors remain compact and are displayed immediately above the submit button.
+
+## Interaction evidence
+
+- Invalid-dosage focused UI test: passed.
+- Existing automatic-inventory UI test: passed.
+- Existing medication-form validation unit tests: passed.
+- Staging simulator build: passed.
+
+final result: passed
+
+---
+
+# Inventory editing image-to-code QA
+
+## Evidence
+
+- Source visual truth: `/Users/kaito/.codex/generated_images/019f5a2c-62d4-7b23-b53d-61601c7e2b02/exec-6d99f155-d90e-4751-a80a-2448dddde596.png`
+- Final implementation screenshot: `/tmp/inventory-redesign-preview-final.png`
+- Full-view comparison: `/tmp/inventory-redesign-comparison-final.png`
+- Viewport: iPhone 17e simulator, portrait, 390 x 844 points at 3x density.
+- Source pixels: 853 x 1844. Implementation pixels: 1170 x 2532.
+- Comparison normalization: both images fitted to 390 x 844 and placed side by side.
+- State: caregiver inventory edit, scheduled medication `血圧の薬 5 mg`, current stock 4 tablets, about 4 days remaining, refill action selected, 14-day preset producing 18 tablets after refill.
+
+## Findings
+
+- No actionable P0, P1, or P2 mismatch remains.
+- The selected option's hierarchy is preserved: compact medication summary, explicit action choice, refill presets, before-and-after stock, and a single confirmation action.
+- Native iOS status and navigation bars use more vertical space than the generated concept. Content density was reduced so the confirmation button remains visible above the persistent caregiver tab bar.
+- The correction flow uses the same action-first shell and swaps only the editor content, avoiding simultaneous refill and replacement controls.
+
+## Required fidelity surfaces
+
+- Typography: native Japanese system type keeps the same bold hierarchy for the title, medication name, question, actions, and numeric results without truncation.
+- Spacing and layout: card order, compact header metrics, two action rows, four refill choices, 14-to-18 result row, and confirmation action match the selected composition.
+- Colors: the existing caregiver teal identifies refill and selection; orange identifies stock correction; pale blue background, white cards, and gray supporting copy remain consistent with the app.
+- Assets: production SF Symbols and the existing inventory illustration component are used at device resolution. No placeholder or improvised raster asset was introduced.
+- Navigation: inventory detail is a pushed destination, so the existing caregiver bottom tab bar remains visible as requested.
+
+## Interaction evidence
+
+- Staging simulator build: passed.
+- Focused UI test: passed with 0 failures.
+- Verified refill and correction can be selected independently.
+- Verified the 14-day preset and the calculated after-refill quantity of 18 tablets.
+- Existing refill, correction, inventory enablement, confirmation, and API methods are retained.
+
+## Comparison history
+
+- Pass 1 P2: the medication header wrapped, action cards were too tall, and the numeric refill result began below the initial viewport.
+- Pass 2: compacted the header, removed the extra status badge, shortened action rows, and initialized the realistic 14-day suggestion. The result and confirmation action became visible, but the button edge met the tab overlay.
+- Final pass: reduced inter-section spacing so the complete confirmation button is visible above the bottom navigation without reducing touch target sizes.
+
+## Follow-up polish
+
+- [P3] The generated package illustration is represented by the app's existing medication inventory illustration to preserve visual consistency and production asset quality.
+- [P3] The native status bar is present in the implementation and absent from the generated concept.
+
+## Implementation checklist
+
+- [x] Separate refill and stock-recount actions.
+- [x] Show current stock and estimated remaining days.
+- [x] Provide 7-, 14-, and 21-day presets plus direct input.
+- [x] Show the resulting stock before confirmation.
+- [x] Preserve the caregiver bottom tab bar.
+- [x] Pass build, interaction, and visual comparison checks.
+
+final result: passed
+
+---
+
+# Inventory quantity baseline alignment QA
+
+## Evidence
+
+- Reported screenshot: `/Users/kaito/Desktop/Screenshot 2026-07-23 at 0.53.26.png`
+- Corrected simulator screenshot: `/tmp/inventory-alignment-final.png`
+- Focused before-and-after comparison: `/tmp/inventory-quantity-alignment-focused-comparison.png`
+- State: 14-tablet refill resulting in 18 tablets.
+
+## Findings
+
+- No actionable P0, P1, or P2 issue remains.
+- Both quantity cards remain exactly 76 points high.
+- Both sides now reserve the same caption-row height and use the same number/unit baseline.
+- The hidden reserved caption is excluded from accessibility, so VoiceOver does not announce duplicate content.
+- Focused UI test passed after the alignment change.
+
+final result: passed
+
+---
+
+# Inventory refill quantity context QA
+
+## Evidence
+
+- Reported screenshot: `/Users/kaito/Desktop/Screenshot 2026-07-23 at 17.25.24.png`
+- Corrected simulator screenshot: `/tmp/inventory-refill-context-final.png`
+- Before-and-after comparison: `/tmp/inventory-refill-context-comparison.png`
+- State: current stock 4 tablets, 14-day refill of 14 tablets, resulting stock 18 tablets.
+
+## Findings
+
+- No actionable P0, P1, or P2 issue remains.
+- The editor header now shows the current stock in context.
+- The editable quantity is explicitly labelled `今回補充`.
+- The calculated total is explicitly labelled `補充後の在庫`.
+- The editable card uses a teal outline and light tint while keeping the same height and numeric baseline as the result card.
+- The correction flow uses the same pattern with `変更前` and `数え直し後`.
+
+## Interaction evidence
+
+- Focused refill/correction UI test: passed.
+- Staging simulator build: passed.
+- The 7-, 14-, 21-day presets and direct-entry control remain available.
+
+final result: passed
+
+---
+
+# Inventory refill confirmation QA
+
+## Evidence
+
+- Reported screenshot: `/Users/kaito/Desktop/Screenshot 2026-07-23 at 18.14.03.png`
+- Corrected simulator screenshot: `/tmp/inventory-centered-alert-attachments/27D12FA5-2F5B-4C6E-B318-1617B389B021.png`
+- State: current stock 4 tablets, refill 14 tablets, resulting stock 18 tablets.
+
+## Findings
+
+- No actionable P0, P1, or P2 issue remains.
+- The app uses the same centered native alert pattern as its other consequential actions.
+- The refill amount, current stock, and resulting stock have separate labels.
+- Every quantity uses the medication-specific unit `錠` instead of the generic `個`.
+- Cancel and confirmation actions remain standard system-sized controls.
+- The alert is centered by the platform and dims the underlying inventory editor.
+
+## Interaction evidence
+
+- Staging simulator build: passed.
+- Focused refill confirmation UI test: passed with 0 failures.
+- Verified the confirmation opens with the expected medication and quantities.
+- Verified cancel dismisses the confirmation without applying a refill.
+- The existing confirmation action continues to call the established refill API path.
 
 final result: passed

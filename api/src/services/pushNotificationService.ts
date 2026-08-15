@@ -88,7 +88,6 @@ async function getLinkedCaregiverIds(patientId: string): Promise<string[]> {
 
 function buildDoseRecordPayload(input: DoseRecordNotificationInput): ApnsPayload {
   const patientName = input.displayName;
-
   let body: string;
   if (input.isPrn && input.medicationName) {
     body = `${patientName}さんが${input.medicationName}（頓服）を服用しました`;
@@ -149,7 +148,7 @@ function buildDoseTakenBody(input: DoseTakenNotificationInput): string {
   }
 
   const slotLabel = slotLabels[input.slot];
-  if (input.recordingGroupId && slotLabel) {
+  if (slotLabel) {
     return `${input.displayName}さんの${slotLabel}のお薬を記録しました`;
   }
 

@@ -123,6 +123,27 @@ export function validatePatientSlotTimes(input: unknown): {
     }
   }
 
+  if (errors.length === 0) {
+    const toMinutes = (value: string) => {
+      const [hour, minute] = value.split(":").map(Number);
+      return hour * 60 + minute;
+    };
+    const morning = toMinutes(result.morning);
+    const noon = toMinutes(result.noon);
+    const evening = toMinutes(result.evening);
+    const bedtime = toMinutes(result.bedtime);
+
+    if (noon <= morning) {
+      errors.push("noon must be later than morning");
+    }
+    if (evening <= noon) {
+      errors.push("evening must be later than noon");
+    }
+    if (bedtime <= evening) {
+      errors.push("bedtime must be later than evening");
+    }
+  }
+
   return errors.length ? { errors } : { errors, slotTimes: result };
 }
 

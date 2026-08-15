@@ -177,21 +177,35 @@ struct InventoryListView: View {
         .onReceive(NotificationCenter.default.publisher(for: .medicationUpdated)) { _ in
             viewModel.load(showLoading: viewModel.items.isEmpty)
         }
-        .sheet(item: $selectedItem, onDismiss: {
-            viewModel.load(showLoading: false)
-        }) { item in
-            InventoryDetailView(
-                item: item,
-                viewModel: viewModel,
-                onSaved: {
-                    showToast(NSLocalizedString("caregiver.inventory.toast.saved", comment: "Inventory saved toast"))
-                },
-                onRefilled: {
-                    showToast(NSLocalizedString("caregiver.inventory.toast.refilled", comment: "Inventory refilled toast"))
-                }
-            )
+        .navigationDestination(isPresented: detailIsPresented) {
+            if let item = selectedItem {
+                InventoryDetailView(
+                    item: item,
+                    viewModel: viewModel,
+                    onSaved: {
+                        showToast(NSLocalizedString("caregiver.inventory.toast.saved", comment: "Inventory saved toast"))
+                        viewModel.load(showLoading: false)
+                    },
+                    onRefilled: {
+                        showToast(NSLocalizedString("caregiver.inventory.toast.refilled", comment: "Inventory refilled toast"))
+                        viewModel.load(showLoading: false)
+                    }
+                )
+            }
         }
         .accessibilityIdentifier("InventoryListView")
+    }
+
+    private var detailIsPresented: Binding<Bool> {
+        Binding(
+            get: { selectedItem != nil },
+            set: { isPresented in
+                if !isPresented {
+                    selectedItem = nil
+                    viewModel.load(showLoading: false)
+                }
+            }
+        )
     }
 
     private var emptyInventoryView: some View {

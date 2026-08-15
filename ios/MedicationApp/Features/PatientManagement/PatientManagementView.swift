@@ -174,6 +174,7 @@ struct PatientManagementView: View {
     @State private var isSavingDetail = false
     @State private var isPreparingTimePreset = false
     @State private var showingTimePresetSheet = false
+    @State private var timePresetErrorMessage: String?
     @State private var shouldShowPostCreateCodeGuide = false
     @StateObject private var pushSettingsViewModel: CaregiverPushSettingsViewModel
     private let timeZone = AppConstants.defaultTimeZone
@@ -265,13 +266,12 @@ struct PatientManagementView: View {
                             Button(NSLocalizedString("common.save", comment: "Save")) {
                                 Task {
                                     let success = await saveDetailSettings()
-                                    showingTimePresetSheet = false
-                                    showToast(
-                                        success
-                                            ? NSLocalizedString("caregiver.timePreset.toast.updated", comment: "Time preset updated toast")
-                                            : NSLocalizedString("common.error.save", comment: "Save error"),
-                                        kind: success ? .success : .error
-                                    )
+                                    if success {
+                                        showingTimePresetSheet = false
+                                        showToast(
+                                            NSLocalizedString("caregiver.timePreset.toast.updated", comment: "Time preset updated toast")
+                                        )
+                                    }
                                 }
                             }
                             .disabled(isSavingDetail)
@@ -903,6 +903,24 @@ struct PatientManagementView: View {
                 .font(.subheadline)
                 .textCase(nil)
             }
+
+            if let timePresetErrorMessage {
+                Section {
+                    Label(timePresetErrorMessage, systemImage: "exclamationmark.triangle.fill")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("TimePresetValidationError")
+                } header: {
+                    Text(
+                        NSLocalizedString(
+                            "caregiver.timePreset.validation.title",
+                            comment: "Time preset validation title"
+                        )
+                    )
+                    .foregroundStyle(.red)
+                }
+            }
         }
         .overlay { savingOverlay }
     }
@@ -938,6 +956,7 @@ struct PatientManagementView: View {
             },
             set: { newDate in
                 draftTimes[slot] = newDate
+                timePresetErrorMessage = nil
             }
         )
     }
@@ -970,6 +989,7 @@ struct PatientManagementView: View {
         guard !isPreparingTimePreset else { return }
         Task {
             await refreshTimePresetStateFromServer()
+            timePresetErrorMessage = nil
             showingTimePresetSheet = true
         }
     }
@@ -1005,40 +1025,47 @@ struct PatientManagementView: View {
         return (parts[0], parts[1])
     }
 
-    private func currentSlotTimesDTO() -> PatientSlotTimesDTO {
-        let morning = preferencesStore.slotTime(for: .morning)
-        let noon = preferencesStore.slotTime(for: .noon)
-        let evening = preferencesStore.slotTime(for: .evening)
-        let bedtime = preferencesStore.slotTime(for: .bedtime)
+    private func draftSlotTimesDTO() -> PatientSlotTimesDTO {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+
+        func value(for slot: NotificationSlot) -> String {
+            let fallback = preferencesStore.slotTime(for: slot)
+            guard let date = draftTimes[slot] else {
+                return String(format: "%02d:%02d", fallback.hour, fallback.minute)
+            }
+            let components = calendar.dateComponents([.hour, .minute], from: date)
+            return String(
+                format: "%02d:%02d",
+                components.hour ?? fallback.hour,
+                components.minute ?? fallback.minute
+            )
+        }
+
         return PatientSlotTimesDTO(
-            morning: String(format: "%02d:%02d", morning.hour, morning.minute),
-            noon: String(format: "%02d:%02d", noon.hour, noon.minute),
-            evening: String(format: "%02d:%02d", evening.hour, evening.minute),
-            bedtime: String(format: "%02d:%02d", bedtime.hour, bedtime.minute)
+            morning: value(for: .morning),
+            noon: value(for: .noon),
+            evening: value(for: .evening),
+            bedtime: value(for: .bedtime)
         )
     }
 
     private func saveDetailSettings() async -> Bool {
         guard !isSavingDetail else { return false }
         guard let patientId = viewModel.selectedPatientId else { return false }
+        let draftSlotTimes = draftSlotTimesDTO()
+        if let validationMessage = PatientSlotTimeOrderValidator.validationMessage(for: draftSlotTimes) {
+            timePresetErrorMessage = validationMessage
+            return false
+        }
+
+        timePresetErrorMessage = nil
         isSavingDetail = true
         defer { isSavingDetail = false }
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = timeZone
-        for slot in NotificationSlot.allCases {
-            if let date = draftTimes[slot] {
-                let components = calendar.dateComponents([.hour, .minute], from: date)
-                preferencesStore.setSlotTime(
-                    slot,
-                    hour: components.hour ?? 0,
-                    minute: components.minute ?? 0
-                )
-            }
-        }
         do {
             let savedSlotTimes = try await apiClient.updatePatientSlotTimes(
                 patientId: patientId,
-                slotTimes: currentSlotTimesDTO()
+                slotTimes: draftSlotTimes
             )
             viewModel.updateSlotTimes(patientId: patientId, slotTimes: savedSlotTimes)
             applySlotTimes(savedSlotTimes)
@@ -1047,6 +1074,7 @@ struct PatientManagementView: View {
             NotificationCenter.default.post(name: .presetTimesUpdated, object: nil)
             return true
         } catch {
+            timePresetErrorMessage = NSLocalizedString("common.error.save", comment: "Save error")
             return false
         }
     }

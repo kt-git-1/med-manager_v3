@@ -119,6 +119,7 @@ export async function GET(request: Request) {
           dosageText: dose.medicationSnapshot.dosageText,
           doseCountPerIntake: dose.medicationSnapshot.doseCountPerIntake,
           scheduledAt: dose.scheduledAt,
+          takenAt: dose.takenAt ?? null,
           slot,
           effectiveStatus: dose.effectiveStatus,
           recordedByType: dose.recordedByType ?? null
