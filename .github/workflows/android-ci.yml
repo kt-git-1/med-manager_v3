@@ -54,8 +54,21 @@ jobs:
         if: github.event_name == 'push'
         run: ./gradlew verifyFirebaseRuntime
 
-      - name: Unit tests
-        run: ./gradlew testDebugUnitTest
+      - name: Connected shard runner contract
+        run: |
+          bash -n scripts/run-connected-ui-shards.sh
+          scripts/run-connected-ui-shards.sh --help >/dev/null
+          if ANDROID_UI_TEST_SHARDS=0 scripts/run-connected-ui-shards.sh >/dev/null 2>&1; then
+            echo "Invalid shard count unexpectedly passed."
+            exit 1
+          fi
+          if ANDROID_UI_TEST_SHARDS=4 ANDROID_UI_TEST_SHARD_INDEX=4 scripts/run-connected-ui-shards.sh >/dev/null 2>&1; then
+            echo "Invalid shard index unexpectedly passed."
+            exit 1
+          fi
+
+      - name: Unit tests (Debug and Release)
+        run: ./gradlew testDebugUnitTest testReleaseUnitTest
 
       - name: Debug build
         run: ./gradlew assembleDebug
