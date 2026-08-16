@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint C76 is pending commit in this worktree
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C79
 - Baseline date: 2026-08-16
-- Current action: C78 adds a Release-excluded, shell-protected FCM preflight and proves configured token acquisition followed by immediate token/auto-init/local-state cleanup on A302SH without exposing the token or registering with the backend. Debug JVM 216/216, Release JVM 213/213, Lint, Release compatibility and Play assets pass. Processed Analytics Events/Explore, authenticated physical FCM delivery/routing, complete spoken TalkBack, API 26–28 and Google/reference targets, Play Internal and release-owner signing remain required.
+- Current action: C79 reaches authenticated FCM registration through the real Caregiver Settings switch and proves the remaining deployment boundary: production `main@432b34c` rejects `platform=android` before upsert, while `android-dev` already implements/tests that contract. The device was returned OFF with token/session/app/temp artifacts removed. Merge/deploy, then physical delivery/routing, processed Analytics Events/Explore, TalkBack, remaining devices, Play Internal and release-owner signing remain required.
 
 ## Authority order
 

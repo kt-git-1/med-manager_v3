@@ -75,6 +75,7 @@ Before upload, also verify:
 ## 5. Current external blockers
 
 - Firebase app registration, runtime configuration, physical consent, DebugView and Realtime evidence are complete under C76; processed Events/Explore and FCM remain pending.
+- C79 confirms production `main@432b34c` still rejects Android push-device registration before upsert. Merge/deploy the tested Android API contract and rerun FC-001 before any Play FCM acceptance; do not relabel Android devices as iOS.
 - No release-owner upload keystore has been selected, so a production-signed AAB cannot be produced here yet.
 - One A302SH Android 15/API 35 Debug target is evidenced through C76; old-supported and Google/reference devices remain pending.
 - Play-installed Internal/Closed track and final Console declaration evidence remain pending.

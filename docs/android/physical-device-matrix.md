@@ -105,6 +105,8 @@ Requires production-shaped Firebase values, a disposable caregiver/patient pair 
 
 C78 closes only the Firebase installation/token sub-preflight on A302SH Debug: the shell-protected diagnostic reported token readiness without the value, then disabled auto-init, deleted the token, cleared local token state, repeated cleanup and was uninstalled. It is absent from Release. FC-001 remains incomplete until the caregiver-authenticated `platform=android`/correct-environment backend registration is observed; no delivery row is inferred from token acquisition.
 
+C79 reaches that authenticated call through the production Settings switch. Firebase token acquisition succeeds, but live production and `origin/main@432b34c` accept only `platform=ios`, so the Android request returns 422 during validation before device upsert. The UI shows its retryable sync failure; switching OFF, explicit Firebase cleanup, app-data clear and uninstall leave no token/session/package. FC-001 is `BLOCKED_BY_DEPLOYMENT`, not failed client behavior: rerun immediately after the tested `android-dev` validator/API changes are merged and deployed. Never send `platform=ios` from Android as a workaround.
+
 Debug-only non-retaining preflight (status output only):
 
 ```bash
