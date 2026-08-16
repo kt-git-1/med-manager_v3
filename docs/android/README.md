@@ -7,7 +7,7 @@ This directory is the source of truth for the Android port. Android work is isol
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
 - Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint C76 is pending commit in this worktree
 - Baseline date: 2026-08-16
-- Current action: C77 reaudits FCM before physical delivery and corrects the missed-dose Android envelope to the same high-priority data-only, app-rendered generic path as taken-dose delivery while retaining the iOS envelope. The targeted push suite passes 16/16 and the complete API gate passes 333/333, typecheck and ESLint. Processed Analytics Events/Explore, physical FCM, complete spoken TalkBack, API 26–28 and Google/reference targets, Play Internal and release-owner signing remain required.
+- Current action: C78 adds a Release-excluded, shell-protected FCM preflight and proves configured token acquisition followed by immediate token/auto-init/local-state cleanup on A302SH without exposing the token or registering with the backend. Debug JVM 216/216, Release JVM 213/213, Lint, Release compatibility and Play assets pass. Processed Analytics Events/Explore, authenticated physical FCM delivery/routing, complete spoken TalkBack, API 26–28 and Google/reference targets, Play Internal and release-owner signing remain required.
 
 ## Authority order
 

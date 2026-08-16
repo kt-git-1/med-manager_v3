@@ -233,6 +233,7 @@ G02 and `CG-011` are `IMPLEMENTED`. G03 now owns Android FCM permission and toke
 - The backend validator now accepts the documented `android` platform while continuing to reject unsupported platforms. Its Android upsert is covered by the existing push integration suite.
 - The messaging service ignores locally disabled or invalid events. Valid privacy-minimal `DOSE_TAKEN` data builds a generic notification and preserves the strict patient/date/slot History destination already implemented by G01.
 - API contract and repository tests cover exact auth/path/body, enable, token refresh, disable failure, pending retry and missing configuration. Production Compose coverage confirms the explicit Settings control; the full gate passes with 73/73 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint. The backend push suite passes 14/14.
+- C78 adds a Debug-only shell preflight for the live Firebase token handshake. It emits status only, immediately disables auto-init/deletes the token/clears app-owned state, is absent from Release and passes on A302SH. This does not replace the authenticated Settings registration or delivery matrix.
 
 G03 is complete. `CG-012` and `XP-001` remain `PARTIAL` until G04 adds account-delete defense-in-depth cleanup and closes background-payload privacy/dedup behavior; physical FCM delivery remains a release-matrix item.
 

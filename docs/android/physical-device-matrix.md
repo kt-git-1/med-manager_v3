@@ -103,6 +103,22 @@ The displayed title/body must not include patient identity, medication, dosage, 
 
 Requires production-shaped Firebase values, a disposable caregiver/patient pair and server delivery logs that do not expose message tokens in the evidence artifact.
 
+C78 closes only the Firebase installation/token sub-preflight on A302SH Debug: the shell-protected diagnostic reported token readiness without the value, then disabled auto-init, deleted the token, cleared local token state, repeated cleanup and was uninstalled. It is absent from Release. FC-001 remains incomplete until the caregiver-authenticated `platform=android`/correct-environment backend registration is observed; no delivery row is inferred from token acquisition.
+
+Debug-only non-retaining preflight (status output only):
+
+```bash
+adb shell am broadcast \
+  -n com.afterlifearchive.medmanager/.FirebasePushDiagnosticReceiver \
+  -a com.afterlifearchive.medmanager.debug.VERIFY_FCM_TOKEN
+adb logcat -d -s MedManagerFcmDiagnostic:I '*:S'
+adb shell am broadcast \
+  -n com.afterlifearchive.medmanager/.FirebasePushDiagnosticReceiver \
+  -a com.afterlifearchive.medmanager.debug.CLEANUP_FCM_TOKEN
+```
+
+Accept only `TOKEN_READY` followed by `CLEANUP_READY`; reject any build/log path that prints the token. The component must be missing from the exact Release manifest.
+
 | ID | State | Procedure | Pass condition |
 |---|---|---|---|
 | FC-001 | Fresh enable | Grant notification permission and enable caregiver push | FCM initializes only after consent; Android token registers once with `platform=android` and correct environment |
