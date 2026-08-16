@@ -53,6 +53,32 @@ fun normalizedSha256Fingerprint(value: String): String? = value
     .lowercase()
     .takeIf { it.matches(Regex("^[0-9a-f]{64}$")) }
 
+fun forbiddenReleaseSdkReason(coordinate: String): String? = when {
+    coordinate.startsWith("com.android.billingclient:") ->
+        "Google Play Billing is not approved while BILLING_ENABLED=false"
+    coordinate.startsWith("com.android.installreferrer:") ->
+        "Google Play Install Referrer is not approved"
+    coordinate.startsWith("com.google.android.gms:play-services-ads:") ||
+        coordinate.startsWith("com.google.android.gms:play-services-ads-") &&
+        !coordinate.startsWith("com.google.android.gms:play-services-ads-identifier:") ->
+        "Google Mobile Ads is not approved"
+    coordinate.startsWith("com.google.android.gms:play-services-tagmanager:") ->
+        "Google Tag Manager is not approved"
+    coordinate.startsWith("com.google.firebase:firebase-crashlytics") ->
+        "Firebase Crashlytics is not declared or approved"
+    coordinate.startsWith("com.google.firebase:firebase-perf") ->
+        "Firebase Performance Monitoring is not declared or approved"
+    coordinate.startsWith("com.appsflyer:") -> "AppsFlyer attribution is not approved"
+    coordinate.startsWith("com.adjust.sdk:") -> "Adjust attribution is not approved"
+    coordinate.startsWith("com.facebook.android:") -> "Meta SDK is not approved"
+    coordinate.startsWith("io.sentry:") -> "Sentry telemetry is not approved"
+    coordinate.startsWith("com.mixpanel.android:") -> "Mixpanel analytics is not approved"
+    coordinate.startsWith("com.amplitude:") -> "Amplitude analytics is not approved"
+    coordinate.startsWith("com.segment.analytics:") || coordinate.startsWith("com.segment.analytics.android:") ->
+        "Segment analytics is not approved"
+    else -> null
+}
+
 val generatedRoleAssets = layout.buildDirectory.dir("generated/role-assets/res")
 val releaseStoreFilePath = runtimeConfig("RELEASE_STORE_FILE")
 val releaseStorePassword = runtimeConfig("RELEASE_STORE_PASSWORD")
@@ -258,10 +284,106 @@ val verifyProductionRuntime by tasks.registering {
     }
 }
 
+val verifyReleaseSdkPolicyContract by tasks.registering {
+    group = "verification"
+    description = "Proves the Release SDK allow/deny policy, including known Firebase transitive support libraries."
+    doLast {
+        listOf(
+            "com.google.firebase:firebase-analytics:23.0.0",
+            "com.google.firebase:firebase-messaging:25.0.1",
+            "com.google.firebase:firebase-installations:19.0.1",
+            "com.google.android.gms:play-services-ads-identifier:18.0.0",
+            "androidx.privacysandbox.ads:ads-adservices:1.1.0-beta11",
+        ).forEach { coordinate ->
+            require(forbiddenReleaseSdkReason(coordinate) == null) {
+                "Approved or known Firebase transitive dependency was rejected: $coordinate"
+            }
+        }
+        listOf(
+            "com.android.billingclient:billing:7.1.1",
+            "com.android.installreferrer:installreferrer:2.2",
+            "com.google.android.gms:play-services-ads:24.0.0",
+            "com.google.android.gms:play-services-ads-base:24.0.0",
+            "com.google.firebase:firebase-crashlytics:19.4.1",
+            "com.google.firebase:firebase-perf:21.0.5",
+            "com.appsflyer:af-android-sdk:6.16.2",
+            "com.adjust.sdk:adjust-android:5.0.2",
+            "com.facebook.android:facebook-core:18.0.0",
+            "io.sentry:sentry-android:8.0.0",
+            "com.mixpanel.android:mixpanel-android:7.5.2",
+            "com.amplitude:analytics-android:1.22.1",
+            "com.segment.analytics.android:analytics:4.11.3",
+        ).forEach { coordinate ->
+            require(forbiddenReleaseSdkReason(coordinate) != null) {
+                "Forbidden Release SDK unexpectedly passed policy: $coordinate"
+            }
+        }
+    }
+}
+
+val releaseRuntimeClasspath = providers.provider { configurations.getByName("releaseRuntimeClasspath") }
+val releaseSdkInventoryFile = layout.buildDirectory.file("reports/release-sdk-inventory.txt")
+val verifyReleaseSdkPolicy by tasks.registering {
+    group = "verification"
+    description = "Audits the exact resolved Release SDK inventory against the Play Data safety policy."
+    dependsOn(verifyReleaseSdkPolicyContract)
+    inputs.files(releaseRuntimeClasspath)
+    outputs.file(releaseSdkInventoryFile)
+    doLast {
+        val coordinates = releaseRuntimeClasspath.get()
+            .incoming.resolutionResult.allComponents
+            .mapNotNull { component ->
+                component.moduleVersion?.let { "${it.group}:${it.name}:${it.version}" }
+            }
+            .distinct()
+            .sorted()
+        val violations = coordinates.mapNotNull { coordinate ->
+            forbiddenReleaseSdkReason(coordinate)?.let { reason -> "$coordinate - $reason" }
+        }
+        require(violations.isEmpty()) {
+            "Release contains SDKs outside the approved Data safety contract:\n - ${violations.joinToString("\n - ")}"
+        }
+        require(coordinates.any { it.startsWith("com.google.firebase:firebase-analytics:") }) {
+            "Firebase Analytics is required by the approved Data safety contract"
+        }
+        require(coordinates.any { it.startsWith("com.google.firebase:firebase-messaging:") }) {
+            "Firebase Cloud Messaging is required by the approved Data safety contract"
+        }
+        require(coordinates.any { it.startsWith("com.google.firebase:firebase-installations:") }) {
+            "Firebase Installations is required by the approved Data safety contract"
+        }
+
+        val knownFirebaseTransitives = coordinates.filter { coordinate ->
+            coordinate.startsWith("com.google.android.gms:play-services-ads-identifier:") ||
+                coordinate.startsWith("androidx.privacysandbox.ads:ads-adservices")
+        }
+        releaseSdkInventoryFile.get().asFile.apply {
+            parentFile.mkdirs()
+            writeText(
+                buildString {
+                    appendLine("Release runtime SDK inventory")
+                    appendLine("Resolved modules: ${coordinates.size}")
+                    appendLine()
+                    appendLine("Known Firebase Analytics transitive support libraries")
+                    if (knownFirebaseTransitives.isEmpty()) appendLine("(none)")
+                    knownFirebaseTransitives.forEach(::appendLine)
+                    appendLine()
+                    appendLine("All resolved modules")
+                    coordinates.forEach(::appendLine)
+                },
+            )
+        }
+        println(
+            "Release SDK policy passed for ${coordinates.size} resolved modules; " +
+                "inventory: ${releaseSdkInventoryFile.get().asFile}",
+        )
+    }
+}
+
 val verifyReleaseApkCompatibility by tasks.registering(org.gradle.api.tasks.Exec::class) {
     group = "verification"
     description = "Builds and inspects the Release APK for SDK, permission and 16 KB page-size compatibility."
-    dependsOn("assembleRelease")
+    dependsOn("assembleRelease", verifyReleaseSdkPolicy)
     val apkFileName = if (releaseSigningConfigured) "app-release.apk" else "app-release-unsigned.apk"
     val apkFile = layout.buildDirectory.file("outputs/apk/release/$apkFileName")
     inputs.file(apkFile)
@@ -355,6 +477,7 @@ val verifySignedReleaseBundle by tasks.registering(org.gradle.api.tasks.Exec::cl
     dependsOn(
         verifyProductionRuntime,
         verifyProductionSigning,
+        verifyReleaseSdkPolicy,
         verifyReleaseApkCompatibility,
         verifyPlayStoreAssets,
         "bundleRelease",

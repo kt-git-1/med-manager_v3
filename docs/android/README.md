@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C85
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C86
 - Baseline date: 2026-08-16
-- Current action: C85 makes `bundleSignedRelease` verify its own output: signed/unsigned Release APK compatibility uses the exact variant filename; the AAB must have the required bundle structure, a complete verifiable JAR signature, exactly one signer and a certificate SHA-256 matching `PLAY_UPLOAD_CERT_SHA256`. Synthetic contract tests cover success, mismatch, unsigned and partially signed artifacts in CI. The release-owner upload key/fingerprint, production runtime, exact signed Play artifact and Console/device acceptance remain external inputs/evidence.
+- Current action: C86 audits the exact resolved `releaseRuntimeClasspath` before Release artifacts are accepted. Firebase Analytics/Messaging/Installations must be present; unapproved ads, billing, install-referrer, crash/performance and external attribution/analytics SDKs fail closed; the sorted inventory records Firebase Analytics' known advertising-ID/Privacy Sandbox support transitives without confusing their presence with app permission use. APK permission exclusion remains an independent gate. The exact signed AAB, current vendor disclosures and submitted Play Data safety/Health apps answers remain external evidence.
 
 ## Authority order
 

@@ -45,12 +45,13 @@ Do not add `google-services.json`, a keystore, passwords, or populated `local.pr
 ```bash
 cd android
 ./gradlew clean test assembleDebug assembleRelease lint
+./gradlew verifyReleaseSdkPolicy
 ./gradlew verifyReleaseApkCompatibility
 ./gradlew verifyPlayStoreAssets
 ./gradlew bundleSignedRelease
 ```
 
-`verifyReleaseApkCompatibility` checks the exact signed or unsigned Release APK application ID, min/target SDK, advertising/attribution permission exclusions, 16 KB ZIP alignment and native ELF alignment, then prints its SHA-256. `verifyPlayStoreAssets` checks listing text limits, the exact eight JPEG screenshot names and dimensions, the 512 px RGBA icon, the alpha-free 1024 x 500 feature graphic, and pixel parity between the iOS source icon and Android launcher foreground. `bundleSignedRelease` intentionally fails before bundle generation when earlier gates fail, production runtime/Firebase configuration is incomplete, signing/fingerprint input is missing, or the keystore path does not exist. After generation it fails unless the AAB has the required bundle structure, every entry is signature-covered, exactly one signing certificate is readable and its SHA-256 matches `PLAY_UPLOAD_CERT_SHA256`. It prints the final AAB and upload-certificate hashes for the evidence ledger. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
+`verifyReleaseSdkPolicy` resolves the exact Release runtime graph, writes the sorted inventory to `app/build/reports/release-sdk-inventory.txt`, requires the approved Firebase Analytics/Messaging/Installations capabilities, and rejects unapproved ads, billing, Install Referrer, crash/performance and third-party attribution/analytics SDKs. Firebase Analytics' current advertising-ID/Privacy Sandbox support transitives are recorded rather than misclassified; actual advertising/attribution permission use is checked separately. `verifyReleaseApkCompatibility` checks the exact signed or unsigned Release APK application ID, min/target SDK, advertising/attribution permission exclusions, 16 KB ZIP alignment and native ELF alignment, then prints its SHA-256. `verifyPlayStoreAssets` checks listing text limits, the exact eight JPEG screenshot names and dimensions, the 512 px RGBA icon, the alpha-free 1024 x 500 feature graphic, and pixel parity between the iOS source icon and Android launcher foreground. `bundleSignedRelease` intentionally fails before bundle generation when earlier gates fail, production runtime/Firebase configuration is incomplete, signing/fingerprint input is missing, or the keystore path does not exist. After generation it fails unless the AAB has the required bundle structure, every entry is signature-covered, exactly one signing certificate is readable and its SHA-256 matches `PLAY_UPLOAD_CERT_SHA256`. It prints the final AAB and upload-certificate hashes for the evidence ledger. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
 
 `verifyProductionRuntime` also prevents privileged Supabase credentials from entering the client artifact. `SUPABASE_ANON_KEY` may contain a current `sb_publishable_...` key or a legacy JWT whose issuer is `supabase` and sole role is `anon`; `sb_secret_...`, legacy `service_role`, wrong-issuer, malformed and opaque-long values fail closed. The synthetic `verifyRuntimeCredentialSafety` task exercises this contract without reading or logging any real key.
 
@@ -58,6 +59,7 @@ Before upload, also verify:
 
 - `applicationId` is `com.afterlifearchive.medmanager`.
 - The merged Release Manifest contains no advertising ID, AdServices attribution/ID, or Install Referrer permission.
+- `verifyReleaseSdkPolicy` passes and its inventory matches the dependency state used for the exact AAB; recheck current Firebase vendor disclosures rather than copying older answers.
 - `verifyReleaseApkCompatibility` passes for the exact commit and dependency lock state used for the AAB.
 - No production secret appears in tracked files or Gradle output.
 - `bundleSignedRelease` reports that the AAB certificate matches the registered Play upload certificate; independently compare the reported fingerprint with Play Console before upload.

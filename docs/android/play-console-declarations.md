@@ -1,7 +1,7 @@
 # Google Play declaration worksheet
 
 **Status:** implementation-backed draft, not a submitted Console declaration  
-**Baseline:** `main@1cf8aef`, Android `android-dev`
+**Baseline:** published iOS/API `main@432b34c`, Android `android-dev` C86
 **Recheck:** the exact signed AAB, current Firebase SDK disclosures and Play Console questions immediately before submission
 
 This worksheet separates repository evidence from release-owner/Console decisions. It must not be copied blindly if the production configuration or SDK set changes.
@@ -47,7 +47,13 @@ Google states that every published app, including closed-test apps, must complet
 - Advertising ID, ad-personalization signals or advertising/marketing attribution
 - Generated medication PDF files: generation is on-device and sharing occurs only through the user-invoked Android Sharesheet; the app does not upload the PDF
 
-SDK-provided coarse technical metadata must still be rechecked against the exact Firebase versions in the final dependency report. If Google Analytics or Firebase Installations currently maps any automatically processed field to an additional Play data type, add it even if the app code does not set it directly.
+## Resolved Release SDK evidence
+
+C86 resolves the actual `releaseRuntimeClasspath` rather than inferring collection from direct dependency declarations. The current graph contains 175 modules and requires Firebase Analytics, Cloud Messaging and Installations. It contains no Google Mobile Ads SDK, Billing, Install Referrer, Crashlytics, Firebase Performance, AppsFlyer, Adjust, Meta, Sentry, Mixpanel, Amplitude or Segment SDK. The sorted inventory is generated at `android/app/build/reports/release-sdk-inventory.txt` by `verifyReleaseSdkPolicy`; it is build evidence, not a tracked release artifact.
+
+Firebase Analytics currently brings `play-services-ads-identifier` and Privacy Sandbox AdServices support libraries transitively. Their names do not by themselves mean that this app uses advertising identifiers. The independent Release APK gate confirms that `AD_ID`, AdServices attribution/ID/topics and Install Referrer permissions are absent. Both facts must be retained: do not claim that no such support artifact exists, and do not declare advertising use solely from the artifact name.
+
+SDK-provided coarse technical metadata must still be rechecked against the exact Firebase versions and Google's current disclosure guidance for the final signed AAB. If Google Analytics or Firebase Installations maps any automatically processed field to an additional Play data type, add it even if the app code does not set it directly.
 
 ## Health apps declaration draft
 
@@ -62,8 +68,9 @@ SDK-provided coarse technical metadata must still be rechecked against the exact
 ## Submission evidence checklist
 
 - [ ] Record exact commit, `versionCode`, `versionName`, AAB SHA-256 and upload-certificate SHA-256.
-- [ ] Inspect the signed AAB manifest and dependencies; attach results to Gate I evidence.
-- [ ] Recheck Firebase Analytics, Cloud Messaging and Installations disclosures for the resolved SDK versions.
+- [x] Inventory and policy-check the resolved Release dependency graph and independently exclude advertising/attribution permissions from the Release APK (C86); repeat against the exact signed AAB below.
+- [ ] Inspect the exact signed AAB manifest and dependencies; attach results to Gate I evidence.
+- [ ] Recheck Firebase Analytics, Cloud Messaging and Installations disclosures for the resolved SDK versions immediately before Console submission.
 - [ ] Verify production Analytics sharing, retention and consent behavior in Console/DebugView.
 - [x] Verify both Android FCM event constructors are data-only and exclude patient display/medication text (C77); retain physical production delivery verification below.
 - [ ] Verify the production FCM sender and physical Android delivery preserve the audited data-only envelope on the exact release artifact.

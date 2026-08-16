@@ -60,6 +60,9 @@ jobs:
       - name: Signed bundle verifier contract
         run: scripts/test-verify-signed-aab.sh
 
+      - name: Release SDK and Data safety policy
+        run: ./gradlew verifyReleaseSdkPolicy
+
       - name: Connected shard runner contract
         run: |
           bash -n scripts/run-connected-ui-shards.sh
