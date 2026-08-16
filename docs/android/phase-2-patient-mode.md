@@ -280,7 +280,7 @@ This selector foundation is connected to inventory-backed production candidates 
 - Repository tests cover successful and failed server revocation.
 - Android 15 Compose tests cover settings content, canonical destinations, scroll behavior, and explicit unlink confirmation.
 
-`PH-005` through `PH-008` are `IMPLEMENTED`. C67-C68 later close notification permission and local Doze/alarm delivery on one A302SH Debug target; cross-device/signed-Play notification evidence, external browser return, real server revocation, remaining iOS comparison captures, large text, and spoken TalkBack remain before `VERIFIED`.
+`PH-005` through `PH-008` are `IMPLEMENTED`. C67-C69 later close notification permission, local reminder lifecycle and all three live Patient Settings browser returns on one A302SH Debug target; cross-device/signed-Play evidence, real server revocation, remaining iOS comparison captures, large text, and spoken TalkBack remain before `VERIFIED`.
 
 ## 2026-07-14 C05 current Patient Settings parity
 
@@ -299,7 +299,7 @@ This selector foundation is connected to inventory-backed production candidates 
 - Direct runtime comparison confirms the C21 18-unit card, 20/15-unit hierarchy, circular icons, legal rows and 58-unit logout metrics. It also exposes and closes the remaining toggle drift: enabled notification and Analytics controls now use iOS system green rather than patient teal, including disabled-selected permission state.
 - The confirmation action now uses destructive red text with exact title/body/action copy. Android retains Material-native alert placement while iOS retains its native bottom alert placement.
 - Current iOS exposes no logout progress/failure state and ignores revoke failure before clearing its token. Android intentionally preserves the pinned server-first contract: `ログアウト中…` is disabled, failed revoke keeps the linked session and retry remains available.
-- Current iOS caps its root at `.xLarge` under Accessibility XXXL; Android keeps all Settings actions scroll-reachable at 200%. Physical permission transitions, browser return, real revocation and TalkBack remain Gate I.
+- Current iOS caps its root at `.xLarge` under Accessibility XXXL; Android keeps all Settings actions scroll-reachable at 200%. C67-C69 later close one-device permission and browser return; real revocation, other device/Play artifacts and spoken TalkBack remain Gate I.
 
 ## 2026-07-16 C49 Caregiver Today exceptional-state calibration
 

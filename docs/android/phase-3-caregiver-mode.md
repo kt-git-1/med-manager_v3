@@ -254,7 +254,7 @@ G04, `CG-012` and `XP-001` are `IMPLEMENTED`; physical background/Doze/process-d
 - Production Compose coverage verifies all three legal destinations are reachable in the Settings list and logout requires confirmation. Existing API/JVM coverage verifies distinct server-first logout/account-delete behavior and failure preservation.
 - The final Gate G verification passes 74/74 API-35 instrumentation tests plus Android JVM, Debug/Release assembly and Lint. The complete API suite passes 300/300 tests and TypeScript typecheck; ESLint has no errors and retains one unrelated pre-existing E2E warning.
 
-G05 completes Gate G implementation. Physical browser, FCM, process-death and destructive production-account checks remain Gate I verification; Gate H now owns caregiver Analytics consent and the privacy-safe Firebase Analytics wrapper.
+G05 completes Gate G implementation. C69 later closes the three Caregiver Settings browser destinations on the A302SH Debug production surface; FCM, other device/Play artifacts and destructive production-account checks remain Gate I verification. Gate H owns caregiver Analytics consent and the privacy-safe Firebase Analytics wrapper.
 
 ### G05 current-iOS UI-208 rebaseline — 2026-07-15
 
@@ -266,7 +266,7 @@ G05 completes Gate G implementation. Physical browser, FCM, process-death and de
 - Create, slot-time, linking-code, destructive and push mutations block the whole settings content with exact `更新中...` feedback. The API-35 tests explicitly cover initial loading, the three-step empty state, time-sheet reachability and in-flight create blocking.
 - Direct light-theme UI-208 device evidence is recorded at `docs/android/evidence/c01-20260714/android-ui-208-caregiver-settings-light.png`. The complete Android gate passes 148/148 API-35 instrumentation tests plus JVM, Debug/Release assembly and Lint.
 
-The C17 UI-208 state/modal rebaseline closes the remaining Android Settings implementation drift and adds dark/200%-font sheet evidence. Matched iOS captures, full TalkBack and physical clipboard/Sharesheet/browser/FCM/destructive checks remain Gate I verification rather than implementation work.
+The C17 UI-208 state/modal rebaseline closes the remaining Android Settings implementation drift and adds dark/200%-font sheet evidence. C69 later closes one-device live linking-code copy/chooser and legal-browser checks; matched iOS captures, full spoken TalkBack, FCM, destructive checks and other device/Play artifacts remain Gate I verification rather than implementation work.
 
 ### C29 UI-208 typical-light source calibration — 2026-07-15
 
