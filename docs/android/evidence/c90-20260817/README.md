@@ -36,6 +36,7 @@
 - Release APK compatibility and manifest policy passed.
 - Unsigned Release AAB validation/content/manifest policy passed as base-only with four DEX files and eight native libraries.
 - Play listing assets passed.
+- Hosted Android CI [run #31973374763](https://github.com/kt-git-1/med-manager_v3/actions/runs/31973374763) passed every step for implementation commit `04555ff`, including the Linux upload-keystore verifier contract and all existing Android release gates.
 
 ## Deliberately incomplete external evidence
 
