@@ -53,6 +53,7 @@ The production publishable-key screen was checked without revealing or using any
 | Release APK compatibility | PASS — package/minSdk 26/targetSdk 35, forbidden advertising/attribution permissions absent, 16 KB ZIP/native alignment valid; SHA-256 `04474eaf0149f738fb98689d47c7614fbb5070bea8dbea7a3f1ea376a3c3a550` |
 | Play store assets | PASS |
 | A302SH synthetic UI regression | PASS — 278/278, 0 failed/skipped; test and app packages removed afterward |
+| GitHub Android CI | PASS — run `31959149756` on implementation commit `e914989`; Firebase runtime, Unit tests, Debug build, Lint, Release compatibility and Play listing assets all completed successfully |
 
 The synthetic UI suite uses local fixtures and performs no production API request or health/destructive mutation.
 
