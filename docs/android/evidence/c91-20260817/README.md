@@ -28,6 +28,7 @@
 - No temporary JSON file remained after the atomic replacement.
 - A final clean ordinary regression passed 108 tasks: evidence contract 1/11, upload-keystore contract 1/7, Debug JVM 216/216, Release JVM 213/213, Lint, 175-module SDK policy, Release APK manifest/16 KB compatibility, validated base-only unsigned AAB content and Play assets.
 - That final `clean` removed the synthetic keystore, signed AAB and JSON ledger. No generated keystore or release ledger remains in `app/build`.
+- Hosted Android CI [run #31974761066](https://github.com/kt-git-1/med-manager_v3/actions/runs/31974761066) succeeded for `5025e2c`; the Linux Release evidence policy/atomic-JSON step passed, followed by the complete existing Android CI job.
 
 ## Deliberately incomplete external evidence
 
