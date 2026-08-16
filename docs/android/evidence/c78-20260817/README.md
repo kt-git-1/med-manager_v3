@@ -29,6 +29,7 @@ The verify action initializes the configured Firebase app, temporarily enables M
 | Release diagnostic exclusion | PASS — component/action absent from merged Release manifest |
 | Debug/Release JVM | PASS — 216/216 and 213/213, 0 failed/skipped |
 | Lint / Release assembly / Release APK compatibility / Play assets | PASS |
+| GitHub Android CI | PASS — run `31960548523` on implementation commit `55a1a01`; Firebase runtime, Unit tests, Debug build, Lint, Release compatibility and Play listing assets all completed successfully |
 
 ## Remaining FCM evidence
 
