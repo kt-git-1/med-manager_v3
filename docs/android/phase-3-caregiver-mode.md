@@ -238,12 +238,12 @@ G03 is complete. `CG-012` and `XP-001` remain `PARTIAL` until G04 adds account-d
 
 ## G04 push privacy, deduplication and deletion cleanup — 2026-07-15
 
-- The server now branches by registered device platform. iOS retains its current notification/APNs envelope, while Android receives high-priority data-only FCM so Android never lets a background system notification expose the server's patient-specific display text.
+- The server now branches by registered device platform. iOS retains its current notification/APNs envelope, while Android receives high-priority data-only FCM so Android never lets a background system notification expose the server's patient-specific display text. C77 reaudits and applies this branch to both `DOSE_TAKEN` and `DOSE_MISSED`; the latter had still used the shared iOS envelope before correction.
 - Android accepts only `DOSE_TAKEN`, non-empty patient ID, strict ISO date and one canonical slot. The displayed title/body are fixed generic resources with no patient name, medication, dosage, result detail, email, free text or token; navigation data remains limited to the documented target fields.
 - Server `PushDelivery` uniqueness remains the authoritative event/device deduplication. Android additionally persists a bounded 100-entry FCM message-ID window so redelivery across service recreation does not display the same message twice; the route-derived notification ID also updates rather than stacks an identical target.
 - Caregiver proxy recording continues to exclude the acting caregiver before device lookup. Unlinked, disabled and environment-mismatched devices remain outside delivery, and FCM `UNREGISTERED` disables stale devices.
 - `DELETE /api/me` already removes server PushDelivery/PushDevice records before the successful response. Only after that response, Android erases enabled/token/registered/pending-unregister state and disables auto-init before clearing the caregiver session. Ordinary logout first performs the soft-disable/unregister lifecycle.
-- API tests cover Android data-only content, privacy field exclusion, actor exclusion, event/device dedup and stale-device disable. JVM tests cover process-persistent bounded message dedup and deletion cleanup with no redundant post-deletion network call.
+- API tests cover both Android event types' data-only content and display-name exclusion, actor exclusion, event/device dedup and stale-device disable. JVM tests cover process-persistent bounded message dedup and deletion cleanup with no redundant post-deletion network call.
 
 G04, `CG-012` and `XP-001` are `IMPLEMENTED`; physical background/Doze/process-death delivery remains Gate I evidence. G05 now owns the remaining complete Settings flow.
 

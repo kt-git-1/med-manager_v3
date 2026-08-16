@@ -563,8 +563,46 @@ describe("notifyCaregiversOfDoseMissed", () => {
         date: "2026-07-15",
         slot: "noon"
       },
-      expect.any(Object)
+      expect.any(Object),
+      undefined
     );
+  });
+
+  it("uses data-only privacy-safe delivery for Android missed-dose events", async () => {
+    resetStores();
+    seedDevices([
+      {
+        id: "android-missed-device",
+        ownerType: "CAREGIVER",
+        ownerId: "caregiver-1",
+        token: "android-missed-token",
+        platform: "android",
+        environment: "DEV",
+        isEnabled: true
+      }
+    ]);
+    const { notifyCaregiversOfDoseMissed } =
+      await import("../../src/services/pushNotificationService");
+
+    await notifyCaregiversOfDoseMissed({
+      patientId: "patient-1",
+      displayName: "秘密の表示名",
+      date: "2026-07-15",
+      slot: "noon"
+    });
+
+    const call = sendFcmMessageMock.mock.calls[0];
+    expect(call[0]).toBe("android-missed-token");
+    expect(call[1]).toBeUndefined();
+    expect(call[2]).toEqual({
+      type: "DOSE_MISSED",
+      patientId: "patient-1",
+      date: "2026-07-15",
+      slot: "noon"
+    });
+    expect(JSON.stringify(call[2])).not.toContain("秘密の表示名");
+    expect(call[3]).toBeUndefined();
+    expect(call[4]).toEqual({ priority: "high" });
   });
 
   it("deduplicates repeated cron runs by patient, date, slot and device", async () => {

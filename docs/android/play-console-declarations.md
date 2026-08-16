@@ -65,7 +65,8 @@ SDK-provided coarse technical metadata must still be rechecked against the exact
 - [ ] Inspect the signed AAB manifest and dependencies; attach results to Gate I evidence.
 - [ ] Recheck Firebase Analytics, Cloud Messaging and Installations disclosures for the resolved SDK versions.
 - [ ] Verify production Analytics sharing, retention and consent behavior in Console/DebugView.
-- [ ] Verify production FCM data-only payloads never contain patient/medication text.
+- [x] Verify both Android FCM event constructors are data-only and exclude patient display/medication text (C77); retain physical production delivery verification below.
+- [ ] Verify the production FCM sender and physical Android delivery preserve the audited data-only envelope on the exact release artifact.
 - [x] Verify the public privacy policy and nominated account-deletion URL (`/support#section-3`) are live and match Android behavior (2026-07-15); recheck immediately before submission.
 - [ ] Save screenshots/export of submitted Data safety and Health apps answers with date and operator.
 - [ ] Repeat review whenever SDKs, billing, OCR/images, crash reporting, advertising, permissions or backend data flows change.

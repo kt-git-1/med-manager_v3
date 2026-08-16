@@ -322,7 +322,17 @@ export async function notifyCaregiversOfDoseMissed(
         continue;
       }
 
-      const result = await sendFcmMessage(device.token, notification, data, apns);
+      // Android must remain data-only so Firebase cannot bypass the app's generic,
+      // privacy-safe notification renderer while the process is backgrounded.
+      // iOS retains its existing notification/APNs path.
+      const android = device.platform === "android";
+      const result = await sendFcmMessage(
+        device.token,
+        android ? undefined : notification,
+        data,
+        android ? undefined : apns,
+        android ? { priority: "high" } : undefined
+      );
       if (result.success) {
         sentCount += 1;
         continue;
