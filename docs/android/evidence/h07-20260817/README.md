@@ -60,6 +60,7 @@ The synthetic UI suite uses local fixtures and performs no production API reques
 ## Remaining H07 evidence
 
 - Recheck the processed Events report after aggregation delay.
+- The 2026-08-17 first recheck showed the fixed safe event names in the property-wide Events report, but a temporary Platform comparison offered only iOS. Therefore those aggregate counts cannot be attributed to Android yet. The unsaved comparison was discarded without applying or persisting it.
 - Create and remove the temporary privacy-reviewed Explore using event name plus fixed enum only; this is a Console state change and remains separately controlled.
 - Preserve redacted Console screenshots outside Git if required by the release owner.
 
