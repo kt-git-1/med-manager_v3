@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C81
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C82
 - Baseline date: 2026-08-16
-- Current action: C81 strengthens the automated TalkBack boundary: Patient/Caregiver bottom navigation now proves ordered labels, Tab roles and selection; both tutorials prove pane context and hide the live navigation tree; and the physical regression suite is stable as four bounded shards. Debug JVM 216/216, Release JVM 213/213, Lint, Release assembly, targeted accessibility 23/23 and physical UI 280/280 pass. Assisted spoken order, real-finger activation and scrolling remain physical acceptance, alongside C79's API deployment boundary, FCM, Explore, remaining devices and Play/signing.
+- Current action: C82 makes the complete connected UI gate repeatable as four bounded AndroidJUnitRunner shards, refuses to overwrite an existing installation and removes the app/test packages on every exit. Clean API 26/33/35 AVDs each pass 280/280 (840/840 total); Debug JVM 216/216, Release JVM 213/213, Lint and Release assembly also pass. This expands emulator compatibility evidence only. C81's physical A302SH 280/280 remains separate, as do assisted spoken TalkBack, C79's API deployment boundary, FCM, Explore, remaining devices and Play/signing.
 
 ## Authority order
 
