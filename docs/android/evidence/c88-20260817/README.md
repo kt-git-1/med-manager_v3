@@ -25,6 +25,7 @@
 - Debug JVM: 216/216 passed.
 - Release JVM: 213/213 passed.
 - `lintDebug`, Release SDK policy, application ID/SDK, advertising exclusions, 16 KB ZIP/native alignment and Play assets: passed.
+- Hosted Android CI [run #31971338858](https://github.com/kt-git-1/med-manager_v3/actions/runs/31971338858): every step passed for implementation commit `5ae080f`, including the synthetic manifest contract and actual Release APK inspection on a clean runner.
 
 ## Deliberately incomplete external evidence
 
