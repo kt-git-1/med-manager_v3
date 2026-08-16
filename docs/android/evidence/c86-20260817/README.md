@@ -26,6 +26,7 @@
 - `lintDebug`: passed.
 - `verifyReleaseApkCompatibility`: passed application ID, min/target SDK, advertising/attribution permission exclusions, 16 KB ZIP/native alignment and SHA-256 inspection.
 - `verifyPlayStoreAssets`: passed.
+- Hosted Android CI [run #31969758228](https://github.com/kt-git-1/med-manager_v3/actions/runs/31969758228): all steps passed for implementation commit `83f13db`, including the new Release SDK/Data safety policy on a clean runner.
 
 ## Deliberately incomplete external evidence
 

@@ -19,6 +19,7 @@
 - Locked Release graph plus C86 policy: passed; the runtime inventory remains 175 modules including the app component.
 - Missing-lock negative contract: rejected with `Locking strict mode` and `does not have lock state` before the policy could pass.
 - Required Firebase Analytics, Messaging and Installations versions and the known Firebase Analytics advertising-ID/Privacy Sandbox support transitives are pinned.
+- Hosted Android CI [run #31970389538](https://github.com/kt-git-1/med-manager_v3/actions/runs/31970389538): all steps passed for implementation commit `f904835`, proving the checked-in strict lock resolves on a clean runner.
 
 ## Deliberately incomplete external evidence
 
