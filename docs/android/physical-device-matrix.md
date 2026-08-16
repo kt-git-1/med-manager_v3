@@ -131,6 +131,7 @@ For each screen confirm:
 - switches, menus, date fields, filters, confirmations, Retry, Back and destructive actions are operable without touch exploration traps;
 - lazy lists expose every action through two-finger scrolling; focus does not jump to disposed items;
 - Japanese labels are not clipped at 200%; keyboard Next/Done order works for link, login, signup, patient creation and medication form;
+- C72-C73 physically close the safe A302SH input slice: Patient-link exact-length guarding; Caregiver login; synthetic Patient-create blank/valid `Done`; live medication name/strength/unit/dose and supply/inventory traversal; terminal actions that do not save; and system Back returning an unsaved medication editor to its list. Signup remains automated on this device because no disposable production mailbox/account was created.
 - orientation/configuration change preserves the selected tab and safe draft state without replaying a mutation or tutorial event.
 
 Any unreachable action, duplicate/blank announcement, sensitive notification speech, focus escape behind a modal or clipped mandatory text is a release blocker.

@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.SystemClock
 import android.view.inputmethod.InputMethodManager
 import androidx.activity.compose.LocalActivity
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,11 +15,14 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
@@ -267,6 +271,47 @@ class CaregiverMedicationScreenTest {
         composeRule.onNodeWithTag("medication-inventory").assertTextEquals("60")
         composeRule.onNodeWithTag("medication-inventory").performTextReplacement("62")
         composeRule.onNodeWithTag("medication-inventory").assertTextEquals("62")
+    }
+
+    @Test
+    fun medicationFormImeActionsFollowLogicalFieldGroupsWithoutSaving() {
+        setContent(emptyList(), slotTimes = iosDefaultSlotTimes())
+        composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
+
+        composeRule.onNodeWithTag("medication-name").performTextInput("テスト薬")
+        composeRule.onNodeWithTag("medication-name").performImeAction()
+        composeRule.onNodeWithTag("medication-strength-value").assertIsFocused()
+            .performTextInput("5")
+        composeRule.onNodeWithTag("medication-strength-value").performImeAction()
+        composeRule.onNodeWithTag("medication-strength-unit").assertIsFocused()
+            .performTextInput("mg")
+        composeRule.onNodeWithTag("medication-strength-unit").performImeAction()
+        composeRule.onNodeWithTag("medication-dose-count").assertIsFocused()
+            .performTextInput("1")
+        composeRule.onNodeWithTag("medication-dose-count").performImeAction()
+        composeRule.onNodeWithTag("medication-dose-count").assertIsNotFocused()
+
+        composeRule.onNodeWithTag("caregiver-medication-form")
+            .performScrollToNode(hasTestTag("medication-supply-days"))
+        composeRule.onNodeWithTag("medication-supply-days").performTextInput("30")
+        composeRule.onNodeWithTag("medication-supply-days").performImeAction()
+        composeRule.onNodeWithTag("medication-inventory").assertIsFocused().performImeAction()
+        composeRule.onNodeWithTag("medication-inventory").assertIsNotFocused()
+        composeRule.onNodeWithTag("caregiver-medication-form").assertIsDisplayed()
+    }
+
+    @Test
+    fun systemBackClosesMedicationEditorWithoutSaving() {
+        val activity = setContent(emptyList(), slotTimes = iosDefaultSlotTimes())
+        composeRule.onNodeWithTag("caregiver-medication-empty-add").performClick()
+        composeRule.onNodeWithTag("medication-name").performTextInput("未保存")
+
+        composeRule.runOnIdle {
+            (activity as ComponentActivity).onBackPressedDispatcher.onBackPressed()
+        }
+
+        composeRule.onNodeWithTag("caregiver-medication-form").assertDoesNotExist()
+        composeRule.onNodeWithTag("caregiver-medication-empty-add").assertIsDisplayed()
     }
 
     @Test

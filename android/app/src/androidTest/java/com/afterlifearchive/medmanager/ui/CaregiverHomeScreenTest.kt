@@ -7,6 +7,7 @@ import androidx.core.view.WindowCompat
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.captureToImage
@@ -175,6 +176,38 @@ class CaregiverHomeScreenTest {
         composeRule.waitUntil(5_000) { repository.state.value.createError == CaregiverCreateError.TOO_LONG }
         composeRule.onNodeWithTag("caregiver-create-error", useUnmergedTree = true).assertIsDisplayed()
             .assertTextContains("表示名は50文字以内で入力してください")
+    }
+
+    @Test
+    fun createPatientImeDoneSubmitsOnlyANonblankEnabledName() {
+        var createCount = 0
+        val storage = TestSelectionStorage()
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val repository = CaregiverPatientRepository(
+            object : CaregiverPatientDataSource {
+                override suspend fun listPatients() = emptyList<CaregiverPatient>()
+                override suspend fun createPatient(displayName: String): CaregiverPatient {
+                    createCount += 1
+                    return CaregiverPatient("patient-created", displayName)
+                }
+            },
+            selection,
+        )
+        composeRule.setContent {
+            MedicationAppTheme { CaregiverHomeScreen(repository, tutorialEnabled = false) }
+        }
+        composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
+
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-register-patient").performClick()
+        composeRule.onNodeWithTag("caregiver-create-name").performClick()
+        composeRule.onNodeWithTag("caregiver-create-name").performImeAction()
+        composeRule.runOnIdle { assertEquals(0, createCount) }
+
+        composeRule.onNodeWithTag("caregiver-create-name").performTextInput("さくら")
+        composeRule.onNodeWithTag("caregiver-create-name").performImeAction()
+        composeRule.waitUntil(5_000) { repository.state.value.selectedPatientId == "patient-created" }
+        composeRule.runOnIdle { assertEquals(1, createCount) }
     }
 
     @Test

@@ -7,6 +7,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -85,16 +86,21 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.BackHandler
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.R
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
@@ -625,6 +631,10 @@ private fun CaregiverMedicationEditor(
         ).show()
     }
 
+    BackHandler {
+        if (!submitting && !deleting) onClose()
+    }
+
     Box(Modifier.fillMaxSize()) {
         LazyColumn(
             Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 16.dp).testTag("caregiver-medication-form"),
@@ -1044,6 +1054,8 @@ private fun MedicationSupplyCalculator(
     onSupplyDaysChange: (String) -> Unit,
     onInventoryChange: (String) -> Unit,
 ) {
+    val focusManager = LocalFocusManager.current
+    val inventoryFocus = remember { FocusRequester() }
     Card(
         modifier = Modifier.fillMaxWidth().testTag("medication-inventory-calculator"),
         shape = RoundedCornerShape(16.dp),
@@ -1069,6 +1081,8 @@ private fun MedicationSupplyCalculator(
                     onValueChange = onSupplyDaysChange,
                     modifier = Modifier.weight(1f).testTag("medication-supply-days"),
                     keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Next,
+                    onImeAction = inventoryFocus::requestFocus,
                     contentPadding = PaddingValues(vertical = 12.dp),
                 )
                 Text(stringResource(R.string.caregiver_medication_form_supply_days_unit), fontSize = 18.sp, fontWeight = FontWeight.Bold)
@@ -1112,7 +1126,10 @@ private fun MedicationSupplyCalculator(
                     placeholder = "0",
                     onValueChange = onInventoryChange,
                     modifier = Modifier.width(96.dp).testTag("medication-inventory"),
+                    focusRequester = inventoryFocus,
                     keyboardType = KeyboardType.Decimal,
+                    imeAction = ImeAction.Done,
+                    onImeAction = focusManager::clearFocus,
                     textAlign = TextAlign.End,
                     contentPadding = PaddingValues(vertical = 14.dp),
                 )
@@ -1131,6 +1148,7 @@ private fun MedicationSupplyCalculator(
 
 @Composable
 private fun MedicationManualInventoryCard(value: String, onValueChange: (String) -> Unit) {
+    val focusManager = LocalFocusManager.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -1145,6 +1163,8 @@ private fun MedicationManualInventoryCard(value: String, onValueChange: (String)
                 onValueChange = onValueChange,
                 modifier = Modifier.width(80.dp).testTag("medication-inventory"),
                 keyboardType = KeyboardType.Decimal,
+                imeAction = ImeAction.Done,
+                onImeAction = focusManager::clearFocus,
                 textAlign = TextAlign.End,
                 contentPadding = PaddingValues(vertical = 14.dp),
             )
@@ -1209,6 +1229,10 @@ private fun MedicationBasicInformation(
     onDraftChange: (CaregiverMedicationDraft) -> Unit,
 ) {
     var unitMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    val strengthValueFocus = remember { FocusRequester() }
+    val strengthUnitFocus = remember { FocusRequester() }
+    val doseCountFocus = remember { FocusRequester() }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -1227,6 +1251,11 @@ private fun MedicationBasicInformation(
                     placeholder = stringResource(R.string.caregiver_medication_form_name_placeholder),
                     onValueChange = { onDraftChange(draft.copy(name = it)) },
                     modifier = Modifier.weight(1f).testTag("medication-name"),
+                    imeAction = ImeAction.Next,
+                    onImeAction = {
+                        if (draft.dosageStrengthUnit == "不明") strengthUnitFocus.requestFocus()
+                        else strengthValueFocus.requestFocus()
+                    },
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                 )
                 MedicationInlineField(
@@ -1234,8 +1263,11 @@ private fun MedicationBasicInformation(
                     placeholder = "5",
                     onValueChange = { onDraftChange(draft.copy(dosageStrengthValue = it)) },
                     modifier = Modifier.width(52.dp).testTag("medication-strength-value"),
+                    focusRequester = strengthValueFocus,
                     enabled = draft.dosageStrengthUnit != "不明",
                     keyboardType = KeyboardType.Decimal,
+                    imeAction = ImeAction.Next,
+                    onImeAction = strengthUnitFocus::requestFocus,
                     textAlign = TextAlign.End,
                     contentPadding = PaddingValues(vertical = 12.dp),
                 )
@@ -1245,6 +1277,9 @@ private fun MedicationBasicInformation(
                         placeholder = stringResource(R.string.caregiver_medication_form_strength_unit),
                         onValueChange = { unit -> onDraftChange(draft.copy(dosageStrengthUnit = unit, dosageStrengthValue = if (unit == "不明") "" else draft.dosageStrengthValue)) },
                         modifier = Modifier.fillMaxWidth().testTag("medication-strength-unit"),
+                        focusRequester = strengthUnitFocus,
+                        imeAction = ImeAction.Next,
+                        onImeAction = doseCountFocus::requestFocus,
                         contentPadding = PaddingValues(start = 8.dp, top = 12.dp, bottom = 12.dp),
                         trailing = {
                             IconButton(
@@ -1276,7 +1311,10 @@ private fun MedicationBasicInformation(
                     onValueChange = { onDraftChange(draft.copy(doseCountPerIntake = it)) },
                     modifier = Modifier.width(116.dp).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f), RoundedCornerShape(10.dp))
                         .border(1.2.dp, MedicationTheme.colors.cardStroke, RoundedCornerShape(10.dp)).testTag("medication-dose-count"),
+                    focusRequester = doseCountFocus,
                     keyboardType = KeyboardType.Decimal,
+                    imeAction = ImeAction.Done,
+                    onImeAction = focusManager::clearFocus,
                     textAlign = TextAlign.Center,
                     contentPadding = PaddingValues(vertical = 12.dp),
                 )
@@ -1293,7 +1331,10 @@ private fun MedicationInlineField(
     onValueChange: (String) -> Unit,
     modifier: Modifier,
     enabled: Boolean = true,
+    focusRequester: FocusRequester? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
+    imeAction: ImeAction,
+    onImeAction: () -> Unit,
     textAlign: TextAlign = TextAlign.Start,
     contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 16.dp),
     leading: (@Composable () -> Unit)? = null,
@@ -1302,10 +1343,14 @@ private fun MedicationInlineField(
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier,
+        modifier = modifier.then(focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier),
         enabled = enabled,
         singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
+        keyboardActions = KeyboardActions(
+            onNext = { onImeAction() },
+            onDone = { onImeAction() },
+        ),
         textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface, textAlign = textAlign),
         decorationBox = { inner ->
             Row(Modifier.fillMaxWidth().padding(contentPadding), verticalAlignment = Alignment.CenterVertically) {
