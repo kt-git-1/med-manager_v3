@@ -7,7 +7,6 @@ import hashlib
 import json
 import os
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from pathlib import Path
 import re
 import subprocess
@@ -221,7 +220,6 @@ def generate_report(args: argparse.Namespace) -> dict[str, object]:
 
     return {
         "schemaVersion": 1,
-        "generatedAtUtc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "source": {
             "commitSha": source_commit,
             "branch": source_branch,

@@ -61,6 +61,9 @@ def main() -> None:
         report = {"schemaVersion": 1, "source": {"commitSha": "b" * 40}}
         MODULE.write_json_atomic(output, report)
         assert json.loads(output.read_text(encoding="utf-8")) == report
+        first_bytes = output.read_bytes()
+        MODULE.write_json_atomic(output, report)
+        assert output.read_bytes() == first_bytes
         assert not list(output.parent.glob("*.tmp"))
 
     print("Release evidence policy contract passed (1 accepted, 11 rejected; atomic JSON passed).")

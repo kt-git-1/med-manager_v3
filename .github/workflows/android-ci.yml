@@ -66,6 +66,9 @@ jobs:
       - name: Release evidence policy contract
         run: python3 scripts/test-generate-release-evidence.py
 
+      - name: Play release handoff contract
+        run: python3 scripts/test-prepare-play-release-handoff.py
+
       - name: Release manifest policy contract
         run: python3 scripts/test-verify-release-manifest-policy.py
 

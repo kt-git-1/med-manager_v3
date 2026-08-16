@@ -754,10 +754,44 @@ val generateSignedReleaseEvidence by tasks.registering(org.gradle.api.tasks.Exec
     )
 }
 
+val verifyPlayReleaseHandoffContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Exercises exact AAB/evidence/checksum handoff acceptance and tamper rejection."
+    inputs.files(
+        rootProject.file("scripts/prepare-play-release-handoff.py"),
+        rootProject.file("scripts/test-prepare-play-release-handoff.py"),
+    )
+    commandLine("python3", rootProject.file("scripts/test-prepare-play-release-handoff.py").absolutePath)
+}
+
+val playReleaseHandoffRoot = layout.buildDirectory.dir("outputs/play-release")
+val preparePlayReleaseHandoff by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Pairs the exact signed AAB, evidence JSON and checksums in an atomic Play handoff directory."
+    dependsOn(generateSignedReleaseEvidence, verifyPlayReleaseHandoffContract)
+    inputs.files(
+        releaseBundleFile,
+        signedReleaseEvidenceFile,
+        rootProject.file("scripts/prepare-play-release-handoff.py"),
+    )
+    outputs.dir(playReleaseHandoffRoot)
+    outputs.upToDateWhen { false }
+    commandLine(
+        "python3",
+        rootProject.file("scripts/prepare-play-release-handoff.py").absolutePath,
+        "--aab",
+        releaseBundleFile.get().asFile.absolutePath,
+        "--evidence",
+        signedReleaseEvidenceFile.get().asFile.absolutePath,
+        "--output-root",
+        playReleaseHandoffRoot.get().asFile.absolutePath,
+    )
+}
+
 tasks.register("bundleSignedRelease") {
     group = "build"
-    description = "Builds, verifies and records exact evidence for the Play upload AAB."
-    dependsOn(generateSignedReleaseEvidence)
+    description = "Builds, verifies, records and packages the exact Play upload AAB handoff."
+    dependsOn(preparePlayReleaseHandoff)
 }
 verifyReleaseApkCompatibility.configure {
     mustRunAfter(verifyProductionRuntime, verifyProductionSigning, verifyUploadKeystore)
