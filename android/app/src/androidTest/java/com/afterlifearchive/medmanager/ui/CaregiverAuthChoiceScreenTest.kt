@@ -5,6 +5,7 @@ import android.os.SystemClock
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -13,6 +14,8 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.core.view.WindowCompat
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
@@ -132,6 +135,25 @@ class CaregiverAuthChoiceScreenTest {
             assertEquals(1, signupCount)
             assertEquals(1, backCount)
         }
+    }
+
+    @Test
+    fun increasedDisplaySizeKeepsHeaderTitleOnOneLineAndActionsReachable() {
+        composeRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(density = 2.1875f, fontScale = 1f)) {
+                MedicationAppTheme { CaregiverAuthChoiceScreen({}, {}, {}) }
+            }
+        }
+
+        val titleLayouts = mutableListOf<TextLayoutResult>()
+        composeRule.onNodeWithTag("caregiver-auth-header-title")
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { action ->
+                action(titleLayouts)
+            }
+        assertEquals(1, titleLayouts.single().lineCount)
+        composeRule.onNodeWithText("ログイン").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("新規登録").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("モードを選び直す").performScrollTo().assertIsDisplayed()
     }
 
     private fun captureFixture(name: String) {

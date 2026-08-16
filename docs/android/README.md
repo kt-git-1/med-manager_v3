@@ -7,7 +7,7 @@ This directory is the source of truth for the Android port. Android work is isol
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
 - Android baseline merge: `android-dev@36a6d4d`
 - Baseline date: 2026-08-16
-- Current action: C65 started the physical gate on one SHARP A302SH non-Google OEM target running Android 15/API 35. The adb-installed 1.0.6 Debug artifact launches and the corrected full UI suite passes 272/272; JVM 202/202, Lint, Debug/Release assembly, Release APK compatibility and Play assets also pass. This is partial device evidence only: manual TalkBack/system font/dark checks, an API 26-28 physical target, a Google/reference target, live Firebase, Play Internal and release-owner signing remain required.
+- Current action: C66 continued the SHARP A302SH Android 15/API 35 physical gate with real system dark/200%-font and increased-display-size passes, local mode recovery after background/process reclaim/force-stop, and a compact-width header correction found from the physical screenshot. The expanded physical UI suite passes 273/273; JVM 202/202, Lint, Debug/Release assembly, Release APK compatibility and Play assets also pass. Manual TalkBack, exact task-card removal, authenticated Patient/Caregiver primary flows, an API 26-28 physical target, a Google/reference target, live Firebase, Play Internal and release-owner signing remain required.
 
 ## Authority order
 

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -482,17 +483,25 @@ private fun AuthInfo(message: String) {
 
 @Composable
 private fun CaregiverHeader(title: String, subtitle: String) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Box(
-            Modifier.size(62.dp).shadow(8.dp, CircleShape).clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface).testTag("caregiver-auth-header-icon"),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(Icons.Rounded.AdminPanelSettings, null, tint = AuthTeal, modifier = Modifier.size(42.dp))
-        }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(title, fontSize = 32.sp, fontWeight = FontWeight.Bold)
-            Text(subtitle, color = MedicationTheme.colors.readableSecondaryText, fontSize = 16.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold)
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val titleSize = if (maxWidth < 320.dp) 30.sp else 32.sp
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Box(
+                Modifier.size(62.dp).shadow(8.dp, CircleShape).clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface).testTag("caregiver-auth-header-icon"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Rounded.AdminPanelSettings, null, tint = AuthTeal, modifier = Modifier.size(42.dp))
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    title,
+                    modifier = Modifier.testTag("caregiver-auth-header-title"),
+                    fontSize = titleSize,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(subtitle, color = MedicationTheme.colors.readableSecondaryText, fontSize = 16.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold)
+            }
         }
     }
 }
