@@ -10,6 +10,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -18,6 +23,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
 import com.afterlifearchive.medmanager.data.patient.HistoryDay
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
@@ -29,6 +37,25 @@ import java.time.LocalDate
 class PatientAccessibilityTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun bottomNavigationExposesOrderedLabelsTabRolesAndSelection() {
+        composeRule.setContent {
+            MedicationAppTheme { PatientModePreview(initialTab = PatientTab.HISTORY) }
+        }
+
+        listOf(
+            Triple("today", "今日", false),
+            Triple("history", "履歴", true),
+            Triple("settings", "設定", false),
+        ).forEach { (tag, label, selected) ->
+            val node = composeRule.onNodeWithTag("patient-navigation-$tag")
+                .assertTextEquals(label)
+                .assertHasClickAction()
+                .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
+            if (selected) node.assertIsSelected() else node.assertIsNotSelected()
+        }
+    }
 
     @Test
     fun simpleHistoryExposesPatientFacingSummary() {

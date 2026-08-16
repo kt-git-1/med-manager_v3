@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -19,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.semantics.SemanticsProperties
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import androidx.core.view.WindowCompat
 import androidx.test.platform.app.InstrumentationRegistry
@@ -94,6 +96,10 @@ class PatientTutorialOverlayTest {
 
         composeRule.onNodeWithText("1/4").assertIsDisplayed()
         composeRule.onNodeWithTag("patient-tutorial-sample").assertIsDisplayed()
+        composeRule.onAllNodesWithTag("patient-navigation-today").assertCountEquals(0)
+        composeRule.onNode(
+            SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "患者モードの使い方 1/4"),
+        ).assertIsDisplayed()
         composeRule.onNodeWithText("次のお薬").assertIsDisplayed()
         composeRule.onNodeWithTag("patient-tutorial-next").performClick()
         composeRule.onNodeWithText("2/4").assertIsDisplayed()

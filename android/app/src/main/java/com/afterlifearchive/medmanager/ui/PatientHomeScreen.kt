@@ -159,6 +159,7 @@ private fun PatientBottomTabBar(
                     .background(if (selected) PatientTeal.copy(alpha = 0.13f) else Color.Transparent)
                     .clickable(role = Role.Tab) { onSelect(item) }
                     .semantics { this.selected = selected }
+                    .testTag("patient-navigation-${item.name.lowercase()}")
                     .padding(horizontal = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),

@@ -68,6 +68,10 @@ class CaregiverTutorialOverlayTest {
 
         composeRule.onNodeWithText("今日の予定を確認").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-tutorial-sample").assertIsDisplayed()
+        composeRule.onAllNodesWithTag("caregiver-tab-today").assertCountEquals(0)
+        composeRule.onNode(
+            SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "家族モードの使い方 1/10"),
+        ).assertIsDisplayed()
         composeRule.waitUntil(5_000) {
             composeRule.onAllNodesWithText("血圧の薬", substring = true).fetchSemanticsNodes().isNotEmpty()
         }

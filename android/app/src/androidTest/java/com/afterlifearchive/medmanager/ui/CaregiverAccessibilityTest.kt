@@ -2,6 +2,11 @@ package com.afterlifearchive.medmanager.ui
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -10,6 +15,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverInventoryDataSource
@@ -43,6 +51,27 @@ import kotlinx.coroutines.runBlocking
 class CaregiverAccessibilityTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun bottomNavigationExposesOrderedLabelsTabRolesAndSelection() {
+        composeRule.setContent {
+            MedicationAppTheme { CaregiverModePreview(initialTab = CaregiverTab.INVENTORY) }
+        }
+
+        listOf(
+            Triple("today", "今日", false),
+            Triple("medications", "薬", false),
+            Triple("inventory", "在庫", true),
+            Triple("history", "履歴", false),
+            Triple("settings", "設定", false),
+        ).forEach { (tag, label, selected) ->
+            val node = composeRule.onNodeWithTag("caregiver-tab-$tag")
+                .assertTextEquals(label)
+                .assertHasClickAction()
+                .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
+            if (selected) node.assertIsSelected() else node.assertIsNotSelected()
+        }
+    }
 
     @Test
     fun historyDayMergesDateDoseStatusesAndPrnForTalkBack() {

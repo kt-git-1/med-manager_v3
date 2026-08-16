@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C80
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C81
 - Baseline date: 2026-08-16
-- Current action: C80 closes the delayed processed-Events observation: the production Analytics report now includes Platform `android`, the Android 1.0.6 app row reports successful processing, and the privacy-safe events exercised in C76 are present. Aggregate counts are not claimed as Android-only. Explore remains separately controlled. C79's production API deployment boundary, physical FCM delivery/routing, TalkBack, remaining devices, Play Internal and release-owner signing remain required.
+- Current action: C81 strengthens the automated TalkBack boundary: Patient/Caregiver bottom navigation now proves ordered labels, Tab roles and selection; both tutorials prove pane context and hide the live navigation tree; and the physical regression suite is stable as four bounded shards. Debug JVM 216/216, Release JVM 213/213, Lint, Release assembly, targeted accessibility 23/23 and physical UI 280/280 pass. Assisted spoken order, real-finger activation and scrolling remain physical acceptance, alongside C79's API deployment boundary, FCM, Explore, remaining devices and Play/signing.
 
 ## Authority order
 

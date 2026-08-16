@@ -465,6 +465,9 @@ class CaregiverInventoryScreenTest {
         composeRule.onNodeWithTag("inventory-correction-quantity").performTextReplacement("4")
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction"))
         composeRule.onNodeWithTag("inventory-correction").performClick()
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithTag("inventory-correction-confirm").fetchSemanticsNodes().isNotEmpty()
+        }
         composeRule.onNodeWithTag("inventory-correction-confirm").performClick()
 
         composeRule.waitUntil(5_000) { repository.state.value.mutationFailed }
