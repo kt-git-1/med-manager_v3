@@ -28,11 +28,12 @@ After every successful patient-list load:
 - API tests cover caregiver bearer authentication, URL, typed slot-time mapping and optional slot times.
 - Compose tests cover Today initial state, all five tabs, Settings selection, persistence across tab switches and shared no-patient states.
 - `./gradlew test assembleDebug assembleRelease lint connectedDebugAndroidTest` passes with 43/43 API-35 instrumentation tests.
+- C70 later verifies the production-runtime shell on A302SH through online, same-process cached-offline, cold-offline and reconnect/Retry transitions. The pass exposed that Caregiver Today's patient-list initial failure displayed recovery copy without an action; it now uses the shared Retry/return-login state, is regression-tested, and the complete current suite passes 274/274 on the device.
 
 ### Residual before verification
 
 - Match UI-200 shell and selection states against current iOS light/dark/large-text captures.
-- Verify process/configuration restoration, TalkBack traversal and compact/large physical devices.
+- Verify TalkBack traversal, remaining compact/large physical devices and mutation-interruption network behavior. C70 closes the read-only process/configuration network-recovery slice on the current A302SH target only.
 - Implement D02 create/edit/link/revoke/delete/account lifecycle; the non-Settings feature tabs intentionally remain gated landing surfaces until their later vertical slices.
 
 `CG-001` and `CG-014` are `IMPLEMENTED`, not yet `VERIFIED`.

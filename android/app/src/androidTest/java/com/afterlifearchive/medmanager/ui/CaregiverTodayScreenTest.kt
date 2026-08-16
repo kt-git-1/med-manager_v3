@@ -229,6 +229,31 @@ class CaregiverTodayScreenTest {
     }
 
     @Test
+    fun failedPatientLoadExposesRetryAndLoginRecoveryActions() {
+        val repository = repository()
+        var retried = false
+        var returnedToLogin = false
+        composeRule.setContent {
+            MedicationAppTheme {
+                CaregiverTodayScreen(
+                    repository = repository,
+                    patientState = CaregiverPatientState(hasLoaded = true, loadFailed = true),
+                    enabled = true,
+                    onOpenMedications = {},
+                    onReturnToLogin = { returnedToLogin = true },
+                    onRetryPatients = { retried = true },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("情報を取得できませんでした").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-patient-retry").assertIsDisplayed().performClick()
+        assertTrue(retried)
+        composeRule.onNodeWithTag("caregiver-today-patient-return-login").assertIsDisplayed().performClick()
+        assertTrue(returnedToLogin)
+    }
+
+    @Test
     fun failedLoadExposesRetryableCanonicalErrorState() {
         val source = object : CaregiverTodayDataSource {
             override suspend fun today(patientId: String): List<PatientDose> = error("offline")

@@ -1,6 +1,6 @@
 # Android physical-device verification matrix
 
-**Status:** procedure complete; authenticated role/appearance/lifecycle/permission, exact local reminder lifecycle, legal-link browser return and linking-code copy/chooser execution recorded on one API 35 non-Google OEM Debug device; signed Play, FCM, destructive/network paths, full spoken TalkBack and remaining device classes pending
+**Status:** procedure complete; authenticated role/appearance/lifecycle/permission, exact local reminder lifecycle, legal-link browser return, linking-code copy/chooser and read-only cached/cold offline recovery recorded on one API 35 non-Google OEM Debug device; signed Play, FCM, destructive/mutation-interruption paths, full spoken TalkBack and remaining device classes pending
 **Package:** `com.afterlifearchive.medmanager`
 **Owner gate:** V1 / Gate I / `XP-005`, `XP-006`, `XP-008`, `XP-010`
 
@@ -149,7 +149,7 @@ Any unreachable action, duplicate/blank announcement, sensitive notification spe
 
 Use disposable records only. Capture before/after server state without placing identity/health payloads in Git.
 
-- Toggle airplane mode during initial load and cached refresh; last-known in-memory content, stale warning, Retry and no offline write queue must match `XP-007`.
+- Toggle airplane mode or disable the only validated network during initial load and cached refresh; last-known in-memory content, stale warning, Retry and no offline write queue must match `XP-007`. C70 passes this read-only procedure for the dedicated QA Caregiver on A302SH: same-process cached content/stale/Retry, cold offline role retention/error/recovery actions, and reconnect/Retry restoration. Patient and other-device repetitions remain required.
 - Interrupt individual, bulk, PRN, inventory, patient-delete, logout and account-delete requests. A successful write must remain visible through failed reconciliation; an uncertain/failed write must not be replayed automatically.
 - Double-tap/high-latency tests must remain single-flight and server-idempotent.
 - Revoke patient access and permanently delete a different disposable patient; verify the former preserves data and the latter clears dependent selections/screens only after server success.

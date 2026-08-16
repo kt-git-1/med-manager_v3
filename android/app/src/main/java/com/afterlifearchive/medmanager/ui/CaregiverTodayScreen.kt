@@ -93,6 +93,7 @@ internal fun CaregiverTodayScreen(
     enabled: Boolean,
     onOpenMedications: () -> Unit,
     onReturnToLogin: () -> Unit = {},
+    onRetryPatients: () -> Unit = {},
 ) {
     val state by repository.state.collectAsStateWithLifecycle()
     val freshness by repository.freshness.collectAsStateWithLifecycle()
@@ -113,9 +114,11 @@ internal fun CaregiverTodayScreen(
 
     when {
         patientState.loading && patientState.patients.isEmpty() -> CaregiverTodayLoadingState()
-        patientState.loadFailed -> CaregiverTodayMessage(
-            stringResource(R.string.caregiver_data_unavailable_title),
-            stringResource(R.string.caregiver_data_unavailable_message),
+        patientState.loadFailed -> CaregiverDataUnavailableState(
+            enabled = enabled,
+            onRetry = onRetryPatients,
+            onReturnToLogin = onReturnToLogin,
+            testTagPrefix = "caregiver-today-patient",
         )
         patientState.patients.isEmpty() -> CaregiverTodayMessage(
             stringResource(R.string.caregiver_no_patient_title),
