@@ -1,6 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.gradle.api.tasks.Sync
 import java.net.URI
+import java.util.Base64
 import java.util.Properties
 import javax.imageio.ImageIO
 
@@ -13,6 +14,39 @@ val localProperties = Properties().apply {
 
 fun runtimeConfig(name: String, default: String = ""): String =
     providers.environmentVariable(name).orNull ?: localProperties.getProperty(name) ?: default
+
+fun decodeBase64Url(value: String): String? {
+    if (!value.matches(Regex("^[A-Za-z0-9_-]+$"))) return null
+    val padded = value + "=".repeat((4 - value.length % 4) % 4)
+    return runCatching { Base64.getUrlDecoder().decode(padded).toString(Charsets.UTF_8) }.getOrNull()
+}
+
+fun legacySupabaseRole(value: String): String? {
+    val segments = value.split('.')
+    if (segments.size != 3 || segments.any(String::isBlank)) return null
+    val header = decodeBase64Url(segments[0]) ?: return null
+    val payload = decodeBase64Url(segments[1]) ?: return null
+    if (!Regex("\"alg\"\\s*:").containsMatchIn(header)) return null
+    val issuer = Regex("\"iss\"\\s*:\\s*\"([^\"]+)\"").find(payload)?.groupValues?.get(1)
+    if (issuer != "supabase") return null
+    return Regex("\"role\"\\s*:\\s*\"([^\"]+)\"")
+        .findAll(payload)
+        .map { it.groupValues[1] }
+        .toList()
+        .singleOrNull()
+}
+
+fun isClientSafeSupabaseKey(value: String): Boolean {
+    if (value.matches(Regex("^sb_publishable_[A-Za-z0-9_-]{20,}$"))) return true
+    return legacySupabaseRole(value) == "anon"
+}
+
+fun syntheticLegacySupabaseKey(role: String, issuer: String = "supabase"): String {
+    val encoder = Base64.getUrlEncoder().withoutPadding()
+    val header = encoder.encodeToString("{\"alg\":\"HS256\",\"typ\":\"JWT\"}".toByteArray())
+    val payload = encoder.encodeToString("{\"iss\":\"$issuer\",\"role\":\"$role\"}".toByteArray())
+    return "$header.$payload.synthetic-signature"
+}
 
 val generatedRoleAssets = layout.buildDirectory.dir("generated/role-assets/res")
 val releaseStoreFilePath = runtimeConfig("RELEASE_STORE_FILE")
@@ -171,9 +205,24 @@ val verifyFirebaseRuntime by tasks.registering {
     }
 }
 
+val verifyRuntimeCredentialSafety by tasks.registering {
+    group = "verification"
+    description = "Proves that only client-safe Supabase publishable or legacy anon keys pass validation."
+    doLast {
+        require(isClientSafeSupabaseKey("sb_publishable_${"a".repeat(24)}"))
+        require(isClientSafeSupabaseKey(syntheticLegacySupabaseKey("anon")))
+        require(!isClientSafeSupabaseKey("sb_secret_${"a".repeat(24)}"))
+        require(!isClientSafeSupabaseKey(syntheticLegacySupabaseKey("service_role")))
+        require(!isClientSafeSupabaseKey(syntheticLegacySupabaseKey("anon", issuer = "other")))
+        require(!isClientSafeSupabaseKey("x".repeat(40)))
+        require(!isClientSafeSupabaseKey("malformed.jwt"))
+    }
+}
+
 val verifyProductionRuntime by tasks.registering {
     group = "verification"
     description = "Fails unless the Play artifact has complete, structurally valid production runtime configuration."
+    dependsOn(verifyRuntimeCredentialSafety)
     doLast {
         fun httpsUri(value: String): URI? = runCatching { URI(value) }.getOrNull()
             ?.takeIf { it.scheme == "https" && !it.host.isNullOrBlank() }
@@ -182,7 +231,9 @@ val verifyProductionRuntime by tasks.registering {
             val apiUri = httpsUri(productionApiBaseUrl)
             if (apiUri?.host != "www.okusuri-mimamori.com") add("API_BASE_URL must use the production HTTPS host")
             if (httpsUri(productionSupabaseUrl) == null) add("SUPABASE_URL is missing or is not HTTPS")
-            if (productionSupabaseAnonKey.length < 20) add("SUPABASE_ANON_KEY is missing or malformed")
+            if (!isClientSafeSupabaseKey(productionSupabaseAnonKey)) {
+                add("SUPABASE_ANON_KEY must be a client-safe publishable or legacy anon key")
+            }
             addAll(firebaseRuntimeFailures())
             val redirectUri = httpsUri(productionEmailRedirectUrl)
             if (redirectUri?.host != "www.okusuri-mimamori.com" || redirectUri.path != "/auth/confirmed") {

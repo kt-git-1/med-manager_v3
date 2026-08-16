@@ -54,6 +54,9 @@ jobs:
         if: github.event_name == 'push'
         run: ./gradlew verifyFirebaseRuntime
 
+      - name: Runtime credential safety
+        run: ./gradlew verifyRuntimeCredentialSafety
+
       - name: Connected shard runner contract
         run: |
           bash -n scripts/run-connected-ui-shards.sh
