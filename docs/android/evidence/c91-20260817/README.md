@@ -22,6 +22,12 @@
 - `origin/main` remains the published `432b34c` baseline; the two `origin/staging` commits remain iOS-only Analytics/Xcode CI changes and were not merged.
 - Pure policy contract: one valid fixture passed and eleven invalid package/version/source/dirty/hash/signer/module/DEX/SDK/lock fixtures failed closed.
 - A full synthetic signed AAB passed runtime, upload-key, SDK, APK, AAB, asset and signature gates, then was deliberately rejected because `android/app/build.gradle.kts` was not yet committed. The failure listed that release input and did not write a release ledger.
+- The first clean-commit run caught the policy test's own untracked Python bytecode cache under `android/scripts`; bytecode generation was disabled and the cache was removed instead of weakening the dirty-input boundary.
+- From clean implementation commit `4749ab9`, the complete synthetic `bundleSignedRelease` graph passed 74 tasks and atomically wrote the JSON ledger only after signature verification.
+- Independent shell/JQ checks matched the ledger to that exact AAB SHA-256, upload certificate, dumped base-manifest hash, full source commit, package/version/SDK identity, base-only four-DEX/eight-native-library structure, 175-module SDK inventory, 187-coordinate Gradle lock and all eight gate names.
+- No temporary JSON file remained after the atomic replacement.
+- A final clean ordinary regression passed 108 tasks: evidence contract 1/11, upload-keystore contract 1/7, Debug JVM 216/216, Release JVM 213/213, Lint, 175-module SDK policy, Release APK manifest/16 KB compatibility, validated base-only unsigned AAB content and Play assets.
+- That final `clean` removed the synthetic keystore, signed AAB and JSON ledger. No generated keystore or release ledger remains in `app/build`.
 
 ## Deliberately incomplete external evidence
 
