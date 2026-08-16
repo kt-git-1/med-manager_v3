@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C82
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C83
 - Baseline date: 2026-08-16
-- Current action: C82 makes the complete connected UI gate repeatable as four bounded AndroidJUnitRunner shards, refuses to overwrite an existing installation and removes the app/test packages on every exit. Clean API 26/33/35 AVDs each pass 280/280 (840/840 total); Debug JVM 216/216, Release JVM 213/213, Lint and Release assembly also pass. This expands emulator compatibility evidence only. C81's physical A302SH 280/280 remains separate, as do assisted spoken TalkBack, C79's API deployment boundary, FCM, Explore, remaining devices and Play/signing.
+- Current action: C83 brings CI up to the C82 local contract: every `android-dev` push now syntax-checks the bounded connected runner, proves its help and invalid-shard guards, and runs both Debug and Release JVM suites before build, Lint, Release compatibility and Play-asset gates. C82's API 26/33/35 840/840 matrix remains the instrumentation evidence; GitHub-hosted CI does not substitute for physical/TalkBack/FCM/Play acceptance. Production runtime and upload-signing inputs remain fail-closed outside approved secrets.
 
 ## Authority order
 
