@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C83
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C84
 - Baseline date: 2026-08-16
-- Current action: C83 brings CI up to the C82 local contract: every `android-dev` push now syntax-checks the bounded connected runner, proves its help and invalid-shard guards, and runs both Debug and Release JVM suites before build, Lint, Release compatibility and Play-asset gates. C82's API 26/33/35 840/840 matrix remains the instrumentation evidence; GitHub-hosted CI does not substitute for physical/TalkBack/FCM/Play acceptance. Production runtime and upload-signing inputs remain fail-closed outside approved secrets.
+- Current action: C84 closes a production-credential safety gap: the Android runtime validator now accepts only Supabase `sb_publishable_...` or a structurally valid legacy `anon` JWT and rejects `sb_secret_...`, `service_role`, wrong-issuer, opaque-long and malformed values before a Play bundle can be built. A synthetic-only regression task runs locally and in CI without printing or retaining any credential. Production runtime values, upload signing, physical/TalkBack/FCM/Explore and Play acceptance remain external inputs/evidence.
 
 ## Authority order
 
