@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C90
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C91
 - Baseline date: 2026-08-16
-- Current action: C90 verifies the configured upload keystore before any Play AAB is built. The selected alias must exist as a private-key entry, sign with the supplied key password and expose exactly the registered `PLAY_UPLOAD_CERT_SHA256`; wrong certificate, alias, store/key password, malformed fingerprint, missing store and certificate-only aliases fail closed. A synthetic full `bundleSignedRelease` proves the pre-build key gate, actual APK/AAB content gates, AAB signature and post-build certificate identity form one path. No release-owner key was used or created; the exact production-signed AAB and Play scan remain external evidence.
+- Current action: C91 makes `bundleSignedRelease` produce `app/build/reports/play-release-evidence.json` only after all runtime, keystore, SDK, APK, AAB, asset, signature and evidence-policy gates pass. It records the full source commit, branch, published iOS/API baseline, app/version/SDK identity, exact AAB and base-manifest hashes, upload certificate, module/DEX/native counts, dependency-lock and resolved-SDK inventory hashes/counts and the passed gate set. Any uncommitted Android or consumed cross-platform/store asset input fails the final gate. No release-owner key was used; the exact production-signed AAB, independent Play comparison/scan and installed-track evidence remain external.
 
 ## Authority order
 

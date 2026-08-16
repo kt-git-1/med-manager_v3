@@ -56,6 +56,19 @@ fun normalizedSha256Fingerprint(value: String): String? = value
     .lowercase()
     .takeIf { it.matches(Regex("^[0-9a-f]{64}$")) }
 
+fun File.sha256Hex(): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    inputStream().use { input ->
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        while (true) {
+            val bytesRead = input.read(buffer)
+            if (bytesRead < 0) break
+            digest.update(buffer, 0, bytesRead)
+        }
+    }
+    return digest.digest().joinToString("") { "%02x".format(it) }
+}
+
 fun forbiddenReleaseSdkReason(coordinate: String): String? = when {
     coordinate.startsWith("com.android.billingclient:") ->
         "Google Play Billing is not approved while BILLING_ENABLED=false"
@@ -115,6 +128,12 @@ fun releaseBundleStructureFailures(entries: Set<String>): List<String> = buildLi
 }
 
 val generatedRoleAssets = layout.buildDirectory.dir("generated/role-assets/res")
+val releaseApplicationId = "com.afterlifearchive.medmanager"
+val releaseVersionCode = 1
+val releaseVersionName = "1.0.6"
+val releaseMinSdk = 26
+val releaseTargetSdk = 35
+val publishedIosApiBaselineSha = "432b34c064d70a59c20753116b39390bee2c1cd0"
 val releaseStoreFilePath = runtimeConfig("RELEASE_STORE_FILE")
 val releaseStorePassword = runtimeConfig("RELEASE_STORE_PASSWORD")
 val releaseKeyAlias = runtimeConfig("RELEASE_KEY_ALIAS")
@@ -183,11 +202,11 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.afterlifearchive.medmanager"
-        minSdk = 26
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.6"
+        applicationId = releaseApplicationId
+        minSdk = releaseMinSdk
+        targetSdk = releaseTargetSdk
+        versionCode = releaseVersionCode
+        versionName = releaseVersionName
 
         buildConfigField("String", "API_BASE_URL", productionApiBaseUrl.asBuildConfigString())
         buildConfigField("String", "SUPABASE_URL", productionSupabaseUrl.asBuildConfigString())
@@ -636,16 +655,7 @@ val verifyReleaseBundleContent by tasks.registering(org.gradle.api.tasks.Exec::c
         require(failures.isEmpty()) {
             "Release AAB content policy failed:\n - ${failures.joinToString("\n - ")}"
         }
-        val digest = MessageDigest.getInstance("SHA-256")
-        bundle.inputStream().use { input ->
-            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-            while (true) {
-                val bytesRead = input.read(buffer)
-                if (bytesRead < 0) break
-                digest.update(buffer, 0, bytesRead)
-            }
-        }
-        val sha256 = digest.digest().joinToString("") { "%02x".format(it) }
+        val sha256 = bundle.sha256Hex()
         val dexCount = entries.count { it.matches(Regex("^base/dex/classes[0-9]*\\.dex$")) }
         val nativeLibraryCount = entries.count { it.matches(Regex("^base/lib/[^/]+/[^/]+\\.so$")) }
         println("Release AAB content verification passed.")
@@ -675,10 +685,79 @@ val verifySignedReleaseBundle by tasks.registering(org.gradle.api.tasks.Exec::cl
     environment("EXPECTED_UPLOAD_CERT_SHA256", playUploadCertSha256)
 }
 
+val verifyReleaseEvidencePolicyContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Exercises exact-artifact release evidence acceptance and rejection boundaries."
+    inputs.files(
+        rootProject.file("scripts/generate-release-evidence.py"),
+        rootProject.file("scripts/test-generate-release-evidence.py"),
+    )
+    commandLine("python3", rootProject.file("scripts/test-generate-release-evidence.py").absolutePath)
+}
+
+val signedReleaseEvidenceFile = layout.buildDirectory.file("reports/play-release-evidence.json")
+val generateSignedReleaseEvidence by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Writes the exact signed Play AAB source/version/hash/certificate/dependency evidence ledger."
+    dependsOn(verifySignedReleaseBundle, verifyReleaseEvidencePolicyContract)
+    inputs.files(
+        releaseBundleFile,
+        releaseBundleManifestFile,
+        releaseDependencyLockFile,
+        releaseSdkInventoryFile,
+        rootProject.file("scripts/generate-release-evidence.py"),
+    )
+    inputs.properties(
+        mapOf(
+            "applicationId" to releaseApplicationId,
+            "versionCode" to releaseVersionCode,
+            "versionName" to releaseVersionName,
+            "minSdk" to releaseMinSdk,
+            "targetSdk" to releaseTargetSdk,
+            "publishedIosApiBaselineSha" to publishedIosApiBaselineSha,
+            "playUploadCertSha256" to playUploadCertSha256,
+        ),
+    )
+    outputs.file(signedReleaseEvidenceFile)
+    outputs.upToDateWhen { false }
+    commandLine(
+        "python3",
+        rootProject.file("scripts/generate-release-evidence.py").absolutePath,
+        "--repository-root",
+        rootProject.projectDir.parentFile.absolutePath,
+        "--aab",
+        releaseBundleFile.get().asFile.absolutePath,
+        "--manifest",
+        releaseBundleManifestFile.get().asFile.absolutePath,
+        "--dependency-lock",
+        releaseDependencyLockFile.absolutePath,
+        "--inventory",
+        releaseSdkInventoryFile.get().asFile.absolutePath,
+        "--output",
+        signedReleaseEvidenceFile.get().asFile.absolutePath,
+        "--application-id",
+        releaseApplicationId,
+        "--version-code",
+        releaseVersionCode.toString(),
+        "--version-name",
+        releaseVersionName,
+        "--min-sdk",
+        releaseMinSdk.toString(),
+        "--target-sdk",
+        releaseTargetSdk.toString(),
+        "--baseline-sha",
+        publishedIosApiBaselineSha,
+        "--expected-signer-sha256",
+        playUploadCertSha256,
+        "--bundletool-version",
+        "1.18.0",
+    )
+}
+
 tasks.register("bundleSignedRelease") {
     group = "build"
-    description = "Builds and verifies the Play upload AAB after every production release gate passes."
-    dependsOn(verifySignedReleaseBundle)
+    description = "Builds, verifies and records exact evidence for the Play upload AAB."
+    dependsOn(generateSignedReleaseEvidence)
 }
 verifyReleaseApkCompatibility.configure {
     mustRunAfter(verifyProductionRuntime, verifyProductionSigning, verifyUploadKeystore)

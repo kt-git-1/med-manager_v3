@@ -25,7 +25,7 @@ For each target record:
 - manufacturer/model, Android/API, build number and security patch;
 - display size/density, navigation mode, locale/time zone, system font/display scale;
 - TalkBack, Google Play services and Play Store versions where relevant;
-- artifact commit, `versionCode`, `versionName`, SHA-256 and install source (`Play Internal`, `adb debug`, or `adb release`);
+- artifact commit, `versionCode`, `versionName`, SHA-256 and install source (`Play Internal`, `adb debug`, or `adb release`); for the signed Play pass, copy these from the retained C91 `play-release-evidence.json` and verify they match Play rather than transcribing build output;
 - network type and battery-optimization state;
 - disposable test account/patient labels that reveal no real identity or health data.
 
