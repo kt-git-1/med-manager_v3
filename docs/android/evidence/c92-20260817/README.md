@@ -22,6 +22,11 @@
 - Standalone contract accepted one exact handoff and its idempotent rerun.
 - Seven fixtures failed closed: tampered source AAB, dirty source ledger, wrong application ID, malformed signer, added feature module, missing gate and tampered existing packaged AAB.
 - Temporary construction directories were absent after both success and rejection.
+- C91 JSON was made deterministic for identical inputs by removing a non-identity generation timestamp; repeated packaging therefore compares byte-identical ledgers while a changed artifact still conflicts.
+- From clean implementation commit `c6148ab`, the complete synthetic `bundleSignedRelease` graph passed 76 tasks and created `v1.0.6-code1-c6148ab47f45` with exactly the named AAB, JSON and checksum manifest.
+- `shasum -a 256 -c SHA256SUMS` passed for both files; independent checks matched the JSON commit and AAB hash. The same full task reran idempotently in 7 seconds (15 executed, 61 up-to-date) without replacing the handoff.
+- A final clean ordinary regression passed 109 tasks: handoff contract 1/idempotent/7, evidence contract 1/11, keystore contract 1/7, Debug JVM 216/216, Release JVM 213/213, Lint, 175-module SDK policy, APK/16 KB policy, base-only AAB policy and Play assets.
+- Final `clean` removed the synthetic key, signed AAB, JSON, checksum and handoff directory; no generated release package remains.
 
 ## Deliberately incomplete external evidence
 
