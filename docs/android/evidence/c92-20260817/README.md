@@ -11,7 +11,7 @@
 ## Contract
 
 - Make `bundleSignedRelease` end at the handoff task, after the complete C91 graph.
-- Reparse and revalidate the exact C91 schema, clean source, production identity/version, source AAB hash, upload-certificate form, base-only module and ordered gate set. C93 extends that set from eight to nine with `bundle-install-surface`; the C93 contract rerun proves the handoff fails if the new gate is absent.
+- Reparse and revalidate the exact C91 schema, clean source, production identity/version, source AAB hash, upload-certificate form, base-only module and ordered gate set. C93 extends that set from eight to nine with `bundle-install-surface`; C94 extends it to ten with `device-split-install-surface`. The later contract reruns prove the handoff fails if either new gate is absent.
 - Create a version/code/commit-named directory atomically.
 - Allow exactly one correspondingly named AAB, byte-identical `play-release-evidence.json` and two-entry `SHA256SUMS`.
 - Accept an existing target only when all three files still match; reject symlinks, missing/extra files and conflicts.

@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C93
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C94
 - Baseline date: 2026-08-16
-- Current action: C93 uses strict-locked bundletool to turn the exact generated AAB into an exact two-entry universal APK Set, extracts `universal.apk` atomically, proves its ephemeral test signer, and reapplies the merged manifest, SDK, permission, exported-component, App Links and 16 KB ZIP/ELF policy to that install surface. The generated universal APK is test-only and never enters the C92 three-file Play handoff. No release-owner or Play app-signing key was used; production signing, independent Play comparison/scan and installed-track evidence remain external.
+- Current action: C94 uses strict-locked bundletool to build the full APK Set once, selects the exact base/ABI/Japanese/density split quartet for API 26 arm64, API 33 x86_64 and the connected API 35 A302SH specification, and verifies every split's package, synthetic certificate, ZIP/native alignment and structure while reapplying the complete Release policy to the selected base master. The A302SH quartet is installed with `adb install-multiple`, its exact installed split/version identity is checked, and it is immediately removed. These outputs are test-only and never enter the C92 handoff; Play app signing, Play-generated splits and installed-track evidence remain external.
 
 ## Authority order
 

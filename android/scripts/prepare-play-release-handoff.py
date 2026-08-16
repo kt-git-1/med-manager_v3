@@ -21,6 +21,7 @@ EXPECTED_GATES = (
     "release-apk-compatibility",
     "release-aab-content",
     "bundle-install-surface",
+    "device-split-install-surface",
     "play-store-assets",
     "signed-aab-certificate",
     "release-evidence-policy",

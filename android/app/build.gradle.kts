@@ -699,6 +699,55 @@ val verifyReleaseBundleInstallSurface by tasks.registering(org.gradle.api.tasks.
     )
 }
 
+val verifyDeviceSplitSetContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Exercises exact device split selection structure and atomic report acceptance/rejection."
+    inputs.files(
+        rootProject.file("scripts/verify-device-split-set.py"),
+        rootProject.file("scripts/test-verify-device-split-set.py"),
+    )
+    commandLine("python3", rootProject.file("scripts/test-verify-device-split-set.py").absolutePath)
+}
+
+val verifyDeviceSplitInstallContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Exercises physical split installer pre-existing-install refusal and cleanup."
+    inputs.files(
+        rootProject.file("scripts/verify-device-split-install.sh"),
+        rootProject.file("scripts/test-verify-device-split-install.sh"),
+    )
+    commandLine("bash", rootProject.file("scripts/test-verify-device-split-install.sh").absolutePath)
+}
+
+val releaseDeviceSplitSurfaceDir = layout.buildDirectory.dir("outputs/device-split-install-surface")
+val verifyReleaseDeviceSplitSurface by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Selects and validates exact API 26/33/35 split APK surfaces from the generated AAB."
+    dependsOn(
+        verifyReleaseBundleContent,
+        verifyDeviceSplitSetContract,
+        verifyDeviceSplitInstallContract,
+    )
+    inputs.files(
+        releaseBundleFile,
+        bundletoolCli,
+        rootProject.file("scripts/verify-device-split-set.py"),
+        rootProject.file("scripts/verify-device-split-install.sh"),
+        rootProject.file("scripts/test-verify-device-split-install.sh"),
+        rootProject.file("scripts/verify-release-device-split-surface.sh"),
+        rootProject.file("scripts/verify-release-apk.sh"),
+        rootProject.file("scripts/verify-release-manifest-policy.py"),
+    )
+    outputs.dir(releaseDeviceSplitSurfaceDir)
+    commandLine(
+        "bash",
+        rootProject.file("scripts/verify-release-device-split-surface.sh").absolutePath,
+        bundletoolCli.asPath,
+        releaseBundleFile.get().asFile.absolutePath,
+        releaseDeviceSplitSurfaceDir.get().asFile.absolutePath,
+    )
+}
+
 val verifySignedReleaseBundle by tasks.registering(org.gradle.api.tasks.Exec::class) {
     group = "verification"
     description = "Verifies the generated AAB signature and registered Play upload certificate."
@@ -709,6 +758,7 @@ val verifySignedReleaseBundle by tasks.registering(org.gradle.api.tasks.Exec::cl
         verifyReleaseApkCompatibility,
         verifyReleaseBundleContent,
         verifyReleaseBundleInstallSurface,
+        verifyReleaseDeviceSplitSurface,
         verifyPlayStoreAssets,
     )
     inputs.files(releaseBundleFile, rootProject.file("scripts/verify-signed-aab.sh"))

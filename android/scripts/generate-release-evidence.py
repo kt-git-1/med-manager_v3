@@ -257,6 +257,7 @@ def generate_report(args: argparse.Namespace) -> dict[str, object]:
             "release-apk-compatibility",
             "release-aab-content",
             "bundle-install-surface",
+            "device-split-install-surface",
             "play-store-assets",
             "signed-aab-certificate",
             "release-evidence-policy",

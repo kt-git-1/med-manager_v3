@@ -14,6 +14,8 @@ Use the exact signed Internal-test AAB for the final pass. A locally installed D
 
 C93's `universal-test-only.apk` is also diagnostic-only: it proves that bundletool can derive an APK which retains the reviewed manifest/SDK/permission/App Links/16 KB contract, but its ephemeral signer and universal packaging cannot close Play app-signing, optimized device-split or track-install rows. Do not install it as the final acceptance artifact.
 
+C94 adds a narrower physical packaging preflight: its exact synthetic-signed base/arm64/Japanese/xhdpi quartet may be installed only when no Med Manager package exists, on the matching retained A302SH specification, without launch, followed by mandatory uninstall and absence verification. This proves Android accepts the selected split topology and version, but remains `adb`/synthetic evidence and cannot close any Play-installed row.
+
 | Target | Minimum purpose | Acceptance |
 |---|---|---|
 | Old supported physical device | API 26–28, smaller/older hardware if available | Legacy permission, alarm, backup/session, rendering and lifecycle behavior |

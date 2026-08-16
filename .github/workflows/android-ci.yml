@@ -106,5 +106,8 @@ jobs:
       - name: Release AAB install surface
         run: ./gradlew verifyReleaseBundleInstallSurface
 
+      - name: Release device split surfaces
+        run: ./gradlew verifyReleaseDeviceSplitSurface
+
       - name: Play listing assets
         run: ./gradlew verifyPlayStoreAssets
