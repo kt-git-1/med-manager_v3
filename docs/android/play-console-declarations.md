@@ -1,7 +1,7 @@
 # Google Play declaration worksheet
 
 **Status:** implementation-backed draft, not a submitted Console declaration  
-**Baseline:** published iOS/API `main@432b34c`, Android `android-dev` C92
+**Baseline:** published iOS/API `main@432b34c`, Android `android-dev` C93
 **Recheck:** the exact signed AAB, current Firebase SDK disclosures and Play Console questions immediately before submission
 
 This worksheet separates repository evidence from release-owner/Console decisions. It must not be copied blindly if the production configuration or SDK set changes.
@@ -63,6 +63,8 @@ C91 generates `play-release-evidence.json` only after that complete signed path 
 
 C92 packages that ledger with its exact commit/version-named AAB and `SHA256SUMS` as one three-file handoff, rejecting a mismatch or conflicting existing directory. Retain and compare the production handoff as a unit; synthetic packaging still does not answer Console declarations.
 
+C93 asks the same locked bundletool to generate a universal APK Set from the exact AAB and reapplies the reviewed manifest, SDK, permission, exported-component, App Links and 16 KB policy to the extracted APK. The APK uses an ephemeral synthetic key, is deliberately excluded from the C92 handoff and cannot answer Play app-signing, optimized split, Console scan or installed-track questions.
+
 SDK-provided coarse technical metadata must still be rechecked against the exact Firebase versions and Google's current disclosure guidance for the final signed AAB. If Google Analytics or Firebase Installations maps any automatically processed field to an additional Play data type, add it even if the app code does not set it directly.
 
 ## Health apps declaration draft
@@ -79,7 +81,7 @@ SDK-provided coarse technical metadata must still be rechecked against the exact
 
 - [ ] Retain the complete production C92 three-file handoff; verify `SHA256SUMS` and independently confirm its commit, `versionCode`, `versionName`, AAB SHA-256 and upload-certificate SHA-256 before upload. No release-owner artifact exists yet.
 - [x] Inventory and policy-check the resolved Release dependency graph and independently exclude advertising/attribution permissions from the Release APK (C86); repeat against the exact signed AAB below.
-- [x] Validate and inspect the current generated unsigned AAB structure and protobuf manifest (C89); repeat against the exact signed production AAB below.
+- [x] Validate and inspect the current generated unsigned AAB structure/protobuf manifest and its synthetic-signed universal install surface (C89/C93); repeat against the exact signed production AAB and Play-generated artifacts below.
 - [ ] Inspect the exact release-owner-signed production AAB and Play scan; attach results to Gate I evidence.
 - [ ] Recheck Firebase Analytics, Cloud Messaging and Installations disclosures for the resolved SDK versions immediately before Console submission.
 - [ ] Verify production Analytics sharing, retention and consent behavior in Console/DebugView.

@@ -103,5 +103,8 @@ jobs:
       - name: Release AAB content
         run: ./gradlew verifyReleaseBundleContent
 
+      - name: Release AAB install surface
+        run: ./gradlew verifyReleaseBundleInstallSurface
+
       - name: Play listing assets
         run: ./gradlew verifyPlayStoreAssets

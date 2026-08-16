@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C92
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C93
 - Baseline date: 2026-08-16
-- Current action: C92 makes `bundleSignedRelease` end with an atomic three-file handoff under `app/build/outputs/play-release/v<version>-code<versionCode>-<commit12>/`: one commit/version-named AAB, its exact C91 `play-release-evidence.json` and `SHA256SUMS`. The packager reparses the ledger, requires the production package, clean source, base module and complete ordered gate set, matches the supplied AAB hash/certificate identity, rejects symlinks/unexpected files/tampering and refuses to overwrite a conflicting same-release directory. No release-owner key was used; production signing, independent Play comparison/scan and installed-track evidence remain external.
+- Current action: C93 uses strict-locked bundletool to turn the exact generated AAB into an exact two-entry universal APK Set, extracts `universal.apk` atomically, proves its ephemeral test signer, and reapplies the merged manifest, SDK, permission, exported-component, App Links and 16 KB ZIP/ELF policy to that install surface. The generated universal APK is test-only and never enters the C92 three-file Play handoff. No release-owner or Play app-signing key was used; production signing, independent Play comparison/scan and installed-track evidence remain external.
 
 ## Authority order
 

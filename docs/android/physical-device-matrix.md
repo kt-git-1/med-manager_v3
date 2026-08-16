@@ -12,6 +12,8 @@ This matrix is required before Android is merged to `main`. Emulator and Compose
 
 Use the exact signed Internal-test AAB for the final pass. A locally installed Debug/Release APK may be used for diagnosis, but it does not close Play-installed, signing, App Link, FCM or upgrade rows.
 
+C93's `universal-test-only.apk` is also diagnostic-only: it proves that bundletool can derive an APK which retains the reviewed manifest/SDK/permission/App Links/16 KB contract, but its ephemeral signer and universal packaging cannot close Play app-signing, optimized device-split or track-install rows. Do not install it as the final acceptance artifact.
+
 | Target | Minimum purpose | Acceptance |
 |---|---|---|
 | Old supported physical device | API 26–28, smaller/older hardware if available | Legacy permission, alarm, backup/session, rendering and lifecycle behavior |

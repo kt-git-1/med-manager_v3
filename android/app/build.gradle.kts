@@ -664,6 +664,41 @@ val verifyReleaseBundleContent by tasks.registering(org.gradle.api.tasks.Exec::c
     }
 }
 
+val verifyUniversalApkSetContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Exercises universal APK Set structure and atomic extraction acceptance/rejection."
+    inputs.files(
+        rootProject.file("scripts/extract-universal-apk.py"),
+        rootProject.file("scripts/test-extract-universal-apk.py"),
+    )
+    commandLine("python3", rootProject.file("scripts/test-extract-universal-apk.py").absolutePath)
+}
+
+val releaseBundleInstallSurfaceApk = layout.buildDirectory.file(
+    "outputs/bundle-install-surface/universal-test-only.apk",
+)
+val verifyReleaseBundleInstallSurface by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Builds a universal APK Set from the exact AAB and reapplies Release APK policy."
+    dependsOn(verifyReleaseBundleContent, verifyUniversalApkSetContract)
+    inputs.files(
+        releaseBundleFile,
+        bundletoolCli,
+        rootProject.file("scripts/extract-universal-apk.py"),
+        rootProject.file("scripts/verify-release-bundle-install-surface.sh"),
+        rootProject.file("scripts/verify-release-apk.sh"),
+        rootProject.file("scripts/verify-release-manifest-policy.py"),
+    )
+    outputs.file(releaseBundleInstallSurfaceApk)
+    commandLine(
+        "bash",
+        rootProject.file("scripts/verify-release-bundle-install-surface.sh").absolutePath,
+        bundletoolCli.asPath,
+        releaseBundleFile.get().asFile.absolutePath,
+        releaseBundleInstallSurfaceApk.get().asFile.absolutePath,
+    )
+}
+
 val verifySignedReleaseBundle by tasks.registering(org.gradle.api.tasks.Exec::class) {
     group = "verification"
     description = "Verifies the generated AAB signature and registered Play upload certificate."
@@ -673,6 +708,7 @@ val verifySignedReleaseBundle by tasks.registering(org.gradle.api.tasks.Exec::cl
         verifyReleaseSdkPolicy,
         verifyReleaseApkCompatibility,
         verifyReleaseBundleContent,
+        verifyReleaseBundleInstallSurface,
         verifyPlayStoreAssets,
     )
     inputs.files(releaseBundleFile, rootProject.file("scripts/verify-signed-aab.sh"))
