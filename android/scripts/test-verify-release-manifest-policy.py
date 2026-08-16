@@ -78,6 +78,14 @@ class ReleaseManifestPolicyTests(unittest.TestCase):
         self.assertEqual(summary["exported_components"], 3)
         self.assertEqual(summary["authentication_links"], 3)
 
+    def test_bundletool_padded_signature_value_passes(self) -> None:
+        POLICY.verify_manifest_text(
+            VALID_MANIFEST.replace(
+                'android:protectionLevel="0x2"',
+                'android:protectionLevel="0x00000002"',
+            ),
+        )
+
     def test_debuggable_release_is_rejected(self) -> None:
         self.assert_rejected(
             VALID_MANIFEST.replace("android:allowBackup", 'android:debuggable="true" android:allowBackup'),

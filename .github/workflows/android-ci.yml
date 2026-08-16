@@ -91,5 +91,8 @@ jobs:
       - name: Release compatibility
         run: ./gradlew verifyReleaseApkCompatibility
 
+      - name: Release AAB content
+        run: ./gradlew verifyReleaseBundleContent
+
       - name: Play listing assets
         run: ./gradlew verifyPlayStoreAssets

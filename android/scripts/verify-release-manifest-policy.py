@@ -36,6 +36,15 @@ def component_name(element: ET.Element) -> str:
     return name
 
 
+def is_signature_protection(value: str | None) -> bool:
+    if value == "signature":
+        return True
+    try:
+        return value is not None and int(value, 0) == 2
+    except ValueError:
+        return False
+
+
 def verify_manifest_text(xml_text: str) -> dict[str, int | str]:
     try:
         manifest = ET.fromstring(xml_text)
@@ -114,7 +123,7 @@ def verify_manifest_text(xml_text: str) -> dict[str, int | str]:
     ]
     require(len(custom_permission) == 1, "Dynamic receiver signature permission must be declared once")
     require(
-        android_attr(custom_permission[0], "protectionLevel") in {"signature", "0x2"},
+        is_signature_protection(android_attr(custom_permission[0], "protectionLevel")),
         "Dynamic receiver permission must use signature protection",
     )
 

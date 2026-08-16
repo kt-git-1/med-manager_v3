@@ -2,8 +2,10 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.gradle.api.artifacts.dsl.LockMode
 import org.gradle.api.tasks.Sync
 import java.net.URI
+import java.security.MessageDigest
 import java.util.Base64
 import java.util.Properties
+import java.util.zip.ZipFile
 import javax.imageio.ImageIO
 
 fun String.asBuildConfigString(): String = "\"${replace("\\", "\\\\").replace("\"", "\\\"")}\""
@@ -78,6 +80,38 @@ fun forbiddenReleaseSdkReason(coordinate: String): String? = when {
     coordinate.startsWith("com.segment.analytics:") || coordinate.startsWith("com.segment.analytics.android:") ->
         "Segment analytics is not approved"
     else -> null
+}
+
+fun releaseBundleStructureFailures(entries: Set<String>): List<String> = buildList {
+    val requiredEntries = setOf(
+        "BundleConfig.pb",
+        "base/manifest/AndroidManifest.xml",
+        "base/dex/classes.dex",
+    )
+    requiredEntries.minus(entries).sorted().forEach { add("Missing required AAB entry: $it") }
+
+    val moduleManifests = entries
+        .filter { it.matches(Regex("^[^/]+/manifest/AndroidManifest\\.xml$")) }
+        .sorted()
+    if (moduleManifests != listOf("base/manifest/AndroidManifest.xml")) {
+        add("Expected exactly the reviewed base module manifest: ${moduleManifests.joinToString()}")
+    }
+
+    val forbiddenNames = setOf(
+        ".env",
+        "google-services.json",
+        "local.properties",
+        "secrets.properties",
+        "service-account.json",
+    )
+    val forbiddenExtensions = setOf("jks", "keystore", "p12", "pem", "key")
+    entries.sorted().forEach { entry ->
+        val fileName = entry.substringAfterLast('/').lowercase()
+        val extension = fileName.substringAfterLast('.', missingDelimiterValue = "")
+        if (fileName in forbiddenNames || extension in forbiddenExtensions) {
+            add("Forbidden private configuration/key entry in AAB: $entry")
+        }
+    }
 }
 
 val generatedRoleAssets = layout.buildDirectory.dir("generated/role-assets/res")
@@ -221,6 +255,11 @@ configurations.configureEach {
 }
 dependencyLocking {
     lockMode.set(LockMode.STRICT)
+}
+val bundletoolCli = configurations.create("bundletoolCli") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    resolutionStrategy.activateDependencyLocking()
 }
 
 val verifyProductionSigning by tasks.registering {
@@ -398,7 +437,11 @@ val verifyReleaseApkCompatibility by tasks.registering(org.gradle.api.tasks.Exec
     dependsOn("assembleRelease", verifyReleaseSdkPolicy)
     val apkFileName = if (releaseSigningConfigured) "app-release.apk" else "app-release-unsigned.apk"
     val apkFile = layout.buildDirectory.file("outputs/apk/release/$apkFileName")
-    inputs.file(apkFile)
+    inputs.files(
+        apkFile,
+        rootProject.file("scripts/verify-release-apk.sh"),
+        rootProject.file("scripts/verify-release-manifest-policy.py"),
+    )
     commandLine(
         "bash",
         rootProject.file("scripts/verify-release-apk.sh").absolutePath,
@@ -483,6 +526,97 @@ val verifyPlayStoreAssets by tasks.registering {
     }
 }
 
+val releaseBundleFile = layout.buildDirectory.file("outputs/bundle/release/app-release.aab")
+val releaseBundleManifestFile = layout.buildDirectory.file("reports/release-bundle-manifest.xml")
+
+val verifyReleaseBundlePolicyContract by tasks.registering {
+    group = "verification"
+    description = "Proves the AAB base-module and private-file fail-closed structure policy."
+    doLast {
+        val validEntries = setOf(
+            "BundleConfig.pb",
+            "base/manifest/AndroidManifest.xml",
+            "base/dex/classes.dex",
+            "base/resources.pb",
+            "BUNDLE-METADATA/com.android.tools.build.gradle/app-metadata.properties",
+        )
+        require(releaseBundleStructureFailures(validEntries).isEmpty())
+        listOf(
+            validEntries - "BundleConfig.pb",
+            validEntries + "feature/manifest/AndroidManifest.xml",
+            validEntries + "base/assets/google-services.json",
+            validEntries + "base/root/private-upload-key.jks",
+            validEntries + "base/root/.env",
+        ).forEach { entries ->
+            require(releaseBundleStructureFailures(entries).isNotEmpty()) {
+                "Unsafe synthetic AAB structure unexpectedly passed"
+            }
+        }
+    }
+}
+
+val prepareReleaseBundleManifest by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Validates the Release AAB and atomically extracts its base manifest with pinned bundletool."
+    dependsOn("bundleRelease", verifyReleaseBundlePolicyContract)
+    inputs.files(
+        releaseBundleFile,
+        bundletoolCli,
+        rootProject.file("scripts/prepare-release-bundle-manifest.sh"),
+    )
+    outputs.file(releaseBundleManifestFile)
+    doFirst {
+        commandLine(
+            "bash",
+            rootProject.file("scripts/prepare-release-bundle-manifest.sh").absolutePath,
+            bundletoolCli.asPath,
+            releaseBundleFile.get().asFile.absolutePath,
+            releaseBundleManifestFile.get().asFile.absolutePath,
+        )
+    }
+}
+
+val verifyReleaseBundleContent by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Verifies validated AAB structure and its dumped merged manifest security/privacy policy."
+    dependsOn(prepareReleaseBundleManifest)
+    inputs.files(
+        releaseBundleFile,
+        releaseBundleManifestFile,
+        rootProject.file("scripts/verify-release-manifest-policy.py"),
+    )
+    commandLine(
+        "python3",
+        rootProject.file("scripts/verify-release-manifest-policy.py").absolutePath,
+        releaseBundleManifestFile.get().asFile.absolutePath,
+    )
+    doLast {
+        val bundle = releaseBundleFile.get().asFile
+        val entries = ZipFile(bundle).use { zip ->
+            zip.entries().asSequence().map { it.name }.toSet()
+        }
+        val failures = releaseBundleStructureFailures(entries)
+        require(failures.isEmpty()) {
+            "Release AAB content policy failed:\n - ${failures.joinToString("\n - ")}"
+        }
+        val digest = MessageDigest.getInstance("SHA-256")
+        bundle.inputStream().use { input ->
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            while (true) {
+                val bytesRead = input.read(buffer)
+                if (bytesRead < 0) break
+                digest.update(buffer, 0, bytesRead)
+            }
+        }
+        val sha256 = digest.digest().joinToString("") { "%02x".format(it) }
+        val dexCount = entries.count { it.matches(Regex("^base/dex/classes[0-9]*\\.dex$")) }
+        val nativeLibraryCount = entries.count { it.matches(Regex("^base/lib/[^/]+/[^/]+\\.so$")) }
+        println("Release AAB content verification passed.")
+        println("modules=base dexFiles=$dexCount nativeLibraries=$nativeLibraryCount")
+        println("AAB_SHA256=$sha256")
+    }
+}
+
 val verifySignedReleaseBundle by tasks.registering(org.gradle.api.tasks.Exec::class) {
     group = "verification"
     description = "Verifies the generated AAB signature and registered Play upload certificate."
@@ -491,16 +625,15 @@ val verifySignedReleaseBundle by tasks.registering(org.gradle.api.tasks.Exec::cl
         verifyProductionSigning,
         verifyReleaseSdkPolicy,
         verifyReleaseApkCompatibility,
+        verifyReleaseBundleContent,
         verifyPlayStoreAssets,
-        "bundleRelease",
     )
-    val bundleFile = layout.buildDirectory.file("outputs/bundle/release/app-release.aab")
-    inputs.file(bundleFile)
+    inputs.files(releaseBundleFile, rootProject.file("scripts/verify-signed-aab.sh"))
     inputs.property("playUploadCertSha256", playUploadCertSha256)
     commandLine(
         "bash",
         rootProject.file("scripts/verify-signed-aab.sh").absolutePath,
-        bundleFile.get().asFile.absolutePath,
+        releaseBundleFile.get().asFile.absolutePath,
     )
     environment("EXPECTED_UPLOAD_CERT_SHA256", playUploadCertSha256)
 }
@@ -526,6 +659,7 @@ kotlin {
 }
 
 dependencies {
+    add(bundletoolCli.name, "com.android.tools.build:bundletool:1.18.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
 

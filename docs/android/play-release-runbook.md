@@ -47,15 +47,16 @@ cd android
 ./gradlew clean test assembleDebug assembleRelease lint
 ./gradlew verifyReleaseSdkPolicy
 ./gradlew verifyReleaseApkCompatibility
+./gradlew verifyReleaseBundleContent
 ./gradlew verifyPlayStoreAssets
 ./gradlew bundleSignedRelease
 ```
 
-`verifyReleaseSdkPolicy` resolves the exact Release runtime graph, writes the sorted inventory to `app/build/reports/release-sdk-inventory.txt`, requires the approved Firebase Analytics/Messaging/Installations capabilities, and rejects unapproved ads, billing, Install Referrer, crash/performance and third-party attribution/analytics SDKs. Firebase Analytics' current advertising-ID/Privacy Sandbox support transitives are recorded rather than misclassified; actual advertising/attribution permission use is checked separately. `verifyReleaseApkCompatibility` checks the exact signed or unsigned Release APK application ID, min/target SDK, complete permission allowlist, Firebase auto-init, backup/data-transfer, cleartext, debug/test/profileable, exported-component/FileProvider and authentication-link contracts, plus 16 KB ZIP/native ELF alignment, then prints its SHA-256. `verifyPlayStoreAssets` checks listing text limits, the exact eight JPEG screenshot names and dimensions, the 512 px RGBA icon, the alpha-free 1024 x 500 feature graphic, and pixel parity between the iOS source icon and Android launcher foreground. `bundleSignedRelease` intentionally fails before bundle generation when earlier gates fail, production runtime/Firebase configuration is incomplete, signing/fingerprint input is missing, or the keystore path does not exist. After generation it fails unless the AAB has the required bundle structure, every entry is signature-covered, exactly one signing certificate is readable and its SHA-256 matches `PLAY_UPLOAD_CERT_SHA256`. It prints the final AAB and upload-certificate hashes for the evidence ledger. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
+`verifyReleaseSdkPolicy` resolves the exact Release runtime graph and rejects unapproved collection/monetization SDKs. `verifyReleaseApkCompatibility` checks the exact Release APK manifest/security/permission/SDK/16 KB contract. `verifyReleaseBundleContent` uses strict-locked bundletool to validate the AAB, requires only the reviewed base module, rejects embedded private configuration/key material, dumps the protobuf manifest and reapplies the APK policy before printing structure counts and SHA-256. `verifyPlayStoreAssets` checks listing text/assets and iOS icon parity. `bundleSignedRelease` intentionally fails before generation when runtime/signing inputs are incomplete; after generation it requires all APK/AAB/content gates, complete JAR signature coverage, exactly one signer and a certificate SHA-256 matching `PLAY_UPLOAD_CERT_SHA256`. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
 
 `verifyProductionRuntime` also prevents privileged Supabase credentials from entering the client artifact. `SUPABASE_ANON_KEY` may contain a current `sb_publishable_...` key or a legacy JWT whose issuer is `supabase` and sole role is `anon`; `sb_secret_...`, legacy `service_role`, wrong-issuer, malformed and opaque-long values fail closed. The synthetic `verifyRuntimeCredentialSafety` task exercises this contract without reading or logging any real key.
 
-`app/gradle.lockfile` strictly pins only `releaseRuntimeClasspath`. Never hand-edit it. For an intentional dependency update, run `./gradlew :app:dependencies --configuration releaseRuntimeClasspath --write-locks`, review every lock diff, then rerun `verifyReleaseSdkPolicy`, `verifyReleaseApkCompatibility`, current Firebase disclosure review and the complete CI matrix. A missing or stale lock fails closed; do not bypass it to make a release build pass.
+`app/gradle.lockfile` strictly pins `releaseRuntimeClasspath` and the isolated `bundletoolCli` verifier classpath. It currently represents 174 runtime coordinates and 17 bundletool coordinates, with four shared. Never hand-edit it. For an intentional app dependency update, use `./gradlew :app:dependencies --configuration releaseRuntimeClasspath --write-locks`; for a bundletool update, use the same command with `--configuration bundletoolCli`. Review every lock diff and rerun SDK, APK, AAB, disclosure and complete CI gates. Missing or stale state fails closed.
 
 Before upload, also verify:
 
@@ -63,6 +64,7 @@ Before upload, also verify:
 - The merged Release Manifest contains no advertising ID, AdServices attribution/ID, or Install Referrer permission.
 - `verifyReleaseSdkPolicy` passes and its inventory matches the dependency state used for the exact AAB; recheck current Firebase vendor disclosures rather than copying older answers.
 - `verifyReleaseApkCompatibility` passes for the exact commit and dependency lock state used for the AAB.
+- `verifyReleaseBundleContent` validates that same AAB and reports the expected base-only structure and manifest contract.
 - No production secret appears in tracked files or Gradle output.
 - `bundleSignedRelease` reports that the AAB certificate matches the registered Play upload certificate; independently compare the reported fingerprint with Play Console before upload.
 - API 26/33/35 tests and the physical-device matrix are green for the exact commit.
