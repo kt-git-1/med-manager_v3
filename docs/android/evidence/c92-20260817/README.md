@@ -27,6 +27,7 @@
 - `shasum -a 256 -c SHA256SUMS` passed for both files; independent checks matched the JSON commit and AAB hash. The same full task reran idempotently in 7 seconds (15 executed, 61 up-to-date) without replacing the handoff.
 - A final clean ordinary regression passed 109 tasks: handoff contract 1/idempotent/7, evidence contract 1/11, keystore contract 1/7, Debug JVM 216/216, Release JVM 213/213, Lint, 175-module SDK policy, APK/16 KB policy, base-only AAB policy and Play assets.
 - Final `clean` removed the synthetic key, signed AAB, JSON, checksum and handoff directory; no generated release package remains.
+- Hosted Android CI [run #31975815710](https://github.com/kt-git-1/med-manager_v3/actions/runs/31975815710) passed all 23 steps for `fec2b5d`, including the Linux evidence and Play handoff contracts plus every existing Android release gate.
 
 ## Deliberately incomplete external evidence
 
