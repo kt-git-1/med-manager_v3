@@ -31,6 +31,9 @@ C75 closes the locally reproducible duplicate-effect gaps found after C74:
 | Debug APK | PASS | SHA-256 `062820186f947cf50ee3543046cd6388f2c7ff78afd2e40a794fdcf3764fe672` |
 | Physical synthetic UI regression | PASS | A302SH Android 15/API 35, 278/278 tests, 0 failed/skipped; test package removed afterward |
 | Production release-security configuration | BLOCKED | Fail-closed check correctly rejects this local shell because production DB/Supabase/FCM secrets are absent |
+| GitHub API CI | PASS | Run 126 applied all migrations, including C75, to the workflow's disposable PostgreSQL service and passed; this is real PostgreSQL migration evidence, not production deployment |
+| GitHub API E2E | PASS | Run 126 completed; Supabase-backed cases remain conditional when their external secrets are absent |
+| GitHub Android CI | PASS | Run 136 completed on the pushed C75 commit |
 
 The physical suite uses synthetic instrumentation fixtures. It performs no production API request, health-data mutation, destructive operation or schema change.
 

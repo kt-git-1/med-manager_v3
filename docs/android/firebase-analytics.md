@@ -1,15 +1,17 @@
 # Android Firebase Analytics verification runbook
 
-**Status:** implementation and automated privacy gates complete; live Firebase/physical-device evidence pending
+**Status:** Android Firebase app, physical consent boundary, DebugView and Realtime verified in C76; processed Events/Explore evidence pending
 **Package:** `com.afterlifearchive.medmanager`
 **Source baseline:** published app baseline `main@432b34c`; privacy-first Analytics contract retained from the pre-publication Android plan
 **Owner gate:** H07 / `XP-004`
 
 This is the canonical procedure for validating the Android Analytics transport. It does not authorize adding Firebase values to Git, enabling collection without consent, or logging health/identity data. Console screenshots are evidence only when they show the exact build and event contract below.
 
+Latest redacted execution record: `docs/android/evidence/h07-20260817/README.md`.
+
 ## 1. Required external inputs
 
-The release owner must create/select the Android Firebase app for `com.afterlifearchive.medmanager`, enable Google Analytics for that Firebase project, and supply these four values through Git-ignored `android/local.properties` or CI secrets:
+The Android Firebase app for `com.afterlifearchive.medmanager` was registered in the existing project during C76. Its four runtime values are configured as GitHub Actions secrets; local verification must still supply them through Git-ignored `android/local.properties` or process environment variables:
 
 ```properties
 FIREBASE_APP_ID=...
@@ -18,11 +20,12 @@ FIREBASE_PROJECT_ID=...
 FIREBASE_SENDER_ID=...
 ```
 
-Do not commit `google-services.json`, populated `local.properties`, Console exports or screenshots containing unrelated user/device data. This project initializes Firebase from the four runtime values and intentionally keeps `firebase_analytics_collection_enabled=false` in the manifest.
+Do not commit `google-services.json`, populated `local.properties`, Console exports or screenshots containing unrelated user/device data. Gradle generates both `BuildConfig` fields and the standard `google_app_id`/API key/sender/project resources from the four runtime values. The latter are required by Firebase Analytics even though FirebaseApp itself can initialize from `FirebaseOptions`. The manifest intentionally keeps `firebase_analytics_collection_enabled=false` and FCM auto-init disabled.
 
 Preflight from `android/`:
 
 ```bash
+./gradlew :app:verifyFirebaseRuntime
 ./gradlew :app:verifyProductionRuntime
 ./gradlew :app:testDebugUnitTest :app:assembleDebug
 ```

@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint C76 is pending commit in this worktree
 - Baseline date: 2026-08-16
-- Current action: C66 continued the SHARP A302SH Android 15/API 35 physical gate with real system dark/200%-font and increased-display-size passes, local mode recovery after background/process reclaim/force-stop, and a compact-width header correction found from the physical screenshot. The expanded physical UI suite passes 273/273; JVM 202/202, Lint, Debug/Release assembly, Release APK compatibility and Play assets also pass. Manual TalkBack, exact task-card removal, authenticated Patient/Caregiver primary flows, an API 26-28 physical target, a Google/reference target, live Firebase, Play Internal and release-owner signing remain required.
+- Current action: C76 registers the production-package Android Firebase app, adds fail-closed runtime validation and the standard Android resources required by Analytics, then verifies consent-off suppression, fixed-enum consent-on upload, shared reset/resume, DebugView parameters and Realtime on the SHARP A302SH Android 15/API 35 target. Final gates pass Debug JVM 216/216, Release JVM 213/213, Lint, both APKs, Release compatibility, Play assets and A302SH synthetic UI 278/278. Processed Events/Explore, FCM, complete spoken TalkBack, API 26–28 and Google/reference physical targets, Play Internal and release-owner signing remain required.
 
 ## Authority order
 

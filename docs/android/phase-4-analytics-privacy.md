@@ -1,6 +1,6 @@
 # Phase 4 — Analytics and privacy
 
-## Gate H implementation — 2026-07-15
+## Gate H implementation — updated 2026-08-17
 
 Android Analytics follows the current iOS `AnalyticsService.swift` contract but does not require a checked-in `google-services.json`. `FIREBASE_APP_ID`, `FIREBASE_API_KEY`, `FIREBASE_PROJECT_ID` and `FIREBASE_SENDER_ID` come only from Git-ignored `android/local.properties` or CI environment variables. Missing configuration leaves the app fully runnable and collection inactive.
 
@@ -12,8 +12,10 @@ Production wiring currently records mode selection, safe screen/tab usage, tutor
 
 The public privacy policy now states that consent can be changed from both roles. `docs/android/firebase-analytics.md` contains Android runtime configuration, consent-off/on/reset controls, DebugView commands, the exact safe event matrix, Realtime/Events/Explore checks and the required H07 evidence format.
 
-Automated coverage proves default-off behavior, explicit enable, disable/reset, environment suppression, enum event output and rejection of patient-ID/free-text/unknown/out-of-range payloads. Compose coverage proves first-decision UI, both decision actions at 200% font scale, opt-out persistence and the shared Caregiver Settings toggle. Historical Gate H/Gate I counts remain valid evidence for those commits; C57 is the current Android gate at JVM 186/186 and instrumentation 259/259 on each of API 26/33/35 (777/777). Debug/Release assembly and Lint pass after the current compatibility rerun.
+Automated coverage proves default-off behavior, explicit enable, disable/reset, environment suppression, enum event output and rejection of patient-ID/free-text/unknown/out-of-range payloads. Compose coverage proves first-decision UI, both decision actions at 200% font scale, opt-out persistence and the shared Caregiver Settings toggle. Historical Gate H/Gate I counts remain evidence for those commits; C75 is the latest complete regression checkpoint at Debug JVM 216/216, Release JVM 213/213 and A302SH instrumentation 278/278 before the C76 runtime-resource-only correction.
 
-## Remaining external verification
+## C76 live verification and remaining external evidence
 
-The current local environment has none of the four Android Firebase values. Therefore DebugView, then Realtime/Events/Explore evidence cannot be honestly marked complete yet. After values are supplied, follow `docs/android/firebase-analytics.md`, capture privacy-reviewed physical-device and Console evidence without user/patient data, and only then upgrade `XP-004` from `PARTIAL`.
+The production-package Android Firebase app is registered and the four values are held only in GitHub Actions secrets or supplied ephemerally for local verification. C76 passed the physical consent-off/on/reset boundary, safe fixed-enum transport, both-role shared state, DebugView parameter inspection and Realtime aggregation without recording identity or health data. The redacted result is `docs/android/evidence/h07-20260817/README.md`.
+
+Processed Events and the temporary privacy-reviewed Explore remain pending after aggregation delay. `XP-004` therefore remains `PARTIAL`; DebugView/Realtime evidence alone is not promoted to complete Analytics release acceptance.

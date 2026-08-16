@@ -37,6 +37,23 @@ val productionEmailRedirectUrl = runtimeConfig(
     "https://www.okusuri-mimamori.com/auth/confirmed",
 )
 val productionBillingEnabled = runtimeConfig("BILLING_ENABLED", "false")
+
+fun firebaseRuntimeFailures(): List<String> = buildList {
+    val appIdMatch = Regex("^1:([0-9]+):android:[A-Za-z0-9]+$").matchEntire(productionFirebaseAppId)
+    if (appIdMatch == null) add("FIREBASE_APP_ID is missing or malformed")
+    if (!productionFirebaseApiKey.startsWith("AIza") || productionFirebaseApiKey.length < 20) {
+        add("FIREBASE_API_KEY is missing or malformed")
+    }
+    if (!productionFirebaseProjectId.matches(Regex("^[a-z][a-z0-9-]{4,}$"))) {
+        add("FIREBASE_PROJECT_ID is missing or malformed")
+    }
+    if (!productionFirebaseSenderId.matches(Regex("^[0-9]+$"))) {
+        add("FIREBASE_SENDER_ID is missing or malformed")
+    }
+    if (appIdMatch != null && appIdMatch.groupValues[1] != productionFirebaseSenderId) {
+        add("FIREBASE_APP_ID project number must match FIREBASE_SENDER_ID")
+    }
+}
 val syncRoleAssets by tasks.registering(Sync::class) {
     into(generatedRoleAssets)
     from(rootProject.file("../ios/MedicationApp/Assets.xcassets/RolePatient.imageset/role-patient.png")) {
@@ -79,6 +96,13 @@ android {
         buildConfigField("String", "FIREBASE_API_KEY", productionFirebaseApiKey.asBuildConfigString())
         buildConfigField("String", "FIREBASE_PROJECT_ID", productionFirebaseProjectId.asBuildConfigString())
         buildConfigField("String", "FIREBASE_SENDER_ID", productionFirebaseSenderId.asBuildConfigString())
+        // FirebaseApp can be initialized from FirebaseOptions, but Analytics still resolves its
+        // Android app identity from the standard google-services resources. Generate the same
+        // resource contract from Git-ignored runtime values without committing google-services.json.
+        resValue("string", "google_app_id", productionFirebaseAppId)
+        resValue("string", "google_api_key", productionFirebaseApiKey)
+        resValue("string", "gcm_defaultSenderId", productionFirebaseSenderId)
+        resValue("string", "project_id", productionFirebaseProjectId)
         buildConfigField(
             "String",
             "EMAIL_CONFIRMATION_REDIRECT_URL",
@@ -136,6 +160,17 @@ val verifyProductionSigning by tasks.registering {
     }
 }
 
+val verifyFirebaseRuntime by tasks.registering {
+    group = "verification"
+    description = "Fails unless the Android Firebase app identity is complete and internally consistent."
+    doLast {
+        val failures = firebaseRuntimeFailures()
+        require(failures.isEmpty()) {
+            "Firebase runtime configuration is incomplete:\n - ${failures.joinToString("\n - ")}"
+        }
+    }
+}
+
 val verifyProductionRuntime by tasks.registering {
     group = "verification"
     description = "Fails unless the Play artifact has complete, structurally valid production runtime configuration."
@@ -148,18 +183,7 @@ val verifyProductionRuntime by tasks.registering {
             if (apiUri?.host != "www.okusuri-mimamori.com") add("API_BASE_URL must use the production HTTPS host")
             if (httpsUri(productionSupabaseUrl) == null) add("SUPABASE_URL is missing or is not HTTPS")
             if (productionSupabaseAnonKey.length < 20) add("SUPABASE_ANON_KEY is missing or malformed")
-            if (!productionFirebaseAppId.matches(Regex("^1:[0-9]+:android:[A-Za-z0-9]+$"))) {
-                add("FIREBASE_APP_ID is missing or malformed")
-            }
-            if (!productionFirebaseApiKey.startsWith("AIza") || productionFirebaseApiKey.length < 20) {
-                add("FIREBASE_API_KEY is missing or malformed")
-            }
-            if (!productionFirebaseProjectId.matches(Regex("^[a-z][a-z0-9-]{4,}$"))) {
-                add("FIREBASE_PROJECT_ID is missing or malformed")
-            }
-            if (!productionFirebaseSenderId.matches(Regex("^[0-9]+$"))) {
-                add("FIREBASE_SENDER_ID is missing or malformed")
-            }
+            addAll(firebaseRuntimeFailures())
             val redirectUri = httpsUri(productionEmailRedirectUrl)
             if (redirectUri?.host != "www.okusuri-mimamori.com" || redirectUri.path != "/auth/confirmed") {
                 add("EMAIL_CONFIRMATION_REDIRECT_URL must use the production confirmation route")
