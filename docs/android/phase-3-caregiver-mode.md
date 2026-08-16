@@ -257,6 +257,8 @@ G04, `CG-012` and `XP-001` are `IMPLEMENTED`; physical background/Doze/process-d
 
 G05 completes Gate G implementation. C69 later closes the three Caregiver Settings browser destinations on the A302SH Debug production surface; FCM, other device/Play artifacts and destructive production-account checks remain Gate I verification. Gate H owns caregiver Analytics consent and the privacy-safe Firebase Analytics wrapper.
 
+C71 later physically confirms the Caregiver logout dialog/action, persistence of the unauthenticated state through force-stop/relaunch, and successful reauthentication of the retained QA account. The subsequent Patient link/logout proves that returning to Caregiver requires account login and exposes no Patient data. Account deletion and destructive patient actions were not invoked.
+
 ### G05 current-iOS UI-208 rebaseline — 2026-07-15
 
 - Settings now separates initial `読み込み中...`, initial data failure with retry/return-login actions, no-patient onboarding and selected-patient content instead of rendering the create form before every state.

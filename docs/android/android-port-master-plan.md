@@ -161,7 +161,7 @@ This is a verification/repair phase, not a declaration that earlier code is auto
 5. Data safety and health-app declarations
 6. Signed internal/closed test, feedback repair and rollout plan
 
-### Current checkpoint — C70 (2026-08-16)
+### Current checkpoint — C71 (2026-08-16)
 
 - R0–C4 and the automated portion of X1 are implemented against published `main@432b34c`.
 - C62 reopened the initial C61 conclusion with a direct source audit and closed the expandable History, Today summary, medication form and inventory gaps. C63 then corrected the tutorial implementation after direct comparison with `PatientTutorialSampleView`, `CaregiverTutorialSampleView` and `GuidedTutorialOverlay`: Android now uses dedicated published sample screens for all 14 steps, exact fixed copy/data and the compact role-colored guide card. The current suite passes 202/202 JVM tests, Lint and 272/272 UI tests on API 26/33/35.
@@ -169,9 +169,10 @@ This is a verification/repair phase, not a declaration that earlier code is auto
 - C65-C68 execute the available A302SH/API 35 physical slice. C68 closes local primary/secondary, foreground/background, task-removed tap, forced Doze and wait-through-target cancellation with generic slot-only content through a Release-excluded Debug diagnostic. The final gate passes 273/273 Compose and 206/206 JVM tests, Lint, both APK assemblies, Release compatibility and Play assets.
 - C69 extends the same device slice without source or health-data mutation: exact legal URLs and Back restoration pass from Patient/Caregiver Settings, live ephemeral linking-code copy/chooser opens without sending, denied/force-stop/uninstall reminder branches remain silent through their windows, and local App Standby is documented as a single delivery deferred until exit.
 - C70 executes the safe read-only `XP-007` transition on the dedicated QA Caregiver: online baseline, same-process cached offline retention with stale/Retry, cold offline role restoration with initial recovery actions, and validated-Wi-Fi Retry recovery all pass. The run exposed a missing Caregiver Today patient-list Retry action; the production UI and regression test were corrected. Final gates pass 274/274 Compose, 206/206 JVM, Lint, Debug/Release assembly, Release APK compatibility and Play assets.
+- C71 proves the same-installation role-isolation contract on the configured Debug artifact. Caregiver logout persists through force-stop/relaunch and later reauthentication; one process-only ephemeral link code enters Patient mode; Patient logout then makes Caregiver require account login and Patient require a new code. Neither role surface exposes the other's data, and the device ends at role selection with both sessions logged out.
 - The repeatable privacy-first Firebase procedure is `firebase-analytics.md`; live Console evidence still requires the four Android Firebase values and a physical device.
 - The physical release procedure is `physical-device-matrix.md`; its row-level evidence still requires old-supported, current-reference and non-Google OEM targets plus the exact signed Play Internal artifact.
-- C65-C70 now cover one non-Google OEM/API 35 Debug target, including local reminder lifecycle, safe browser/link-code I/O and read-only offline recovery. V1 remains open for API 26–28 and Google/reference devices, remaining destructive/mutation-interruption paths, complete spoken TalkBack, Firebase/FCM, a release-owner signed AAB, Play Internal/Closed testing, Console declarations and the final pre-merge main rebaseline.
+- C65-C71 now cover one non-Google OEM/API 35 Debug target, including local reminder lifecycle, safe browser/link-code I/O, read-only offline recovery and same-installation role isolation. V1 remains open for API 26–28 and Google/reference devices, remaining destructive/mutation-interruption paths, complete spoken TalkBack, Firebase/FCM, a release-owner signed AAB, Play Internal/Closed testing, Console declarations and the final pre-merge main rebaseline.
 
 ## 7. Automated quality gates
 

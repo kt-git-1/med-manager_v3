@@ -282,6 +282,8 @@ This selector foundation is connected to inventory-backed production candidates 
 
 `PH-005` through `PH-008` are `IMPLEMENTED`. C67-C69 later close notification permission, local reminder lifecycle and all three live Patient Settings browser returns on one A302SH Debug target; cross-device/signed-Play evidence, real server revocation, remaining iOS comparison captures, large text, and spoken TalkBack remain before `VERIFIED`.
 
+C71 later consumes one in-memory-only dedicated QA link code, loads only the Patient three-tab shell, then physically confirms the Patient logout dialog/action. After logout, Patient requires a new code and Caregiver requires account login; neither role exposes the other's data. This closes the safe same-installation logout/isolation row without exercising revocation, patient deletion or health-data mutation.
+
 ## 2026-07-14 C05 current Patient Settings parity
 
 - Settings now follows current iOS card order and copy: gear header, master notification toggle, linked status, analytics consent, explained legal/support links, permission-denied guidance and red logout action.
