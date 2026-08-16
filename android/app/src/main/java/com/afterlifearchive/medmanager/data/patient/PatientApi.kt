@@ -4,6 +4,7 @@ import com.afterlifearchive.medmanager.data.network.ApiClient
 import com.afterlifearchive.medmanager.data.network.RequestAuthPolicy
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import java.util.UUID
 
 interface PatientDataSource {
     suspend fun today(): List<PatientDose>
@@ -11,6 +12,7 @@ interface PatientDataSource {
     suspend fun medications(): List<PatientMedication> = emptyList()
     suspend fun recordSlot(date: String, slot: MedicationSlot): SlotBulkRecordResult = error("recordSlot not implemented")
     suspend fun recordPrn(medication: PatientMedication) = Unit
+    suspend fun recordPrn(medication: PatientMedication, clientMutationId: String) = recordPrn(medication)
     suspend fun recordDose(dose: PatientDose)
     suspend fun history(year: Int, month: Int): List<HistoryDay>
     suspend fun historyStreak(): PatientHistoryStreak = error("historyStreak not implemented")
@@ -48,9 +50,18 @@ class PatientApi(private val client: ApiClient) : PatientDataSource {
     }
 
     override suspend fun recordPrn(medication: PatientMedication) {
+        recordPrn(medication, UUID.randomUUID().toString())
+    }
+
+    override suspend fun recordPrn(medication: PatientMedication, clientMutationId: String) {
         client.postBody(
             "api/patients/${medication.patientId}/prn-dose-records",
-            PatientWireJson.encodeToString(PatientPrnRecordRequestDto(medication.id)),
+            PatientWireJson.encodeToString(
+                PatientPrnRecordRequestDto(
+                    medicationId = medication.id,
+                    clientMutationId = clientMutationId,
+                ),
+            ),
             RequestAuthPolicy.PATIENT,
         )
     }

@@ -112,6 +112,7 @@ export type InventoryUpdateInput = {
 export type InventoryAdjustInput = {
   patientId: string;
   medicationId: string;
+  clientMutationId?: string;
   reason: InventoryAdjustmentReason;
   actorType: InventoryAdjustmentActorType;
   actorId?: string | null;
@@ -332,92 +333,127 @@ export async function adjustMedicationInventory(
   const now = new Date();
 
   const patient = await getPatientRecordById(medication.patientId);
-  const updated = await prisma.$transaction(async (tx) => {
-    let quantityUpdated;
-    if (delta < 0) {
-      quantityUpdated = await tx.medication.updateMany({
-        where: {
-          id: medication.id,
-          patientId: input.patientId,
-          inventoryQuantity: { gte: Math.abs(delta) }
-        },
-        data: {
-          inventoryQuantity: { decrement: Math.abs(delta) },
-          inventoryUpdatedAt: now
+  let updated: Medication;
+  try {
+    updated = await prisma.$transaction(async (tx) => {
+      if (input.clientMutationId) {
+        const replay = await tx.medicationInventoryAdjustment.findUnique({
+          where: {
+            patientId_clientMutationId: {
+              patientId: input.patientId,
+              clientMutationId: input.clientMutationId
+            }
+          }
+        });
+        if (replay) {
+          const currentMedication = await tx.medication.findFirst({
+            where: { id: medication.id, patientId: input.patientId }
+          });
+          if (!currentMedication) {
+            throw new Error("Medication not found after idempotent inventory replay");
+          }
+          return currentMedication;
         }
-      });
-      if (quantityUpdated.count === 0) {
-        throw new InsufficientInventoryError();
       }
-    } else {
-      await tx.medication.update({
+
+      let quantityUpdated;
+      if (delta < 0) {
+        quantityUpdated = await tx.medication.updateMany({
+          where: {
+            id: medication.id,
+            patientId: input.patientId,
+            inventoryQuantity: { gte: Math.abs(delta) }
+          },
+          data: {
+            inventoryQuantity: { decrement: Math.abs(delta) },
+            inventoryUpdatedAt: now
+          }
+        });
+        if (quantityUpdated.count === 0) {
+          throw new InsufficientInventoryError();
+        }
+      } else {
+        await tx.medication.update({
+          where: { id: medication.id },
+          data: {
+            inventoryQuantity:
+              input.absoluteQuantity !== undefined
+                ? Math.max(0, input.absoluteQuantity)
+                : { increment: delta },
+            inventoryUpdatedAt: now
+          }
+        });
+      }
+
+      const quantityMedication = await tx.medication.findFirst({
+        where: { id: medication.id, patientId: input.patientId }
+      });
+      if (!quantityMedication) {
+        throw new Error("Medication not found after inventory update");
+      }
+
+      const plan = computeRefillPlan({
+        inventoryEnabled: quantityMedication.inventoryEnabled,
+        inventoryQuantity: quantityMedication.inventoryQuantity,
+        doseCountPerIntake: quantityMedication.doseCountPerIntake,
+        regimens: mapRegimensForPlan(regimens)
+      });
+      const nextState = quantityMedication.inventoryEnabled
+        ? computeInventoryState(
+            quantityMedication.inventoryQuantity,
+            inventoryLowThresholdFor(quantityMedication.inventoryEnabled),
+            plan.daysRemaining
+          )
+        : "NONE";
+      const previousState = quantityMedication.inventoryLastAlertState ?? "NONE";
+      const shouldEmitAlert =
+        quantityMedication.inventoryEnabled && nextState !== previousState && nextState !== "NONE";
+
+      const updatedMedication = await tx.medication.update({
         where: { id: medication.id },
         data: {
-          inventoryQuantity:
-            input.absoluteQuantity !== undefined
-              ? Math.max(0, input.absoluteQuantity)
-              : { increment: delta },
-          inventoryUpdatedAt: now
+          inventoryLowThreshold: inventoryLowThresholdFor(quantityMedication.inventoryEnabled),
+          inventoryLastAlertState: nextState
         }
       });
-    }
-
-    const quantityMedication = await tx.medication.findFirst({
-      where: { id: medication.id, patientId: input.patientId }
-    });
-    if (!quantityMedication) {
-      throw new Error("Medication not found after inventory update");
-    }
-
-    const plan = computeRefillPlan({
-      inventoryEnabled: quantityMedication.inventoryEnabled,
-      inventoryQuantity: quantityMedication.inventoryQuantity,
-      doseCountPerIntake: quantityMedication.doseCountPerIntake,
-      regimens: mapRegimensForPlan(regimens)
-    });
-    const nextState = quantityMedication.inventoryEnabled
-      ? computeInventoryState(
-          quantityMedication.inventoryQuantity,
-          inventoryLowThresholdFor(quantityMedication.inventoryEnabled),
-          plan.daysRemaining
-        )
-      : "NONE";
-    const previousState = quantityMedication.inventoryLastAlertState ?? "NONE";
-    const shouldEmitAlert =
-      quantityMedication.inventoryEnabled && nextState !== previousState && nextState !== "NONE";
-
-    const updatedMedication = await tx.medication.update({
-      where: { id: medication.id },
-      data: {
-        inventoryLowThreshold: inventoryLowThresholdFor(quantityMedication.inventoryEnabled),
-        inventoryLastAlertState: nextState
-      }
-    });
-    await tx.medicationInventoryAdjustment.create({
-      data: {
-        patientId: input.patientId,
-        medicationId: input.medicationId,
-        delta,
-        reason: input.reason,
-        actorType: input.actorType,
-        actorId: input.actorId ?? null
-      }
-    });
-    if (shouldEmitAlert) {
-      await tx.inventoryAlertEvent.create({
+      await tx.medicationInventoryAdjustment.create({
         data: {
-          patientId: quantityMedication.patientId,
-          medicationId: quantityMedication.id,
-          type: nextState as InventoryAlertType,
-          remaining: quantityMedication.inventoryQuantity,
-          threshold: inventoryLowThresholdFor(quantityMedication.inventoryEnabled),
-          patientDisplayName: patient?.displayName ?? null,
-          medicationName: quantityMedication.name
+          patientId: input.patientId,
+          medicationId: input.medicationId,
+          clientMutationId: input.clientMutationId ?? null,
+          delta,
+          reason: input.reason,
+          actorType: input.actorType,
+          actorId: input.actorId ?? null
         }
       });
+      if (shouldEmitAlert) {
+        await tx.inventoryAlertEvent.create({
+          data: {
+            patientId: quantityMedication.patientId,
+            medicationId: quantityMedication.id,
+            type: nextState as InventoryAlertType,
+            remaining: quantityMedication.inventoryQuantity,
+            threshold: inventoryLowThresholdFor(quantityMedication.inventoryEnabled),
+            patientDisplayName: patient?.displayName ?? null,
+            medicationName: quantityMedication.name
+          }
+        });
+      }
+      return updatedMedication;
+    });
+  } catch (error) {
+    if (
+      !input.clientMutationId ||
+      !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+      error.code !== "P2002"
+    ) {
+      throw error;
     }
-    return updatedMedication;
-  });
+    const replayed = await getMedicationRecordForPatient(input.patientId, input.medicationId);
+    if (!replayed) return null;
+    updated = replayed;
+  }
 
   return buildInventoryItemWithPlan(updated, regimens);
 }

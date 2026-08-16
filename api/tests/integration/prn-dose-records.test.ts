@@ -5,7 +5,9 @@ import { createPrnRecord, deletePrnRecord } from "../../src/services/prnDoseReco
 import { getMedicationRecordForPatient } from "../../src/repositories/medicationRepo";
 import {
   createPrnDoseRecord as createPrnDoseRecordRepo,
+  createPrnDoseRecordIdempotent as createPrnDoseRecordIdempotentRepo,
   deletePrnDoseRecordById,
+  getPrnDoseRecordByClientMutationId as getPrnDoseRecordByClientMutationIdRepo,
   getPrnDoseRecordById
 } from "../../src/repositories/prnDoseRecordRepo";
 
@@ -44,6 +46,9 @@ vi.mock("../../src/repositories/patientRepo", () => ({
 }));
 
 const applyInventoryDeltaMock = vi.fn();
+const createPrnDoseRecordMock = vi.hoisted(() => vi.fn());
+const createPrnDoseRecordIdempotentMock = vi.hoisted(() => vi.fn());
+const getPrnDoseRecordByClientMutationIdMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../../src/services/medicationService", () => ({
   applyInventoryDeltaForDoseRecord: (...args: unknown[]) => applyInventoryDeltaMock(...args),
@@ -91,7 +96,7 @@ vi.mock("../../src/repositories/medicationRepo", () => ({
 }));
 
 vi.mock("../../src/repositories/prnDoseRecordRepo", () => ({
-  createPrnDoseRecord: vi.fn(async () => ({
+  createPrnDoseRecord: createPrnDoseRecordMock.mockImplementation(async () => ({
     id: "prn-1",
     patientId: "patient-1",
     medicationId: "med-1",
@@ -100,6 +105,10 @@ vi.mock("../../src/repositories/prnDoseRecordRepo", () => ({
     actorType: "PATIENT",
     createdAt: new Date("2026-02-02T00:10:00.000Z")
   })),
+  createPrnDoseRecordIdempotent: createPrnDoseRecordIdempotentMock.mockImplementation(
+    async (input: unknown) => ({ record: await createPrnDoseRecordMock(input), created: true })
+  ),
+  getPrnDoseRecordByClientMutationId: getPrnDoseRecordByClientMutationIdMock,
   getPrnDoseRecordById: vi.fn(async () => ({
     id: "prn-1",
     patientId: "patient-1",
@@ -138,6 +147,9 @@ describe("prn dose records integration", () => {
   beforeEach(() => {
     ownedPatients.clear();
     applyInventoryDeltaMock.mockReset();
+    createPrnDoseRecordIdempotentMock.mockClear();
+    getPrnDoseRecordByClientMutationIdMock.mockReset().mockResolvedValue(null);
+    (getMedicationRecordForPatient as unknown as ReturnType<typeof vi.fn>).mockClear();
   });
 
   it("allows patient to create PRN record but denies delete", async () => {
@@ -279,6 +291,63 @@ describe("prn dose records integration", () => {
       2,
       expect.objectContaining({ delta: quantityTaken, reason: "TAKEN_DELETE" })
     );
+  });
+
+  it("does not repeat PRN side effects when a client mutation id is replayed", async () => {
+    const record = {
+      id: "prn-idempotent-1",
+      patientId: "patient-1",
+      medicationId: "med-1",
+      clientMutationId: "11111111-1111-4111-8111-111111111111",
+      takenAt: new Date("2026-02-02T00:10:00.000Z"),
+      quantityTaken: 2,
+      actorType: "PATIENT" as const,
+      createdAt: new Date("2026-02-02T00:10:00.000Z")
+    };
+    (createPrnDoseRecordIdempotentRepo as unknown as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ record, created: true })
+      .mockResolvedValueOnce({ record, created: false });
+    const input = {
+      patientId: "patient-1",
+      medicationId: "med-1",
+      clientMutationId: record.clientMutationId,
+      actorType: "PATIENT" as const
+    };
+
+    const first = await createPrnRecord(input);
+    const replay = await createPrnRecord(input);
+
+    expect(first && "record" in first && first.record.id).toBe(record.id);
+    expect(replay && "record" in replay && replay.record.id).toBe(record.id);
+    expect(applyInventoryDeltaMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns a completed replay before rechecking medication inventory", async () => {
+    const replay = {
+      id: "prn-replay-1",
+      patientId: "patient-1",
+      medicationId: "med-1",
+      clientMutationId: "33333333-3333-4333-8333-333333333333",
+      takenAt: new Date("2026-02-02T00:10:00.000Z"),
+      quantityTaken: 2,
+      actorType: "PATIENT" as const,
+      createdAt: new Date("2026-02-02T00:10:00.000Z")
+    };
+    (
+      getPrnDoseRecordByClientMutationIdRepo as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce(replay);
+
+    const result = await createPrnRecord({
+      patientId: replay.patientId,
+      medicationId: replay.medicationId,
+      clientMutationId: replay.clientMutationId,
+      actorType: "PATIENT"
+    });
+
+    expect(result).toEqual({ record: replay });
+    expect(getMedicationRecordForPatient).not.toHaveBeenCalled();
+    expect(createPrnDoseRecordIdempotentRepo).not.toHaveBeenCalled();
+    expect(applyInventoryDeltaMock).not.toHaveBeenCalled();
   });
 
   it("rejects create when medication is not PRN", async () => {

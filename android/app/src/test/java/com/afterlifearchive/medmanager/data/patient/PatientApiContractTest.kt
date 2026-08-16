@@ -10,7 +10,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.json.JSONObject
 import java.time.Instant
+import java.util.UUID
 
 class PatientApiContractTest {
     @Test
@@ -153,6 +155,31 @@ class PatientApiContractTest {
         assertTrue(request.url.endsWith("/api/patients/patient-1/prn-dose-records"))
         assertTrue(request.body.orEmpty().contains("\"medicationId\":\"medication-1\""))
         assertTrue(request.body.orEmpty().contains("\"takenAt\":null"))
+        assertEquals(4, UUID.fromString(JSONObject(request.body!!).getString("clientMutationId")).version())
+    }
+
+    @Test
+    fun prnAuthRefreshRetryReusesTheExactClientMutationId() = runTest {
+        val requests = mutableListOf<HttpRequest>()
+        val transport = HttpTransport { request ->
+            requests += request
+            if (requests.size == 1) HttpResponse(401, "{}") else HttpResponse(200, "{}")
+        }
+        val api = PatientApi(
+            ApiClient(
+                baseUrl = "https://example.test/",
+                patientTokenProvider = { "patient-token" },
+                forceRefreshPatient = { true },
+                transport = transport,
+            ),
+        )
+
+        api.recordPrn(api.medicationsFromFixtureForTest())
+
+        assertEquals(2, requests.size)
+        assertEquals(requests[0].body, requests[1].body)
+        val mutationId = JSONObject(requests[0].body!!).getString("clientMutationId")
+        assertEquals(4, UUID.fromString(mutationId).version())
     }
 
     @Test

@@ -224,6 +224,7 @@ model PrnDoseRecord {
   id            String         @id @default(uuid())
   patientId     String
   medicationId  String
+  clientMutationId String?
   takenAt       DateTime       @default(now())
   quantityTaken Float
   actorType     RecordedByType
@@ -234,6 +235,7 @@ model PrnDoseRecord {
 
   @@index([patientId, takenAt(sort: Desc)])
   @@index([patientId, medicationId, takenAt(sort: Desc)])
+  @@unique([patientId, clientMutationId])
   @@map("prn_dose_records")
 }
 
@@ -257,6 +259,7 @@ model MedicationInventoryAdjustment {
   id          String                    @id @default(uuid())
   patientId   String
   medicationId String
+  clientMutationId String?
   delta       Float
   reason      InventoryAdjustmentReason
   actorType   InventoryAdjustmentActorType
@@ -268,6 +271,7 @@ model MedicationInventoryAdjustment {
 
   @@index([patientId, createdAt])
   @@index([medicationId, createdAt])
+  @@unique([patientId, clientMutationId])
 }
 
 model InventoryAlertEvent {

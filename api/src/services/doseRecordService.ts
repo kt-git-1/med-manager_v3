@@ -1,9 +1,9 @@
 import type { DoseRecord, RecordedByType } from "@prisma/client";
 import {
   deleteDoseRecordByKey,
+  createDoseRecordIfAbsent,
   getDoseRecordByKey,
   listDoseRecordsByPatientRange,
-  upsertDoseRecord,
   type DoseRecordKey
 } from "../repositories/doseRecordRepo";
 import { createDoseRecordEvent } from "../repositories/doseRecordEventRepo";
@@ -41,7 +41,10 @@ export async function createDoseRecordIdempotent(
     assertInventoryAvailableForMedication(medication, medication.doseCountPerIntake);
   }
 
-  const record = await upsertDoseRecord(input);
+  const { record, created } = await createDoseRecordIfAbsent(input);
+  if (!created) {
+    return record;
+  }
   const patient = await getPatientRecordById(record.patientId);
   if (!patient) {
     return record;

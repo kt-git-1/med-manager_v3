@@ -182,6 +182,8 @@ class PatientRepositoryTest {
         val medication = testMedication("prn", 10.0).copy(isPrn = true)
         val source = object : PatientDataSource by FakePatientDataSource() {
             override suspend fun recordPrn(medication: PatientMedication): Unit = error("record unavailable")
+            override suspend fun recordPrn(medication: PatientMedication, clientMutationId: String): Unit =
+                error("record unavailable")
         }
         val repository = PatientRepository(source)
 
@@ -194,6 +196,28 @@ class PatientRepositoryTest {
 
         repository.clearPrnFeedback()
         assertNull(repository.state.value.prnError)
+    }
+
+    @Test
+    fun failedPrnRetryReusesMutationIdUntilServerConfirmsSuccess() = runTest {
+        val mutationIds = mutableListOf<String>()
+        var fail = true
+        val source = object : PatientDataSource by PrnPatientDataSource() {
+            override suspend fun recordPrn(medication: PatientMedication, clientMutationId: String) {
+                mutationIds += clientMutationId
+                if (fail) error("response lost")
+            }
+        }
+        val repository = PatientRepository(source)
+        repository.loadToday()
+        val medication = repository.state.value.prnMedications.single()
+
+        assertFalse(repository.recordPrn(medication))
+        fail = false
+        assertTrue(repository.recordPrn(medication))
+
+        assertEquals(2, mutationIds.size)
+        assertEquals(mutationIds[0], mutationIds[1])
     }
 
     @Test

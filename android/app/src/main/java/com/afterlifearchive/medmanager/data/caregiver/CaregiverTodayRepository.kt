@@ -23,6 +23,7 @@ import com.afterlifearchive.medmanager.data.patient.SlotBulkRecordResult
 import java.net.URLEncoder
 import java.time.Instant
 import java.time.ZoneId
+import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -76,6 +77,8 @@ interface CaregiverTodayDataSource {
     suspend fun deleteDose(patientId: String, dose: PatientDose): Unit = error("deleteDose is not implemented")
     suspend fun recordSlot(patientId: String, date: String, slot: MedicationSlot): SlotBulkRecordResult = error("recordSlot is not implemented")
     suspend fun recordPrn(patientId: String, medication: PatientMedication): Unit = error("recordPrn is not implemented")
+    suspend fun recordPrn(patientId: String, medication: PatientMedication, clientMutationId: String): Unit =
+        recordPrn(patientId, medication)
 }
 
 class CaregiverTodayApi(private val client: ApiClient) : CaregiverTodayDataSource {
@@ -124,9 +127,18 @@ class CaregiverTodayApi(private val client: ApiClient) : CaregiverTodayDataSourc
     }
 
     override suspend fun recordPrn(patientId: String, medication: PatientMedication) {
+        recordPrn(patientId, medication, UUID.randomUUID().toString())
+    }
+
+    override suspend fun recordPrn(patientId: String, medication: PatientMedication, clientMutationId: String) {
         client.postBody(
             "api/patients/$patientId/prn-dose-records",
-            PatientWireJson.encodeToString(PatientPrnRecordRequestDto(medication.id)),
+            PatientWireJson.encodeToString(
+                PatientPrnRecordRequestDto(
+                    medicationId = medication.id,
+                    clientMutationId = clientMutationId,
+                ),
+            ),
             RequestAuthPolicy.CAREGIVER,
         )
     }
@@ -164,6 +176,7 @@ class CaregiverTodayRepository(
 ) {
     private val mutableState = MutableStateFlow(CaregiverTodayState())
     private val mutationMutex = Mutex()
+    private val pendingPrnMutationIds = mutableMapOf<String, String>()
     val state: StateFlow<CaregiverTodayState> = mutableState.asStateFlow()
     val freshness = freshnessStore.revisions
 
@@ -345,9 +358,12 @@ class CaregiverTodayRepository(
             return false
         }
         if (!mutationMutex.tryLock()) return false
+        val mutationKey = "$patientId:${medication.id}"
+        val clientMutationId = pendingPrnMutationIds.getOrPut(mutationKey) { UUID.randomUUID().toString() }
         mutableState.value = current.copy(updatingPrnMedicationId = medication.id, mutationError = null, mutationMessage = null)
         return try {
-            dataSource.recordPrn(patientId, medication)
+            dataSource.recordPrn(patientId, medication, clientMutationId)
+            pendingPrnMutationIds.remove(mutationKey)
             mutableState.value = mutableState.value.copy(
                 updatingPrnMedicationId = null,
                 mutationMessage = CaregiverTodayMutationMessage.PRN_RECORDED,
@@ -371,6 +387,7 @@ class CaregiverTodayRepository(
     }
 
     fun clear() {
+        pendingPrnMutationIds.clear()
         mutableState.value = CaregiverTodayState()
     }
 

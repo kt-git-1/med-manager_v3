@@ -36,8 +36,9 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { errors, takenAt } = validatePrnDoseRecordCreate({
+    const { errors, takenAt, clientMutationId } = validatePrnDoseRecordCreate({
       medicationId: body.medicationId,
+      clientMutationId: body.clientMutationId,
       takenAt: body.takenAt,
       quantityTaken: body.quantityTaken
     });
@@ -51,6 +52,7 @@ export async function POST(
     const result = await createPrnRecord({
       patientId,
       medicationId: body.medicationId,
+      clientMutationId,
       takenAt,
       quantityTaken: body.quantityTaken,
       actorType,

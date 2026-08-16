@@ -1,7 +1,8 @@
 import type { PrnDoseRecord, RecordedByType } from "@prisma/client";
 import {
-  createPrnDoseRecord,
+  createPrnDoseRecordIdempotent,
   deletePrnDoseRecordById,
+  getPrnDoseRecordByClientMutationId,
   getPrnDoseRecordById,
   listPrnDoseRecordsByPatientRange
 } from "../repositories/prnDoseRecordRepo";
@@ -20,6 +21,7 @@ import { DEFAULT_TIMEZONE } from "../constants";
 export type PrnDoseRecordCreateInput = {
   patientId: string;
   medicationId: string;
+  clientMutationId?: string;
   takenAt?: Date;
   quantityTaken?: number;
   actorType: RecordedByType;
@@ -32,6 +34,14 @@ export type PrnDoseRecordCreateResult =
 export async function createPrnRecord(
   input: PrnDoseRecordCreateInput
 ): Promise<PrnDoseRecordCreateResult | null> {
+  if (input.clientMutationId) {
+    const replay = await getPrnDoseRecordByClientMutationId({
+      patientId: input.patientId,
+      clientMutationId: input.clientMutationId
+    });
+    if (replay) return { record: replay };
+  }
+
   const medication = await getMedicationRecordForPatient(input.patientId, input.medicationId);
   if (!medication) {
     return { error: "not_found" };
@@ -43,13 +53,18 @@ export async function createPrnRecord(
   const quantityTaken = input.quantityTaken ?? medication.doseCountPerIntake;
   assertInventoryAvailableForMedication(medication, quantityTaken);
 
-  const record = await createPrnDoseRecord({
+  const { record, created } = await createPrnDoseRecordIdempotent({
     patientId: input.patientId,
     medicationId: input.medicationId,
+    clientMutationId: input.clientMutationId,
     takenAt: input.takenAt ?? new Date(),
     quantityTaken,
     actorType: input.actorType
   });
+
+  if (!created) {
+    return { record };
+  }
 
   const patient = await getPatientRecordById(record.patientId);
   if (patient) {

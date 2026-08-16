@@ -20,7 +20,7 @@ function buildKey(input: { patientId: string; medicationId: string; scheduledAt:
 }
 
 vi.mock("../../src/repositories/doseRecordRepo", () => ({
-  upsertDoseRecord: async (input: {
+  createDoseRecordIfAbsent: async (input: {
     patientId: string;
     medicationId: string;
     scheduledAt: Date;
@@ -30,7 +30,7 @@ vi.mock("../../src/repositories/doseRecordRepo", () => ({
     const key = buildKey(input);
     const existing = store.get(key);
     if (existing) {
-      return existing;
+      return { record: existing, created: false };
     }
     const now = new Date();
     const record: DoseRecord = {
@@ -45,7 +45,7 @@ vi.mock("../../src/repositories/doseRecordRepo", () => ({
       updatedAt: now
     };
     store.set(key, record);
-    return record;
+    return { record, created: true };
   },
   getDoseRecordByKey: async (key: {
     patientId: string;

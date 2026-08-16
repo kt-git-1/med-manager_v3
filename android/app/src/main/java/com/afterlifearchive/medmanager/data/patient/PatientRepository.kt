@@ -13,6 +13,7 @@ import com.afterlifearchive.medmanager.data.network.ApiException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import java.time.ZoneId
+import java.util.UUID
 
 data class PatientUiState(
     val doses: List<PatientDose> = emptyList(),
@@ -62,6 +63,7 @@ class PatientRepository(
 ) {
     private val mutableState = MutableStateFlow(PatientUiState())
     private val mutationMutex = Mutex()
+    private val pendingPrnMutationIds = mutableMapOf<String, String>()
     val state: StateFlow<PatientUiState> = mutableState.asStateFlow()
     val freshness: StateFlow<MutationRevisions> = freshnessStore.revisions
 
@@ -250,9 +252,11 @@ class PatientRepository(
             return false
         }
         if (!mutationMutex.tryLock()) return false
+        val clientMutationId = pendingPrnMutationIds.getOrPut(medication.id) { UUID.randomUUID().toString() }
         mutableState.value = mutableState.value.copy(updatingPrnMedicationId = medication.id, prnError = null, message = null)
         return try {
-            api.recordPrn(medication)
+            api.recordPrn(medication, clientMutationId)
+            pendingPrnMutationIds.remove(medication.id)
             mutableState.value = mutableState.value.copy(
                 message = PatientUserMessage.PrnRecorded,
                 prnRecordSuccessRevision = mutableState.value.prnRecordSuccessRevision + 1,
@@ -373,6 +377,7 @@ class PatientRepository(
         mutableState.value = mutableState.value.copy(loading = true, error = null)
         return try {
             api.revokeSession()
+            pendingPrnMutationIds.clear()
             true
         } catch (error: Exception) {
             if (error is CancellationException) throw error

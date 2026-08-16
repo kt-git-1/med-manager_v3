@@ -14,6 +14,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import java.util.UUID
 
 data class CaregiverInventoryItem(
     val medicationId: String,
@@ -55,6 +56,14 @@ interface CaregiverInventoryDataSource {
     suspend fun list(patientId: String): List<CaregiverInventoryItem>
     suspend fun update(patientId: String, medicationId: String, enabled: Boolean, quantity: Double?): CaregiverInventoryItem
     suspend fun adjust(patientId: String, medicationId: String, reason: String, delta: Double?, absoluteQuantity: Double?): CaregiverInventoryItem
+    suspend fun adjust(
+        patientId: String,
+        medicationId: String,
+        reason: String,
+        delta: Double?,
+        absoluteQuantity: Double?,
+        clientMutationId: String,
+    ): CaregiverInventoryItem = adjust(patientId, medicationId, reason, delta, absoluteQuantity)
 }
 
 class CaregiverInventoryApi(private val client: ApiClient) : CaregiverInventoryDataSource {
@@ -84,9 +93,27 @@ class CaregiverInventoryApi(private val client: ApiClient) : CaregiverInventoryD
         delta: Double?,
         absoluteQuantity: Double?,
     ): CaregiverInventoryItem {
+        return adjust(patientId, medicationId, reason, delta, absoluteQuantity, UUID.randomUUID().toString())
+    }
+
+    override suspend fun adjust(
+        patientId: String,
+        medicationId: String,
+        reason: String,
+        delta: Double?,
+        absoluteQuantity: Double?,
+        clientMutationId: String,
+    ): CaregiverInventoryItem {
         val body = client.postBody(
             "api/patients/$patientId/medications/$medicationId/inventory/adjust",
-            PatientWireJson.encodeToString(InventoryAdjustDto(reason, delta, absoluteQuantity)),
+            PatientWireJson.encodeToString(
+                InventoryAdjustDto(
+                    reason = reason,
+                    delta = delta,
+                    absoluteQuantity = absoluteQuantity,
+                    clientMutationId = clientMutationId,
+                ),
+            ),
             RequestAuthPolicy.CAREGIVER,
         )
         return PatientWireJson.decodeFromString<InventoryItemEnvelopeDto>(body).data.toDomain()
@@ -106,7 +133,12 @@ private data class InventoryItemEnvelopeDto(val data: InventoryItemDto)
 private data class InventoryUpdateDto(val inventoryEnabled: Boolean? = null, val inventoryQuantity: Double? = null)
 
 @Serializable
-private data class InventoryAdjustDto(val reason: String, val delta: Double? = null, val absoluteQuantity: Double? = null)
+private data class InventoryAdjustDto(
+    val reason: String,
+    val delta: Double? = null,
+    val absoluteQuantity: Double? = null,
+    val clientMutationId: String? = null,
+)
 
 @Serializable
 private data class InventoryItemDto(
@@ -140,6 +172,7 @@ class CaregiverInventoryRepository(
 ) {
     private val mutableState = MutableStateFlow(CaregiverInventoryState())
     private val mutationMutex = Mutex()
+    private val pendingMutationIds = mutableMapOf<String, String>()
     val state: StateFlow<CaregiverInventoryState> = mutableState.asStateFlow()
     val freshness = freshnessStore.revisions
 
@@ -180,15 +213,23 @@ class CaregiverInventoryRepository(
 
     suspend fun refill(patientId: String, item: CaregiverInventoryItem, amount: Double): Boolean {
         if (!amount.isFinite() || amount <= 0) return false
+        val operationKey = "$patientId:${item.medicationId}:REFILL:$amount"
         return mutate(patientId, item, CaregiverInventoryMutationMessage.REFILLED) {
-            dataSource.adjust(patientId, item.medicationId, "REFILL", amount, null)
+            val mutationId = pendingMutationIds.getOrPut(operationKey) { UUID.randomUUID().toString() }
+            dataSource.adjust(patientId, item.medicationId, "REFILL", amount, null, mutationId).also {
+                clearPendingMutationIds(patientId, item.medicationId)
+            }
         }
     }
 
     suspend fun correct(patientId: String, item: CaregiverInventoryItem, quantity: Double): Boolean {
         if (!quantity.isFinite() || quantity < 0) return false
+        val operationKey = "$patientId:${item.medicationId}:SET:$quantity"
         return mutate(patientId, item, CaregiverInventoryMutationMessage.CORRECTED) {
-            dataSource.adjust(patientId, item.medicationId, "SET", null, quantity)
+            val mutationId = pendingMutationIds.getOrPut(operationKey) { UUID.randomUUID().toString() }
+            dataSource.adjust(patientId, item.medicationId, "SET", null, quantity, mutationId).also {
+                clearPendingMutationIds(patientId, item.medicationId)
+            }
         }
     }
 
@@ -221,10 +262,18 @@ class CaregiverInventoryRepository(
         }
     }
 
-    fun clear() { mutableState.value = CaregiverInventoryState() }
+    fun clear() {
+        pendingMutationIds.clear()
+        mutableState.value = CaregiverInventoryState()
+    }
     fun newFreshnessCursor(): FreshnessCursor = freshnessStore.newCursor(FreshnessConsumer.CAREGIVER_INVENTORY)
 
     private fun sorted(items: List<CaregiverInventoryItem>) = items.sortedWith(
         compareBy<CaregiverInventoryItem>({ it.periodEnded }, { !it.out }, { !it.low }, { it.daysRemaining ?: Int.MAX_VALUE }, { it.inventoryQuantity }, { it.name }),
     )
+
+    private fun clearPendingMutationIds(patientId: String, medicationId: String) {
+        val prefix = "$patientId:$medicationId:"
+        pendingMutationIds.keys.removeAll { it.startsWith(prefix) }
+    }
 }

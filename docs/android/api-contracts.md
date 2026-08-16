@@ -80,7 +80,7 @@ Medication DTO fields required by Android include `id`, `patientId`, name/dosage
 | API-035 | `DELETE /api/patients/{patientId}/dose-records?...` | CAREGIVER | Caregiver removes a taken record; inventory is compensated server-side |
 | API-036 | `POST /api/patient/dose-records/slot` | PATIENT | `{date,slot}` plus optional slot times; recordable from `scheduledAt-30m` through the next Tokyo day at 04:00 exclusive |
 | API-037 | `POST /api/patients/{patientId}/dose-records/slot` | CAREGIVER | `{date,slot}`; caregiver may record older missed slots and is not blocked by patient window |
-| API-038 | `POST /api/patients/{patientId}/prn-dose-records` | PATIENT or authorized CAREGIVER | `{medicationId,takenAt?,quantityTaken?}`; returns record and optional inventory snapshot |
+| API-038 | `POST /api/patients/{patientId}/prn-dose-records` | PATIENT or authorized CAREGIVER | `{medicationId,takenAt?,quantityTaken?,clientMutationId?}`; returns record and optional inventory snapshot |
 | API-039 | `DELETE /api/patients/{patientId}/prn-dose-records/{id}` | CAREGIVER | Deletes caregiver-manageable PRN record |
 
 Schedule dose identity is `(patientId, medicationId, scheduledAt)` and the UI key is stable. Only taken records are stored; pending/missed are derived. Status ordering and aggregation follow current iOS/backend tests.
@@ -109,6 +109,16 @@ Slot-bulk response is top-level:
 - Inventory never becomes negative and the backend is authoritative under concurrency.
 - A successful scheduled individual/bulk mutation updates UI immediately. Reminder rebuild and cross-tab refresh happen afterward and must not delay the success state.
 - A failed follow-up refresh does not turn an already successful mutation into failure.
+
+### Mutation idempotency boundary
+
+- Scheduled individual-dose identity remains the natural key `(patientId, medicationId, scheduledAt)`. Exactly one successful insert owns the associated history event, inventory decrement and push attempt; a concurrent duplicate returns the winning record without repeating those effects.
+- API-038 and API-052 accept an optional UUID-v4 `clientMutationId`. Omitting it remains valid so the published iOS client and older callers stay wire-compatible.
+- Android generates one random identifier per logical PRN or inventory-adjust operation. A transport/auth retry and a manual retry after an uncertain response reuse that identifier; a changed inventory intent receives a new identifier.
+- The server scopes the identifier to the patient. Replaying the same identifier returns the already accepted operation without creating another PRN record, applying another inventory delta, emitting another history/alert event or attempting another push.
+- Android keeps pending identifiers in process memory only. It has no offline write queue and never automatically replays a mutation after cancellation or process death; the user must refresh before deciding whether to retry.
+- `clientMutationId` is protocol metadata only. It must never be included in Analytics events, UI copy, notifications or application logs.
+- The nullable schema migration `20260817090000_android_mutation_idempotency` must be deployed before server-side API-038/API-052 replay suppression is considered live. Local tests do not prove production migration or interrupted-network behavior.
 
 ### Cross-screen mutation freshness
 
@@ -146,7 +156,7 @@ When billing is enabled, Android first reads API-063 and treats unknown entitlem
 |---|---|---|---|
 | API-050 | `GET /api/patients/{id}/inventory` | CAREGIVER | Inventory list, low/out flags, consumption projections and refill date |
 | API-051 | `PATCH /api/patients/{id}/medications/{medId}/inventory` | CAREGIVER | Enable/disable and/or absolute quantity update |
-| API-052 | `POST /api/patients/{id}/medications/{medId}/inventory/adjust` | CAREGIVER | Reason plus delta or absolute quantity |
+| API-052 | `POST /api/patients/{id}/medications/{medId}/inventory/adjust` | CAREGIVER | Reason plus delta or absolute quantity and optional UUID-v4 `clientMutationId` |
 
 `isInsufficientForDose = inventoryEnabled && inventoryQuantity < doseCountPerIntake`. Low/out presentation uses server fields; Android does not recalculate caregiver alert transitions.
 

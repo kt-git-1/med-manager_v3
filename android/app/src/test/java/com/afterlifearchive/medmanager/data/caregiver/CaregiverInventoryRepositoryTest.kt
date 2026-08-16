@@ -12,6 +12,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.json.JSONObject
+import java.util.UUID
 
 class CaregiverInventoryRepositoryTest {
     @Test
@@ -41,7 +43,11 @@ class CaregiverInventoryRepositoryTest {
         assertEquals("https://example.test/api/patients/p1/medications/med-1/inventory", requests[1].url)
         assertEquals("{\"inventoryEnabled\":true,\"inventoryQuantity\":null}", requests[1].body)
         assertEquals("https://example.test/api/patients/p1/medications/med-1/inventory/adjust", requests[2].url)
-        assertEquals("{\"reason\":\"REFILL\",\"delta\":7.0,\"absoluteQuantity\":null}", requests[2].body)
+        val adjustment = JSONObject(requests[2].body!!)
+        assertEquals("REFILL", adjustment.getString("reason"))
+        assertEquals(7.0, adjustment.getDouble("delta"), 0.0)
+        assertTrue(adjustment.isNull("absoluteQuantity"))
+        assertEquals(4, UUID.fromString(adjustment.getString("clientMutationId")).version())
         assertTrue(requests.all { it.headers["Authorization"] == "Bearer caregiver-token" })
     }
 
@@ -155,6 +161,42 @@ class CaregiverInventoryRepositoryTest {
         responseGate.complete(Unit)
         assertTrue(repository.correct("p1", original, 8.0))
         assertEquals(2, adjustCalls)
+    }
+
+    @Test
+    fun failedInventoryRetryReusesMutationIdButChangedIntentGetsANewId() = runTest {
+        val original = item(quantity = 3.0)
+        val mutationIds = mutableListOf<String>()
+        var fail = true
+        val source = object : CaregiverInventoryDataSource {
+            override suspend fun list(patientId: String) = listOf(original)
+            override suspend fun update(patientId: String, medicationId: String, enabled: Boolean, quantity: Double?) = original
+            override suspend fun adjust(patientId: String, medicationId: String, reason: String, delta: Double?, absoluteQuantity: Double?) =
+                error("legacy path must not be used")
+
+            override suspend fun adjust(
+                patientId: String,
+                medicationId: String,
+                reason: String,
+                delta: Double?,
+                absoluteQuantity: Double?,
+                clientMutationId: String,
+            ): CaregiverInventoryItem {
+                mutationIds += clientMutationId
+                if (fail) error("response lost")
+                return original.copy(inventoryQuantity = absoluteQuantity ?: original.inventoryQuantity + (delta ?: 0.0))
+            }
+        }
+        val repository = CaregiverInventoryRepository(source, MutationFreshnessStore())
+        repository.load("p1")
+
+        assertFalse(repository.refill("p1", original, 2.0))
+        fail = false
+        assertTrue(repository.refill("p1", original, 2.0))
+        assertTrue(repository.refill("p1", repository.state.value.items.single(), 3.0))
+
+        assertEquals(mutationIds[0], mutationIds[1])
+        assertFalse(mutationIds[1] == mutationIds[2])
     }
 
     private fun item(quantity: Double, enabled: Boolean = true) = CaregiverInventoryItem(

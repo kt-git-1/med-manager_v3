@@ -1,5 +1,5 @@
 import { prisma } from "./prisma";
-import type { DoseRecord, RecordedByType } from "@prisma/client";
+import { Prisma, type DoseRecord, type RecordedByType } from "@prisma/client";
 
 export type DoseRecordKey = {
   patientId: string;
@@ -12,21 +12,29 @@ export type DoseRecordCreateInput = DoseRecordKey & {
   recordedById?: string | null;
 };
 
-export async function upsertDoseRecord(input: DoseRecordCreateInput): Promise<DoseRecord> {
+export async function createDoseRecordIfAbsent(
+  input: DoseRecordCreateInput
+): Promise<{ record: DoseRecord; created: boolean }> {
   const { patientId, medicationId, scheduledAt, recordedByType, recordedById } = input;
-  return prisma.doseRecord.upsert({
-    where: {
-      patientId_medicationId_scheduledAt: { patientId, medicationId, scheduledAt }
-    },
-    create: {
-      patientId,
-      medicationId,
-      scheduledAt,
-      recordedByType,
-      recordedById: recordedById ?? null
-    },
-    update: {}
-  });
+  try {
+    const record = await prisma.doseRecord.create({
+      data: {
+        patientId,
+        medicationId,
+        scheduledAt,
+        recordedByType,
+        recordedById: recordedById ?? null
+      }
+    });
+    return { record, created: true };
+  } catch (error) {
+    if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
+      throw error;
+    }
+    const record = await getDoseRecordByKey({ patientId, medicationId, scheduledAt });
+    if (!record) throw error;
+    return { record, created: false };
+  }
 }
 
 export async function getDoseRecordByKey(key: DoseRecordKey): Promise<DoseRecord | null> {

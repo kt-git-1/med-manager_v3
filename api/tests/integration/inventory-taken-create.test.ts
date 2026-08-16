@@ -119,7 +119,7 @@ function applyMedicationUpdate(data: Record<string, unknown>) {
 }
 
 vi.mock("../../src/repositories/doseRecordRepo", () => ({
-  upsertDoseRecord: async (input: {
+  createDoseRecordIfAbsent: async (input: {
     patientId: string;
     medicationId: string;
     scheduledAt: Date;
@@ -129,7 +129,7 @@ vi.mock("../../src/repositories/doseRecordRepo", () => ({
     const key = buildKey(input);
     const existing = store.get(key);
     if (existing) {
-      return existing;
+      return { record: existing, created: false };
     }
     const now = new Date();
     const record: DoseRecord = {
@@ -144,7 +144,7 @@ vi.mock("../../src/repositories/doseRecordRepo", () => ({
       updatedAt: now
     };
     store.set(key, record);
-    return record;
+    return { record, created: true };
   },
   getDoseRecordByKey: async (key: {
     patientId: string;
@@ -201,6 +201,30 @@ describe("inventory adjustments on TAKEN create", () => {
       recordedByType: "CAREGIVER",
       recordedById: "caregiver-1"
     });
+    expect(mockData.medication.inventoryQuantity).toBe(3);
+    expect(mockData.adjustments).toHaveLength(1);
+  });
+
+  it("owns side effects once when duplicate creates race before either read sees a record", async () => {
+    store.clear();
+    mockData.medication.inventoryQuantity = 5;
+    mockData.adjustments.length = 0;
+    const scheduledAt = new Date("2026-02-02T09:00:00.000Z");
+    const input = {
+      patientId: "patient-1",
+      medicationId: "med-1",
+      scheduledAt,
+      recordedByType: "CAREGIVER" as const,
+      recordedById: "caregiver-1"
+    };
+
+    const [first, second] = await Promise.all([
+      createDoseRecordIdempotent(input),
+      createDoseRecordIdempotent(input)
+    ]);
+
+    expect(first.id).toBe(second.id);
+    expect(store.size).toBe(1);
     expect(mockData.medication.inventoryQuantity).toBe(3);
     expect(mockData.adjustments).toHaveLength(1);
   });

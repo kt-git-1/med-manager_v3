@@ -135,6 +135,7 @@ internal data class PatientPrnRecordRequestDto(
     val medicationId: String,
     val takenAt: String? = null,
     val quantityTaken: Double? = null,
+    val clientMutationId: String? = null,
 )
 
 @Serializable

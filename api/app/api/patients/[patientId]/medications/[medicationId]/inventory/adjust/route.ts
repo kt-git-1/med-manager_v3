@@ -29,7 +29,8 @@ export async function POST(
     const validation = validateInventoryAdjust({
       reason: body.reason,
       delta: body.delta,
-      absoluteQuantity: body.absoluteQuantity
+      absoluteQuantity: body.absoluteQuantity,
+      clientMutationId: body.clientMutationId
     });
     if (validation.errors.length) {
       return new Response(JSON.stringify({ error: "validation", messages: validation.errors }), {
@@ -41,6 +42,7 @@ export async function POST(
     const updated = await adjustMedicationInventory({
       patientId,
       medicationId,
+      clientMutationId: validation.clientMutationId,
       reason: validation.reason!,
       delta: validation.delta,
       absoluteQuantity: validation.absoluteQuantity,

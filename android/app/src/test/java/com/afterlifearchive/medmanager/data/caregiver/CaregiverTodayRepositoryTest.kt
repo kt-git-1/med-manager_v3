@@ -20,6 +20,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.json.JSONObject
+import java.util.UUID
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class CaregiverTodayRepositoryTest {
@@ -122,7 +124,11 @@ class CaregiverTodayRepositoryTest {
 
         assertEquals("POST", captured?.method)
         assertEquals("https://example.test/api/patients/patient-1/prn-dose-records", captured?.url)
-        assertEquals("{\"medicationId\":\"prn-1\",\"takenAt\":null,\"quantityTaken\":null}", captured?.body)
+        val body = JSONObject(captured?.body.orEmpty())
+        assertEquals("prn-1", body.getString("medicationId"))
+        assertTrue(body.isNull("takenAt"))
+        assertTrue(body.isNull("quantityTaken"))
+        assertEquals(4, UUID.fromString(body.getString("clientMutationId")).version())
         assertEquals("Bearer caregiver-token", captured?.headers?.get("Authorization"))
     }
 
@@ -370,6 +376,31 @@ class CaregiverTodayRepositoryTest {
         assertFalse(repository.recordPrn("patient-1", prn))
         assertEquals(CaregiverTodayMutationError.FAILED, repository.state.value.mutationError)
         assertEquals(1L, freshness.revisions.value.dose)
+    }
+
+    @Test
+    fun caregiverPrnRetryReusesMutationIdUntilSuccess() = runTest {
+        val prn = medication("prn-1", "痛み止め", isPrn = true, active = true)
+        val mutationIds = mutableListOf<String>()
+        var fail = true
+        val source = object : CaregiverTodayDataSource {
+            override suspend fun today(patientId: String) = emptyList<PatientDose>()
+            override suspend fun medications(patientId: String) = listOf(prn)
+            override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
+            override suspend fun recordPrn(patientId: String, medication: PatientMedication, clientMutationId: String) {
+                mutationIds += clientMutationId
+                if (fail) error("response lost")
+            }
+        }
+        val repository = CaregiverTodayRepository(source, MutationFreshnessStore())
+        repository.load("patient-1")
+
+        assertFalse(repository.recordPrn("patient-1", prn))
+        fail = false
+        assertTrue(repository.recordPrn("patient-1", prn))
+
+        assertEquals(2, mutationIds.size)
+        assertEquals(mutationIds[0], mutationIds[1])
     }
 
     @Test

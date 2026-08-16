@@ -1,9 +1,10 @@
 import { prisma } from "./prisma";
-import type { PrnDoseRecord, RecordedByType } from "@prisma/client";
+import { Prisma, type PrnDoseRecord, type RecordedByType } from "@prisma/client";
 
 export type PrnDoseRecordCreateInput = {
   patientId: string;
   medicationId: string;
+  clientMutationId?: string;
   takenAt: Date;
   quantityTaken: number;
   actorType: RecordedByType;
@@ -14,9 +15,54 @@ export async function createPrnDoseRecord(input: PrnDoseRecordCreateInput): Prom
     data: {
       patientId: input.patientId,
       medicationId: input.medicationId,
+      clientMutationId: input.clientMutationId ?? null,
       takenAt: input.takenAt,
       quantityTaken: input.quantityTaken,
       actorType: input.actorType
+    }
+  });
+}
+
+export async function createPrnDoseRecordIdempotent(
+  input: PrnDoseRecordCreateInput
+): Promise<{ record: PrnDoseRecord; created: boolean }> {
+  if (!input.clientMutationId) {
+    return { record: await createPrnDoseRecord(input), created: true };
+  }
+
+  const key = {
+    patientId_clientMutationId: {
+      patientId: input.patientId,
+      clientMutationId: input.clientMutationId
+    }
+  };
+  const existing = await prisma.prnDoseRecord.findUnique({ where: key });
+  if (existing) {
+    return { record: existing, created: false };
+  }
+
+  try {
+    return { record: await createPrnDoseRecord(input), created: true };
+  } catch (error) {
+    if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
+      throw error;
+    }
+    const raced = await prisma.prnDoseRecord.findUnique({ where: key });
+    if (!raced) throw error;
+    return { record: raced, created: false };
+  }
+}
+
+export async function getPrnDoseRecordByClientMutationId(input: {
+  patientId: string;
+  clientMutationId: string;
+}): Promise<PrnDoseRecord | null> {
+  return prisma.prnDoseRecord.findUnique({
+    where: {
+      patientId_clientMutationId: {
+        patientId: input.patientId,
+        clientMutationId: input.clientMutationId
+      }
     }
   });
 }

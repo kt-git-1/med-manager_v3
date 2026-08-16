@@ -8,6 +8,7 @@ export type InventoryUpdateValidationResult = {
 
 export type InventoryAdjustValidationResult = {
   errors: string[];
+  clientMutationId?: string;
   reason?: InventoryAdjustmentReason;
   delta?: number;
   absoluteQuantity?: number;
@@ -61,9 +62,23 @@ export function validateInventoryAdjust(input: {
   reason?: unknown;
   delta?: unknown;
   absoluteQuantity?: unknown;
+  clientMutationId?: unknown;
 }): InventoryAdjustValidationResult {
   const errors: string[] = [];
   const result: InventoryAdjustValidationResult = { errors };
+
+  if (input.clientMutationId !== undefined) {
+    if (
+      typeof input.clientMutationId !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        input.clientMutationId
+      )
+    ) {
+      errors.push("clientMutationId must be a UUID v4");
+    } else {
+      result.clientMutationId = input.clientMutationId.toLowerCase();
+    }
+  }
 
   if (!input.reason || typeof input.reason !== "string") {
     errors.push("reason is required");
