@@ -1,8 +1,10 @@
 # Android physical-device verification matrix
 
-**Status:** procedure complete; execution pending attached physical devices and release configuration
+**Status:** procedure complete; partial execution started on one API 35 non-Google OEM device; release configuration and remaining device classes pending
 **Package:** `com.afterlifearchive.medmanager`
 **Owner gate:** V1 / Gate I / `XP-005`, `XP-006`, `XP-008`, `XP-010`
+
+Latest redacted execution record: `docs/android/evidence/v1-20260816/README.md`.
 
 This matrix is required before Android is merged to `main`. Emulator and Compose evidence remain useful regression gates but cannot be copied into a physical result. Every checked row needs the exact build, device, action and observed outcome.
 

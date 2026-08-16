@@ -1,12 +1,12 @@
 # Android Current Gap Audit
 
-**Audit date:** 2026-08-15
+**Audit date:** 2026-08-16
 **Reference:** published iOS 1.0.6 Build 51, `main@432b34c`
 **Android branch:** `android-dev`
 
 ## 1. Executive result
 
-The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C61 safely merged published `main@432b34c` into `android-dev` and revalidated the 322-test API contract. C62 reopened the initial emulator conclusion because several tests still protected superseded Android structures. C63 corrected the remaining tutorial assumption: published iOS uses dedicated simplified `PatientTutorialSampleView` and `CaregiverTutorialSampleView` fixtures, not production screens populated through synthetic repositories. C64 then audited all 69 parity rows against current code and evidence, finding 63 complete implementation rows and six external-only release rows. The only local correction was medication-form validation/calculator presentation crossing the data/UI boundary as Japanese strings; it now uses typed codes/models plus Android resources. JVM 202/202, Lint, Debug/Release assembly, Release APK compatibility, Play assets, API 35 full UI 272/272 and medication-form UI 25/25 on API 26/33/35 pass; live Firebase, physical-device evidence and Play release operations remain separate external gates.
+The Android project contains production Patient and Caregiver flows through Gate G plus the automated portion of privacy-first Analytics in Gate H. C61 safely merged published `main@432b34c` into `android-dev` and revalidated the 322-test API contract. C62 reopened the initial emulator conclusion because several tests still protected superseded Android structures. C63 corrected the remaining tutorial assumption: published iOS uses dedicated simplified `PatientTutorialSampleView` and `CaregiverTutorialSampleView` fixtures, not production screens populated through synthetic repositories. C64 then audited all 69 parity rows against current code and evidence, finding 63 complete implementation rows and six external-only release rows. C65 started the physical gate on one SHARP A302SH non-Google OEM target at Android 15/API 35: the adb-installed 1.0.6 Debug artifact launched and the corrected full UI suite passed 272/272. JVM 202/202, Lint, Debug/Release assembly, Release APK compatibility and Play assets also pass. Live Firebase, manual TalkBack/system appearance, two remaining physical device classes and Play release operations remain separate gates.
 
 ## 2. What is reusable
 
@@ -41,8 +41,8 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Resolved C01/C37–C48 | Existing patient screenshots predated current iOS behavior | Fresh current-runtime entry/auth and Patient UI-001–106 evidence now has explicit owners across C37–C48; C58 separately rechecks the later nonblocking post-record behavior | Keep physical/TalkBack variants in V1 instead of reopening emulator implementation rows |
 | P2 | Analytics live verification is pending | Runtime Firebase transport, both-role consent/reset and a privacy-rejecting fixed schema are implemented; C59 adds the previously missing repeatable consent-off/on/reset, DebugView, Realtime, Events and Explore runbook; no local Android Firebase values are available | Supply four environment values and execute `firebase-analytics.md` on a physical device |
 | P2 | Production artifact ownership/configuration is pending | The Play task now fails closed on incomplete Firebase/runtime/signing inputs; the Release APK passes application-ID, SDK, forbidden-permission and 16 KB ZIP/ELF checks | Release owner supplies Firebase values and upload key, then verifies the exact signed AAB and Play scan |
-| P2 | Full dark/large-text/TalkBack coverage is incomplete | Patient primary dark captures plus Caregiver primary dark-plus-200% captures/action paths are complete; matched variants and full traversal remain | Complete matched per-screen audit and physical-device traversal |
-| P2 | Physical notification/Doze/process-death evidence is incomplete | Emulator tests do not prove delivery/tap on devices | Complete V1 device matrix |
+| P2 | Full dark/large-text/TalkBack coverage is incomplete | Automated dark-plus-200% fixtures pass on emulators and A302SH/API 35, but TalkBack was installed and disabled during C65; system appearance/font settings and spoken traversal were not substituted by automation | Complete the manual matched per-screen and spoken physical traversal |
+| P2 | Physical notification/Doze/process-death evidence is incomplete | C65 proves one current non-Google OEM Debug install/launch and 272/272 UI automation; it does not prove actual alarm/FCM delivery, Doze, process recovery, Play install/update or the required old/reference devices | Complete the remaining V1 rows in `evidence/v1-20260816/README.md` |
 
 ## 4. Latest-main behavior that must be carried forward
 

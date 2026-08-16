@@ -143,7 +143,7 @@ class CaregiverAuthFlowScreenTest {
         composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performTextInput("SamplePass123!")
         composeRule.onNodeWithTag(AUTH_CONFIRMATION_TAG).performTextInput("SamplePass123!")
         dismissKeyboard()
-        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).performScrollTo().assertIsDisplayed()
         captureDevice(activity, "android-ui-005-caregiver-signup-filled-light.png")
         assertEquals(false, repository.state.value.canResendConfirmation)
     }
@@ -158,7 +158,7 @@ class CaregiverAuthFlowScreenTest {
         composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performTextInput("SamplePass123!")
         composeRule.onNodeWithTag(AUTH_CONFIRMATION_TAG).performTextInput("SamplePass123!")
         dismissKeyboard()
-        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).performScrollTo().assertIsDisplayed()
         captureDevice(activity, "android-ui-005-caregiver-signup-filled-dark.png", darkTheme = true)
         assertEquals(false, repository.state.value.canResendConfirmation)
     }
