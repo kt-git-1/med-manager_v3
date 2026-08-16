@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C79
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C80
 - Baseline date: 2026-08-16
-- Current action: C79 reaches authenticated FCM registration through the real Caregiver Settings switch and proves the remaining deployment boundary: production `main@432b34c` rejects `platform=android` before upsert, while `android-dev` already implements/tests that contract. The device was returned OFF with token/session/app/temp artifacts removed. Merge/deploy, then physical delivery/routing, processed Analytics Events/Explore, TalkBack, remaining devices, Play Internal and release-owner signing remain required.
+- Current action: C80 closes the delayed processed-Events observation: the production Analytics report now includes Platform `android`, the Android 1.0.6 app row reports successful processing, and the privacy-safe events exercised in C76 are present. Aggregate counts are not claimed as Android-only. Explore remains separately controlled. C79's production API deployment boundary, physical FCM delivery/routing, TalkBack, remaining devices, Play Internal and release-owner signing remain required.
 
 ## Authority order
 

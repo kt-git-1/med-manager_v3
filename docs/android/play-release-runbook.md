@@ -7,7 +7,7 @@ This is the production handoff procedure for Gate I. It does not authorize creat
 - Work from `android-dev`; merge to `main` only after the release gates pass.
 - Rebaseline against the latest `origin/main` and resolve every new iOS/API change first.
 - Keep `BILLING_ENABLED=false` until a separate Google Play purchase contract is approved.
-- Keep the registered production-package Android Firebase app's four runtime values outside Git. C76 completes the consent/DebugView/Realtime slice; processed Events/Explore remain before production rollout.
+- Keep the registered production-package Android Firebase app's four runtime values outside Git. C76 completes consent/DebugView/Realtime and C80 closes processed Events; Explore remains before production rollout.
 - Execute the privacy-reviewed consent-off/on/reset plus DebugView, Realtime, Events and Explore matrix in `firebase-analytics.md`; DebugView alone is not the acceptance gate.
 - Register and verify the production App Link domain.
 - Use Play App Signing. Store the upload-key keystore and passwords in an approved password manager/backup, never in Git or build logs.
@@ -74,7 +74,7 @@ Before upload, also verify:
 
 ## 5. Current external blockers
 
-- Firebase app registration, runtime configuration, physical consent, DebugView and Realtime evidence are complete under C76; processed Events/Explore and FCM remain pending.
+- Firebase app registration, runtime configuration, physical consent, DebugView and Realtime evidence are complete under C76; C80 closes processed Events. Analytics Explore and FCM remain pending.
 - C79 confirms production `main@432b34c` still rejects Android push-device registration before upsert. Merge/deploy the tested Android API contract and rerun FC-001 before any Play FCM acceptance; do not relabel Android devices as iOS.
 - No release-owner upload keystore has been selected, so a production-signed AAB cannot be produced here yet.
 - One A302SH Android 15/API 35 Debug target is evidenced through C76; old-supported and Google/reference devices remain pending.

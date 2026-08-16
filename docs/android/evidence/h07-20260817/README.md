@@ -59,9 +59,8 @@ The synthetic UI suite uses local fixtures and performs no production API reques
 
 ## Remaining H07 evidence
 
-- Recheck the processed Events report after aggregation delay.
-- The 2026-08-17 first recheck showed the fixed safe event names in the property-wide Events report, but a temporary Platform comparison offered only iOS. Therefore those aggregate counts cannot be attributed to Android yet. The unsaved comparison was discarded without applying or persisting it.
+- C80's later 2026-08-17 read-only recheck closes processed Events: Platform now includes `android`, the Android 1.0.6 application row reports successful processing with 100% available data, and the fixed safe events exercised above are present. Displayed event counts remain property-wide and are not claimed as Android-only counts. See `../c80-20260817/README.md`.
 - Create and remove the temporary privacy-reviewed Explore using event name plus fixed enum only; this is a Console state change and remains separately controlled.
 - Preserve redacted Console screenshots outside Git if required by the release owner.
 
-Therefore `XP-004` remains `PARTIAL`: live consent, transport, DebugView and Realtime are verified, while processed Events and Explore are not yet complete.
+Therefore `XP-004` remains `PARTIAL`: live consent, transport, DebugView, Realtime and processed Events are verified, while Explore is not yet complete.

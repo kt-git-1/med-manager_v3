@@ -1,13 +1,13 @@
 # Android Firebase Analytics verification runbook
 
-**Status:** Android Firebase app, physical consent boundary, DebugView and Realtime verified in C76; processed Events/Explore evidence pending
+**Status:** Android Firebase app, physical consent boundary, DebugView and Realtime verified in C76; processed Events verified in C80; Explore pending
 **Package:** `com.afterlifearchive.medmanager`
 **Source baseline:** published app baseline `main@432b34c`; privacy-first Analytics contract retained from the pre-publication Android plan
 **Owner gate:** H07 / `XP-004`
 
 This is the canonical procedure for validating the Android Analytics transport. It does not authorize adding Firebase values to Git, enabling collection without consent, or logging health/identity data. Console screenshots are evidence only when they show the exact build and event contract below.
 
-Latest redacted execution record: `docs/android/evidence/h07-20260817/README.md`.
+Latest redacted execution records: `docs/android/evidence/h07-20260817/README.md` and `docs/android/evidence/c80-20260817/README.md`.
 
 ## 1. Required external inputs
 
@@ -103,7 +103,7 @@ adb shell setprop debug.firebase.analytics.app .none.
 DebugView is the immediate instrumentation gate. Aggregated reports are asynchronous, so verify the same test property later without generating extra sensitive traffic:
 
 - **Realtime:** confirm the Android app/device activity and allowlisted event names appear; inspect that no user/health dimension was introduced.
-- **Events:** after processing, confirm the selected safe event names and counts. Use DebugView for immediate diagnosis rather than treating report delay as a client defect.
+- **Events:** after processing, confirm the selected safe event names and counts. C80 confirms the Android 1.0.6 processing row and fixed safe event rows; its displayed counts are retained as property-wide aggregates rather than misreported as Android-only. Use DebugView for immediate diagnosis rather than treating report delay as a client defect.
 - **Explore:** create a temporary free-form exploration using only event name plus safe fixed enum parameters such as mode/tab. Do not add user ID, device advertising identifiers or health-related custom dimensions. Confirm expected synthetic rows, then delete or archive the temporary exploration according to the release owner's policy.
 - **Custom definitions:** do not register a parameter merely because it exists. Register only a privacy-reviewed fixed enum that the approved product report actually needs.
 
