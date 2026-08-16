@@ -20,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
@@ -118,6 +119,39 @@ class PatientLinkScreenTest {
         composeRule.onNodeWithTag(LINK_CODE_INPUT_TAG).assertTextEquals("123456")
         composeRule.onNodeWithTag(LINK_CODE_SUBMIT_TAG).assertIsEnabled().performClick()
 
+        composeRule.runOnIdle { assertEquals(1, submitCount) }
+    }
+
+    @Test
+    fun imeDoneSubmitsOnlyWhenCodeIsReadyAndNotLoading() {
+        var code by mutableStateOf("")
+        var loading by mutableStateOf(false)
+        var submitCount = 0
+        composeRule.setContent {
+            MedicationAppTheme {
+                PatientLinkContent(
+                    code = code,
+                    loading = loading,
+                    errorMessage = null,
+                    onCodeChange = { code = it.filter(Char::isDigit).take(6) },
+                    onSubmit = { submitCount += 1 },
+                    onBack = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag(LINK_CODE_INPUT_TAG).performTextInput("12345")
+        composeRule.onNodeWithTag(LINK_CODE_INPUT_TAG).performImeAction()
+        composeRule.runOnIdle { assertEquals(0, submitCount) }
+
+        composeRule.onNodeWithTag(LINK_CODE_INPUT_TAG).performTextInput("6")
+        composeRule.onNodeWithTag(LINK_CODE_INPUT_TAG).performImeAction()
+        composeRule.runOnIdle {
+            assertEquals(1, submitCount)
+            loading = true
+        }
+
+        composeRule.onNodeWithTag(LINK_CODE_INPUT_TAG).performImeAction()
         composeRule.runOnIdle { assertEquals(1, submitCount) }
     }
 
