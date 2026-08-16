@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C94
-- Baseline date: 2026-08-16
-- Current action: C94 uses strict-locked bundletool to build the full APK Set once, selects the exact base/ABI/Japanese/density split quartet for API 26 arm64, API 33 x86_64 and the connected API 35 A302SH specification, and verifies every split's package, synthetic certificate, ZIP/native alignment and structure while reapplying the complete Release policy to the selected base master. The A302SH quartet is installed with `adb install-multiple`, its exact installed split/version identity is checked, and it is immediately removed. These outputs are test-only and never enter the C92 handoff; Play app signing, Play-generated splits and installed-track evidence remain external.
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C95
+- Baseline date: 2026-08-17
+- Current action: C95 makes production and Play-installed App Links acceptance executable. The Release manifest now declares only the canonical redirect-free `www` host used by production email/API configuration. Pure CI contracts require exact HTTP/JSON/cache/package/relation/app-signing-certificate identity and exact Google Play installer/package-manager verification state; the live production endpoint remains HTTP 404 until the Android API contract is approved, merged and deployed, so production/Play evidence remains external.
 
 ## Authority order
 

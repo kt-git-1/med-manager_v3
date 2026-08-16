@@ -198,7 +198,6 @@ def verify_manifest_text(xml_text: str) -> dict[str, int | str]:
         link_contract.update(filter_links)
     require(launcher_filters == 1, "Expected exactly one launcher intent filter")
     expected_links = {
-        ("https", "okusuri-mimamori.com", "/auth/"),
         ("https", "www.okusuri-mimamori.com", "/auth/"),
         ("okusurimimamori", "auth", "/login"),
     }

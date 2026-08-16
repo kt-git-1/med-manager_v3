@@ -139,6 +139,9 @@ val releaseStorePassword = runtimeConfig("RELEASE_STORE_PASSWORD")
 val releaseKeyAlias = runtimeConfig("RELEASE_KEY_ALIAS")
 val releaseKeyPassword = runtimeConfig("RELEASE_KEY_PASSWORD")
 val playUploadCertSha256 = runtimeConfig("PLAY_UPLOAD_CERT_SHA256")
+val playAppSigningCertSha256Fingerprints = runtimeConfig(
+    "PLAY_APP_SIGNING_CERT_SHA256_FINGERPRINTS",
+)
 val releaseSigningConfigured = listOf(
     releaseStoreFilePath,
     releaseStorePassword,
@@ -332,6 +335,65 @@ val verifyUploadKeystoreContract by tasks.registering(org.gradle.api.tasks.Exec:
         rootProject.file("scripts/test-verify-upload-keystore.sh"),
     )
     commandLine("bash", rootProject.file("scripts/test-verify-upload-keystore.sh").absolutePath)
+}
+
+val verifyProductionAppLinksContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Exercises accepted and rejected production Digital Asset Links surfaces."
+    dependsOn("verifyPlayInstalledAppLinksContract")
+    inputs.files(
+        rootProject.file("scripts/verify-production-app-links.py"),
+        rootProject.file("scripts/test-verify-production-app-links.py"),
+    )
+    commandLine("python3", rootProject.file("scripts/test-verify-production-app-links.py").absolutePath)
+}
+
+val verifyPlayInstalledAppLinksContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Exercises accepted and rejected Play-installed App Links package-manager states."
+    inputs.files(
+        rootProject.file("scripts/verify-production-app-links.py"),
+        rootProject.file("scripts/verify-play-installed-app-links.py"),
+        rootProject.file("scripts/test-verify-play-installed-app-links.py"),
+    )
+    commandLine("python3", rootProject.file("scripts/test-verify-play-installed-app-links.py").absolutePath)
+}
+
+val verifyProductionAppLinks by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Fetches and verifies production Digital Asset Links against Play app signing."
+    dependsOn(verifyProductionAppLinksContract)
+    inputs.file(rootProject.file("scripts/verify-production-app-links.py"))
+    inputs.property(
+        "playAppSigningCertificateCount",
+        playAppSigningCertSha256Fingerprints.split(',').count(String::isNotBlank),
+    )
+    outputs.upToDateWhen { false }
+    commandLine("python3", rootProject.file("scripts/verify-production-app-links.py").absolutePath)
+    environment(
+        "EXPECTED_APP_SIGNING_CERT_SHA256_FINGERPRINTS",
+        playAppSigningCertSha256Fingerprints,
+    )
+}
+
+val verifyPlayInstalledAppLinks by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Re-verifies the exact Play-installed package signer and production App Link domain."
+    dependsOn(verifyProductionAppLinks, verifyPlayInstalledAppLinksContract)
+    inputs.files(
+        rootProject.file("scripts/verify-production-app-links.py"),
+        rootProject.file("scripts/verify-play-installed-app-links.py"),
+    )
+    inputs.property(
+        "playAppSigningCertificateCount",
+        playAppSigningCertSha256Fingerprints.split(',').count(String::isNotBlank),
+    )
+    outputs.upToDateWhen { false }
+    commandLine("python3", rootProject.file("scripts/verify-play-installed-app-links.py").absolutePath)
+    environment(
+        "EXPECTED_APP_SIGNING_CERT_SHA256_FINGERPRINTS",
+        playAppSigningCertSha256Fingerprints,
+    )
 }
 
 val verifyFirebaseRuntime by tasks.registering {

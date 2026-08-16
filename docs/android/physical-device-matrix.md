@@ -16,6 +16,8 @@ C93's `universal-test-only.apk` is also diagnostic-only: it proves that bundleto
 
 C94 adds a narrower physical packaging preflight: its exact synthetic-signed base/arm64/Japanese/xhdpi quartet may be installed only when no Med Manager package exists, on the matching retained A302SH specification, without launch, followed by mandatory uninstall and absence verification. This proves Android accepts the selected split topology and version, but remains `adb`/synthetic evidence and cannot close any Play-installed row.
 
+C95 adds the exact final App Links preflight. Set `PLAY_APP_SIGNING_CERT_SHA256_FINGERPRINTS` from Play Console, deploy the `android-dev` Digital Asset Links route through the approved main merge, run `verifyProductionAppLinks`, install from Internal testing, then run `ANDROID_SERIAL=... ./gradlew verifyPlayInstalledAppLinks`. The task refuses adb/other installers, upload-key signing, extra/unverified hosts and the current production 404. Retain only redacted pass output; certificate fingerprints are public but do not need to be copied into screenshots.
+
 | Target | Minimum purpose | Acceptance |
 |---|---|---|
 | Old supported physical device | API 26–28, smaller/older hardware if available | Legacy permission, alarm, backup/session, rendering and lifecycle behavior |

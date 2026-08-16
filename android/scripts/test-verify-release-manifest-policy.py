@@ -42,7 +42,6 @@ VALID_MANIFEST = """<?xml version="1.0" encoding="utf-8"?>
         <action android:name="android.intent.action.VIEW" />
         <category android:name="android.intent.category.DEFAULT" />
         <category android:name="android.intent.category.BROWSABLE" />
-        <data android:scheme="https" android:host="okusuri-mimamori.com" android:pathPrefix="/auth/" />
         <data android:scheme="https" android:host="www.okusuri-mimamori.com" android:pathPrefix="/auth/" />
       </intent-filter>
       <intent-filter>
@@ -76,7 +75,7 @@ class ReleaseManifestPolicyTests(unittest.TestCase):
         summary = POLICY.verify_manifest_text(VALID_MANIFEST)
         self.assertEqual(summary["permissions"], 6)
         self.assertEqual(summary["exported_components"], 3)
-        self.assertEqual(summary["authentication_links"], 3)
+        self.assertEqual(summary["authentication_links"], 2)
 
     def test_bundletool_padded_signature_value_passes(self) -> None:
         POLICY.verify_manifest_text(
@@ -155,9 +154,9 @@ class ReleaseManifestPolicyTests(unittest.TestCase):
     def test_unreviewed_authentication_host_is_rejected(self) -> None:
         self.assert_rejected(
             VALID_MANIFEST.replace(
-                '        <data android:scheme="https" android:host="okusuri-mimamori.com"',
+                '        <data android:scheme="https" android:host="www.okusuri-mimamori.com"',
                 '        <data android:scheme="https" android:host="evil.example" android:pathPrefix="/auth/" />\n'
-                '        <data android:scheme="https" android:host="okusuri-mimamori.com"',
+                '        <data android:scheme="https" android:host="www.okusuri-mimamori.com"',
             ),
             "Unexpected authentication link surface",
         )

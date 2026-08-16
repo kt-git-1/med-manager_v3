@@ -34,9 +34,12 @@ RELEASE_STORE_PASSWORD=...
 RELEASE_KEY_ALIAS=...
 RELEASE_KEY_PASSWORD=...
 PLAY_UPLOAD_CERT_SHA256=<registered Play upload certificate SHA-256>
+PLAY_APP_SIGNING_CERT_SHA256_FINGERPRINTS=<Play app-signing certificate SHA-256>
 ```
 
-The API production environment separately requires `ANDROID_APP_LINK_SHA256_CERT_FINGERPRINTS`, containing the Play app-signing certificate SHA-256 fingerprint (or comma-separated fingerprints during an intentional certificate transition). This value belongs in Vercel, not Android `local.properties`. See `evidence/i03-app-links-20260715.md`.
+`PLAY_UPLOAD_CERT_SHA256` and `PLAY_APP_SIGNING_CERT_SHA256_FINGERPRINTS` are different identities under Play App Signing. Read both independently from Play Console; never substitute the locally generated upload certificate for the app-signing certificate delivered to users. The latter may be comma-separated only during an intentional certificate transition and is public certificate metadata, not a private key.
+
+The API production environment separately requires `ANDROID_APP_LINK_SHA256_CERT_FINGERPRINTS` with the exact same Play app-signing fingerprint set. This value belongs in Vercel, not Android `local.properties`. See `evidence/i03-app-links-20260715.md`.
 
 Do not add `google-services.json`, a keystore, passwords, or populated `local.properties` to the repository. The repository ignores `android/local.properties`, `*.jks`, and `*.keystore`, but the operator must still inspect `git status` before committing.
 
@@ -53,6 +56,18 @@ cd android
 ./gradlew verifyPlayStoreAssets
 ./gradlew verifyUploadKeystore
 ./gradlew bundleSignedRelease
+```
+
+After the Android API contract is merged to `main`, its production deployment is complete and Play App Signing is enabled, run the network gate. It checks only the canonical host declared by the Release manifest and refuses redirects, HTTP/cache/content drift, extra trust statements and any certificate mismatch:
+
+```bash
+./gradlew verifyProductionAppLinks
+```
+
+After installing the exact Internal-test artifact from Google Play on an API-31+ physical device, run the installed gate. It first reruns the production gate, then requires the Google Play installer, exact app-signing certificate and only `www.okusuri-mimamori.com: verified`; it never launches or mutates app data:
+
+```bash
+ANDROID_SERIAL=<physical-device-serial> ./gradlew verifyPlayInstalledAppLinks
 ```
 
 `verifyReleaseSdkPolicy` resolves the exact Release runtime graph and rejects unapproved collection/monetization SDKs. `verifyReleaseApkCompatibility` checks the exact assembled Release APK manifest/security/permission/SDK/16 KB contract. `verifyReleaseBundleContent` uses strict-locked bundletool to validate the AAB, requires only the reviewed base module, rejects embedded private configuration/key material, dumps the protobuf manifest and reapplies the APK policy before printing structure counts and SHA-256. `verifyReleaseBundleInstallSurface` uses that same locked bundletool and an ephemeral test key to build an exact two-entry universal APK Set from the exact AAB, proves the extracted APK's synthetic signer, then reapplies the complete APK policy. `verifyReleaseDeviceSplitSurface` builds the full APK Set once and selects exact base/ABI/Japanese/density quartets for API 26 arm64, API 33 x86_64 and API 35 A302SH; it verifies every split's package/certificate/16 KB contract and reapplies full policy to each selected base master. Both output families are diagnostic build output, not Play upload/install artifacts and not part of the C92 handoff. `verifyPlayStoreAssets` checks listing text/assets and iOS icon parity. `verifyUploadKeystore` runs before AAB generation: the selected alias must be a usable private-key entry and its certificate must exactly match `PLAY_UPLOAD_CERT_SHA256`; passwords are neither printed nor declared as cacheable task inputs. `bundleSignedRelease` intentionally fails before generation when runtime/signing/key inputs are incomplete or inconsistent; after generation it requires all APK/AAB/install-surface gates, complete JAR signature coverage, exactly one signer and the same certificate identity. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
@@ -73,6 +88,7 @@ Before upload, also verify:
 - `verifyReleaseBundleInstallSurface` derives and validates the universal APK from that same AAB. Do not upload, distribute or retain its ephemeral-signed `universal-test-only.apk`, and do not use it to close Play app-signing, optimized split or track-install rows.
 - `verifyReleaseDeviceSplitSurface` derives exact representative selected split quartets from that same AAB. The optional A302SH `adb install-multiple` verifier must refuse an existing installation, match the retained device spec, avoid launching the app and uninstall on success/failure. It still cannot close Play app-signing, Play-generated split or track-install rows.
 - `verifyUploadKeystore` reports the same upload-certificate SHA-256 that the release owner independently reads from Play Console; a successful synthetic contract is not a substitute.
+- `verifyProductionAppLinks` passes against the deployed redirect-free `www` endpoint using the independently read Play app-signing certificate set. The current production 404 is a hard failure, not a waivable warning.
 - No production secret appears in tracked files or Gradle output.
 - `bundleSignedRelease` reports that the AAB certificate matches the registered Play upload certificate; independently compare the reported fingerprint with Play Console before upload.
 - `SHA256SUMS` passes inside the generated three-file handoff, and its JSON SHA/certificate/version/commit match the named AAB selected for upload; retain the whole directory unchanged.
@@ -81,7 +97,7 @@ Before upload, also verify:
 ## 4. Play tracks
 
 1. Upload the signed AAB to Internal testing and record commit SHA, `versionCode`, certificate fingerprint, tester account and result.
-2. Install from Play, not adb. Verify caregiver/patient sign-in, session restoration, App Links, FCM permission/token/delivery/tap, local reminders, background/Doze/process death, legal links and analytics consent.
+2. Install from Play, not adb. Run `verifyPlayInstalledAppLinks`, then verify caregiver/patient sign-in, session restoration, both production auth paths, browser fallback, FCM permission/token/delivery/tap, local reminders, background/Doze/process death, legal links and analytics consent.
    Execute and record every applicable row in `physical-device-matrix.md`; the summary in this runbook is not a substitute for that evidence ledger.
 3. Complete Data safety and Health apps declarations from the actual production build. Do not infer declarations from SDK names alone.
    Use `https://www.okusuri-mimamori.com/support#section-3` as the account-deletion request URL unless the release owner intentionally replaces it; it is the verified public support section with an email request path and does not require the app to be installed.
@@ -93,6 +109,7 @@ Before upload, also verify:
 
 - Firebase app registration, runtime configuration, physical consent, DebugView and Realtime evidence are complete under C76; C80 closes processed Events. Analytics Explore and FCM remain pending.
 - C79 confirms production `main@432b34c` still rejects Android push-device registration before upsert. Merge/deploy the tested Android API contract and rerun FC-001 before any Play FCM acceptance; do not relabel Android devices as iOS.
+- C95 confirms production Digital Asset Links still returns HTTP 404 because its tested route is only on `android-dev`. Merge/deploy the same Android API contract, configure the Play app-signing certificate in production and pass both App Links tasks; neither a synthetic certificate nor an upload certificate closes this row.
 - No release-owner upload keystore has been selected, so a production-signed AAB cannot be produced here yet.
 - One A302SH Android 15/API 35 Debug target is evidenced through C76; old-supported and Google/reference devices remain pending.
 - Play-installed Internal/Closed track and final Console declaration evidence remain pending.

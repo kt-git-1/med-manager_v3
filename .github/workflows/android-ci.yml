@@ -63,6 +63,9 @@ jobs:
       - name: Upload keystore verifier contract
         run: ./gradlew verifyUploadKeystoreContract
 
+      - name: Production App Links verifier contract
+        run: ./gradlew verifyProductionAppLinksContract
+
       - name: Release evidence policy contract
         run: python3 scripts/test-generate-release-evidence.py
 
