@@ -33,6 +33,7 @@ RELEASE_STORE_FILE=/absolute/private/path/upload-key.jks
 RELEASE_STORE_PASSWORD=...
 RELEASE_KEY_ALIAS=...
 RELEASE_KEY_PASSWORD=...
+PLAY_UPLOAD_CERT_SHA256=<registered Play upload certificate SHA-256>
 ```
 
 The API production environment separately requires `ANDROID_APP_LINK_SHA256_CERT_FINGERPRINTS`, containing the Play app-signing certificate SHA-256 fingerprint (or comma-separated fingerprints during an intentional certificate transition). This value belongs in Vercel, not Android `local.properties`. See `evidence/i03-app-links-20260715.md`.
@@ -47,10 +48,9 @@ cd android
 ./gradlew verifyReleaseApkCompatibility
 ./gradlew verifyPlayStoreAssets
 ./gradlew bundleSignedRelease
-jarsigner -verify -verbose -certs app/build/outputs/bundle/release/app-release.aab
 ```
 
-`verifyReleaseApkCompatibility` checks the Release APK application ID, min/target SDK, advertising/attribution permission exclusions, 16 KB ZIP alignment and native ELF alignment, then prints its SHA-256. `verifyPlayStoreAssets` checks listing text limits, the exact eight JPEG screenshot names and dimensions, the 512 px RGBA icon, the alpha-free 1024 x 500 feature graphic, and pixel parity between the iOS source icon and Android launcher foreground. `bundleSignedRelease` intentionally fails before bundle generation when these gates fail, production runtime/Firebase configuration is incomplete, any signing value is missing, or the keystore path does not exist. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
+`verifyReleaseApkCompatibility` checks the exact signed or unsigned Release APK application ID, min/target SDK, advertising/attribution permission exclusions, 16 KB ZIP alignment and native ELF alignment, then prints its SHA-256. `verifyPlayStoreAssets` checks listing text limits, the exact eight JPEG screenshot names and dimensions, the 512 px RGBA icon, the alpha-free 1024 x 500 feature graphic, and pixel parity between the iOS source icon and Android launcher foreground. `bundleSignedRelease` intentionally fails before bundle generation when earlier gates fail, production runtime/Firebase configuration is incomplete, signing/fingerprint input is missing, or the keystore path does not exist. After generation it fails unless the AAB has the required bundle structure, every entry is signature-covered, exactly one signing certificate is readable and its SHA-256 matches `PLAY_UPLOAD_CERT_SHA256`. It prints the final AAB and upload-certificate hashes for the evidence ledger. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
 
 `verifyProductionRuntime` also prevents privileged Supabase credentials from entering the client artifact. `SUPABASE_ANON_KEY` may contain a current `sb_publishable_...` key or a legacy JWT whose issuer is `supabase` and sole role is `anon`; `sb_secret_...`, legacy `service_role`, wrong-issuer, malformed and opaque-long values fail closed. The synthetic `verifyRuntimeCredentialSafety` task exercises this contract without reading or logging any real key.
 
@@ -60,7 +60,7 @@ Before upload, also verify:
 - The merged Release Manifest contains no advertising ID, AdServices attribution/ID, or Install Referrer permission.
 - `verifyReleaseApkCompatibility` passes for the exact commit and dependency lock state used for the AAB.
 - No production secret appears in tracked files or Gradle output.
-- The AAB certificate matches the registered Play upload certificate.
+- `bundleSignedRelease` reports that the AAB certificate matches the registered Play upload certificate; independently compare the reported fingerprint with Play Console before upload.
 - API 26/33/35 tests and the physical-device matrix are green for the exact commit.
 
 ## 4. Play tracks
