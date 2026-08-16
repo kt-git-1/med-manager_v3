@@ -278,6 +278,43 @@ val verifyProductionSigning by tasks.registering {
     }
 }
 
+val verifyUploadKeystore by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Proves the configured upload alias, private key and certificate before building the Play AAB."
+    dependsOn(verifyProductionSigning)
+    inputs.files(
+        providers.provider {
+            releaseStoreFilePath.takeIf(String::isNotBlank)
+                ?.let { listOf(rootProject.file(it)) }
+                ?: emptyList<File>()
+        },
+        rootProject.file("scripts/verify-upload-keystore.sh"),
+    )
+    inputs.property("releaseKeyAlias", releaseKeyAlias)
+    inputs.property("playUploadCertSha256", playUploadCertSha256)
+    doFirst {
+        commandLine(
+            "bash",
+            rootProject.file("scripts/verify-upload-keystore.sh").absolutePath,
+            rootProject.file(releaseStoreFilePath).absolutePath,
+        )
+        environment("RELEASE_STORE_PASSWORD", releaseStorePassword)
+        environment("RELEASE_KEY_ALIAS", releaseKeyAlias)
+        environment("RELEASE_KEY_PASSWORD", releaseKeyPassword)
+        environment("EXPECTED_UPLOAD_CERT_SHA256", playUploadCertSha256)
+    }
+}
+
+val verifyUploadKeystoreContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Exercises accepted and rejected upload-keystore verifier fixtures."
+    inputs.files(
+        rootProject.file("scripts/verify-upload-keystore.sh"),
+        rootProject.file("scripts/test-verify-upload-keystore.sh"),
+    )
+    commandLine("bash", rootProject.file("scripts/test-verify-upload-keystore.sh").absolutePath)
+}
+
 val verifyFirebaseRuntime by tasks.registering {
     group = "verification"
     description = "Fails unless the Android Firebase app identity is complete and internally consistent."
@@ -622,7 +659,7 @@ val verifySignedReleaseBundle by tasks.registering(org.gradle.api.tasks.Exec::cl
     description = "Verifies the generated AAB signature and registered Play upload certificate."
     dependsOn(
         verifyProductionRuntime,
-        verifyProductionSigning,
+        verifyUploadKeystore,
         verifyReleaseSdkPolicy,
         verifyReleaseApkCompatibility,
         verifyReleaseBundleContent,
@@ -644,10 +681,15 @@ tasks.register("bundleSignedRelease") {
     dependsOn(verifySignedReleaseBundle)
 }
 verifyReleaseApkCompatibility.configure {
-    mustRunAfter(verifyProductionRuntime, verifyProductionSigning)
+    mustRunAfter(verifyProductionRuntime, verifyProductionSigning, verifyUploadKeystore)
 }
 tasks.matching { it.name == "bundleRelease" }.configureEach {
-    mustRunAfter(verifyProductionRuntime, verifyProductionSigning, verifyReleaseApkCompatibility)
+    mustRunAfter(
+        verifyProductionRuntime,
+        verifyProductionSigning,
+        verifyUploadKeystore,
+        verifyReleaseApkCompatibility,
+    )
 }
 
 tasks.named("preBuild").configure { dependsOn(syncRoleAssets) }

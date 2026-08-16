@@ -1,7 +1,7 @@
 # Google Play declaration worksheet
 
 **Status:** implementation-backed draft, not a submitted Console declaration  
-**Baseline:** published iOS/API `main@432b34c`, Android `android-dev` C89
+**Baseline:** published iOS/API `main@432b34c`, Android `android-dev` C90
 **Recheck:** the exact signed AAB, current Firebase SDK disclosures and Play Console questions immediately before submission
 
 This worksheet separates repository evidence from release-owner/Console decisions. It must not be copied blindly if the production configuration or SDK set changes.
@@ -56,6 +56,8 @@ Firebase Analytics currently brings `play-services-ads-identifier` and Privacy S
 C88 additionally checks the complete merged Release permission set, not only advertising exclusions. The current APK has exactly Internet, network-state, wake-lock, notification, FCM receive and AndroidX signature-protected dynamic-receiver permissions. Firebase Analytics collection and FCM auto-init are both manifest-off by default. Any added permission, exported component, weakened permission guard, backup/cleartext relaxation or authentication host fails the Release gate and requires an explicit privacy/security review.
 
 C89 validates the generated AAB with strict-locked bundletool and applies the same manifest policy to the protobuf manifest inside `base/manifest/AndroidManifest.xml`. It also rejects an unreviewed feature module or embedded Firebase config, environment file, service-account file or private key/keystore. This is repository evidence for the current unsigned artifact; repeat it on the release-owner-signed production AAB and retain Play's own scan before submission.
+
+C90 validates the upload keystore before that production AAB can be generated: the configured alias must be a usable private-key entry whose certificate SHA-256 equals the Play-registered upload fingerprint. The signed AAB verifier repeats the certificate comparison after generation. Synthetic key coverage proves the mechanism only; it does not answer any Console declaration or replace inspection of the release-owner artifact.
 
 SDK-provided coarse technical metadata must still be rechecked against the exact Firebase versions and Google's current disclosure guidance for the final signed AAB. If Google Analytics or Firebase Installations maps any automatically processed field to an additional Play data type, add it even if the app code does not set it directly.
 

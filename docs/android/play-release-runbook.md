@@ -49,10 +49,11 @@ cd android
 ./gradlew verifyReleaseApkCompatibility
 ./gradlew verifyReleaseBundleContent
 ./gradlew verifyPlayStoreAssets
+./gradlew verifyUploadKeystore
 ./gradlew bundleSignedRelease
 ```
 
-`verifyReleaseSdkPolicy` resolves the exact Release runtime graph and rejects unapproved collection/monetization SDKs. `verifyReleaseApkCompatibility` checks the exact Release APK manifest/security/permission/SDK/16 KB contract. `verifyReleaseBundleContent` uses strict-locked bundletool to validate the AAB, requires only the reviewed base module, rejects embedded private configuration/key material, dumps the protobuf manifest and reapplies the APK policy before printing structure counts and SHA-256. `verifyPlayStoreAssets` checks listing text/assets and iOS icon parity. `bundleSignedRelease` intentionally fails before generation when runtime/signing inputs are incomplete; after generation it requires all APK/AAB/content gates, complete JAR signature coverage, exactly one signer and a certificate SHA-256 matching `PLAY_UPLOAD_CERT_SHA256`. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
+`verifyReleaseSdkPolicy` resolves the exact Release runtime graph and rejects unapproved collection/monetization SDKs. `verifyReleaseApkCompatibility` checks the exact Release APK manifest/security/permission/SDK/16 KB contract. `verifyReleaseBundleContent` uses strict-locked bundletool to validate the AAB, requires only the reviewed base module, rejects embedded private configuration/key material, dumps the protobuf manifest and reapplies the APK policy before printing structure counts and SHA-256. `verifyPlayStoreAssets` checks listing text/assets and iOS icon parity. `verifyUploadKeystore` runs before AAB generation: the selected alias must be a usable private-key entry and its certificate must exactly match `PLAY_UPLOAD_CERT_SHA256`; passwords are neither printed nor declared as cacheable task inputs. `bundleSignedRelease` intentionally fails before generation when runtime/signing/key inputs are incomplete or inconsistent; after generation it requires all APK/AAB/content gates, complete JAR signature coverage, exactly one signer and the same certificate identity. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
 
 `verifyProductionRuntime` also prevents privileged Supabase credentials from entering the client artifact. `SUPABASE_ANON_KEY` may contain a current `sb_publishable_...` key or a legacy JWT whose issuer is `supabase` and sole role is `anon`; `sb_secret_...`, legacy `service_role`, wrong-issuer, malformed and opaque-long values fail closed. The synthetic `verifyRuntimeCredentialSafety` task exercises this contract without reading or logging any real key.
 
@@ -65,6 +66,7 @@ Before upload, also verify:
 - `verifyReleaseSdkPolicy` passes and its inventory matches the dependency state used for the exact AAB; recheck current Firebase vendor disclosures rather than copying older answers.
 - `verifyReleaseApkCompatibility` passes for the exact commit and dependency lock state used for the AAB.
 - `verifyReleaseBundleContent` validates that same AAB and reports the expected base-only structure and manifest contract.
+- `verifyUploadKeystore` reports the same upload-certificate SHA-256 that the release owner independently reads from Play Console; a successful synthetic contract is not a substitute.
 - No production secret appears in tracked files or Gradle output.
 - `bundleSignedRelease` reports that the AAB certificate matches the registered Play upload certificate; independently compare the reported fingerprint with Play Console before upload.
 - API 26/33/35 tests and the physical-device matrix are green for the exact commit.

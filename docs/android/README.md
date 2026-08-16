@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C89
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C90
 - Baseline date: 2026-08-16
-- Current action: C89 validates the generated Release AAB with strict-locked bundletool 1.18.0, extracts its protobuf base manifest, reapplies the C88 security/privacy contract and rejects non-base modules or embedded private configuration/key material. The current unsigned AAB is valid, base-only, contains four DEX files/eight native libraries and matches the six-permission/three-exported/three-auth-link contract. The same gate is mandatory before signed-AAB certificate verification; release-owner signing and Play scan remain external evidence.
+- Current action: C90 verifies the configured upload keystore before any Play AAB is built. The selected alias must exist as a private-key entry, sign with the supplied key password and expose exactly the registered `PLAY_UPLOAD_CERT_SHA256`; wrong certificate, alias, store/key password, malformed fingerprint, missing store and certificate-only aliases fail closed. A synthetic full `bundleSignedRelease` proves the pre-build key gate, actual APK/AAB content gates, AAB signature and post-build certificate identity form one path. No release-owner key was used or created; the exact production-signed AAB and Play scan remain external evidence.
 
 ## Authority order
 
