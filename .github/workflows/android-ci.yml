@@ -60,6 +60,9 @@ jobs:
       - name: Signed bundle verifier contract
         run: scripts/test-verify-signed-aab.sh
 
+      - name: Release manifest policy contract
+        run: python3 scripts/test-verify-release-manifest-policy.py
+
       - name: Release SDK and Data safety policy
         run: ./gradlew verifyReleaseSdkPolicy
 

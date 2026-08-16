@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C87
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C88
 - Baseline date: 2026-08-16
-- Current action: C87 makes the C86 Release SDK/Data safety result reproducible with strict dependency locking scoped to `releaseRuntimeClasspath`. Missing or stale lock state fails resolution; dependency changes now require an intentional `--write-locks` update, review of the lock diff and a repeated C86 policy/permission/vendor-disclosure audit. Debug and test configurations are not unnecessarily locked. The exact signed AAB, current vendor disclosures and submitted Play Data safety/Health apps answers remain external evidence.
+- Current action: C88 makes the final merged Release APK manifest a fail-closed security/privacy contract. It rejects debug/test/profileable builds, backup/cleartext relaxation, Firebase auto-collection, unreviewed permissions/exported components/authentication hosts and broken App Link intent semantics. The current Release APK has six allow-listed permissions, three explicitly reviewed exported components with exact permission guards, and three authentication links. Synthetic negative cases run in CI; exact signed-AAB/Play inspection remains external evidence.
 
 ## Authority order
 

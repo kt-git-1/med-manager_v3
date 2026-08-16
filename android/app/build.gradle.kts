@@ -394,7 +394,7 @@ val verifyReleaseSdkPolicy by tasks.registering {
 
 val verifyReleaseApkCompatibility by tasks.registering(org.gradle.api.tasks.Exec::class) {
     group = "verification"
-    description = "Builds and inspects the Release APK for SDK, permission and 16 KB page-size compatibility."
+    description = "Inspects Release manifest security/privacy, SDK, permissions and 16 KB compatibility."
     dependsOn("assembleRelease", verifyReleaseSdkPolicy)
     val apkFileName = if (releaseSigningConfigured) "app-release.apk" else "app-release-unsigned.apk"
     val apkFile = layout.buildDirectory.file("outputs/apk/release/$apkFileName")

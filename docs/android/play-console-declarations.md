@@ -53,6 +53,8 @@ C86 resolves the actual `releaseRuntimeClasspath` rather than inferring collecti
 
 Firebase Analytics currently brings `play-services-ads-identifier` and Privacy Sandbox AdServices support libraries transitively. Their names do not by themselves mean that this app uses advertising identifiers. The independent Release APK gate confirms that `AD_ID`, AdServices attribution/ID/topics and Install Referrer permissions are absent. Both facts must be retained: do not claim that no such support artifact exists, and do not declare advertising use solely from the artifact name.
 
+C88 additionally checks the complete merged Release permission set, not only advertising exclusions. The current APK has exactly Internet, network-state, wake-lock, notification, FCM receive and AndroidX signature-protected dynamic-receiver permissions. Firebase Analytics collection and FCM auto-init are both manifest-off by default. Any added permission, exported component, weakened permission guard, backup/cleartext relaxation or authentication host fails the Release gate and requires an explicit privacy/security review.
+
 SDK-provided coarse technical metadata must still be rechecked against the exact Firebase versions and Google's current disclosure guidance for the final signed AAB. If Google Analytics or Firebase Installations maps any automatically processed field to an additional Play data type, add it even if the app code does not set it directly.
 
 ## Health apps declaration draft

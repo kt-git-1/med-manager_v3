@@ -42,6 +42,12 @@ if [[ ! -x "$ZIPALIGN" || ! -x "$APKANALYZER" ]]; then
   exit 1
 fi
 
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TMP_DIR"' EXIT
+MERGED_MANIFEST="$TMP_DIR/AndroidManifest.xml"
+"$APKANALYZER" manifest print "$APK" > "$MERGED_MANIFEST"
+python3 "$PROJECT_DIR/scripts/verify-release-manifest-policy.py" "$MERGED_MANIFEST"
+
 APPLICATION_ID="$($APKANALYZER manifest application-id "$APK")"
 MIN_SDK="$($APKANALYZER manifest min-sdk "$APK")"
 TARGET_SDK="$($APKANALYZER manifest target-sdk "$APK")"
@@ -73,9 +79,6 @@ do
 done
 
 "$ZIPALIGN" -c -P 16 -v 4 "$APK" >/dev/null
-
-TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TMP_DIR"' EXIT
 unzip -qq "$APK" 'lib/*.so' 'lib/*/*.so' -d "$TMP_DIR" 2>/dev/null || true
 
 OBJDUMP="$(command -v llvm-objdump || command -v objdump || true)"
