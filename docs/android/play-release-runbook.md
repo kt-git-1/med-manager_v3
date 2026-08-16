@@ -55,6 +55,8 @@ cd android
 
 `verifyProductionRuntime` also prevents privileged Supabase credentials from entering the client artifact. `SUPABASE_ANON_KEY` may contain a current `sb_publishable_...` key or a legacy JWT whose issuer is `supabase` and sole role is `anon`; `sb_secret_...`, legacy `service_role`, wrong-issuer, malformed and opaque-long values fail closed. The synthetic `verifyRuntimeCredentialSafety` task exercises this contract without reading or logging any real key.
 
+`app/gradle.lockfile` strictly pins only `releaseRuntimeClasspath`. Never hand-edit it. For an intentional dependency update, run `./gradlew :app:dependencies --configuration releaseRuntimeClasspath --write-locks`, review every lock diff, then rerun `verifyReleaseSdkPolicy`, `verifyReleaseApkCompatibility`, current Firebase disclosure review and the complete CI matrix. A missing or stale lock fails closed; do not bypass it to make a release build pass.
+
 Before upload, also verify:
 
 - `applicationId` is `com.afterlifearchive.medmanager`.

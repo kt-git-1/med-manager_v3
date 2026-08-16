@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.gradle.api.artifacts.dsl.LockMode
 import org.gradle.api.tasks.Sync
 import java.net.URI
 import java.util.Base64
@@ -213,6 +214,15 @@ android {
     sourceSets["main"].res.srcDir(generatedRoleAssets)
 }
 
+configurations.configureEach {
+    if (name == "releaseRuntimeClasspath") {
+        resolutionStrategy.activateDependencyLocking()
+    }
+}
+dependencyLocking {
+    lockMode.set(LockMode.STRICT)
+}
+
 val verifyProductionSigning by tasks.registering {
     group = "verification"
     description = "Fails unless all production upload-signing values and the keystore are available."
@@ -323,11 +333,13 @@ val verifyReleaseSdkPolicyContract by tasks.registering {
 
 val releaseRuntimeClasspath = providers.provider { configurations.getByName("releaseRuntimeClasspath") }
 val releaseSdkInventoryFile = layout.buildDirectory.file("reports/release-sdk-inventory.txt")
+val releaseDependencyLockFile = project.file("gradle.lockfile")
 val verifyReleaseSdkPolicy by tasks.registering {
     group = "verification"
     description = "Audits the exact resolved Release SDK inventory against the Play Data safety policy."
     dependsOn(verifyReleaseSdkPolicyContract)
     inputs.files(releaseRuntimeClasspath)
+    inputs.file(releaseDependencyLockFile)
     outputs.file(releaseSdkInventoryFile)
     doLast {
         val coordinates = releaseRuntimeClasspath.get()

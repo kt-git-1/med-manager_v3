@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C86
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C87
 - Baseline date: 2026-08-16
-- Current action: C86 audits the exact resolved `releaseRuntimeClasspath` before Release artifacts are accepted. Firebase Analytics/Messaging/Installations must be present; unapproved ads, billing, install-referrer, crash/performance and external attribution/analytics SDKs fail closed; the sorted inventory records Firebase Analytics' known advertising-ID/Privacy Sandbox support transitives without confusing their presence with app permission use. APK permission exclusion remains an independent gate. The exact signed AAB, current vendor disclosures and submitted Play Data safety/Health apps answers remain external evidence.
+- Current action: C87 makes the C86 Release SDK/Data safety result reproducible with strict dependency locking scoped to `releaseRuntimeClasspath`. Missing or stale lock state fails resolution; dependency changes now require an intentional `--write-locks` update, review of the lock diff and a repeated C86 policy/permission/vendor-disclosure audit. Debug and test configurations are not unnecessarily locked. The exact signed AAB, current vendor disclosures and submitted Play Data safety/Health apps answers remain external evidence.
 
 ## Authority order
 

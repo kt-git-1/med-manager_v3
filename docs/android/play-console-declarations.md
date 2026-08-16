@@ -1,7 +1,7 @@
 # Google Play declaration worksheet
 
 **Status:** implementation-backed draft, not a submitted Console declaration  
-**Baseline:** published iOS/API `main@432b34c`, Android `android-dev` C86
+**Baseline:** published iOS/API `main@432b34c`, Android `android-dev` C87
 **Recheck:** the exact signed AAB, current Firebase SDK disclosures and Play Console questions immediately before submission
 
 This worksheet separates repository evidence from release-owner/Console decisions. It must not be copied blindly if the production configuration or SDK set changes.
@@ -49,7 +49,7 @@ Google states that every published app, including closed-test apps, must complet
 
 ## Resolved Release SDK evidence
 
-C86 resolves the actual `releaseRuntimeClasspath` rather than inferring collection from direct dependency declarations. The current graph contains 175 modules and requires Firebase Analytics, Cloud Messaging and Installations. It contains no Google Mobile Ads SDK, Billing, Install Referrer, Crashlytics, Firebase Performance, AppsFlyer, Adjust, Meta, Sentry, Mixpanel, Amplitude or Segment SDK. The sorted inventory is generated at `android/app/build/reports/release-sdk-inventory.txt` by `verifyReleaseSdkPolicy`; it is build evidence, not a tracked release artifact.
+C86 resolves the actual `releaseRuntimeClasspath` rather than inferring collection from direct dependency declarations. The current graph contains 175 modules and requires Firebase Analytics, Cloud Messaging and Installations. It contains no Google Mobile Ads SDK, Billing, Install Referrer, Crashlytics, Firebase Performance, AppsFlyer, Adjust, Meta, Sentry, Mixpanel, Amplitude or Segment SDK. The sorted inventory is generated at `android/app/build/reports/release-sdk-inventory.txt` by `verifyReleaseSdkPolicy`; it is build evidence, not a tracked release artifact. C87 checks in strict Gradle lock state for its 174 external modules, so the reviewed graph cannot silently gain, lose or change a version on another machine.
 
 Firebase Analytics currently brings `play-services-ads-identifier` and Privacy Sandbox AdServices support libraries transitively. Their names do not by themselves mean that this app uses advertising identifiers. The independent Release APK gate confirms that `AD_ID`, AdServices attribution/ID/topics and Install Referrer permissions are absent. Both facts must be retained: do not claim that no such support artifact exists, and do not declare advertising use solely from the artifact name.
 
