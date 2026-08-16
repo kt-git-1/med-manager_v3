@@ -48,11 +48,17 @@ fun syntheticLegacySupabaseKey(role: String, issuer: String = "supabase"): Strin
     return "$header.$payload.synthetic-signature"
 }
 
+fun normalizedSha256Fingerprint(value: String): String? = value
+    .replace(Regex("[:\\s]"), "")
+    .lowercase()
+    .takeIf { it.matches(Regex("^[0-9a-f]{64}$")) }
+
 val generatedRoleAssets = layout.buildDirectory.dir("generated/role-assets/res")
 val releaseStoreFilePath = runtimeConfig("RELEASE_STORE_FILE")
 val releaseStorePassword = runtimeConfig("RELEASE_STORE_PASSWORD")
 val releaseKeyAlias = runtimeConfig("RELEASE_KEY_ALIAS")
 val releaseKeyPassword = runtimeConfig("RELEASE_KEY_PASSWORD")
+val playUploadCertSha256 = runtimeConfig("PLAY_UPLOAD_CERT_SHA256")
 val releaseSigningConfigured = listOf(
     releaseStoreFilePath,
     releaseStorePassword,
@@ -191,6 +197,9 @@ val verifyProductionSigning by tasks.registering {
         require(rootProject.file(releaseStoreFilePath).isFile) {
             "RELEASE_STORE_FILE does not exist: ${rootProject.file(releaseStoreFilePath)}"
         }
+        require(normalizedSha256Fingerprint(playUploadCertSha256) != null) {
+            "Set PLAY_UPLOAD_CERT_SHA256 to the registered Play upload-certificate fingerprint."
+        }
     }
 }
 
@@ -253,7 +262,14 @@ val verifyReleaseApkCompatibility by tasks.registering(org.gradle.api.tasks.Exec
     group = "verification"
     description = "Builds and inspects the Release APK for SDK, permission and 16 KB page-size compatibility."
     dependsOn("assembleRelease")
-    commandLine("bash", rootProject.file("scripts/verify-release-apk.sh").absolutePath)
+    val apkFileName = if (releaseSigningConfigured) "app-release.apk" else "app-release-unsigned.apk"
+    val apkFile = layout.buildDirectory.file("outputs/apk/release/$apkFileName")
+    inputs.file(apkFile)
+    commandLine(
+        "bash",
+        rootProject.file("scripts/verify-release-apk.sh").absolutePath,
+        apkFile.get().asFile.absolutePath,
+    )
 }
 
 val verifyPlayStoreAssets by tasks.registering {
@@ -333,9 +349,9 @@ val verifyPlayStoreAssets by tasks.registering {
     }
 }
 
-tasks.register("bundleSignedRelease") {
-    group = "build"
-    description = "Builds the Play upload AAB only after production runtime and signing configuration are verified."
+val verifySignedReleaseBundle by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Verifies the generated AAB signature and registered Play upload certificate."
     dependsOn(
         verifyProductionRuntime,
         verifyProductionSigning,
@@ -343,6 +359,21 @@ tasks.register("bundleSignedRelease") {
         verifyPlayStoreAssets,
         "bundleRelease",
     )
+    val bundleFile = layout.buildDirectory.file("outputs/bundle/release/app-release.aab")
+    inputs.file(bundleFile)
+    inputs.property("playUploadCertSha256", playUploadCertSha256)
+    commandLine(
+        "bash",
+        rootProject.file("scripts/verify-signed-aab.sh").absolutePath,
+        bundleFile.get().asFile.absolutePath,
+    )
+    environment("EXPECTED_UPLOAD_CERT_SHA256", playUploadCertSha256)
+}
+
+tasks.register("bundleSignedRelease") {
+    group = "build"
+    description = "Builds and verifies the Play upload AAB after every production release gate passes."
+    dependsOn(verifySignedReleaseBundle)
 }
 verifyReleaseApkCompatibility.configure {
     mustRunAfter(verifyProductionRuntime, verifyProductionSigning)
