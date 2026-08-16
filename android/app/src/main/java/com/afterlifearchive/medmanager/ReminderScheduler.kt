@@ -14,7 +14,6 @@ import androidx.core.app.NotificationManagerCompat
 
 object ReminderScheduler {
     const val CHANNEL_ID = "patient_reminders"
-    private const val EXTRA_MEDICATION = "medication"
 
     fun createNotificationChannel(context: Context) {
         val channel = NotificationChannel(
@@ -25,9 +24,8 @@ object ReminderScheduler {
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    fun schedule(context: Context, doseKey: String, medicationName: String, delayMinutes: Long = 10) {
+    fun schedule(context: Context, doseKey: String, delayMinutes: Long = 10) {
         val intent = Intent(context, ReminderReceiver::class.java)
-            .putExtra(EXTRA_MEDICATION, medicationName)
         val pending = PendingIntent.getBroadcast(
             context,
             doseKey.hashCode(),
@@ -42,8 +40,14 @@ object ReminderScheduler {
         )
     }
 
-    fun medicationName(context: Context, intent: Intent): String =
-        intent.getStringExtra(EXTRA_MEDICATION) ?: context.getString(R.string.notification_default_medication_name)
+}
+
+internal fun patientNotificationBodyResource(slot: String?): Int = when (slot?.lowercase()) {
+    "morning" -> R.string.notification_patient_body_morning
+    "noon" -> R.string.notification_patient_body_noon
+    "evening" -> R.string.notification_patient_body_evening
+    "bedtime" -> R.string.notification_patient_body_bedtime
+    else -> R.string.notification_patient_body
 }
 
 class ReminderReceiver : BroadcastReceiver() {
@@ -65,7 +69,7 @@ class ReminderReceiver : BroadcastReceiver() {
         val notification = NotificationCompat.Builder(context, ReminderScheduler.CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_popup_reminder)
             .setContentTitle(context.getString(R.string.notification_patient_title))
-            .setContentText(context.getString(R.string.notification_patient_body, ReminderScheduler.medicationName(context, intent)))
+            .setContentText(context.getString(patientNotificationBodyResource(intent.getStringExtra("notification_slot"))))
             .setContentIntent(contentIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

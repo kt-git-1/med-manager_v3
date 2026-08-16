@@ -414,7 +414,7 @@ fun PatientHomeScreen(
                     onRecordPrn = { confirmPrn = it },
                     onRemind = { dose ->
                         if (Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        ReminderScheduler.schedule(context, dose.key, dose.medicationName)
+                        ReminderScheduler.schedule(context, dose.key)
                     },
                     prnError = state.prnError?.let { patientUserMessageText(it) },
                     prnSuccessRevision = state.prnRecordSuccessRevision,

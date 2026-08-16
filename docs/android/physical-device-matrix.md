@@ -1,6 +1,6 @@
 # Android physical-device verification matrix
 
-**Status:** procedure complete; partial execution started on one API 35 non-Google OEM device; release configuration and remaining device classes pending
+**Status:** procedure complete; authenticated role/appearance/lifecycle/permission and diagnostic local-notification execution recorded on one API 35 non-Google OEM device; signed Play, full TalkBack/timed delivery and remaining device classes pending
 **Package:** `com.afterlifearchive.medmanager`
 **Owner gate:** V1 / Gate I / `XP-005`, `XP-006`, `XP-008`, `XP-010`
 

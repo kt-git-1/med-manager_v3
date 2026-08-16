@@ -746,9 +746,12 @@
     <!-- Local notifications -->
     <string name="notification_channel_patient_reminders">服薬リマインダー</string>
     <string name="notification_channel_patient_reminders_description">あとで知らせる服薬通知</string>
-    <string name="notification_default_medication_name">お薬</string>
     <string name="notification_patient_title">お薬の時間です</string>
-    <string name="notification_patient_body">%1$sを確認しましょう。</string>
+    <string name="notification_patient_body">お薬の予定を確認しましょう。</string>
+    <string name="notification_patient_body_morning">朝のお薬の時間です！</string>
+    <string name="notification_patient_body_noon">昼のお薬の時間です！</string>
+    <string name="notification_patient_body_evening">夜のお薬の時間です！</string>
+    <string name="notification_patient_body_bedtime">眠前のお薬の時間です！</string>
     <string name="notification_channel_caregiver">見守り通知</string>
     <string name="notification_channel_caregiver_description">見守っている方の服薬状況に関する通知</string>
     <string name="notification_caregiver_title">服薬状況が更新されました</string>
