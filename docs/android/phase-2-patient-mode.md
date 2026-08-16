@@ -6,6 +6,15 @@
 
 This file records the first working path. Completion is governed by the `PT-*`, `PH-*`, and relevant `XP-*` rows in `parity-requirements.md`.
 
+## 2026-08-16 C68 physical local-reminder evidence
+
+- A Debug-only, `android.permission.DUMP`-protected diagnostic accepts only 15–600 second delays, canonical medication slots and primary/secondary sequence values, then delegates to the production `PatientNotificationScheduler` and `ReminderReceiver`.
+- On A302SH/API 35, one background primary and one foreground secondary each arrived in 36 seconds for 20-second targets. A task-removed noon reminder cold-started the app into Patient Today/noon, and a 45-second target forced into deep idle arrived once in 79 seconds.
+- Production cancellation removed the active alarm immediately and no notification or alarm existed through 96 seconds. All displayed content was generic slot copy with no patient, medication, dosage, inventory or record data.
+- The diagnostic receiver/actions are absent from merged Release manifests and the Release APK. Full regression passes 273/273 Compose and 206/206 JVM tests plus Lint and both APK gates.
+
+This closes the local timed/secondary/task-removed/Doze/cancellation rows on one current non-Google OEM Debug target. Firebase/FCM, signed Play, API 26–28, Google/reference and complete spoken TalkBack remain external physical gates.
+
 ## 2026-07-14 A04 mutation-freshness evidence
 
 - `MutationFreshnessStore` owns monotonic dose, medication and inventory revisions independently of any screen or tab.
@@ -38,7 +47,7 @@ A04 establishes the shared contract. A05 binds reminder maintenance; A06 supplie
 - A production-shell Compose regression now proves that the payload slot is promoted into the next-dose hero during that four-second transition; current iOS scrolls to the corresponding slot rather than adding a separate highlight border to normal bulk-slot cards.
 - Existing tutorial navigation still selects/loads its required retained tab; the 200% font-scale tutorial test remains green.
 
-`PT-014` is `IMPLEMENTED`. `XP-002` is `PARTIAL` until caregiver remote push routing and process-death/physical notification taps are verified.
+`PT-014` is `IMPLEMENTED`. C68 later closes the local Patient task-removed physical tap on A302SH; caregiver remote push and remaining device/release-artifact routing evidence stay open under `XP-002`.
 
 ## Implemented foundation
 
@@ -57,7 +66,7 @@ The UI establishes the patient tab structure and shared teal identity. Patient T
 
 - Live API recording and concurrent inventory behavior
 - Dark mode, 130%/200% font, TalkBack and compact/large devices
-- Physical AlarmManager delivery, process death and notification taps
+- Cross-device and signed-Play AlarmManager/process/tap verification beyond the C68 A302SH Debug pass
 - The remaining current-main paired screen captures in C01/C04/C05
 
 PRN recording, slot bulk/partial inventory, recurring notification settings and tutorial coachmarks are implemented and covered by automated tests. The historical patient day-detail component is retained only as a typed/shared caregiver foundation and is no longer a patient navigation destination.
@@ -271,7 +280,7 @@ This selector foundation is connected to inventory-backed production candidates 
 - Repository tests cover successful and failed server revocation.
 - Android 15 Compose tests cover settings content, canonical destinations, scroll behavior, and explicit unlink confirmation.
 
-`PH-005` through `PH-008` are `IMPLEMENTED`. Physical notification permission, Doze/alarm delivery, external browser return, real server revocation, iOS comparison captures, large text, and TalkBack remain before `VERIFIED`.
+`PH-005` through `PH-008` are `IMPLEMENTED`. C67-C68 later close notification permission and local Doze/alarm delivery on one A302SH Debug target; cross-device/signed-Play notification evidence, external browser return, real server revocation, remaining iOS comparison captures, large text, and spoken TalkBack remain before `VERIFIED`.
 
 ## 2026-07-14 C05 current Patient Settings parity
 
@@ -360,7 +369,7 @@ This selector foundation is connected to inventory-backed production candidates 
 - The overlay now follows the current iOS senior-friendly contract: exact copy, per-step icon, 18% scrim, 16 dp elevated card, 48 dp icon treatment, circular back action, icon-bearing primary action and 104 dp clearance above the persistent patient navigation bar.
 - Current-iOS and API-35 Android default-size captures for all four steps are paired under `evidence/c01-20260714/`. Android fixtures render each state independently over the production patient preview and capture the complete device display to prevent transition or alpha artifacts.
 
-`XP-002` and the patient portion of `XP-003` are `IMPLEMENTED`. Default-size, completion/skip and largest-text matched tutorial evidence is complete; physical notification taps, process-death routing and TalkBack remain before `VERIFIED`.
+`XP-002` and the patient portion of `XP-003` are `IMPLEMENTED`. Default-size, completion/skip and largest-text matched tutorial evidence is complete; C68 later closes one-device local task-removed routing, while caregiver FCM, other device/release artifacts and spoken TalkBack remain before `VERIFIED`.
 
 ### XP-005 patient accessibility hardening
 
