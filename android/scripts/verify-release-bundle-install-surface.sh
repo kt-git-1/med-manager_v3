@@ -74,18 +74,28 @@ python3 "$PROJECT_DIR/scripts/extract-universal-apk.py" \
   "$work_dir/universal.apks" \
   "$work_dir/universal.apk"
 
-expected_fingerprint="$(
-  LC_ALL=C keytool -list -v \
+expected_certificate="$(
+  LC_ALL=C keytool -exportcert -rfc \
     -keystore "$work_dir/install-surface.jks" \
     -storepass "$TEST_PASSWORD" \
-    -alias "$TEST_ALIAS" 2>/dev/null |
-    awk -F': ' '/SHA256:/{gsub(":", "", $2); print tolower($2); exit}'
+    -alias "$TEST_ALIAS" 2>/dev/null
 )"
-actual_fingerprint="$(
-  LC_ALL=C "$APKSIGNER" verify --print-certs "$work_dir/universal.apk" 2>/dev/null |
-    awk -F': ' '/Signer #1 certificate SHA-256 digest:/{print tolower($2); exit}'
+if ! signer_output="$(
+  LC_ALL=C "$APKSIGNER" verify --print-certs-pem "$work_dir/universal.apk" 2>/dev/null
+)"; then
+  echo "Universal APK signature verification failed." >&2
+  exit 1
+fi
+certificate_count="$(printf '%s\n' "$signer_output" | grep -c '^-----BEGIN CERTIFICATE-----$')"
+actual_certificate="$(
+  printf '%s\n' "$signer_output" |
+    sed -n '/^-----BEGIN CERTIFICATE-----$/,/^-----END CERTIFICATE-----$/p'
 )"
-if [[ -z "$actual_fingerprint" || "$actual_fingerprint" != "$expected_fingerprint" ]]; then
+normalize_certificate() {
+  printf '%s\n' "$1" | sed '/^-----/d' | tr -d '\r\n'
+}
+if [[ "$certificate_count" != "1" ]] ||
+  [[ "$(normalize_certificate "$actual_certificate")" != "$(normalize_certificate "$expected_certificate")" ]]; then
   echo "Universal APK does not use the ephemeral install-surface certificate." >&2
   exit 1
 fi
