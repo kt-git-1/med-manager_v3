@@ -5,6 +5,8 @@ import com.afterlifearchive.medmanager.data.network.ApiClient
 import com.afterlifearchive.medmanager.data.network.HttpRequest
 import com.afterlifearchive.medmanager.data.network.HttpResponse
 import com.afterlifearchive.medmanager.data.network.HttpTransport
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -118,6 +120,41 @@ class CaregiverInventoryRepositoryTest {
         assertFalse(repository.state.value.mutationFailed)
         assertFalse(repository.updateSettings("p1", original, false))
         assertEquals(0, updateCalls)
+    }
+
+    @Test
+    fun inventoryMutationsAreSingleFlightAndCancellationDoesNotReplayRequest() = runTest {
+        val requestStarted = CompletableDeferred<Unit>()
+        val responseGate = CompletableDeferred<Unit>()
+        val original = item(quantity = 3.0)
+        var adjustCalls = 0
+        val source = object : CaregiverInventoryDataSource {
+            override suspend fun list(patientId: String) = listOf(original)
+            override suspend fun update(patientId: String, medicationId: String, enabled: Boolean, quantity: Double?) = original
+            override suspend fun adjust(patientId: String, medicationId: String, reason: String, delta: Double?, absoluteQuantity: Double?): CaregiverInventoryItem {
+                adjustCalls += 1
+                requestStarted.complete(Unit)
+                responseGate.await()
+                return original.copy(inventoryQuantity = absoluteQuantity ?: original.inventoryQuantity + (delta ?: 0.0))
+            }
+        }
+        val repository = CaregiverInventoryRepository(source, MutationFreshnessStore())
+        repository.load("p1")
+
+        val first = launch { repository.refill("p1", original, 2.0) }
+        requestStarted.await()
+        assertFalse(repository.correct("p1", original, 8.0))
+        assertEquals(1, adjustCalls)
+
+        first.cancel()
+        first.join()
+        assertEquals(null, repository.state.value.updatingMedicationId)
+        assertEquals(3.0, repository.state.value.items.single().inventoryQuantity, 0.0)
+        assertEquals(1, adjustCalls)
+
+        responseGate.complete(Unit)
+        assertTrue(repository.correct("p1", original, 8.0))
+        assertEquals(2, adjustCalls)
     }
 
     private fun item(quantity: Double, enabled: Boolean = true) = CaregiverInventoryItem(

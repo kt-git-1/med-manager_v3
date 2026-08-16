@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -117,6 +118,7 @@ class CaregiverPatientRepository(
     private val mutableState = MutableStateFlow(
         CaregiverPatientState(selectedPatientId = selectionRepository.state.value.patientId),
     )
+    private val mutationMutex = Mutex()
     val state: StateFlow<CaregiverPatientState> = mutableState.asStateFlow()
 
     suspend fun refresh() {
@@ -166,6 +168,7 @@ class CaregiverPatientRepository(
             mutableState.value = mutableState.value.copy(createError = validation)
             return false
         }
+        if (!mutationMutex.tryLock()) return false
         mutableState.value = mutableState.value.copy(creating = true, createError = null)
         return try {
             val created = dataSource.createPatient(normalized)
@@ -186,6 +189,9 @@ class CaregiverPatientRepository(
                 createError = if (error is ApiException.PatientLimitExceeded) CaregiverCreateError.PATIENT_LIMIT else CaregiverCreateError.FAILED,
             )
             false
+        } finally {
+            mutableState.value = mutableState.value.copy(creating = false)
+            mutationMutex.unlock()
         }
     }
 
@@ -203,6 +209,7 @@ class CaregiverPatientRepository(
             )
             return false
         }
+        if (!mutationMutex.tryLock()) return false
         mutableState.value = mutableState.value.copy(
             savingSlotTimes = true,
             slotTimesSaveFailed = false,
@@ -226,6 +233,9 @@ class CaregiverPatientRepository(
                 slotTimesValidationError = null,
             )
             false
+        } finally {
+            mutableState.value = mutableState.value.copy(savingSlotTimes = false)
+            mutationMutex.unlock()
         }
     }
 
@@ -241,6 +251,7 @@ class CaregiverPatientRepository(
             return false
         }
         val patientId = mutableState.value.selectedPatientId ?: return false
+        if (!mutationMutex.tryLock()) return false
         mutableState.value = mutableState.value.copy(issuingLinkingCode = true, linkingCodeFailed = false)
         return try {
             val issued = dataSource.issueLinkingCode(patientId)
@@ -253,6 +264,9 @@ class CaregiverPatientRepository(
             if (error is CancellationException) throw error
             mutableState.value = mutableState.value.copy(issuingLinkingCode = false, linkingCodeFailed = true)
             false
+        } finally {
+            mutableState.value = mutableState.value.copy(issuingLinkingCode = false)
+            mutationMutex.unlock()
         }
     }
 
@@ -265,6 +279,7 @@ class CaregiverPatientRepository(
     suspend fun deleteSelectedPatient(): Boolean = mutateSelectedPatient(dataSource::deletePatient)
 
     suspend fun deleteCaregiverAccount(): Boolean {
+        if (!mutationMutex.tryLock()) return false
         mutableState.value = mutableState.value.copy(destructiveActionInProgress = true, destructiveActionFailed = false)
         return try {
             dataSource.deleteCaregiverAccount()
@@ -276,6 +291,9 @@ class CaregiverPatientRepository(
             if (error is CancellationException) throw error
             mutableState.value = mutableState.value.copy(destructiveActionInProgress = false, destructiveActionFailed = true)
             false
+        } finally {
+            mutableState.value = mutableState.value.copy(destructiveActionInProgress = false)
+            mutationMutex.unlock()
         }
     }
 
@@ -305,6 +323,7 @@ class CaregiverPatientRepository(
             return false
         }
         val patientId = mutableState.value.selectedPatientId ?: return false
+        if (!mutationMutex.tryLock()) return false
         mutableState.value = mutableState.value.copy(destructiveActionInProgress = true, destructiveActionFailed = false)
         return try {
             action(patientId)
@@ -323,6 +342,9 @@ class CaregiverPatientRepository(
             if (error is CancellationException) throw error
             mutableState.value = mutableState.value.copy(destructiveActionInProgress = false, destructiveActionFailed = true)
             false
+        } finally {
+            mutableState.value = mutableState.value.copy(destructiveActionInProgress = false)
+            mutationMutex.unlock()
         }
     }
 }

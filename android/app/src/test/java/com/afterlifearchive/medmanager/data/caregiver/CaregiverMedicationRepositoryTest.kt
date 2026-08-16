@@ -6,6 +6,8 @@ import com.afterlifearchive.medmanager.data.network.HttpRequest
 import com.afterlifearchive.medmanager.data.network.HttpResponse
 import com.afterlifearchive.medmanager.data.network.HttpTransport
 import com.afterlifearchive.medmanager.data.patient.PatientMedication
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -283,6 +285,43 @@ class CaregiverMedicationRepositoryTest {
         assertTrue(repository.state.value.hasLoaded)
         assertTrue(repository.state.value.refreshFailed)
         assertFalse(repository.state.value.loadFailed)
+    }
+
+    @Test
+    fun saveAndDeleteShareSingleFlightWithoutAutomaticReplayAfterCancellation() = runTest {
+        val requestStarted = CompletableDeferred<Unit>()
+        val responseGate = CompletableDeferred<Unit>()
+        var createCalls = 0
+        var deleteCalls = 0
+        val source = object : CaregiverMedicationDataSource {
+            override suspend fun listMedications(patientId: String) = listOf(medication("old", patientId))
+            override suspend fun createMedication(patientId: String, draft: CaregiverMedicationDraft): PatientMedication {
+                createCalls += 1
+                requestStarted.complete(Unit)
+                responseGate.await()
+                return medication("new", patientId)
+            }
+            override suspend fun listRegimens(medicationId: String) = emptyList<CaregiverRegimen>()
+            override suspend fun createRegimen(medicationId: String, draft: CaregiverMedicationDraft) = CaregiverRegimen("reg", true)
+            override suspend fun deleteMedication(patientId: String, medicationId: String) { deleteCalls += 1 }
+        }
+        val repository = CaregiverMedicationRepository(source, MutationFreshnessStore())
+        repository.load("patient-1")
+
+        val first = launch { repository.save("patient-1", null, validDraft()) }
+        requestStarted.await()
+        assertFalse(repository.delete("patient-1", "old"))
+        assertEquals(1, createCalls)
+        assertEquals(0, deleteCalls)
+
+        first.cancel()
+        first.join()
+        assertEquals(1, createCalls)
+        assertEquals(listOf("old"), repository.state.value.items.map { it.id })
+
+        responseGate.complete(Unit)
+        assertTrue(repository.delete("patient-1", "old"))
+        assertEquals(1, deleteCalls)
     }
 
     private fun medication(id: String, patientId: String) = PatientMedication(

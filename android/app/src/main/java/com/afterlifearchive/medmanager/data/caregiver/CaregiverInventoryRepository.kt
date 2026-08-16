@@ -10,6 +10,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -138,6 +139,7 @@ class CaregiverInventoryRepository(
     private val freshnessStore: MutationFreshnessStore,
 ) {
     private val mutableState = MutableStateFlow(CaregiverInventoryState())
+    private val mutationMutex = Mutex()
     val state: StateFlow<CaregiverInventoryState> = mutableState.asStateFlow()
     val freshness = freshnessStore.revisions
 
@@ -197,7 +199,8 @@ class CaregiverInventoryRepository(
         request: suspend () -> CaregiverInventoryItem,
     ): Boolean {
         val current = mutableState.value
-        if (current.patientId != patientId || current.refreshFailed || current.updatingMedicationId != null) return false
+        if (current.patientId != patientId || current.refreshFailed) return false
+        if (!mutationMutex.tryLock()) return false
         mutableState.value = current.copy(updatingMedicationId = item.medicationId, mutationFailed = false, mutationMessage = null)
         return try {
             val updated = request()
@@ -210,8 +213,11 @@ class CaregiverInventoryRepository(
             true
         } catch (error: Exception) {
             if (error is CancellationException) throw error
-            mutableState.value = mutableState.value.copy(updatingMedicationId = null, mutationFailed = true)
+            mutableState.value = mutableState.value.copy(mutationFailed = true)
             false
+        } finally {
+            mutableState.value = mutableState.value.copy(updatingMedicationId = null)
+            mutationMutex.unlock()
         }
     }
 

@@ -424,6 +424,45 @@ class PatientRepositoryTest {
     }
 
     @Test
+    fun highLatencyMutationIsSingleFlightAndCancellationRequiresManualRetry() = runTest {
+        val requestStarted = CompletableDeferred<Unit>()
+        val responseGate = CompletableDeferred<Unit>()
+        var recordCalls = 0
+        var slotCalls = 0
+        val source = object : PatientDataSource by FakePatientDataSource() {
+            override suspend fun recordDose(dose: PatientDose) {
+                recordCalls += 1
+                requestStarted.complete(Unit)
+                responseGate.await()
+            }
+
+            override suspend fun recordSlot(date: String, slot: MedicationSlot): SlotBulkRecordResult {
+                slotCalls += 1
+                return SlotBulkRecordResult(1, 0, 0, 1.0, 1, "08:00", emptyMap(), "group")
+            }
+        }
+        val repository = PatientRepository(source)
+        repository.loadToday()
+        val dose = repository.state.value.doses.single()
+
+        val first = launch { repository.record(dose) }
+        requestStarted.await()
+        assertEquals(dose.key, repository.state.value.updatingDoseKey)
+        assertFalse(repository.recordSlot(MedicationSlot.MORNING))
+        assertEquals(1, recordCalls)
+        assertEquals(0, slotCalls)
+
+        first.cancel()
+        first.join()
+        assertNull(repository.state.value.updatingDoseKey)
+        assertEquals(1, recordCalls)
+
+        responseGate.complete(Unit)
+        assertTrue(repository.record(dose))
+        assertEquals(2, recordCalls)
+    }
+
+    @Test
     fun revokeFailureKeepsSessionOwnerInControlAndPublishesError() = runTest {
         val source = object : PatientDataSource by FakePatientDataSource() {
             override suspend fun revokeSession(): Unit = error("解除に失敗しました")

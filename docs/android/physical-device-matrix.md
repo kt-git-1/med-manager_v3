@@ -152,7 +152,7 @@ Use disposable records only. Capture before/after server state without placing i
 
 - Toggle airplane mode or disable the only validated network during initial load and cached refresh; last-known in-memory content, stale warning, Retry and no offline write queue must match `XP-007`. C70 passes this read-only procedure for the dedicated QA Caregiver on A302SH: same-process cached content/stale/Retry, cold offline role retention/error/recovery actions, and reconnect/Retry restoration. Patient and other-device repetitions remain required.
 - Interrupt individual, bulk, PRN, inventory, patient-delete, logout and account-delete requests. A successful write must remain visible through failed reconciliation; an uncertain/failed write must not be replayed automatically.
-- Double-tap/high-latency tests must remain single-flight and server-idempotent.
+- Double-tap/high-latency tests must remain single-flight and server-idempotent. C74 proves the client-side repository boundary with synthetic blocked requests across all mutation owners, including cross-type actions and cancellation/manual-retry behavior; the real API/server-idempotency half remains mandatory here.
 - Revoke patient access and permanently delete a different disposable patient; verify the former preserves data and the latter clears dependent selections/screens only after server success.
 - Account-delete failure preserves caregiver session, patients and FCM state for retry; success removes server devices before local cleanup.
 

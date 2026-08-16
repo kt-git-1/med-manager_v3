@@ -15,6 +15,8 @@ import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -155,6 +157,40 @@ class CaregiverHistoryRepositoryTest {
         fail = true
         assertFalse(repository.recordMissed("p1", missed.copy(status = DoseStatus.MISSED)))
         assertEquals(1L, freshness.revisions.value.dose)
+    }
+
+    @Test
+    fun backfillIsSingleFlightAndCancellationClearsBusyWithoutReplay() = runTest {
+        val requestStarted = CompletableDeferred<Unit>()
+        val responseGate = CompletableDeferred<Unit>()
+        val missed = missedDose()
+        var recordCalls = 0
+        val source = object : CaregiverHistoryDataSource {
+            override suspend fun month(patientId: String, yearMonth: YearMonth) = listOf(day("2026-07-15"))
+            override suspend fun day(patientId: String, date: LocalDate) = HistoryDayDetail(date.toString(), listOf(missed), emptyList())
+            override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) {
+                recordCalls += 1
+                requestStarted.complete(Unit)
+                responseGate.await()
+            }
+        }
+        val repository = CaregiverHistoryRepository(source, MutationFreshnessStore())
+        repository.loadMonth("p1", YearMonth.of(2026, 7))
+        repository.loadDay("p1", LocalDate.of(2026, 7, 15))
+
+        val first = launch { repository.recordMissed("p1", missed) }
+        requestStarted.await()
+        assertFalse(repository.recordMissed("p1", missed))
+        assertEquals(1, recordCalls)
+
+        first.cancel()
+        first.join()
+        assertFalse(repository.state.value.updating)
+        assertEquals(1, recordCalls)
+
+        responseGate.complete(Unit)
+        assertTrue(repository.recordMissed("p1", missed))
+        assertEquals(2, recordCalls)
     }
 
     @Test

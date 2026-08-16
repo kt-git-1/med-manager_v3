@@ -20,6 +20,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -88,6 +89,7 @@ class CaregiverHistoryRepository(
     private val freshnessStore: MutationFreshnessStore,
 ) {
     private val mutableState = MutableStateFlow(CaregiverHistoryState())
+    private val mutationMutex = Mutex()
     val state: StateFlow<CaregiverHistoryState> = mutableState.asStateFlow()
     val freshness = freshnessStore.revisions
 
@@ -189,7 +191,8 @@ class CaregiverHistoryRepository(
 
     suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose): Boolean {
         val current = mutableState.value
-        if (current.patientId != patientId || current.monthRefreshFailed || current.dayRefreshFailed || current.updating || dose.status.name != "MISSED") return false
+        if (current.patientId != patientId || current.monthRefreshFailed || current.dayRefreshFailed || dose.status.name != "MISSED") return false
+        if (!mutationMutex.tryLock()) return false
         mutableState.value = current.copy(updating = true, mutationFailed = false, mutationSucceeded = false)
         return try {
             dataSource.recordMissed(patientId, dose)
@@ -201,8 +204,11 @@ class CaregiverHistoryRepository(
             true
         } catch (error: Exception) {
             if (error is CancellationException) throw error
-            mutableState.value = mutableState.value.copy(updating = false, mutationFailed = true)
+            mutableState.value = mutableState.value.copy(mutationFailed = true)
             false
+        } finally {
+            mutableState.value = mutableState.value.copy(updating = false)
+            mutationMutex.unlock()
         }
     }
 

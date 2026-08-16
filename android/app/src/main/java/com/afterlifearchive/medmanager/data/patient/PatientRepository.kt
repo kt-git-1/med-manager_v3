@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.time.LocalDate
 import java.time.Instant
 import com.afterlifearchive.medmanager.data.network.ApiException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
 import java.time.ZoneId
 
 data class PatientUiState(
@@ -59,6 +61,7 @@ class PatientRepository(
     private val nowProvider: () -> Instant = Instant::now,
 ) {
     private val mutableState = MutableStateFlow(PatientUiState())
+    private val mutationMutex = Mutex()
     val state: StateFlow<PatientUiState> = mutableState.asStateFlow()
     val freshness: StateFlow<MutationRevisions> = freshnessStore.revisions
 
@@ -186,89 +189,87 @@ class PatientRepository(
             mutableState.value = mutableState.value.copy(error = PatientUserMessage.InventoryInsufficient)
             return false
         }
+        if (!mutationMutex.tryLock()) return false
         mutableState.value = mutableState.value.copy(updatingDoseKey = dose.key, error = null, message = null)
-        return runCatching { api.recordDose(dose) }
-            .fold(
-                onSuccess = {
-                    val takenAt = nowProvider()
-                    val updated = mutableState.value.doses.map {
-                        if (it.key == dose.key) it.copy(status = DoseStatus.TAKEN, takenAt = takenAt) else it
-                    }
-                    mutableState.value = mutableState.value.copy(
-                        doses = updated,
-                        updatingDoseKey = null,
-                        message = PatientUserMessage.DoseRecorded,
-                    )
-                    freshnessStore.markScheduledDoseChanged()
-                    true
-                },
-                onFailure = {
-                    mutableState.value = mutableState.value.copy(updatingDoseKey = null, error = it.toPatientUserMessage())
-                    false
-                },
+        return try {
+            api.recordDose(dose)
+            val takenAt = nowProvider()
+            val updated = mutableState.value.doses.map {
+                if (it.key == dose.key) it.copy(status = DoseStatus.TAKEN, takenAt = takenAt) else it
+            }
+            mutableState.value = mutableState.value.copy(
+                doses = updated,
+                message = PatientUserMessage.DoseRecorded,
             )
+            freshnessStore.markScheduledDoseChanged()
+            true
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            mutableState.value = mutableState.value.copy(error = error.toPatientUserMessage())
+            false
+        } finally {
+            mutableState.value = mutableState.value.copy(updatingDoseKey = null)
+            mutationMutex.unlock()
+        }
     }
 
     suspend fun recordSlot(slot: MedicationSlot, date: LocalDate = LocalDate.now(ZoneId.of("Asia/Tokyo"))): Boolean {
-        if (mutableState.value.updatingSlot != null) return false
+        if (!mutationMutex.tryLock()) return false
         mutableState.value = mutableState.value.copy(updatingSlot = slot, error = null, message = null)
-        return runCatching { api.recordSlot(date.toString(), slot) }
-            .fold(
-                onSuccess = { result ->
-                    val takenAt = nowProvider()
-                    val message = when {
-                        result.updatedCount > 0 && result.insufficientCount > 0 -> PatientUserMessage.SlotPartial(result.updatedCount, result.insufficientCount)
-                        result.insufficientCount > 0 -> PatientUserMessage.InventoryInsufficient
-                        result.updatedCount > 0 -> PatientUserMessage.SlotRecorded(result.updatedCount)
-                        else -> PatientUserMessage.NoRecordableMedication
-                    }
-                    val updated = mutableState.value.doses.map { dose ->
-                        if (result.updatedCount > 0 && dose.slot == slot && dose.status != DoseStatus.TAKEN && !mutableState.value.insufficientMedicationIds.contains(dose.medicationId)) {
-                            dose.copy(status = DoseStatus.TAKEN, takenAt = takenAt)
-                        } else dose
-                    }
-                    mutableState.value = mutableState.value.copy(doses = updated, updatingSlot = null, message = message)
-                    if (result.updatedCount > 0) freshnessStore.markScheduledDoseChanged()
-                    result.updatedCount > 0
-                },
-                onFailure = { error ->
-                    mutableState.value = mutableState.value.copy(updatingSlot = null, error = error.toPatientUserMessage())
-                    false
-                },
-            )
+        return try {
+            val result = api.recordSlot(date.toString(), slot)
+            val takenAt = nowProvider()
+            val message = when {
+                result.updatedCount > 0 && result.insufficientCount > 0 -> PatientUserMessage.SlotPartial(result.updatedCount, result.insufficientCount)
+                result.insufficientCount > 0 -> PatientUserMessage.InventoryInsufficient
+                result.updatedCount > 0 -> PatientUserMessage.SlotRecorded(result.updatedCount)
+                else -> PatientUserMessage.NoRecordableMedication
+            }
+            val updated = mutableState.value.doses.map { dose ->
+                if (result.updatedCount > 0 && dose.slot == slot && dose.status != DoseStatus.TAKEN && !mutableState.value.insufficientMedicationIds.contains(dose.medicationId)) {
+                    dose.copy(status = DoseStatus.TAKEN, takenAt = takenAt)
+                } else dose
+            }
+            mutableState.value = mutableState.value.copy(doses = updated, message = message)
+            if (result.updatedCount > 0) freshnessStore.markScheduledDoseChanged()
+            result.updatedCount > 0
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            mutableState.value = mutableState.value.copy(error = error.toPatientUserMessage())
+            false
+        } finally {
+            mutableState.value = mutableState.value.copy(updatingSlot = null)
+            mutationMutex.unlock()
+        }
     }
 
     suspend fun recordPrn(medication: PatientMedication): Boolean {
-        if (!medication.isPrn || mutableState.value.updatingPrnMedicationId != null) return false
+        if (!medication.isPrn) return false
         if (medication.isInsufficientForDose) {
             mutableState.value = mutableState.value.copy(prnError = PatientUserMessage.InventoryInsufficient)
             return false
         }
+        if (!mutationMutex.tryLock()) return false
         mutableState.value = mutableState.value.copy(updatingPrnMedicationId = medication.id, prnError = null, message = null)
-        return runCatching { api.recordPrn(medication) }
-            .fold(
-                onSuccess = {
-                    mutableState.value = mutableState.value.copy(
-                        updatingPrnMedicationId = null,
-                        message = PatientUserMessage.PrnRecorded,
-                        prnRecordSuccessRevision = mutableState.value.prnRecordSuccessRevision + 1,
-                    )
-                    freshnessStore.markDoseChanged()
-                    true
-                },
-                onFailure = { error ->
-                    val mapped = error.toPatientUserMessage()
-                    mutableState.value = mutableState.value.copy(
-                        updatingPrnMedicationId = null,
-                        prnError = if (mapped == PatientUserMessage.InsufficientInventory) {
-                            mapped
-                        } else {
-                            PatientUserMessage.PrnRecordFailed
-                        },
-                    )
-                    false
-                },
+        return try {
+            api.recordPrn(medication)
+            mutableState.value = mutableState.value.copy(
+                message = PatientUserMessage.PrnRecorded,
+                prnRecordSuccessRevision = mutableState.value.prnRecordSuccessRevision + 1,
             )
+            freshnessStore.markDoseChanged()
+            true
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            val mapped = error.toPatientUserMessage()
+            mutableState.value = mutableState.value.copy(
+                prnError = if (mapped == PatientUserMessage.InsufficientInventory) mapped else PatientUserMessage.PrnRecordFailed,
+            )
+            false
+        } finally {
+            mutableState.value = mutableState.value.copy(updatingPrnMedicationId = null)
+            mutationMutex.unlock()
+        }
     }
 
     fun clearPrnFeedback() {
@@ -368,18 +369,19 @@ class PatientRepository(
     }
 
     suspend fun revokeSession(): Boolean {
+        if (!mutationMutex.tryLock()) return false
         mutableState.value = mutableState.value.copy(loading = true, error = null)
-        return runCatching { api.revokeSession() }
-            .fold(
-                onSuccess = {
-                    mutableState.value = mutableState.value.copy(loading = false)
-                    true
-                },
-                onFailure = {
-                    mutableState.value = mutableState.value.copy(loading = false, error = it.toPatientUserMessage())
-                    false
-                },
-            )
+        return try {
+            api.revokeSession()
+            true
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            mutableState.value = mutableState.value.copy(error = error.toPatientUserMessage())
+            false
+        } finally {
+            mutableState.value = mutableState.value.copy(loading = false)
+            mutationMutex.unlock()
+        }
     }
 
     fun clearNotice() {

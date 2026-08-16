@@ -29,6 +29,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -162,6 +163,7 @@ class CaregiverTodayRepository(
     private val now: () -> Instant = Instant::now,
 ) {
     private val mutableState = MutableStateFlow(CaregiverTodayState())
+    private val mutationMutex = Mutex()
     val state: StateFlow<CaregiverTodayState> = mutableState.asStateFlow()
     val freshness = freshnessStore.revisions
 
@@ -219,11 +221,12 @@ class CaregiverTodayRepository(
 
     suspend fun recordDose(patientId: String, dose: PatientDose): Boolean {
         val current = mutableState.value
-        if (current.patientId != patientId || current.refreshFailed || current.updatingDoseKey != null || dose.status == DoseStatus.TAKEN) return false
+        if (current.patientId != patientId || current.refreshFailed || dose.status == DoseStatus.TAKEN) return false
         if (dose.medicationId in current.outOfStockMedicationIds) {
             mutableState.value = current.copy(mutationError = CaregiverTodayMutationError.INSUFFICIENT_INVENTORY, mutationMessage = null)
             return false
         }
+        if (!mutationMutex.tryLock()) return false
         mutableState.value = current.copy(updatingDoseKey = dose.key, mutationError = null, mutationMessage = null)
         return try {
             dataSource.recordDose(patientId, dose)
@@ -241,16 +244,19 @@ class CaregiverTodayRepository(
         } catch (error: Exception) {
             if (error is CancellationException) throw error
             mutableState.value = mutableState.value.copy(
-                updatingDoseKey = null,
                 mutationError = if (error is ApiException.InsufficientInventory) CaregiverTodayMutationError.INSUFFICIENT_INVENTORY else CaregiverTodayMutationError.FAILED,
             )
             false
+        } finally {
+            mutableState.value = mutableState.value.copy(updatingDoseKey = null)
+            mutationMutex.unlock()
         }
     }
 
     suspend fun deleteDose(patientId: String, dose: PatientDose): Boolean {
         val current = mutableState.value
-        if (current.patientId != patientId || current.refreshFailed || current.updatingDoseKey != null || dose.status != DoseStatus.TAKEN) return false
+        if (current.patientId != patientId || current.refreshFailed || dose.status != DoseStatus.TAKEN) return false
+        if (!mutationMutex.tryLock()) return false
         mutableState.value = current.copy(updatingDoseKey = dose.key, mutationError = null, mutationMessage = null)
         return try {
             dataSource.deleteDose(patientId, dose)
@@ -271,19 +277,23 @@ class CaregiverTodayRepository(
             true
         } catch (error: Exception) {
             if (error is CancellationException) throw error
-            mutableState.value = mutableState.value.copy(updatingDoseKey = null, mutationError = CaregiverTodayMutationError.FAILED)
+            mutableState.value = mutableState.value.copy(mutationError = CaregiverTodayMutationError.FAILED)
             false
+        } finally {
+            mutableState.value = mutableState.value.copy(updatingDoseKey = null)
+            mutationMutex.unlock()
         }
     }
 
     suspend fun recordSlot(patientId: String, slot: MedicationSlot, doses: List<PatientDose>): Boolean {
         val current = mutableState.value
-        if (current.patientId != patientId || current.refreshFailed || current.updatingDoseKey != null || current.updatingSlot != null) return false
+        if (current.patientId != patientId || current.refreshFailed) return false
         val candidates = doses.filter { it.status != DoseStatus.TAKEN }
         if (candidates.isEmpty()) {
             mutableState.value = current.copy(mutationMessage = CaregiverTodayMutationMessage.NOTHING_TO_RECORD)
             return false
         }
+        if (!mutationMutex.tryLock()) return false
         val date = candidates.minOf(PatientDose::scheduledAt).atZone(TOKYO).toLocalDate().toString()
         mutableState.value = current.copy(
             updatingSlot = slot,
@@ -319,18 +329,22 @@ class CaregiverTodayRepository(
             result.updatedCount > 0
         } catch (error: Exception) {
             if (error is CancellationException) throw error
-            mutableState.value = mutableState.value.copy(updatingSlot = null, mutationError = CaregiverTodayMutationError.FAILED)
+            mutableState.value = mutableState.value.copy(mutationError = CaregiverTodayMutationError.FAILED)
             false
+        } finally {
+            mutableState.value = mutableState.value.copy(updatingSlot = null)
+            mutationMutex.unlock()
         }
     }
 
     suspend fun recordPrn(patientId: String, medication: PatientMedication): Boolean {
         val current = mutableState.value
-        if (current.patientId != patientId || current.refreshFailed || current.updatingDoseKey != null || current.updatingSlot != null || current.updatingPrnMedicationId != null || !medication.isPrn) return false
+        if (current.patientId != patientId || current.refreshFailed || !medication.isPrn) return false
         if (medication.id in current.outOfStockMedicationIds) {
             mutableState.value = current.copy(mutationError = CaregiverTodayMutationError.INSUFFICIENT_INVENTORY, mutationMessage = null)
             return false
         }
+        if (!mutationMutex.tryLock()) return false
         mutableState.value = current.copy(updatingPrnMedicationId = medication.id, mutationError = null, mutationMessage = null)
         return try {
             dataSource.recordPrn(patientId, medication)
@@ -343,10 +357,12 @@ class CaregiverTodayRepository(
         } catch (error: Exception) {
             if (error is CancellationException) throw error
             mutableState.value = mutableState.value.copy(
-                updatingPrnMedicationId = null,
                 mutationError = if (error is ApiException.InsufficientInventory) CaregiverTodayMutationError.INSUFFICIENT_INVENTORY else CaregiverTodayMutationError.FAILED,
             )
             false
+        } finally {
+            mutableState.value = mutableState.value.copy(updatingPrnMedicationId = null)
+            mutationMutex.unlock()
         }
     }
 

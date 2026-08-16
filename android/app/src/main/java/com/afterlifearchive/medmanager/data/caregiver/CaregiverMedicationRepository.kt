@@ -13,6 +13,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.Serializable
@@ -136,6 +137,7 @@ class CaregiverMedicationRepository(
     private val freshnessStore: MutationFreshnessStore,
 ) {
     private val mutableState = MutableStateFlow(CaregiverMedicationState())
+    private val mutationMutex = Mutex()
     val state: StateFlow<CaregiverMedicationState> = mutableState.asStateFlow()
     val freshness = freshnessStore.revisions
 
@@ -174,27 +176,31 @@ class CaregiverMedicationRepository(
             return Result.failure(IllegalStateException("fresh medication snapshot required"))
         }
         if (draft.validate().isNotEmpty()) return Result.failure(IllegalArgumentException("invalid medication"))
-        val saved = try {
-            val saved = if (medicationId == null) dataSource.createMedication(patientId, draft)
-            else dataSource.updateMedication(patientId, medicationId, draft)
-            val current = mutableState.value
-            val items = if (medicationId == null) current.items + saved
-            else current.items.map { if (it.id == saved.id) saved else it }
-            mutableState.value = CaregiverMedicationState(patientId = patientId, hasLoaded = true, items = items)
-            saved
-        } catch (error: Exception) {
-            if (error is CancellationException) throw error
-            return Result.failure(error)
+        if (!mutationMutex.tryLock()) return Result.failure(IllegalStateException("medication mutation already in progress"))
+        return try {
+            val saved = try {
+                val saved = if (medicationId == null) dataSource.createMedication(patientId, draft)
+                else dataSource.updateMedication(patientId, medicationId, draft)
+                val current = mutableState.value
+                val items = if (medicationId == null) current.items + saved
+                else current.items.map { if (it.id == saved.id) saved else it }
+                mutableState.value = CaregiverMedicationState(patientId = patientId, hasLoaded = true, items = items)
+                saved
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                return Result.failure(error)
+            }
+            freshnessStore.markMedicationChanged(inventoryChanged = true, notificationPlanChanged = true)
+            try {
+                persistRegimen(saved.id, draft)
+                Result.success(saved)
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                Result.failure(error)
+            }
+        } finally {
+            mutationMutex.unlock()
         }
-        val regimenResult = try {
-            persistRegimen(saved.id, draft)
-            Result.success(saved)
-        } catch (error: Exception) {
-            if (error is CancellationException) throw error
-            Result.failure(error)
-        }
-        freshnessStore.markMedicationChanged(inventoryChanged = true, notificationPlanChanged = true)
-        return regimenResult
     }
 
     private suspend fun persistRegimen(medicationId: String, draft: CaregiverMedicationDraft) {
@@ -211,6 +217,7 @@ class CaregiverMedicationRepository(
     suspend fun delete(patientId: String, medicationId: String): Boolean {
         val current = mutableState.value
         if (current.patientId != patientId || current.refreshFailed) return false
+        if (!mutationMutex.tryLock()) return false
         return try {
             dataSource.deleteMedication(patientId, medicationId)
             if (current.patientId == patientId) {
@@ -221,6 +228,8 @@ class CaregiverMedicationRepository(
         } catch (error: Exception) {
             if (error is CancellationException) throw error
             false
+        } finally {
+            mutationMutex.unlock()
         }
     }
 

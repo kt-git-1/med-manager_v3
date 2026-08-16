@@ -5,6 +5,8 @@ import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
 import com.afterlifearchive.medmanager.data.session.CaregiverSelectionRepository
 import com.afterlifearchive.medmanager.data.session.SessionStorage
 import com.afterlifearchive.medmanager.ui.AppMode
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -320,6 +322,43 @@ class CaregiverPatientRepositoryTest {
 
         assertEquals("one", repository.state.value.selectedPatientId)
         assertEquals("one", storage.currentPatientId)
+    }
+
+    @Test
+    fun destructiveActionsAreSingleFlightAndCancellationPreservesLocalOwnership() = runTest {
+        val requestStarted = CompletableDeferred<Unit>()
+        val responseGate = CompletableDeferred<Unit>()
+        val storage = FakeStorage().apply { currentPatientId = "one" }
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        var revokeCalls = 0
+        var accountDeleteCalls = 0
+        val source = object : CaregiverPatientDataSource {
+            override suspend fun listPatients() = listOf(patient("one", "あおい"))
+            override suspend fun revokePatient(patientId: String) {
+                revokeCalls += 1
+                requestStarted.complete(Unit)
+                responseGate.await()
+            }
+            override suspend fun deleteCaregiverAccount() { accountDeleteCalls += 1 }
+        }
+        val repository = CaregiverPatientRepository(source, selection)
+        repository.refresh()
+
+        val first = launch { repository.revokeSelectedPatient() }
+        requestStarted.await()
+        assertFalse(repository.deleteCaregiverAccount())
+        assertEquals(1, revokeCalls)
+        assertEquals(0, accountDeleteCalls)
+
+        first.cancel()
+        first.join()
+        assertFalse(repository.state.value.destructiveActionInProgress)
+        assertEquals("one", repository.state.value.selectedPatientId)
+        assertEquals("one", storage.currentPatientId)
+
+        assertTrue(repository.deleteCaregiverAccount())
+        assertEquals(1, accountDeleteCalls)
+        assertNull(storage.currentPatientId)
     }
 
     private fun repository(storage: FakeStorage, block: suspend () -> List<CaregiverPatient>): CaregiverPatientRepository {

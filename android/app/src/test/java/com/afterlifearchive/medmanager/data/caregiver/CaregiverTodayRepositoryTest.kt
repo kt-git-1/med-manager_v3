@@ -419,6 +419,46 @@ class CaregiverTodayRepositoryTest {
         assertTrue(repository.state.value.doses.isEmpty())
     }
 
+    @Test
+    fun crossTypeMutationsAreSingleFlightAndCancellationClearsBusyState() = runTest {
+        val requestStarted = CompletableDeferred<Unit>()
+        val responseGate = CompletableDeferred<Unit>()
+        var recordCalls = 0
+        var slotCalls = 0
+        val pending = dose("dose-1", DoseStatus.PENDING, "2026-07-15T08:00:00Z")
+        val source = object : CaregiverTodayDataSource {
+            override suspend fun today(patientId: String) = listOf(pending)
+            override suspend fun medications(patientId: String) = emptyList<PatientMedication>()
+            override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
+            override suspend fun recordDose(patientId: String, dose: PatientDose) {
+                recordCalls += 1
+                requestStarted.complete(Unit)
+                responseGate.await()
+            }
+            override suspend fun recordSlot(patientId: String, date: String, slot: MedicationSlot): SlotBulkRecordResult {
+                slotCalls += 1
+                return slotResult(1)
+            }
+        }
+        val repository = CaregiverTodayRepository(source, MutationFreshnessStore())
+        repository.load("patient-1")
+
+        val first = launch { repository.recordDose("patient-1", pending) }
+        requestStarted.await()
+        assertFalse(repository.recordSlot("patient-1", MedicationSlot.MORNING, listOf(pending)))
+        assertEquals(1, recordCalls)
+        assertEquals(0, slotCalls)
+
+        first.cancel()
+        first.join()
+        assertEquals(null, repository.state.value.updatingDoseKey)
+        assertEquals(1, recordCalls)
+
+        responseGate.complete(Unit)
+        assertTrue(repository.recordSlot("patient-1", MedicationSlot.MORNING, listOf(pending)))
+        assertEquals(1, slotCalls)
+    }
+
     private fun dose(key: String, status: DoseStatus, at: String) = PatientDose(
         key = key,
         medicationId = key,
