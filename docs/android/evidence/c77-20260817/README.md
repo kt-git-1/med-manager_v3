@@ -24,6 +24,8 @@ The server already sent Android `DOSE_TAKEN` as high-priority data-only FCM so t
 | Complete API suite | PASS — 333/333 across 75 files |
 | TypeScript typecheck | PASS |
 | ESLint | PASS |
+| GitHub API CI | PASS — run `31960043708` on commit `12b7121` |
+| GitHub API E2E | PASS — run `31960043725` on commit `12b7121` |
 | Production traffic/data mutation | NOT RUN — no token registration, FCM send, health-data mutation or schema deployment |
 
 The new regression isolates one Android missed-dose device, asserts that notification/APNs arguments are absent, asserts high priority, checks the exact strict data payload and rejects leakage of the synthetic display name.
