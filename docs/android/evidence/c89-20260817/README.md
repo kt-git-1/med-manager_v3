@@ -24,6 +24,7 @@
 - AAB protobuf manifest: six permissions, three reviewed exported components and three authentication links; C88 policy passed.
 - Manifest policy: 12/12 synthetic contracts passed, including APK/AAB signature-protection numeric normalization.
 - AAB SHA-256 is emitted by the gate for the per-build evidence ledger; it is not treated as stable across later runtime/signing inputs.
+- Hosted Android CI [run #31972360476](https://github.com/kt-git-1/med-manager_v3/actions/runs/31972360476): every step passed for implementation commit `2bb0fdc`, including strict bundletool resolution, clean AAB generation, validation, content/manifest policy and all existing Android gates.
 
 ## Deliberately incomplete external evidence
 
