@@ -563,6 +563,40 @@ rejected(
     ),
 )
 rejected(
+    "play-internal-installed-package-prerequisite",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][5].update(
+            prerequisites=[item for item in value["gates"][5]["prerequisites"] if item != "C119"]
+        ),
+    ),
+)
+rejected(
+    "play-internal-installed-package-evidence",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][5].update(
+            evidenceSources=[
+                item
+                for item in value["gates"][5]["evidenceSources"]
+                if item != "docs/android/evidence/c119-20260817/README.md"
+            ]
+        ),
+    ),
+)
+rejected(
+    "play-internal-installed-package-condition",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][5].update(
+            doneWhen=[
+                item.replace("C118 base.apk byte match", "unbound installed metadata")
+                for item in value["gates"][5]["doneWhen"]
+            ]
+        ),
+    ),
+)
+rejected(
     "play-policy-readiness-prerequisite",
     lambda _root, paths: edit_manifest(
         paths,
@@ -703,4 +737,4 @@ rejected(
     ),
 )
 
-print("Release gate contract passed: accepted=1 rejected=57")
+print("Release gate contract passed: accepted=1 rejected=60")

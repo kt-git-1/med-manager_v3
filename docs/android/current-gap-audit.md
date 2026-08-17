@@ -34,6 +34,8 @@ C117 chains that exact version to official Play generated-APK metadata, requirin
 
 C118 chains one downloaded base-master APK per C117 signing-key group to the exact retained version and verifies safe APK bytes, production package/version, DEX content and the matching v2-or-newer embedded signer without retaining download IDs or local paths.
 
+C119 chains that C118 byte identity to package-manager state on one selected physical device: the installed `base.apk` must exactly match one retained hash/size row while version, complete signer set, Google Play installer, optimized split presence and canonical App Links remain stable across the check. The receipt excludes serials and installed paths; actual Play installation/update behavior remains external.
+
 ## 2. What is reusable
 
 - Kotlin/Compose Gradle project, application identity and build workflow

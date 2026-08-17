@@ -1364,6 +1364,56 @@ val verifyPlayDownloadedBaseApksReceiptContract by tasks.registering(org.gradle.
     )
 }
 
+val verifyPlayInstalledPackageReceiptContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Exercises C118-to-physical-package byte, installer, split, signer and App Links binding."
+    inputs.files(
+        rootProject.file("scripts/verify-production-app-links.py"),
+        rootProject.file("scripts/verify-play-installed-app-links.py"),
+        rootProject.file("scripts/verify-play-installed-package-receipt.py"),
+        rootProject.file("scripts/test-verify-play-installed-package-receipt.py"),
+    )
+    environment("PYTHONDONTWRITEBYTECODE", "1")
+    commandLine(
+        "python3",
+        rootProject.file("scripts/test-verify-play-installed-package-receipt.py").absolutePath,
+    )
+}
+
+val playDownloadedBaseApksReceipt = runtimeConfig("PLAY_DOWNLOADED_BASE_APKS_RECEIPT")
+val playInstalledPackageReceiptOutput = runtimeConfig("PLAY_INSTALLED_PACKAGE_RECEIPT_OUTPUT")
+
+val verifyPlayInstalledPackageReceipt by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Binds the exact C118 base APK bytes to the Play-installed physical package."
+    dependsOn(verifyProductionAppLinks, verifyPlayInstalledPackageReceiptContract)
+    inputs.files(
+        rootProject.file("scripts/verify-production-app-links.py"),
+        rootProject.file("scripts/verify-play-installed-app-links.py"),
+        rootProject.file("scripts/verify-play-installed-package-receipt.py"),
+    )
+    inputs.property("c118ReceiptConfigured", playDownloadedBaseApksReceipt.isNotBlank())
+    inputs.property("c119ReceiptOutputConfigured", playInstalledPackageReceiptOutput.isNotBlank())
+    outputs.upToDateWhen { false }
+    doFirst {
+        require(playDownloadedBaseApksReceipt.isNotBlank()) {
+            "Set PLAY_DOWNLOADED_BASE_APKS_RECEIPT to the exact retained C118 receipt."
+        }
+        require(playInstalledPackageReceiptOutput.isNotBlank()) {
+            "Set PLAY_INSTALLED_PACKAGE_RECEIPT_OUTPUT to the canonical C119 receipt path."
+        }
+    }
+    commandLine(
+        "python3",
+        rootProject.file("scripts/verify-play-installed-package-receipt.py").absolutePath,
+        "--downloaded-base-apks-receipt",
+        playDownloadedBaseApksReceipt,
+        "--output",
+        playInstalledPackageReceiptOutput,
+    )
+    environment("PYTHONDONTWRITEBYTECODE", "1")
+}
+
 val playReleaseHandoffRoot = layout.buildDirectory.dir("outputs/play-release")
 val preparePlayReleaseHandoff by tasks.registering(org.gradle.api.tasks.Exec::class) {
     group = "verification"

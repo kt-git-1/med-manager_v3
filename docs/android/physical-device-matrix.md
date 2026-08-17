@@ -18,6 +18,16 @@ C94 adds a narrower physical packaging preflight: its exact synthetic-signed bas
 
 C95 adds the exact final App Links preflight. Set `PLAY_APP_SIGNING_CERT_SHA256_FINGERPRINTS` from Play Console, deploy the `android-dev` Digital Asset Links route through the approved main merge, run `verifyProductionAppLinks`, install from Internal testing, then run `ANDROID_SERIAL=... ./gradlew verifyPlayInstalledAppLinks`. The task refuses adb/other installers, upload-key signing, extra/unverified hosts and the current production 404. Retain only redacted pass output; certificate fingerprints are public but do not need to be copied into screenshots.
 
+C119 is the required exact-artifact identity gate after that real Internal-track install. Keep the real C118 receipt and downloaded base APKs outside Git, set the C118 receipt and new output paths, and run the command below from `android/`. It first reruns production App Links, then hashes the package-manager-installed `base.apk` bytes and binds them to one C118 row while checking stable version, complete signing set, Google Play installer and at least one optimized split. The receipt intentionally omits device serial and APK paths. Do not run it against an adb-installed diagnostic build and do not commit the receipt if its surrounding owner evidence contains account/tester data.
+
+```bash
+ANDROID_SERIAL=<physical-device-serial> \
+PLAY_APP_SIGNING_CERT_SHA256_FINGERPRINTS=<complete-C118-colon-fingerprint-set> \
+PLAY_DOWNLOADED_BASE_APKS_RECEIPT=<owner-path>/<handoff>.play-downloaded-base-apks-receipt.json \
+PLAY_INSTALLED_PACKAGE_RECEIPT_OUTPUT=<owner-path>/<handoff>.play-installed-package-receipt.json \
+./gradlew verifyPlayInstalledPackageReceipt
+```
+
 | Target | Minimum purpose | Acceptance |
 |---|---|---|
 | Old supported physical device | API 26–28, smaller/older hardware if available | Legacy permission, alarm, backup/session, rendering and lifecycle behavior |

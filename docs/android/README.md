@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C118
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C119
 - Baseline date: 2026-08-17
-- Current action: C118 chains one downloaded Play base-master APK per C117 signing-key group to the exact retained release identity, verifies production package/version/ZIP/DEX bytes and the matching v2-or-newer embedded app signature with Android SDK tools, and emits a path/download-ID-free receipt. Real Play API/download/install evidence remains RG-005/RG-006 owner/device work.
+- Current action: C119 binds the physical Play-installed `base.apk` bytes directly to one exact C118 base-master receipt row, then requires matching version/signing set, Google Play installer identity, at least one optimized split and the canonical verified App Link before emitting a serial/path-free receipt. Real Play installation and behavioral acceptance remain RG-006 owner/device work.
 
 ## Authority order
 

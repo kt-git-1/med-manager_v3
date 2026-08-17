@@ -4,7 +4,7 @@
     "iosRelease": "1.0.6 Build 51",
     "mainCommit": "432b34c",
     "androidBranch": "android-dev",
-    "checkpoint": "C118"
+    "checkpoint": "C119"
   },
   "partialRequirementIds": [
     "XP-004",
@@ -228,13 +228,15 @@
         "C95",
         "C116",
         "C117",
-        "C118"
+        "C118",
+        "C119"
       ],
       "doneWhen": [
         "The exact handoff AAB is processed and installed from Play Internal with Play app signing.",
         "The applications.tracks.releases.list response for qa contains the exact C114 versionCode once with RELEASE_LIFECYCLE_STATE_PUBLISHED, a fresh inspection edit's edits.tracks.get response contains it once with completed status, and the secret-free chained receipt is retained.",
         "The generatedapks.list response for that exact version contains base-master split metadata under the expected Play app-signing certificate set and its C117 receipt is retained.",
         "One generatedapks.download base-master APK per C117 signing key passes exact package, versionCode, versionName, ZIP, DEX and embedded-signature verification, and the path-free C118 receipt is retained.",
+        "The physical Play-installed package has Google Play installer identity, an exact C118 base.apk byte match, matching version/signing set, at least one optimized split and verified canonical App Links, and its serial/path-free C119 receipt is retained.",
         "Fresh install, prior-version update, App Links, sessions, notifications and package identity pass on the exact artifact."
       ],
       "evidenceSources": [
@@ -242,7 +244,8 @@
         "docs/android/physical-device-matrix.md",
         "docs/android/evidence/c116-20260817/README.md",
         "docs/android/evidence/c117-20260817/README.md",
-        "docs/android/evidence/c118-20260817/README.md"
+        "docs/android/evidence/c118-20260817/README.md",
+        "docs/android/evidence/c119-20260817/README.md"
       ],
       "backlogTitle": "Play Internal install and update verification"
     },
