@@ -19,6 +19,12 @@ assert SPEC is not None and SPEC.loader is not None
 MODULE = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
+HANDOFF_PATH = Path(__file__).with_name("prepare-play-release-handoff.py")
+HANDOFF_SPEC = importlib.util.spec_from_file_location("prepare_play_release_handoff", HANDOFF_PATH)
+assert HANDOFF_SPEC is not None and HANDOFF_SPEC.loader is not None
+HANDOFF = importlib.util.module_from_spec(HANDOFF_SPEC)
+sys.modules[HANDOFF_SPEC.name] = HANDOFF
+HANDOFF_SPEC.loader.exec_module(HANDOFF)
 
 
 def run(command: list[str], cwd: Path) -> None:
@@ -162,6 +168,29 @@ def verify_integrated_report(root: Path) -> None:
         MODULE.EXPECTED_STORE_SCREENSHOTS
     )
 
+    evidence = build / "play-release-evidence.json"
+    MODULE.write_json_atomic(evidence, report)
+    handoff_root = build / "handoff"
+    handoff = HANDOFF.prepare_handoff(aab, evidence, handoff_root, repository)
+    aab_name = f"med-manager-android-{handoff.name}.aab"
+    assert {path.name for path in handoff.iterdir()} == {
+        aab_name,
+        "play-release-evidence.json",
+        "SHA256SUMS",
+    }
+    assert (handoff / "play-release-evidence.json").read_bytes() == evidence.read_bytes()
+    assert HANDOFF.prepare_handoff(aab, evidence, handoff_root, repository) == handoff
+
+    icon_bytes = icon.read_bytes()
+    icon.write_bytes(b"changed icon")
+    try:
+        HANDOFF.prepare_handoff(aab, evidence, build / "changed-store-handoff", repository)
+    except HANDOFF.HandoffError as error:
+        assert "icon512Sha256" in str(error)
+    else:
+        raise AssertionError("Changed store input unexpectedly passed generated-ledger handoff")
+    icon.write_bytes(icon_bytes)
+
     listing.write_text("dirty listing\n", encoding="utf-8")
     try:
         MODULE.generate_report(arguments)
@@ -241,7 +270,7 @@ def main() -> None:
 
     print(
         "Release evidence policy contract passed "
-        "(3 accepted, 13 rejected; signed schema-v2 integration and atomic JSON passed)."
+        "(4 accepted, 14 rejected; generated-ledger handoff and atomic JSON passed)."
     )
 
 

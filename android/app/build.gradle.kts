@@ -1178,6 +1178,7 @@ val verifyReleaseEvidencePolicyContract by tasks.registering(org.gradle.api.task
     description = "Exercises exact-artifact release evidence acceptance and rejection boundaries."
     inputs.files(
         rootProject.file("scripts/generate-release-evidence.py"),
+        rootProject.file("scripts/prepare-play-release-handoff.py"),
         rootProject.file("scripts/test-generate-release-evidence.py"),
     )
     commandLine("python3", rootProject.file("scripts/test-generate-release-evidence.py").absolutePath)

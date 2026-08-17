@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C111
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C112
 - Baseline date: 2026-08-17
-- Current action: C111 executes the production schema-v2 ledger generator end to end in an isolated Git repository with an ephemeral signed AAB, real `jarsigner`/`keytool`, exact store hashes and dirty-input rejection. RG-005 now directly requires C110-C111 before owner-controlled Organization/signing/handoff work. Play upload/preview and release-owner signing remain external.
+- Current action: C112 bridges the real schema-v2 generator output into the production handoff, verifies the exact three-file package and idempotency, and rejects a store change made after ledger generation. RG-005 directly retains C110-C112 before owner-controlled Organization/signing/handoff work. Play upload/preview and release-owner signing remain external.
 
 ## Authority order
 

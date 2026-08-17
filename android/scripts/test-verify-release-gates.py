@@ -242,6 +242,30 @@ rejected(
         ),
     ),
 )
+
+rejected(
+    "play-organization-generated-handoff-prerequisite",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][4].update(
+            prerequisites=[item for item in value["gates"][4]["prerequisites"] if item != "C112"]
+        ),
+    ),
+)
+
+rejected(
+    "play-organization-generated-handoff-evidence",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][4].update(
+            evidenceSources=[
+                item
+                for item in value["gates"][4]["evidenceSources"]
+                if item != "docs/android/evidence/c112-20260817/README.md"
+            ]
+        ),
+    ),
+)
 rejected(
     "play-policy-readiness-prerequisite",
     lambda _root, paths: edit_manifest(
@@ -346,4 +370,4 @@ rejected(
     ),
 )
 
-print("Release gate contract passed: accepted=1 rejected=27")
+print("Release gate contract passed: accepted=1 rejected=29")

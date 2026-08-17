@@ -4,7 +4,7 @@
     "iosRelease": "1.0.6 Build 51",
     "mainCommit": "432b34c",
     "androidBranch": "android-dev",
-    "checkpoint": "C111"
+    "checkpoint": "C112"
   },
   "partialRequirementIds": [
     "XP-004",
@@ -169,7 +169,8 @@
         "C92",
         "C105",
         "C110",
-        "C111"
+        "C111",
+        "C112"
       ],
       "doneWhen": [
         "A release-owner-controlled Play Organization developer account is verified against matching D-U-N-S, legal/payment-profile identity, website and contact details, then the exact production package is created.",
@@ -182,7 +183,8 @@
         "docs/android/evidence/c105-20260817/README.md",
         "docs/android/evidence/c92-20260817/README.md",
         "docs/android/evidence/c110-20260817/README.md",
-        "docs/android/evidence/c111-20260817/README.md"
+        "docs/android/evidence/c111-20260817/README.md",
+        "docs/android/evidence/c112-20260817/README.md"
       ],
       "backlogTitle": "Play Organization account, signing and exact AAB handoff"
     },
