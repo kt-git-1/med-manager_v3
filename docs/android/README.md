@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C104
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C105
 - Baseline date: 2026-08-17
-- Current action: C104 closes the production-database TLS verification gap found by a live read-only preflight. API runtime connections to reviewed Supabase hosts pin the Supabase Root 2021 CA and require normal Node CA/hostname verification; the protected workflow independently downloads, fingerprints and uses that CA with `sslmode=verify-full`, then removes it. Production Supabase currently does not enforce SSL server-side, so RG-002 remains open until the release owner enables enforcement in an approved restart window and reruns count-only preflight. C103 separately keeps sleeping/locked targets from creating false physical UI evidence; its fresh real-device four-shard rerun remains V01 evidence after the device is manually unlocked.
+- Current action: C105 corrects the Play ownership prerequisite after a live read-only Console preflight reached developer-account signup rather than an app dashboard. This product's declared Medical / Medication and Treatment Management behavior is a Health app, so current Play policy requires an Organization account and D-U-N-S-backed verification; a Personal account is not an acceptable shortcut. No signup choice, payment, identity submission, account creation or app creation was performed. RG-005 now begins with verified organization ownership before signing/handoff, while C104's verified database TLS boundary and C103's fail-fast physical runner remain intact.
 
 ## Authority order
 
@@ -35,6 +35,7 @@ An Android shortcut never overrides a backend rule or an intentional iOS product
 - [Firebase Analytics verification](./firebase-analytics.md)
 - [Physical-device verification matrix](./physical-device-matrix.md)
 - [Play release runbook](./play-release-runbook.md)
+- [Play developer account onboarding](./play-developer-account-onboarding.md)
 - [Canonical residual release gates](./release-gates.json)
 - [Phase 0 foundation](./phase-0-foundation.md)
 - [Phase 1 session/API notes](./phase-1-session-api.md)

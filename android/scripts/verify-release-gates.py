@@ -40,6 +40,7 @@ ALLOWED_AUTHORITIES = {
     "physical_device",
     "play_console_read",
     "play_console_write",
+    "play_organization_account_creation",
     "production_database_configuration",
     "production_database_read",
     "production_deploy",
@@ -237,10 +238,25 @@ def verify_release_gates(
         _require(not missing_prerequisites,
                  f"{gate_id} prerequisites are not completed: {sorted(missing_prerequisites)}")
 
-        _string_list(gate["doneWhen"], f"{gate_id}.doneWhen", minimum=2)
+        done_when = _string_list(gate["doneWhen"], f"{gate_id}.doneWhen", minimum=2)
         sources = _string_list(gate["evidenceSources"], f"{gate_id}.evidenceSources")
         for source in sources:
             _evidence_path(root, source)
+
+        if gate_id == "RG-005":
+            _require(
+                "play_organization_account_creation" in authorities,
+                "RG-005 must retain Play Organization account creation authority",
+            )
+            _require("C105" in prerequisites, "RG-005 must retain the C105 account audit")
+            _require(
+                any("Play Organization" in item and "D-U-N-S" in item for item in done_when),
+                "RG-005 must require verified Play Organization and D-U-N-S ownership",
+            )
+            _require(
+                "docs/android/evidence/c105-20260817/README.md" in sources,
+                "RG-005 must retain C105 account evidence",
+            )
 
         backlog_checked, backlog_title = backlog_gates[gate_id]
         _require(backlog_title == gate["backlogTitle"], f"{gate_id} backlog text differs")

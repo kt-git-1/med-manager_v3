@@ -1,7 +1,7 @@
 # Google Play declaration worksheet
 
 **Status:** implementation-backed draft, not a submitted Console declaration  
-**Baseline:** published iOS/API `main@432b34c`, Android `android-dev` C96
+**Baseline:** published iOS/API `main@432b34c`, Android `android-dev` C105
 **Recheck:** the exact signed AAB, current Firebase SDK disclosures and Play Console questions immediately before submission
 
 This worksheet separates repository evidence from release-owner/Console decisions. It must not be copied blindly if the production configuration or SDK set changes.
@@ -12,8 +12,12 @@ This worksheet separates repository evidence from release-owner/Console decision
 - [Firebase Android Play data disclosure guidance](https://firebase.google.com/docs/android/play-data-disclosure)
 - [Google Analytics disclosure guidance](https://support.google.com/analytics/answer/11582702)
 - [Google Play Health apps declaration](https://support.google.com/googleplay/android-developer/answer/14738291)
+- [Choose a developer account type](https://support.google.com/googleplay/android-developer/answer/13634885)
+- [Required information to create a developer account](https://support.google.com/googleplay/android-developer/answer/13628312)
 
 Google states that every published app, including closed-test apps, must complete the Health apps declaration. The current official category that matches this product is **Medical → Medication and Treatment Management**: the app manages medication schedules, reminders and treatment adherence. It is not presented as diagnosis, treatment recommendation, a regulated medical device, or an emergency service; the release owner must reconfirm those claims and applicable local law.
+
+This same classification controls account ownership before any declaration can be submitted. Current Google Play policy requires developers providing Health apps, including Medical apps, to use an **Organization** developer account. Organization onboarding requires a D-U-N-S number and matching organization/payment-profile identity, website and verified contact information. The current selected Google account reaches the developer-account signup page, so no Play app, signing identity, track or submitted declaration exists yet. Do not start a Personal account to bypass organization verification; follow `play-developer-account-onboarding.md` under release-owner control.
 
 ## Data collection and security
 
@@ -83,6 +87,8 @@ SDK-provided coarse technical metadata must still be rechecked against the exact
 
 ## Submission evidence checklist
 
+- [ ] Create and verify the owner-controlled Play Organization developer account with matching D-U-N-S, legal/payment-profile identity, website and contact details; retain the registration receipt privately. Current read-only state is signup-only.
+- [ ] Create the exact production-package app only after organization verification, then enable Play App Signing and independently record the upload/app-signing certificate identities without exposing keys.
 - [ ] Retain the complete production C92 three-file handoff; verify `SHA256SUMS` and independently confirm its commit, `versionCode`, `versionName`, AAB SHA-256 and upload-certificate SHA-256 before upload. No release-owner artifact exists yet.
 - [x] Inventory and policy-check the resolved Release dependency graph and independently exclude advertising/attribution permissions from the Release APK (C86); repeat against the exact signed AAB below.
 - [x] Validate and inspect the current generated unsigned AAB structure/protobuf manifest plus its synthetic-signed universal and API 26/33/35 selected-split surfaces (C89/C93/C94), and fail-close the exact production/installed App Links contract (C95); repeat against the exact signed production AAB and Play-generated artifacts below.

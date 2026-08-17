@@ -4,7 +4,7 @@
     "iosRelease": "1.0.6 Build 51",
     "mainCommit": "432b34c",
     "androidBranch": "android-dev",
-    "checkpoint": "C104"
+    "checkpoint": "C105"
   },
   "partialRequirementIds": [
     "XP-004",
@@ -144,7 +144,7 @@
     },
     {
       "id": "RG-005",
-      "title": "Release-owner signing and exact AAB handoff",
+      "title": "Play Organization account, signing and exact AAB handoff",
       "status": "READY_FOR_OWNER_ACTION",
       "requirements": [
         "XP-009",
@@ -152,6 +152,7 @@
       ],
       "dependencies": [],
       "authorities": [
+        "play_organization_account_creation",
         "release_key_access",
         "play_console_read"
       ],
@@ -165,17 +166,21 @@
         "C89",
         "C90",
         "C91",
-        "C92"
+        "C92",
+        "C105"
       ],
       "doneWhen": [
+        "A release-owner-controlled Play Organization developer account is verified against matching D-U-N-S, legal/payment-profile identity, website and contact details, then the exact production package is created.",
         "The owner-managed upload key and independent Play certificate identities pass every fail-closed signing gate.",
         "The exact clean-commit AAB, ledger and SHA256SUMS three-file handoff is retained unchanged."
       ],
       "evidenceSources": [
+        "docs/android/play-developer-account-onboarding.md",
         "docs/android/play-release-runbook.md",
+        "docs/android/evidence/c105-20260817/README.md",
         "docs/android/evidence/c92-20260817/README.md"
       ],
-      "backlogTitle": "Release-owner signing and exact AAB handoff"
+      "backlogTitle": "Play Organization account, signing and exact AAB handoff"
     },
     {
       "id": "RG-006",

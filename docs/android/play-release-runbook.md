@@ -4,6 +4,7 @@ This is the production handoff procedure for Gate I. It does not authorize creat
 
 ## 1. Preconditions
 
+- Complete `play-developer-account-onboarding.md` first. This Medical / Medication and Treatment Management product is a Health app, so use a verified Play **Organization** developer account with matching D-U-N-S-backed identity; do not create a Personal account as a shortcut. The currently selected Google account is still at developer-account signup.
 - Work from `android-dev`; merge to `main` only after the release gates pass.
 - Treat `release-gates.json` plus its matching `RG-001`–`RG-010` backlog rows as the canonical residual order. The ledger does not authorize any listed external action.
 - Rebaseline against the latest `origin/main` and resolve every new iOS/API change first.
@@ -17,6 +18,10 @@ This is the production handoff procedure for Gate I. It does not authorize creat
 - Increment `versionCode` for every Play upload. Confirm `versionName` is the intended public version.
 - Recheck the current official target-API requirement immediately before upload. As of 2026-07-15, mobile submissions require API 35 or newer and this project targets 35.
 - Verify 16 KB page-size compatibility for every native library. Play requires this for API-35+ submissions; the repository gate checks both APK ZIP alignment and every ELF `LOAD` segment.
+
+The organization account is an external release-owner asset, not a repository or CI resource. Current Google guidance documents a one-time US$25 registration fee and requires organization name/address, D-U-N-S, website and verified contact details. Confirm the exact displayed agreement, local-currency charge and legal/entity inputs immediately before signup. Account selection, agreement acceptance, payment, identity/contact verification and application creation are persistent external actions and must not be automated from this runbook without explicit action-time authorization.
+
+The 12 opted-in testers for 14 continuous days requirement applies to newly created **Personal** accounts. It is not the account model for this Health app and must not be copied into the organization release plan. This project still requires Internal installation followed by a controlled closed test, crash/ANR review and final production-access checks; those are product-quality gates, not a claim that organization accounts inherit the Personal-account rule.
 
 ## 2. Local or CI-only configuration
 
@@ -40,7 +45,7 @@ PLAY_UPLOAD_CERT_SHA256=<registered Play upload certificate SHA-256>
 PLAY_APP_SIGNING_CERT_SHA256_FINGERPRINTS=<Play app-signing certificate SHA-256>
 ```
 
-`PLAY_UPLOAD_CERT_SHA256` and `PLAY_APP_SIGNING_CERT_SHA256_FINGERPRINTS` are different identities under Play App Signing. Read both independently from Play Console; never substitute the locally generated upload certificate for the app-signing certificate delivered to users. The latter may be comma-separated only during an intentional certificate transition and is public certificate metadata, not a private key.
+`PLAY_UPLOAD_CERT_SHA256` and `PLAY_APP_SIGNING_CERT_SHA256_FINGERPRINTS` are different identities under Play App Signing. Read both independently only after the verified Organization account creates the exact production-package app; never substitute the locally generated upload certificate for the app-signing certificate delivered to users. The latter may be comma-separated only during an intentional certificate transition and is public certificate metadata, not a private key.
 
 The API production environment separately requires `ANDROID_APP_LINK_SHA256_CERT_FINGERPRINTS` with the exact same Play app-signing fingerprint set. This value belongs in Vercel, not Android `local.properties`. See `evidence/i03-app-links-20260715.md`.
 

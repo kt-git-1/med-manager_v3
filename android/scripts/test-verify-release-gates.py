@@ -206,5 +206,17 @@ rejected(
         paths, lambda value: value["gates"][0].update(requirements=["XP-005"])
     ),
 )
+rejected(
+    "play-organization-ownership",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][4].update(
+            doneWhen=[
+                item.replace("Play Organization", "Play Personal")
+                for item in value["gates"][4]["doneWhen"]
+            ]
+        ),
+    ),
+)
 
-print("Release gate contract passed: accepted=1 rejected=15")
+print("Release gate contract passed: accepted=1 rejected=16")
