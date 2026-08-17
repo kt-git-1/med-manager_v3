@@ -50,6 +50,11 @@ jobs:
           node scripts/test-verify-android-production-release.mjs
           node scripts/test-prepare-android-production-database.mjs
 
+      - name: Android Play policy readiness contract
+        run: |
+          node scripts/test-verify-android-play-policy-readiness.mjs
+          node scripts/verify-android-play-policy-readiness.mjs
+
       - name: API Node runtime contract
         run: |
           node scripts/test-verify-api-node-runtime.mjs

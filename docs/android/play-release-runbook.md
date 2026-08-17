@@ -145,6 +145,7 @@ Before upload, also verify:
 - `SHA256SUMS` passes inside the generated three-file handoff, and its JSON SHA/certificate/version/commit match the named AAB selected for upload; retain the whole directory unchanged.
 - API 26/33/35 tests and the physical-device matrix are green for the exact commit.
 - `verifyMainMergeSurface` passes against freshly fetched `origin/main`; inspect its base/head/count summary and separately confirm `git status` is clean before opening or performing the merge.
+- From `api/`, `node scripts/verify-android-play-policy-readiness.mjs --release` passes only after the verified Organization legal name is present in the public privacy policy and `play-review-access.json` records final reusable, region-independent access against the exact Play `versionCode`. Never place the login, password or patient identifier in Git or command output.
 
 ## 4. Play tracks
 
@@ -152,7 +153,7 @@ Before upload, also verify:
 2. Install from Play, not adb. Run `verifyPlayInstalledAppLinks`, then verify caregiver/patient sign-in, session restoration, both production auth paths, browser fallback, FCM permission/token/delivery/tap, local reminders, background/Doze/process death, legal links and analytics consent.
    Execute and record every applicable row in `physical-device-matrix.md`; the summary in this runbook is not a substitute for that evidence ledger.
 3. Complete Data safety and Health apps declarations from the actual production build. Do not infer declarations from SDK names alone.
-   Use `https://www.okusuri-mimamori.com/support#section-3` as the account-deletion request URL unless the release owner intentionally replaces it; it is the verified public support section with an email request path and does not require the app to be installed.
+   After C106 is merged/deployed, confirm `https://www.okusuri-mimamori.com/account-deletion` returns HTTP 200 without authentication and use that dedicated URL. Do not enter it while production still returns 404. Run the release-mode policy verifier with the verified legal developer name and final review-access facts before submission.
 4. Populate the Japanese main store listing from `play-store-listing-ja.md`, upload the prepared 1350 x 2400 phone set, and verify every field and asset in the Play preview. The store listing is shared across test tracks.
 5. Promote the same artifact to Closed testing. Record device/OS coverage, crashes/ANRs, Firebase delivery and Analytics verification.
 6. Only after all residual matrix rows are accepted, prepare production rollout and the `android-dev` to `main` merge without overwriting newer iOS/API work.
@@ -165,3 +166,4 @@ Before upload, also verify:
 - No release-owner upload keystore has been selected, so a production-signed AAB cannot be produced here yet.
 - One A302SH Android 15/API 35 Debug target is evidenced through C76; old-supported and Google/reference devices remain pending.
 - Play-installed Internal/Closed track and final Console declaration evidence remain pending.
+- C106 source readiness passes, but its public route is not deployed and the Organization legal name/final Play review-access fields intentionally remain pending. The retained QA password stays only in the external release-owner secret store and must never be copied into Git or evidence.

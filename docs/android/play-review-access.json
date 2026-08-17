@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "C106",
+  "appName": "お薬見守り",
+  "accountDeletionUrl": "https://www.okusuri-mimamori.com/account-deletion",
+  "developerOrganization": {
+    "status": "PENDING_PLAY_ORGANIZATION_VERIFICATION",
+    "legalName": null
+  },
+  "reviewAccess": {
+    "status": "PENDING_FINAL_PLAY_ARTIFACT_VERIFICATION",
+    "credentialMethod": "caregiver_email_password",
+    "credentialsStorage": "external_release_owner_secret_store",
+    "secretMaterialStoredInRepository": false,
+    "loginReusable": true,
+    "regionIndependent": false,
+    "oneTimeLinkCodeRequired": false,
+    "patientFixture": "retained_dedicated_production_qa_patient",
+    "credentialsLastVerifiedAt": null,
+    "playArtifactVersionCode": null
+  }
+}

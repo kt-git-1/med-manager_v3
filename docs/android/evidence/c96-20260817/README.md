@@ -25,14 +25,14 @@ The existing unstaged user `.gitignore` edit is intentionally not part of these 
 3. only added/modified paths—no deletion, rename or copy;
 4. exactly the five reviewed top-level scopes: Android, `docs/android`, Android CI, Android ignore policy and API;
 5. exactly the four currently reviewed workflows: Android CI, API CI, API E2E and the C100 manual production API release;
-6. exactly the reviewed 47-file API allowlist covering Android FCM registration/envelopes, mutation idempotency, privacy/security, Digital Asset Links, production release/configuration, C101/C102 dependency/runtime files, C104 verified database TLS files and their tests/migration;
+6. exactly the reviewed 52-file API allowlist covering Android FCM registration/envelopes, mutation idempotency, privacy/security and deletion, Digital Asset Links, production release/configuration, C101/C102 dependency/runtime files, C104 verified database TLS files, C106 Play policy readiness and their tests/migration;
 7. zero `ios/` or non-Android documentation paths;
 8. the exact reviewed committed `.gitignore` delta, so a later `/docs` override or other broad ignore cannot silently pass;
 9. no environment, Firebase config, service-account, key/keystore, APK/AAB/APKS or generated build/IDE/dependency directory;
 10. ordinary/executable blobs only—no symlink or submodule;
 11. at most 1,250 files, 2 MiB per blob and 400 MiB in the changed tree.
 
-Current policy note: C97 adds `.github/workflows/api-ci.yml` and two reviewed mutation-migration verifier scripts; C98 adds two reviewed read-only deployment-audit scripts; C100 adds the reviewed manual production workflow, two production-release contract scripts and `api/vercel.json`; C101 adds `api/package-lock.json`; C102 adds the existing API E2E workflow to the changed surface plus `api/package.json`, the two Node-runtime verifier files and the Node-crypto JWK boundary; C104 adds the production URL/CA preparer and test, runtime database TLS policy, its unit test and the already-existing Prisma repository now modified to consume that policy. The current boundary is exactly four workflows and 47 API files. Every future expansion remains a direct review event.
+Current policy note: C97 adds `.github/workflows/api-ci.yml` and two reviewed mutation-migration verifier scripts; C98 adds two reviewed read-only deployment-audit scripts; C100 adds the reviewed manual production workflow, two production-release contract scripts and `api/vercel.json`; C101 adds `api/package-lock.json`; C102 adds the existing API E2E workflow to the changed surface plus `api/package.json`, the two Node-runtime verifier files and the Node-crypto JWK boundary; C104 adds the production URL/CA preparer and test, runtime database TLS policy, its unit test and the already-existing Prisma repository now modified to consume that policy. C106 adds the dedicated deletion page, existing footer/support modifications and the source/test policy verifier. The current boundary is exactly four workflows and 52 API files. Every future expansion remains a direct review event.
 
 The C104 implementation recheck at `ca78acb8c68dd4a0bcfadb148cbec07a0f097d9e` passes with 212 commits, 1,197 files, 386,168,584 bytes and scopes `.github=4`, `.gitignore=1`, `android=183`, `api=47`, `docs/android=962`, `ios=0`.
 

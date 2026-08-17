@@ -12,6 +12,7 @@ export function SiteFooter() {
         <nav aria-label="フッターリンク">
           <a href="/guide">詳しい使い方</a>
           <a href="/privacy">プライバシーポリシー</a>
+          <a href="/account-deletion">アカウント削除</a>
           <a href="/terms">利用規約</a>
           <a href="/support">サポート</a>
         </nav>

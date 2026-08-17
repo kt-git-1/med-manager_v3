@@ -218,5 +218,25 @@ rejected(
         ),
     ),
 )
+rejected(
+    "play-policy-readiness-prerequisite",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][8].update(
+            prerequisites=[item for item in value["gates"][8]["prerequisites"] if item != "C106"]
+        ),
+    ),
+)
+rejected(
+    "play-review-access-contract",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][9].update(
+            doneWhen=[
+                item.replace("reusable", "temporary") for item in value["gates"][9]["doneWhen"]
+            ]
+        ),
+    ),
+)
 
-print("Release gate contract passed: accepted=1 rejected=16")
+print("Release gate contract passed: accepted=1 rejected=18")

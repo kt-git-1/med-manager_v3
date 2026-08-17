@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C105
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C106
 - Baseline date: 2026-08-17
-- Current action: C105 corrects the Play ownership prerequisite after a live read-only Console preflight reached developer-account signup rather than an app dashboard. This product's declared Medical / Medication and Treatment Management behavior is a Health app, so current Play policy requires an Organization account and D-U-N-S-backed verification; a Personal account is not an acceptable shortcut. No signup choice, payment, identity submission, account creation or app creation was performed. RG-005 now begins with verified organization ownership before signing/handoff, while C104's verified database TLS boundary and C103's fail-fast physical runner remain intact.
+- Current action: C106 adds the dedicated public `/account-deletion` route, explicit secure-handling disclosure and a machine-readable Play review-access handoff. Source-mode CI proves the repository path without secrets; release mode stays fail-closed until the Organization legal name is verified and published, the exact Play artifact accepts reusable region-independent caregiver credentials, and the retained dedicated QA patient can be selected without issuing a one-time link code. The page changes remain undeployed on `android-dev` until the approved main/API release path runs.
 
 ## Authority order
 

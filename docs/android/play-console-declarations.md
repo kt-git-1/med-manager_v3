@@ -1,7 +1,7 @@
 # Google Play declaration worksheet
 
 **Status:** implementation-backed draft, not a submitted Console declaration  
-**Baseline:** published iOS/API `main@432b34c`, Android `android-dev` C105
+**Baseline:** published iOS/API `main@432b34c`, Android `android-dev` C106
 **Recheck:** the exact signed AAB, current Firebase SDK disclosures and Play Console questions immediately before submission
 
 This worksheet separates repository evidence from release-owner/Console decisions. It must not be copied blindly if the production configuration or SDK set changes.
@@ -25,7 +25,7 @@ This same classification controls account ownership before any declaration can b
 |---|---|---|
 | Does the app collect or share required user data types? | Yes, collects | Account, patient, medication, adherence, inventory and optional SDK data are sent off-device to service providers. |
 | Is all collected user data encrypted in transit? | Yes, after final endpoint verification | Android forbids cleartext traffic. Production API, Supabase and Firebase use HTTPS/TLS. Inspect the signed merged manifest and production environment again. |
-| Can users request data deletion? | Yes | Caregiver Settings exposes server-first `DELETE /api/me`. Use `https://www.okusuri-mimamori.com/support#section-3` for the Play account-deletion URL: the live public page names お薬見守り, prominently explains in-app deletion and lets an uninstalled/signed-out user initiate deletion by emailing support. |
+| Can users request data deletion? | Yes, after C106 is merged/deployed | Caregiver Settings exposes server-first `DELETE /api/me`. Enter `https://www.okusuri-mimamori.com/account-deletion` only after the C106 route is deployed and returns HTTP 200 without authentication. It names お薬見守り, explains in-app deletion, supports an uninstalled/signed-out email request, lists deleted/retained categories and refuses passwords/codes. The current production route remains the older support-page fallback until that deployment. |
 | Is data shared with third parties? | Draft: No | Supabase, Vercel and Firebase act as instructed service providers, not advertising recipients. Reconfirm contracts, Console sharing settings and Google's current definition before submission. |
 
 ## Data-type mapping
