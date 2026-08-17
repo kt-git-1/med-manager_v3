@@ -342,6 +342,78 @@ rejected(
     ),
 )
 rejected(
+    "play-internal-track-api-authority",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][5].update(
+            authorities=[
+                item
+                for item in value["gates"][5]["authorities"]
+                if item != "play_developer_api_read"
+            ]
+        ),
+    ),
+)
+rejected(
+    "play-internal-track-inspection-edit-authority",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][5].update(
+            authorities=[
+                item
+                for item in value["gates"][5]["authorities"]
+                if item != "play_developer_api_write"
+            ]
+        ),
+    ),
+)
+rejected(
+    "play-internal-track-receipt-prerequisite",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][5].update(
+            prerequisites=[item for item in value["gates"][5]["prerequisites"] if item != "C116"]
+        ),
+    ),
+)
+rejected(
+    "play-internal-track-receipt-evidence",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][5].update(
+            evidenceSources=[
+                item
+                for item in value["gates"][5]["evidenceSources"]
+                if item != "docs/android/evidence/c116-20260817/README.md"
+            ]
+        ),
+    ),
+)
+rejected(
+    "play-internal-track-receipt-condition",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][5].update(
+            doneWhen=[
+                item.replace("RELEASE_LIFECYCLE_STATE_PUBLISHED", "RELEASE_LIFECYCLE_STATE_DRAFT")
+                for item in value["gates"][5]["doneWhen"]
+            ]
+        ),
+    ),
+)
+rejected(
+    "play-internal-track-completed-condition",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][5].update(
+            doneWhen=[
+                item.replace("completed status", "halted status")
+                for item in value["gates"][5]["doneWhen"]
+            ]
+        ),
+    ),
+)
+rejected(
     "play-policy-readiness-prerequisite",
     lambda _root, paths: edit_manifest(
         paths,
@@ -482,4 +554,4 @@ rejected(
     ),
 )
 
-print("Release gate contract passed: accepted=1 rejected=38")
+print("Release gate contract passed: accepted=1 rejected=44")

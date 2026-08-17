@@ -28,6 +28,8 @@ C114 adds a post-upload Play Bundle-response verifier that binds the official AP
 
 C115 replaces the three deprecated/Node 20 Android CI action majors with full-SHA-pinned official Node 24 releases, removes unnecessary token persistence/write authority and makes runtime drift fail hosted CI.
 
+C116 chains the revalidated C114 upload receipt to the official Play releases-list and fresh inspection-edit Track responses, requiring the exact version once on Internal `qa` with published lifecycle plus `completed` status before emitting a fixed-field secret-free receipt.
+
 ## 2. What is reusable
 
 - Kotlin/Compose Gradle project, application identity and build workflow
@@ -83,6 +85,7 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Resolved C113 | A retained/transferred handoff could only run generic `shasum`, which did not reapply ledger naming/schema/store identity | Read-only verifier revalidates exact directory/files, canonical ledger, AAB/evidence/checksums and current store hashes; six retained drift classes are rejected | Execute immediately before owner upload and retain Console-side comparison; local revalidation cannot prove upload selection |
 | Resolved C114 | C113 could not prove that Play received the selected handoff AAB | Strict Google Play Developer API Bundle parsing requires one matching versionCode and upload-payload SHA-256, reruns C113 and writes an atomic secret-free receipt outside the handoff | Obtain the real response under owner-controlled Play authority; synthetic contract evidence does not prove upload, processing, signing or installation |
 | Resolved C115 | Successful Android CI still emitted Node 20 forced-runtime and setup-java deprecation warnings, while action majors were mutable | Official Node 24 checkout/Java/Gradle releases are full-SHA pinned; contents-only permission, no persisted credential, Temurin 17 and exact trigger/action inventory are contract-locked with twenty-three rejections | Rerun the exact final commit in hosted CI and require no action-runtime deprecation warning; this does not close product, device or Play gates |
+| Resolved C116 | C114 proved Play received the upload bytes but could not prove the artifact was published and currently serving on Internal testing | Strict releases-list plus fresh inspection-edit Track parsing revalidates C114, requires `qa`, one exact version, `RELEASE_LIFECYCLE_STATE_PUBLISHED` and `completed`, then emits an atomic fixed-field chained receipt; forty-eight drift cases are rejected | Retain real owner-controlled API responses/receipts and install/update the Play-signed artifact on required devices; synthetic fixtures do not close RG-006 |
 
 ## 4. Latest-main behavior that must be carried forward
 

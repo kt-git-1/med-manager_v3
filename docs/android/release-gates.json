@@ -4,7 +4,7 @@
     "iosRelease": "1.0.6 Build 51",
     "mainCommit": "432b34c",
     "androidBranch": "android-dev",
-    "checkpoint": "C115"
+    "checkpoint": "C116"
   },
   "partialRequirementIds": [
     "XP-004",
@@ -208,6 +208,8 @@
         "RG-005"
       ],
       "authorities": [
+        "play_developer_api_read",
+        "play_developer_api_write",
         "play_console_write",
         "physical_device"
       ],
@@ -216,15 +218,18 @@
         "C92",
         "C93",
         "C94",
-        "C95"
+        "C95",
+        "C116"
       ],
       "doneWhen": [
         "The exact handoff AAB is processed and installed from Play Internal with Play app signing.",
+        "The applications.tracks.releases.list response for qa contains the exact C114 versionCode once with RELEASE_LIFECYCLE_STATE_PUBLISHED, a fresh inspection edit's edits.tracks.get response contains it once with completed status, and the secret-free chained receipt is retained.",
         "Fresh install, prior-version update, App Links, sessions, notifications and package identity pass on the exact artifact."
       ],
       "evidenceSources": [
         "docs/android/play-release-runbook.md",
-        "docs/android/physical-device-matrix.md"
+        "docs/android/physical-device-matrix.md",
+        "docs/android/evidence/c116-20260817/README.md"
       ],
       "backlogTitle": "Play Internal install and update verification"
     },

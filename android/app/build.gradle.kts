@@ -1295,6 +1295,24 @@ val verifyPlayUploadReceiptContract by tasks.registering(org.gradle.api.tasks.Ex
     commandLine("python3", rootProject.file("scripts/test-verify-play-upload-receipt.py").absolutePath)
 }
 
+val verifyPlayInternalTrackReceiptContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Exercises published Google Play Internal-track matching and chained receipt output."
+    inputs.files(
+        rootProject.file("scripts/prepare-play-release-handoff.py"),
+        rootProject.file("scripts/test-prepare-play-release-handoff.py"),
+        rootProject.file("scripts/verify-prepared-play-release-handoff.py"),
+        rootProject.file("scripts/verify-play-upload-receipt.py"),
+        rootProject.file("scripts/verify-play-internal-track-receipt.py"),
+        rootProject.file("scripts/test-verify-play-internal-track-receipt.py"),
+    )
+    environment("PYTHONDONTWRITEBYTECODE", "1")
+    commandLine(
+        "python3",
+        rootProject.file("scripts/test-verify-play-internal-track-receipt.py").absolutePath,
+    )
+}
+
 val playReleaseHandoffRoot = layout.buildDirectory.dir("outputs/play-release")
 val preparePlayReleaseHandoff by tasks.registering(org.gradle.api.tasks.Exec::class) {
     group = "verification"

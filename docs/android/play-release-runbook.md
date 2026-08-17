@@ -151,6 +151,21 @@ python3 scripts/verify-play-upload-receipt.py \
 
 C114 reruns the complete C113 retained-handoff verification, accepts only the official direct Bundle object or bundles-list envelope, requires exactly one matching `versionCode` and the same upload-payload SHA-256, then atomically writes a deterministic receipt containing no token, edit ID or account identity. A conflicting prior receipt, duplicate versionCode, malformed/extra API field, wrong hash, unsafe path or handoff drift fails closed. Retain the raw response and generated receipt in the release-owner evidence store; neither the synthetic CI contract nor a local receipt proves Play processing, app signing, track assignment or installation.
 
+After the release edit is committed and Internal testing becomes available, call the read-only `applications.tracks.releases.list` endpoint for `applications/com.afterlifearchive.medmanager/tracks/qa`. Google defines `qa` as the default Internal testing track. Because `RELEASE_LIFECYCLE_STATE_PUBLISHED` can include a halted resumable release, also create a fresh inspection edit, call `edits.tracks.get` for `qa`, retain that raw Track body, then delete the inspection edit without changing or committing it. Keep OAuth/account/request/edit metadata out of Git and captured commands. Chain both response bodies to the pre-existing C114 receipt:
+
+```bash
+python3 scripts/verify-play-internal-track-receipt.py \
+  --handoff app/build/outputs/play-release/v<version>-code<versionCode>-<commit12> \
+  --bundle-response /private/path/play-bundle-response.json \
+  --upload-receipt app/build/outputs/play-upload-receipts/v<version>-code<versionCode>-<commit12>.play-upload-receipt.json \
+  --release-list-response /private/path/play-internal-qa-releases-response.json \
+  --track-response /private/path/play-internal-qa-track-response.json \
+  --output app/build/outputs/play-track-receipts/v<version>-code<versionCode>-<commit12>.play-internal-track-receipt.json \
+  --repository-root ..
+```
+
+C116 revalidates C114 byte-for-byte, accepts only the official releases-list and Track schemas, and requires the target `versionCode` exactly once on `qa` with both `RELEASE_LIFECYCLE_STATE_PUBLISHED` and `completed`. It excludes release names/notes/free text, credentials, edit ID, account/tester identity and patient data from its atomic receipt. The two API states are necessary but still do not prove Play signing or an actual install/update; retain the Bundle/list/Track raw responses and C114/C116 receipts, then execute the exact-artifact physical matrix.
+
 `verifyProductionRuntime` also prevents privileged Supabase credentials from entering the client artifact. `SUPABASE_ANON_KEY` may contain a current `sb_publishable_...` key or a legacy JWT whose issuer is `supabase` and sole role is `anon`; `sb_secret_...`, legacy `service_role`, wrong-issuer, malformed and opaque-long values fail closed. The synthetic `verifyRuntimeCredentialSafety` task exercises this contract without reading or logging any real key.
 
 `app/gradle.lockfile` strictly pins `releaseRuntimeClasspath` and the isolated `bundletoolCli` verifier classpath. It currently represents 174 runtime coordinates and 17 bundletool coordinates, with four shared. Never hand-edit it. For an intentional app dependency update, use `./gradlew :app:dependencies --configuration releaseRuntimeClasspath --write-locks`; for a bundletool update, use the same command with `--configuration bundletoolCli`. Review every lock diff and rerun SDK, APK, AAB, disclosure and complete CI gates. Missing or stale state fails closed.
@@ -170,6 +185,7 @@ Before upload, also verify:
 - `bundleSignedRelease` reports that the AAB certificate matches the registered Play upload certificate; independently compare the reported fingerprint with Play Console before upload.
 - `SHA256SUMS` passes inside the generated three-file handoff, and its JSON SHA/certificate/version/commit match the named AAB selected for upload; retain the whole directory unchanged.
 - The real Play Developer API Bundle response reports the same `versionCode` and upload-payload SHA-256; the C114 receipt is outside the handoff, deterministic and retained with the raw response under owner control.
+- The Play releases-list plus fresh inspection-edit Track responses report that same C114 `versionCode` exactly once on Internal `qa` with `RELEASE_LIFECYCLE_STATE_PUBLISHED` and `completed`; the C116 chained receipt is retained outside the handoff with both raw responses.
 - API 26/33/35 tests and the physical-device matrix are green for the exact commit.
 - `verifyMainMergeSurface` passes against freshly fetched `origin/main`; inspect its base/head/count summary and separately confirm `git status` is clean before opening or performing the merge.
 - `verifyAndroidCiRuntimeContract` passes and the exact hosted Android CI run has no Node/action-runtime deprecation annotation; action release SHAs are updated only after direct official-release review.
@@ -177,7 +193,7 @@ Before upload, also verify:
 
 ## 4. Play tracks
 
-1. Upload the signed AAB to Internal testing through the approved owner-controlled path, pass the real Bundle response through C114, and record commit SHA, `versionCode`, upload SHA-256, certificate fingerprint, tester account and result.
+1. Upload the signed AAB to Internal testing through the approved owner-controlled path, pass the real Bundle response through C114, commit the track change, then pass the post-commit `qa` releases-list and fresh inspection-edit Track responses through C116. Delete the unmodified inspection edit. Record commit SHA, `versionCode`, upload SHA-256, certificate fingerprint, tester account and result outside Git.
 2. Install from Play, not adb. Run `verifyPlayInstalledAppLinks`, then verify caregiver/patient sign-in, session restoration, both production auth paths, browser fallback, FCM permission/token/delivery/tap, local reminders, background/Doze/process death, legal links and analytics consent.
    Execute and record every applicable row in `physical-device-matrix.md`; the summary in this runbook is not a substitute for that evidence ledger.
 3. Complete Data safety and Health apps declarations from the actual production build. Do not infer declarations from SDK names alone.
@@ -193,6 +209,7 @@ Before upload, also verify:
 - C95 confirms production Digital Asset Links still returns HTTP 404 because its tested route is only on `android-dev`. Merge/deploy the same Android API contract, configure the Play app-signing certificate in production and pass both App Links tasks; neither a synthetic certificate nor an upload certificate closes this row.
 - No release-owner upload keystore has been selected, so a production-signed AAB cannot be produced here yet.
 - No Play Developer API upload response exists yet; C114's synthetic direct/list fixtures prove only the local comparison and secret-free receipt contract.
+- No real Play Internal releases-list/fresh-Track response pair exists yet; C116's synthetic fixtures prove only the strict `qa`/published/completed chain and secret-free receipt contract.
 - One A302SH Android 15/API 35 Debug target is evidenced through C76; old-supported and Google/reference devices remain pending.
 - Play-installed Internal/Closed track and final Console declaration evidence remain pending.
 - C106 source readiness passes, but its public route is not deployed and the Organization legal name/final Play review-access fields intentionally remain pending. The retained QA password stays only in the external release-owner secret store and must never be copied into Git or evidence.

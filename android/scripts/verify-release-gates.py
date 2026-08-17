@@ -40,6 +40,7 @@ ALLOWED_AUTHORITIES = {
     "physical_device",
     "play_console_read",
     "play_console_write",
+    "play_developer_api_read",
     "play_developer_api_write",
     "play_organization_account_creation",
     "production_database_configuration",
@@ -306,6 +307,34 @@ def verify_release_gates(
             _require(
                 "docs/android/evidence/c109-20260817/README.md" in sources,
                 "RG-008 must retain C109 physical evidence",
+            )
+
+        if gate_id == "RG-006":
+            _require(
+                "play_developer_api_read" in authorities,
+                "RG-006 must retain Play Developer API track-read authority",
+            )
+            _require(
+                "play_developer_api_write" in authorities,
+                "RG-006 must retain Play Developer API inspection-edit authority",
+            )
+            _require("C116" in prerequisites, "RG-006 must retain the C116 Internal-track receipt")
+            _require(
+                "docs/android/evidence/c116-20260817/README.md" in sources,
+                "RG-006 must retain C116 Internal-track receipt evidence",
+            )
+            _require(
+                any(
+                    "applications.tracks.releases.list" in item
+                    and "qa" in item
+                    and "RELEASE_LIFECYCLE_STATE_PUBLISHED" in item
+                    and "edits.tracks.get" in item
+                    and "completed" in item
+                    and "versionCode" in item
+                    and "C114" in item
+                    for item in done_when
+                ),
+                "RG-006 must require the published Internal-track response chained to C114",
             )
 
         if gate_id == "RG-009":
