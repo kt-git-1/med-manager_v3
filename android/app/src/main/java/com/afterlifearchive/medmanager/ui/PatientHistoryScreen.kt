@@ -190,7 +190,7 @@ private fun PatientHistoryStreakCard(streak: PatientHistoryStreak) {
     Card(
         modifier = Modifier.fillMaxWidth().testTag("patient-history-streak-card"),
         shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, PatientTeal.copy(alpha = 0.18f)),
+        border = BorderStroke(1.5.dp, PatientTeal.copy(alpha = 0.55f)),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
@@ -203,7 +203,7 @@ private fun PatientHistoryStreakCard(streak: PatientHistoryStreak) {
                 Text(
                     value,
                     fontSize = if (streak.currentStreakDays == 0) 28.sp else 50.sp,
-                    color = PatientTeal,
+                    color = MedicationTheme.colors.primaryTealText,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     modifier = Modifier.semantics { contentDescription = valueAccessibility },
@@ -217,7 +217,7 @@ private fun PatientHistoryStreakCard(streak: PatientHistoryStreak) {
                 next,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = PatientTeal,
+                color = MedicationTheme.colors.primaryTealText,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().background(PatientTeal.copy(alpha = 0.12f), RoundedCornerShape(12.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
             )
@@ -291,11 +291,12 @@ private enum class PatientSimpleHistoryStatus { TAKEN, PENDING, MISSED, NONE }
 @Composable
 private fun PatientHistoryHeader() {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        PatientHeaderIcon(Icons.Rounded.AccessTime)
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(stringResource(R.string.patient_history_title), modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-            Text(stringResource(R.string.patient_history_subtitle), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-        }
+        PatientHeaderFilledClockIcon()
+        PatientHeaderText(
+            title = stringResource(R.string.patient_history_title),
+            subtitle = stringResource(R.string.patient_history_subtitle),
+            titleModifier = Modifier.semantics { heading() },
+        )
     }
 }
 
@@ -352,7 +353,11 @@ private fun PatientTodayProgressCard(day: HistoryDay?) {
                 if (total > 0) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         HistoryStatusPill(stringResource(R.string.patient_history_today_taken, taken), PatientTeal, Icons.Rounded.CheckCircle)
-                        if (pending > 0) HistoryStatusPill(stringResource(R.string.patient_history_today_remaining, pending), Color(0xFFF36A00), Icons.Rounded.AccessTime)
+                        if (pending > 0) HistoryStatusPill(
+                            stringResource(R.string.patient_history_today_remaining, pending),
+                            Color(0xFFF36A00),
+                            filledClock = true,
+                        )
                         if (missed > 0) HistoryStatusPill(stringResource(R.string.patient_history_today_missed, missed), MaterialTheme.colorScheme.error, Icons.Rounded.Warning)
                     }
                 }
@@ -603,13 +608,26 @@ private fun patientRecentDoseStatusColor(dose: HistoryScheduledDose): Color = wh
 }
 
 @Composable
-private fun HistoryStatusPill(text: String, color: Color, icon: ImageVector? = null) {
+private fun HistoryStatusPill(
+    text: String,
+    color: Color,
+    icon: ImageVector? = null,
+    filledClock: Boolean = false,
+) {
     Row(
         modifier = Modifier.background(color.copy(alpha = 0.13f), RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        icon?.let { Icon(it, contentDescription = null, tint = color, modifier = Modifier.size(16.dp)) }
+        if (filledClock) {
+            FilledClockGlyph(
+                fillColor = color,
+                handColor = Color.White,
+                modifier = Modifier.size(16.dp),
+            )
+        } else {
+            icon?.let { Icon(it, contentDescription = null, tint = color, modifier = Modifier.size(16.dp)) }
+        }
         Text(text, color = color, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
     }
 }

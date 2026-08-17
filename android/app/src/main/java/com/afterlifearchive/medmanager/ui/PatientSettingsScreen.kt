@@ -168,10 +168,10 @@ internal fun SettingsContent(
 private fun PatientSettingsHeader() {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         PatientHeaderIcon(Icons.Rounded.Settings)
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(stringResource(R.string.patient_settings_title), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-            Text(stringResource(R.string.patient_settings_subtitle), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-        }
+        PatientHeaderText(
+            title = stringResource(R.string.patient_settings_title),
+            subtitle = stringResource(R.string.patient_settings_subtitle),
+        )
     }
 }
 

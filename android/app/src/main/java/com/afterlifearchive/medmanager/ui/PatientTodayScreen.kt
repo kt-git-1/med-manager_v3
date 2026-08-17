@@ -558,10 +558,10 @@ private fun PatientInventoryWarningCard(medicationNames: List<String>) {
 private fun PatientTodayHeader(date: String) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         PatientHeaderIcon(Icons.Rounded.CalendarMonth)
-        Column {
-            Text(stringResource(R.string.patient_today_title), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-            Text(date, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        }
+        PatientHeaderText(
+            title = stringResource(R.string.patient_today_title),
+            subtitle = date,
+        )
     }
 }
 

@@ -178,6 +178,30 @@ class PatientHistoryContentTest {
     }
 
     @Test
+    fun publishedIosV105PatientHistoryFixtureRendersInProductionCompose() {
+        val now = LocalDate.parse("2026-07-19")
+        val activity = showHistory(
+            days = listOf(
+                HistoryDay("2026-07-13", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                HistoryDay("2026-07-14", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                HistoryDay("2026-07-15", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                HistoryDay("2026-07-16", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                HistoryDay("2026-07-17", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0),
+                HistoryDay(now.toString(), HistoryStatus.TAKEN, HistoryStatus.TAKEN, HistoryStatus.PENDING, HistoryStatus.NONE, 0),
+            ),
+            streak = PatientHistoryStreak(5, false, HistoryStreakTodayStatus.IN_PROGRESS),
+            now = now,
+        )
+
+        composeRule.onNodeWithText("2/3回分 記録済み").assertIsDisplayed()
+        composeRule.onNodeWithText("記録済み 2回分").assertIsDisplayed()
+        composeRule.onNodeWithText("残り 1回分").assertIsDisplayed()
+        composeRule.onNodeWithText("5日").assertIsDisplayed()
+        composeRule.onNodeWithText("5/7日").assertIsDisplayed()
+        captureDevice(activity, "android-ui-104-published-v105-light.png")
+    }
+
+    @Test
     fun currentIosAchievementPreviewRemainsReadableInDarkMaximumText() {
         val activity = showHistory(
             days = listOf(

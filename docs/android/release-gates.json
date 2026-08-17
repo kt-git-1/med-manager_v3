@@ -4,7 +4,7 @@
     "iosRelease": "1.0.6 Build 51",
     "mainCommit": "432b34c",
     "androidBranch": "android-dev",
-    "checkpoint": "C123"
+    "checkpoint": "C124"
   },
   "partialRequirementIds": [
     "XP-004",

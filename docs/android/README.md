@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C123
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C124
 - Baseline date: 2026-08-17
-- Current action: C123 continues the screenshot-by-screenshot published-build rebaseline with UI-001 Mode Select. Its exact iOS/Android pair confirms the shared layout, type, illustrations, cards and copy; Android now also matches the published pills header glyph and neutral badge-icon treatment. Play screenshots 01 and 02 are source-bound to the fresh evidence, with six store surfaces still queued.
+- Current action: C124 rebaselines UI-104 Patient History from the unchanged published runtime. Android now matches the filled clock symbols, 34/17 shared Patient header, 1.5-unit streak accent, darker streak copy and exact `5/7日` fixture. Play screenshots 01–03 are source-bound to fresh published-build evidence; five store surfaces remain queued.
 
 ## Authority order
 

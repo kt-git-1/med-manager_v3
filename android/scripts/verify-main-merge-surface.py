@@ -13,8 +13,8 @@ from typing import Sequence
 
 
 # The long-lived Android branch is intentionally source/evidence complete. C123
-# reaches 1,254 reviewed paths; 1,400 retains bounded headroom for the remaining
-# six published-build screenshot pairs without weakening scope/blob policies.
+# reaches 1,254 reviewed paths; 1,400 retains bounded headroom for that six-pair
+# queue (five remain after C124) without weakening scope/blob policies.
 MAX_CHANGED_FILES = 1_400
 MAX_SINGLE_BLOB_BYTES = 2 * 1024 * 1024
 MAX_CHANGED_TREE_BYTES = 400 * 1024 * 1024

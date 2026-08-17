@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.Canvas
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -21,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.stringResource
@@ -60,6 +62,77 @@ internal fun PatientHeaderPillsIcon() {
         contentAlignment = Alignment.Center,
     ) {
         MedicationPillsGlyph(Color.White, Modifier.size(34.dp))
+    }
+}
+
+@Composable
+internal fun PatientHeaderFilledClockIcon() {
+    Box(
+        modifier = Modifier
+            .size(62.dp)
+            .shadow(8.dp, CircleShape)
+            .background(PatientTeal, CircleShape)
+            .border(5.dp, MaterialTheme.colorScheme.surface, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        FilledClockGlyph(
+            fillColor = Color.White,
+            handColor = PatientTeal,
+            modifier = Modifier.size(30.dp),
+        )
+    }
+}
+
+@Composable
+internal fun FilledClockGlyph(
+    fillColor: Color,
+    handColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier) {
+        val radius = size.minDimension / 2f
+        val stroke = size.minDimension * 0.12f
+        drawCircle(color = fillColor, radius = radius)
+        drawLine(
+            color = handColor,
+            start = center,
+            end = center.copy(y = center.y - radius * 0.50f),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = handColor,
+            start = center,
+            end = center.copy(x = center.x - radius * 0.42f),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round,
+        )
+    }
+}
+
+@Composable
+internal fun PatientHeaderText(
+    title: String,
+    subtitle: String,
+    titleModifier: Modifier = Modifier,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = title,
+            fontSize = 34.sp,
+            lineHeight = 41.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            modifier = titleModifier,
+        )
+        Text(
+            text = subtitle,
+            fontSize = 17.sp,
+            lineHeight = 22.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+        )
     }
 }
 
