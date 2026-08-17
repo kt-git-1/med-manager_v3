@@ -218,6 +218,30 @@ rejected(
         ),
     ),
 )
+
+rejected(
+    "play-organization-ledger-integration-prerequisite",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][4].update(
+            prerequisites=[item for item in value["gates"][4]["prerequisites"] if item != "C111"]
+        ),
+    ),
+)
+
+rejected(
+    "play-organization-store-ledger-evidence",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][4].update(
+            evidenceSources=[
+                item
+                for item in value["gates"][4]["evidenceSources"]
+                if item != "docs/android/evidence/c110-20260817/README.md"
+            ]
+        ),
+    ),
+)
 rejected(
     "play-policy-readiness-prerequisite",
     lambda _root, paths: edit_manifest(
@@ -322,4 +346,4 @@ rejected(
     ),
 )
 
-print("Release gate contract passed: accepted=1 rejected=25")
+print("Release gate contract passed: accepted=1 rejected=27")

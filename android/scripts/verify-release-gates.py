@@ -249,6 +249,8 @@ def verify_release_gates(
                 "RG-005 must retain Play Organization account creation authority",
             )
             _require("C105" in prerequisites, "RG-005 must retain the C105 account audit")
+            _require("C110" in prerequisites, "RG-005 must retain the C110 store-ledger binding")
+            _require("C111" in prerequisites, "RG-005 must retain the C111 ledger integration")
             _require(
                 any("Play Organization" in item and "D-U-N-S" in item for item in done_when),
                 "RG-005 must require verified Play Organization and D-U-N-S ownership",
@@ -256,6 +258,18 @@ def verify_release_gates(
             _require(
                 "docs/android/evidence/c105-20260817/README.md" in sources,
                 "RG-005 must retain C105 account evidence",
+            )
+            _require(
+                "docs/android/evidence/c110-20260817/README.md" in sources,
+                "RG-005 must retain C110 store-ledger evidence",
+            )
+            _require(
+                "docs/android/evidence/c111-20260817/README.md" in sources,
+                "RG-005 must retain C111 ledger-integration evidence",
+            )
+            _require(
+                any("schema-v2 ledger" in item and "store hashes" in item for item in done_when),
+                "RG-005 must retain exact schema-v2 store hash handoff acceptance",
             )
 
         if gate_id == "RG-008":
