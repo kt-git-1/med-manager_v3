@@ -112,7 +112,7 @@ Data safety の個別回答は [`play-console-declarations.md`](./play-console-d
 | 7 | `07-caregiver-history.jpg` | 家族の月間履歴 | 月間カレンダーから日付を選び、服薬済み、未達、未服用、頓服の状態を確認する画面 |
 | 8 | `08-caregiver-settings.jpg` | 連携と時間設定 | 見守る方の選択、連携コード発行、連携解除、患者削除、服薬時間設定を表示した画面 |
 
-8枚の正規元画像は[`play-store-assets/phone-ja-JP/sources.tsv`](./play-store-assets/phone-ja-JP/sources.tsv)で固定します。C122で2枚目の本人Todayを未改変の公開iOS 1.0.6 Build 51実行画面から再基準化しました。残る7枚は生産Compose・合成データ証跡ですが、同じ公開ビルド実画面との再撮影監査は未完了です。`./gradlew updatePlayStoreScreenshots verifyPlayStoreAssets`で同じ1350×2400 JPEGを決定論的に再生成し、コミット済みバイトとの一致まで確認できます。実機・Play内部テスト版を撮り直す場合も、この順序、fixture、明るいテーマ、日本語を維持し、ステータスバーに通知や通信事業者名を表示しません。
+8枚の正規元画像は[`play-store-assets/phone-ja-JP/sources.tsv`](./play-store-assets/phone-ja-JP/sources.tsv)で固定します。C122-C123で2枚目の本人Todayと1枚目のモード選択を未改変の公開iOS 1.0.6 Build 51実行画面から再基準化しました。残る6枚は生産Compose・合成データ証跡ですが、同じ公開ビルド実画面との再撮影監査は未完了です。`./gradlew updatePlayStoreScreenshots verifyPlayStoreAssets`で同じ1350×2400 JPEGを決定論的に再生成し、コミット済みバイトとの一致まで確認できます。実機・Play内部テスト版を撮り直す場合も、この順序、fixture、明るいテーマ、日本語を維持し、ステータスバーに通知や通信事業者名を表示しません。
 
 ## 6. グラフィックアセット要件
 

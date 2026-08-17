@@ -60,7 +60,7 @@ Each screen ID maps to parity requirements. Every listed state needs a determini
 
 | Screen | iOS reference | Required states/actions |
 |---|---|---|
-| UI-001 Mode select | `ModeSelectView.swift` | default, dark, large text, patient/family selection, analytics consent prompt, back restoration |
+| UI-001 Mode select | `ModeSelectView.swift` | default, dark, large text, patient/family selection, analytics consent prompt, back restoration. C123 retains the exact published default pair and closes pills-header/neutral-badge drift; older adaptive evidence remains supporting. |
 | UI-002 Patient link | `LinkCodeEntryView.swift` | empty, 1–5 digits, valid six digits, submitting, validation, expired/not-found, forbidden, network, rate limit, success |
 | UI-003 Caregiver auth choice | `CaregiverAuthChoiceView.swift` | login/signup actions, mode reset, dark/large text |
 | UI-004 Login | `CaregiverLoginView.swift` | empty, invalid, loading, auth failure, callback landing, keyboard/IME |

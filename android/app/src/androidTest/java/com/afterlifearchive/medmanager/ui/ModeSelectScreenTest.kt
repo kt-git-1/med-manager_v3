@@ -1,7 +1,13 @@
 package com.afterlifearchive.medmanager.ui
 
+import android.app.Activity
+import android.os.SystemClock
+import androidx.activity.compose.LocalActivity
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -32,6 +38,33 @@ class ModeSelectScreenTest {
         composeRule.onNodeWithText("今日のお薬を確認します").assertIsDisplayed()
         composeRule.onNodeWithText("家族として使う").assertIsDisplayed()
         composeRule.onNodeWithText("薬と在庫を管理します").assertIsDisplayed()
+    }
+
+    @Test
+    fun publishedIosV105ModeSelectFixtureRendersInProductionCompose() {
+        lateinit var activity: Activity
+        composeRule.setContent {
+            MedicationAppTheme {
+                activity = checkNotNull(LocalActivity.current)
+                ModeSelectScreen {}
+            }
+        }
+
+        composeRule.onNodeWithText("お薬見守り").assertIsDisplayed()
+        composeRule.onNodeWithText("どちらで\n使いますか？").assertIsDisplayed()
+        composeRule.onNodeWithText("本人モード").assertIsDisplayed()
+        composeRule.onNodeWithText("家族モード").assertIsDisplayed()
+        composeRule.onAllNodesWithText("このモードで始める").assertCountEquals(2)
+        composeRule.runOnIdle {
+            activity.window.statusBarColor = android.graphics.Color.TRANSPARENT
+            activity.window.navigationBarColor = android.graphics.Color.TRANSPARENT
+            WindowCompat.getInsetsController(activity.window, activity.window.decorView).apply {
+                isAppearanceLightStatusBars = true
+                isAppearanceLightNavigationBars = true
+            }
+        }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-001-published-v105-light.png")
     }
 
     @Test

@@ -24,7 +24,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Groups
-import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -141,12 +140,7 @@ private fun ModeHeader() {
                 modifier = Modifier.size(28.dp).background(colors.primary.copy(alpha = 0.12f), CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Medication,
-                    contentDescription = null,
-                    tint = colors.primary,
-                    modifier = Modifier.size(16.dp),
-                )
+                MedicationPillsGlyph(colors.primary, Modifier.size(16.dp))
             }
             Text(
                 text = stringResource(R.string.app_name),
@@ -203,7 +197,7 @@ private fun RoleModeCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        Icon(badgeIcon, contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
+                        Icon(badgeIcon, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(16.dp))
                         Text(badge, color = tint, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                     }
                     Text(title, color = colors.onSurface, fontSize = 24.sp, lineHeight = 29.sp, fontWeight = FontWeight.Bold)

@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C122
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C123
 - Baseline date: 2026-08-17
-- Current action: C122 starts a fresh screenshot-by-screenshot rebaseline against the unmodified published iOS 1.0.6 Build 51 runtime. Patient Today now uses an exact fixed fixture and matched progress, hero, time, medicine and disabled-action presentation; its iOS/Android pair and deterministic Play screenshot source are retained. The other seven store surfaces remain explicitly queued for the same published-build recapture audit.
+- Current action: C123 continues the screenshot-by-screenshot published-build rebaseline with UI-001 Mode Select. Its exact iOS/Android pair confirms the shared layout, type, illustrations, cards and copy; Android now also matches the published pills header glyph and neutral badge-icon treatment. Play screenshots 01 and 02 are source-bound to the fresh evidence, with six store surfaces still queued.
 
 ## Authority order
 
