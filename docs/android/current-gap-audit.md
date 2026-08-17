@@ -32,6 +32,8 @@ C116 chains the revalidated C114 upload receipt to the official Play releases-li
 
 C117 chains that exact version to official Play generated-APK metadata, requiring production base-master splits, the complete App Links app-signing certificate set and strict separation from the retained upload key.
 
+C118 chains one downloaded base-master APK per C117 signing-key group to the exact retained version and verifies safe APK bytes, production package/version, DEX content and the matching v2-or-newer embedded signer without retaining download IDs or local paths.
+
 ## 2. What is reusable
 
 - Kotlin/Compose Gradle project, application identity and build workflow
@@ -89,6 +91,7 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Resolved C115 | Successful Android CI still emitted Node 20 forced-runtime and setup-java deprecation warnings, while action majors were mutable | Official Node 24 checkout/Java/Gradle releases are full-SHA pinned; contents-only permission, no persisted credential, Temurin 17 and exact trigger/action inventory are contract-locked with twenty-three rejections | Rerun the exact final commit in hosted CI and require no action-runtime deprecation warning; this does not close product, device or Play gates |
 | Resolved C116 | C114 proved Play received the upload bytes but could not prove the artifact was published and currently serving on Internal testing | Strict releases-list plus fresh inspection-edit Track parsing revalidates C114, requires `qa`, one exact version, `RELEASE_LIFECYCLE_STATE_PUBLISHED` and `completed`, then emits an atomic fixed-field chained receipt; forty-eight drift cases are rejected | Retain real owner-controlled API responses/receipts and install/update the Play-signed artifact on required devices; synthetic fixtures do not close RG-006 |
 | Resolved C117 | C116 proved Internal publication state but did not identify the Play-generated split signing keys for that version | Strict `generatedapks.list` groups require production targeting, base-master split metadata, exact App Links certificate-set equality and upload-key separation; the receipt excludes download IDs and thirty-six drift cases are rejected | Obtain the real response for the exact version, then download and inspect generated APK bytes and complete Play install/update/device acceptance; metadata fixtures do not close RG-005/RG-006 |
+| Resolved C118 | C117 identified signing-key metadata but did not verify any downloaded APK bytes | Globally unique download IDs and one base-master per C117 key must pass bounded ZIP/manifest/DEX checks, exact package/version, one matching signer and embedded v2+ verification without byte changes during inspection; the path-free receipt rejects forty-six chain/selection/artifact/tool/TOCTOU/output drifts | Run it on actual `generatedapks.download` bytes, then prove Play installer identity, fresh install/update, App Links/FCM/session/lifecycle and required-device acceptance |
 
 ## 4. Latest-main behavior that must be carried forward
 

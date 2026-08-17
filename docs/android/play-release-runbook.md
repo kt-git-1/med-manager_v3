@@ -182,7 +182,27 @@ python3 scripts/verify-play-generated-apks-receipt.py \
   --repository-root ..
 ```
 
-C117 reruns the complete C116 chain, requires production targeting and at least one base-master split under every generated signing-key group, then compares the complete normalized API certificate set with the independently read App Links set. Any reuse of the retained upload certificate fails. The receipt excludes download IDs/request URLs and retains only public fingerprints, hashes and counts. It proves metadata identity only: download at least one base-master APK per signing key through `generatedapks.download`, verify its actual package/version/signature bytes and retain those results before Play install acceptance.
+C117 reruns the complete C116 chain, requires production targeting and at least one base-master split under every generated signing-key group, then compares the complete normalized API certificate set with the independently read App Links set. Any reuse of the retained upload certificate fails. The receipt excludes download IDs/request URLs and retains only public fingerprints, hashes and counts. It proves metadata identity only.
+
+For every C117 signing-key group, select exactly one base-module master row (`moduleName=base`, empty `splitId`) and call `generatedapks.download` with its `downloadId`. Save the response body as an APK in the owner-controlled evidence area, never in Git or the immutable three-file handoff. Repeat `--downloaded-base-apk DOWNLOAD_ID APK` once per signing-key group:
+
+```bash
+python3 scripts/verify-play-downloaded-base-apks-receipt.py \
+  --handoff app/build/outputs/play-release/v<version>-code<versionCode>-<commit12> \
+  --bundle-response /private/path/play-bundle-response.json \
+  --upload-receipt app/build/outputs/play-upload-receipts/v<version>-code<versionCode>-<commit12>.play-upload-receipt.json \
+  --release-list-response /private/path/play-internal-qa-releases-response.json \
+  --track-response /private/path/play-internal-qa-track-response.json \
+  --internal-track-receipt app/build/outputs/play-track-receipts/v<version>-code<versionCode>-<commit12>.play-internal-track-receipt.json \
+  --generated-apks-response /private/path/play-generated-apks-response.json \
+  --expected-app-signing-sha256 "$PLAY_APP_SIGNING_CERT_SHA256_FINGERPRINTS" \
+  --generated-apks-receipt app/build/outputs/play-generated-apk-receipts/v<version>-code<versionCode>-<commit12>.play-generated-apks-receipt.json \
+  --downloaded-base-apk '<base-master-download-id-for-key-1>' /private/path/base-master-key-1.apk \
+  --output app/build/outputs/play-downloaded-apk-receipts/v<version>-code<versionCode>-<commit12>.play-downloaded-base-apks-receipt.json \
+  --repository-root ..
+```
+
+C118 reruns C117 byte-for-byte and refuses missing rotation coverage, unknown/configuration/duplicate download IDs or reused files. Every APK must be a bounded, unique, traversal-free ZIP outside the handoff with manifest and DEX and without private configuration/key material. SDK `aapt2` must report the production package, exact C117 `versionCode`/`versionName` and no nonempty split identity; SDK `apksigner` must verify exactly one signer, its assigned C117 certificate and an embedded v2-or-newer scheme. The receipt excludes download IDs and paths, retaining only fixed identity, hashes, counts, public fingerprints and Build Tools version. It still does not prove the Google Play installer, fresh install/update or device behavior.
 
 `verifyProductionRuntime` also prevents privileged Supabase credentials from entering the client artifact. `SUPABASE_ANON_KEY` may contain a current `sb_publishable_...` key or a legacy JWT whose issuer is `supabase` and sole role is `anon`; `sb_secret_...`, legacy `service_role`, wrong-issuer, malformed and opaque-long values fail closed. The synthetic `verifyRuntimeCredentialSafety` task exercises this contract without reading or logging any real key.
 
@@ -205,6 +225,7 @@ Before upload, also verify:
 - The real Play Developer API Bundle response reports the same `versionCode` and upload-payload SHA-256; the C114 receipt is outside the handoff, deterministic and retained with the raw response under owner control.
 - The Play releases-list plus fresh inspection-edit Track responses report that same C114 `versionCode` exactly once on Internal `qa` with `RELEASE_LIFECYCLE_STATE_PUBLISHED` and `completed`; the C116 chained receipt is retained outside the handoff with both raw responses.
 - The exact-version `generatedapks.list` response contains production base-master split metadata under the complete independent App Links app-signing certificate set; the C117 receipt is retained outside the handoff and the upload certificate is not in that set.
+- One real `generatedapks.download` base-master APK per C117 signing key passes C118 package/version/ZIP/DEX/signer/embedded-signature checks; its path-free receipt is retained outside the handoff with the owner-controlled APK bytes.
 - API 26/33/35 tests and the physical-device matrix are green for the exact commit.
 - `verifyMainMergeSurface` passes against freshly fetched `origin/main`; inspect its base/head/count summary and separately confirm `git status` is clean before opening or performing the merge.
 - `verifyAndroidCiRuntimeContract` passes and the exact hosted Android CI run has no Node/action-runtime deprecation annotation; action release SHAs are updated only after direct official-release review.
@@ -212,7 +233,7 @@ Before upload, also verify:
 
 ## 4. Play tracks
 
-1. Upload the signed AAB to Internal testing through the approved owner-controlled path, pass the real Bundle response through C114, commit the track change, then pass the post-commit `qa` releases-list and fresh inspection-edit Track responses through C116. Delete the unmodified inspection edit. Pass exact-version generated APK metadata through C117 and retain the raw response/receipt before downloading representative Play-generated APKs. Record commit SHA, `versionCode`, upload SHA-256, certificate fingerprints, tester account and result outside Git.
+1. Upload the signed AAB to Internal testing through the approved owner-controlled path, pass the real Bundle response through C114, commit the track change, then pass the post-commit `qa` releases-list and fresh inspection-edit Track responses through C116. Delete the unmodified inspection edit. Pass exact-version generated APK metadata through C117, download one base-master per signing-key group and pass their bytes through C118. Retain all raw responses/APKs/receipts under owner control. Record commit SHA, `versionCode`, upload/APK SHA-256, certificate fingerprints, tester account and result outside Git.
 2. Install from Play, not adb. Run `verifyPlayInstalledAppLinks`, then verify caregiver/patient sign-in, session restoration, both production auth paths, browser fallback, FCM permission/token/delivery/tap, local reminders, background/Doze/process death, legal links and analytics consent.
    Execute and record every applicable row in `physical-device-matrix.md`; the summary in this runbook is not a substitute for that evidence ledger.
 3. Complete Data safety and Health apps declarations from the actual production build. Do not infer declarations from SDK names alone.
@@ -230,6 +251,7 @@ Before upload, also verify:
 - No Play Developer API upload response exists yet; C114's synthetic direct/list fixtures prove only the local comparison and secret-free receipt contract.
 - No real Play Internal releases-list/fresh-Track response pair exists yet; C116's synthetic fixtures prove only the strict `qa`/published/completed chain and secret-free receipt contract.
 - No real exact-version `generatedapks.list` response exists yet; C117's synthetic fixtures prove only metadata parsing, signing-set/upload-key separation and secret-free receipt behavior.
+- No real `generatedapks.download` base-master APK set exists yet; C118's synthetic fixtures and local Debug-APK SDK integration prove only the fail-closed byte/tool contract, not Play signing, installer identity or installation.
 - One A302SH Android 15/API 35 Debug target is evidenced through C76; old-supported and Google/reference devices remain pending.
 - Play-installed Internal/Closed track and final Console declaration evidence remain pending.
 - C106 source readiness passes, but its public route is not deployed and the Organization legal name/final Play review-access fields intentionally remain pending. The retained QA password stays only in the external release-owner secret store and must never be copied into Git or evidence.

@@ -1332,6 +1332,38 @@ val verifyPlayGeneratedApksReceiptContract by tasks.registering(org.gradle.api.t
     )
 }
 
+val verifyPlayDownloadedBaseApksReceiptContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Exercises downloaded Play base-master APK byte/signing checks and chained receipt output."
+    dependsOn("assembleDebug")
+    val debugApk = layout.buildDirectory.file("outputs/apk/debug/app-debug.apk")
+    inputs.files(
+        rootProject.file("scripts/prepare-play-release-handoff.py"),
+        rootProject.file("scripts/test-prepare-play-release-handoff.py"),
+        rootProject.file("scripts/verify-prepared-play-release-handoff.py"),
+        rootProject.file("scripts/verify-play-upload-receipt.py"),
+        rootProject.file("scripts/verify-play-internal-track-receipt.py"),
+        rootProject.file("scripts/verify-play-generated-apks-receipt.py"),
+        rootProject.file("scripts/test-verify-play-generated-apks-receipt.py"),
+        rootProject.file("scripts/verify-play-downloaded-base-apks-receipt.py"),
+        rootProject.file("scripts/test-verify-play-downloaded-base-apks-receipt.py"),
+        debugApk,
+    )
+    environment("PYTHONDONTWRITEBYTECODE", "1")
+    commandLine(
+        "python3",
+        rootProject.file("scripts/test-verify-play-downloaded-base-apks-receipt.py").absolutePath,
+        "--real-apk",
+        debugApk.get().asFile.absolutePath,
+        "--repository-root",
+        rootProject.projectDir.parentFile.absolutePath,
+        "--expected-version-code",
+        releaseVersionCode.toString(),
+        "--expected-version-name",
+        releaseVersionName,
+    )
+}
+
 val playReleaseHandoffRoot = layout.buildDirectory.dir("outputs/play-release")
 val preparePlayReleaseHandoff by tasks.registering(org.gradle.api.tasks.Exec::class) {
     group = "verification"

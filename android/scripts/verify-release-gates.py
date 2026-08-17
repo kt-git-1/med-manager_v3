@@ -265,6 +265,7 @@ def verify_release_gates(
             _require("C113" in prerequisites, "RG-005 must retain the C113 retained-handoff verifier")
             _require("C114" in prerequisites, "RG-005 must retain the C114 Play upload receipt verifier")
             _require("C117" in prerequisites, "RG-005 must retain the C117 generated-APK receipt")
+            _require("C118" in prerequisites, "RG-005 must retain the C118 downloaded-APK receipt")
             _require(
                 any("Play Organization" in item and "D-U-N-S" in item for item in done_when),
                 "RG-005 must require verified Play Organization and D-U-N-S ownership",
@@ -298,6 +299,10 @@ def verify_release_gates(
                 "RG-005 must retain C117 generated-APK receipt evidence",
             )
             _require(
+                "docs/android/evidence/c118-20260817/README.md" in sources,
+                "RG-005 must retain C118 downloaded-APK receipt evidence",
+            )
+            _require(
                 any("schema-v2 ledger" in item and "store hashes" in item for item in done_when),
                 "RG-005 must retain exact schema-v2 store hash handoff acceptance",
             )
@@ -322,6 +327,16 @@ def verify_release_gates(
                 ),
                 "RG-005 must require exact generated-APK app-signing identity",
             )
+            _require(
+                any(
+                    "generatedapks.download" in item
+                    and "base-master APK" in item
+                    and "package/version/signature bytes" in item
+                    and "C118" in item
+                    for item in done_when
+                ),
+                "RG-005 must require downloaded Play APK byte/signature identity",
+            )
 
         if gate_id == "RG-008":
             _require("C109" in prerequisites, "RG-008 must retain the C109 physical rerun")
@@ -341,6 +356,7 @@ def verify_release_gates(
             )
             _require("C116" in prerequisites, "RG-006 must retain the C116 Internal-track receipt")
             _require("C117" in prerequisites, "RG-006 must retain the C117 generated-APK receipt")
+            _require("C118" in prerequisites, "RG-006 must retain the C118 downloaded-APK receipt")
             _require(
                 "docs/android/evidence/c116-20260817/README.md" in sources,
                 "RG-006 must retain C116 Internal-track receipt evidence",
@@ -348,6 +364,10 @@ def verify_release_gates(
             _require(
                 "docs/android/evidence/c117-20260817/README.md" in sources,
                 "RG-006 must retain C117 generated-APK receipt evidence",
+            )
+            _require(
+                "docs/android/evidence/c118-20260817/README.md" in sources,
+                "RG-006 must retain C118 downloaded-APK receipt evidence",
             )
             _require(
                 any(
@@ -372,6 +392,18 @@ def verify_release_gates(
                     for item in done_when
                 ),
                 "RG-006 must require exact generated split/app-signing metadata",
+            )
+            _require(
+                any(
+                    "generatedapks.download" in item
+                    and "base-master APK" in item
+                    and "package" in item
+                    and "versionCode" in item
+                    and "embedded-signature" in item
+                    and "C118" in item
+                    for item in done_when
+                ),
+                "RG-006 must require downloaded Play base APK byte/signature verification",
             )
 
         if gate_id == "RG-009":
