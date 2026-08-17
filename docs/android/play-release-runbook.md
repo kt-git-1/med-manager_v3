@@ -6,6 +6,7 @@ This is the production handoff procedure for Gate I. It does not authorize creat
 
 - Work from `android-dev`; merge to `main` only after the release gates pass.
 - Rebaseline against the latest `origin/main` and resolve every new iOS/API change first.
+- Run `verifyMainMergeSurface` after every fetch/rebaseline. It verifies committed history only; a pass does not authorize merge/deploy and does not excuse a dirty worktree.
 - Keep `BILLING_ENABLED=false` until a separate Google Play purchase contract is approved.
 - Keep the registered production-package Android Firebase app's four runtime values outside Git. C76 completes consent/DebugView/Realtime and C80 closes processed Events; Explore remains before production rollout.
 - Execute the privacy-reviewed consent-off/on/reset plus DebugView, Realtime, Events and Explore matrix in `firebase-analytics.md`; DebugView alone is not the acceptance gate.
@@ -47,6 +48,7 @@ Do not add `google-services.json`, a keystore, passwords, or populated `local.pr
 
 ```bash
 cd android
+./gradlew verifyMainMergeSurface
 ./gradlew clean test assembleDebug assembleRelease lint
 ./gradlew verifyReleaseSdkPolicy
 ./gradlew verifyReleaseApkCompatibility
@@ -72,6 +74,8 @@ ANDROID_SERIAL=<physical-device-serial> ./gradlew verifyPlayInstalledAppLinks
 
 `verifyReleaseSdkPolicy` resolves the exact Release runtime graph and rejects unapproved collection/monetization SDKs. `verifyReleaseApkCompatibility` checks the exact assembled Release APK manifest/security/permission/SDK/16 KB contract. `verifyReleaseBundleContent` uses strict-locked bundletool to validate the AAB, requires only the reviewed base module, rejects embedded private configuration/key material, dumps the protobuf manifest and reapplies the APK policy before printing structure counts and SHA-256. `verifyReleaseBundleInstallSurface` uses that same locked bundletool and an ephemeral test key to build an exact two-entry universal APK Set from the exact AAB, proves the extracted APK's synthetic signer, then reapplies the complete APK policy. `verifyReleaseDeviceSplitSurface` builds the full APK Set once and selects exact base/ABI/Japanese/density quartets for API 26 arm64, API 33 x86_64 and API 35 A302SH; it verifies every split's package/certificate/16 KB contract and reapplies full policy to each selected base master. Both output families are diagnostic build output, not Play upload/install artifacts and not part of the C92 handoff. `verifyPlayStoreAssets` checks listing text/assets and iOS icon parity. `verifyUploadKeystore` runs before AAB generation: the selected alias must be a usable private-key entry and its certificate must exactly match `PLAY_UPLOAD_CERT_SHA256`; passwords are neither printed nor declared as cacheable task inputs. `bundleSignedRelease` intentionally fails before generation when runtime/signing/key inputs are incomplete or inconsistent; after generation it requires all APK/AAB/install-surface gates, complete JAR signature coverage, exactly one signer and the same certificate identity. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
 
+`verifyMainMergeSurface` operates only on committed `origin/main...HEAD`. It requires current main as the exact ancestor, no deletion/rename, exactly the reviewed top-level/workflow/API/documentation scopes, no iOS path, no private/generated artifact or unsupported file mode, and bounded high-fidelity evidence size. Hosted CI uses full Git ancestry before running it. If main advances, merge/rebaseline main into `android-dev`, rerun API/Android gates and update the allowlist only after direct review; never force the task green by changing refs or removing a required contract.
+
 The final signed task also requires clean committed Android and consumed role/icon/store inputs. It writes the exact ledger, then creates `app/build/outputs/play-release/v<version>-code<versionCode>-<commit12>/` atomically. That directory must contain exactly the commit/version-named AAB, byte-identical `play-release-evidence.json` and `SHA256SUMS`. If the same target already exists it must match all three files; the task never silently overwrites a conflict. Treat this directory as the indivisible handoff, run `shasum -a 256 -c SHA256SUMS` inside it, and select only its named AAB in Play Console. If any input changes, run `clean` and rebuild the complete handoff.
 
 `verifyProductionRuntime` also prevents privileged Supabase credentials from entering the client artifact. `SUPABASE_ANON_KEY` may contain a current `sb_publishable_...` key or a legacy JWT whose issuer is `supabase` and sole role is `anon`; `sb_secret_...`, legacy `service_role`, wrong-issuer, malformed and opaque-long values fail closed. The synthetic `verifyRuntimeCredentialSafety` task exercises this contract without reading or logging any real key.
@@ -93,6 +97,7 @@ Before upload, also verify:
 - `bundleSignedRelease` reports that the AAB certificate matches the registered Play upload certificate; independently compare the reported fingerprint with Play Console before upload.
 - `SHA256SUMS` passes inside the generated three-file handoff, and its JSON SHA/certificate/version/commit match the named AAB selected for upload; retain the whole directory unchanged.
 - API 26/33/35 tests and the physical-device matrix are green for the exact commit.
+- `verifyMainMergeSurface` passes against freshly fetched `origin/main`; inspect its base/head/count summary and separately confirm `git status` is clean before opening or performing the merge.
 
 ## 4. Play tracks
 

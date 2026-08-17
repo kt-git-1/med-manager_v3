@@ -1,7 +1,7 @@
 # Google Play declaration worksheet
 
 **Status:** implementation-backed draft, not a submitted Console declaration  
-**Baseline:** published iOS/API `main@432b34c`, Android `android-dev` C95
+**Baseline:** published iOS/API `main@432b34c`, Android `android-dev` C96
 **Recheck:** the exact signed AAB, current Firebase SDK disclosures and Play Console questions immediately before submission
 
 This worksheet separates repository evidence from release-owner/Console decisions. It must not be copied blindly if the production configuration or SDK set changes.

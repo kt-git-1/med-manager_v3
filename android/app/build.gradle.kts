@@ -337,6 +337,37 @@ val verifyUploadKeystoreContract by tasks.registering(org.gradle.api.tasks.Exec:
     commandLine("bash", rootProject.file("scripts/test-verify-upload-keystore.sh").absolutePath)
 }
 
+val verifyMainMergeSurfaceContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Exercises accepted and rejected android-dev to main committed merge surfaces."
+    inputs.files(
+        rootProject.file("scripts/verify-main-merge-surface.py"),
+        rootProject.file("scripts/test-verify-main-merge-surface.py"),
+    )
+    commandLine("python3", rootProject.file("scripts/test-verify-main-merge-surface.py").absolutePath)
+}
+
+val verifyMainMergeSurface by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Fails unless committed android-dev changes are rebased and confined to reviewed main scopes."
+    dependsOn(verifyMainMergeSurfaceContract)
+    inputs.files(
+        rootProject.file("scripts/verify-main-merge-surface.py"),
+        rootProject.file("scripts/test-verify-main-merge-surface.py"),
+    )
+    outputs.upToDateWhen { false }
+    commandLine(
+        "python3",
+        rootProject.file("scripts/verify-main-merge-surface.py").absolutePath,
+        "--repository-root",
+        rootProject.projectDir.parentFile.absolutePath,
+        "--base-ref",
+        "origin/main",
+        "--head-ref",
+        "HEAD",
+    )
+}
+
 val verifyProductionAppLinksContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
     group = "verification"
     description = "Exercises accepted and rejected production Digital Asset Links surfaces."

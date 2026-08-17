@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C95
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C96
 - Baseline date: 2026-08-17
-- Current action: C95 makes production and Play-installed App Links acceptance executable. The Release manifest now declares only the canonical redirect-free `www` host used by production email/API configuration. Pure CI contracts require exact HTTP/JSON/cache/package/relation/app-signing-certificate identity and exact Google Play installer/package-manager verification state; the live production endpoint remains HTTP 404 until the Android API contract is approved, merged and deployed, so production/Play evidence remains external.
+- Current action: C96 makes the eventual `android-dev` to `main` committed merge surface executable and fail-closed. It requires latest `origin/main` to be the exact ancestor, permits only Android, `docs/android`, one Android CI workflow, the reviewed Android ignore policy and the exact 30-file API contract, rejects iOS or private/generated artifacts, and bounds the retained high-fidelity evidence tree. It does not authorize the merge or waive the remaining Play/physical gates.
 
 ## Authority order
 
