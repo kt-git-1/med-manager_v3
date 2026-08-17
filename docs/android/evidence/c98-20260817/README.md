@@ -18,6 +18,8 @@ Implementation commit: `057b4bd11ba07840e81c153847fe1947e8df1414`.
 6. only `SELECT`/`SHOW` data statements after the transaction controls;
 7. count-only output with no database URL, host, record identifier, mutation identifier or health value.
 
+This list records the historical C98 contract. C104 supersedes item 4 for every remote execution: only exact `sslmode=verify-full` with an absolute `sslrootcert` path is now accepted, and `sslmode=require`/compatibility mode are rejected. See `evidence/c104-20260817/README.md` for the pinned-CA runtime/workflow boundary and live read-only verification.
+
 Unexpected database errors are reduced to a safe generic message plus an optional SQLSTATE. The direct database URL remains an operator secret and must not be written to shell history, chat, Git or evidence.
 
 ## State contracts

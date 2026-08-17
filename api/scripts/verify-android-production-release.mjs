@@ -110,12 +110,17 @@ export function validateProductionWorkflow(text) {
     "- release",
     "node scripts/verify-android-production-release.mjs",
     "node scripts/verify-api-node-runtime.mjs",
+    "node scripts/test-prepare-android-production-database.mjs",
+    "node scripts/prepare-android-production-database.mjs",
     "npm audit --audit-level=high",
     "git -C .. fetch --no-tags origin main",
     '"$(git -C .. rev-parse origin/main)" != "$GITHUB_SHA"',
     'test -z "$(git -C .. status --porcelain)"',
     "node scripts/verify-android-mutation-deployment.mjs --mode preflight",
     "node scripts/verify-android-mutation-deployment.mjs --mode postdeploy",
+    "curl --proto '=https' --tlsv1.2 --fail --silent --show-error --location",
+    "https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt",
+    "ANDROID_PRODUCTION_DATABASE_CA_PATH: ${{ runner.temp }}/supabase-prod-ca-2021.crt",
     "npx prisma migrate deploy",
     "npx --yes vercel@59.1.3 pull --yes --environment=production",
     "npx --yes vercel@59.1.3 build --prod",
@@ -139,6 +144,22 @@ export function validateProductionWorkflow(text) {
       JSON.stringify([...EXPECTED_VARIABLES].sort()),
     "Production variable references drifted"
   );
+  assert(
+    text.split("secrets.ANDROID_PRODUCTION_DIRECT_URL").length - 1 === 1,
+    "Production database secret must be read exactly once by the TLS preparation step"
+  );
+
+  const tlsPreparation = stepBlock(text, "node scripts/prepare-android-production-database.mjs");
+  assert(
+    tlsPreparation.includes(
+      "ANDROID_PRODUCTION_DIRECT_URL: ${{ secrets.ANDROID_PRODUCTION_DIRECT_URL }}"
+    ),
+    "TLS preparation must own the production database secret"
+  );
+  assert(
+    tlsPreparation.includes('--output "$ANDROID_PRODUCTION_DATABASE_CA_PATH"'),
+    "Pinned database CA must be written only to its ephemeral path"
+  );
 
   const migration = stepBlock(text, "npx prisma migrate deploy");
   const postdeploy = stepBlock(
@@ -159,7 +180,22 @@ export function validateProductionWorkflow(text) {
     preflight.includes("if: inputs.mode == 'preflight' || inputs.mode == 'deploy'"),
     "Preflight state audit mode guard drifted"
   );
+  for (const block of [preflight, migration, postdeploy]) {
+    assert(
+      !block.includes("secrets.ANDROID_PRODUCTION_DIRECT_URL"),
+      "Database operations must consume only the prepared verify-full URL"
+    );
+  }
+  const cleanup = stepBlock(text, "process.env.ANDROID_PRODUCTION_DATABASE_CA_PATH");
+  assert(cleanup.includes("if: always()"), "Database CA cleanup must always run");
+  assert(
+    cleanup.includes(
+      "ANDROID_PRODUCTION_DATABASE_CA_PATH: ${{ runner.temp }}/supabase-prod-ca-2021.crt"
+    ),
+    "Database CA cleanup must know the path even when preparation fails"
+  );
   const orderedFragments = [
+    "node scripts/prepare-android-production-database.mjs",
     "--mode preflight | tee",
     "npx prisma migrate deploy",
     '--mode postdeploy | tee "$RUNNER_TEMP/android-api-postdeploy.txt"',

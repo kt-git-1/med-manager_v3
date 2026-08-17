@@ -81,6 +81,7 @@ jobs:
           node scripts/verify-api-node-runtime.mjs
           node scripts/test-verify-android-mutation-migration.mjs
           node scripts/test-verify-android-mutation-deployment.mjs
+          node scripts/test-prepare-android-production-database.mjs
 
       - name: Verify source quality
         env:
@@ -92,19 +93,23 @@ jobs:
           npm run typecheck
           npm run build
 
-      - name: Require production audit secret
+      - name: Prepare pinned production database TLS
         env:
-          DIRECT_URL: ${{ secrets.ANDROID_PRODUCTION_DIRECT_URL }}
+          ANDROID_PRODUCTION_DIRECT_URL: ${{ secrets.ANDROID_PRODUCTION_DIRECT_URL }}
+          ANDROID_PRODUCTION_DATABASE_CA_PATH: ${{ runner.temp }}/supabase-prod-ca-2021.crt
         run: |
-          if [ -z "$DIRECT_URL" ]; then
+          if [ -z "$ANDROID_PRODUCTION_DIRECT_URL" ]; then
             echo "Production dispatch rejected: required audit secret is unavailable." >&2
             exit 1
           fi
+          curl --proto '=https' --tlsv1.2 --fail --silent --show-error --location \
+            https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt \
+            --output "$ANDROID_PRODUCTION_DATABASE_CA_PATH"
+          node scripts/prepare-android-production-database.mjs
 
       - name: Read-only production preflight audit
         if: inputs.mode == 'preflight' || inputs.mode == 'deploy'
         env:
-          DIRECT_URL: ${{ secrets.ANDROID_PRODUCTION_DIRECT_URL }}
           ANDROID_MUTATION_DEPLOYMENT_AUDIT: preflight
           ALLOW_REMOTE_ANDROID_MUTATION_AUDIT: "1"
         run: node scripts/verify-android-mutation-deployment.mjs --mode preflight | tee "$RUNNER_TEMP/android-api-preflight.txt"
@@ -112,7 +117,6 @@ jobs:
       - name: Read-only existing-deployment audit
         if: inputs.mode == 'release'
         env:
-          DIRECT_URL: ${{ secrets.ANDROID_PRODUCTION_DIRECT_URL }}
           ANDROID_MUTATION_DEPLOYMENT_AUDIT: postdeploy
           ALLOW_REMOTE_ANDROID_MUTATION_AUDIT: "1"
         run: node scripts/verify-android-mutation-deployment.mjs --mode postdeploy | tee "$RUNNER_TEMP/android-api-before-release.txt"
@@ -134,9 +138,6 @@ jobs:
 
       - name: Apply reviewed production migration
         if: inputs.mode != 'preflight'
-        env:
-          DIRECT_URL: ${{ secrets.ANDROID_PRODUCTION_DIRECT_URL }}
-          DATABASE_URL: ${{ secrets.ANDROID_PRODUCTION_DIRECT_URL }}
         run: |
           if ! npx prisma migrate deploy >"$RUNNER_TEMP/prisma-migrate.log" 2>&1; then
             echo "Production migration failed; inspect the protected job log." >&2
@@ -147,7 +148,6 @@ jobs:
       - name: Read-only production postdeploy audit
         if: inputs.mode != 'preflight'
         env:
-          DIRECT_URL: ${{ secrets.ANDROID_PRODUCTION_DIRECT_URL }}
           ANDROID_MUTATION_DEPLOYMENT_AUDIT: postdeploy
           ALLOW_REMOTE_ANDROID_MUTATION_AUDIT: "1"
         run: node scripts/verify-android-mutation-deployment.mjs --mode postdeploy | tee "$RUNNER_TEMP/android-api-postdeploy.txt"
@@ -199,4 +199,6 @@ jobs:
 
       - name: Remove ephemeral deployment state
         if: always()
-        run: node -e "const fs=require('node:fs'); for (const path of ['.vercel','.next']) fs.rmSync(path,{recursive:true,force:true})"
+        env:
+          ANDROID_PRODUCTION_DATABASE_CA_PATH: ${{ runner.temp }}/supabase-prod-ca-2021.crt
+        run: node -e "const fs=require('node:fs'); for (const path of ['.vercel','.next',process.env.ANDROID_PRODUCTION_DATABASE_CA_PATH].filter(Boolean)) fs.rmSync(path,{recursive:true,force:true})"

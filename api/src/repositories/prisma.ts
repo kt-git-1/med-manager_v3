@@ -2,17 +2,15 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
+import { createDatabasePoolConfig } from "./databaseTls";
+
 declare global {
   var prisma: PrismaClient | undefined;
   var pgPool: Pool | undefined;
 }
 
 // Singleton clients to keep serverless connections under control.
-const pool =
-  global.pgPool ??
-  new Pool({
-    connectionString: process.env.DATABASE_URL
-  });
+const pool = global.pgPool ?? new Pool(createDatabasePoolConfig(process.env.DATABASE_URL));
 
 export const prisma =
   global.prisma ??

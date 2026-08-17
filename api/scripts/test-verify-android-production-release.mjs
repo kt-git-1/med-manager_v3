@@ -107,8 +107,8 @@ const workflowCases = [
   [
     "unguarded migration",
     workflow.replace(
-      "if: inputs.mode != 'preflight'\n        env:\n          DIRECT_URL",
-      "if: always()\n        env:\n          DIRECT_URL"
+      "- name: Apply reviewed production migration\n        if: inputs.mode != 'preflight'",
+      "- name: Apply reviewed production migration\n        if: always()"
     )
   ],
   [
@@ -139,6 +139,19 @@ const workflowCases = [
   [
     "forced state",
     workflow.replace("npx prisma migrate deploy", "npx prisma migrate deploy --force")
+  ],
+  ["unpinned database CA", workflow.replace("prod/ssl/prod-ca-2021.crt", "prod/ssl/current.crt")],
+  ["weak database CA download", workflow.replace("curl --proto '=https' --tlsv1.2", "curl")],
+  [
+    "raw database secret reuse",
+    workflow.replace(
+      "- name: Apply reviewed production migration\n        if: inputs.mode != 'preflight'",
+      "- name: Apply reviewed production migration\n        if: inputs.mode != 'preflight'\n        env:\n          DIRECT_URL: ${{ secrets.ANDROID_PRODUCTION_DIRECT_URL }}"
+    )
+  ],
+  [
+    "missing database CA cleanup",
+    workflow.replace("process.env.ANDROID_PRODUCTION_DATABASE_CA_PATH", "undefined")
   ]
 ];
 for (const [label, mutated] of workflowCases) {

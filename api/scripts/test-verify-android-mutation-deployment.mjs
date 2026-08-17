@@ -150,11 +150,12 @@ rejectedPolicy(
     confirmation: "preflight",
     allowRemote: true
   },
-  /TLS/
+  /verify-full/
 );
 rejectedPolicy(
   {
-    databaseUrl: "postgresql://audit:audit@db.example.invalid/database?sslmode=verify-full",
+    databaseUrl:
+      "postgresql://audit:audit@db.example.invalid/database?sslmode=verify-full&sslrootcert=/tmp/prod-ca.crt",
     schema: "private_fixture",
     mode: "preflight",
     confirmation: "preflight",
@@ -162,9 +163,42 @@ rejectedPolicy(
   },
   /public schema/
 );
+rejectedPolicy(
+  {
+    databaseUrl: "postgresql://audit:audit@db.example.invalid/database?sslmode=verify-full",
+    schema: "public",
+    mode: "preflight",
+    confirmation: "preflight",
+    allowRemote: true
+  },
+  /sslrootcert/
+);
+rejectedPolicy(
+  {
+    databaseUrl:
+      "postgresql://audit:audit@db.example.invalid/database?sslmode=require&uselibpqcompat=true&sslrootcert=/tmp/prod-ca.crt",
+    schema: "public",
+    mode: "preflight",
+    confirmation: "preflight",
+    allowRemote: true
+  },
+  /verify-full/
+);
+rejectedPolicy(
+  {
+    databaseUrl:
+      "postgresql://audit:audit@db.example.invalid/database?sslmode=verify-full&sslrootcert=relative.crt",
+    schema: "public",
+    mode: "preflight",
+    confirmation: "preflight",
+    allowRemote: true
+  },
+  /absolute sslrootcert/
+);
 assert.deepEqual(
   validateDeploymentAuditOptions({
-    databaseUrl: "postgresql://audit:audit@db.example.invalid/database?sslmode=verify-full",
+    databaseUrl:
+      "postgresql://audit:audit@db.example.invalid/database?sslmode=verify-full&sslrootcert=/tmp/prod-ca.crt",
     schema: "public",
     mode: "postdeploy",
     confirmation: "postdeploy",
@@ -174,7 +208,7 @@ assert.deepEqual(
 );
 
 let accepted = 0;
-let rejected = 6;
+let rejected = 9;
 
 await withFixture("preflight_ok", async (schema) => {
   const result = await auditAndroidMutationDeployment(localOptions(schema, "preflight"));
@@ -251,7 +285,7 @@ await rejectedFixture(
 
 await client.end();
 assert.equal(accepted, 2);
-assert.equal(rejected, 12);
+assert.equal(rejected, 15);
 console.log(
   `Android mutation deployment audit contract passed: accepted=${accepted} rejected=${rejected} cleanup=passed`
 );

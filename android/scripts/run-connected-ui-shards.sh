@@ -13,6 +13,8 @@ Usage: scripts/run-connected-ui-shards.sh [adb-serial]
 Runs the complete connected Debug UI suite in bounded AndroidJUnitRunner shards.
 The target must not already contain the app or test package. Both packages are
 removed when the command exits, including after a failed shard.
+The target must remain awake and unlocked before every shard; the runner never
+changes lock-screen or device power settings on the user's behalf.
 
 Environment:
   ANDROID_UI_TEST_SHARDS  shard count (default: 4, range: 1..16)
@@ -82,6 +84,31 @@ if [[ "$($adb_bin -s "$serial" get-state 2>/dev/null || true)" != "device" ]]; t
   echo "The selected adb target is not ready." >&2
   exit 2
 fi
+
+require_interactive_target() {
+  local power_state window_state
+  power_state="$($adb_bin -s "$serial" shell dumpsys power 2>/dev/null || true)"
+  if ! grep -Eq 'mWakefulness=(Awake|AWAKE)' <<<"$power_state"; then
+    echo "The selected adb target must be awake before running UI tests. Wake and unlock it, then retry." >&2
+    return 2
+  fi
+
+  window_state="$($adb_bin -s "$serial" shell dumpsys window 2>/dev/null || true)"
+  if grep -Eq \
+    'mDreamingLockscreen=true|mShowingLockscreen=true|isKeyguardShowing=true|mInputRestricted=true' \
+    <<<"$window_state"; then
+    echo "The selected adb target must be unlocked before running UI tests. Unlock it, then retry." >&2
+    return 2
+  fi
+  if ! grep -Eq \
+    'mDreamingLockscreen=false|mShowingLockscreen=false|isKeyguardShowing=false|mInputRestricted=false' \
+    <<<"$window_state"; then
+    echo "The selected adb target unlock state could not be confirmed. Unlock it and verify adb access, then retry." >&2
+    return 2
+  fi
+}
+
+require_interactive_target
 for package_name in "$APP_PACKAGE" "$TEST_PACKAGE"; do
   if $adb_bin -s "$serial" shell pm path "$package_name" 2>/dev/null | grep -q '^package:'; then
     echo "Refusing to overwrite an existing $package_name installation. Use a disposable target." >&2
@@ -105,6 +132,7 @@ if [[ -n "$REQUESTED_SHARD" ]]; then
   last_shard="$((REQUESTED_SHARD + 1))"
 fi
 for (( shard = first_shard; shard < last_shard; shard += 1 )); do
+  require_interactive_target
   echo "Running connected UI shard $((shard + 1))/$SHARD_COUNT"
   ANDROID_SERIAL="$serial" ./gradlew :app:connectedDebugAndroidTest \
     --no-configuration-cache \

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { isAbsolute } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import pg from "pg";
@@ -54,7 +55,16 @@ export function validateDeploymentAuditOptions({
   if (remote) {
     assert(allowRemote, "Remote audit requires ALLOW_REMOTE_ANDROID_MUTATION_AUDIT=1");
     const sslMode = parsed.searchParams.get("sslmode");
-    assert(sslMode === "require" || sslMode === "verify-full", "Remote audit URL must require TLS");
+    assert(sslMode === "verify-full", "Remote audit URL must use sslmode=verify-full");
+    const rootCertificate = parsed.searchParams.get("sslrootcert");
+    assert(
+      rootCertificate && isAbsolute(rootCertificate),
+      "Remote audit URL must use an absolute sslrootcert path"
+    );
+    assert(
+      !parsed.searchParams.has("uselibpqcompat"),
+      "Remote verify-full audit must not enable libpq compatibility mode"
+    );
     assert(schema === "public", "Remote audit is restricted to the public schema");
   }
   return { remote, schema };

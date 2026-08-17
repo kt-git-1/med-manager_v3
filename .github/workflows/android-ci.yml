@@ -91,7 +91,8 @@ jobs:
 
       - name: Connected shard runner contract
         run: |
-          bash -n scripts/run-connected-ui-shards.sh
+          bash -n scripts/run-connected-ui-shards.sh scripts/test-run-connected-ui-shards.sh
+          scripts/test-run-connected-ui-shards.sh
           scripts/run-connected-ui-shards.sh --help >/dev/null
           if ANDROID_UI_TEST_SHARDS=0 scripts/run-connected-ui-shards.sh >/dev/null 2>&1; then
             echo "Invalid shard count unexpectedly passed."

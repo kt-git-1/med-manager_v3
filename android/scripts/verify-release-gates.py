@@ -40,6 +40,7 @@ ALLOWED_AUTHORITIES = {
     "physical_device",
     "play_console_read",
     "play_console_write",
+    "production_database_configuration",
     "production_database_read",
     "production_deploy",
     "production_test_data_write",

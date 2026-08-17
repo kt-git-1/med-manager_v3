@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C102
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C104
 - Baseline date: 2026-08-17
-- Current action: C102 removes the API runtime/toolchain split and reduces remaining Moderate advisories from 13 to 6. `package.json`, API CI, API E2E and the manual production workflow are all fixed to Node 22; Prisma CLI/client/adapter 7.9.1, matching Node 22 types and Firebase Admin 14.2.0 are contract-locked. A 1-accepted/19-rejected verifier prevents Vercel/CI/workflow/package/trigger drift. Production secrets/environment and owner approval are still absent, so RG-002 remains unchecked.
+- Current action: C104 closes the production-database TLS verification gap found by a live read-only preflight. API runtime connections to reviewed Supabase hosts pin the Supabase Root 2021 CA and require normal Node CA/hostname verification; the protected workflow independently downloads, fingerprints and uses that CA with `sslmode=verify-full`, then removes it. Production Supabase currently does not enforce SSL server-side, so RG-002 remains open until the release owner enables enforcement in an approved restart window and reruns count-only preflight. C103 separately keeps sleeping/locked targets from creating false physical UI evidence; its fresh real-device four-shard rerun remains V01 evidence after the device is manually unlocked.
 
 ## Authority order
 

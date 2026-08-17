@@ -4,7 +4,7 @@
     "iosRelease": "1.0.6 Build 51",
     "mainCommit": "432b34c",
     "androidBranch": "android-dev",
-    "checkpoint": "C102"
+    "checkpoint": "C104"
   },
   "partialRequirementIds": [
     "XP-004",
@@ -52,6 +52,7 @@
       "dependencies": [],
       "authorities": [
         "production_database_read",
+        "production_database_configuration",
         "production_deploy"
       ],
       "owner": "release_owner",
@@ -61,10 +62,11 @@
         "C98",
         "C100",
         "C101",
-        "C102"
+        "C102",
+        "C104"
       ],
       "doneWhen": [
-        "C98 preflight passes with count-only output on the approved production target.",
+        "Incoming SSL enforcement is enabled in an approved database restart window, then C98 verify-full preflight passes with count-only output on the production target.",
         "The controlled migration and API deploy finish once, then C98 postdeploy and Android API smokes pass."
       ],
       "evidenceSources": [
@@ -72,7 +74,8 @@
         "docs/android/evidence/c98-20260817/README.md",
         "docs/android/evidence/c100-20260817/README.md",
         "docs/android/evidence/c101-20260817/README.md",
-        "docs/android/evidence/c102-20260817/README.md"
+        "docs/android/evidence/c102-20260817/README.md",
+        "docs/android/evidence/c104-20260817/README.md"
       ],
       "backlogTitle": "Production API migration and deploy"
     },
@@ -226,7 +229,8 @@
       "prerequisites": [
         "C67",
         "C82",
-        "C94"
+        "C94",
+        "C103"
       ],
       "doneWhen": [
         "The required API 26-28 physical target passes its applicable release matrix rows.",
@@ -256,7 +260,8 @@
       "owner": "qa_owner",
       "prerequisites": [
         "C81",
-        "C82"
+        "C82",
+        "C103"
       ],
       "doneWhen": [
         "One-finger focus, spoken order, double-tap activation and two-finger scrolling pass across both role flows.",
