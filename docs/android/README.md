@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C97
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C98
 - Baseline date: 2026-08-17
-- Current action: C97 turns the nullable Android mutation-idempotency migration into an executable upgrade contract. CI first rejects any SQL outside the exact four reviewed additive statements, then upgrades isolated pre-migration PostgreSQL tables containing six legacy rows and proves row preservation, nullable/default-free compatibility, patient-scoped uniqueness, repeated-null legacy writes and cleanup. The C96 merge-surface allowlist is correspondingly expanded to the two reviewed CI workflows and 32 reviewed API files. Production deployment and real interrupted-network behavior remain external gates.
+- Current action: C98 adds a fail-closed, read-only deployment audit around C97. `preflight` requires the exact pre-migration state and reports only anonymous row counts; `postdeploy` binds the Prisma success record/checksum to the checked-in SQL, exact columns/indexes and zero duplicate groups. Remote execution requires an exact mode confirmation, a second explicit opt-in, TLS and the `public` schema. CI exercises two accepted/twelve rejected fixtures and the real full-migration postdeploy state. Production migration execution and real interrupted-network behavior remain external gates.
 
 ## Authority order
 

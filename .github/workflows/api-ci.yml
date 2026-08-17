@@ -96,8 +96,16 @@ jobs:
           node scripts/test-verify-android-mutation-migration.mjs
           node scripts/verify-android-mutation-migration.mjs
 
+      - name: Android mutation deployment audit contract
+        run: node scripts/test-verify-android-mutation-deployment.mjs
+
       - name: Run Migrations
         run: npx prisma migrate deploy
+
+      - name: Android mutation postdeploy audit
+        env:
+          ANDROID_MUTATION_DEPLOYMENT_AUDIT: postdeploy
+        run: node scripts/verify-android-mutation-deployment.mjs --mode postdeploy
 
       - name: Run Tests
         run: npm test

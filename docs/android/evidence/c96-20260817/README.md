@@ -32,7 +32,7 @@ The existing unstaged user `.gitignore` edit is intentionally not part of these 
 10. ordinary/executable blobs only—no symlink or submodule;
 11. at most 1,250 files, 2 MiB per blob and 400 MiB in the changed tree.
 
-Current policy note: C97 adds only `.github/workflows/api-ci.yml` and the two reviewed mutation-migration verifier scripts to these exact allowlists. Every future expansion remains a direct review event.
+Current policy note: C97 adds `.github/workflows/api-ci.yml` and two reviewed mutation-migration verifier scripts; C98 adds two reviewed read-only deployment-audit scripts. The current boundary is exactly two workflows and 34 API files. Every future expansion remains a direct review event.
 
 The size bounds retain the existing high-fidelity visual evidence instead of degrading it while preventing unreviewed growth. The pre-C96 input tree contained 842 PNG files and its largest blob was about 1.63 MiB; no image was recompressed or removed.
 

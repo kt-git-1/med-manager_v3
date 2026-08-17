@@ -33,6 +33,8 @@ C96 is intentionally expanded from its historical one-workflow/30-API-file surfa
 - 201 commits, 1,168 changed files and 385,713,551 changed-tree bytes;
 - scopes: `.github=2`, `.gitignore=1`, `android=180`, `api=32`, `docs/android=953`, `ios=0`.
 
+These are historical C97 implementation counts. C98 later adds two reviewed read-only deployment-audit scripts, bringing the current API allowlist to 34 files; this evidence is not rewritten as if they existed in the C97 commit.
+
 The existing unstaged user `.gitignore` edit is intentionally excluded from all committed counts and was neither staged nor modified.
 
 ## Local regression
