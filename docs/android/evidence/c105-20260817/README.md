@@ -6,6 +6,8 @@
 
 **Release boundary:** `RG-005` remains unchecked; no developer account, payment, identity submission, Play app, signing key, track or declaration was created or changed
 
+**Implementation commit:** `88bbb95974ca48d5be92c74a12c4275d66440e83`
+
 ## Live read-only finding
 
 Play Console was opened in the browser's currently selected Google account only to inspect visible state. It redirected to **Create a developer account** and displayed Organization and Personal onboarding choices rather than an application dashboard.
@@ -34,6 +36,12 @@ The new-Personal-account requirement for 12 opted-in testers over 14 continuous 
 - `RG-005` now includes Play Organization account creation authority, C105 evidence and verified organization/package creation before signing/handoff.
 - The release-gate verifier rejects removal of Organization/D-U-N-S/C105 requirements; one accepted and sixteen rejected synthetic ledgers cover the boundary.
 - README, master plan, gap audit, parity matrix and backlog use checkpoint C105 without marking any external Play gate complete.
+
+The committed C96 recheck passed at `88bbb95974ca48d5be92c74a12c4275d66440e83`: 214 commits, 1,199 changed files and 386,186,723 changed-tree bytes across `.github=4`, `.gitignore=1`, `android=183`, `api=47`, `docs/android=964`, `ios=0`.
+
+## Hosted CI
+
+[Android CI run 31992454719](https://github.com/kt-git-1/med-manager_v3/actions/runs/31992454719) passed 29/29 steps on the exact implementation commit. It included C96, the C105 release-gate fixture/current ledger, Firebase/runtime/signing/App Links/SDK policies, both JVM variants, Debug build, Lint, APK/AAB compatibility, universal/device-split surfaces and Play assets.
 
 ## Owner-controlled next action
 

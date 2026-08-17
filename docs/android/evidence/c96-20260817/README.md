@@ -36,6 +36,8 @@ Current policy note: C97 adds `.github/workflows/api-ci.yml` and two reviewed mu
 
 The C104 implementation recheck at `ca78acb8c68dd4a0bcfadb148cbec07a0f097d9e` passes with 212 commits, 1,197 files, 386,168,584 bytes and scopes `.github=4`, `.gitignore=1`, `android=183`, `api=47`, `docs/android=962`, `ios=0`.
 
+The C105 implementation recheck at `88bbb95974ca48d5be92c74a12c4275d66440e83` passes with 214 commits, 1,199 files, 386,186,723 bytes and scopes `.github=4`, `.gitignore=1`, `android=183`, `api=47`, `docs/android=964`, `ios=0`.
+
 The size bounds retain the existing high-fidelity visual evidence instead of degrading it while preventing unreviewed growth. The pre-C96 input tree contained 842 PNG files and its largest blob was about 1.63 MiB; no image was recompressed or removed.
 
 ## Contract verification
