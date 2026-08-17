@@ -4,7 +4,7 @@
     "iosRelease": "1.0.6 Build 51",
     "mainCommit": "432b34c",
     "androidBranch": "android-dev",
-    "checkpoint": "C108"
+    "checkpoint": "C109"
   },
   "partialRequirementIds": [
     "XP-004",
@@ -266,7 +266,8 @@
       "prerequisites": [
         "C81",
         "C82",
-        "C103"
+        "C103",
+        "C109"
       ],
       "doneWhen": [
         "One-finger focus, spoken order, double-tap activation and two-finger scrolling pass across both role flows.",
@@ -274,7 +275,8 @@
       ],
       "evidenceSources": [
         "docs/android/physical-device-matrix.md",
-        "docs/android/evidence/c81-20260817/README.md"
+        "docs/android/evidence/c81-20260817/README.md",
+        "docs/android/evidence/c109-20260817/README.md"
       ],
       "backlogTitle": "Assisted spoken TalkBack traversal"
     },

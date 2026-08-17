@@ -227,6 +227,18 @@ rejected(
         ),
     ),
 )
+
+rejected(
+    "talkback-physical-rerun-prerequisite",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][7].update(
+            prerequisites=[
+                item for item in value["gates"][7]["prerequisites"] if item != "C109"
+            ]
+        ),
+    ),
+)
 rejected(
     "play-review-access-contract",
     lambda _root, paths: edit_manifest(
@@ -286,4 +298,4 @@ rejected(
     ),
 )
 
-print("Release gate contract passed: accepted=1 rejected=22")
+print("Release gate contract passed: accepted=1 rejected=23")

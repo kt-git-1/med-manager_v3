@@ -258,6 +258,13 @@ def verify_release_gates(
                 "RG-005 must retain C105 account evidence",
             )
 
+        if gate_id == "RG-008":
+            _require("C109" in prerequisites, "RG-008 must retain the C109 physical rerun")
+            _require(
+                "docs/android/evidence/c109-20260817/README.md" in sources,
+                "RG-008 must retain C109 physical evidence",
+            )
+
         if gate_id == "RG-009":
             _require("C106" in prerequisites, "RG-009 must retain the C106 policy-readiness contract")
             _require("C107" in prerequisites, "RG-009 must retain the C107 listing-readiness contract")

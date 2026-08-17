@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C108
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C109
 - Baseline date: 2026-08-17
-- Current action: C108 makes the C107 store handoff reproducible without macOS tooling. A JDK-backed renderer rebuilds all eight mapped Compose captures with fixed canvas, padding and JPEG quality; CI rejects invalid renderer inputs and any committed JPEG that is not byte-for-byte the current generated output. Live `/account-deletion`, Play preview, signed-artifact comparison and Console submission remain external.
+- Current action: C109 completes the fresh unlocked A302SH four-shard regression at 280/280 and makes every shard retain a fail-closed XML summary plus aggregate TSV. One non-reproducible OEM/platform `libhwui` incident is recorded separately from the final pass; the implicated test passed 10/10 in isolation. Spoken TalkBack, other physical device classes, FCM, signed Play and closed-test crash/ANR review remain external.
 
 ## Authority order
 

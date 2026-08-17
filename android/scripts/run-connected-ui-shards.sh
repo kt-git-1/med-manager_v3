@@ -5,6 +5,7 @@ set -euo pipefail
 readonly APP_PACKAGE="com.afterlifearchive.medmanager"
 readonly TEST_PACKAGE="com.afterlifearchive.medmanager.test"
 readonly ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly RESULT_ROOT="$ROOT_DIR/app/build/reports/connected-ui-shards"
 
 usage() {
   cat <<'EOF'
@@ -125,6 +126,17 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 cd "$ROOT_DIR"
+rm -rf "$RESULT_ROOT"
+mkdir -p "$RESULT_ROOT"
+printf 'shard\ttests\tfailures\terrors\tskipped\txml\n' > "$RESULT_ROOT/results.tsv"
+
+xml_attribute() {
+  local file="$1"
+  local attribute="$2"
+  sed -n "s/.* ${attribute}=\"\([0-9][0-9]*\)\".*/\1/p" "$file" | head -n 1
+}
+
+total_tests=0
 first_shard=0
 last_shard="$SHARD_COUNT"
 if [[ -n "$REQUESTED_SHARD" ]]; then
@@ -138,10 +150,40 @@ for (( shard = first_shard; shard < last_shard; shard += 1 )); do
     --no-configuration-cache \
     "-Pandroid.testInstrumentationRunnerArguments.numShards=$SHARD_COUNT" \
     "-Pandroid.testInstrumentationRunnerArguments.shardIndex=$shard"
+
+  result_directory="$ROOT_DIR/app/build/outputs/androidTest-results/connected/debug"
+  result_files="$(find "$result_directory" -maxdepth 1 -type f -name 'TEST-*.xml' -print 2>/dev/null || true)"
+  result_count="$(printf '%s\n' "$result_files" | sed '/^$/d' | wc -l | tr -d ' ')"
+  if [[ "$result_count" != "1" ]]; then
+    echo "Expected exactly one instrumentation XML after shard $((shard + 1)); found $result_count." >&2
+    exit 2
+  fi
+  result_file="$(printf '%s\n' "$result_files" | sed '/^$/d' | head -n 1)"
+  tests="$(xml_attribute "$result_file" tests)"
+  failures="$(xml_attribute "$result_file" failures)"
+  errors="$(xml_attribute "$result_file" errors)"
+  skipped="$(xml_attribute "$result_file" skipped)"
+  for value in "$tests" "$failures" "$errors" "$skipped"; do
+    if [[ ! "$value" =~ ^[0-9]+$ ]]; then
+      echo "Instrumentation XML has an invalid summary after shard $((shard + 1))." >&2
+      exit 2
+    fi
+  done
+  if (( tests < 1 || failures != 0 || errors != 0 || skipped != 0 )); then
+    echo "Instrumentation XML is not a complete pass after shard $((shard + 1)): tests=$tests failures=$failures errors=$errors skipped=$skipped." >&2
+    exit 2
+  fi
+  preserved_name="shard-$((shard + 1))-of-$SHARD_COUNT.xml"
+  cp "$result_file" "$RESULT_ROOT/$preserved_name"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$((shard + 1))/$SHARD_COUNT" "$tests" "$failures" "$errors" "$skipped" "$preserved_name" \
+    >> "$RESULT_ROOT/results.tsv"
+  total_tests="$((total_tests + tests))"
+  echo "Connected UI shard $((shard + 1))/$SHARD_COUNT evidence preserved: tests=$tests failures=0 errors=0 skipped=0"
 done
 
 if [[ -n "$REQUESTED_SHARD" ]]; then
-  echo "Connected UI shard $((REQUESTED_SHARD + 1))/$SHARD_COUNT passed."
+  echo "Connected UI shard $((REQUESTED_SHARD + 1))/$SHARD_COUNT passed: tests=$total_tests evidence=$RESULT_ROOT"
 else
-  echo "All $SHARD_COUNT connected UI shards passed."
+  echo "All $SHARD_COUNT connected UI shards passed: tests=$total_tests failures=0 errors=0 skipped=0 evidence=$RESULT_ROOT"
 fi

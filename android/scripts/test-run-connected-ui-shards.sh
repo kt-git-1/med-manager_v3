@@ -40,7 +40,19 @@ make_fixture() {
   printf '%s\n' '#!/usr/bin/env bash' \
     'set -euo pipefail' \
     'printf "%s\\n" "$*" >> "$FAKE_GRADLE_LOG"' \
-    'exit "${FAKE_GRADLE_EXIT:-0}"' > "$root/gradlew"
+    'status="${FAKE_GRADLE_EXIT:-0}"' \
+    'if [[ "$status" != "0" ]]; then exit "$status"; fi' \
+    'if [[ "${FAKE_RESULT_MODE:-valid}" == "missing" ]]; then exit 0; fi' \
+    'shard=0' \
+    'for argument in "$@"; do' \
+    '  case "$argument" in *shardIndex=*) shard="${argument##*=}" ;; esac' \
+    'done' \
+    'tests="$((shard + 3))"' \
+    'skipped=0' \
+    'if [[ "${FAKE_RESULT_MODE:-valid}" == "skipped" ]]; then skipped=1; fi' \
+    'directory="$PWD/app/build/outputs/androidTest-results/connected/debug"' \
+    'mkdir -p "$directory"' \
+    'printf "%s\n" "<testsuite tests=\"$tests\" failures=\"0\" errors=\"0\" skipped=\"$skipped\"></testsuite>" > "$directory/TEST-fixture.xml"' > "$root/gradlew"
   chmod +x "$root/gradlew"
   printf '%s\n' "$root"
 }
@@ -56,8 +68,13 @@ run_fixture() {
 
 awake_root="$(make_fixture awake)"
 run_fixture "$awake_root" env ANDROID_UI_TEST_SHARDS=1 > "$awake_root/output"
-grep -q 'All 1 connected UI shards passed.' "$awake_root/output" || fail "awake target did not pass"
+grep -q 'All 1 connected UI shards passed: tests=3 failures=0 errors=0 skipped=0' "$awake_root/output" || \
+  fail "awake target did not pass with an aggregate summary"
 grep -q 'connectedDebugAndroidTest' "$awake_root/gradle.log" || fail "Gradle shard was not invoked"
+grep -q $'1/1\t3\t0\t0\t0\tshard-1-of-1.xml' "$awake_root/app/build/reports/connected-ui-shards/results.tsv" || \
+  fail "awake target evidence summary drifted"
+[[ -f "$awake_root/app/build/reports/connected-ui-shards/shard-1-of-1.xml" ]] || \
+  fail "awake target XML was not preserved"
 [[ "$(grep -c '^.*uninstall com.afterlifearchive.medmanager' "$awake_root/adb.log")" == "2" ]] || \
   fail "both packages were not cleaned after success"
 
@@ -85,4 +102,27 @@ set -e
 [[ "$(grep -c '^.*uninstall com.afterlifearchive.medmanager' "$failure_root/adb.log")" == "2" ]] || \
   fail "both packages were not cleaned after failure"
 
-echo "UI shard runner contract passed: awake=1 dozingRejected=1 lockedRejected=1 unknownRejected=1 failureCleanup=1"
+for result_mode in missing skipped; do
+  result_root="$(make_fixture "result-$result_mode")"
+  set +e
+  run_fixture "$result_root" env FAKE_RESULT_MODE="$result_mode" ANDROID_UI_TEST_SHARDS=1 \
+    > "$result_root/output" 2>&1
+  status=$?
+  set -e
+  [[ "$status" == "2" ]] || fail "$result_mode result returned $status instead of 2"
+  [[ "$(grep -c '^.*uninstall com.afterlifearchive.medmanager' "$result_root/adb.log")" == "2" ]] || \
+    fail "both packages were not cleaned after $result_mode result"
+done
+grep -q 'Expected exactly one instrumentation XML' "$TEMP_ROOT/result-missing/output" || \
+  fail "missing-result rejection is unclear"
+grep -q 'is not a complete pass' "$TEMP_ROOT/result-skipped/output" || \
+  fail "skipped-result rejection is unclear"
+
+multi_root="$(make_fixture multi)"
+run_fixture "$multi_root" env ANDROID_UI_TEST_SHARDS=2 > "$multi_root/output"
+grep -q 'All 2 connected UI shards passed: tests=7 failures=0 errors=0 skipped=0' "$multi_root/output" || \
+  fail "multi-shard aggregate summary drifted"
+[[ "$(find "$multi_root/app/build/reports/connected-ui-shards" -name 'shard-*-of-2.xml' | wc -l | tr -d ' ')" == "2" ]] || \
+  fail "multi-shard XML evidence was not preserved"
+
+echo "UI shard runner contract passed: awake=1 dozingRejected=1 lockedRejected=1 unknownRejected=1 failureCleanup=1 missingResultRejected=1 skippedResultRejected=1 multiShardEvidence=2"

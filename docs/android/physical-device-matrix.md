@@ -164,6 +164,8 @@ C81 closes only the automatable navigation/tutorial subset on A302SH: both role 
 
 C82 makes the same four-shard structure reproducible from `android/` with `scripts/run-connected-ui-shards.sh [adb-serial]`. C103 additionally requires the ready target to be awake and unlocked before installation and again before every shard; it does not wake, unlock or change power policy for the user. The runner refuses to overwrite an existing app or test-package installation, accepts `ANDROID_UI_TEST_SHARDS` and an optional zero-based `ANDROID_UI_TEST_SHARD_INDEX`, and uninstalls app/test packages on every exit. Clean API 26/33/35 AVDs each pass 280/280 (840/840 total). This is compatibility regression evidence only; it does not satisfy any old-supported, Google/reference, OEM, spoken TalkBack, FCM-delivery or exact signed-Play physical row.
 
+C109 executes the pending fresh awake/unlocked A302SH run and closes the runner's report-retention gap. Every successful shard must produce exactly one parseable nonempty XML with zero failures, errors and skips before it is copied to durable build evidence; the final 66/59/79/76 split totals 280/280 and cleanup leaves both packages absent. One preceding attempt hit an Android platform `libhwui` RenderThread `SIGSEGV`; the implicated test passed 10/10 from clean installs and the complete rerun passed. Treat it as a transparent non-reproducible OEM/platform risk requiring Play closed-test crash/ANR monitoring, not as an app pass that closes spoken TalkBack, other hardware classes, FCM or signed-Play rows.
+
 ## 7. Browser, clipboard, share and file boundaries
 
 | ID | Procedure | Pass condition |
