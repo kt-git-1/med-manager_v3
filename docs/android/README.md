@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C101
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C102
 - Baseline date: 2026-08-17
-- Current action: C101 closes the High/Critical dependency blocker found while validating C100. The lock-only refresh moves Next.js and its affected runtime/build transitive packages to patched versions, reducing the complete `npm audit` from 7 High to 0 High/Critical; the remaining 13 findings are Moderate and separately recorded. API CI and the manual production workflow now fail before database access on any future High/Critical advisory. Production secrets/environment and owner approval are still absent, so RG-002 remains unchecked.
+- Current action: C102 removes the API runtime/toolchain split and reduces remaining Moderate advisories from 13 to 6. `package.json`, API CI, API E2E and the manual production workflow are all fixed to Node 22; Prisma CLI/client/adapter 7.9.1, matching Node 22 types and Firebase Admin 14.2.0 are contract-locked. A 1-accepted/19-rejected verifier prevents Vercel/CI/workflow/package/trigger drift. Production secrets/environment and owner approval are still absent, so RG-002 remains unchecked.
 
 ## Authority order
 

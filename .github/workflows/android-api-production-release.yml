@@ -46,7 +46,7 @@ jobs:
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: api/package-lock.json
 
@@ -78,6 +78,7 @@ jobs:
       - name: Verify production workflow contract
         run: |
           node scripts/test-verify-android-production-release.mjs
+          node scripts/verify-api-node-runtime.mjs
           node scripts/test-verify-android-mutation-migration.mjs
           node scripts/test-verify-android-mutation-deployment.mjs
 

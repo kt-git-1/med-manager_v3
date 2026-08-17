@@ -20,10 +20,12 @@ EXPECTED_TOP_LEVEL = {".github", ".gitignore", "android", "api", "docs"}
 EXPECTED_WORKFLOW_PATHS = {
     ".github/workflows/android-api-production-release.yml",
     ".github/workflows/android-ci.yml",
+    ".github/workflows/api-e2e.yml",
     ".github/workflows/api-ci.yml",
 }
 EXPECTED_ROOT_PATHS = {".gitignore"}
 EXPECTED_API_PATHS = {
+    "api/package.json",
     "api/package-lock.json",
     "api/app/.well-known/assetlinks.json/route.ts",
     "api/app/api/patients/[patientId]/medications/[medicationId]/inventory/adjust/route.ts",
@@ -33,11 +35,14 @@ EXPECTED_API_PATHS = {
     "api/prisma/schema.prisma",
     "api/scripts/release-security-check.mjs",
     "api/scripts/test-verify-android-production-release.mjs",
+    "api/scripts/test-verify-api-node-runtime.mjs",
     "api/scripts/test-verify-android-mutation-deployment.mjs",
     "api/scripts/test-verify-android-mutation-migration.mjs",
     "api/scripts/verify-android-production-release.mjs",
+    "api/scripts/verify-api-node-runtime.mjs",
     "api/scripts/verify-android-mutation-deployment.mjs",
     "api/scripts/verify-android-mutation-migration.mjs",
+    "api/src/auth/supabaseJwt.ts",
     "api/src/repositories/doseRecordRepo.ts",
     "api/src/repositories/prnDoseRecordRepo.ts",
     "api/src/services/doseRecordService.ts",

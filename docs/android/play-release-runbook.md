@@ -59,6 +59,8 @@ The direct URL must target the approved production `public` schema over `sslmode
 
 After locked installation, the workflow runs `npm audit --audit-level=high` before it reads the production database secret. C101's bounded lock refresh leaves zero High/Critical runtime or build advisories; any future High/Critical advisory blocks even preflight. Thirteen Moderate transitive findings remain tracked in C101 evidence and are not represented as zero-risk. Do not bypass the audit or apply npm's suggested breaking Firebase downgrade without a separate compatibility review.
 
+C102 fixes the API to Node `22.x` in `package.json`; Vercel uses that exact supported major instead of resolving the previous broad `>=20` range to its latest runtime. API CI, API E2E and the production workflow contain exactly five Node 22 setup entries, and the runtime contract locks Prisma 7.9.1, Node 22 types and Firebase Admin 14.2.0. Never change only a dashboard setting or one workflow: update the package, all workflows, dependency baseline, contract and full DB/API/E2E evidence together. The complete audit now retains six Moderate Firebase Storage/uuid transitive findings; they are not grounds to bypass the zero-High/Critical gate or force an unsupported uuid major.
+
 The dispatch inputs are deliberately exact:
 
 | Mode | Confirmation | Effect |

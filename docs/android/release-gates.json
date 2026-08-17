@@ -4,7 +4,7 @@
     "iosRelease": "1.0.6 Build 51",
     "mainCommit": "432b34c",
     "androidBranch": "android-dev",
-    "checkpoint": "C101"
+    "checkpoint": "C102"
   },
   "partialRequirementIds": [
     "XP-004",
@@ -60,7 +60,8 @@
         "C97",
         "C98",
         "C100",
-        "C101"
+        "C101",
+        "C102"
       ],
       "doneWhen": [
         "C98 preflight passes with count-only output on the approved production target.",
@@ -70,7 +71,8 @@
         "docs/android/play-release-runbook.md",
         "docs/android/evidence/c98-20260817/README.md",
         "docs/android/evidence/c100-20260817/README.md",
-        "docs/android/evidence/c101-20260817/README.md"
+        "docs/android/evidence/c101-20260817/README.md",
+        "docs/android/evidence/c102-20260817/README.md"
       ],
       "backlogTitle": "Production API migration and deploy"
     },

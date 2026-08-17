@@ -6,12 +6,14 @@ on:
     paths:
       - "api/**"
       - ".github/workflows/api-ci.yml"
+      - ".github/workflows/api-e2e.yml"
       - ".github/workflows/android-api-production-release.yml"
   pull_request:
     branches: [main, staging, android-dev]
     paths:
       - "api/**"
       - ".github/workflows/api-ci.yml"
+      - ".github/workflows/api-e2e.yml"
       - ".github/workflows/android-api-production-release.yml"
 
 concurrency:
@@ -34,7 +36,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: api/package-lock.json
 
@@ -45,6 +47,11 @@ jobs:
 
       - name: Android production release contract
         run: node scripts/test-verify-android-production-release.mjs
+
+      - name: API Node runtime contract
+        run: |
+          node scripts/test-verify-api-node-runtime.mjs
+          node scripts/verify-api-node-runtime.mjs
 
       - name: Production dependency audit
         run: npm audit --audit-level=high
@@ -87,7 +94,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: api/package-lock.json
 
@@ -132,7 +139,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: api/package-lock.json
 

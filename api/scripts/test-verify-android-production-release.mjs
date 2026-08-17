@@ -91,6 +91,7 @@ const workflowCases = [
   ["secret drift", workflow.replace("secrets.VERCEL_TOKEN", "secrets.EXTRA_TOKEN")],
   ["variable drift", workflow.replace("vars.VERCEL_PROJECT_ID", "vars.EXTRA_PROJECT_ID")],
   ["non-preflight default", workflow.replace("default: preflight", "default: deploy")],
+  ["Node runtime drift", workflow.replace("node-version: 22", "node-version: 20")],
   ["unpinned Vercel", workflow.replaceAll("vercel@59.1.3", "vercel@latest")],
   [
     "removed dependency audit",

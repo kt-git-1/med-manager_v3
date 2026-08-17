@@ -1,4 +1,10 @@
-import { createHmac, createPublicKey, timingSafeEqual, verify } from "crypto";
+import {
+  createHmac,
+  createPublicKey,
+  timingSafeEqual,
+  verify,
+  type JsonWebKey as CryptoJsonWebKey
+} from "crypto";
 import { log } from "../logging/logger";
 
 export type CaregiverSession = {
@@ -37,7 +43,7 @@ function parseJson<T>(input: string) {
   return JSON.parse(decoded) as T;
 }
 
-type JwkKey = {
+type JwkKey = CryptoJsonWebKey & {
   kty: string;
   crv?: string;
   x?: string;
@@ -151,7 +157,7 @@ async function resolveEs256Key(header: JwtHeader) {
   if (!jwk) {
     return null;
   }
-  return createPublicKey({ key: jwk as JsonWebKey, format: "jwk" });
+  return createPublicKey({ key: jwk, format: "jwk" });
 }
 
 export async function verifySupabaseJwt(token: string): Promise<CaregiverSession> {
@@ -186,7 +192,7 @@ export async function verifySupabaseJwt(token: string): Promise<CaregiverSession
         }
         let verified = false;
         for (const jwk of jwks.values()) {
-          const key = createPublicKey({ key: jwk as JsonWebKey, format: "jwk" });
+          const key = createPublicKey({ key: jwk, format: "jwk" });
           if (verify("sha256", data, key, signature)) {
             verified = true;
             break;
