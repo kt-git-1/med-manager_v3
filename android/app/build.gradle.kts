@@ -368,6 +368,49 @@ val verifyMainMergeSurface by tasks.registering(org.gradle.api.tasks.Exec::class
     )
 }
 
+val verifyReleaseGatesContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Exercises accepted and rejected residual release-gate ledger fixtures."
+    inputs.files(
+        rootProject.file("scripts/verify-release-gates.py"),
+        rootProject.file("scripts/test-verify-release-gates.py"),
+        rootProject.file("../docs/android/release-gates.json"),
+    )
+    commandLine("python3", rootProject.file("scripts/test-verify-release-gates.py").absolutePath)
+}
+
+val verifyReleaseGates by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Fails unless residual Android release gates exactly match requirements and backlog."
+    dependsOn(verifyReleaseGatesContract)
+    inputs.files(
+        rootProject.file("scripts/verify-release-gates.py"),
+        rootProject.file("scripts/test-verify-release-gates.py"),
+        rootProject.file("../docs/android/release-gates.json"),
+        rootProject.file("../docs/android/parity-requirements.md"),
+        rootProject.file("../docs/android/execution-backlog.md"),
+        rootProject.file("../docs/android/README.md"),
+        rootProject.file("../docs/android/android-port-master-plan.md"),
+    )
+    outputs.upToDateWhen { false }
+    commandLine(
+        "python3",
+        rootProject.file("scripts/verify-release-gates.py").absolutePath,
+        "--repository-root",
+        rootProject.projectDir.parentFile.absolutePath,
+        "--manifest",
+        rootProject.file("../docs/android/release-gates.json").absolutePath,
+        "--requirements",
+        rootProject.file("../docs/android/parity-requirements.md").absolutePath,
+        "--backlog",
+        rootProject.file("../docs/android/execution-backlog.md").absolutePath,
+        "--readme",
+        rootProject.file("../docs/android/README.md").absolutePath,
+        "--master-plan",
+        rootProject.file("../docs/android/android-port-master-plan.md").absolutePath,
+    )
+}
+
 val verifyProductionAppLinksContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
     group = "verification"
     description = "Exercises accepted and rejected production Digital Asset Links surfaces."

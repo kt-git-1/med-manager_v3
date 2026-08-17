@@ -58,6 +58,9 @@ jobs:
       - name: Main merge surface
         run: ./gradlew verifyMainMergeSurface
 
+      - name: Residual release gates
+        run: ./gradlew verifyReleaseGates
+
       - name: Firebase runtime
         if: github.event_name == 'push'
         run: ./gradlew verifyFirebaseRuntime

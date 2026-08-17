@@ -1,0 +1,332 @@
+{
+  "schemaVersion": 1,
+  "baseline": {
+    "iosRelease": "1.0.6 Build 51",
+    "mainCommit": "432b34c",
+    "androidBranch": "android-dev",
+    "checkpoint": "C99"
+  },
+  "partialRequirementIds": [
+    "XP-004",
+    "XP-005",
+    "XP-006",
+    "XP-008",
+    "XP-009",
+    "XP-010"
+  ],
+  "gates": [
+    {
+      "id": "RG-001",
+      "title": "Firebase Analytics Explore verification",
+      "status": "READY_FOR_OWNER_ACTION",
+      "requirements": [
+        "XP-004"
+      ],
+      "dependencies": [],
+      "authorities": [
+        "firebase_console_write"
+      ],
+      "owner": "analytics_owner",
+      "prerequisites": [
+        "C76",
+        "C80"
+      ],
+      "doneWhen": [
+        "A temporary fixed-enum-only Explore is created under explicit approval.",
+        "Android-only safe event rows are verified and the temporary Explore is removed."
+      ],
+      "evidenceSources": [
+        "docs/android/firebase-analytics.md",
+        "docs/android/evidence/c80-20260817/README.md"
+      ],
+      "backlogTitle": "Firebase Analytics Explore verification"
+    },
+    {
+      "id": "RG-002",
+      "title": "Production API migration and deploy",
+      "status": "READY_FOR_OWNER_ACTION",
+      "requirements": [
+        "XP-008",
+        "XP-010"
+      ],
+      "dependencies": [],
+      "authorities": [
+        "production_database_read",
+        "production_deploy"
+      ],
+      "owner": "release_owner",
+      "prerequisites": [
+        "C75",
+        "C97",
+        "C98"
+      ],
+      "doneWhen": [
+        "C98 preflight passes with count-only output on the approved production target.",
+        "The controlled migration and API deploy finish once, then C98 postdeploy and Android API smokes pass."
+      ],
+      "evidenceSources": [
+        "docs/android/play-release-runbook.md",
+        "docs/android/evidence/c98-20260817/README.md"
+      ],
+      "backlogTitle": "Production API migration and deploy"
+    },
+    {
+      "id": "RG-003",
+      "title": "Real mutation interruption recovery",
+      "status": "BLOCKED_BY_DEPENDENCIES",
+      "requirements": [
+        "XP-008"
+      ],
+      "dependencies": [
+        "RG-002"
+      ],
+      "authorities": [
+        "production_test_data_write",
+        "physical_device"
+      ],
+      "owner": "qa_owner",
+      "prerequisites": [
+        "C74",
+        "C75",
+        "C98"
+      ],
+      "doneWhen": [
+        "Approved disposable PRN and inventory operations are interrupted after request transmission.",
+        "Refresh and same-intent retry prove one server effect without automatic replay or ambiguous UI success."
+      ],
+      "evidenceSources": [
+        "docs/android/physical-device-matrix.md",
+        "docs/android/evidence/c75-20260817/README.md"
+      ],
+      "backlogTitle": "Real mutation interruption recovery"
+    },
+    {
+      "id": "RG-004",
+      "title": "Production App Links and Android FCM",
+      "status": "BLOCKED_BY_DEPENDENCIES",
+      "requirements": [
+        "XP-008",
+        "XP-010"
+      ],
+      "dependencies": [
+        "RG-002"
+      ],
+      "authorities": [
+        "production_deploy",
+        "firebase_delivery",
+        "physical_device"
+      ],
+      "owner": "release_owner",
+      "prerequisites": [
+        "C77",
+        "C78",
+        "C79",
+        "C95"
+      ],
+      "doneWhen": [
+        "The canonical assetlinks endpoint and Play-installed domain verification pass with the app-signing certificate.",
+        "Android token registration and FC-002 through FC-010 delivery, privacy, routing and cleanup rows pass."
+      ],
+      "evidenceSources": [
+        "docs/android/physical-device-matrix.md",
+        "docs/android/evidence/c95-20260817/README.md"
+      ],
+      "backlogTitle": "Production App Links and Android FCM"
+    },
+    {
+      "id": "RG-005",
+      "title": "Release-owner signing and exact AAB handoff",
+      "status": "READY_FOR_OWNER_ACTION",
+      "requirements": [
+        "XP-009",
+        "XP-010"
+      ],
+      "dependencies": [],
+      "authorities": [
+        "release_key_access",
+        "play_console_read"
+      ],
+      "owner": "release_owner",
+      "prerequisites": [
+        "C84",
+        "C85",
+        "C86",
+        "C87",
+        "C88",
+        "C89",
+        "C90",
+        "C91",
+        "C92"
+      ],
+      "doneWhen": [
+        "The owner-managed upload key and independent Play certificate identities pass every fail-closed signing gate.",
+        "The exact clean-commit AAB, ledger and SHA256SUMS three-file handoff is retained unchanged."
+      ],
+      "evidenceSources": [
+        "docs/android/play-release-runbook.md",
+        "docs/android/evidence/c92-20260817/README.md"
+      ],
+      "backlogTitle": "Release-owner signing and exact AAB handoff"
+    },
+    {
+      "id": "RG-006",
+      "title": "Play Internal install and update verification",
+      "status": "BLOCKED_BY_DEPENDENCIES",
+      "requirements": [
+        "XP-008",
+        "XP-010"
+      ],
+      "dependencies": [
+        "RG-002",
+        "RG-004",
+        "RG-005"
+      ],
+      "authorities": [
+        "play_console_write",
+        "physical_device"
+      ],
+      "owner": "release_owner",
+      "prerequisites": [
+        "C92",
+        "C93",
+        "C94",
+        "C95"
+      ],
+      "doneWhen": [
+        "The exact handoff AAB is processed and installed from Play Internal with Play app signing.",
+        "Fresh install, prior-version update, App Links, sessions, notifications and package identity pass on the exact artifact."
+      ],
+      "evidenceSources": [
+        "docs/android/play-release-runbook.md",
+        "docs/android/physical-device-matrix.md"
+      ],
+      "backlogTitle": "Play Internal install and update verification"
+    },
+    {
+      "id": "RG-007",
+      "title": "Old-supported and Google-reference physical devices",
+      "status": "BLOCKED_BY_DEPENDENCIES",
+      "requirements": [
+        "XP-006",
+        "XP-008"
+      ],
+      "dependencies": [
+        "RG-006"
+      ],
+      "authorities": [
+        "physical_device"
+      ],
+      "owner": "qa_owner",
+      "prerequisites": [
+        "C67",
+        "C82",
+        "C94"
+      ],
+      "doneWhen": [
+        "The required API 26-28 physical target passes its applicable release matrix rows.",
+        "A current Google-reference physical target passes its applicable exact-Play-artifact rows."
+      ],
+      "evidenceSources": [
+        "docs/android/physical-device-matrix.md",
+        "docs/android/evidence/c82-20260817/README.md"
+      ],
+      "backlogTitle": "Old-supported and Google-reference physical devices"
+    },
+    {
+      "id": "RG-008",
+      "title": "Assisted spoken TalkBack traversal",
+      "status": "BLOCKED_BY_DEPENDENCIES",
+      "requirements": [
+        "XP-005",
+        "XP-008"
+      ],
+      "dependencies": [
+        "RG-006"
+      ],
+      "authorities": [
+        "manual_accessibility",
+        "physical_device"
+      ],
+      "owner": "qa_owner",
+      "prerequisites": [
+        "C81",
+        "C82"
+      ],
+      "doneWhen": [
+        "One-finger focus, spoken order, double-tap activation and two-finger scrolling pass across both role flows.",
+        "No hidden, clipped, duplicate, blank or sensitive announcement remains on the exact Play artifact."
+      ],
+      "evidenceSources": [
+        "docs/android/physical-device-matrix.md",
+        "docs/android/evidence/c81-20260817/README.md"
+      ],
+      "backlogTitle": "Assisted spoken TalkBack traversal"
+    },
+    {
+      "id": "RG-009",
+      "title": "Play Console Data safety and Health declarations",
+      "status": "BLOCKED_BY_DEPENDENCIES",
+      "requirements": [
+        "XP-009",
+        "XP-010"
+      ],
+      "dependencies": [
+        "RG-005"
+      ],
+      "authorities": [
+        "play_console_write"
+      ],
+      "owner": "release_owner",
+      "prerequisites": [
+        "C86",
+        "C87",
+        "C88",
+        "C89"
+      ],
+      "doneWhen": [
+        "Current SDK disclosures and the exact signed artifact are reconciled with the worksheet.",
+        "Data safety, Health apps, account deletion and store declarations are submitted and recorded."
+      ],
+      "evidenceSources": [
+        "docs/android/play-console-declarations.md",
+        "docs/android/play-release-runbook.md"
+      ],
+      "backlogTitle": "Play Console Data safety and Health declarations"
+    },
+    {
+      "id": "RG-010",
+      "title": "Closed test, final rebaseline and main merge",
+      "status": "BLOCKED_BY_DEPENDENCIES",
+      "requirements": [
+        "XP-010"
+      ],
+      "dependencies": [
+        "RG-001",
+        "RG-003",
+        "RG-004",
+        "RG-006",
+        "RG-007",
+        "RG-008",
+        "RG-009"
+      ],
+      "authorities": [
+        "play_console_write",
+        "branch_merge"
+      ],
+      "owner": "release_owner",
+      "prerequisites": [
+        "C96",
+        "C98"
+      ],
+      "doneWhen": [
+        "Closed testing, crash and ANR review complete with no unresolved P0 or P1 defect.",
+        "Latest main is rebaselined, every release gate passes and the reviewed zero-iOS-drift merge is explicitly approved."
+      ],
+      "evidenceSources": [
+        "docs/android/play-release-runbook.md",
+        "docs/android/evidence/c96-20260817/README.md"
+      ],
+      "backlogTitle": "Closed test, final rebaseline and main merge"
+    }
+  ]
+}

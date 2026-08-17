@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C98
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C99
 - Baseline date: 2026-08-17
-- Current action: C98 adds a fail-closed, read-only deployment audit around C97. `preflight` requires the exact pre-migration state and reports only anonymous row counts; `postdeploy` binds the Prisma success record/checksum to the checked-in SQL, exact columns/indexes and zero duplicate groups. Remote execution requires an exact mode confirmation, a second explicit opt-in, TLS and the `public` schema. CI exercises two accepted/twelve rejected fixtures and the real full-migration postdeploy state. Production migration execution and real interrupted-network behavior remain external gates.
+- Current action: C99 replaces scattered residual prose with the canonical `release-gates.json`. Ten external gates exactly cover the six current PARTIAL requirements and encode owner, authority, prerequisites, dependencies, completion evidence and backlog state. A fail-closed verifier rejects baseline/checkpoint drift, stale SH-007/SH-009 tracking, missing evidence, invalid dependency/status transitions or any checkbox/coverage mismatch. It clarifies the order of remaining work without promoting external evidence to completion.
 
 ## Authority order
 
@@ -35,6 +35,7 @@ An Android shortcut never overrides a backend rule or an intentional iOS product
 - [Firebase Analytics verification](./firebase-analytics.md)
 - [Physical-device verification matrix](./physical-device-matrix.md)
 - [Play release runbook](./play-release-runbook.md)
+- [Canonical residual release gates](./release-gates.json)
 - [Phase 0 foundation](./phase-0-foundation.md)
 - [Phase 1 session/API notes](./phase-1-session-api.md)
 - [Phase 2 patient-mode notes](./phase-2-patient-mode.md)

@@ -5,6 +5,7 @@ This is the production handoff procedure for Gate I. It does not authorize creat
 ## 1. Preconditions
 
 - Work from `android-dev`; merge to `main` only after the release gates pass.
+- Treat `release-gates.json` plus its matching `RG-001`–`RG-010` backlog rows as the canonical residual order. The ledger does not authorize any listed external action.
 - Rebaseline against the latest `origin/main` and resolve every new iOS/API change first.
 - Run `verifyMainMergeSurface` after every fetch/rebaseline. It verifies committed history only; a pass does not authorize merge/deploy and does not excuse a dirty worktree.
 - Require API CI's C97 legacy-upgrade and C98 read-only preflight/postdeploy contracts to pass. They protect compatibility and observation locally but do not authorize or prove a production migration.
