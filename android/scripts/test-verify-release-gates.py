@@ -207,6 +207,53 @@ rejected(
     ),
 )
 rejected(
+    "production-control-plane-authority",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][1].update(
+            authorities=[
+                item
+                for item in value["gates"][1]["authorities"]
+                if item != "github_repository_admin"
+            ]
+        ),
+    ),
+)
+rejected(
+    "production-control-plane-prerequisite",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][1].update(
+            prerequisites=[item for item in value["gates"][1]["prerequisites"] if item != "C120"]
+        ),
+    ),
+)
+rejected(
+    "production-control-plane-evidence",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][1].update(
+            evidenceSources=[
+                item
+                for item in value["gates"][1]["evidenceSources"]
+                if item != "docs/android/evidence/c120-20260817/README.md"
+            ]
+        ),
+    ),
+)
+rejected(
+    "production-control-plane-condition",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][1].update(
+            doneWhen=[
+                item.replace("self-review prevention", "self-review allowed")
+                for item in value["gates"][1]["doneWhen"]
+            ]
+        ),
+    ),
+)
+rejected(
     "play-organization-ownership",
     lambda _root, paths: edit_manifest(
         paths,
@@ -737,4 +784,4 @@ rejected(
     ),
 )
 
-print("Release gate contract passed: accepted=1 rejected=60")
+print("Release gate contract passed: accepted=1 rejected=64")

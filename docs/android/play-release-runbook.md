@@ -78,7 +78,17 @@ The dispatch inputs are deliberately exact:
 
 For either write mode, set both arm variables to the exact lowercase value `true`; otherwise dispatch validation fails. `ANDROID_API_PRODUCTION_REVIEWERS_CONFIGURED=true` is an attestation, not a replacement for actual environment protection. Enter the full 40-character lowercase SHA shown by current `main`; the workflow fetches `origin/main`, compares all three identities and refuses a dirty checkout. Run `preflight` first and review its anonymous counts/window. Only after independent release approval should the owner arm and dispatch `deploy`. If migration succeeds but a later build/deploy check fails, do not retry `deploy` because absent-state preflight will correctly reject it; diagnose the failure and use `release` only after the exact postdeploy audit is valid. Keep both arms false or absent outside an approved window.
 
-As of C100, the live repository has no `android-api-production` environment and none of these production secrets/variables, so no write-mode run is possible. C100 creates and tests the control path only; it does not execute preflight, migrate a database or deploy Vercel.
+Before any dispatch, inject a short-lived fine-grained GitHub token through the `GITHUB_CONTROL_PLANE_TOKEN` environment variable without placing its value in command arguments, shell history, Git or evidence. It needs only the repository/environment/workflow secret-name and variable-name metadata reads required by the official GitHub APIs; C120 never requests secret values. From `api/`, fetch the current reviewed `origin/main` and run the safe check:
+
+```bash
+node scripts/verify-android-production-control-plane.mjs \
+  --expected-main-sha "$(git -C .. rev-parse origin/main)" \
+  --arm-state safe
+```
+
+Accept only the bounded summary line: exact main prefix, active workflow, protected environment, reviewer/secret/variable counts and `arm=safe`. Do not retain raw GitHub responses, reviewer identities, repository IDs or variable values. Immediately before an approved write dispatch, set only `ANDROID_API_PRODUCTION_RELEASE_ENABLED=true`, rerun with `--arm-state armed`, obtain the independent environment approval and dispatch the exact main SHA. Return the arm to `false` and rerun `safe` after the window even if the dispatch fails.
+
+As of C120, a fresh public read-only check reports `main@432b34c` with `protected=false`, four registered workflows but no `Android API Production Release` workflow, and no `android-api-production` environment. The eight existing generated Preview/Production environments report no protection rules. Production `/api/health` is HTTP 200 JSON, while `/.well-known/assetlinks.json` and `/account-deletion` remain redirect-free HTTP 404 HTML. No token, branch rule, environment, secret, variable, workflow dispatch, database write or deployment was created. C120 therefore verifies the owner setup once it exists but does not make any write-mode run possible by itself.
 
 ## 3. Build and local verification
 

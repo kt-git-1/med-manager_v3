@@ -4,7 +4,7 @@
     "iosRelease": "1.0.6 Build 51",
     "mainCommit": "432b34c",
     "androidBranch": "android-dev",
-    "checkpoint": "C119"
+    "checkpoint": "C120"
   },
   "partialRequirementIds": [
     "XP-004",
@@ -51,6 +51,7 @@
       ],
       "dependencies": [],
       "authorities": [
+        "github_repository_admin",
         "production_database_read",
         "production_database_configuration",
         "production_deploy"
@@ -63,9 +64,11 @@
         "C100",
         "C101",
         "C102",
-        "C104"
+        "C104",
+        "C120"
       ],
       "doneWhen": [
+        "The production workflow is registered on protected main and the android-api-production environment has required reviewers, self-review prevention, protected-branch policy, the exact secret/variable names and a safe release arm; a redacted C120 read-only preflight is retained.",
         "Incoming SSL enforcement is enabled in an approved database restart window, then C98 verify-full preflight passes with count-only output on the production target.",
         "The controlled migration and API deploy finish once, then C98 postdeploy and Android API smokes pass."
       ],
@@ -75,7 +78,8 @@
         "docs/android/evidence/c100-20260817/README.md",
         "docs/android/evidence/c101-20260817/README.md",
         "docs/android/evidence/c102-20260817/README.md",
-        "docs/android/evidence/c104-20260817/README.md"
+        "docs/android/evidence/c104-20260817/README.md",
+        "docs/android/evidence/c120-20260817/README.md"
       ],
       "backlogTitle": "Production API migration and deploy"
     },

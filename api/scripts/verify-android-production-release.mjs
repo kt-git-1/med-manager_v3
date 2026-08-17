@@ -109,6 +109,7 @@ export function validateProductionWorkflow(text) {
     "- deploy",
     "- release",
     "node scripts/verify-android-production-release.mjs",
+    "node scripts/test-verify-android-production-control-plane.mjs",
     "node scripts/verify-api-node-runtime.mjs",
     "node scripts/test-prepare-android-production-database.mjs",
     "node scripts/prepare-android-production-database.mjs",

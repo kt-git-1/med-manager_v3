@@ -36,6 +36,7 @@ ALLOWED_AUTHORITIES = {
     "branch_merge",
     "firebase_console_write",
     "firebase_delivery",
+    "github_repository_admin",
     "manual_accessibility",
     "physical_device",
     "play_console_read",
@@ -244,6 +245,32 @@ def verify_release_gates(
         sources = _string_list(gate["evidenceSources"], f"{gate_id}.evidenceSources")
         for source in sources:
             _evidence_path(root, source)
+
+        if gate_id == "RG-002":
+            _require(
+                "github_repository_admin" in authorities,
+                "RG-002 must retain GitHub repository control-plane authority",
+            )
+            _require("C120" in prerequisites, "RG-002 must retain the C120 control-plane preflight")
+            _require(
+                "docs/android/evidence/c120-20260817/README.md" in sources,
+                "RG-002 must retain C120 control-plane evidence",
+            )
+            _require(
+                any(
+                    "production workflow" in item
+                    and "protected main" in item
+                    and "android-api-production environment" in item
+                    and "required reviewers" in item
+                    and "self-review prevention" in item
+                    and "protected-branch policy" in item
+                    and "secret/variable names" in item
+                    and "safe release arm" in item
+                    and "C120" in item
+                    for item in done_when
+                ),
+                "RG-002 must require a live protected production control plane",
+            )
 
         if gate_id == "RG-005":
             _require(

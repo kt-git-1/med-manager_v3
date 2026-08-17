@@ -48,6 +48,7 @@ jobs:
       - name: Android production release contract
         run: |
           node scripts/test-verify-android-production-release.mjs
+          node scripts/test-verify-android-production-control-plane.mjs
           node scripts/test-prepare-android-production-database.mjs
 
       - name: Android Play policy readiness contract

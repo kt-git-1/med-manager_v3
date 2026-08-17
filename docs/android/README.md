@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C119
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C120
 - Baseline date: 2026-08-17
-- Current action: C119 binds the physical Play-installed `base.apk` bytes directly to one exact C118 base-master receipt row, then requires matching version/signing set, Google Play installer identity, at least one optimized split and the canonical verified App Link before emitting a serial/path-free receipt. Real Play installation and behavioral acceptance remain RG-006 owner/device work.
+- Current action: C120 adds a read-only GitHub production control-plane preflight that requires the exact protected `main`, an active registered production workflow, protected `android-api-production` environment, required reviewers with self-review prevention, exact secret/variable names and an explicit safe/armed state without printing values. The live control plane is still absent, so RG-002 remains owner work.
 
 ## Authority order
 

@@ -36,6 +36,8 @@ C118 chains one downloaded base-master APK per C117 signing-key group to the exa
 
 C119 chains that C118 byte identity to package-manager state on one selected physical device: the installed `base.apk` must exactly match one retained hash/size row while version, complete signer set, Google Play installer, optimized split presence and canonical App Links remain stable across the check. The receipt excludes serials and installed paths; actual Play installation/update behavior remains external.
 
+C120 makes the previously narrative-only GitHub production control-plane readiness check executable. It reads repository/workflow/environment/secret-name/variable-name metadata only, requires the exact protected `main`, reviewer/self-review/branch policy and safe-or-armed state, and never prints token or values. The live workflow and dedicated protected environment are still absent, so no production dispatch is inferred.
+
 ## 2. What is reusable
 
 - Kotlin/Compose Gradle project, application identity and build workflow
