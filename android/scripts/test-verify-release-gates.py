@@ -254,6 +254,40 @@ rejected(
     ),
 )
 rejected(
+    "production-api-runtime-prerequisite",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][1].update(
+            prerequisites=[item for item in value["gates"][1]["prerequisites"] if item != "C121"]
+        ),
+    ),
+)
+rejected(
+    "production-api-runtime-evidence",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][1].update(
+            evidenceSources=[
+                item
+                for item in value["gates"][1]["evidenceSources"]
+                if item != "docs/android/evidence/c121-20260817/README.md"
+            ]
+        ),
+    ),
+)
+rejected(
+    "production-api-runtime-condition",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][1].update(
+            doneWhen=[
+                item.replace("zero action-runtime deprecation annotations", "runtime warnings ignored")
+                for item in value["gates"][1]["doneWhen"]
+            ]
+        ),
+    ),
+)
+rejected(
     "play-organization-ownership",
     lambda _root, paths: edit_manifest(
         paths,
@@ -784,4 +818,41 @@ rejected(
     ),
 )
 
-print("Release gate contract passed: accepted=1 rejected=64")
+rejected(
+    "closed-test-api-runtime-prerequisite",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][9].update(
+            prerequisites=[item for item in value["gates"][9]["prerequisites"] if item != "C121"]
+        ),
+    ),
+)
+
+rejected(
+    "closed-test-api-runtime-evidence",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][9].update(
+            evidenceSources=[
+                item
+                for item in value["gates"][9]["evidenceSources"]
+                if item != "docs/android/evidence/c121-20260817/README.md"
+            ]
+        ),
+    ),
+)
+
+rejected(
+    "closed-test-api-runtime-condition",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][9].update(
+            doneWhen=[
+                item.replace("zero action-runtime deprecation annotations", "warning annotations accepted")
+                for item in value["gates"][9]["doneWhen"]
+            ]
+        ),
+    ),
+)
+
+print("Release gate contract passed: accepted=1 rejected=70")

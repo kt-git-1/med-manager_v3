@@ -4,7 +4,7 @@
     "iosRelease": "1.0.6 Build 51",
     "mainCommit": "432b34c",
     "androidBranch": "android-dev",
-    "checkpoint": "C120"
+    "checkpoint": "C121"
   },
   "partialRequirementIds": [
     "XP-004",
@@ -65,10 +65,12 @@
         "C101",
         "C102",
         "C104",
-        "C120"
+        "C120",
+        "C121"
       ],
       "doneWhen": [
         "The production workflow is registered on protected main and the android-api-production environment has required reviewers, self-review prevention, protected-branch policy, the exact secret/variable names and a safe release arm; a redacted C120 read-only preflight is retained.",
+        "The exact Production workflow uses full-SHA official Node 24 actions, contents-read-only authority and non-persistent checkout credentials, and the exact API CI/API E2E runs have zero action-runtime deprecation annotations under C121.",
         "Incoming SSL enforcement is enabled in an approved database restart window, then C98 verify-full preflight passes with count-only output on the production target.",
         "The controlled migration and API deploy finish once, then C98 postdeploy and Android API smokes pass."
       ],
@@ -79,7 +81,8 @@
         "docs/android/evidence/c101-20260817/README.md",
         "docs/android/evidence/c102-20260817/README.md",
         "docs/android/evidence/c104-20260817/README.md",
-        "docs/android/evidence/c120-20260817/README.md"
+        "docs/android/evidence/c120-20260817/README.md",
+        "docs/android/evidence/c121-20260817/README.md"
       ],
       "backlogTitle": "Production API migration and deploy"
     },
@@ -387,12 +390,14 @@
         "C107",
         "C108",
         "C110",
-        "C115"
+        "C115",
+        "C121"
       ],
       "doneWhen": [
         "Always-available, reusable and region-independent caregiver review credentials select the retained dedicated QA patient without a one-time linking code.",
         "Closed testing, crash and ANR review complete with no unresolved P0 or P1 defect.",
         "The exact final commit passes the immutable Node 24 Android CI runtime contract and hosted Android CI without an action-runtime deprecation warning.",
+        "The exact final commit passes the full-SHA Node 24 API workflow action contract and hosted API CI/API E2E with zero action-runtime deprecation annotations.",
         "Latest main is rebaselined, every release gate passes and the reviewed zero-iOS-drift merge is explicitly approved."
       ],
       "evidenceSources": [
@@ -403,7 +408,8 @@
         "docs/android/evidence/c107-20260817/README.md",
         "docs/android/evidence/c108-20260817/README.md",
         "docs/android/evidence/c110-20260817/README.md",
-        "docs/android/evidence/c115-20260817/README.md"
+        "docs/android/evidence/c115-20260817/README.md",
+        "docs/android/evidence/c121-20260817/README.md"
       ],
       "backlogTitle": "Closed test, final rebaseline and main merge"
     }

@@ -252,9 +252,14 @@ def verify_release_gates(
                 "RG-002 must retain GitHub repository control-plane authority",
             )
             _require("C120" in prerequisites, "RG-002 must retain the C120 control-plane preflight")
+            _require("C121" in prerequisites, "RG-002 must retain the C121 API action runtime contract")
             _require(
                 "docs/android/evidence/c120-20260817/README.md" in sources,
                 "RG-002 must retain C120 control-plane evidence",
+            )
+            _require(
+                "docs/android/evidence/c121-20260817/README.md" in sources,
+                "RG-002 must retain C121 API action runtime evidence",
             )
             _require(
                 any(
@@ -270,6 +275,19 @@ def verify_release_gates(
                     for item in done_when
                 ),
                 "RG-002 must require a live protected production control plane",
+            )
+            _require(
+                any(
+                    "Production workflow" in item
+                    and "full-SHA official Node 24 actions" in item
+                    and "contents-read-only" in item
+                    and "non-persistent checkout credentials" in item
+                    and "API CI/API E2E" in item
+                    and "zero action-runtime deprecation annotations" in item
+                    and "C121" in item
+                    for item in done_when
+                ),
+                "RG-002 must require warning-free immutable API production actions",
             )
 
         if gate_id == "RG-005":
@@ -495,6 +513,7 @@ def verify_release_gates(
             _require("C108" in prerequisites, "RG-010 must retain the C108 renderer contract")
             _require("C110" in prerequisites, "RG-010 must retain the C110 store-ledger binding")
             _require("C115" in prerequisites, "RG-010 must retain the C115 Android CI runtime contract")
+            _require("C121" in prerequisites, "RG-010 must retain the C121 API action runtime contract")
             _require(
                 any("reusable" in item and "region-independent" in item for item in done_when),
                 "RG-010 must require reusable region-independent Play review access",
@@ -516,12 +535,25 @@ def verify_release_gates(
                 "RG-010 must retain C115 Android CI runtime evidence",
             )
             _require(
+                "docs/android/evidence/c121-20260817/README.md" in sources,
+                "RG-010 must retain C121 API action runtime evidence",
+            )
+            _require(
                 any(
                     "Node 24 Android CI runtime contract" in item
                     and "deprecation warning" in item
                     for item in done_when
                 ),
                 "RG-010 must require a warning-free immutable Android CI runtime",
+            )
+            _require(
+                any(
+                    "full-SHA Node 24 API workflow action contract" in item
+                    and "API CI/API E2E" in item
+                    and "zero action-runtime deprecation annotations" in item
+                    for item in done_when
+                ),
+                "RG-010 must require warning-free immutable API CI evidence",
             )
 
         backlog_checked, backlog_title = backlog_gates[gate_id]

@@ -25,7 +25,8 @@ assert.deepEqual(summary, {
   prisma: "7.9.1",
   firebaseAdmin: "14.2.0",
   workflows: 3,
-  setups: 5
+  setups: 5,
+  actions: 13
 });
 
 const cases = [
@@ -93,6 +94,54 @@ const cases = [
       (value.workflows[".github/workflows/android-api-production-release.yml"] = value.workflows[
         ".github/workflows/android-api-production-release.yml"
       ].replace("node-version: 22", "node-version: 20"))
+  ],
+  [
+    "mutable checkout tag",
+    (value) =>
+      (value.workflows[".github/workflows/api-ci.yml"] = value.workflows[
+        ".github/workflows/api-ci.yml"
+      ].replace("actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", "actions/checkout@v7"))
+  ],
+  [
+    "old setup-node action",
+    (value) =>
+      (value.workflows[".github/workflows/api-e2e.yml"] = value.workflows[
+        ".github/workflows/api-e2e.yml"
+      ].replace(
+        "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020",
+        "actions/setup-node@v4"
+      ))
+  ],
+  [
+    "mutable upload action",
+    (value) =>
+      (value.workflows[".github/workflows/api-e2e.yml"] = value.workflows[
+        ".github/workflows/api-e2e.yml"
+      ].replace(
+        "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+        "actions/upload-artifact@v7"
+      ))
+  ],
+  [
+    "missing read-only permissions",
+    (value) =>
+      (value.workflows[".github/workflows/api-ci.yml"] = value.workflows[
+        ".github/workflows/api-ci.yml"
+      ].replace("permissions:\n  contents: read\n", ""))
+  ],
+  [
+    "write permission",
+    (value) =>
+      (value.workflows[".github/workflows/api-e2e.yml"] = value.workflows[
+        ".github/workflows/api-e2e.yml"
+      ].replace("contents: read", "contents: write"))
+  ],
+  [
+    "persisted checkout credential",
+    (value) =>
+      (value.workflows[".github/workflows/android-api-production-release.yml"] = value.workflows[
+        ".github/workflows/android-api-production-release.yml"
+      ].replace("persist-credentials: false", "persist-credentials: true"))
   ],
   [
     "extra setup",

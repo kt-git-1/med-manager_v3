@@ -38,6 +38,8 @@ C119 chains that C118 byte identity to package-manager state on one selected phy
 
 C120 makes the previously narrative-only GitHub production control-plane readiness check executable. It reads repository/workflow/environment/secret-name/variable-name metadata only, requires the exact protected `main`, reviewer/self-review/branch policy and safe-or-armed state, and never prints token or values. The live workflow and dedicated protected environment are still absent, so no production dispatch is inferred.
 
+C121 updates every API CI/E2E/Production action invocation to reviewed official Node 24 full-SHA releases, grants only contents-read authority and refuses persisted checkout credentials. This removes the Node 20 deprecation class found in the exact C120 hosted API jobs; exact post-fix annotation inspection remains the acceptance evidence rather than a green conclusion alone.
+
 ## 2. What is reusable
 
 - Kotlin/Compose Gradle project, application identity and build workflow
