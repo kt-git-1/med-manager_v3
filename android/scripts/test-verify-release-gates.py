@@ -342,6 +342,53 @@ rejected(
     ),
 )
 rejected(
+    "play-organization-generated-apk-read-authority",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][4].update(
+            authorities=[
+                item
+                for item in value["gates"][4]["authorities"]
+                if item != "play_developer_api_read"
+            ]
+        ),
+    ),
+)
+rejected(
+    "play-organization-generated-apk-prerequisite",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][4].update(
+            prerequisites=[item for item in value["gates"][4]["prerequisites"] if item != "C117"]
+        ),
+    ),
+)
+rejected(
+    "play-organization-generated-apk-evidence",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][4].update(
+            evidenceSources=[
+                item
+                for item in value["gates"][4]["evidenceSources"]
+                if item != "docs/android/evidence/c117-20260817/README.md"
+            ]
+        ),
+    ),
+)
+rejected(
+    "play-organization-generated-apk-condition",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][4].update(
+            doneWhen=[
+                item.replace("App Links app-signing certificate set", "unverified signing key")
+                for item in value["gates"][4]["doneWhen"]
+            ]
+        ),
+    ),
+)
+rejected(
     "play-internal-track-api-authority",
     lambda _root, paths: edit_manifest(
         paths,
@@ -408,6 +455,40 @@ rejected(
         lambda value: value["gates"][5].update(
             doneWhen=[
                 item.replace("completed status", "halted status")
+                for item in value["gates"][5]["doneWhen"]
+            ]
+        ),
+    ),
+)
+rejected(
+    "play-internal-generated-apk-prerequisite",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][5].update(
+            prerequisites=[item for item in value["gates"][5]["prerequisites"] if item != "C117"]
+        ),
+    ),
+)
+rejected(
+    "play-internal-generated-apk-evidence",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][5].update(
+            evidenceSources=[
+                item
+                for item in value["gates"][5]["evidenceSources"]
+                if item != "docs/android/evidence/c117-20260817/README.md"
+            ]
+        ),
+    ),
+)
+rejected(
+    "play-internal-generated-apk-condition",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][5].update(
+            doneWhen=[
+                item.replace("base-master split metadata", "local synthetic splits")
                 for item in value["gates"][5]["doneWhen"]
             ]
         ),
@@ -554,4 +635,4 @@ rejected(
     ),
 )
 
-print("Release gate contract passed: accepted=1 rejected=44")
+print("Release gate contract passed: accepted=1 rejected=51")

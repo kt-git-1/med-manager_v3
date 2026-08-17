@@ -96,6 +96,9 @@ jobs:
       - name: Play Internal track receipt contract
         run: ./gradlew verifyPlayInternalTrackReceiptContract
 
+      - name: Play generated APK receipt contract
+        run: ./gradlew verifyPlayGeneratedApksReceiptContract
+
       - name: Release manifest policy contract
         run: python3 scripts/test-verify-release-manifest-policy.py
 

@@ -4,7 +4,7 @@
     "iosRelease": "1.0.6 Build 51",
     "mainCommit": "432b34c",
     "androidBranch": "android-dev",
-    "checkpoint": "C116"
+    "checkpoint": "C117"
   },
   "partialRequirementIds": [
     "XP-004",
@@ -155,6 +155,7 @@
         "play_organization_account_creation",
         "release_key_access",
         "play_console_read",
+        "play_developer_api_read",
         "play_developer_api_write"
       ],
       "owner": "release_owner",
@@ -173,11 +174,13 @@
         "C111",
         "C112",
         "C113",
-        "C114"
+        "C114",
+        "C117"
       ],
       "doneWhen": [
         "A release-owner-controlled Play Organization developer account is verified against matching D-U-N-S, legal/payment-profile identity, website and contact details, then the exact production package is created.",
         "The owner-managed upload key and independent Play certificate identities pass every fail-closed signing gate.",
+        "The generatedapks.list response requested for the exact C114/C116 version has the exact App Links app-signing certificate set, keeps it disjoint from the upload certificate and retains a secret-free C117 receipt.",
         "The exact clean-commit AAB, schema-v2 ledger with reverified ordered store hashes and SHA256SUMS three-file handoff is retained unchanged.",
         "The Play Developer API Bundle response for the selected upload has the same versionCode and upload-payload SHA-256 as the retained handoff, and its secret-free receipt is retained outside that handoff."
       ],
@@ -190,7 +193,8 @@
         "docs/android/evidence/c111-20260817/README.md",
         "docs/android/evidence/c112-20260817/README.md",
         "docs/android/evidence/c113-20260817/README.md",
-        "docs/android/evidence/c114-20260817/README.md"
+        "docs/android/evidence/c114-20260817/README.md",
+        "docs/android/evidence/c117-20260817/README.md"
       ],
       "backlogTitle": "Play Organization account, signing and exact AAB handoff"
     },
@@ -219,17 +223,20 @@
         "C93",
         "C94",
         "C95",
-        "C116"
+        "C116",
+        "C117"
       ],
       "doneWhen": [
         "The exact handoff AAB is processed and installed from Play Internal with Play app signing.",
         "The applications.tracks.releases.list response for qa contains the exact C114 versionCode once with RELEASE_LIFECYCLE_STATE_PUBLISHED, a fresh inspection edit's edits.tracks.get response contains it once with completed status, and the secret-free chained receipt is retained.",
+        "The generatedapks.list response for that exact version contains base-master split metadata under the expected Play app-signing certificate set and its C117 receipt is retained.",
         "Fresh install, prior-version update, App Links, sessions, notifications and package identity pass on the exact artifact."
       ],
       "evidenceSources": [
         "docs/android/play-release-runbook.md",
         "docs/android/physical-device-matrix.md",
-        "docs/android/evidence/c116-20260817/README.md"
+        "docs/android/evidence/c116-20260817/README.md",
+        "docs/android/evidence/c117-20260817/README.md"
       ],
       "backlogTitle": "Play Internal install and update verification"
     },
