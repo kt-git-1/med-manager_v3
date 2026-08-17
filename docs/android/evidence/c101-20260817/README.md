@@ -4,7 +4,7 @@
 
 C101 removes the High/Critical production dependency blocker discovered while validating C100 and makes that severity boundary fail closed before production database access. It does not deploy, read production, change Console configuration or complete RG-002.
 
-The implementation commit and hosted CI run links are recorded after the evidence handoff.
+Implementation commit: `fca55a68af9f33a1d7918ccb78964ba8bc20204d`.
 
 ## Bounded remediation
 
@@ -42,6 +42,14 @@ In the production workflow it runs immediately after `npm ci`, before the produc
 - Prettier, ESLint, TypeScript and Next.js 16.3.1 production build: passed.
 - Release-gate ledger: 10 gates, 3 ready, 7 dependency-blocked, 0 verified, 6 PARTIAL requirements.
 - C96 allowlist: exactly three workflows and 38 API files; iOS remains excluded.
+
+The committed surface passed with base `432b34c064d70a59c20753116b39390bee2c1cd0`, 208 commits, 1,183 files, 386,064,015 bytes and scopes `.github=3`, `.gitignore=1`, `android=182`, `api=38`, `docs/android=959`, `ios=0`.
+
+## Hosted CI
+
+- API CI: [run 31987147273](https://github.com/kt-git-1/med-manager_v3/actions/runs/31987147273) — all three jobs and 37/37 steps passed, including the complete dependency audit, C97/C98/C100 contracts, migration/postdeploy, 333 API tests and Next.js build.
+- API E2E: [run 31987147278](https://github.com/kt-git-1/med-manager_v3/actions/runs/31987147278) — 15 execution/cleanup steps passed; two failure-only artifact steps were correctly skipped.
+- Android CI: [run 31987147267](https://github.com/kt-git-1/med-manager_v3/actions/runs/31987147267) — 29/29 steps passed, including C96/C99-C101 ledgers, both JVM variants, Lint, APK/AAB compatibility, universal/device-split surfaces and Play assets.
 
 ## Residual boundary
 

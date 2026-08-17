@@ -4,7 +4,7 @@
 
 C100 creates an enforceable RG-002 execution path without executing it. Production database, Vercel, Firebase, Play Console, user/patient data and connected devices were not read or changed.
 
-The implementation commit and hosted CI run links are recorded after the two-commit evidence handoff.
+Implementation commit: `09f9ebe5cc10606e7fec22b57f96d7bd4f2e3c13`.
 
 ## Pre-implementation live configuration audit
 
@@ -33,6 +33,10 @@ Migration and Vercel command output stays in runner-temporary files and is not u
 - Rejected fixtures: 23 covering shortened/uppercase/mismatched SHA, wrong ref/mode/confirmation, missing arms, Vercel branch-policy drift, automatic trigger, non-preflight default, secret/variable drift, unpinned CLI/action, unguarded migration/deploy/health, operation reordering, continue-on-error and force behavior.
 - C96 merge surface: one accepted / ten rejected temporary Git repositories.
 - Current allowlist: exactly three workflows and 37 API paths; no iOS path is admitted.
+
+The committed C100 surface passed at implementation HEAD with base `432b34c064d70a59c20753116b39390bee2c1cd0`, 207 commits, 1,181 files, 385,816,872 bytes and scopes `.github=3`, `.gitignore=1`, `android=182`, `api=37`, `docs/android=958`, `ios=0`. C101 subsequently adds only the reviewed dependency lock and reruns the superset gates.
+
+The C101 superset at `fca55a68af9f33a1d7918ccb78964ba8bc20204d` passes [API CI](https://github.com/kt-git-1/med-manager_v3/actions/runs/31987147273), [API E2E](https://github.com/kt-git-1/med-manager_v3/actions/runs/31987147278) and [Android CI](https://github.com/kt-git-1/med-manager_v3/actions/runs/31987147267). No production workflow was dispatched.
 
 ## External boundary
 
