@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C121
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C122
 - Baseline date: 2026-08-17
-- Current action: C121 removes the hosted API action-runtime warning exposed after C120 by pinning official Node 24 checkout/setup-node/upload-artifact releases by full SHA across API CI, API E2E and Production, reducing permissions to `contents: read` and disabling checkout credential persistence. The contract locks all thirteen action occurrences and hosted annotations remain an explicit acceptance check.
+- Current action: C122 starts a fresh screenshot-by-screenshot rebaseline against the unmodified published iOS 1.0.6 Build 51 runtime. Patient Today now uses an exact fixed fixture and matched progress, hero, time, medicine and disabled-action presentation; its iOS/Android pair and deterministic Play screenshot source are retained. The other seven store surfaces remain explicitly queued for the same published-build recapture audit.
 
 ## Authority order
 

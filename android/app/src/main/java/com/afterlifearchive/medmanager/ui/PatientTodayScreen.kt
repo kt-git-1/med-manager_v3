@@ -2,6 +2,7 @@ package com.afterlifearchive.medmanager.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,12 +26,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AccessTime
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.LocalHospital
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -52,7 +57,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
@@ -550,7 +557,7 @@ private fun PatientInventoryWarningCard(medicationNames: List<String>) {
 @Composable
 private fun PatientTodayHeader(date: String) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        PatientHeaderPillsIcon()
+        PatientHeaderIcon(Icons.Rounded.CalendarMonth)
         Column {
             Text(stringResource(R.string.patient_today_title), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
             Text(date, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -565,43 +572,72 @@ private fun PatientDayProgressStrip(
     grouped: Map<MedicationSlot, List<PatientDose>>,
     nextSlot: MedicationSlot?,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth().testTag("patient-today-progress-strip"),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    val completedConnectorCount = MedicationSlot.entries
+        .takeWhile { slot -> grouped[slot].orEmpty().let { it.isNotEmpty() && it.all { dose -> dose.status == DoseStatus.TAKEN } } }
+        .size
+        .coerceAtMost(MedicationSlot.entries.lastIndex)
+    val connectorColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+    val completedColor = PatientTeal
+    Box(
+        modifier = Modifier.fillMaxWidth().height(142.dp).testTag("patient-today-progress-strip"),
     ) {
-        MedicationSlot.entries.forEach { slot ->
-            val slotDoses = grouped[slot].orEmpty()
-            val completed = slotDoses.isNotEmpty() && slotDoses.all { it.status == DoseStatus.TAKEN }
-            val takenAt = slotDoses.mapNotNull(PatientDose::takenAt).maxOrNull()
-            val accent = when {
-                completed -> PatientTeal
-                slot == nextSlot -> PatientOrange
-                else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+        Canvas(Modifier.fillMaxSize()) {
+            val start = 35.dp.toPx()
+            val end = size.width - start
+            val y = 72.dp.toPx()
+            val stroke = 8.dp.toPx()
+            drawLine(connectorColor, Offset(start, y), Offset(end, y), stroke, StrokeCap.Round)
+            if (completedConnectorCount > 0) {
+                val completedEnd = start + (end - start) * completedConnectorCount / MedicationSlot.entries.lastIndex
+                drawLine(completedColor, Offset(start, y), Offset(completedEnd, y), stroke, StrokeCap.Round)
             }
-            Card(
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.5.dp, accent.copy(alpha = if (slot == nextSlot || completed) 0.8f else 0.25f)),
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 126.dp).padding(horizontal = 4.dp, vertical = 10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+        }
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            MedicationSlot.entries.forEach { slot ->
+                val slotDoses = grouped[slot].orEmpty()
+                val completed = slotDoses.isNotEmpty() && slotDoses.all { it.status == DoseStatus.TAKEN }
+                val takenAt = slotDoses.mapNotNull(PatientDose::takenAt).maxOrNull()
+                val accent = when {
+                    completed -> PatientTeal
+                    slot == nextSlot -> PatientOrange
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                }
+                val emphasized = completed || slot == nextSlot
+                Card(
+                    modifier = Modifier.weight(1f).height(142.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(2.dp, accent.copy(alpha = if (emphasized) 1f else 0.26f)),
                 ) {
-                    Text(patientSlotShortTitle(slot), color = accent, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                    Box(Modifier.size(44.dp).background(accent, CircleShape), contentAlignment = Alignment.Center) {
-                        Icon(
-                            if (completed) Icons.Rounded.CheckCircle else Icons.Rounded.AccessTime,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(26.dp),
-                        )
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 11.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+                    ) {
+                        Text(patientSlotShortTitle(slot), color = accent, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Box(
+                            Modifier.size(52.dp).background(
+                                if (emphasized) accent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
+                                CircleShape,
+                            ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            val icon = when {
+                                completed -> Icons.Rounded.Check
+                                slotDoses.isEmpty() -> Icons.Rounded.Remove
+                                slot == MedicationSlot.BEDTIME -> Icons.Rounded.DarkMode
+                                else -> Icons.Rounded.AccessTime
+                            }
+                            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+                        }
+                        val detail = takenAt?.let(::instantTimeText)
+                            ?: slotDoses.minOfOrNull(PatientDose::scheduledAt)?.let(::instantTimeText)
+                            ?: "—"
+                        Text(detail, color = accent, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                     }
-                    val detail = takenAt?.let(::instantTimeText)
-                        ?: slotDoses.minOfOrNull(PatientDose::scheduledAt)?.let(::instantTimeText)
-                        ?: "—"
-                    Text(detail, color = accent, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                 }
             }
         }
@@ -658,18 +694,23 @@ private fun NextDoseHeroCard(
         val withinWindow = MedicationRecordingPolicy.isRecordable(scheduledAt, now)
         val isLate = MedicationRecordingPolicy.isLate(scheduledAt, now)
         val recordableCount = remaining.size - insufficient
-        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text(stringResource(R.string.patient_today_next_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(stringResource(R.string.patient_today_next_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 Box(
-                    Modifier.size(66.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                    Modifier.size(58.dp).background(PatientTeal.copy(alpha = 0.12f), CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Rounded.AccessTime, contentDescription = null, tint = PatientTeal, modifier = Modifier.size(36.dp))
+                    Icon(Icons.Rounded.AccessTime, contentDescription = null, tint = MedicationTheme.colors.primaryTealText, modifier = Modifier.size(30.dp))
                 }
-                Column {
-                    Text(patientTodaySlotTitle(slot), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = PatientTeal)
-                    Text(timeText(doses.first()), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(patientTodaySlotTitle(slot), fontSize = 29.sp, fontWeight = FontWeight.Bold, color = MedicationTheme.colors.primaryTealText, maxLines = 1)
+                    Text(
+                        stringResource(R.string.patient_today_schedule_format, timeText(doses.first())),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
             }
             Text(
@@ -685,7 +726,7 @@ private fun NextDoseHeroCard(
                     fontWeight = FontWeight.Bold,
                 )
             }
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 doses.forEach { dose ->
                     val inventoryInsufficient = medications[dose.medicationId]?.isInsufficientForDose == true
                     val dosage = dose.dosageText.trim()
@@ -736,11 +777,23 @@ private fun NextDoseHeroCard(
                     }
                 }
             }
+            val actionEnabled = !loading && !updating && withinWindow && recordableCount > 0
             Button(
                 onClick = { onRecordSlot(slot) },
-                enabled = !loading && !updating && withinWindow && recordableCount > 0,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp).testTag("patient-today-primary-bulk-record"),
+                enabled = actionEnabled,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 64.dp)
+                    // SwiftUI applies its disabled treatment in addition to the explicit 55% label opacity.
+                    .alpha(if (actionEnabled) 1f else 0.28f)
+                    .testTag("patient-today-primary-bulk-record"),
                 shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PatientTeal,
+                    disabledContainerColor = PatientTeal,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
             ) {
                 Icon(Icons.Rounded.CheckCircle, contentDescription = null)
                 Spacer(Modifier.size(8.dp))
@@ -751,7 +804,6 @@ private fun NextDoseHeroCard(
                 )
             }
             if (insufficient > 0) Text(stringResource(R.string.patient_slot_insufficient_count, insufficient), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
-            if (!withinWindow) Text(stringResource(R.string.patient_slot_wait_for_window), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -1437,7 +1489,7 @@ private fun timeText(dose: PatientDose): String = dose.scheduledAt
 
 private fun instantTimeText(instant: Instant): String = instant
     .atZone(ZoneId.of("Asia/Tokyo"))
-    .format(DateTimeFormatter.ofPattern("HH:mm"))
+    .format(DateTimeFormatter.ofPattern("H:mm"))
 
 private fun delayText(seconds: Long): String {
     val minutes = seconds.coerceAtLeast(0L) / 60L

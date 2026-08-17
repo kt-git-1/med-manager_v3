@@ -21,10 +21,11 @@
     <string name="patient_tab_today">今日</string>
     <string name="patient_tab_history">履歴</string>
     <string name="patient_tab_settings">設定</string>
-    <string name="patient_preview_morning_name">朝のビタミン</string>
+    <string name="patient_preview_morning_name">整腸剤</string>
     <string name="patient_preview_blood_pressure_name">血圧の薬</string>
     <string name="patient_preview_stomach_name">胃薬</string>
-    <string name="patient_preview_evening_name">コレステロールの薬</string>
+    <string name="patient_preview_evening_name">夕食後の薬</string>
+    <string name="patient_preview_bedtime_name">眠前薬</string>
     <string name="patient_preview_prn_name">頭痛薬</string>
     <string name="patient_preview_prn_instructions">頭痛・発熱時</string>
     <string name="patient_preview_one_tablet">1回1錠</string>

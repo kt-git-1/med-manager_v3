@@ -141,6 +141,27 @@ class PatientTodayContentTest {
     }
 
     @Test
+    fun publishedIosV105PreviewUsesExactProductionTodayFixture() {
+        lateinit var activity: Activity
+        composeRule.setContent {
+            MedicationAppTheme {
+                activity = checkNotNull(LocalActivity.current)
+                PatientModePreview(PatientTab.TODAY)
+            }
+        }
+
+        composeRule.onNodeWithText("8月17日（月）").assertIsDisplayed()
+        composeRule.onNodeWithText("8:07").assertIsDisplayed()
+        composeRule.onNodeWithText("予定 23:00").assertIsDisplayed()
+        composeRule.onNodeWithText("眠前薬 1 mg").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-primary-bulk-record").assertIsDisplayed().assertIsNotEnabled()
+        composeRule.onNodeWithText("記録できる時間になるまでお待ちください").assertDoesNotExist()
+        composeRule.runOnIdle { normalizeStatusBar(activity) }
+        SystemClock.sleep(250)
+        writeDeviceScreenshotFixture("android-ui-101-published-v105-light.png")
+    }
+
+    @Test
     fun compactSummaryUsesPublishedEmptyAndExpandableCompletedStates() {
         showTodayState(
             doses = listOf(
@@ -150,7 +171,7 @@ class PatientTodayContentTest {
 
         composeRule.onNodeWithTag("patient-today-list").performScrollToNode(hasTestTag("patient-today-summary-toggle-morning"))
         composeRule.onNodeWithText("服用済み").assertIsDisplayed()
-        composeRule.onNodeWithText("朝 08:07に服用").assertIsDisplayed()
+        composeRule.onNodeWithText("朝 8:07に服用").assertIsDisplayed()
         composeRule.onNodeWithText("薬の内容を見る").performClick()
         composeRule.onNodeWithText("薬の内容を閉じる").assertIsDisplayed()
         composeRule.onNodeWithTag("patient-today-summary-dose-dose-taken").assertIsDisplayed()
@@ -211,7 +232,7 @@ class PatientTodayContentTest {
 
         composeRule.onNodeWithTag("patient-today-list").performScrollToNode(hasTestTag("patient-today-summary-toggle-morning"))
         composeRule.onNodeWithText("飲み遅れ").assertIsDisplayed()
-        composeRule.onNodeWithText("朝 09:25に服用").assertIsDisplayed()
+        composeRule.onNodeWithText("朝 9:25に服用").assertIsDisplayed()
         composeRule.onNodeWithText("薬の内容を見る").assertIsDisplayed()
     }
 

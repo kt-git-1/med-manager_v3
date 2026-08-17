@@ -1,6 +1,6 @@
 # Android UI Fidelity Specification
 
-**Pinned screen reference:** `main@1cf8aef`. Use this together with `ui-screen-contracts.md`; older captures are historical evidence until recaptured from this baseline.
+**Pinned screen reference:** published iOS 1.0.6 Build 51, `main@432b34c`. Use this together with `ui-screen-contracts.md`; captures from an older source SHA are historical evidence until the affected surface is recaptured. C122 begins the explicit published-build recapture with UI-101 Patient Today.
 
 ## 1. Fidelity target
 

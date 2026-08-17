@@ -190,12 +190,9 @@ internal fun PatientModePreview(initialTab: PatientTab = PatientTab.TODAY) {
     val bloodPressureName = stringResource(R.string.patient_preview_blood_pressure_name)
     val stomachName = stringResource(R.string.patient_preview_stomach_name)
     val eveningName = stringResource(R.string.patient_preview_evening_name)
-    val prnName = stringResource(R.string.patient_preview_prn_name)
-    val prnInstructions = stringResource(R.string.patient_preview_prn_instructions)
-    val oneTablet = stringResource(R.string.patient_preview_one_tablet)
-    val twoTablets = stringResource(R.string.patient_preview_two_tablets)
-    val previewNow = remember { Instant.parse("2026-07-14T03:00:00Z") }
-    val previewDate = remember(previewNow) { previewNow.atZone(ZoneId.of("Asia/Tokyo")).toLocalDate() }
+    val bedtimeName = stringResource(R.string.patient_preview_bedtime_name)
+    val previewNow = remember { Instant.parse("2026-08-17T04:47:00Z") }
+    val previewDate = remember { LocalDate.parse("2026-07-14") }
     val previewHistory = remember {
         listOf(
             HistoryDay("2026-07-10", HistoryStatus.TAKEN, HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, 0),
@@ -205,22 +202,14 @@ internal fun PatientModePreview(initialTab: PatientTab = PatientTab.TODAY) {
             HistoryDay("2026-07-14", HistoryStatus.TAKEN, HistoryStatus.PENDING, HistoryStatus.PENDING, HistoryStatus.NONE, 0),
         )
     }
-    val previewDoses = remember(morningName, bloodPressureName, stomachName, eveningName, oneTablet, twoTablets) {
+    val previewDoses = remember(morningName, bloodPressureName, stomachName, eveningName, bedtimeName) {
         listOf(
-            PatientDose("preview-1", "med-1", Instant.parse("2026-07-13T23:00:00Z"), DoseStatus.TAKEN, morningName, oneTablet, 1.0, slot = MedicationSlot.MORNING),
-            PatientDose("preview-2", "med-2", Instant.parse("2026-07-14T03:30:00Z"), DoseStatus.PENDING, "$bloodPressureName 5 mg", oneTablet, 1.0, slot = MedicationSlot.NOON),
-            PatientDose("preview-3", "med-3", Instant.parse("2026-07-14T03:30:00Z"), DoseStatus.PENDING, stomachName, oneTablet, 1.0, slot = MedicationSlot.NOON),
-            PatientDose("preview-4", "med-4", Instant.parse("2026-07-14T10:00:00Z"), DoseStatus.PENDING, eveningName, twoTablets, 2.0, slot = MedicationSlot.EVENING),
-        )
-    }
-    val prnMedication = remember(prnName, prnInstructions, oneTablet) {
-        PatientMedication(
-            id = "preview-prn", patientId = "preview-patient", name = prnName, dosageText = oneTablet,
-            doseCountPerIntake = 1.0, dosageStrengthValue = 200.0, dosageStrengthUnit = "mg", notes = null,
-            isPrn = true, prnInstructions = prnInstructions, startDate = Instant.EPOCH, endDate = null,
-            inventoryCount = 12.0, inventoryUnit = "錠", inventoryEnabled = true, inventoryQuantity = 12.0,
-            inventoryOut = false, isActive = true, isArchived = false, nextScheduledAt = null,
-            regimenTimes = null, regimenDaysOfWeek = null,
+            PatientDose("morning-1", "morning-med", Instant.parse("2026-08-16T23:00:00Z"), DoseStatus.TAKEN, morningName, "50 mg", 1.0, slot = MedicationSlot.MORNING, takenAt = Instant.parse("2026-08-16T23:07:00Z")),
+            PatientDose("noon-1", "noon-blood", Instant.parse("2026-08-17T03:30:00Z"), DoseStatus.MISSED, bloodPressureName, "5 mg", 1.0, slot = MedicationSlot.NOON),
+            PatientDose("noon-2", "noon-stomach", Instant.parse("2026-08-17T03:30:00Z"), DoseStatus.MISSED, stomachName, "", 1.0, slot = MedicationSlot.NOON),
+            PatientDose("evening-1", "evening-med", Instant.parse("2026-08-17T10:00:00Z"), DoseStatus.PENDING, eveningName, "10 mg", 1.0, slot = MedicationSlot.EVENING),
+            PatientDose("evening-2", "evening-stomach", Instant.parse("2026-08-17T10:00:00Z"), DoseStatus.PENDING, stomachName, "", 1.0, slot = MedicationSlot.EVENING),
+            PatientDose("bedtime-1", "bedtime-med", Instant.parse("2026-08-17T14:00:00Z"), DoseStatus.PENDING, bedtimeName, "1 mg", 1.0, slot = MedicationSlot.BEDTIME),
         )
     }
     Scaffold(
@@ -249,10 +238,10 @@ internal fun PatientModePreview(initialTab: PatientTab = PatientTab.TODAY) {
                     error = null,
                     message = null,
                     maintenanceWarning = null,
-                    medications = mapOf(prnMedication.id to prnMedication),
-                    nextSlot = MedicationSlot.NOON,
+                    medications = emptyMap(),
+                    nextSlot = MedicationSlot.BEDTIME,
                     updatingSlot = null,
-                    prnMedications = listOf(prnMedication),
+                    prnMedications = emptyList(),
                     updatingPrnMedicationId = null,
                     onRetry = {},
                     onRecord = {},

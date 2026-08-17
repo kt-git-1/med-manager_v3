@@ -1,6 +1,6 @@
 # Android UI and Screen Contracts
 
-**Pinned reference:** `main@1cf8aef`
+**Pinned reference:** published iOS 1.0.6 Build 51, `main@432b34c`
 **Primary locale/time zone:** `ja_JP` / `Asia/Tokyo`
 
 This file defines what “high-fidelity reproduction” means at screen level. It supplements `ui-fidelity-spec.md`; it does not replace live comparison with the pinned iOS build.

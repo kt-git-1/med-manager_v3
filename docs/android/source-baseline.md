@@ -134,4 +134,4 @@ Run this procedure whenever API or iOS behavior changes on `main`.
 - [x] Runtime/spec conflicts are explicitly identified.
 - [x] All affected Android contract tests have been updated for actual-time/late-dose behavior, slot ordering, medication supply calculation, action-first inventory editing and patient-first push routing.
 - [x] All affected emulator-verifiable Android implementation rows passed 202/202 JVM tests, Lint and 272/272 UI tests on API 26, 33 and 35 after the C63 tutorial fidelity correction. Physical/TalkBack/OEM evidence remains the separate V01 gate.
-- [x] Current iOS source/runtime references have been captured for every emulator-verifiable scoped state through C37–C56; physical/TalkBack/OEM variants remain an explicit V1 gate.
+- [x] Current published source is audited for every emulator-verifiable row. C122 starts replacing pre-published-build visual evidence with an exact `main@432b34c` runtime pair for UI-101; older C37–C56 images remain historical/supporting evidence until each changed surface is explicitly recaptured. Physical/TalkBack/OEM variants remain an explicit V1 gate.

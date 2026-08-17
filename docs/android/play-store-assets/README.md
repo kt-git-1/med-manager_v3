@@ -12,7 +12,7 @@
 
 The original 1080 x 2400 emulator captures cannot be uploaded directly because the 2400 px long side is more than twice the 1080 px short side. The padded 1350 x 2400 exports preserve the full UI and satisfy the Play screenshot ratio rule.
 
-Exact source mapping is machine-readable in [`phone-ja-JP/sources.tsv`](phone-ja-JP/sources.tsv), and Japanese alt text is maintained in [`../play-store-listing-ja.md`](../play-store-listing-ja.md). C107 refreshes all eight exports from the latest available post-parity production-Compose evidence for each primary surface instead of retaining the original C01 marketing set. If UI behavior changes, recapture the deterministic source fixture, update the mapping and regenerate the corresponding store image; do not edit medical state or copy only in the marketing export.
+Exact source mapping is machine-readable in [`phone-ja-JP/sources.tsv`](phone-ja-JP/sources.tsv), and Japanese alt text is maintained in [`../play-store-listing-ja.md`](../play-store-listing-ja.md). C122 replaces screenshot 02 with an exact Patient Today fixture recaptured against the unmodified published iOS 1.0.6 Build 51 runtime. The other seven C107 sources remain deterministic post-parity Compose evidence, but they predate this stricter published-build recapture procedure and stay queued for the same audit. If UI behavior changes, recapture the deterministic source fixture, update the mapping and regenerate the corresponding store image; do not edit medical state or copy only in the marketing export.
 
 Regenerate all eight outputs from any supported JDK/Gradle environment, then verify that the committed handoff is byte-for-byte current:
 
