@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import importlib.util
 import json
@@ -43,6 +44,10 @@ SIGNATURE_SCHEME = re.compile(
     r"^Verified using (v[0-9]+(?:\.[0-9]+)?) scheme(?: \([^)]*\))?: (true|false)$"
 )
 NUMBER_OF_SIGNERS = re.compile(r"^Number of signers: ([1-9][0-9]*)$")
+PEM_CERTIFICATE = re.compile(
+    r"-----BEGIN CERTIFICATE-----\s+([A-Za-z0-9+/=\s]+?)\s+-----END CERTIFICATE-----",
+    re.DOTALL,
+)
 FORBIDDEN_NAMES = {
     ".env",
     "google-services.json",
@@ -238,6 +243,45 @@ def parse_badging(output: str, expected_version_code: int, expected_version_name
         raise DownloadedBaseApksReceiptError("Downloaded APK is not a base-master split")
 
 
+def extract_signer_certificates(output: str) -> list[str]:
+    pem_certificates: list[str] = []
+    for encoded in PEM_CERTIFICATE.findall(output):
+        compact = "".join(encoded.split())
+        try:
+            der = base64.b64decode(compact, validate=True)
+        except (ValueError, base64.binascii.Error) as error:
+            raise DownloadedBaseApksReceiptError(
+                "Downloaded APK signer PEM certificate is malformed"
+            ) from error
+        if not der or len(der) > 64 * 1024:
+            raise DownloadedBaseApksReceiptError(
+                "Downloaded APK signer PEM certificate size is invalid"
+            )
+        pem_certificates.append(
+            GENERATED.normalize_sha256(
+                hashlib.sha256(der).hexdigest(),
+                label="Downloaded APK signer PEM SHA-256",
+            )
+        )
+
+    lines = [line.strip() for line in output.splitlines() if line.strip()]
+    certificate_rows = [SIGNER_DIGEST.fullmatch(line) for line in lines]
+    digest_certificates = [
+        GENERATED.normalize_sha256(
+            match.group(2), label="Downloaded APK signer certificate SHA-256"
+        )
+        for match in certificate_rows
+        if match is not None
+    ]
+    if pem_certificates:
+        if digest_certificates and digest_certificates != pem_certificates:
+            raise DownloadedBaseApksReceiptError(
+                "Downloaded APK PEM and displayed signer digests disagree"
+            )
+        return pem_certificates
+    return digest_certificates
+
+
 def parse_apksigner(output: str, expected_certificate: str) -> tuple[str, ...]:
     lines = [line.strip() for line in output.splitlines() if line.strip()]
     if "Verifies" not in lines:
@@ -250,18 +294,8 @@ def parse_apksigner(output: str, expected_certificate: str) -> tuple[str, ...]:
             "Downloaded APK must contain exactly one verified signer"
         )
 
-    certificate_rows = [SIGNER_DIGEST.fullmatch(line) for line in lines]
-    certificates = [
-        GENERATED.normalize_sha256(
-            match.group(2), label="Downloaded APK signer certificate SHA-256"
-        )
-        for match in certificate_rows
-        if match is not None
-    ]
-    signer_numbers = [
-        int(match.group(1)) for match in certificate_rows if match is not None
-    ]
-    if signer_numbers != [1] or certificates != [expected_certificate]:
+    certificates = extract_signer_certificates(output)
+    if certificates != [expected_certificate]:
         raise DownloadedBaseApksReceiptError(
             "Downloaded APK signer does not match its generated APK signing-key group"
         )
@@ -377,7 +411,7 @@ def inspect_downloaded_apk(
             str(apksigner),
             "verify",
             "--verbose",
-            "--print-certs",
+            "--print-certs-pem",
             "--min-sdk-version",
             "26",
             str(apk),

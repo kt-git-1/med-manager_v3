@@ -14,13 +14,14 @@ The atomic receipt retains the fixed package/commit/version/AAB chain, C117 rece
 
 ## Verification
 
-- Downloaded base-APK receipt contract: 5 accepted/idempotent, 46 rejected.
-- Accepted coverage: one signing key, byte-identical re-entry, CLI execution, success metadata emitted on stderr and complete two-key rotation coverage.
+- Downloaded base-APK receipt contract: 6 accepted/idempotent, 46 rejected.
+- Accepted coverage: one signing key, byte-identical re-entry, CLI execution, success metadata emitted on stderr, PEM-certificate hashing and complete two-key rotation coverage.
 - Rejected coverage: C117-chain drift, missing/duplicate/non-master selections, incomplete or duplicate signing-key coverage, globally reused download IDs, unsafe/malformed/oversized/private APK ZIPs, package/version/split drift, tool failure, signer/scheme mismatch, APK mutation during tool verification, unsafe SDK tools and unsafe/conflicting output.
 - Real-tool integration: Android Build Tools 36.0.0 `aapt2` and `apksigner` inspect the existing signed Debug APK as production package `com.afterlifearchive.medmanager`, version 1/1.0.6, one signer and verified v2 signature. This proves the SDK command/parsing path, not Play signing.
 - Residual gate contract: one accepted, 57 rejected; RG-005 and RG-006 both retain C118 without changing their status.
 - Hosted Android CI runs the dedicated Gradle contract; no Play authority or artifact is required for its synthetic fixtures.
 - Clean local non-secret regression: 147 actionable Gradle tasks, 40 executed and 107 up-to-date; Debug/Release unit tests, Lint, assemblies, APK/AAB policies, universal/device-split surfaces, store assets and all local Play receipt contracts passed. The signed-AAB shell contract, twelve manifest-policy tests and connected-shard runner contract also passed.
+- Hosted portability finding: runs #175 and #176 reached the clean Debug APK integration but rejected before downstream steps because the Ubuntu Build Tools success output did not match the macOS human-readable signer-digest row. C118 now requests official PEM certificate output, computes SHA-256 from DER bytes and keeps bounded stdout/stderr compatibility; no certificate value was printed while diagnosing the failures.
 
 Official method reviewed on 2026-08-17: [`generatedapks.download`](https://developers.google.com/android-publisher/api-ref/rest/v3/generatedapks/download) downloads one signed APK generated from the selected app bundle using a `downloadId` returned by `generatedapks.list`. Android's official [`apksigner`](https://developer.android.com/tools/apksigner) verifies the APK signature and prints signing-certificate data; official [`aapt2 dump badging`](https://developer.android.com/tools/aapt2) extracts manifest package/version metadata.
 

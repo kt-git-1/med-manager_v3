@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -115,6 +117,22 @@ def signing(certificate: str, *, schemes: str | None = None, signers: int = 1) -
     )
 
 
+def signing_pem(der: bytes) -> str:
+    encoded = base64.b64encode(der).decode("ascii")
+    wrapped = "\n".join(
+        encoded[index : index + 64] for index in range(0, len(encoded), 64)
+    )
+    return (
+        "Verifies\n"
+        "Verified using v1 scheme (JAR signing): false\n"
+        "Verified using v2 scheme (APK Signature Scheme v2): true\n"
+        "Number of signers: 1\n"
+        "-----BEGIN CERTIFICATE-----\n"
+        f"{wrapped}\n"
+        "-----END CERTIFICATE-----\n"
+    )
+
+
 def create_apk(
     path: Path,
     certificate: str,
@@ -184,23 +202,14 @@ def run_real_sdk_integration(
             str(apksigner),
             "verify",
             "--verbose",
-            "--print-certs",
+            "--print-certs-pem",
             "--min-sdk-version",
             "26",
             str(apk),
         ],
         "apksigner",
     )
-    matches = [
-        MODULE.SIGNER_DIGEST.fullmatch(line.strip()) for line in output.splitlines()
-    ]
-    certificates = [
-        MODULE.GENERATED.normalize_sha256(
-            match.group(2), label="Real SDK integration signer SHA-256"
-        )
-        for match in matches
-        if match is not None
-    ]
+    certificates = MODULE.extract_signer_certificates(output)
     if len(certificates) != 1:
         raise AssertionError("Real SDK integration requires exactly one signer certificate")
     result = MODULE.inspect_downloaded_apk(
@@ -426,6 +435,56 @@ def main() -> None:
         assert stderr_receipt["downloadedBaseApks"][0]["verifiedSignatureSchemes"] == [
             "v2"
         ]
+
+        synthetic_der = b"synthetic certificate DER fixture"
+        pem_certificate = hashlib.sha256(synthetic_der).hexdigest()
+        pem_response = write_json(
+            root / "responses/generated-apks-pem.json",
+            {
+                "generatedApks": [
+                    C117_FIXTURES.signing_group(pem_certificate, prefix="pem-key")
+                ]
+            },
+        )
+        pem_generated_receipt = root / "receipts/generated-pem" / generated_name
+        MODULE.GENERATED.verify_play_generated_apks_receipt(
+            target,
+            bundle_response,
+            upload_receipt,
+            release_list_response,
+            track_response,
+            internal_receipt,
+            pem_response,
+            pem_certificate,
+            pem_generated_receipt,
+            root,
+        )
+        pem_apk = create_apk(
+            root / "downloads/pem-base-master.apk",
+            pem_certificate,
+            signing_output=signing_pem(synthetic_der),
+        )
+        pem_inputs = (
+            target,
+            bundle_response,
+            upload_receipt,
+            release_list_response,
+            track_response,
+            internal_receipt,
+            pem_response,
+            pem_certificate,
+            pem_generated_receipt,
+        )
+        pem_receipt = verify(
+            [("pem-key-base-master", pem_apk)],
+            root / "receipts/pem-tools" / output_name,
+            inputs=pem_inputs,
+        )
+        assert pem_receipt["downloadedBaseApks"][0][
+            "appSigningCertificateSha256Fingerprint"
+        ] == MODULE.GENERATED.normalize_sha256(
+            pem_certificate, label="PEM fixture SHA-256"
+        )
 
         second_certificate = "c" * 64
         rotation_response = write_json(
@@ -866,7 +925,7 @@ def main() -> None:
 
     print(
         "Play downloaded base APK receipt contract passed "
-        f"(5 accepted/idempotent, 46 rejected, real-sdk={int(arguments.real_apk is not None)})."
+        f"(6 accepted/idempotent, 46 rejected, real-sdk={int(arguments.real_apk is not None)})."
     )
 
 
