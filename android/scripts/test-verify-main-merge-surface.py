@@ -74,7 +74,8 @@ def create_repository(root: Path) -> tuple[str, str]:
             ]
         ),
     )
-    write(root, ".github/workflows/android-ci.yml")
+    for path in MODULE.EXPECTED_WORKFLOW_PATHS:
+        write(root, path)
     for path in MODULE.REQUIRED_ANDROID_PATHS:
         write(root, path)
     for path in MODULE.REQUIRED_AUTHORITY_DOCS:

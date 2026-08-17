@@ -91,6 +91,11 @@ jobs:
       - name: Bootstrap Supabase PostgreSQL objects
         run: npx prisma db execute --file scripts/ci-bootstrap-postgres.sql
 
+      - name: Android mutation migration upgrade contract
+        run: |
+          node scripts/test-verify-android-mutation-migration.mjs
+          node scripts/verify-android-mutation-migration.mjs
+
       - name: Run Migrations
         run: npx prisma migrate deploy
 

@@ -7,6 +7,7 @@ This is the production handoff procedure for Gate I. It does not authorize creat
 - Work from `android-dev`; merge to `main` only after the release gates pass.
 - Rebaseline against the latest `origin/main` and resolve every new iOS/API change first.
 - Run `verifyMainMergeSurface` after every fetch/rebaseline. It verifies committed history only; a pass does not authorize merge/deploy and does not excuse a dirty worktree.
+- Require API CI's C97 mutation migration upgrade contract to pass. It protects legacy-row compatibility locally but does not authorize or prove a production migration.
 - Keep `BILLING_ENABLED=false` until a separate Google Play purchase contract is approved.
 - Keep the registered production-package Android Firebase app's four runtime values outside Git. C76 completes consent/DebugView/Realtime and C80 closes processed Events; Explore remains before production rollout.
 - Execute the privacy-reviewed consent-off/on/reset plus DebugView, Realtime, Events and Explore matrix in `firebase-analytics.md`; DebugView alone is not the acceptance gate.
@@ -45,6 +46,8 @@ The API production environment separately requires `ANDROID_APP_LINK_SHA256_CERT
 Do not add `google-services.json`, a keystore, passwords, or populated `local.properties` to the repository. The repository ignores `android/local.properties`, `*.jks`, and `*.keystore`, but the operator must still inspect `git status` before committing.
 
 ## 3. Build and local verification
+
+Before deploying the Android API contract, run the C97 static contract and isolated PostgreSQL upgrade fixture in CI, review `npx prisma migrate status` against the target, confirm the migration is pending exactly once, and assess the unique-index deployment window from anonymous row counts. The fixture refuses non-local database URLs by default; do not bypass that guard to test production. Deploy through the normal controlled API release with `npx prisma migrate deploy`, then verify migration status and API replay behavior separately. Never copy identifiers or health rows into evidence.
 
 ```bash
 cd android

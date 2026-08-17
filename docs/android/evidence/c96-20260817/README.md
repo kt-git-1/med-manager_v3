@@ -12,6 +12,8 @@ After a fresh fetch, implementation commit `778cc29509c8442000b41cf3d35b151c445c
 - 385,687,550 bytes in the changed head-tree blobs;
 - scopes: `.github=1`, `.gitignore=1`, `android=180`, `api=30`, `docs/android=952`, `ios=0`.
 
+These are the historical C96 implementation counts. C97 intentionally extends the current verifier to exactly two reviewed workflows and 32 reviewed API files for the isolated migration-upgrade gate; the original C96 evidence is not rewritten as if those files existed during its run.
+
 The existing unstaged user `.gitignore` edit is intentionally not part of these committed counts and was neither staged nor modified. A final operator must still require a clean worktree; this gate proves committed history only.
 
 ## Enforced contract
@@ -29,6 +31,8 @@ The existing unstaged user `.gitignore` edit is intentionally not part of these 
 9. no environment, Firebase config, service-account, key/keystore, APK/AAB/APKS or generated build/IDE/dependency directory;
 10. ordinary/executable blobs only—no symlink or submodule;
 11. at most 1,250 files, 2 MiB per blob and 400 MiB in the changed tree.
+
+Current policy note: C97 adds only `.github/workflows/api-ci.yml` and the two reviewed mutation-migration verifier scripts to these exact allowlists. Every future expansion remains a direct review event.
 
 The size bounds retain the existing high-fidelity visual evidence instead of degrading it while preventing unreviewed growth. The pre-C96 input tree contained 842 PNG files and its largest blob was about 1.63 MiB; no image was recompressed or removed.
 

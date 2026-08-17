@@ -118,7 +118,8 @@ Slot-bulk response is top-level:
 - The server scopes the identifier to the patient. Replaying the same identifier returns the already accepted operation without creating another PRN record, applying another inventory delta, emitting another history/alert event or attempting another push.
 - Android keeps pending identifiers in process memory only. It has no offline write queue and never automatically replays a mutation after cancellation or process death; the user must refresh before deciding whether to retry.
 - `clientMutationId` is protocol metadata only. It must never be included in Analytics events, UI copy, notifications or application logs.
-- The nullable schema migration `20260817090000_android_mutation_idempotency` must be deployed before server-side API-038/API-052 replay suppression is considered live. Local tests do not prove production migration or interrupted-network behavior.
+- The nullable schema migration `20260817090000_android_mutation_idempotency` must be deployed before server-side API-038/API-052 replay suppression is considered live. C97 locks it to exactly two nullable/default-free `TEXT` additions and two patient-scoped unique indexes. Its isolated PostgreSQL upgrade fixture starts from pre-migration tables with six existing rows and proves all row identities survive with null keys, repeated null keys remain legal for legacy callers, the same UUID remains legal across patients, and the same patient/UUID is rejected for both record types.
+- C97 is an upgrade-semantics gate, not production evidence. The production operator must still inspect the target migration state and row/index conditions, choose an appropriate deployment window, run the normal migration command once, and verify the deployed API plus real uncertain-response recovery without exposing health data or identifiers.
 
 ### Cross-screen mutation freshness
 

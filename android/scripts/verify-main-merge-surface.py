@@ -17,7 +17,10 @@ MAX_SINGLE_BLOB_BYTES = 2 * 1024 * 1024
 MAX_CHANGED_TREE_BYTES = 400 * 1024 * 1024
 
 EXPECTED_TOP_LEVEL = {".github", ".gitignore", "android", "api", "docs"}
-EXPECTED_WORKFLOW_PATHS = {".github/workflows/android-ci.yml"}
+EXPECTED_WORKFLOW_PATHS = {
+    ".github/workflows/android-ci.yml",
+    ".github/workflows/api-ci.yml",
+}
 EXPECTED_ROOT_PATHS = {".gitignore"}
 EXPECTED_API_PATHS = {
     "api/app/.well-known/assetlinks.json/route.ts",
@@ -27,6 +30,8 @@ EXPECTED_API_PATHS = {
     "api/prisma/migrations/20260817090000_android_mutation_idempotency/migration.sql",
     "api/prisma/schema.prisma",
     "api/scripts/release-security-check.mjs",
+    "api/scripts/test-verify-android-mutation-migration.mjs",
+    "api/scripts/verify-android-mutation-migration.mjs",
     "api/src/repositories/doseRecordRepo.ts",
     "api/src/repositories/prnDoseRecordRepo.ts",
     "api/src/services/doseRecordService.ts",
@@ -196,7 +201,7 @@ def _validate_path_policy(paths: set[str], blobs: dict[str, Blob]) -> Counter[st
 
     workflows = {path for path in paths if path.startswith(".github/")}
     if workflows != EXPECTED_WORKFLOW_PATHS:
-        raise MergeSurfaceError("only the reviewed Android CI workflow may change")
+        raise MergeSurfaceError("only the reviewed Android and API CI workflows may change")
     roots = {path for path in paths if "/" not in path}
     if roots != EXPECTED_ROOT_PATHS:
         raise MergeSurfaceError("only the reviewed root .gitignore may change")

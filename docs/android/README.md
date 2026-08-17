@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C96
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C97
 - Baseline date: 2026-08-17
-- Current action: C96 makes the eventual `android-dev` to `main` committed merge surface executable and fail-closed. It requires latest `origin/main` to be the exact ancestor, permits only Android, `docs/android`, one Android CI workflow, the reviewed Android ignore policy and the exact 30-file API contract, rejects iOS or private/generated artifacts, and bounds the retained high-fidelity evidence tree. It does not authorize the merge or waive the remaining Play/physical gates.
+- Current action: C97 turns the nullable Android mutation-idempotency migration into an executable upgrade contract. CI first rejects any SQL outside the exact four reviewed additive statements, then upgrades isolated pre-migration PostgreSQL tables containing six legacy rows and proves row preservation, nullable/default-free compatibility, patient-scoped uniqueness, repeated-null legacy writes and cleanup. The C96 merge-surface allowlist is correspondingly expanded to the two reviewed CI workflows and 32 reviewed API files. Production deployment and real interrupted-network behavior remain external gates.
 
 ## Authority order
 
