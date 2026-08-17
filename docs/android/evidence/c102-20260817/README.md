@@ -4,7 +4,7 @@
 
 C102 removes the API build/runtime major-version split, aligns supported Prisma/Firebase dependencies and reduces the remaining dependency audit without touching production. No production database, Vercel deployment, Firebase delivery, Console state, user/patient data or connected device was read or changed.
 
-The implementation commit and hosted CI links are recorded after the evidence handoff.
+Implementation commit: `e127320fac15ea9dfa2a7fcc9a11d8940060050b`.
 
 ## Why the runtime changed
 
@@ -59,6 +59,14 @@ The synthetic contract accepts one exact state and rejects nineteen engine, decl
 - API tests: 75 files / 333 tests passed, including Firebase Messaging and Supabase JWT coverage.
 - Prettier, ESLint, TypeScript and Next.js 16.3.1 production build: passed.
 - Release-gate ledger remains 10 total / 3 ready / 7 blocked / 0 verified / 6 PARTIAL requirements.
+
+The committed merge surface passes with base `432b34c064d70a59c20753116b39390bee2c1cd0`, 210 commits, 1,189 files, 386,127,304 bytes and scopes `.github=4`, `.gitignore=1`, `android=182`, `api=42`, `docs/android=960`, `ios=0`.
+
+## Hosted CI
+
+- API CI: [run 31988521203](https://github.com/kt-git-1/med-manager_v3/actions/runs/31988521203) — all three Node 22 jobs and 38/38 steps passed, including runtime/audit/migration/postdeploy/333-test/build gates.
+- API E2E: [run 31988521188](https://github.com/kt-git-1/med-manager_v3/actions/runs/31988521188) — Node 22 build/server/Playwright execution passed; 15 steps succeeded and two failure-only uploads were skipped.
+- Android CI: [run 31988521225](https://github.com/kt-git-1/med-manager_v3/actions/runs/31988521225) — 29/29 steps passed, including C96/C99-C102 contracts, both JVM variants, Lint, APK/AAB compatibility, universal/device-split surfaces and Play assets.
 
 ## Residual boundary
 
