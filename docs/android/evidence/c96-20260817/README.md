@@ -34,6 +34,8 @@ The existing unstaged user `.gitignore` edit is intentionally not part of these 
 
 Current policy note: C97 adds `.github/workflows/api-ci.yml` and two reviewed mutation-migration verifier scripts; C98 adds two reviewed read-only deployment-audit scripts; C100 adds the reviewed manual production workflow, two production-release contract scripts and `api/vercel.json`; C101 adds `api/package-lock.json`; C102 adds the existing API E2E workflow to the changed surface plus `api/package.json`, the two Node-runtime verifier files and the Node-crypto JWK boundary; C104 adds the production URL/CA preparer and test, runtime database TLS policy, its unit test and the already-existing Prisma repository now modified to consume that policy. The current boundary is exactly four workflows and 47 API files. Every future expansion remains a direct review event.
 
+The C104 implementation recheck at `ca78acb8c68dd4a0bcfadb148cbec07a0f097d9e` passes with 212 commits, 1,197 files, 386,168,584 bytes and scopes `.github=4`, `.gitignore=1`, `android=183`, `api=47`, `docs/android=962`, `ios=0`.
+
 The size bounds retain the existing high-fidelity visual evidence instead of degrading it while preventing unreviewed growth. The pre-C96 input tree contained 842 PNG files and its largest blob was about 1.63 MiB; no image was recompressed or removed.
 
 ## Contract verification

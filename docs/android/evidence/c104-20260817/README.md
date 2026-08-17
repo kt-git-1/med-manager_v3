@@ -6,6 +6,8 @@
 
 **Release boundary:** `RG-002` remains unchecked; no production write, migration, deploy, secret change or database setting change occurred
 
+**Implementation commit:** `ca78acb8c68dd4a0bcfadb148cbec07a0f097d9e`
+
 ## Finding
 
 The retained production database URLs did not contain an SSL mode. The prior C98 remote guard rejected them before connecting. A temporary `sslmode=require` compatibility attempt was insufficient as a durable contract: current Node PostgreSQL parsing can map SSL modes differently depending on compatibility mode, and provider certificate-chain validation requires the Supabase root. The accepted security target is therefore exact `verify-full`, which verifies both the trusted CA chain and the requested database hostname.
@@ -49,6 +51,16 @@ The test did not select identifiers, health/free-text fields or secret values. T
 - dependency audit: zero High/Critical; six known Moderate transitive findings remain;
 - format, lint, typecheck and production build: passed;
 - workflow YAML parse and Android release-gate/main-merge-surface contracts: passed.
+
+The committed C96 recheck passed at `ca78acb8c68dd4a0bcfadb148cbec07a0f097d9e`: 212 commits, 1,197 changed files and 386,168,584 changed-tree bytes across `.github=4`, `.gitignore=1`, `android=183`, `api=47`, `docs/android=962`, `ios=0`.
+
+## Hosted CI
+
+- [API CI run 31991432693](https://github.com/kt-git-1/med-manager_v3/actions/runs/31991432693) — all three jobs passed, totaling 38 successful steps; this includes CA preparation/release contracts, migration/deployment audits, 342 API tests and the production build.
+- [API E2E run 31991432659](https://github.com/kt-git-1/med-manager_v3/actions/runs/31991432659) — 15 execution/cleanup steps passed and the two failure-only uploads were correctly skipped.
+- [Android CI run 31991432672](https://github.com/kt-git-1/med-manager_v3/actions/runs/31991432672) — 29/29 steps passed, including C96/C104 release contracts, both JVM variants, Lint, APK/AAB compatibility, universal/device-split surfaces and Play assets.
+
+No production-release workflow was dispatched.
 
 ## Residual owner action
 

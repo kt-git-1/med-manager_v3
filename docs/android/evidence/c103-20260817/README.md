@@ -5,6 +5,8 @@
 **Device:** retained SHARP A302SH, Android 15 / API 35, adb-authorized disposable target
 **Parity boundary:** `XP-008` remains `PARTIAL`
 
+**Implementation commit:** `ca78acb8c68dd4a0bcfadb148cbec07a0f097d9e`
+
 ## Finding
 
 The C82 runner accepted an authorized target whose display had entered Doze and whose keyguard was active. The first shard then emitted four immediate `No compose hierarchies found in the app` failures out of 66 tests. The run was stopped rather than turning one invalid precondition into a broad regression result.
@@ -39,3 +41,7 @@ UI shard runner contract passed: awake=1 dozingRejected=1 lockedRejected=1 unkno
 ```
 
 The real A302SH then fails fast with the exact awake/unlock guidance instead of installing or running tests while locked. The synthetic contract and hosted CI close the C103 runner behavior; a fresh unlocked real-device 4-shard result remains V01 physical evidence and is run only after the user manually unlocks the target. This evidence improves physical-result validity only; it does not close spoken TalkBack, old-supported/reference-device, FCM, Play signing/install or other external release rows.
+
+## Hosted CI
+
+[Android CI run 31991432672](https://github.com/kt-git-1/med-manager_v3/actions/runs/31991432672) passed 29/29 steps on the exact implementation commit. The connected-shard-runner contract passed before both JVM variants, Debug build, Lint, APK/AAB, universal/device-split and Play asset gates.
