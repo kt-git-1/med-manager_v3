@@ -74,7 +74,10 @@ if text.startswith('__MUTATE_APK__\\n'):
     with apk.open('ab') as stream:
         stream.write(b'changed-during-tool-verification')
     text = text.removeprefix('__MUTATE_APK__\\n')
-sys.stdout.write(text)
+if text.startswith('__STDERR__\\n'):
+    sys.stderr.write(text.removeprefix('__STDERR__\\n'))
+else:
+    sys.stdout.write(text)
 """
     for name in ("aapt2", "apksigner"):
         path = tools / name
@@ -408,6 +411,21 @@ def main() -> None:
         )
         assert cli.returncode == 0, cli.stderr
         assert "VERSION_CODE=1 BASE_APKS=1" in cli.stdout
+
+        stderr_apk = create_apk(
+            root / "downloads/stderr-base-master.apk",
+            first_certificate,
+            package_row="__STDERR__\n" + badging(),
+            signing_output="__STDERR__\n" + signing(first_certificate),
+        )
+        stderr_output = root / "receipts/stderr-tools" / output_name
+        stderr_receipt = verify(
+            [("key-one-base-master", stderr_apk)], stderr_output
+        )
+        assert stderr_receipt["versionCode"] == 1
+        assert stderr_receipt["downloadedBaseApks"][0]["verifiedSignatureSchemes"] == [
+            "v2"
+        ]
 
         second_certificate = "c" * 64
         rotation_response = write_json(
@@ -848,7 +866,7 @@ def main() -> None:
 
     print(
         "Play downloaded base APK receipt contract passed "
-        f"(4 accepted/idempotent, 46 rejected, real-sdk={int(arguments.real_apk is not None)})."
+        f"(5 accepted/idempotent, 46 rejected, real-sdk={int(arguments.real_apk is not None)})."
     )
 
 

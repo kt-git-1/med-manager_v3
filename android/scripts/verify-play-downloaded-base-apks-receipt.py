@@ -202,9 +202,13 @@ def run_tool(arguments: list[str], label: str) -> str:
     if len(completed.stdout) > MAX_TOOL_OUTPUT_BYTES or len(completed.stderr) > MAX_TOOL_OUTPUT_BYTES:
         raise DownloadedBaseApksReceiptError(f"{label} output is unexpectedly large")
     try:
-        return completed.stdout.decode("utf-8").replace("\r\n", "\n")
+        stdout = completed.stdout.decode("utf-8").replace("\r\n", "\n")
+        stderr = completed.stderr.decode("utf-8").replace("\r\n", "\n")
     except UnicodeDecodeError as error:
         raise DownloadedBaseApksReceiptError(f"{label} output is not UTF-8") from error
+    if stdout and stderr and not stdout.endswith("\n"):
+        stdout += "\n"
+    return stdout + stderr
 
 
 def sha256_file(path: Path) -> str:

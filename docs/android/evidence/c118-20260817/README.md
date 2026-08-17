@@ -14,8 +14,8 @@ The atomic receipt retains the fixed package/commit/version/AAB chain, C117 rece
 
 ## Verification
 
-- Downloaded base-APK receipt contract: 4 accepted/idempotent, 46 rejected.
-- Accepted coverage: one signing key, byte-identical re-entry, CLI execution and complete two-key rotation coverage.
+- Downloaded base-APK receipt contract: 5 accepted/idempotent, 46 rejected.
+- Accepted coverage: one signing key, byte-identical re-entry, CLI execution, success metadata emitted on stderr and complete two-key rotation coverage.
 - Rejected coverage: C117-chain drift, missing/duplicate/non-master selections, incomplete or duplicate signing-key coverage, globally reused download IDs, unsafe/malformed/oversized/private APK ZIPs, package/version/split drift, tool failure, signer/scheme mismatch, APK mutation during tool verification, unsafe SDK tools and unsafe/conflicting output.
 - Real-tool integration: Android Build Tools 36.0.0 `aapt2` and `apksigner` inspect the existing signed Debug APK as production package `com.afterlifearchive.medmanager`, version 1/1.0.6, one signer and verified v2 signature. This proves the SDK command/parsing path, not Play signing.
 - Residual gate contract: one accepted, 57 rejected; RG-005 and RG-006 both retain C118 without changing their status.
