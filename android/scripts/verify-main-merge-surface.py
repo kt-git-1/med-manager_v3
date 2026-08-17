@@ -18,6 +18,7 @@ MAX_CHANGED_TREE_BYTES = 400 * 1024 * 1024
 
 EXPECTED_TOP_LEVEL = {".github", ".gitignore", "android", "api", "docs"}
 EXPECTED_WORKFLOW_PATHS = {
+    ".github/workflows/android-api-production-release.yml",
     ".github/workflows/android-ci.yml",
     ".github/workflows/api-ci.yml",
 }
@@ -30,8 +31,10 @@ EXPECTED_API_PATHS = {
     "api/prisma/migrations/20260817090000_android_mutation_idempotency/migration.sql",
     "api/prisma/schema.prisma",
     "api/scripts/release-security-check.mjs",
+    "api/scripts/test-verify-android-production-release.mjs",
     "api/scripts/test-verify-android-mutation-deployment.mjs",
     "api/scripts/test-verify-android-mutation-migration.mjs",
+    "api/scripts/verify-android-production-release.mjs",
     "api/scripts/verify-android-mutation-deployment.mjs",
     "api/scripts/verify-android-mutation-migration.mjs",
     "api/src/repositories/doseRecordRepo.ts",
@@ -57,6 +60,7 @@ EXPECTED_API_PATHS = {
     "api/tests/unit/client-mutation-id-validation.test.ts",
     "api/tests/unit/dose-record-create-ownership.test.ts",
     "api/tests/unit/prn-dose-record-idempotency.test.ts",
+    "api/vercel.json",
 }
 REQUIRED_ANDROID_PATHS = {
     "android/app/build.gradle.kts",

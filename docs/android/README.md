@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C99
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C100
 - Baseline date: 2026-08-17
-- Current action: C99 replaces scattered residual prose with the canonical `release-gates.json`. Ten external gates exactly cover the six current PARTIAL requirements and encode owner, authority, prerequisites, dependencies, completion evidence and backlog state. A fail-closed verifier rejects baseline/checkpoint drift, stale SH-007/SH-009 tracking, missing evidence, invalid dependency/status transitions or any checkbox/coverage mismatch. It clarifies the order of remaining work without promoting external evidence to completion.
+- Current action: C100 makes RG-002 executable but does not execute it. A manual-only `main` workflow defaults to read-only C98 preflight; exact full-SHA, mode confirmation, environment reviewer attestation and a separate release arm are required before migration or deployment. `main` and `android-dev` Git auto-deploys are disabled so the enforced order remains preflight -> migration -> postdeploy -> pinned Vercel build/deploy -> health -> App Links. Production secrets/environment and owner approval are still absent, so RG-002 remains unchecked.
 
 ## Authority order
 

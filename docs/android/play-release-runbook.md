@@ -46,6 +46,29 @@ The API production environment separately requires `ANDROID_APP_LINK_SHA256_CERT
 
 Do not add `google-services.json`, a keystore, passwords, or populated `local.properties` to the repository. The repository ignores `android/local.properties`, `*.jks`, and `*.keystore`, but the operator must still inspect `git status` before committing.
 
+## 2.1 Protected production API release control
+
+After the reviewed Android/API change is present on `main`, use only `.github/workflows/android-api-production-release.yml` for RG-002. The workflow has no push, pull-request, schedule or chained trigger; it accepts a manual dispatch only from the exact current `main` commit. `api/vercel.json` disables Git-based Vercel deployment for both `android-dev` and `main`, so a source push cannot deploy the API ahead of its migration. Do not re-enable Git deployment or run a separate Vercel deployment while this release is in progress.
+
+Create the GitHub environment `android-api-production` under release-owner control with required reviewers and prevent self-review where the repository plan supports it. Store only these workflow inputs there:
+
+- secrets: `ANDROID_PRODUCTION_DIRECT_URL`, `PLAY_APP_SIGNING_CERT_SHA256_FINGERPRINTS`, `VERCEL_TOKEN`;
+- variables: `ANDROID_API_PRODUCTION_RELEASE_ENABLED`, `ANDROID_API_PRODUCTION_REVIEWERS_CONFIGURED`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+
+The direct URL must target the approved production `public` schema over `sslmode=require` or `verify-full`. The Play fingerprint is public certificate metadata but remains environment-scoped to prevent an unreviewed identity change. Vercel's production environment separately retains the API runtime variables, including `ANDROID_APP_LINK_SHA256_CERT_FINGERPRINTS`; the workflow pulls those values into an ephemeral production build and deletes `.vercel`/`.next` state at the end. Never copy secret values or raw migration/deploy output into evidence.
+
+The dispatch inputs are deliberately exact:
+
+| Mode | Confirmation | Effect |
+|---|---|---|
+| `preflight` (default) | `PREFLIGHT_ANDROID_API_PRODUCTION` | C98 count-only read-only audit; no migration, build or deploy |
+| `deploy` | `DEPLOY_ANDROID_API_PRODUCTION` | First rollout only: absent-state preflight, migration, exact postdeploy audit, pinned Vercel production build/deploy, fixed health and App Links checks |
+| `release` | `RELEASE_ANDROID_API_PRODUCTION` | Later/recovery rollout: require the migration's exact postdeploy state before the idempotent migration command and the same deploy/smokes |
+
+For either write mode, set both arm variables to the exact lowercase value `true`; otherwise dispatch validation fails. `ANDROID_API_PRODUCTION_REVIEWERS_CONFIGURED=true` is an attestation, not a replacement for actual environment protection. Enter the full 40-character lowercase SHA shown by current `main`; the workflow fetches `origin/main`, compares all three identities and refuses a dirty checkout. Run `preflight` first and review its anonymous counts/window. Only after independent release approval should the owner arm and dispatch `deploy`. If migration succeeds but a later build/deploy check fails, do not retry `deploy` because absent-state preflight will correctly reject it; diagnose the failure and use `release` only after the exact postdeploy audit is valid. Keep both arms false or absent outside an approved window.
+
+As of C100, the live repository has no `android-api-production` environment and none of these production secrets/variables, so no write-mode run is possible. C100 creates and tests the control path only; it does not execute preflight, migrate a database or deploy Vercel.
+
 ## 3. Build and local verification
 
 Before deploying the Android API contract, require the C97 static/isolated upgrade gate and run C98 `preflight` against the target. C98 opens one `READ ONLY` transaction, requires the migration/columns/indexes to be absent and outputs counts only. Remote execution needs all four explicit inputs below; use the independently approved direct PostgreSQL URL with `sslmode=require` or `verify-full`. Never place the URL in shell history, chat, Git or evidence.

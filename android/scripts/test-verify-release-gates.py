@@ -53,17 +53,18 @@ def create_fixture(root: Path) -> dict[str, Path]:
         {item for gate in manifest["gates"] for item in gate["prerequisites"]},
         key=lambda value: int(value[1:]),
     )
+    checkpoint = manifest["baseline"]["checkpoint"]
     backlog_lines = ["# Backlog"]
     backlog_lines.extend(f"- [x] {item} completed fixture" for item in prerequisites)
-    backlog_lines.append("- [x] C99 canonical release gate ledger")
+    backlog_lines.append(f"- [x] {checkpoint} current checkpoint fixture")
     for gate in manifest["gates"]:
         checked = "x" if gate["status"] == "VERIFIED" else " "
         backlog_lines.append(f"- [{checked}] {gate['id']} {gate['backlogTitle']}")
     write(backlog_path, "\n".join(backlog_lines) + "\n")
-    write(readme_path, "current implementation checkpoint: C99\n")
+    write(readme_path, f"current implementation checkpoint: {checkpoint}\n")
     write(
         master_plan_path,
-        "**Status:** physical/release gates open\n\n### Current checkpoint — C99 (fixture)\n",
+        f"**Status:** physical/release gates open\n\n### Current checkpoint — {checkpoint} (fixture)\n",
     )
     for gate in manifest["gates"]:
         for source in gate["evidenceSources"]:

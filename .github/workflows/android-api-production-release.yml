@@ -1,0 +1,198 @@
+name: Android API Production Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_commit:
+        description: Exact full main commit SHA to verify or deploy
+        required: true
+        type: string
+      mode:
+        description: Read-only preflight, first deploy, or later release
+        required: true
+        default: preflight
+        type: choice
+        options:
+          - preflight
+          - deploy
+          - release
+      confirmation:
+        description: Exact mode-specific confirmation phrase
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-api-production-release
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: api
+
+jobs:
+  release:
+    name: Production preflight or release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: android-api-production
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Validate immutable dispatch and release policy
+        env:
+          RELEASE_COMMIT: ${{ inputs.release_commit }}
+          RELEASE_MODE: ${{ inputs.mode }}
+          RELEASE_CONFIRMATION: ${{ inputs.confirmation }}
+          RELEASE_ENABLED: ${{ vars.ANDROID_API_PRODUCTION_RELEASE_ENABLED }}
+          REVIEWERS_CONFIGURED: ${{ vars.ANDROID_API_PRODUCTION_REVIEWERS_CONFIGURED }}
+        run: |
+          git -C .. fetch --no-tags origin main
+          if [ "$(git -C .. rev-parse origin/main)" != "$GITHUB_SHA" ]; then
+            echo "Production dispatch rejected: checked-out commit is not current origin/main." >&2
+            exit 1
+          fi
+          node scripts/verify-android-production-release.mjs
+          test -z "$(git -C .. status --porcelain)"
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Verify production workflow contract
+        run: |
+          node scripts/test-verify-android-production-release.mjs
+          node scripts/test-verify-android-mutation-migration.mjs
+          node scripts/test-verify-android-mutation-deployment.mjs
+
+      - name: Verify source quality
+        env:
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+          DIRECT_URL: postgresql://dummy:dummy@localhost:5432/dummy
+        run: |
+          npm run lint
+          npm run format
+          npm run typecheck
+          npm run build
+
+      - name: Require production audit secret
+        env:
+          DIRECT_URL: ${{ secrets.ANDROID_PRODUCTION_DIRECT_URL }}
+        run: |
+          if [ -z "$DIRECT_URL" ]; then
+            echo "Production dispatch rejected: required audit secret is unavailable." >&2
+            exit 1
+          fi
+
+      - name: Read-only production preflight audit
+        if: inputs.mode == 'preflight' || inputs.mode == 'deploy'
+        env:
+          DIRECT_URL: ${{ secrets.ANDROID_PRODUCTION_DIRECT_URL }}
+          ANDROID_MUTATION_DEPLOYMENT_AUDIT: preflight
+          ALLOW_REMOTE_ANDROID_MUTATION_AUDIT: "1"
+        run: node scripts/verify-android-mutation-deployment.mjs --mode preflight | tee "$RUNNER_TEMP/android-api-preflight.txt"
+
+      - name: Read-only existing-deployment audit
+        if: inputs.mode == 'release'
+        env:
+          DIRECT_URL: ${{ secrets.ANDROID_PRODUCTION_DIRECT_URL }}
+          ANDROID_MUTATION_DEPLOYMENT_AUDIT: postdeploy
+          ALLOW_REMOTE_ANDROID_MUTATION_AUDIT: "1"
+        run: node scripts/verify-android-mutation-deployment.mjs --mode postdeploy | tee "$RUNNER_TEMP/android-api-before-release.txt"
+
+      - name: Require armed production deployment inputs
+        if: inputs.mode != 'preflight'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          PLAY_FINGERPRINTS: ${{ secrets.PLAY_APP_SIGNING_CERT_SHA256_FINGERPRINTS }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+        run: |
+          for value in "$VERCEL_TOKEN" "$PLAY_FINGERPRINTS" "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID"; do
+            if [ -z "$value" ]; then
+              echo "Production dispatch rejected: required deployment input is unavailable." >&2
+              exit 1
+            fi
+          done
+
+      - name: Apply reviewed production migration
+        if: inputs.mode != 'preflight'
+        env:
+          DIRECT_URL: ${{ secrets.ANDROID_PRODUCTION_DIRECT_URL }}
+          DATABASE_URL: ${{ secrets.ANDROID_PRODUCTION_DIRECT_URL }}
+        run: |
+          if ! npx prisma migrate deploy >"$RUNNER_TEMP/prisma-migrate.log" 2>&1; then
+            echo "Production migration failed; inspect the protected job log." >&2
+            exit 1
+          fi
+          echo "Production migration command completed."
+
+      - name: Read-only production postdeploy audit
+        if: inputs.mode != 'preflight'
+        env:
+          DIRECT_URL: ${{ secrets.ANDROID_PRODUCTION_DIRECT_URL }}
+          ANDROID_MUTATION_DEPLOYMENT_AUDIT: postdeploy
+          ALLOW_REMOTE_ANDROID_MUTATION_AUDIT: "1"
+        run: node scripts/verify-android-mutation-deployment.mjs --mode postdeploy | tee "$RUNNER_TEMP/android-api-postdeploy.txt"
+
+      - name: Build and deploy the verified API
+        if: inputs.mode != 'preflight'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+        run: |
+          if ! npx --yes vercel@59.1.3 pull --yes --environment=production --token="$VERCEL_TOKEN" >"$RUNNER_TEMP/vercel-pull.log" 2>&1; then
+            echo "Vercel production environment pull failed." >&2
+            exit 1
+          fi
+          if ! npx --yes vercel@59.1.3 build --prod --token="$VERCEL_TOKEN" >"$RUNNER_TEMP/vercel-build.log" 2>&1; then
+            echo "Vercel production build failed." >&2
+            exit 1
+          fi
+          if ! npx --yes vercel@59.1.3 deploy --prebuilt --prod --token="$VERCEL_TOKEN" >"$RUNNER_TEMP/vercel-deploy.log" 2>&1; then
+            echo "Vercel production deploy failed." >&2
+            exit 1
+          fi
+          echo "Vercel production deployment completed."
+
+      - name: Verify official production health
+        if: inputs.mode != 'preflight'
+        run: |
+          response="$(curl --fail --silent --show-error --retry 5 --retry-all-errors --max-time 20 https://www.okusuri-mimamori.com/api/health)"
+          test "$response" = '{"status":"ok"}'
+
+      - name: Verify production Digital Asset Links
+        if: inputs.mode != 'preflight'
+        env:
+          EXPECTED_APP_SIGNING_CERT_SHA256_FINGERPRINTS: ${{ secrets.PLAY_APP_SIGNING_CERT_SHA256_FINGERPRINTS }}
+        run: python3 ../android/scripts/verify-production-app-links.py
+
+      - name: Upload privacy-safe audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: android-api-production-audit-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/android-api-preflight.txt
+            ${{ runner.temp }}/android-api-before-release.txt
+            ${{ runner.temp }}/android-api-postdeploy.txt
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Remove ephemeral deployment state
+        if: always()
+        run: node -e "const fs=require('node:fs'); for (const path of ['.vercel','.next']) fs.rmSync(path,{recursive:true,force:true})"

@@ -6,11 +6,13 @@ on:
     paths:
       - "api/**"
       - ".github/workflows/api-ci.yml"
+      - ".github/workflows/android-api-production-release.yml"
   pull_request:
     branches: [main, staging, android-dev]
     paths:
       - "api/**"
       - ".github/workflows/api-ci.yml"
+      - ".github/workflows/android-api-production-release.yml"
 
 concurrency:
   group: api-ci-${{ github.ref }}
@@ -40,6 +42,9 @@ jobs:
 
       - name: Generate Prisma Client
         run: npx prisma generate
+
+      - name: Android production release contract
+        run: node scripts/test-verify-android-production-release.mjs
 
       - name: ESLint
         run: npm run lint
