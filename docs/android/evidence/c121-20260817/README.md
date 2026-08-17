@@ -32,7 +32,13 @@ API CI's three jobs, API E2E and the manual Production workflow now use only tho
 - Release-gate contract: one accepted and seventy rejected fixtures; RG-002 and RG-010 retain C121.
 - Node 22 local regression: dependency install/generation, zero High/Critical audit, ESLint, Prettier, TypeScript and production Next.js build pass; the six known Moderate Firebase Storage/uuid transitive findings remain explicit.
 
-Post-fix hosted API CI/E2E annotation acceptance is intentionally not claimed until the exact C121 commit runs. The final evidence update must record every job conclusion and annotation count, including skipped failure-only upload steps.
+The exact C121 implementation commit `a88b3cbb9381cf19ca11d52c23520d8427f3ab88` then passed the post-fix hosted acceptance:
+
+- [API CI run 32020590554](https://github.com/kt-git-1/med-manager_v3/actions/runs/32020590554): Lint/Typecheck 15/15, isolated PostgreSQL Tests 16/16 and Build 8/8 steps succeeded; every one of the three jobs has zero annotations.
+- [API E2E run 32020590555](https://github.com/kt-git-1/med-manager_v3/actions/runs/32020590555): all fifteen applicable steps succeeded, the two failure-only v7 upload steps were correctly skipped, and the job has zero annotations.
+- [Android CI run 32020590499](https://github.com/kt-git-1/med-manager_v3/actions/runs/32020590499): 35/35 steps succeeded and the job has zero annotations.
+
+This closes the observed Node 20 action-runtime warning class for the reviewed workflow source. It does not waive rechecking every exact final release job after a future action change.
 
 Official sources: [checkout v7.0.1](https://github.com/actions/checkout/releases/tag/v7.0.1), [setup-node v7.0.0](https://github.com/actions/setup-node/releases/tag/v7.0.0), [upload-artifact v7.0.1](https://github.com/actions/upload-artifact/releases/tag/v7.0.1), and [GitHub's Node 20 action-runtime deprecation notice](https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/).
 
