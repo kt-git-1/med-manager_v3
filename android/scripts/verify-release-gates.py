@@ -252,6 +252,7 @@ def verify_release_gates(
             _require("C110" in prerequisites, "RG-005 must retain the C110 store-ledger binding")
             _require("C111" in prerequisites, "RG-005 must retain the C111 ledger integration")
             _require("C112" in prerequisites, "RG-005 must retain the C112 generated handoff bridge")
+            _require("C113" in prerequisites, "RG-005 must retain the C113 retained-handoff verifier")
             _require(
                 any("Play Organization" in item and "D-U-N-S" in item for item in done_when),
                 "RG-005 must require verified Play Organization and D-U-N-S ownership",
@@ -271,6 +272,10 @@ def verify_release_gates(
             _require(
                 "docs/android/evidence/c112-20260817/README.md" in sources,
                 "RG-005 must retain C112 generated-handoff evidence",
+            )
+            _require(
+                "docs/android/evidence/c113-20260817/README.md" in sources,
+                "RG-005 must retain C113 retained-handoff evidence",
             )
             _require(
                 any("schema-v2 ledger" in item and "store hashes" in item for item in done_when),

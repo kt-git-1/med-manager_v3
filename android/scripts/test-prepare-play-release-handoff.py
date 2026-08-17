@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
+import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -14,6 +17,14 @@ assert SPEC is not None and SPEC.loader is not None
 MODULE = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
+VERIFIER_PATH = Path(__file__).with_name("verify-prepared-play-release-handoff.py")
+VERIFIER_SPEC = importlib.util.spec_from_file_location(
+    "verify_prepared_play_release_handoff", VERIFIER_PATH
+)
+assert VERIFIER_SPEC is not None and VERIFIER_SPEC.loader is not None
+VERIFIER = importlib.util.module_from_spec(VERIFIER_SPEC)
+sys.modules[VERIFIER_SPEC.name] = VERIFIER
+VERIFIER_SPEC.loader.exec_module(VERIFIER)
 
 
 def create_store_inputs(root: Path) -> dict[str, object]:
@@ -89,7 +100,7 @@ def main() -> None:
         aab.write_bytes(b"synthetic signed AAB contract")
         store_listing = create_store_inputs(root)
         report = valid_report(aab, store_listing)
-        evidence.write_text(json.dumps(report), encoding="utf-8")
+        evidence.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
         target = MODULE.prepare_handoff(aab, evidence, output_root, root)
         assert target.name == "v1.0.6-code1-" + "b" * 12
@@ -101,6 +112,74 @@ def main() -> None:
         }
         assert MODULE.prepare_handoff(aab, evidence, output_root, root) == target
         assert not list(output_root.glob(".handoff-*"))
+        retained = VERIFIER.verify_prepared_handoff(target, root)
+        assert retained["directory"] == target.name
+        assert retained["files"] == 3
+        cli = subprocess.run(
+            [
+                sys.executable,
+                str(VERIFIER_PATH),
+                "--handoff",
+                str(target),
+                "--repository-root",
+                str(root),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert cli.returncode == 0
+        assert "FILES=3" in cli.stdout
+
+        retained_fixtures = root / "retained-fixtures"
+
+        def copied_target(label: str) -> Path:
+            copy = retained_fixtures / label / target.name
+            copy.parent.mkdir(parents=True)
+            shutil.copytree(target, copy)
+            return copy
+
+        extra = copied_target("extra")
+        (extra / "unexpected.txt").write_text("unexpected\n", encoding="utf-8")
+        expect_failure("Retained extra file", lambda: VERIFIER.verify_prepared_handoff(extra, root))
+
+        checksum = copied_target("checksum")
+        (checksum / "SHA256SUMS").write_text("tampered\n", encoding="utf-8")
+        expect_failure(
+            "Retained checksum tamper", lambda: VERIFIER.verify_prepared_handoff(checksum, root)
+        )
+
+        noncanonical = copied_target("noncanonical")
+        noncanonical_evidence = noncanonical / "play-release-evidence.json"
+        noncanonical_bytes = json.dumps(report, separators=(",", ":")).encode("utf-8")
+        noncanonical_evidence.write_bytes(noncanonical_bytes)
+        noncanonical_aab = noncanonical / aab_name
+        (noncanonical / "SHA256SUMS").write_text(
+            MODULE.expected_checksum_text(
+                aab_name,
+                MODULE.file_sha256(noncanonical_aab),
+                hashlib.sha256(noncanonical_bytes).hexdigest(),
+            ),
+            encoding="utf-8",
+        )
+        expect_failure(
+            "Retained noncanonical evidence",
+            lambda: VERIFIER.verify_prepared_handoff(noncanonical, root),
+        )
+
+        icon = root / "docs/android/play-store-assets/icon-512.png"
+        icon_bytes = icon.read_bytes()
+        icon.write_bytes(b"changed icon")
+        expect_failure("Retained store drift", lambda: VERIFIER.verify_prepared_handoff(target, root))
+        icon.write_bytes(icon_bytes)
+
+        renamed = root / "retained-wrong-name"
+        shutil.copytree(target, renamed)
+        expect_failure("Retained wrong name", lambda: VERIFIER.verify_prepared_handoff(renamed, root))
+
+        symlink = root / "retained-symlink"
+        symlink.symlink_to(target, target_is_directory=True)
+        expect_failure("Retained symlink", lambda: VERIFIER.verify_prepared_handoff(symlink, root))
 
         original_aab = aab.read_bytes()
         aab.write_bytes(b"tampered")
@@ -163,7 +242,7 @@ def main() -> None:
             lambda: MODULE.prepare_handoff(aab, evidence, output_root, root),
         )
 
-    print("Play release handoff contract passed (1 accepted/idempotent, 11 rejected).")
+    print("Play release handoff contract passed (3 accepted/idempotent, 17 rejected).")
 
 
 if __name__ == "__main__":

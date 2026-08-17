@@ -107,7 +107,11 @@ def validate_store_listing(report: object, repository_root: Path) -> list[str]:
 
 
 def handoff_identity(
-    report: dict[str, object], aab: Path, repository_root: Path
+    report: dict[str, object],
+    aab: Path,
+    repository_root: Path,
+    *,
+    expected_artifact_name: str | None = None,
 ) -> tuple[str, str, int, str]:
     failures: list[str] = []
     source = report.get("source")
@@ -135,7 +139,10 @@ def handoff_identity(
         r"[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?", version_name
     ):
         failures.append("Release evidence versionName is invalid")
-    if artifact.get("fileName") != aab.name:
+    artifact_name = artifact.get("fileName")
+    if not isinstance(artifact_name, str) or not re.fullmatch(r"[A-Za-z0-9._-]+\.aab", artifact_name):
+        failures.append("Release evidence source AAB name is unsafe")
+    if artifact_name != (expected_artifact_name or aab.name):
         failures.append("Release evidence names a different source AAB")
     if not isinstance(expected_aab_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_aab_sha):
         failures.append("Release evidence AAB SHA-256 is malformed")

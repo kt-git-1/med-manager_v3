@@ -1264,6 +1264,7 @@ val verifyPlayReleaseHandoffContract by tasks.registering(org.gradle.api.tasks.E
     inputs.files(
         rootProject.file("scripts/prepare-play-release-handoff.py"),
         rootProject.file("scripts/test-prepare-play-release-handoff.py"),
+        rootProject.file("scripts/verify-prepared-play-release-handoff.py"),
     )
     commandLine("python3", rootProject.file("scripts/test-prepare-play-release-handoff.py").absolutePath)
 }
