@@ -109,6 +109,16 @@ def main() -> None:
         assert summary.scopes["api"] == len(MODULE.EXPECTED_API_PATHS)
         assert summary.scopes["android"] == len(MODULE.REQUIRED_ANDROID_PATHS)
 
+    try:
+        MODULE._validate_path_policy(
+            {f"android/overflow-{index}.txt" for index in range(MODULE.MAX_CHANGED_FILES + 1)},
+            {},
+        )
+    except MODULE.MergeSurfaceError as error:
+        assert f"exceeds {MODULE.MAX_CHANGED_FILES}" in str(error)
+    else:
+        raise AssertionError("Changed-file ceiling unexpectedly passed")
+
     cases = [
         ("iOS drift", lambda root: write(root, "ios/MedicationApp/Unexpected.swift")),
         ("unreviewed API", lambda root: write(root, "api/app/api/unreviewed/route.ts")),
@@ -144,7 +154,7 @@ def main() -> None:
         else:
             raise AssertionError("Diverged main unexpectedly passed")
 
-    print(f"Main merge surface contract passed: accepted=1 rejected={len(cases) + 1}")
+    print(f"Main merge surface contract passed: accepted=1 rejected={len(cases) + 2}")
 
 
 if __name__ == "__main__":

@@ -48,6 +48,7 @@ Normalization resizes both complete device captures to 1080 x 2400 for diagnosti
 - Full `ModeSelectScreenTest`: 6/6 passed on API 35, including the exact published fixture and existing canonical copy, interaction, 200% reachability and Analytics-consent cases.
 - Complete API-35 connected UI suite: 282/282 passed in four retained shards (66 + 59 + 80 + 77), with zero failure, error or skip and automatic package cleanup.
 - Debug JVM: 216/216; Release JVM: 213/213; Debug Lint, Debug/Release assembly, Release APK compatibility, deterministic Play assets and release-gate ledger verification all passed.
+- The first hosted run stopped at the older 1,250-file long-lived-branch ceiling with 1,254 reviewed paths. The bound is raised to 1,400 for the six remaining evidence pairs, and the contract explicitly rejects 1,401 while retaining exact scope, blob, byte and zero-iOS-drift rules; the post-fix hosted result is checked before delivery.
 - Existing dark/200% tests remain part of UI-001; physical spoken TalkBack and Play-installed evidence remain external and C123 closes no RG gate.
 
 ## SHA-256
