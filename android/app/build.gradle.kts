@@ -411,6 +411,18 @@ val verifyUploadKeystoreContract by tasks.registering(org.gradle.api.tasks.Exec:
     commandLine("bash", rootProject.file("scripts/test-verify-upload-keystore.sh").absolutePath)
 }
 
+val verifyAndroidCiRuntimeContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Locks Android CI to reviewed Node 24 actions, least privilege and Java 17."
+    inputs.files(
+        rootProject.file("scripts/verify-android-ci-runtime.py"),
+        rootProject.file("scripts/test-verify-android-ci-runtime.py"),
+        rootProject.file("../.github/workflows/android-ci.yml"),
+    )
+    environment("PYTHONDONTWRITEBYTECODE", "1")
+    commandLine("python3", rootProject.file("scripts/test-verify-android-ci-runtime.py").absolutePath)
+}
+
 val verifyMainMergeSurfaceContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
     group = "verification"
     description = "Exercises accepted and rejected android-dev to main committed merge surfaces."

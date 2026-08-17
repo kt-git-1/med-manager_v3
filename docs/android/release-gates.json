@@ -4,7 +4,7 @@
     "iosRelease": "1.0.6 Build 51",
     "mainCommit": "432b34c",
     "androidBranch": "android-dev",
-    "checkpoint": "C114"
+    "checkpoint": "C115"
   },
   "partialRequirementIds": [
     "XP-004",
@@ -361,11 +361,13 @@
         "C106",
         "C107",
         "C108",
-        "C110"
+        "C110",
+        "C115"
       ],
       "doneWhen": [
         "Always-available, reusable and region-independent caregiver review credentials select the retained dedicated QA patient without a one-time linking code.",
         "Closed testing, crash and ANR review complete with no unresolved P0 or P1 defect.",
+        "The exact final commit passes the immutable Node 24 Android CI runtime contract and hosted Android CI without an action-runtime deprecation warning.",
         "Latest main is rebaselined, every release gate passes and the reviewed zero-iOS-drift merge is explicitly approved."
       ],
       "evidenceSources": [
@@ -375,7 +377,8 @@
         "docs/android/evidence/c106-20260817/README.md",
         "docs/android/evidence/c107-20260817/README.md",
         "docs/android/evidence/c108-20260817/README.md",
-        "docs/android/evidence/c110-20260817/README.md"
+        "docs/android/evidence/c110-20260817/README.md",
+        "docs/android/evidence/c115-20260817/README.md"
       ],
       "backlogTitle": "Closed test, final rebaseline and main merge"
     }

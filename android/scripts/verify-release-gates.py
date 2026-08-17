@@ -352,6 +352,7 @@ def verify_release_gates(
             _require("C107" in prerequisites, "RG-010 must retain the C107 listing contract")
             _require("C108" in prerequisites, "RG-010 must retain the C108 renderer contract")
             _require("C110" in prerequisites, "RG-010 must retain the C110 store-ledger binding")
+            _require("C115" in prerequisites, "RG-010 must retain the C115 Android CI runtime contract")
             _require(
                 any("reusable" in item and "region-independent" in item for item in done_when),
                 "RG-010 must require reusable region-independent Play review access",
@@ -367,6 +368,18 @@ def verify_release_gates(
             _require(
                 "docs/android/evidence/c110-20260817/README.md" in sources,
                 "RG-010 must retain C110 store-ledger evidence",
+            )
+            _require(
+                "docs/android/evidence/c115-20260817/README.md" in sources,
+                "RG-010 must retain C115 Android CI runtime evidence",
+            )
+            _require(
+                any(
+                    "Node 24 Android CI runtime contract" in item
+                    and "deprecation warning" in item
+                    for item in done_when
+                ),
+                "RG-010 must require a warning-free immutable Android CI runtime",
             )
 
         backlog_checked, backlog_title = backlog_gates[gate_id]

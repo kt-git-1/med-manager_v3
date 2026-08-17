@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C114
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C115
 - Baseline date: 2026-08-17
-- Current action: C114 compares a Google Play Developer API Bundle upload/list response with the C113-retained handoff, requires exact `versionCode` and upload-payload SHA-256, and emits an atomic deterministic receipt outside the three-file handoff without credentials or edit identifiers. RG-005 directly retains C110-C114. Organization ownership, release-owner signing and the real API response remain external.
+- Current action: C115 removes the hosted Android CI Node 20/deprecated-action boundary by pinning official Node 24 checkout/Java/Gradle actions to reviewed full release SHAs, granting only `contents: read`, disabling checkout credential persistence and enforcing the exact runtime through one accepted/twenty-three rejected fixtures. RG-010 retains C115 for the final commit; product/release external gates remain open.
 
 ## Authority order
 

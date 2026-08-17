@@ -26,6 +26,8 @@ C113 adds an upload-time retained-handoff verifier that rechecks directory/file 
 
 C114 adds a post-upload Play Bundle-response verifier that binds the official API `versionCode` and upload-payload SHA-256 to that freshly reverified handoff and writes only a deterministic secret-free receipt outside it.
 
+C115 replaces the three deprecated/Node 20 Android CI action majors with full-SHA-pinned official Node 24 releases, removes unnecessary token persistence/write authority and makes runtime drift fail hosted CI.
+
 ## 2. What is reusable
 
 - Kotlin/Compose Gradle project, application identity and build workflow
@@ -80,6 +82,7 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Resolved C112 | C111 generated a real ledger, but handoff tests still consumed a separately hand-built report | The production-generated JSON creates and idempotently reopens the exact AAB/ledger/SHA256SUMS handoff; changing the store icon between phases is rejected | Run the same graph with owner-managed input, then compare retained bytes and hashes in Play Console |
 | Resolved C113 | A retained/transferred handoff could only run generic `shasum`, which did not reapply ledger naming/schema/store identity | Read-only verifier revalidates exact directory/files, canonical ledger, AAB/evidence/checksums and current store hashes; six retained drift classes are rejected | Execute immediately before owner upload and retain Console-side comparison; local revalidation cannot prove upload selection |
 | Resolved C114 | C113 could not prove that Play received the selected handoff AAB | Strict Google Play Developer API Bundle parsing requires one matching versionCode and upload-payload SHA-256, reruns C113 and writes an atomic secret-free receipt outside the handoff | Obtain the real response under owner-controlled Play authority; synthetic contract evidence does not prove upload, processing, signing or installation |
+| Resolved C115 | Successful Android CI still emitted Node 20 forced-runtime and setup-java deprecation warnings, while action majors were mutable | Official Node 24 checkout/Java/Gradle releases are full-SHA pinned; contents-only permission, no persisted credential, Temurin 17 and exact trigger/action inventory are contract-locked with twenty-three rejections | Rerun the exact final commit in hosted CI and require no action-runtime deprecation warning; this does not close product, device or Play gates |
 
 ## 4. Latest-main behavior that must be carried forward
 

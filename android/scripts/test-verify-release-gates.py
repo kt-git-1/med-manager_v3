@@ -445,4 +445,41 @@ rejected(
     ),
 )
 
-print("Release gate contract passed: accepted=1 rejected=35")
+rejected(
+    "closed-test-ci-runtime-prerequisite",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][9].update(
+            prerequisites=[item for item in value["gates"][9]["prerequisites"] if item != "C115"]
+        ),
+    ),
+)
+
+rejected(
+    "closed-test-ci-runtime-evidence",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][9].update(
+            evidenceSources=[
+                item
+                for item in value["gates"][9]["evidenceSources"]
+                if item != "docs/android/evidence/c115-20260817/README.md"
+            ]
+        ),
+    ),
+)
+
+rejected(
+    "closed-test-ci-runtime-condition",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][9].update(
+            doneWhen=[
+                item.replace("Node 24 Android CI runtime contract", "legacy Android CI runtime")
+                for item in value["gates"][9]["doneWhen"]
+            ]
+        ),
+    ),
+)
+
+print("Release gate contract passed: accepted=1 rejected=38")
