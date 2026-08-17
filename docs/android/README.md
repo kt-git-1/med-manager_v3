@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C106
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C107
 - Baseline date: 2026-08-17
-- Current action: C106 adds the dedicated public `/account-deletion` route, explicit secure-handling disclosure and a machine-readable Play review-access handoff. Source-mode CI proves the repository path without secrets; release mode stays fail-closed until the Organization legal name is verified and published, the exact Play artifact accepts reusable region-independent caregiver credentials, and the retained dedicated QA patient can be selected without issuing a one-time link code. The page changes remain undeployed on `android-dev` until the approved main/API release path runs.
+- Current action: C107 replaces the obsolete initial marketing screenshot set with eight current post-parity production-Compose surfaces and pins their exact synthetic evidence sources. CI now cross-checks Japanese copy, public URLs, privacy/health/ads/billing claims and shipping Android identity, then proves the padded JPEG pixels still derive from those sources. Live `/account-deletion`, Play preview, signed-artifact comparison and Console submission remain external.
 
 ## Authority order
 

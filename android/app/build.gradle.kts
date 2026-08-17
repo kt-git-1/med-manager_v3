@@ -344,6 +344,7 @@ val verifyMainMergeSurfaceContract by tasks.registering(org.gradle.api.tasks.Exe
         rootProject.file("scripts/verify-main-merge-surface.py"),
         rootProject.file("scripts/test-verify-main-merge-surface.py"),
     )
+    environment("PYTHONDONTWRITEBYTECODE", "1")
     commandLine("python3", rootProject.file("scripts/test-verify-main-merge-surface.py").absolutePath)
 }
 
@@ -376,6 +377,7 @@ val verifyReleaseGatesContract by tasks.registering(org.gradle.api.tasks.Exec::c
         rootProject.file("scripts/test-verify-release-gates.py"),
         rootProject.file("../docs/android/release-gates.json"),
     )
+    environment("PYTHONDONTWRITEBYTECODE", "1")
     commandLine("python3", rootProject.file("scripts/test-verify-release-gates.py").absolutePath)
 }
 
@@ -641,18 +643,63 @@ val verifyReleaseApkCompatibility by tasks.registering(org.gradle.api.tasks.Exec
     )
 }
 
+val verifyPlayStoreListingContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Exercises accepted and rejected Play store listing contract fixtures."
+    inputs.files(
+        rootProject.file("scripts/verify-play-store-listing.py"),
+        rootProject.file("scripts/test-verify-play-store-listing.py"),
+        rootProject.file("../docs/android/play-store-listing-ja.md"),
+        rootProject.file("../docs/android/play-store-assets/phone-ja-JP/sources.tsv"),
+    )
+    environment("PYTHONDONTWRITEBYTECODE", "1")
+    commandLine("python3", rootProject.file("scripts/test-verify-play-store-listing.py").absolutePath)
+}
+
+val verifyPlayStoreListing by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    group = "verification"
+    description = "Fails unless Play listing copy, URLs, declarations and screenshot source map match shipping Android surfaces."
+    dependsOn(verifyPlayStoreListingContract)
+    inputs.files(
+        rootProject.file("scripts/verify-play-store-listing.py"),
+        rootProject.file("scripts/test-verify-play-store-listing.py"),
+        rootProject.file("../docs/android/play-store-listing-ja.md"),
+        rootProject.file("../docs/android/play-store-assets/phone-ja-JP/sources.tsv"),
+        project.file("src/main/AndroidManifest.xml"),
+        project.file("src/main/res/values/strings.xml"),
+        project.file("build.gradle.kts"),
+    )
+    outputs.upToDateWhen { false }
+    environment("PYTHONDONTWRITEBYTECODE", "1")
+    commandLine(
+        "python3",
+        rootProject.file("scripts/verify-play-store-listing.py").absolutePath,
+        "--repository-root",
+        rootProject.projectDir.parentFile.absolutePath,
+    )
+}
+
 val verifyPlayStoreAssets by tasks.registering {
     group = "verification"
-    description = "Validates Play listing text limits, phone screenshots, store icon and cross-platform icon parity."
+    description = "Validates source-bound Play phone screenshots, store icon and cross-platform icon parity."
+    dependsOn(verifyPlayStoreListing)
 
     val listingFile = rootProject.file("../docs/android/play-store-listing-ja.md")
     val assetRoot = rootProject.file("../docs/android/play-store-assets")
     val phoneDirectory = assetRoot.resolve("phone-ja-JP")
+    val screenshotSourceMapFile = phoneDirectory.resolve("sources.tsv")
     val storeIconFile = assetRoot.resolve("icon-512.png")
     val featureGraphicFile = assetRoot.resolve("feature-graphic-1024x500.jpg")
     val iosIconFile = rootProject.file("../ios/MedicationApp/Assets.xcassets/AppIcon.appiconset/med_1024_transparent.png")
     val androidForegroundFile = project.file("src/main/res/drawable-nodpi/ic_launcher_foreground.png")
-    inputs.files(listingFile, storeIconFile, featureGraphicFile, iosIconFile, androidForegroundFile)
+    inputs.files(
+        listingFile,
+        screenshotSourceMapFile,
+        storeIconFile,
+        featureGraphicFile,
+        iosIconFile,
+        androidForegroundFile,
+    )
     inputs.dir(phoneDirectory)
 
     doLast {
@@ -666,10 +713,14 @@ val verifyPlayStoreAssets by tasks.registering {
             "07-caregiver-history.jpg",
             "08-caregiver-settings.jpg",
         )
-        val screenshotFiles = phoneDirectory.listFiles()
-            ?.filter { it.isFile }
+        val directoryFiles = phoneDirectory.listFiles()
+            ?.filter { it.isFile && !it.name.startsWith(".") }
             ?.sortedBy { it.name }
             .orEmpty()
+        require(directoryFiles.map { it.name } == expectedScreenshots.sorted() + "sources.tsv") {
+            "Play phone asset directory contains an unexpected or missing file"
+        }
+        val screenshotFiles = directoryFiles.filter { it.extension.lowercase() == "jpg" }
         require(screenshotFiles.map { it.name } == expectedScreenshots) {
             "Expected exactly the ordered Play phone screenshot set: ${expectedScreenshots.joinToString()}"
         }
@@ -679,6 +730,74 @@ val verifyPlayStoreAssets by tasks.registering {
                 "Play phone screenshot must be 1350 x 2400: $file is ${image.width} x ${image.height}"
             }
             require(!image.colorModel.hasAlpha()) { "Play JPEG must not contain alpha: $file" }
+        }
+
+        val sourceMappings = screenshotSourceMapFile.readLines()
+            .filter(String::isNotBlank)
+            .mapIndexed { index, line ->
+                val fields = line.split('\t')
+                require(fields.size == 2 && fields.all { it.isNotBlank() }) {
+                    "Invalid screenshot source mapping at line ${index + 1}"
+                }
+                fields[0] to fields[1]
+            }
+        require(sourceMappings.map { it.first } == expectedScreenshots) {
+            "Screenshot source map output order drifted"
+        }
+        require(sourceMappings.map { it.second }.distinct().size == expectedScreenshots.size) {
+            "Each Play screenshot must have one unique evidence source"
+        }
+        val repositoryRoot = rootProject.projectDir.parentFile.canonicalFile
+        sourceMappings.forEach { (outputName, sourcePath) ->
+            require(
+                sourcePath.startsWith("docs/android/evidence/") &&
+                    sourcePath.endsWith(".png") &&
+                    sourcePath.split('/').none { it == ".." },
+            ) { "Unsafe or non-evidence screenshot source: $sourcePath" }
+            val sourceFile = repositoryRoot.resolve(sourcePath).canonicalFile
+            require(sourceFile.toPath().startsWith(repositoryRoot.toPath()) && sourceFile.isFile) {
+                "Screenshot evidence source does not exist: $sourcePath"
+            }
+            val source = requireNotNull(ImageIO.read(sourceFile)) { "Unreadable screenshot source: $sourcePath" }
+            require(source.width == 1080 && source.height == 2400) {
+                "Screenshot source must be 1080 x 2400: $sourcePath is ${source.width} x ${source.height}"
+            }
+            val output = requireNotNull(ImageIO.read(phoneDirectory.resolve(outputName))) {
+                "Unreadable Play screenshot: $outputName"
+            }
+            var channelDifference = 0L
+            var comparedChannels = 0L
+            for (y in 0 until source.height step 4) {
+                for (x in 0 until source.width step 4) {
+                    val sourceRgb = source.getRGB(x, y)
+                    val outputRgb = output.getRGB(x + 135, y)
+                    channelDifference += Math.abs((sourceRgb shr 16 and 0xff) - (outputRgb shr 16 and 0xff))
+                    channelDifference += Math.abs((sourceRgb shr 8 and 0xff) - (outputRgb shr 8 and 0xff))
+                    channelDifference += Math.abs((sourceRgb and 0xff) - (outputRgb and 0xff))
+                    comparedChannels += 3
+                }
+            }
+            val sourceMeanDifference = channelDifference.toDouble() / comparedChannels
+            require(sourceMeanDifference <= 1.5) {
+                "$outputName no longer derives from $sourcePath (mean RGB difference $sourceMeanDifference)"
+            }
+
+            var paddingDifference = 0L
+            var paddingChannels = 0L
+            for (y in 0 until output.height step 4) {
+                for (x in 0 until output.width step 4) {
+                    if (x >= 128 && x < 1222) continue
+                    val rgb = output.getRGB(x, y)
+                    paddingDifference += Math.abs((rgb shr 16 and 0xff) - 0xf3)
+                    paddingDifference += Math.abs((rgb shr 8 and 0xff) - 0xfa)
+                    paddingDifference += Math.abs((rgb and 0xff) - 0xfc)
+                    paddingChannels += 3
+                }
+            }
+            val paddingMeanDifference = paddingDifference.toDouble() / paddingChannels
+            require(paddingMeanDifference <= 1.5) {
+                "$outputName horizontal padding drifted from #F3FAFC (mean RGB difference $paddingMeanDifference)"
+            }
         }
 
         val storeIcon = requireNotNull(ImageIO.read(storeIconFile)) { "Unreadable Play store icon" }
@@ -704,17 +823,6 @@ val verifyPlayStoreAssets by tasks.registering {
                 .contentEquals(androidForeground.getRGB(0, 0, width, height, null, 0, width)),
         ) { "Android launcher foreground pixels drifted from the shipping iOS icon" }
 
-        val textBlocks = Regex("```text\\R(.*?)\\R```", setOf(RegexOption.DOT_MATCHES_ALL))
-            .findAll(listingFile.readText())
-            .map { it.groupValues[1] }
-            .toList()
-        require(textBlocks.size == 4) { "Expected app name, short description, full description and release-note blocks" }
-        val limits = listOf(30, 80, 4_000, 500)
-        textBlocks.zip(limits).forEachIndexed { index, (text, limit) ->
-            require(text.codePointCount(0, text.length) <= limit) {
-                "Play text block ${index + 1} exceeds its $limit-character limit"
-            }
-        }
     }
 }
 

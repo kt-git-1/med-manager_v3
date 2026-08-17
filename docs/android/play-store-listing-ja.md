@@ -6,7 +6,7 @@
 
 **パッケージ:** `com.afterlifearchive.medmanager`
 
-**更新基準日:** 2026-07-15
+**更新基準日:** 2026-08-17（C107）
 
 この文書は Play Console に転記する確定候補です。公開前に、実際にアップロードする署名済み AAB、課金状態、Firebase 設定、公開 Web ページと一致するかを再確認します。ストア掲載情報はテストを含む全トラックで共有されます。
 
@@ -92,10 +92,10 @@ Data safety の個別回答は [`play-console-declarations.md`](./play-console-d
 | プライバシーポリシー | `https://www.okusuri-mimamori.com/privacy` |
 | 利用規約 | `https://www.okusuri-mimamori.com/terms` |
 | サポート | `https://www.okusuri-mimamori.com/support` |
-| アカウント削除URL | `https://www.okusuri-mimamori.com/support#section-3` |
+| アカウント削除URL | `https://www.okusuri-mimamori.com/account-deletion`（C106の本番反映後に使用） |
 | サポートメール | `support@okusuri-mimamori.com` |
 
-`/account-deletion` は2026-07-15時点で404だったため使用しません。公開直前に上記URLのHTTP 200、本文、メールリンクを再確認します。
+`/account-deletion` は`android-dev`に実装済みですが、2026-08-17時点の本番には未反映です。Play Consoleへ入力する前に、承認済みのmainマージ・デプロイ後のURLが未ログインでHTTP 200となり、アプリ名、削除対象、保持対象、アプリ内手順、メールリンクを表示することを確認します。旧サポートページ内アンカーは新規入力に使用しません。
 
 ## 5. スクリーンショットの順序
 
@@ -104,15 +104,15 @@ Data safety の個別回答は [`play-console-declarations.md`](./play-console-d
 | 順番 | ファイル | 伝える機能 | 代替テキスト（140文字以内） |
 |---:|---|---|---|
 | 1 | `01-mode-select.jpg` | 本人・家族の2モード | 本人として服薬を記録するモードと、家族として薬と在庫を管理するモードを選ぶ画面 |
-| 2 | `02-patient-today.jpg` | 本人の今日の予定と記録 | 今日飲む薬、服薬時刻、薬の一覧、時間帯をまとめて記録するボタンを表示した本人モードの画面 |
-| 3 | `03-patient-history.jpg` | 本人の履歴と進捗 | 今日と今週の服薬記録の進み具合をカードと曜日別の状態で確認する履歴画面 |
-| 4 | `04-caregiver-today.jpg` | 家族の見守り状況 | 家族が見守る方の次の服薬、今日の進み具合、頓服薬、服薬済みの予定を確認する画面 |
+| 2 | `02-patient-today.jpg` | 本人の今日の予定と記録 | 今日の次の服薬時刻とお薬、時間帯の記録操作、今日の予定を表示した本人モードの画面 |
+| 3 | `03-patient-history.jpg` | 本人の履歴と継続記録 | 今日の記録状況、連続記録日数、今週の記録日を確認する本人モードの履歴画面 |
+| 4 | `04-caregiver-today.jpg` | 家族の見守り状況 | 家族が見守る方の飲み忘れ、今日の進み具合、時間帯ごとのお薬と代理記録操作を確認する画面 |
 | 5 | `05-caregiver-medications.jpg` | 薬と服薬予定の管理 | 定時薬と頓服薬の件数、用量、服薬時間、残量を一覧で管理する画面 |
 | 6 | `06-caregiver-inventory.jpg` | 在庫・補充管理 | 補充が必要な薬、残量、残り日数を確認し、1週間分を補充できる在庫画面 |
 | 7 | `07-caregiver-history.jpg` | 家族の月間履歴 | 月間カレンダーから日付を選び、服薬済み、未達、未服用、頓服の状態を確認する画面 |
-| 8 | `08-caregiver-settings.jpg` | 連携と時間設定 | 見守る方の選択、6桁連携コード、連携解除、患者削除、服薬時間設定を表示した画面 |
+| 8 | `08-caregiver-settings.jpg` | 連携と時間設定 | 見守る方の選択、連携コード発行、連携解除、患者削除、服薬時間設定を表示した画面 |
 
-実機・Play内部テスト版を撮り直す場合も、この順序、fixture、明るいテーマ、日本語を維持し、ステータスバーに通知や通信事業者名を表示しません。
+8枚の正規元画像は[`play-store-assets/phone-ja-JP/sources.tsv`](./play-store-assets/phone-ja-JP/sources.tsv)で固定します。すべて最終UI再現工程の生産Compose・合成データ証跡です。実機・Play内部テスト版を撮り直す場合も、この順序、fixture、明るいテーマ、日本語を維持し、ステータスバーに通知や通信事業者名を表示しません。
 
 ## 6. グラフィックアセット要件
 

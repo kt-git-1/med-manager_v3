@@ -260,6 +260,7 @@ def verify_release_gates(
 
         if gate_id == "RG-009":
             _require("C106" in prerequisites, "RG-009 must retain the C106 policy-readiness contract")
+            _require("C107" in prerequisites, "RG-009 must retain the C107 listing-readiness contract")
             _require(
                 "docs/android/play-review-access.json" in sources,
                 "RG-009 must retain the machine-readable Play review-access handoff",
@@ -269,15 +270,28 @@ def verify_release_gates(
                 "RG-009 must retain C106 policy-readiness evidence",
             )
             _require(
+                "docs/android/evidence/c107-20260817/README.md" in sources,
+                "RG-009 must retain C107 listing-readiness evidence",
+            )
+            _require(
                 any("legal organization" in item and "account-deletion" in item for item in done_when),
                 "RG-009 must require verified developer identity and dedicated deletion URL",
+            )
+            _require(
+                any("source-bound Japanese listing" in item and "Play preview" in item for item in done_when),
+                "RG-009 must require exact source-bound listing preview evidence",
             )
 
         if gate_id == "RG-010":
             _require("C106" in prerequisites, "RG-010 must retain the C106 review-access contract")
+            _require("C107" in prerequisites, "RG-010 must retain the C107 listing contract")
             _require(
                 any("reusable" in item and "region-independent" in item for item in done_when),
                 "RG-010 must require reusable region-independent Play review access",
+            )
+            _require(
+                "docs/android/evidence/c107-20260817/README.md" in sources,
+                "RG-010 must retain C107 listing evidence",
             )
 
         backlog_checked, backlog_title = backlog_gates[gate_id]

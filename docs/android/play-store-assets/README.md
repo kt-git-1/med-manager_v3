@@ -12,7 +12,7 @@
 
 The original 1080 x 2400 emulator captures cannot be uploaded directly because the 2400 px long side is more than twice the 1080 px short side. The padded 1350 x 2400 exports preserve the full UI and satisfy the Play screenshot ratio rule.
 
-Source mapping and Japanese alt text are maintained in [`../play-store-listing-ja.md`](../play-store-listing-ja.md). If UI behavior changes, recapture the source fixture and regenerate the corresponding store image; do not edit medical state or copy only in the marketing export.
+Exact source mapping is machine-readable in [`phone-ja-JP/sources.tsv`](phone-ja-JP/sources.tsv), and Japanese alt text is maintained in [`../play-store-listing-ja.md`](../play-store-listing-ja.md). C107 refreshes all eight exports from the latest available post-parity production-Compose evidence for each primary surface instead of retaining the original C01 marketing set. If UI behavior changes, recapture the deterministic source fixture, update the mapping and regenerate the corresponding store image; do not edit medical state or copy only in the marketing export.
 
 `icon-512.png` is the Play store icon export from the shipping iOS app-icon source. The same source is wired into Android legacy-density and API-26 adaptive launcher resources so the store, launcher and iOS identity do not drift.
 

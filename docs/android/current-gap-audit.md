@@ -10,6 +10,8 @@ The Android project contains production Patient and Caregiver flows through Gate
 
 C106 additionally closes the repository-verifiable Play User Data/Health review boundary: the dedicated deletion route and secure-handling disclosure are implemented, while release mode still refuses missing legal Organization identity, undeployed HTTP evidence, region-bound/one-time review access or absent exact-artifact verification. No credential or patient identifier is stored in the handoff.
 
+C107 closes the stale Play marketing handoff found after that audit: all eight Japanese phone images now use current production-Compose fixture evidence, their source paths/order are committed, the obsolete caregiver next-dose hero is gone, and listing copy/configuration plus image derivation fail closed. Live public-URL, signed-artifact and Play Console preview evidence remains external.
+
 ## 2. What is reusable
 
 - Kotlin/Compose Gradle project, application identity and build workflow
@@ -56,6 +58,7 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Resolved C104 | Production database URLs did not authenticate the remote TLS endpoint consistently across `pg`, Prisma migration and the C98 audit | Runtime pins the reviewed Supabase root and enables Node CA/hostname verification; the workflow fingerprints an ephemeral official CA and prepares exact `verify-full`/absolute-root URLs; contracts reject weaker modes, override drift and secret reuse | Enable Supabase incoming-SSL enforcement only in an approved restart window, rerun verify-full count-only preflight and keep RG-002 open until that and the authorized migration/deploy pass |
 | Resolved C105 | Release planning assumed Play signing/track surfaces existed and did not encode the Health-app Organization-account prerequisite | Live read-only Console reaches account signup; current official policy requires Health/Medical apps to use Organization ownership with D-U-N-S-backed verification; a dedicated privacy-safe onboarding contract rejects Personal-account shortcuts | Release owner establishes and verifies the legal organization/account, then creates the exact package and signing identities; no signup/payment/identity/app action is locally complete |
 | Resolved C106 | Public deletion and Play review-access requirements were spread across a support anchor and narrative notes | Dedicated `/account-deletion`, privacy security handling, a secret-free machine handoff and source/release verifier now reject URL, transport, storage, identity and reusable-access drift | Merge/deploy the route, publish the verified Organization legal name, verify reusable region-independent credentials on the exact Play artifact and then submit Console declarations |
+| Resolved C107 | The store handoff retained original C01 images and an obsolete Caregiver Today next-dose surface after UI parity changed | Eight exact post-parity Compose evidence sources, refreshed padded JPEGs and copy/config/pixel-level contracts reject stale listing identity, claims, ordering, source or export drift | Verify live URLs and exact signed build in Play preview; retain Console screenshots before submission |
 
 ## 4. Latest-main behavior that must be carried forward
 

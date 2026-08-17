@@ -4,7 +4,7 @@
     "iosRelease": "1.0.6 Build 51",
     "mainCommit": "432b34c",
     "androidBranch": "android-dev",
-    "checkpoint": "C106"
+    "checkpoint": "C107"
   },
   "partialRequirementIds": [
     "XP-004",
@@ -298,18 +298,21 @@
         "C87",
         "C88",
         "C89",
-        "C106"
+        "C106",
+        "C107"
       ],
       "doneWhen": [
         "Current SDK disclosures and the exact signed artifact are reconciled with the worksheet.",
         "The verified legal organization identity is present in the public privacy policy and the dedicated /account-deletion URL passes the release-mode contract.",
+        "The exact source-bound Japanese listing and all eight current screenshots match the signed build in Play preview.",
         "Data safety, Health apps, account deletion and store declarations are submitted and recorded."
       ],
       "evidenceSources": [
         "docs/android/play-console-declarations.md",
         "docs/android/play-release-runbook.md",
         "docs/android/play-review-access.json",
-        "docs/android/evidence/c106-20260817/README.md"
+        "docs/android/evidence/c106-20260817/README.md",
+        "docs/android/evidence/c107-20260817/README.md"
       ],
       "backlogTitle": "Play Console Data safety and Health declarations"
     },
@@ -337,7 +340,8 @@
       "prerequisites": [
         "C96",
         "C98",
-        "C106"
+        "C106",
+        "C107"
       ],
       "doneWhen": [
         "Always-available, reusable and region-independent caregiver review credentials select the retained dedicated QA patient without a one-time linking code.",
@@ -348,7 +352,8 @@
         "docs/android/play-release-runbook.md",
         "docs/android/play-review-access.json",
         "docs/android/evidence/c96-20260817/README.md",
-        "docs/android/evidence/c106-20260817/README.md"
+        "docs/android/evidence/c106-20260817/README.md",
+        "docs/android/evidence/c107-20260817/README.md"
       ],
       "backlogTitle": "Closed test, final rebaseline and main merge"
     }

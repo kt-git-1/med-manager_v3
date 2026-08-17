@@ -239,4 +239,27 @@ rejected(
     ),
 )
 
-print("Release gate contract passed: accepted=1 rejected=18")
+rejected(
+    "play-listing-readiness-prerequisite",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][8].update(
+            prerequisites=[item for item in value["gates"][8]["prerequisites"] if item != "C107"]
+        ),
+    ),
+)
+
+rejected(
+    "play-listing-preview-contract",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][8].update(
+            doneWhen=[
+                item.replace("Play preview", "local preview")
+                for item in value["gates"][8]["doneWhen"]
+            ]
+        ),
+    ),
+)
+
+print("Release gate contract passed: accepted=1 rejected=20")
