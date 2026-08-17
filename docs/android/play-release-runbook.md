@@ -135,6 +135,20 @@ python3 scripts/verify-prepared-play-release-handoff.py \
 
 The C113 verifier requires the ledger-derived directory/file names, canonical schema-v2 bytes, exact AAB/evidence/checksums and current ordered store hashes. Treat the directory as indivisible and select only its named AAB in Play Console. If any input changes or verification fails, run `clean` and rebuild the complete handoff.
 
+For the owner-controlled upload, use approved Google Play Developer API v3 tooling that returns the official [`Bundle`](https://developers.google.com/android-publisher/api-ref/rest/v3/edits.bundles) resource, or retain the raw body from `edits.bundles.list` for that active edit. The resource formally contains `versionCode`, SHA-1 and the SHA-256 of the upload payload. Keep OAuth credentials, authorization headers, service-account material, package/edit URLs and command history out of the repository and captured output; pass only the JSON response body to the verifier.
+
+After Play accepts the upload response, run from `android/` with the exact same retained handoff. The receipt path must remain outside its three-file directory and use the handoff-derived name:
+
+```bash
+python3 scripts/verify-play-upload-receipt.py \
+  --handoff app/build/outputs/play-release/v<version>-code<versionCode>-<commit12> \
+  --bundle-response /private/path/play-bundle-response.json \
+  --output app/build/outputs/play-upload-receipts/v<version>-code<versionCode>-<commit12>.play-upload-receipt.json \
+  --repository-root ..
+```
+
+C114 reruns the complete C113 retained-handoff verification, accepts only the official direct Bundle object or bundles-list envelope, requires exactly one matching `versionCode` and the same upload-payload SHA-256, then atomically writes a deterministic receipt containing no token, edit ID or account identity. A conflicting prior receipt, duplicate versionCode, malformed/extra API field, wrong hash, unsafe path or handoff drift fails closed. Retain the raw response and generated receipt in the release-owner evidence store; neither the synthetic CI contract nor a local receipt proves Play processing, app signing, track assignment or installation.
+
 `verifyProductionRuntime` also prevents privileged Supabase credentials from entering the client artifact. `SUPABASE_ANON_KEY` may contain a current `sb_publishable_...` key or a legacy JWT whose issuer is `supabase` and sole role is `anon`; `sb_secret_...`, legacy `service_role`, wrong-issuer, malformed and opaque-long values fail closed. The synthetic `verifyRuntimeCredentialSafety` task exercises this contract without reading or logging any real key.
 
 `app/gradle.lockfile` strictly pins `releaseRuntimeClasspath` and the isolated `bundletoolCli` verifier classpath. It currently represents 174 runtime coordinates and 17 bundletool coordinates, with four shared. Never hand-edit it. For an intentional app dependency update, use `./gradlew :app:dependencies --configuration releaseRuntimeClasspath --write-locks`; for a bundletool update, use the same command with `--configuration bundletoolCli`. Review every lock diff and rerun SDK, APK, AAB, disclosure and complete CI gates. Missing or stale state fails closed.
@@ -153,13 +167,14 @@ Before upload, also verify:
 - No production secret appears in tracked files or Gradle output.
 - `bundleSignedRelease` reports that the AAB certificate matches the registered Play upload certificate; independently compare the reported fingerprint with Play Console before upload.
 - `SHA256SUMS` passes inside the generated three-file handoff, and its JSON SHA/certificate/version/commit match the named AAB selected for upload; retain the whole directory unchanged.
+- The real Play Developer API Bundle response reports the same `versionCode` and upload-payload SHA-256; the C114 receipt is outside the handoff, deterministic and retained with the raw response under owner control.
 - API 26/33/35 tests and the physical-device matrix are green for the exact commit.
 - `verifyMainMergeSurface` passes against freshly fetched `origin/main`; inspect its base/head/count summary and separately confirm `git status` is clean before opening or performing the merge.
 - From `api/`, `node scripts/verify-android-play-policy-readiness.mjs --release` passes only after the verified Organization legal name is present in the public privacy policy and `play-review-access.json` records final reusable, region-independent access against the exact Play `versionCode`. Never place the login, password or patient identifier in Git or command output.
 
 ## 4. Play tracks
 
-1. Upload the signed AAB to Internal testing and record commit SHA, `versionCode`, certificate fingerprint, tester account and result.
+1. Upload the signed AAB to Internal testing through the approved owner-controlled path, pass the real Bundle response through C114, and record commit SHA, `versionCode`, upload SHA-256, certificate fingerprint, tester account and result.
 2. Install from Play, not adb. Run `verifyPlayInstalledAppLinks`, then verify caregiver/patient sign-in, session restoration, both production auth paths, browser fallback, FCM permission/token/delivery/tap, local reminders, background/Doze/process death, legal links and analytics consent.
    Execute and record every applicable row in `physical-device-matrix.md`; the summary in this runbook is not a substitute for that evidence ledger.
 3. Complete Data safety and Health apps declarations from the actual production build. Do not infer declarations from SDK names alone.
@@ -174,6 +189,7 @@ Before upload, also verify:
 - C79 confirms production `main@432b34c` still rejects Android push-device registration before upsert. Merge/deploy the tested Android API contract and rerun FC-001 before any Play FCM acceptance; do not relabel Android devices as iOS.
 - C95 confirms production Digital Asset Links still returns HTTP 404 because its tested route is only on `android-dev`. Merge/deploy the same Android API contract, configure the Play app-signing certificate in production and pass both App Links tasks; neither a synthetic certificate nor an upload certificate closes this row.
 - No release-owner upload keystore has been selected, so a production-signed AAB cannot be produced here yet.
+- No Play Developer API upload response exists yet; C114's synthetic direct/list fixtures prove only the local comparison and secret-free receipt contract.
 - One A302SH Android 15/API 35 Debug target is evidenced through C76; old-supported and Google/reference devices remain pending.
 - Play-installed Internal/Closed track and final Console declaration evidence remain pending.
 - C106 source readiness passes, but its public route is not deployed and the Organization legal name/final Play review-access fields intentionally remain pending. The retained QA password stays only in the external release-owner secret store and must never be copied into Git or evidence.

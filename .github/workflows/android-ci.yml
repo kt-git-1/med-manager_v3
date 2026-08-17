@@ -83,6 +83,9 @@ jobs:
       - name: Play release handoff contract
         run: python3 scripts/test-prepare-play-release-handoff.py
 
+      - name: Play upload receipt contract
+        run: ./gradlew verifyPlayUploadReceiptContract
+
       - name: Release manifest policy contract
         run: python3 scripts/test-verify-release-manifest-policy.py
 

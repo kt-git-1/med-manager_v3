@@ -24,6 +24,8 @@ C112 passes the generated ledger directly into the production handoff, verifies 
 
 C113 adds an upload-time retained-handoff verifier that rechecks directory/file naming, canonical evidence, checksums, AAB identity and current store hashes without the original build paths.
 
+C114 adds a post-upload Play Bundle-response verifier that binds the official API `versionCode` and upload-payload SHA-256 to that freshly reverified handoff and writes only a deterministic secret-free receipt outside it.
+
 ## 2. What is reusable
 
 - Kotlin/Compose Gradle project, application identity and build workflow
@@ -77,6 +79,7 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Resolved C111 | C110 tested policy helpers but did not execute Git clean detection, JAR certificate extraction and full schema-v2 generation together | Isolated committed tree plus ephemeral signed AAB exercises the production generator and all artifact/store fields, then rejects a dirty listing; RG-005 directly requires C110-C111 | The disposable signer is test-only; release owner must still prove Organization, upload/app-signing identities and exact Play handoff |
 | Resolved C112 | C111 generated a real ledger, but handoff tests still consumed a separately hand-built report | The production-generated JSON creates and idempotently reopens the exact AAB/ledger/SHA256SUMS handoff; changing the store icon between phases is rejected | Run the same graph with owner-managed input, then compare retained bytes and hashes in Play Console |
 | Resolved C113 | A retained/transferred handoff could only run generic `shasum`, which did not reapply ledger naming/schema/store identity | Read-only verifier revalidates exact directory/files, canonical ledger, AAB/evidence/checksums and current store hashes; six retained drift classes are rejected | Execute immediately before owner upload and retain Console-side comparison; local revalidation cannot prove upload selection |
+| Resolved C114 | C113 could not prove that Play received the selected handoff AAB | Strict Google Play Developer API Bundle parsing requires one matching versionCode and upload-payload SHA-256, reruns C113 and writes an atomic secret-free receipt outside the handoff | Obtain the real response under owner-controlled Play authority; synthetic contract evidence does not prove upload, processing, signing or installation |
 
 ## 4. Latest-main behavior that must be carried forward
 

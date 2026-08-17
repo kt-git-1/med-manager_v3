@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C113
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C114
 - Baseline date: 2026-08-17
-- Current action: C113 adds a read-only verifier for a retained/transferred Play handoff, rechecking canonical ledger, directory/file identity, checksums, AAB and current store hashes immediately before upload. RG-005 directly retains C110-C113. Play Console selection and release-owner signing remain external.
+- Current action: C114 compares a Google Play Developer API Bundle upload/list response with the C113-retained handoff, requires exact `versionCode` and upload-payload SHA-256, and emits an atomic deterministic receipt outside the three-file handoff without credentials or edit identifiers. RG-005 directly retains C110-C114. Organization ownership, release-owner signing and the real API response remain external.
 
 ## Authority order
 

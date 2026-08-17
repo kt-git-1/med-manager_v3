@@ -87,6 +87,7 @@ def verify_prepared_handoff(target: Path, repository_root: Path) -> dict[str, ob
     )
     return {
         "directory": target.name,
+        "applicationId": application.get("applicationId"),
         "commitSha": commit_sha,
         "versionName": version_name,
         "versionCode": version_code,

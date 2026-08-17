@@ -40,6 +40,7 @@ ALLOWED_AUTHORITIES = {
     "physical_device",
     "play_console_read",
     "play_console_write",
+    "play_developer_api_write",
     "play_organization_account_creation",
     "production_database_configuration",
     "production_database_read",
@@ -248,11 +249,16 @@ def verify_release_gates(
                 "play_organization_account_creation" in authorities,
                 "RG-005 must retain Play Organization account creation authority",
             )
+            _require(
+                "play_developer_api_write" in authorities,
+                "RG-005 must retain Play Developer API receipt authority",
+            )
             _require("C105" in prerequisites, "RG-005 must retain the C105 account audit")
             _require("C110" in prerequisites, "RG-005 must retain the C110 store-ledger binding")
             _require("C111" in prerequisites, "RG-005 must retain the C111 ledger integration")
             _require("C112" in prerequisites, "RG-005 must retain the C112 generated handoff bridge")
             _require("C113" in prerequisites, "RG-005 must retain the C113 retained-handoff verifier")
+            _require("C114" in prerequisites, "RG-005 must retain the C114 Play upload receipt verifier")
             _require(
                 any("Play Organization" in item and "D-U-N-S" in item for item in done_when),
                 "RG-005 must require verified Play Organization and D-U-N-S ownership",
@@ -278,8 +284,21 @@ def verify_release_gates(
                 "RG-005 must retain C113 retained-handoff evidence",
             )
             _require(
+                "docs/android/evidence/c114-20260817/README.md" in sources,
+                "RG-005 must retain C114 Play upload receipt evidence",
+            )
+            _require(
                 any("schema-v2 ledger" in item and "store hashes" in item for item in done_when),
                 "RG-005 must retain exact schema-v2 store hash handoff acceptance",
+            )
+            _require(
+                any(
+                    "Play Developer API Bundle response" in item
+                    and "versionCode" in item
+                    and "SHA-256" in item
+                    for item in done_when
+                ),
+                "RG-005 must require the exact Play Bundle versionCode/SHA-256 receipt",
             )
 
         if gate_id == "RG-008":

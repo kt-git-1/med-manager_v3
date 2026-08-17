@@ -4,7 +4,7 @@
     "iosRelease": "1.0.6 Build 51",
     "mainCommit": "432b34c",
     "androidBranch": "android-dev",
-    "checkpoint": "C113"
+    "checkpoint": "C114"
   },
   "partialRequirementIds": [
     "XP-004",
@@ -154,7 +154,8 @@
       "authorities": [
         "play_organization_account_creation",
         "release_key_access",
-        "play_console_read"
+        "play_console_read",
+        "play_developer_api_write"
       ],
       "owner": "release_owner",
       "prerequisites": [
@@ -171,12 +172,14 @@
         "C110",
         "C111",
         "C112",
-        "C113"
+        "C113",
+        "C114"
       ],
       "doneWhen": [
         "A release-owner-controlled Play Organization developer account is verified against matching D-U-N-S, legal/payment-profile identity, website and contact details, then the exact production package is created.",
         "The owner-managed upload key and independent Play certificate identities pass every fail-closed signing gate.",
-        "The exact clean-commit AAB, schema-v2 ledger with reverified ordered store hashes and SHA256SUMS three-file handoff is retained unchanged."
+        "The exact clean-commit AAB, schema-v2 ledger with reverified ordered store hashes and SHA256SUMS three-file handoff is retained unchanged.",
+        "The Play Developer API Bundle response for the selected upload has the same versionCode and upload-payload SHA-256 as the retained handoff, and its secret-free receipt is retained outside that handoff."
       ],
       "evidenceSources": [
         "docs/android/play-developer-account-onboarding.md",
@@ -186,7 +189,8 @@
         "docs/android/evidence/c110-20260817/README.md",
         "docs/android/evidence/c111-20260817/README.md",
         "docs/android/evidence/c112-20260817/README.md",
-        "docs/android/evidence/c113-20260817/README.md"
+        "docs/android/evidence/c113-20260817/README.md",
+        "docs/android/evidence/c114-20260817/README.md"
       ],
       "backlogTitle": "Play Organization account, signing and exact AAB handoff"
     },

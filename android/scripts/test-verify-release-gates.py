@@ -290,6 +290,57 @@ rejected(
         ),
     ),
 )
+
+rejected(
+    "play-organization-upload-receipt-authority",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][4].update(
+            authorities=[
+                item
+                for item in value["gates"][4]["authorities"]
+                if item != "play_developer_api_write"
+            ]
+        ),
+    ),
+)
+
+rejected(
+    "play-organization-upload-receipt-prerequisite",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][4].update(
+            prerequisites=[item for item in value["gates"][4]["prerequisites"] if item != "C114"]
+        ),
+    ),
+)
+
+rejected(
+    "play-organization-upload-receipt-evidence",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][4].update(
+            evidenceSources=[
+                item
+                for item in value["gates"][4]["evidenceSources"]
+                if item != "docs/android/evidence/c114-20260817/README.md"
+            ]
+        ),
+    ),
+)
+
+rejected(
+    "play-organization-upload-receipt-condition",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][4].update(
+            doneWhen=[
+                item.replace("Play Developer API Bundle response", "local bundle report")
+                for item in value["gates"][4]["doneWhen"]
+            ]
+        ),
+    ),
+)
 rejected(
     "play-policy-readiness-prerequisite",
     lambda _root, paths: edit_manifest(
@@ -394,4 +445,4 @@ rejected(
     ),
 )
 
-print("Release gate contract passed: accepted=1 rejected=31")
+print("Release gate contract passed: accepted=1 rejected=35")
