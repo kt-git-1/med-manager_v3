@@ -108,6 +108,7 @@ export function validateProductionWorkflow(text) {
     "- deploy",
     "- release",
     "node scripts/verify-android-production-release.mjs",
+    "npm audit --audit-level=high",
     "git -C .. fetch --no-tags origin main",
     '"$(git -C .. rev-parse origin/main)" != "$GITHUB_SHA"',
     'test -z "$(git -C .. status --porcelain)"',

@@ -46,6 +46,9 @@ jobs:
       - name: Android production release contract
         run: node scripts/test-verify-android-production-release.mjs
 
+      - name: Production dependency audit
+        run: npm audit --audit-level=high
+
       - name: ESLint
         run: npm run lint
 

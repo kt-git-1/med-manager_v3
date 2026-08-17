@@ -93,6 +93,10 @@ const workflowCases = [
   ["non-preflight default", workflow.replace("default: preflight", "default: deploy")],
   ["unpinned Vercel", workflow.replaceAll("vercel@59.1.3", "vercel@latest")],
   [
+    "removed dependency audit",
+    workflow.replace("npm audit --audit-level=high", "echo audit-skipped")
+  ],
+  [
     "unpinned action",
     workflow.replace(
       "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",

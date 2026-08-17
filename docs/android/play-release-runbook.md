@@ -57,6 +57,8 @@ Create the GitHub environment `android-api-production` under release-owner contr
 
 The direct URL must target the approved production `public` schema over `sslmode=require` or `verify-full`. The Play fingerprint is public certificate metadata but remains environment-scoped to prevent an unreviewed identity change. Vercel's production environment separately retains the API runtime variables, including `ANDROID_APP_LINK_SHA256_CERT_FINGERPRINTS`; the workflow pulls those values into an ephemeral production build and deletes `.vercel`/`.next` state at the end. Never copy secret values or raw migration/deploy output into evidence.
 
+After locked installation, the workflow runs `npm audit --audit-level=high` before it reads the production database secret. C101's bounded lock refresh leaves zero High/Critical runtime or build advisories; any future High/Critical advisory blocks even preflight. Thirteen Moderate transitive findings remain tracked in C101 evidence and are not represented as zero-risk. Do not bypass the audit or apply npm's suggested breaking Firebase downgrade without a separate compatibility review.
+
 The dispatch inputs are deliberately exact:
 
 | Mode | Confirmation | Effect |

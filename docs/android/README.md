@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C100
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C101
 - Baseline date: 2026-08-17
-- Current action: C100 makes RG-002 executable but does not execute it. A manual-only `main` workflow defaults to read-only C98 preflight; exact full-SHA, mode confirmation, environment reviewer attestation and a separate release arm are required before migration or deployment. `main` and `android-dev` Git auto-deploys are disabled so the enforced order remains preflight -> migration -> postdeploy -> pinned Vercel build/deploy -> health -> App Links. Production secrets/environment and owner approval are still absent, so RG-002 remains unchecked.
+- Current action: C101 closes the High/Critical dependency blocker found while validating C100. The lock-only refresh moves Next.js and its affected runtime/build transitive packages to patched versions, reducing the complete `npm audit` from 7 High to 0 High/Critical; the remaining 13 findings are Moderate and separately recorded. API CI and the manual production workflow now fail before database access on any future High/Critical advisory. Production secrets/environment and owner approval are still absent, so RG-002 remains unchecked.
 
 ## Authority order
 

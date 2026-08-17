@@ -24,6 +24,7 @@ EXPECTED_WORKFLOW_PATHS = {
 }
 EXPECTED_ROOT_PATHS = {".gitignore"}
 EXPECTED_API_PATHS = {
+    "api/package-lock.json",
     "api/app/.well-known/assetlinks.json/route.ts",
     "api/app/api/patients/[patientId]/medications/[medicationId]/inventory/adjust/route.ts",
     "api/app/api/patients/[patientId]/prn-dose-records/route.ts",
