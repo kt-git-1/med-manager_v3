@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C107
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C108
 - Baseline date: 2026-08-17
-- Current action: C107 replaces the obsolete initial marketing screenshot set with eight current post-parity production-Compose surfaces and pins their exact synthetic evidence sources. CI now cross-checks Japanese copy, public URLs, privacy/health/ads/billing claims and shipping Android identity, then proves the padded JPEG pixels still derive from those sources. Live `/account-deletion`, Play preview, signed-artifact comparison and Console submission remain external.
+- Current action: C108 makes the C107 store handoff reproducible without macOS tooling. A JDK-backed renderer rebuilds all eight mapped Compose captures with fixed canvas, padding and JPEG quality; CI rejects invalid renderer inputs and any committed JPEG that is not byte-for-byte the current generated output. Live `/account-deletion`, Play preview, signed-artifact comparison and Console submission remain external.
 
 ## Authority order
 

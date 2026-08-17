@@ -2,11 +2,16 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.gradle.api.artifacts.dsl.LockMode
 import org.gradle.api.tasks.Sync
 import java.net.URI
+import java.awt.Color
+import java.awt.image.BufferedImage
 import java.security.MessageDigest
 import java.util.Base64
 import java.util.Properties
 import java.util.zip.ZipFile
+import javax.imageio.IIOImage
 import javax.imageio.ImageIO
+import javax.imageio.ImageWriteParam
+import javax.imageio.stream.FileImageOutputStream
 
 fun String.asBuildConfigString(): String = "\"${replace("\\", "\\\\").replace("\"", "\\\"")}\""
 
@@ -67,6 +72,75 @@ fun File.sha256Hex(): String {
         }
     }
     return digest.digest().joinToString("") { "%02x".format(it) }
+}
+
+val expectedPlayStoreScreenshots = listOf(
+    "01-mode-select.jpg",
+    "02-patient-today.jpg",
+    "03-patient-history.jpg",
+    "04-caregiver-today.jpg",
+    "05-caregiver-medications.jpg",
+    "06-caregiver-inventory.jpg",
+    "07-caregiver-history.jpg",
+    "08-caregiver-settings.jpg",
+)
+
+fun playStoreScreenshotMappings(sourceMapFile: File): List<Pair<String, String>> =
+    sourceMapFile.readLines()
+        .filter(String::isNotBlank)
+        .mapIndexed { index, line ->
+            val fields = line.split('\t')
+            require(fields.size == 2 && fields.all { it.isNotBlank() && it == it.trim() }) {
+                "Invalid screenshot source mapping at line ${index + 1}"
+            }
+            fields[0] to fields[1]
+        }
+        .also { mappings ->
+            require(mappings.map { it.first } == expectedPlayStoreScreenshots) {
+                "Screenshot source map output order drifted"
+            }
+            require(mappings.map { it.second }.distinct().size == expectedPlayStoreScreenshots.size) {
+                "Each Play screenshot must have one unique evidence source"
+            }
+        }
+
+fun writePaddedPlayStoreJpeg(
+    source: BufferedImage,
+    destination: File,
+    canvasWidth: Int = 1_350,
+    canvasHeight: Int = 2_400,
+    horizontalOffset: Int = 135,
+    quality: Float = 0.9f,
+) {
+    require(source.width + horizontalOffset * 2 == canvasWidth) { "Source/canvas width contract drifted" }
+    require(source.height == canvasHeight) { "Source/canvas height contract drifted" }
+    require(quality in 0f..1f) { "JPEG quality must be between zero and one" }
+
+    val canvas = BufferedImage(canvasWidth, canvasHeight, BufferedImage.TYPE_INT_RGB)
+    val graphics = canvas.createGraphics()
+    try {
+        graphics.color = Color(0xF3, 0xFA, 0xFC)
+        graphics.fillRect(0, 0, canvasWidth, canvasHeight)
+        graphics.drawImage(source, horizontalOffset, 0, null)
+    } finally {
+        graphics.dispose()
+    }
+    destination.parentFile.mkdirs()
+    val writer = ImageIO.getImageWritersByFormatName("jpeg").asSequence().firstOrNull()
+        ?: error("No JPEG writer is available")
+    try {
+        val parameters = writer.defaultWriteParam.apply {
+            compressionMode = ImageWriteParam.MODE_EXPLICIT
+            compressionQuality = quality
+            progressiveMode = ImageWriteParam.MODE_DISABLED
+        }
+        FileImageOutputStream(destination).use { output ->
+            writer.output = output
+            writer.write(null, IIOImage(canvas, null, null), parameters)
+        }
+    } finally {
+        writer.dispose()
+    }
 }
 
 fun forbiddenReleaseSdkReason(coordinate: String): String? = when {
@@ -643,6 +717,107 @@ val verifyReleaseApkCompatibility by tasks.registering(org.gradle.api.tasks.Exec
     )
 }
 
+val playStorePhoneDirectory = rootProject.file("../docs/android/play-store-assets/phone-ja-JP")
+val playStoreScreenshotSourceMapFile = playStorePhoneDirectory.resolve("sources.tsv")
+val renderedPlayStoreScreenshotDirectory = layout.buildDirectory.dir("generated/play-store-phone-ja-JP")
+
+val renderPlayStoreScreenshots by tasks.registering {
+    group = "documentation"
+    description = "Deterministically renders the ordered Play phone JPEGs from mapped Compose evidence."
+    inputs.file(playStoreScreenshotSourceMapFile)
+    inputs.files(
+        providers.provider {
+            playStoreScreenshotMappings(playStoreScreenshotSourceMapFile).map { mapping ->
+                rootProject.projectDir.parentFile.resolve(mapping.second)
+            }
+        },
+    )
+    outputs.dir(renderedPlayStoreScreenshotDirectory)
+
+    doLast {
+        val repositoryRoot = rootProject.projectDir.parentFile.canonicalFile
+        val outputDirectory = renderedPlayStoreScreenshotDirectory.get().asFile
+        delete(outputDirectory)
+        outputDirectory.mkdirs()
+        playStoreScreenshotMappings(playStoreScreenshotSourceMapFile).forEach { (outputName, sourcePath) ->
+            require(
+                sourcePath.startsWith("docs/android/evidence/") &&
+                    sourcePath.endsWith(".png") &&
+                    sourcePath.split('/').none { it == ".." },
+            ) { "Unsafe or non-evidence screenshot source: $sourcePath" }
+            val sourceFile = repositoryRoot.resolve(sourcePath).canonicalFile
+            require(sourceFile.toPath().startsWith(repositoryRoot.toPath()) && sourceFile.isFile) {
+                "Screenshot evidence source does not exist: $sourcePath"
+            }
+            val source = requireNotNull(ImageIO.read(sourceFile)) { "Unreadable screenshot source: $sourcePath" }
+            require(source.width == 1080 && source.height == 2400) {
+                "Screenshot source must be 1080 x 2400: $sourcePath is ${source.width} x ${source.height}"
+            }
+            writePaddedPlayStoreJpeg(source, outputDirectory.resolve(outputName))
+        }
+    }
+}
+
+val updatePlayStoreScreenshots by tasks.registering {
+    group = "documentation"
+    description = "Copies deterministic Play phone renders into the committed Japanese handoff."
+    dependsOn(renderPlayStoreScreenshots)
+    inputs.dir(renderedPlayStoreScreenshotDirectory)
+    outputs.files(expectedPlayStoreScreenshots.map(playStorePhoneDirectory::resolve))
+    doLast {
+        expectedPlayStoreScreenshots.forEach { filename ->
+            renderedPlayStoreScreenshotDirectory.get().asFile.resolve(filename)
+                .copyTo(playStorePhoneDirectory.resolve(filename), overwrite = true)
+        }
+    }
+}
+
+val verifyPlayStoreScreenshotRendererContract by tasks.registering {
+    group = "verification"
+    description = "Proves deterministic Play JPEG rendering and rejects invalid canvas/quality inputs."
+    val contractDirectory = layout.buildDirectory.dir("tmp/play-store-renderer-contract")
+    outputs.upToDateWhen { false }
+    doLast {
+        val directory = contractDirectory.get().asFile
+        delete(directory)
+        directory.mkdirs()
+        val source = BufferedImage(4, 3, BufferedImage.TYPE_INT_RGB).apply {
+            for (y in 0 until height) {
+                for (x in 0 until width) {
+                    setRGB(x, y, Color(20 + x * 30, 40 + y * 35, 90 + x * 10 + y * 5).rgb)
+                }
+            }
+        }
+        val first = directory.resolve("first.jpg")
+        val second = directory.resolve("second.jpg")
+        writePaddedPlayStoreJpeg(source, first, canvasWidth = 8, canvasHeight = 3, horizontalOffset = 2)
+        writePaddedPlayStoreJpeg(source, second, canvasWidth = 8, canvasHeight = 3, horizontalOffset = 2)
+        require(first.readBytes().contentEquals(second.readBytes())) {
+            "Identical source renders must be byte-for-byte deterministic"
+        }
+        val decoded = requireNotNull(ImageIO.read(first)) { "Synthetic renderer output is unreadable" }
+        require(decoded.width == 8 && decoded.height == 3 && !decoded.colorModel.hasAlpha()) {
+            "Synthetic renderer output format drifted"
+        }
+        require(
+            runCatching {
+                writePaddedPlayStoreJpeg(source, directory.resolve("bad-width.jpg"), 9, 3, 2)
+            }.isFailure,
+        ) { "Invalid canvas width unexpectedly rendered" }
+        require(
+            runCatching {
+                writePaddedPlayStoreJpeg(source, directory.resolve("bad-height.jpg"), 8, 4, 2)
+            }.isFailure,
+        ) { "Invalid canvas height unexpectedly rendered" }
+        require(
+            runCatching {
+                writePaddedPlayStoreJpeg(source, directory.resolve("bad-quality.jpg"), 8, 3, 2, 1.1f)
+            }.isFailure,
+        ) { "Invalid JPEG quality unexpectedly rendered" }
+        delete(directory)
+    }
+}
+
 val verifyPlayStoreListingContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
     group = "verification"
     description = "Exercises accepted and rejected Play store listing contract fixtures."
@@ -682,12 +857,13 @@ val verifyPlayStoreListing by tasks.registering(org.gradle.api.tasks.Exec::class
 val verifyPlayStoreAssets by tasks.registering {
     group = "verification"
     description = "Validates source-bound Play phone screenshots, store icon and cross-platform icon parity."
-    dependsOn(verifyPlayStoreListing)
+    dependsOn(verifyPlayStoreListing, renderPlayStoreScreenshots, verifyPlayStoreScreenshotRendererContract)
+    mustRunAfter(updatePlayStoreScreenshots)
 
     val listingFile = rootProject.file("../docs/android/play-store-listing-ja.md")
     val assetRoot = rootProject.file("../docs/android/play-store-assets")
-    val phoneDirectory = assetRoot.resolve("phone-ja-JP")
-    val screenshotSourceMapFile = phoneDirectory.resolve("sources.tsv")
+    val phoneDirectory = playStorePhoneDirectory
+    val screenshotSourceMapFile = playStoreScreenshotSourceMapFile
     val storeIconFile = assetRoot.resolve("icon-512.png")
     val featureGraphicFile = assetRoot.resolve("feature-graphic-1024x500.jpg")
     val iosIconFile = rootProject.file("../ios/MedicationApp/Assets.xcassets/AppIcon.appiconset/med_1024_transparent.png")
@@ -701,18 +877,10 @@ val verifyPlayStoreAssets by tasks.registering {
         androidForegroundFile,
     )
     inputs.dir(phoneDirectory)
+    inputs.dir(renderedPlayStoreScreenshotDirectory)
 
     doLast {
-        val expectedScreenshots = listOf(
-            "01-mode-select.jpg",
-            "02-patient-today.jpg",
-            "03-patient-history.jpg",
-            "04-caregiver-today.jpg",
-            "05-caregiver-medications.jpg",
-            "06-caregiver-inventory.jpg",
-            "07-caregiver-history.jpg",
-            "08-caregiver-settings.jpg",
-        )
+        val expectedScreenshots = expectedPlayStoreScreenshots
         val directoryFiles = phoneDirectory.listFiles()
             ?.filter { it.isFile && !it.name.startsWith(".") }
             ?.sortedBy { it.name }
@@ -732,21 +900,7 @@ val verifyPlayStoreAssets by tasks.registering {
             require(!image.colorModel.hasAlpha()) { "Play JPEG must not contain alpha: $file" }
         }
 
-        val sourceMappings = screenshotSourceMapFile.readLines()
-            .filter(String::isNotBlank)
-            .mapIndexed { index, line ->
-                val fields = line.split('\t')
-                require(fields.size == 2 && fields.all { it.isNotBlank() }) {
-                    "Invalid screenshot source mapping at line ${index + 1}"
-                }
-                fields[0] to fields[1]
-            }
-        require(sourceMappings.map { it.first } == expectedScreenshots) {
-            "Screenshot source map output order drifted"
-        }
-        require(sourceMappings.map { it.second }.distinct().size == expectedScreenshots.size) {
-            "Each Play screenshot must have one unique evidence source"
-        }
+        val sourceMappings = playStoreScreenshotMappings(screenshotSourceMapFile)
         val repositoryRoot = rootProject.projectDir.parentFile.canonicalFile
         sourceMappings.forEach { (outputName, sourcePath) ->
             require(
@@ -797,6 +951,10 @@ val verifyPlayStoreAssets by tasks.registering {
             val paddingMeanDifference = paddingDifference.toDouble() / paddingChannels
             require(paddingMeanDifference <= 1.5) {
                 "$outputName horizontal padding drifted from #F3FAFC (mean RGB difference $paddingMeanDifference)"
+            }
+            val renderedFile = renderedPlayStoreScreenshotDirectory.get().asFile.resolve(outputName)
+            require(renderedFile.readBytes().contentEquals(phoneDirectory.resolve(outputName).readBytes())) {
+                "$outputName is not the exact deterministic renderer output; run updatePlayStoreScreenshots"
             }
         }
 

@@ -262,4 +262,28 @@ rejected(
     ),
 )
 
-print("Release gate contract passed: accepted=1 rejected=20")
+rejected(
+    "play-renderer-prerequisite",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][8].update(
+            prerequisites=[item for item in value["gates"][8]["prerequisites"] if item != "C108"]
+        ),
+    ),
+)
+
+rejected(
+    "play-renderer-evidence",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][9].update(
+            evidenceSources=[
+                item
+                for item in value["gates"][9]["evidenceSources"]
+                if item != "docs/android/evidence/c108-20260817/README.md"
+            ]
+        ),
+    ),
+)
+
+print("Release gate contract passed: accepted=1 rejected=22")
