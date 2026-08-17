@@ -16,6 +16,8 @@ C108 closes the remaining regeneration gap: a platform-independent Gradle/JDK re
 
 C109 closes the pending fresh unlocked A302SH automated rerun at 280/280 and preserves one validated XML summary per shard plus an aggregate TSV. A preceding non-reproducible Android platform `libhwui` RenderThread crash, its implicated test's clean-install 10/10 pass and the subsequent complete pass are all retained as evidence; Play closed-test crash/ANR review remains open.
 
+C110 binds the source-controlled Japanese listing and exact ordered assets into signed-release evidence schema v2, then re-hashes them at handoff creation. Valid-looking hash substitution, missing fields/assets and screenshot reorder now fail before an AAB handoff is accepted.
+
 ## 2. What is reusable
 
 - Kotlin/Compose Gradle project, application identity and build workflow
@@ -65,6 +67,7 @@ Reusable means “candidate for re-verification,” not “accepted unchanged.�
 | Resolved C107 | The store handoff retained original C01 images and an obsolete Caregiver Today next-dose surface after UI parity changed | Eight exact post-parity Compose evidence sources, refreshed padded JPEGs and copy/config/pixel-level contracts reject stale listing identity, claims, ordering, source or export drift | Verify live URLs and exact signed build in Play preview; retain Console screenshots before submission |
 | Resolved C108 | C107 outputs were validated but regenerated manually with macOS `sips`, so another environment could not reproduce exact bytes | JDK renderer, explicit update task, deterministic/invalid-input contract and eight-file byte comparison make the committed handoff reproducible and fail closed | Run the same renderer in hosted CI, then compare the exact signed app and uploaded assets in Play preview |
 | Resolved C109 | Gradle overwrote earlier connected-test XML after each shard, and the pending fresh unlocked A302SH rerun lacked durable per-shard evidence | Runner requires exactly one nonempty zero-failure/error/skip XML per successful shard, preserves all reports and TSV summary, rejects missing/skipped results, and final A302SH execution passes 280/280 with package cleanup | Retain the observed non-reproducible OEM/platform HWUI crash in risk review; complete other device classes, spoken TalkBack, signed Play, FCM and closed-test crash/ANR monitoring |
+| Resolved C110 | C91 checked store inputs only for dirtiness, so its artifact ledger did not identify the exact listing and marketing bytes uploaded beside the AAB | Schema-v2 evidence records listing/source-map/icon/feature/eight ordered screenshot hashes; handoff re-hashes repository inputs and rejects missing, substituted or reordered evidence | Compare the ledger hashes with actual Play uploads/preview under release-owner control; local binding is not Console evidence |
 
 ## 4. Latest-main behavior that must be carried forward
 

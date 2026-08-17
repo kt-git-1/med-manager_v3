@@ -4,7 +4,7 @@
     "iosRelease": "1.0.6 Build 51",
     "mainCommit": "432b34c",
     "androidBranch": "android-dev",
-    "checkpoint": "C109"
+    "checkpoint": "C110"
   },
   "partialRequirementIds": [
     "XP-004",
@@ -302,7 +302,8 @@
         "C89",
         "C106",
         "C107",
-        "C108"
+        "C108",
+        "C110"
       ],
       "doneWhen": [
         "Current SDK disclosures and the exact signed artifact are reconciled with the worksheet.",
@@ -316,7 +317,8 @@
         "docs/android/play-review-access.json",
         "docs/android/evidence/c106-20260817/README.md",
         "docs/android/evidence/c107-20260817/README.md",
-        "docs/android/evidence/c108-20260817/README.md"
+        "docs/android/evidence/c108-20260817/README.md",
+        "docs/android/evidence/c110-20260817/README.md"
       ],
       "backlogTitle": "Play Console Data safety and Health declarations"
     },
@@ -346,7 +348,8 @@
         "C98",
         "C106",
         "C107",
-        "C108"
+        "C108",
+        "C110"
       ],
       "doneWhen": [
         "Always-available, reusable and region-independent caregiver review credentials select the retained dedicated QA patient without a one-time linking code.",
@@ -359,7 +362,8 @@
         "docs/android/evidence/c96-20260817/README.md",
         "docs/android/evidence/c106-20260817/README.md",
         "docs/android/evidence/c107-20260817/README.md",
-        "docs/android/evidence/c108-20260817/README.md"
+        "docs/android/evidence/c108-20260817/README.md",
+        "docs/android/evidence/c110-20260817/README.md"
       ],
       "backlogTitle": "Closed test, final rebaseline and main merge"
     }

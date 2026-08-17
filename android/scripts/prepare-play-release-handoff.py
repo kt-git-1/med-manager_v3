@@ -14,6 +14,16 @@ import tempfile
 
 
 EXPECTED_APPLICATION_ID = "com.afterlifearchive.medmanager"
+EXPECTED_STORE_SCREENSHOTS = (
+    "01-mode-select.jpg",
+    "02-patient-today.jpg",
+    "03-patient-history.jpg",
+    "04-caregiver-today.jpg",
+    "05-caregiver-medications.jpg",
+    "06-caregiver-inventory.jpg",
+    "07-caregiver-history.jpg",
+    "08-caregiver-settings.jpg",
+)
 EXPECTED_GATES = (
     "production-runtime",
     "upload-keystore",
@@ -40,13 +50,71 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def handoff_identity(report: dict[str, object], aab: Path) -> tuple[str, str, int, str]:
+def validate_store_listing(report: object, repository_root: Path) -> list[str]:
+    if not isinstance(report, dict):
+        return ["Release evidence is missing store listing hashes"]
+    expected_fields = {
+        "locale",
+        "listingSha256",
+        "screenshotSourceMapSha256",
+        "icon512Sha256",
+        "featureGraphicSha256",
+        "screenshots",
+    }
+    if set(report) != expected_fields:
+        return ["Release evidence store listing fields drifted"]
+    asset_root = repository_root / "docs/android/play-store-assets"
+    phone_directory = asset_root / "phone-ja-JP"
+    required_paths = (
+        repository_root / "docs/android/play-store-listing-ja.md",
+        phone_directory / "sources.tsv",
+        asset_root / "icon-512.png",
+        asset_root / "feature-graphic-1024x500.jpg",
+        *(phone_directory / name for name in EXPECTED_STORE_SCREENSHOTS),
+    )
+    expected_phone_entries = tuple(sorted((*EXPECTED_STORE_SCREENSHOTS, "sources.tsv")))
+    try:
+        actual_phone_entries = tuple(sorted(path.name for path in phone_directory.iterdir()))
+    except OSError:
+        return ["Repository Play phone asset directory could not be read"]
+    if actual_phone_entries != expected_phone_entries:
+        return ["Repository Play phone asset directory contains unexpected or missing entries"]
+    if any(not path.is_file() or path.is_symlink() for path in required_paths):
+        return ["Repository Play store input is missing or unsafe"]
+    expected_hashes = {
+        "listingSha256": file_sha256(required_paths[0]),
+        "screenshotSourceMapSha256": file_sha256(required_paths[1]),
+        "icon512Sha256": file_sha256(required_paths[2]),
+        "featureGraphicSha256": file_sha256(required_paths[3]),
+    }
+    failures: list[str] = []
+    if report.get("locale") != "ja-JP":
+        failures.append("Release evidence store listing locale drifted")
+    for field, expected in expected_hashes.items():
+        if report.get(field) != expected:
+            failures.append(f"Release evidence {field} does not match the repository input")
+    screenshots = report.get("screenshots")
+    if not isinstance(screenshots, list) or len(screenshots) != len(EXPECTED_STORE_SCREENSHOTS):
+        failures.append("Release evidence screenshot hash inventory is incomplete")
+        return failures
+    for item, name in zip(screenshots, EXPECTED_STORE_SCREENSHOTS, strict=True):
+        expected_sha = file_sha256(phone_directory / name)
+        if not isinstance(item, dict) or set(item) != {"fileName", "sha256"}:
+            failures.append("Release evidence screenshot hash entry is malformed")
+        elif item.get("fileName") != name or item.get("sha256") != expected_sha:
+            failures.append(f"Release evidence screenshot does not match repository input: {name}")
+    return failures
+
+
+def handoff_identity(
+    report: dict[str, object], aab: Path, repository_root: Path
+) -> tuple[str, str, int, str]:
     failures: list[str] = []
     source = report.get("source")
     application = report.get("application")
     artifact = report.get("artifact")
     gates = report.get("verifiedGates")
-    if report.get("schemaVersion") != 1:
+    if report.get("schemaVersion") != 2:
         failures.append("Unsupported release evidence schema")
     if not isinstance(source, dict) or not isinstance(application, dict) or not isinstance(artifact, dict):
         raise HandoffError("Release evidence is missing source/application/artifact objects")
@@ -80,6 +148,10 @@ def handoff_identity(report: dict[str, object], aab: Path) -> tuple[str, str, in
         failures.append("Release evidence is not base-module-only")
     if gates != list(EXPECTED_GATES):
         failures.append("Release evidence gate set is incomplete or reordered")
+    try:
+        failures.extend(validate_store_listing(report.get("storeListing"), repository_root))
+    except OSError as error:
+        raise HandoffError("Repository Play store inputs could not be read") from error
     if failures:
         raise HandoffError("Play release handoff policy failed:\n - " + "\n - ".join(failures))
     assert isinstance(commit_sha, str)
@@ -116,7 +188,7 @@ def validate_existing_handoff(
         raise HandoffError("Existing handoff checksum manifest is invalid")
 
 
-def prepare_handoff(aab: Path, evidence: Path, output_root: Path) -> Path:
+def prepare_handoff(aab: Path, evidence: Path, output_root: Path, repository_root: Path) -> Path:
     try:
         evidence_bytes = evidence.read_bytes()
         report = json.loads(evidence_bytes.decode("utf-8"))
@@ -124,7 +196,9 @@ def prepare_handoff(aab: Path, evidence: Path, output_root: Path) -> Path:
         raise HandoffError("Release evidence JSON could not be read") from error
     if not isinstance(report, dict):
         raise HandoffError("Release evidence root must be an object")
-    commit_sha, version_name, version_code, aab_sha256 = handoff_identity(report, aab)
+    commit_sha, version_name, version_code, aab_sha256 = handoff_identity(
+        report, aab, repository_root.resolve()
+    )
     handoff_name = f"v{version_name}-code{version_code}-{commit_sha[:12]}"
     aab_name = f"med-manager-android-{handoff_name}.aab"
     evidence_sha256 = hashlib.sha256(evidence_bytes).hexdigest()
@@ -159,13 +233,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--aab", type=Path, required=True)
     parser.add_argument("--evidence", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--repository-root", type=Path, required=True)
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     try:
-        target = prepare_handoff(args.aab, args.evidence, args.output_root)
+        target = prepare_handoff(args.aab, args.evidence, args.output_root, args.repository_root)
     except (HandoffError, OSError) as error:
         print(str(error), file=sys.stderr)
         return 1

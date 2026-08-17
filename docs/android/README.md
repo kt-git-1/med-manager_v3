@@ -5,9 +5,9 @@ This directory is the source of truth for the Android port. Android work is isol
 ## Current baseline
 
 - Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C109
+- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C110
 - Baseline date: 2026-08-17
-- Current action: C109 completes the fresh unlocked A302SH four-shard regression at 280/280 and makes every shard retain a fail-closed XML summary plus aggregate TSV. One non-reproducible OEM/platform `libhwui` incident is recorded separately from the final pass; the implicated test passed 10/10 in isolation. Spoken TalkBack, other physical device classes, FCM, signed Play and closed-test crash/ANR review remain external.
+- Current action: C110 upgrades signed-release evidence to schema v2 and binds the Japanese listing, source map, icon, feature graphic and ordered eight screenshots by SHA-256. Handoff creation re-hashes the repository inputs and rejects missing, substituted or reordered store evidence. Play upload/preview, public URLs, declarations and release-owner signing remain external.
 
 ## Authority order
 

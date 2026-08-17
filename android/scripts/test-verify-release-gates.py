@@ -298,4 +298,28 @@ rejected(
     ),
 )
 
-print("Release gate contract passed: accepted=1 rejected=23")
+rejected(
+    "play-store-ledger-prerequisite",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][8].update(
+            prerequisites=[item for item in value["gates"][8]["prerequisites"] if item != "C110"]
+        ),
+    ),
+)
+
+rejected(
+    "closed-test-store-ledger-evidence",
+    lambda _root, paths: edit_manifest(
+        paths,
+        lambda value: value["gates"][9].update(
+            evidenceSources=[
+                item
+                for item in value["gates"][9]["evidenceSources"]
+                if item != "docs/android/evidence/c110-20260817/README.md"
+            ]
+        ),
+    ),
+)
+
+print("Release gate contract passed: accepted=1 rejected=25")

@@ -1186,15 +1186,20 @@ val verifyReleaseEvidencePolicyContract by tasks.registering(org.gradle.api.task
 val signedReleaseEvidenceFile = layout.buildDirectory.file("reports/play-release-evidence.json")
 val generateSignedReleaseEvidence by tasks.registering(org.gradle.api.tasks.Exec::class) {
     group = "verification"
-    description = "Writes the exact signed Play AAB source/version/hash/certificate/dependency evidence ledger."
+    description = "Writes exact signed-AAB and source-bound Play listing hashes to the release evidence ledger."
     dependsOn(verifySignedReleaseBundle, verifyReleaseEvidencePolicyContract)
     inputs.files(
         releaseBundleFile,
         releaseBundleManifestFile,
         releaseDependencyLockFile,
         releaseSdkInventoryFile,
+        rootProject.file("../docs/android/play-store-listing-ja.md"),
+        rootProject.file("../docs/android/play-store-assets/phone-ja-JP/sources.tsv"),
+        rootProject.file("../docs/android/play-store-assets/icon-512.png"),
+        rootProject.file("../docs/android/play-store-assets/feature-graphic-1024x500.jpg"),
         rootProject.file("scripts/generate-release-evidence.py"),
     )
+    inputs.dir(rootProject.file("../docs/android/play-store-assets/phone-ja-JP"))
     inputs.properties(
         mapOf(
             "applicationId" to releaseApplicationId,
@@ -1239,6 +1244,16 @@ val generateSignedReleaseEvidence by tasks.registering(org.gradle.api.tasks.Exec
         playUploadCertSha256,
         "--bundletool-version",
         "1.18.0",
+        "--store-listing",
+        rootProject.file("../docs/android/play-store-listing-ja.md").absolutePath,
+        "--store-source-map",
+        rootProject.file("../docs/android/play-store-assets/phone-ja-JP/sources.tsv").absolutePath,
+        "--store-icon",
+        rootProject.file("../docs/android/play-store-assets/icon-512.png").absolutePath,
+        "--store-feature-graphic",
+        rootProject.file("../docs/android/play-store-assets/feature-graphic-1024x500.jpg").absolutePath,
+        "--store-phone-directory",
+        rootProject.file("../docs/android/play-store-assets/phone-ja-JP").absolutePath,
     )
 }
 
@@ -1261,7 +1276,12 @@ val preparePlayReleaseHandoff by tasks.registering(org.gradle.api.tasks.Exec::cl
         releaseBundleFile,
         signedReleaseEvidenceFile,
         rootProject.file("scripts/prepare-play-release-handoff.py"),
+        rootProject.file("../docs/android/play-store-listing-ja.md"),
+        rootProject.file("../docs/android/play-store-assets/phone-ja-JP/sources.tsv"),
+        rootProject.file("../docs/android/play-store-assets/icon-512.png"),
+        rootProject.file("../docs/android/play-store-assets/feature-graphic-1024x500.jpg"),
     )
+    inputs.dir(rootProject.file("../docs/android/play-store-assets/phone-ja-JP"))
     outputs.dir(playReleaseHandoffRoot)
     outputs.upToDateWhen { false }
     commandLine(
@@ -1273,6 +1293,8 @@ val preparePlayReleaseHandoff by tasks.registering(org.gradle.api.tasks.Exec::cl
         signedReleaseEvidenceFile.get().asFile.absolutePath,
         "--output-root",
         playReleaseHandoffRoot.get().asFile.absolutePath,
+        "--repository-root",
+        rootProject.projectDir.parentFile.absolutePath,
     )
 }
 

@@ -57,8 +57,9 @@ def main() -> None:
     ) == 2
 
     with tempfile.TemporaryDirectory(prefix="medmanager-release-evidence-test.") as directory:
-        output = Path(directory) / "evidence.json"
-        report = {"schemaVersion": 1, "source": {"commitSha": "b" * 40}}
+        root = Path(directory)
+        output = root / "evidence.json"
+        report = {"schemaVersion": 2, "source": {"commitSha": "b" * 40}}
         MODULE.write_json_atomic(output, report)
         assert json.loads(output.read_text(encoding="utf-8")) == report
         first_bytes = output.read_bytes()
@@ -66,7 +67,37 @@ def main() -> None:
         assert output.read_bytes() == first_bytes
         assert not list(output.parent.glob("*.tmp"))
 
-    print("Release evidence policy contract passed (1 accepted, 11 rejected; atomic JSON passed).")
+        listing = root / "play-store-listing-ja.md"
+        phone = root / "phone-ja-JP"
+        source_map = phone / "sources.tsv"
+        icon = root / "icon-512.png"
+        feature = root / "feature-graphic-1024x500.jpg"
+        phone.mkdir()
+        listing.write_text("listing\n", encoding="utf-8")
+        icon.write_bytes(b"icon")
+        feature.write_bytes(b"feature")
+        source_map.write_text(
+            "".join(f"{name}\tdocs/android/evidence/source.png\n" for name in MODULE.EXPECTED_STORE_SCREENSHOTS),
+            encoding="utf-8",
+        )
+        for index, name in enumerate(MODULE.EXPECTED_STORE_SCREENSHOTS):
+            (phone / name).write_bytes(f"screenshot-{index}".encode())
+        store = MODULE.store_listing_evidence(listing, source_map, icon, feature, phone)
+        assert store["locale"] == "ja-JP"
+        assert [item["fileName"] for item in store["screenshots"]] == list(
+            MODULE.EXPECTED_STORE_SCREENSHOTS
+        )
+        assert store["listingSha256"] == MODULE.file_sha256(listing)
+
+        source_map.write_text("08-caregiver-settings.jpg\tsource.png\n", encoding="utf-8")
+        try:
+            MODULE.store_listing_evidence(listing, source_map, icon, feature, phone)
+        except MODULE.EvidenceError:
+            pass
+        else:
+            raise AssertionError("Drifted screenshot source map unexpectedly passed")
+
+    print("Release evidence policy contract passed (2 accepted, 12 rejected; atomic JSON passed).")
 
 
 if __name__ == "__main__":

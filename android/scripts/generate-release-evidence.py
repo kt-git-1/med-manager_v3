@@ -16,6 +16,16 @@ import zipfile
 
 
 EXPECTED_APPLICATION_ID = "com.afterlifearchive.medmanager"
+EXPECTED_STORE_SCREENSHOTS = (
+    "01-mode-select.jpg",
+    "02-patient-today.jpg",
+    "03-patient-history.jpg",
+    "04-caregiver-today.jpg",
+    "05-caregiver-medications.jpg",
+    "06-caregiver-inventory.jpg",
+    "07-caregiver-history.jpg",
+    "08-caregiver-settings.jpg",
+)
 RELEASE_INPUT_PATHS = (
     "android",
     "ios/MedicationApp/Assets.xcassets/RolePatient.imageset",
@@ -101,6 +111,45 @@ def dependency_lock_coordinate_count(contents: str) -> int:
         bool(line.strip()) and not line.lstrip().startswith("#") and line.strip() != "empty="
         for line in contents.splitlines()
     )
+
+
+def store_listing_evidence(
+    listing: Path,
+    source_map: Path,
+    icon: Path,
+    feature_graphic: Path,
+    phone_directory: Path,
+) -> dict[str, object]:
+    try:
+        mapping_names = tuple(
+            line.split("\t", 1)[0]
+            for line in source_map.read_text(encoding="utf-8").splitlines()
+            if line
+        )
+        directory_names = tuple(sorted(path.name for path in phone_directory.iterdir()))
+    except OSError as error:
+        raise EvidenceError("Play store listing inputs could not be read") from error
+    if mapping_names != EXPECTED_STORE_SCREENSHOTS:
+        raise EvidenceError("Play screenshot source map order is incomplete or drifted")
+    if directory_names != tuple(sorted((*EXPECTED_STORE_SCREENSHOTS, source_map.name))):
+        raise EvidenceError("Play phone asset directory contains unexpected or missing files")
+    required_files = (listing, source_map, icon, feature_graphic)
+    if any(not path.is_file() or path.is_symlink() for path in required_files):
+        raise EvidenceError("Play store listing input is missing or unsafe")
+    screenshots = []
+    for name in EXPECTED_STORE_SCREENSHOTS:
+        path = phone_directory / name
+        if not path.is_file() or path.is_symlink():
+            raise EvidenceError(f"Play screenshot is missing or unsafe: {name}")
+        screenshots.append({"fileName": name, "sha256": file_sha256(path)})
+    return {
+        "locale": "ja-JP",
+        "listingSha256": file_sha256(listing),
+        "screenshotSourceMapSha256": file_sha256(source_map),
+        "icon512Sha256": file_sha256(icon),
+        "featureGraphicSha256": file_sha256(feature_graphic),
+        "screenshots": screenshots,
+    }
 
 
 def run_command(repository_root: Path, command: list[str], *, allow_failure: bool = False) -> str:
@@ -218,8 +267,16 @@ def generate_report(args: argparse.Namespace) -> dict[str, object]:
             details += "\nChanged release inputs:\n - " + "\n - ".join(release_input_changes)
         raise EvidenceError(f"Signed release evidence policy failed:\n - {details}")
 
+    store_listing = store_listing_evidence(
+        args.store_listing,
+        args.store_source_map,
+        args.store_icon,
+        args.store_feature_graphic,
+        args.store_phone_directory,
+    )
+
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "source": {
             "commitSha": source_commit,
             "branch": source_branch,
@@ -250,6 +307,7 @@ def generate_report(args: argparse.Namespace) -> dict[str, object]:
             "gradleLockSha256": policy_input.dependency_lock_sha256,
             "bundletoolVersion": args.bundletool_version,
         },
+        "storeListing": store_listing,
         "verifiedGates": [
             "production-runtime",
             "upload-keystore",
@@ -281,6 +339,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--baseline-sha", required=True)
     parser.add_argument("--expected-signer-sha256", required=True)
     parser.add_argument("--bundletool-version", required=True)
+    parser.add_argument("--store-listing", type=Path, required=True)
+    parser.add_argument("--store-source-map", type=Path, required=True)
+    parser.add_argument("--store-icon", type=Path, required=True)
+    parser.add_argument("--store-feature-graphic", type=Path, required=True)
+    parser.add_argument("--store-phone-directory", type=Path, required=True)
     return parser.parse_args()
 
 
