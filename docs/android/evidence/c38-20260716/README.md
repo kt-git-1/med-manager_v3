@@ -14,6 +14,10 @@
 | Light | `ui-003-light-side-by-side.png` |
 | Dark | `ui-003-dark-side-by-side.png` |
 | iOS OS Accessibility XXXL / Android 200% dark | `ui-003-dark-adaptive-side-by-side.png` |
+| Android 200% font, light | `android-ui-003-caregiver-auth-choice-font-2.0.png` |
+| Android 200% font, light (scrolled to lower controls) | `android-ui-003-caregiver-auth-choice-font-2.0-scrolled.png` |
+| Android 200% font, dark | `android-ui-003-caregiver-auth-choice-dark-font-2.0.png` |
+| Android 200% font, dark (viewport-equivalent check) | `android-ui-003-caregiver-auth-choice-dark-font-2.0-lower.png` |
 
 The iOS application currently applies `.dynamicTypeSize(.xLarge)` at the root. Consequently its dark and OS Accessibility XXXL captures are byte-identical. Android intentionally retains the stricter project requirement: at 200% font scale the header and cards expand, and login, signup and mode-reset remain scroll-reachable. The adaptive pair documents this current cross-platform policy instead of falsely treating the fixed iOS image as enlarged text.
 
@@ -45,3 +49,7 @@ SF Symbols and Material glyph outlines, system bars and responsive line wrapping
 | `android-ui-003-caregiver-auth-choice-matched-dark.png` | `0099495fa9a87dbbfb83074bec1837fff1c3319ea01fa09911d795e9e345ff5e` |
 | `ios-ui-003-caregiver-auth-choice-dark-axxxl.png` | `9f0a1ab4f0c28da5c4ccd675801a94f89478e014bdcf7437aff4763a9ceb9928` |
 | `android-ui-003-caregiver-auth-choice-dark-font-2.0.png` | `c14687aa0dd780d913317657f7244e94a7399dd2f2aff5f04b0234f2c071097c` |
+| `android-ui-003-caregiver-auth-choice-dark-font-2.0-lower.png` | `c14687aa0dd780d913317657f7244e94a7399dd2f2aff5f04b0234f2c071097c` |
+| `android-ui-003-caregiver-auth-choice-font-2.0.png` | `62f8879809c93ba984e6151e087fe6679cb1022d38f181b8dcafe6d427aa2bb5` |
+| `android-ui-003-caregiver-auth-choice-font-2.0-scrolled.png` | `88cddbd5dba73a1a48b745fd8c3702b34376e7f91a57fa45d98dba82ad4206c4` |
+| `android-ui-003-caregiver-auth-choice-dark.png` | `ee67dfdf2a9fd8f85f989509bbdcc857ff4f6fadf6d581458599100946cebbf2` |
