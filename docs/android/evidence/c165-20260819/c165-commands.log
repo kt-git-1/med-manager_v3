@@ -1,0 +1,25 @@
+Main merge surface contract passed: accepted=1 rejected=11
+---
+test_approved_contract_passes (__main__.ReleaseManifestPolicyTests.test_approved_contract_passes) ... ok
+test_authentication_link_must_remain_browsable (__main__.ReleaseManifestPolicyTests.test_authentication_link_must_remain_browsable) ... ok
+test_backup_or_cleartext_relaxation_is_rejected (__main__.ReleaseManifestPolicyTests.test_backup_or_cleartext_relaxation_is_rejected) ... ok
+test_bundletool_padded_signature_value_passes (__main__.ReleaseManifestPolicyTests.test_bundletool_padded_signature_value_passes) ... ok
+test_debuggable_release_is_rejected (__main__.ReleaseManifestPolicyTests.test_debuggable_release_is_rejected) ... ok
+test_firebase_auto_collection_is_rejected (__main__.ReleaseManifestPolicyTests.test_firebase_auto_collection_is_rejected) ... ok
+test_firebase_receiver_must_remain_permission_guarded (__main__.ReleaseManifestPolicyTests.test_firebase_receiver_must_remain_permission_guarded) ... ok
+test_profile_receiver_must_remain_dump_guarded (__main__.ReleaseManifestPolicyTests.test_profile_receiver_must_remain_dump_guarded) ... ok
+test_test_only_or_shell_profileable_release_is_rejected (__main__.ReleaseManifestPolicyTests.test_test_only_or_shell_profileable_release_is_rejected) ... ok
+test_unreviewed_authentication_host_is_rejected (__main__.ReleaseManifestPolicyTests.test_unreviewed_authentication_host_is_rejected) ... ok
+test_unreviewed_exported_component_is_rejected (__main__.ReleaseManifestPolicyTests.test_unreviewed_exported_component_is_rejected) ... ok
+test_unreviewed_permission_is_rejected (__main__.ReleaseManifestPolicyTests.test_unreviewed_permission_is_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.003s
+
+OK
+---
+Play store listing contract passed: accepted=1 rejected=20
+---
+Android CI runtime contract passed (1 accepted, 23 rejected).
+---
+Release evidence policy contract passed (4 accepted, 14 rejected; generated-ledger handoff and atomic JSON passed).
