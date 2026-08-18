@@ -1,0 +1,108 @@
+$ play_upload_env
+status=0
+STDOUT:
+Play store listing contract passed: accepted=1 rejected=20
+Play store listing verification passed: textBlocks=4 screenshots=8 sourceMappings=8 publicUrls=5
+Upload keystore verification passed.
+UPLOAD_CERT_SHA256=f91e39a0ae9e76ef398b5949a4a8c1badafd4bc68d256643d58e826665990bf7
+Universal APK Set extraction contract passed (1 accepted, 8 rejected; atomic output passed).
+Device split install contract passed (1 accepted, 2 rejected; refusal/cleanup passed).
+Device split-set contract passed (2 accepted, 10 rejected; atomic report passed).
+Release manifest security/privacy policy verification passed.
+package=com.afterlifearchive.medmanager permissions=6 exported=3 authLinks=2
+Release APK compatibility verification passed.
+applicationId=com.afterlifearchive.medmanager minSdk=26 targetSdk=35
+16 KB ZIP and native ELF alignment: passed
+Advertising/attribution permission exclusion: passed
+SHA-256=37a56299678b426ef5d3953936febf91d55e77a2841c8feb0dc2b4b79c583e3a
+bundletool validation and base-manifest extraction passed.
+Release manifest security/privacy policy verification passed.
+package=com.afterlifearchive.medmanager permissions=6 exported=3 authLinks=2
+Release AAB content verification passed.
+modules=base dexFiles=4 nativeLibraries=8
+AAB_SHA256=49c832794a06a029a778292b9e39f6802c7ba70e0f0cd52eafa8143103d780cc
+Universal APK Set extraction passed.
+apksEntries=2 requiredApkEntries=2
+Release manifest security/privacy policy verification passed.
+package=com.afterlifearchive.medmanager permissions=6 exported=3 authLinks=2
+Release APK compatibility verification passed.
+applicationId=com.afterlifearchive.medmanager minSdk=26 targetSdk=35
+16 KB ZIP and native ELF alignment: passed
+Advertising/attribution permission exclusion: passed
+SHA-256=38813894377f41862c252885d5360c26c4fa9112356b5064caf1bb44e37ffb0e
+Release AAB install-surface verification passed.
+APK_SET_MODE=universal APK_SIGNER=synthetic-test-only
+OUTPUT_APK=/Users/kaito/workspace/med-manager_v3-android-worktree/android/app/build/outputs/bundle-install-surface/universal-test-only.apk
+Selected APKs for api26-arm64-xhdpi: base-arm64_v8a.apk base-ja.apk base-master.apk base-xhdpi.apk
+Device split-set structure verification passed.
+selectedApks=4 dexFiles=4 nativeLibraries=2
+Release manifest security/privacy policy verification passed.
+package=com.afterlifearchive.medmanager permissions=6 exported=3 authLinks=2
+Release APK compatibility verification passed.
+applicationId=com.afterlifearchive.medmanager minSdk=26 targetSdk=35
+16 KB ZIP and native ELF alignment: passed
+Advertising/attribution permission exclusion: passed
+SHA-256=08104077f296426f7b112ed8539b08f82167ad71a74512accf08d70c5d6507d9
+Device split-surface verification passed: api26-arm64-xhdpi abi=arm64-v8a density=xhdpi language=ja
+Selected APKs for api33-x86_64-xxhdpi: base-ja.apk base-master_2.apk base-x86_64.apk base-xxhdpi.apk
+Device split-set structure verification passed.
+selectedApks=4 dexFiles=4 nativeLibraries=2
+Release manifest security/privacy policy verification passed.
+package=com.afterlifearchive.medmanager permissions=6 exported=3 authLinks=2
+Release APK compatibility verification passed.
+applicationId=com.afterlifearchive.medmanager minSdk=26 targetSdk=35
+16 KB ZIP and native ELF alignment: passed
+Advertising/attribution permission exclusion: passed
+SHA-256=d7a53caa8d34e686823d90931bb035b0e0b52c0dc4fad4b0faae7ae3032ec8c7
+Device split-surface verification passed: api33-x86_64-xxhdpi abi=x86_64 density=xxhdpi language=ja
+Selected APKs for api35-a302sh-ja: base-arm64_v8a.apk base-ja.apk base-master_2.apk base-xhdpi.apk
+Device split-set structure verification passed.
+selectedApks=4 dexFiles=4 nativeLibraries=2
+Release manifest security/privacy policy verification passed.
+package=com.afterlifearchive.medmanager permissions=6 exported=3 authLinks=2
+Release APK compatibility verification passed.
+applicationId=com.afterlifearchive.medmanager minSdk=26 targetSdk=35
+16 KB ZIP and native ELF alignment: passed
+Advertising/attribution permission exclusion: passed
+SHA-256=d7a53caa8d34e686823d90931bb035b0e0b52c0dc4fad4b0faae7ae3032ec8c7
+Device split-surface verification passed: api35-a302sh-ja abi=arm64-v8a density=xhdpi language=ja
+Release AAB device split-surface verification passed.
+DEVICE_SPECS=3 SELECTED_APKS_PER_SPEC=4 APK_SIGNER=synthetic-test-only
+OUTPUT_DIR=/Users/kaito/workspace/med-manager_v3-android-worktree/android/app/build/outputs/device-split-install-surface
+Signed AAB verification passed.
+AAB_SHA256=49c832794a06a029a778292b9e39f6802c7ba70e0f0cd52eafa8143103d780cc
+UPLOAD_CERT_SHA256=f91e39a0ae9e76ef398b5949a4a8c1badafd4bc68d256643d58e826665990bf7
+STDERR:
+Aug 19, 2026 8:36:57 AM com.android.tools.build.bundletool.commands.ExtractApksCommand lambda$extractMatchedApksFromApksArchive$5
+INFO: Output directory '/var/folders/qk/k_tcht_570sdw_ggrzmhj8sc0000gn/T/medmanager-device-splits.Kspf5K/api26-arm64-xhdpi' does not exist, creating it.
+The APKs have been extracted in the directory: /var/folders/qk/k_tcht_570sdw_ggrzmhj8sc0000gn/T/medmanager-device-splits.Kspf5K/api26-arm64-xhdpi
+Aug 19, 2026 8:37:04 AM com.android.tools.build.bundletool.commands.ExtractApksCommand lambda$extractMatchedApksFromApksArchive$5
+INFO: Output directory '/var/folders/qk/k_tcht_570sdw_ggrzmhj8sc0000gn/T/medmanager-device-splits.Kspf5K/api33-x86_64-xxhdpi' does not exist, creating it.
+The APKs have been extracted in the directory: /var/folders/qk/k_tcht_570sdw_ggrzmhj8sc0000gn/T/medmanager-device-splits.Kspf5K/api33-x86_64-xxhdpi
+Aug 19, 2026 8:37:12 AM com.android.tools.build.bundletool.commands.ExtractApksCommand lambda$extractMatchedApksFromApksArchive$5
+INFO: Output directory '/var/folders/qk/k_tcht_570sdw_ggrzmhj8sc0000gn/T/medmanager-device-splits.Kspf5K/api35-a302sh-ja' does not exist, creating it.
+The APKs have been extracted in the directory: /var/folders/qk/k_tcht_570sdw_ggrzmhj8sc0000gn/T/medmanager-device-splits.Kspf5K/api35-a302sh-ja
+
+--------------------------------------------------------------------------------
+$ expected_only_env
+status=1
+STDOUT:
+Play store listing contract passed: accepted=1 rejected=20
+Play store listing verification passed: textBlocks=4 screenshots=8 sourceMappings=8 publicUrls=5
+STDERR:
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:verifyProductionSigning'.
+> Set PLAY_UPLOAD_CERT_SHA256 to the registered Play upload-certificate fingerprint.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 7s
+
+--------------------------------------------------------------------------------
