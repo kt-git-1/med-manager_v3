@@ -1,0 +1,7 @@
+  mWakefulness=Awake
+  mWakefulnessChanging=false
+  mHoldingWakeLockSuspendBlocker=false
+  mHoldingDisplaySuspendBlocker=true
+        mInputRestricted=false
+    mShowingDream=false mDreamingLockscreen=false
+    isKeyguardShowing=false
