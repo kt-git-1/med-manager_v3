@@ -1,0 +1,17 @@
+ANDROID_UI_TEST_SHARDS=4 ./android/scripts/run-connected-ui-shards.sh emulator-5554
+
+> Connected UI shard 1/4
+- tests=66 failures=0 errors=0 skipped=0
+
+> Connected UI shard 2/4
+- tests=59 failures=0 errors=0 skipped=0
+
+> Connected UI shard 3/4
+- tests=80 failures=0 errors=0 skipped=0
+
+> Connected UI shard 4/4
+- tests=78 failures=0 errors=0 skipped=0
+
+All shards passed:
+- tests=283 failures=0 errors=0 skipped=0
+Evidence path: android/app/build/reports/connected-ui-shards
