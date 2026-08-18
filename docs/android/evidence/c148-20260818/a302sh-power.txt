@@ -1,0 +1,5 @@
+  mWakefulness=Dozing
+  mWakefulnessChanging=false
+        mInputRestricted=true
+    mShowingDream=false mDreamingLockscreen=true
+    isKeyguardShowing=true
