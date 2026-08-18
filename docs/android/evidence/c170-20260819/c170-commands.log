@@ -1,0 +1,206 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Configuration 'bundletoolCli' was resolved during configuration time.
+This is a build performance and scalability issue.
+See https://github.com/gradle/gradle/issues/2298
+Run with --info for a stacktrace.
+
+> Task :app:verifyReleaseEvidencePolicyContract
+Release evidence policy contract passed (4 accepted, 14 rejected; generated-ledger handoff and atomic JSON passed).
+
+> Task :app:renderPlayStoreScreenshots UP-TO-DATE
+
+> Task :app:verifyPlayStoreListingContract
+Play store listing contract passed: accepted=1 rejected=20
+
+> Task :app:verifyPlayStoreListing
+Play store listing verification passed: textBlocks=4 screenshots=8 sourceMappings=8 publicUrls=5
+
+> Task :app:verifyPlayStoreScreenshotRendererContract
+> Task :app:verifyPlayStoreAssets
+> Task :app:verifyRuntimeCredentialSafety
+> Task :app:verifyProductionRuntime
+> Task :app:verifyProductionSigning
+
+> Task :app:verifyUploadKeystore
+Upload keystore verification passed.
+UPLOAD_CERT_SHA256=3313f73dc347a90831e0484e844b1077b6cf526c58c932f94c7e91e31e2f6251
+
+> Task :app:syncRoleAssets UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :app:mergeReleaseNativeLibs UP-TO-DATE
+> Task :app:stripReleaseDebugSymbols UP-TO-DATE
+> Task :app:extractReleaseNativeSymbolTables UP-TO-DATE
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:checkReleaseDuplicateClasses UP-TO-DATE
+> Task :app:buildKotlinToolingMetadata UP-TO-DATE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateReleaseBuildConfig
+> Task :app:checkReleaseAarMetadata UP-TO-DATE
+> Task :app:generateReleaseResValues UP-TO-DATE
+> Task :app:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :app:generateReleaseResources UP-TO-DATE
+> Task :app:mergeReleaseResources UP-TO-DATE
+> Task :app:packageReleaseResources UP-TO-DATE
+> Task :app:parseReleaseLocalResources UP-TO-DATE
+> Task :app:createReleaseCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksRelease UP-TO-DATE
+> Task :app:processReleaseMainManifest UP-TO-DATE
+> Task :app:processReleaseManifest UP-TO-DATE
+> Task :app:processReleaseManifestForPackage UP-TO-DATE
+> Task :app:processReleaseResources UP-TO-DATE
+> Task :app:javaPreCompileRelease UP-TO-DATE
+> Task :app:desugarReleaseFileDependencies UP-TO-DATE
+> Task :app:mergeReleaseStartupProfile UP-TO-DATE
+> Task :app:mergeExtDexRelease UP-TO-DATE
+> Task :app:mergeReleaseArtProfile UP-TO-DATE
+> Task :app:mergeReleaseShaders UP-TO-DATE
+> Task :app:compileReleaseShaders NO-SOURCE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:mergeReleaseAssets UP-TO-DATE
+> Task :app:compressReleaseAssets UP-TO-DATE
+> Task :app:extractReleaseVersionControlInfo UP-TO-DATE
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :app:optimizeReleaseResources UP-TO-DATE
+> Task :app:collectReleaseDependencies UP-TO-DATE
+> Task :app:sdkReleaseDependencyData UP-TO-DATE
+> Task :app:validateSigningRelease UP-TO-DATE
+> Task :app:writeReleaseAppMetadata UP-TO-DATE
+> Task :app:writeReleaseSigningConfigVersions UP-TO-DATE
+> Task :app:verifyReleaseSdkPolicyContract
+> Task :app:verifyReleaseSdkPolicy UP-TO-DATE
+> Task :app:processApplicationManifestReleaseForBundle UP-TO-DATE
+> Task :app:bundleReleaseResources UP-TO-DATE
+> Task :app:configureReleaseDependencies UP-TO-DATE
+> Task :app:parseReleaseIntegrityConfig UP-TO-DATE
+> Task :app:verifyReleaseBundlePolicyContract
+
+> Task :app:verifyUniversalApkSetContract
+Universal APK Set extraction contract passed (1 accepted, 8 rejected; atomic output passed).
+
+> Task :app:verifyDeviceSplitInstallContract
+Device split install contract passed (1 accepted, 2 rejected; refusal/cleanup passed).
+
+> Task :app:verifyDeviceSplitSetContract
+Device split-set contract passed (2 accepted, 10 rejected; atomic report passed).
+
+> Task :app:verifyPlayReleaseHandoffContract
+Play release handoff contract passed (3 accepted/idempotent, 17 rejected).
+
+> Task :app:compileReleaseKotlin
+> Task :app:compileReleaseJavaWithJavac
+> Task :app:dexBuilderRelease
+> Task :app:mergeReleaseGlobalSynthetics UP-TO-DATE
+> Task :app:generateReleaseLintVitalReportModel
+> Task :app:processReleaseJavaRes UP-TO-DATE
+> Task :app:mergeReleaseJavaResource UP-TO-DATE
+> Task :app:mergeDexRelease
+> Task :app:buildReleasePreBundle
+> Task :app:compileReleaseArtProfile
+> Task :app:lintVitalAnalyzeRelease
+> Task :app:lintVitalReportRelease UP-TO-DATE
+> Task :app:lintVitalRelease
+> Task :app:packageReleaseBundle
+> Task :app:packageRelease
+> Task :app:createReleaseApkListingFileRedirect UP-TO-DATE
+> Task :app:assembleRelease
+> Task :app:signReleaseBundle
+
+> Task :app:verifyReleaseApkCompatibility
+Release manifest security/privacy policy verification passed.
+package=com.afterlifearchive.medmanager permissions=6 exported=3 authLinks=2
+Release APK compatibility verification passed.
+applicationId=com.afterlifearchive.medmanager minSdk=26 targetSdk=35
+16 KB ZIP and native ELF alignment: passed
+Advertising/attribution permission exclusion: passed
+SHA-256=00a727ef327511e1534eef1819b5e9a939cfc543ebd10f74e7c0c3ff9ea2ba61
+
+> Task :app:produceReleaseBundleIdeListingFile
+> Task :app:createReleaseBundleListingFileRedirect UP-TO-DATE
+> Task :app:bundleRelease
+
+> Task :app:prepareReleaseBundleManifest
+bundletool validation and base-manifest extraction passed.
+
+> Task :app:verifyReleaseBundleContent
+Release manifest security/privacy policy verification passed.
+package=com.afterlifearchive.medmanager permissions=6 exported=3 authLinks=2
+Release AAB content verification passed.
+modules=base dexFiles=4 nativeLibraries=8
+AAB_SHA256=df73426a66116f603918109aa6e9d8c56f7ea09077bd9be3d09da044b5fc9243
+
+> Task :app:verifyReleaseBundleInstallSurface
+Universal APK Set extraction passed.
+apksEntries=2 requiredApkEntries=2
+Release manifest security/privacy policy verification passed.
+package=com.afterlifearchive.medmanager permissions=6 exported=3 authLinks=2
+Release APK compatibility verification passed.
+applicationId=com.afterlifearchive.medmanager minSdk=26 targetSdk=35
+16 KB ZIP and native ELF alignment: passed
+Advertising/attribution permission exclusion: passed
+SHA-256=f7857fb03f0f33488adf1f0ae386fdca3c0366f3fc0a47bffe450f098437135f
+Release AAB install-surface verification passed.
+APK_SET_MODE=universal APK_SIGNER=synthetic-test-only
+OUTPUT_APK=/Users/kaito/workspace/med-manager_v3-android-worktree/android/app/build/outputs/bundle-install-surface/universal-test-only.apk
+
+> Task :app:verifyReleaseDeviceSplitSurface
+Selected APKs for api26-arm64-xhdpi: base-arm64_v8a.apk base-ja.apk base-master.apk base-xhdpi.apk
+Device split-set structure verification passed.
+selectedApks=4 dexFiles=4 nativeLibraries=2
+Release manifest security/privacy policy verification passed.
+package=com.afterlifearchive.medmanager permissions=6 exported=3 authLinks=2
+Release APK compatibility verification passed.
+applicationId=com.afterlifearchive.medmanager minSdk=26 targetSdk=35
+16 KB ZIP and native ELF alignment: passed
+Advertising/attribution permission exclusion: passed
+SHA-256=7bab6523009e2067cc5b6727e8378221d257b42c7e4001d9d03306cbd8496ae0
+Device split-surface verification passed: api26-arm64-xhdpi abi=arm64-v8a density=xhdpi language=ja
+Selected APKs for api33-x86_64-xxhdpi: base-ja.apk base-master_2.apk base-x86_64.apk base-xxhdpi.apk
+Device split-set structure verification passed.
+selectedApks=4 dexFiles=4 nativeLibraries=2
+Release manifest security/privacy policy verification passed.
+package=com.afterlifearchive.medmanager permissions=6 exported=3 authLinks=2
+Release APK compatibility verification passed.
+applicationId=com.afterlifearchive.medmanager minSdk=26 targetSdk=35
+16 KB ZIP and native ELF alignment: passed
+Advertising/attribution permission exclusion: passed
+SHA-256=b60949e319b43b1a53d64079f257e69ce717964c933e80b6d048d093b4ff8001
+Device split-surface verification passed: api33-x86_64-xxhdpi abi=x86_64 density=xxhdpi language=ja
+Selected APKs for api35-a302sh-ja: base-arm64_v8a.apk base-ja.apk base-master_2.apk base-xhdpi.apk
+Device split-set structure verification passed.
+selectedApks=4 dexFiles=4 nativeLibraries=2
+Release manifest security/privacy policy verification passed.
+package=com.afterlifearchive.medmanager permissions=6 exported=3 authLinks=2
+Release APK compatibility verification passed.
+applicationId=com.afterlifearchive.medmanager minSdk=26 targetSdk=35
+16 KB ZIP and native ELF alignment: passed
+Advertising/attribution permission exclusion: passed
+SHA-256=b60949e319b43b1a53d64079f257e69ce717964c933e80b6d048d093b4ff8001
+Device split-surface verification passed: api35-a302sh-ja abi=arm64-v8a density=xhdpi language=ja
+Release AAB device split-surface verification passed.
+DEVICE_SPECS=3 SELECTED_APKS_PER_SPEC=4 APK_SIGNER=synthetic-test-only
+OUTPUT_DIR=/Users/kaito/workspace/med-manager_v3-android-worktree/android/app/build/outputs/device-split-install-surface
+
+> Task :app:verifySignedReleaseBundle
+Signed AAB verification passed.
+AAB_SHA256=df73426a66116f603918109aa6e9d8c56f7ea09077bd9be3d09da044b5fc9243
+UPLOAD_CERT_SHA256=3313f73dc347a90831e0484e844b1077b6cf526c58c932f94c7e91e31e2f6251
+
+> Task :app:generateSignedReleaseEvidence
+Signed Play release evidence written: /Users/kaito/workspace/med-manager_v3-android-worktree/android/app/build/reports/play-release-evidence.json
+SOURCE_COMMIT=110ed0b7a971697d6e1e7ecf3c90bf1c6e54ae15
+VERSION_CODE=1 VERSION_NAME=1.0.6
+AAB_SHA256=df73426a66116f603918109aa6e9d8c56f7ea09077bd9be3d09da044b5fc9243
+UPLOAD_CERT_SHA256=3313f73dc347a90831e0484e844b1077b6cf526c58c932f94c7e91e31e2f6251
+
+> Task :app:preparePlayReleaseHandoff
+Play release handoff prepared: /Users/kaito/workspace/med-manager_v3-android-worktree/android/app/build/outputs/play-release/v1.0.6-code1-110ed0b7a971
+AAB_SHA256=df73426a66116f603918109aa6e9d8c56f7ea09077bd9be3d09da044b5fc9243
+FILES=3
+
+> Task :app:bundleSignedRelease
+
+BUILD SUCCESSFUL in 1m 13s
+85 actionable tasks: 37 executed, 48 up-to-date
