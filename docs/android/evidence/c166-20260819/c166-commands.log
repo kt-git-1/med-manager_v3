@@ -1,0 +1,4 @@
+for f in scripts/test-verify-*.py scripts/test-prepare-play-release-handoff.py scripts/test-generate-release-evidence.py; do
+  echo "===== RUN: $f ====="
+  python3 "$f"
+done
