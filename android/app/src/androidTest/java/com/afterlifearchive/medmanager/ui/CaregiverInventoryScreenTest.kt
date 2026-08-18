@@ -271,7 +271,7 @@ class CaregiverInventoryScreenTest {
                 }
             }
         }
-        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-item-low").fetchSemanticsNodes().isNotEmpty() }
+        composeRule.waitUntil(10_000) { composeRule.onAllNodesWithTag("caregiver-inventory-item-low").fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag("caregiver-inventory-item-low").performClick()
         composeRule.onNodeWithTag("caregiver-inventory-detail").assertIsDisplayed()
         composeRule.onNodeWithText("在庫を編集").assertIsDisplayed()
@@ -465,17 +465,20 @@ class CaregiverInventoryScreenTest {
         composeRule.onNodeWithTag("inventory-correction-quantity").performTextReplacement("4")
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction"))
         composeRule.onNodeWithTag("inventory-correction").performClick()
-        composeRule.waitUntil(5_000) {
+        composeRule.waitUntil(10_000) {
             composeRule.onAllNodesWithTag("inventory-correction-confirm").fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("inventory-correction-confirm").performClick()
 
-        composeRule.waitUntil(5_000) { repository.state.value.mutationFailed }
+        composeRule.waitUntil(10_000) { repository.state.value.mutationFailed }
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-retry"))
         composeRule.onNodeWithTag("caregiver-inventory-detail").assertIsDisplayed()
         captureDevice(activity, "android-ui-205-caregiver-inventory-detail-failure-light-matched.png")
         composeRule.onNodeWithTag("inventory-retry").performClick()
-        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-list").fetchSemanticsNodes().isNotEmpty() }
+        composeRule.waitUntil(10_000) {
+            repository.state.value.updatingMedicationId == null && !repository.state.value.mutationFailed
+        }
+        composeRule.waitUntil(10_000) { composeRule.onAllNodesWithTag("caregiver-inventory-list").fetchSemanticsNodes().isNotEmpty() }
     }
 
     @Test

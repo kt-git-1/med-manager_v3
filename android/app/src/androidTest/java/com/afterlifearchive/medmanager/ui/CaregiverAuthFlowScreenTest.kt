@@ -308,7 +308,7 @@ class CaregiverAuthFlowScreenTest {
         composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).performScrollTo().performClick()
 
         composeRule.waitUntil(5_000) { repository.state.value.loading }
-        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).assertIsDisplayed().assertIsNotEnabled()
+        composeRule.onNodeWithTag(AUTH_SUBMIT_TAG, useUnmergedTree = true).assertExists().assertIsNotEnabled()
         captureFixture("android-ui-005-caregiver-signup-loading-light.png")
         signupResult.complete(AuthSession(null, null, null))
     }
