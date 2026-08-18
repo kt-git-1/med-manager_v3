@@ -1,0 +1,3 @@
+$ ./scripts/run-connected-ui-shards.sh emulator-5554
+Connected UI shard 1/4 ... Connected UI shard 4/4 evidence preserved.
+All 4 connected UI shards passed: tests=283 failures=0 errors=0 skipped=0

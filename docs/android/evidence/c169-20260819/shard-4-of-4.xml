@@ -1,0 +1,86 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="com.afterlifearchive.medmanager.data.session.AndroidSessionRestorationTest" tests="78" failures="0" errors="0" skipped="0" time="146.12" timestamp="2026-08-18T23:47:20" hostname="localhost">
+  <properties>
+    <property name="device" value="MedicationApp_API_35(AVD) - 15" />
+    <property name="flavor" value="" />
+    <property name="project" value=":app" />
+  </properties>
+  <testcase name="missingNoBackupInstallationMarkerClearsRestoredSessionData" classname="com.afterlifearchive.medmanager.data.session.AndroidSessionRestorationTest" time="0.01" />
+  <testcase name="newRepositoryDropsExpiredPatientSessionButKeepsPatientMode" classname="com.afterlifearchive.medmanager.data.session.AndroidSessionRestorationTest" time="0.032" />
+  <testcase name="eachChoiceInvokesOnlyItsOwnAction" classname="com.afterlifearchive.medmanager.ui.CaregiverAuthChoiceScreenTest" time="2.214" />
+  <testcase name="productionCaregiverShellPreservesSelectedTabAcrossRecreationAndRotation" classname="com.afterlifearchive.medmanager.ui.CaregiverConfigurationUiTest" time="3.46" />
+  <testcase name="patientSelectionUsesHistoryIdentityAndSettingsRoute" classname="com.afterlifearchive.medmanager.ui.CaregiverHistoryScreenTest" time="1.644" />
+  <testcase name="initialMonthFailureKeepsHeaderAndUsesCurrentRecoveryCard" classname="com.afterlifearchive.medmanager.ui.CaregiverHistoryScreenTest" time="1.757" />
+  <testcase name="patientListFailureUsesCurrentCaregiverRecoveryState" classname="com.afterlifearchive.medmanager.ui.CaregiverHistoryScreenTest" time="1.787" />
+  <testcase name="screenshotFixtureShowsInlineCaregiverHistory" classname="com.afterlifearchive.medmanager.ui.CaregiverHistoryScreenTest" time="2.402" />
+  <testcase name="selectedDayFailureRetriesTheExactDayRequest" classname="com.afterlifearchive.medmanager.ui.CaregiverHistoryScreenTest" time="1.999" />
+  <testcase name="failedMonthRefreshKeepsCalendarAndShowsStaleRetryCard" classname="com.afterlifearchive.medmanager.ui.CaregiverHistoryScreenTest" time="1.141" />
+  <testcase name="settingsShowsMessageBearingInitialLoadingState" classname="com.afterlifearchive.medmanager.ui.CaregiverHomeScreenTest" time="1.787" />
+  <testcase name="settingsEmptyStateExplainsThreeStepLinkingFlow" classname="com.afterlifearchive.medmanager.ui.CaregiverHomeScreenTest" time="1.84" />
+  <testcase name="createPatientImeDoneSubmitsOnlyANonblankEnabledName" classname="com.afterlifearchive.medmanager.ui.CaregiverHomeScreenTest" time="3.789" />
+  <testcase name="caregiverSettingsUsesSharedAnalyticsConsentState" classname="com.afterlifearchive.medmanager.ui.CaregiverHomeScreenTest" time="1.872" />
+  <testcase name="medicationNoPatientActionOpensRegistrationInSettings" classname="com.afterlifearchive.medmanager.ui.CaregiverHomeScreenTest" time="1.961" />
+  <testcase name="inventoryDetailDisabledStateUsesTheLiveToggleValue" classname="com.afterlifearchive.medmanager.ui.CaregiverInventoryScreenTest" time="2.333" />
+  <testcase name="inventoryDetailConfirmationsMatchCurrentIos" classname="com.afterlifearchive.medmanager.ui.CaregiverInventoryScreenTest" time="3.83" />
+  <testcase name="failedRefreshShowsStaleInventoryAndDisablesDetailAction" classname="com.afterlifearchive.medmanager.ui.CaregiverInventoryScreenTest" time="0.995" />
+  <testcase name="inventoryDetailTwoHundredPercentRemainsReachable" classname="com.afterlifearchive.medmanager.ui.CaregiverInventoryScreenTest" time="2.119" />
+  <testcase name="inventoryDetailUpdatingOverlayMatchesCurrentIos" classname="com.afterlifearchive.medmanager.ui.CaregiverInventoryScreenTest" time="2.704" />
+  <testcase name="failedCorrectionStaysOpenAndRetryClosesAfterSuccess" classname="com.afterlifearchive.medmanager.ui.CaregiverInventoryScreenTest" time="4.004" />
+  <testcase name="screenshotFixtureShowsCaregiverInventoryDetail" classname="com.afterlifearchive.medmanager.ui.CaregiverInventoryScreenTest" time="1.599" />
+  <testcase name="emptyInventoryShowsThreeStepOnboarding" classname="com.afterlifearchive.medmanager.ui.CaregiverInventoryScreenTest" time="1.53" />
+  <testcase name="weeklyRefillUsesBlockingUpdatingOverlay" classname="com.afterlifearchive.medmanager.ui.CaregiverInventoryScreenTest" time="1.475" />
+  <testcase name="patientListFailureRetriesThePatientRequest" classname="com.afterlifearchive.medmanager.ui.CaregiverInventoryScreenTest" time="0.985" />
+  <testcase name="inventoryDetailScheduledTopAndLowerMatchCurrentIos" classname="com.afterlifearchive.medmanager.ui.CaregiverInventoryScreenTest" time="2.414" />
+  <testcase name="unconfiguredMedicationCanEnableInventoryManagement" classname="com.afterlifearchive.medmanager.ui.CaregiverInventoryScreenTest" time="1.617" />
+  <testcase name="historyInlineDetailRemainsReachableAtTwoHundredPercent[darkTheme=true]" classname="com.afterlifearchive.medmanager.ui.CaregiverLargeTextUiTest" time="2.21" />
+  <testcase name="inventoryCorrectionRemainsReachableAtTwoHundredPercent[darkTheme=true]" classname="com.afterlifearchive.medmanager.ui.CaregiverLargeTextUiTest" time="2.533" />
+  <testcase name="addFormShowsConditionalPrnFieldAndValidationSummary" classname="com.afterlifearchive.medmanager.ui.CaregiverMedicationScreenTest" time="1.937" />
+  <testcase name="contentShowsMetricsFiltersScheduleAndInventory" classname="com.afterlifearchive.medmanager.ui.CaregiverMedicationScreenTest" time="1.545" />
+  <testcase name="systemBackClosesMedicationEditorWithoutSaving" classname="com.afterlifearchive.medmanager.ui.CaregiverMedicationScreenTest" time="1.789" />
+  <testcase name="addFormCapturesCurrentIosBasicSchedulePrnAndWeeklyStates" classname="com.afterlifearchive.medmanager.ui.CaregiverMedicationScreenTest" time="3.921" />
+  <testcase name="currentIosSourceCalibratedMedicationListUsesProductionHierarchy" classname="com.afterlifearchive.medmanager.ui.CaregiverMedicationScreenTest" time="2.581" />
+  <testcase name="populatedEditRemainsReachableAtTwoHundredPercentText" classname="com.afterlifearchive.medmanager.ui.CaregiverMedicationScreenTest" time="1.326" />
+  <testcase name="scheduledSupplyDaysCalculateEditableInitialInventory" classname="com.afterlifearchive.medmanager.ui.CaregiverMedicationScreenTest" time="3.608" />
+  <testcase name="emptyStateMatchesCurrentIosInDarkMode" classname="com.afterlifearchive.medmanager.ui.CaregiverMedicationScreenTest" time="1.454" />
+  <testcase name="initialFailureMatchesCurrentIosRecoveryAndLoginActions" classname="com.afterlifearchive.medmanager.ui.CaregiverMedicationScreenTest" time="1.628" />
+  <testcase name="noPatientStateRoutesToRegistration" classname="com.afterlifearchive.medmanager.ui.CaregiverMedicationScreenTest" time="1.756" />
+  <testcase name="screenshotFixtureCoversFreeLock" classname="com.afterlifearchive.medmanager.ui.CaregiverReportUiTest" time="1.482" />
+  <testcase name="freeEntitlementShowsPdfLock" classname="com.afterlifearchive.medmanager.ui.CaregiverReportUiTest" time="1.662" />
+  <testcase name="generatingOverlayCoversFetchAndOnDeviceRendering" classname="com.afterlifearchive.medmanager.ui.CaregiverReportUiTest" time="1.878" />
+  <testcase name="screenshotFixturesCoverPremiumPickerAndRenderedPdf" classname="com.afterlifearchive.medmanager.ui.CaregiverReportUiTest" time="1.849" />
+  <testcase name="failedPatientLoadExposesRetryAndLoginRecoveryActions" classname="com.afterlifearchive.medmanager.ui.CaregiverTodayScreenTest" time="1.343" />
+  <testcase name="currentIosSourceCalibratedTodayFixtureUsesStatusFirstHierarchy" classname="com.afterlifearchive.medmanager.ui.CaregiverTodayScreenTest" time="1.555" />
+  <testcase name="canonicalEmptyStateRoutesToMedicationTabAction" classname="com.afterlifearchive.medmanager.ui.CaregiverTodayScreenTest" time="1.683" />
+  <testcase name="olderMissedSlotRequiresConfirmationThenRecordsThroughCaregiverRoute" classname="com.afterlifearchive.medmanager.ui.CaregiverTodayScreenTest" time="1.624" />
+  <testcase name="dedicatedSettingsSampleRemainsScrollableInDarkMaximumText" classname="com.afterlifearchive.medmanager.ui.CaregiverTutorialOverlayTest" time="1.101" />
+  <testcase name="publishedDedicatedSampleCoversAllTenTutorialSteps" classname="com.afterlifearchive.medmanager.ui.CaregiverTutorialOverlayTest" time="1.61" />
+  <testcase name="rendersCanonicalJapaneseContent" classname="com.afterlifearchive.medmanager.ui.ModeSelectScreenTest" time="0.848" />
+  <testcase name="todayPrimaryAndPrnEntryRemainReachableAtAdaptiveFontScale[fontScale=1.3]" classname="com.afterlifearchive.medmanager.ui.PatientAdaptiveUiTest" time="0.967" />
+  <testcase name="todayPrimaryAndPrnEntryRemainReachableAtAdaptiveFontScale[fontScale=2]" classname="com.afterlifearchive.medmanager.ui.PatientAdaptiveUiTest" time="0.779" />
+  <testcase name="noSchedulePreservesCurrentIosHierarchyInDarkTheme" classname="com.afterlifearchive.medmanager.ui.PatientHistoryContentTest" time="2.306" />
+  <testcase name="currentIosAchievementPreviewFixtureMatchesFiveDayHierarchy" classname="com.afterlifearchive.medmanager.ui.PatientHistoryContentTest" time="2.161" />
+  <testcase name="currentIosAchievementPreviewRemainsReadableInDarkMaximumText" classname="com.afterlifearchive.medmanager.ui.PatientHistoryContentTest" time="2.283" />
+  <testcase name="initialLoadingUsesCurrentIosMessageState" classname="com.afterlifearchive.medmanager.ui.PatientHistoryContentTest" time="1.135" />
+  <testcase name="retentionLockMatchesCurrentIosFullScreenActions" classname="com.afterlifearchive.medmanager.ui.PatientHistoryContentTest" time="1.464" />
+  <testcase name="dayDetailShowsEmptyContract" classname="com.afterlifearchive.medmanager.ui.PatientHistoryContentTest" time="1.164" />
+  <testcase name="publishedIosV105PatientHistoryFixtureRendersInProductionCompose" classname="com.afterlifearchive.medmanager.ui.PatientHistoryContentTest" time="2.029" />
+  <testcase name="inputIsSanitizedToSixDigitsAndEnablesSubmission" classname="com.afterlifearchive.medmanager.ui.PatientLinkScreenTest" time="2.201" />
+  <testcase name="currentIosFilledHierarchyMatchesInLightAppearanceWithoutSubmitting" classname="com.afterlifearchive.medmanager.ui.PatientLinkScreenTest" time="2.109" />
+  <testcase name="currentIosFilledHierarchyMatchesInDarkAppearanceWithoutSubmitting" classname="com.afterlifearchive.medmanager.ui.PatientLinkScreenTest" time="2.204" />
+  <testcase name="requiredVisualStatesHaveDeterministicFixtures" classname="com.afterlifearchive.medmanager.ui.PatientLinkScreenTest" time="2.578" />
+  <testcase name="settingsFixtureCapturesProductionComponent" classname="com.afterlifearchive.medmanager.ui.PatientProductionScreenshotFixtureTest" time="1.156" />
+  <testcase name="deniedNotificationPermissionDisablesToggleAndShowsGuidance" classname="com.afterlifearchive.medmanager.ui.PatientSettingsContentTest" time="3.909" />
+  <testcase name="todayKeepsLongMedicationNamesBoundedWithoutHidingThePrimaryAction" classname="com.afterlifearchive.medmanager.ui.PatientTodayContentTest" time="1.241" />
+  <testcase name="prnInsufficientInventoryShowsBadgeAndDisablesRecord" classname="com.afterlifearchive.medmanager.ui.PatientTodayContentTest" time="2.012" />
+  <testcase name="publishedIosV105PreviewUsesExactProductionTodayFixture" classname="com.afterlifearchive.medmanager.ui.PatientTodayContentTest" time="1.357" />
+  <testcase name="prnBackActionDismissesFullScreenRoute" classname="com.afterlifearchive.medmanager.ui.PatientTodayContentTest" time="1.963" />
+  <testcase name="reminderMaintenanceWarningDoesNotReplaceMutationSuccess" classname="com.afterlifearchive.medmanager.ui.PatientTodayContentTest" time="1.022" />
+  <testcase name="todayShowsCurrentIosInitialFailureAsFullState" classname="com.afterlifearchive.medmanager.ui.PatientTodayContentTest" time="1.467" />
+  <testcase name="prnSheetShowsCurrentIosUpdatingOverlay" classname="com.afterlifearchive.medmanager.ui.PatientTodayContentTest" time="1.852" />
+  <testcase name="currentIosMatchedTodayFixtureRendersInDarkTheme" classname="com.afterlifearchive.medmanager.ui.PatientTodayContentTest" time="1.508" />
+  <testcase name="prnSheetKeepsRetryableFailureVisible" classname="com.afterlifearchive.medmanager.ui.PatientTodayContentTest" time="1.905" />
+  <testcase name="prnSheetPreservesHierarchyInDarkTheme" classname="com.afterlifearchive.medmanager.ui.PatientTodayContentTest" time="1.732" />
+  <testcase name="historyReferenceFixtureCapturesProductionPatientShell" classname="com.afterlifearchive.medmanager.ui.PatientTutorialOverlayTest" time="1.435" />
+  <testcase name="publishedDedicatedSamplesContainCanonicalFixedCopy" classname="com.afterlifearchive.medmanager.ui.PatientTutorialOverlayTest" time="1.087" />
+  <testcase name="firstStepShowsCanonicalCopyAndNextAction" classname="com.afterlifearchive.medmanager.ui.PatientTutorialOverlayTest" time="1.835" />
+</testsuite>
