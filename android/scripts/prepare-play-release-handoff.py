@@ -97,7 +97,7 @@ def validate_store_listing(report: object, repository_root: Path) -> list[str]:
     if not isinstance(screenshots, list) or len(screenshots) != len(EXPECTED_STORE_SCREENSHOTS):
         failures.append("Release evidence screenshot hash inventory is incomplete")
         return failures
-    for item, name in zip(screenshots, EXPECTED_STORE_SCREENSHOTS, strict=True):
+    for item, name in zip(screenshots, EXPECTED_STORE_SCREENSHOTS):
         expected_sha = file_sha256(phone_directory / name)
         if not isinstance(item, dict) or set(item) != {"fileName", "sha256"}:
             failures.append("Release evidence screenshot hash entry is malformed")
