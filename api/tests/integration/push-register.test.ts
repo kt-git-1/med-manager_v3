@@ -160,6 +160,25 @@ describe("POST /api/push/register", () => {
     expect(device!.isEnabled).toBe(true);
   });
 
+  it("accepts an Android FCM device", async () => {
+    const { POST } = await import("../../app/api/push/register/route");
+    const req = new Request("http://localhost/api/push/register", {
+      method: "POST",
+      headers: caregiverHeaders(),
+      body: JSON.stringify({ token: "android-fcm-token", platform: "android", environment: "PROD" })
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(upsertPushDeviceMock).toHaveBeenCalledWith({
+      ownerType: "CAREGIVER",
+      ownerId: "caregiver-1",
+      token: "android-fcm-token",
+      platform: "android",
+      environment: "PROD"
+    });
+  });
+
   it("re-registers same token idempotently (lastSeenAt updated)", async () => {
     const { POST } = await import("../../app/api/push/register/route");
 
@@ -414,7 +433,7 @@ describe("POST /api/push/register — auth & validation errors", () => {
     const req = new Request("http://localhost/api/push/register", {
       method: "POST",
       headers: caregiverHeaders(),
-      body: JSON.stringify({ token: "fcm-token-1", platform: "android", environment: "DEV" })
+      body: JSON.stringify({ token: "fcm-token-1", platform: "web", environment: "DEV" })
     });
 
     const res = await POST(req);

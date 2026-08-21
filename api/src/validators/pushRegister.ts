@@ -14,7 +14,7 @@ type UnregisterResult = {
   token?: string;
 };
 
-const VALID_PLATFORMS = ["ios"] as const;
+const VALID_PLATFORMS = ["ios", "android"] as const;
 const VALID_ENVIRONMENTS = ["DEV", "PROD"] as const;
 
 /**
@@ -35,13 +35,13 @@ export function validateRegisterRequest(body: unknown): RegisterResult {
     errors.push("token is required");
   }
 
-  // platform: required, must be "ios"
+  // platform: required, must be a supported FCM client platform
   if (
     !obj.platform ||
     typeof obj.platform !== "string" ||
     !(VALID_PLATFORMS as readonly string[]).includes(obj.platform)
   ) {
-    errors.push("platform must be ios");
+    errors.push("platform must be ios or android");
   }
 
   // environment: required, must be "DEV" or "PROD"
