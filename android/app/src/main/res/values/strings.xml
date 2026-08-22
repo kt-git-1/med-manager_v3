@@ -711,7 +711,7 @@
     <string name="caregiver_medication_form_slot_bedtime">眠前</string>
     <string name="caregiver_medication_delete">薬を削除する</string>
     <string name="caregiver_medication_delete_confirm_title">薬を削除しますか？</string>
-    <string name="caregiver_medication_delete_confirm_message">この操作は取り消せません。</string>
+    <string name="caregiver_medication_delete_confirm_message">今後の服薬予定から削除します。これまでの服薬履歴は残ります。</string>
     <string name="caregiver_medication_delete_confirm_action">削除する</string>
     <string name="caregiver_medication_delete_error">薬を削除できませんでした。通信状態を確認して、もう一度お試しください。</string>
 

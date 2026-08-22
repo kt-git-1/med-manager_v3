@@ -497,7 +497,7 @@ class CaregiverMedicationScreenTest {
 
         composeRule.onNodeWithTag("medication-delete-dialog").assertIsDisplayed()
         composeRule.onNodeWithText("薬を削除しますか？").assertIsDisplayed()
-        composeRule.onNodeWithText("この操作は取り消せません。").assertIsDisplayed()
+        composeRule.onNodeWithText("今後の服薬予定から削除します。これまでの服薬履歴は残ります。").assertIsDisplayed()
     }
 
     private fun setContent(
