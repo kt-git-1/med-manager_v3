@@ -7,7 +7,7 @@ final class PatientTodayExpandableSummaryUITests: XCTestCase {
         app.launchArguments = ["-PatientTodayV105Preview"]
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["夜のお薬"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["飲み遅れのお薬"].waitForExistence(timeout: 3))
         XCTAssertFalse(app.staticTexts["昼のお薬"].exists)
 
         let toggle = app.buttons["PatientTodaySummaryToggle-morning"]
