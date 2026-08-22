@@ -122,6 +122,36 @@ describe("schedule generator", () => {
     ]);
   });
 
+  it("keeps a recorded dose scheduled after archive time without restoring unrecorded doses", () => {
+    const recordedDoseKey = "patient-1:med-1:2026-02-03T04:00:00.000Z";
+    const doses = generateSchedule({
+      medications: [
+        {
+          ...baseMedication,
+          isActive: false,
+          isArchived: true,
+          archivedAt: new Date("2026-02-03T03:00:00.000Z") // Feb 3, 12:00 JST
+        }
+      ],
+      regimens: [
+        {
+          ...baseRegimen,
+          daysOfWeek: [],
+          times: ["08:00", "13:00", "19:00"]
+        }
+      ],
+      from: new Date("2026-02-02T15:00:00.000Z"),
+      to: new Date("2026-02-03T15:00:00.000Z"),
+      includeArchivedHistory: true,
+      recordedDoseKeys: new Set([recordedDoseKey])
+    });
+
+    expect(doses.map((dose) => dose.scheduledAt)).toEqual([
+      "2026-02-02T23:00:00.000Z",
+      "2026-02-03T04:00:00.000Z"
+    ]);
+  });
+
   it("does not return archived medications to today or recordable schedules", () => {
     const doses = generateSchedule({
       medications: [
