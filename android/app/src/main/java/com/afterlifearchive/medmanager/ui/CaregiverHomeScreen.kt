@@ -50,7 +50,6 @@ import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Link
-import androidx.compose.material.icons.rounded.LinkOff
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Person
@@ -126,6 +125,9 @@ import com.afterlifearchive.medmanager.AnalyticsCaregiverTab
 import com.afterlifearchive.medmanager.AnalyticsService
 import com.afterlifearchive.medmanager.AnalyticsAppMode
 import com.afterlifearchive.medmanager.AnalyticsCoreAction
+import com.afterlifearchive.medmanager.AnalyticsFailureReason
+import com.afterlifearchive.medmanager.AnalyticsNotificationPermissionResult
+import com.afterlifearchive.medmanager.AnalyticsSurface
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -167,8 +169,16 @@ fun CaregiverHomeScreen(
         mutableStateOf(if (tutorialEnabled && !tutorialPreferences.getBoolean("seen", false)) 0 else -1)
     }
     var postTutorialFocusTag by rememberSaveable { mutableStateOf<String?>(null) }
+    var guidedPatientCreationRequested by rememberSaveable { mutableStateOf(false) }
+    var guidedMedicationRegistrationPending by rememberSaveable { mutableStateOf(false) }
+    var guidedMedicationEditorOpen by rememberSaveable { mutableStateOf(false) }
     val selectedTab = CaregiverTab.valueOf(selectedTabName)
-    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        analyticsService?.logNotificationPermissionResult(
+            if (granted) AnalyticsNotificationPermissionResult.AUTHORIZED else AnalyticsNotificationPermissionResult.DENIED,
+            AnalyticsSurface.NOTIFICATIONS,
+        )
+    }
     val historyState = historyRepository?.state?.collectAsStateWithLifecycle()?.value
 
     fun selectTab(tab: CaregiverTab) {
@@ -178,14 +188,13 @@ fun CaregiverHomeScreen(
         if (changed) analyticsService?.logCaregiverTabViewed(tab.analyticsValue())
     }
 
-    fun finishTutorial(openRegistration: Boolean) {
+    fun finishTutorial(skipped: Boolean) {
         tutorialPreferences.edit().putBoolean("seen", true).apply()
         tutorialStep = -1
-        analyticsService?.logTutorialFinished(AnalyticsAppMode.CAREGIVER, skipped = !openRegistration)
-        if (openRegistration) {
-            selectTab(CaregiverTab.SETTINGS)
-            postTutorialFocusTag = "caregiver-create-name"
-        }
+        guidedPatientCreationRequested = false
+        guidedMedicationRegistrationPending = false
+        guidedMedicationEditorOpen = false
+        analyticsService?.logTutorialFinished(AnalyticsAppMode.CAREGIVER, skipped = skipped)
     }
 
     LaunchedEffect(Unit) {
@@ -210,7 +219,7 @@ fun CaregiverHomeScreen(
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(
             Modifier.fillMaxSize().safeDrawingPadding().testTag("caregiver-home")
-                .then(if (tutorialStep >= 0) Modifier.clearAndSetSemantics { } else Modifier),
+                .then(if (tutorialStep >= 0 && !guidedMedicationEditorOpen) Modifier.clearAndSetSemantics { } else Modifier),
         ) {
             if (state.refreshFailed) {
                 CaregiverStaleDataCard(
@@ -245,7 +254,22 @@ fun CaregiverHomeScreen(
                                 visible,
                                 onLogout,
                                 onAccountDeleted,
-                                if (tutorialStep >= 0) caregiverTutorialFocusTag(tutorialStep) else postTutorialFocusTag,
+                                if (tutorialStep >= 0) null else postTutorialFocusTag,
+                                guidedPatientCreationRequested,
+                                onGuidedPatientCreationConsumed = { guidedPatientCreationRequested = false },
+                                onGuidedPatientCreated = { if (tutorialStep == 6) tutorialStep = 7 },
+                                guidedMedicationRegistrationPending,
+                                onGuidedMedicationRegistrationConsumed = {
+                                    guidedMedicationRegistrationPending = false
+                                    guidedMedicationEditorOpen = true
+                                    postTutorialFocusTag = null
+                                },
+                                onGuidedMedicationEditorClosed = { guidedMedicationEditorOpen = false },
+                                onGuidedMedicationCreated = {
+                                    guidedMedicationEditorOpen = false
+                                    if (tutorialStep == 8) tutorialStep = 9
+                                },
+                                onLinkingCodeDismissed = { if (tutorialStep == 7) tutorialStep = 8 },
                                 onOpenMedications = { selectTab(CaregiverTab.MEDICATIONS) },
                                 onOpenPatients = { selectTab(CaregiverTab.SETTINGS) },
                                 onRetryPatients = { scope.launch { repository.refresh() } },
@@ -270,23 +294,46 @@ fun CaregiverHomeScreen(
                 }
             }
         }
-        if (tutorialStep >= 0) {
+        if (tutorialStep >= 0 && !guidedMedicationEditorOpen) {
             Box(Modifier.fillMaxSize().testTag("caregiver-tutorial-sample")) {
                 CaregiverTutorialSampleScreen(tutorialStep)
             }
         }
-        if (tutorialStep >= 0) {
+        if (tutorialStep >= 0 && !guidedMedicationEditorOpen) {
             CaregiverTutorialOverlay(
                 step = tutorialStep,
-                onSkip = { finishTutorial(openRegistration = false) },
+                onSkip = { finishTutorial(skipped = true) },
                 onPrevious = { if (tutorialStep > 0) tutorialStep -= 1 },
                 onNext = {
-                    if (tutorialStep == CAREGIVER_TUTORIAL_STEP_COUNT - 1) {
-                        finishTutorial(openRegistration = true)
-                        if (requestNotificationPermission != null) requestNotificationPermission()
-                        else if (Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    } else {
-                        tutorialStep += 1
+                    when (tutorialStep) {
+                        6 -> if (state.patients.isEmpty()) {
+                            guidedPatientCreationRequested = true
+                        } else {
+                            tutorialStep = 7
+                        }
+                        7 -> if (state.selectedPatient == null) {
+                            tutorialStep = 6
+                        } else scope.launch {
+                            if (repository.issueLinkingCode()) {
+                                analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.LINK_CODE_ISSUED)
+                            } else {
+                                analyticsService?.logCoreActionFailed(
+                                    AnalyticsCoreAction.LINK_CODE_ISSUED,
+                                    AnalyticsFailureReason.SERVER,
+                                )
+                            }
+                        }
+                        8 -> if (state.selectedPatient == null || medicationRepository == null) {
+                            tutorialStep = 6
+                        } else {
+                            guidedMedicationRegistrationPending = true
+                        }
+                        CAREGIVER_TUTORIAL_STEP_COUNT - 1 -> {
+                            finishTutorial(skipped = false)
+                            if (requestNotificationPermission != null) requestNotificationPermission()
+                            else if (Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                        else -> tutorialStep += 1
                     }
                 },
             )
@@ -310,28 +357,55 @@ private fun CaregiverTabContent(
     onLogout: () -> Unit,
     onAccountDeleted: () -> Unit,
     tutorialFocusTag: String?,
+    guidedPatientCreationRequested: Boolean,
+    onGuidedPatientCreationConsumed: () -> Unit,
+    onGuidedPatientCreated: () -> Unit,
+    guidedMedicationRegistrationPending: Boolean,
+    onGuidedMedicationRegistrationConsumed: () -> Unit,
+    onGuidedMedicationEditorClosed: () -> Unit,
+    onGuidedMedicationCreated: () -> Unit,
+    onLinkingCodeDismissed: () -> Unit,
     onOpenMedications: () -> Unit,
     onOpenPatients: () -> Unit,
     onRetryPatients: () -> Unit,
     onCreatePatient: () -> Unit,
 ) {
     when (tab) {
-        CaregiverTab.SETTINGS -> CaregiverPatientSelectionScreen(state, repository, pushRepository, analyticsService, visible, onLogout, onAccountDeleted, tutorialFocusTag)
+        CaregiverTab.SETTINGS -> CaregiverPatientSelectionScreen(
+            state,
+            repository,
+            pushRepository,
+            analyticsService,
+            visible,
+            onLogout,
+            onAccountDeleted,
+            tutorialFocusTag,
+            guidedPatientCreationRequested,
+            onGuidedPatientCreationConsumed,
+            onGuidedPatientCreated,
+            onLinkingCodeDismissed,
+        )
         CaregiverTab.MEDICATIONS -> if (medicationRepository != null) {
             CaregiverMedicationScreen(
                 repository = medicationRepository,
                 patientState = state,
+                analyticsService = analyticsService,
                 enabled = visible,
                 onReturnToLogin = onLogout,
                 onOpenPatients = onOpenPatients,
                 onCreatePatient = onCreatePatient,
                 onRetryPatients = onRetryPatients,
+                openCreateRequested = guidedMedicationRegistrationPending,
+                onOpenCreateConsumed = onGuidedMedicationRegistrationConsumed,
+                onGuidedCreateClosed = onGuidedMedicationEditorClosed,
+                onGuidedMedicationCreated = onGuidedMedicationCreated,
             )
         } else CaregiverFeatureLanding(tab, state, repository, visible)
         CaregiverTab.TODAY -> if (todayRepository != null) {
             CaregiverTodayScreen(
                 repository = todayRepository,
                 patientState = state,
+                analyticsService = analyticsService,
                 enabled = visible,
                 onOpenMedications = onOpenMedications,
                 onReturnToLogin = onLogout,
@@ -432,16 +506,24 @@ private fun CaregiverPatientSelectionScreen(
     onLogout: () -> Unit,
     onAccountDeleted: () -> Unit,
     tutorialFocusTag: String?,
+    openGuidedCreateRequested: Boolean,
+    onGuidedCreateRequestConsumed: () -> Unit,
+    onGuidedPatientCreated: () -> Unit,
+    onLinkingCodeDismissed: () -> Unit,
 ) {
     var displayName by rememberSaveable { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val pushState = pushRepository?.state?.collectAsStateWithLifecycle()?.value
     val analyticsState = analyticsService?.state?.collectAsStateWithLifecycle()?.value
-    val patientActionsEnabled = enabled && !state.refreshFailed
+    val patientActionsEnabled = enabled && !state.refreshFailed && !state.refreshing
     val updating = state.savingSlotTimes || state.issuingLinkingCode ||
         state.destructiveActionInProgress || pushState?.syncing == true
     val pushPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        analyticsService?.logNotificationPermissionResult(
+            if (granted) AnalyticsNotificationPermissionResult.AUTHORIZED else AnalyticsNotificationPermissionResult.DENIED,
+            AnalyticsSurface.SETTINGS,
+        )
         if (granted) scope.launch { pushRepository?.enable() }
     }
     val selectedPatient = state.selectedPatient
@@ -452,6 +534,7 @@ private fun CaregiverPatientSelectionScreen(
     var confirmation by rememberSaveable { mutableStateOf<String?>(null) }
     var showingSlotTimes by rememberSaveable { mutableStateOf(false) }
     var showingCreate by rememberSaveable { mutableStateOf(false) }
+    var guidedCreateActive by rememberSaveable { mutableStateOf(false) }
     var showingPostCreateGuide by rememberSaveable { mutableStateOf(false) }
     val createSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val linkingCodeSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -474,14 +557,32 @@ private fun CaregiverPatientSelectionScreen(
         }
         if (targetIndex != null) listState.animateScrollToItem(targetIndex)
     }
+    LaunchedEffect(openGuidedCreateRequested, state.patients.size) {
+        if (openGuidedCreateRequested) {
+            onGuidedCreateRequestConsumed()
+            if (state.patients.isEmpty()) {
+                guidedCreateActive = true
+                showingCreate = true
+            } else {
+                onGuidedPatientCreated()
+            }
+        }
+    }
     Box(Modifier.fillMaxSize()) {
-        LazyColumn(
-            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-                .padding(horizontal = 16.dp).testTag("caregiver-settings-list"),
-            state = listState,
-            contentPadding = PaddingValues(top = 16.dp, bottom = 128.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+        MedicationPullToRefresh(
+            isRefreshing = state.refreshing,
+            enabled = enabled && !state.loading && !state.refreshing && !updating,
+            onRefresh = { scope.launch { repository.refresh() } },
+            testTag = "caregiver-settings-pull-refresh",
+            modifier = Modifier.fillMaxSize(),
         ) {
+            LazyColumn(
+                Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+                    .padding(horizontal = 16.dp).testTag("caregiver-settings-list"),
+                state = listState,
+                contentPadding = PaddingValues(top = 16.dp, bottom = 128.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
         if (!state.loading && !state.loadFailed) item {
             CaregiverSettingsHeader(selectedPatient?.displayName)
         }
@@ -527,7 +628,11 @@ private fun CaregiverPatientSelectionScreen(
                 onIssue = {
                     showingPostCreateGuide = false
                     scope.launch {
-                        if (repository.issueLinkingCode()) analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.LINK_CODE_ISSUED)
+                        if (repository.issueLinkingCode()) {
+                            analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.LINK_CODE_ISSUED)
+                        } else {
+                            analyticsService?.logCoreActionFailed(AnalyticsCoreAction.LINK_CODE_ISSUED, AnalyticsFailureReason.SERVER)
+                        }
                     }
                 },
                 onClose = { showingPostCreateGuide = false },
@@ -541,9 +646,12 @@ private fun CaregiverPatientSelectionScreen(
                 destructiveActionInProgress = state.destructiveActionInProgress,
                 linkingCodeFailed = state.linkingCodeFailed,
                 onIssue = { scope.launch {
-                    if (repository.issueLinkingCode()) analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.LINK_CODE_ISSUED)
+                    if (repository.issueLinkingCode()) {
+                        analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.LINK_CODE_ISSUED)
+                    } else {
+                        analyticsService?.logCoreActionFailed(AnalyticsCoreAction.LINK_CODE_ISSUED, AnalyticsFailureReason.SERVER)
+                    }
                 } },
-                onRevoke = { confirmation = "revoke" },
                 onDelete = { confirmation = "delete" },
             )
         }
@@ -703,12 +811,18 @@ private fun CaregiverPatientSelectionScreen(
             }
         }
         }
+            }
         }
         if (updating) CaregiverSettingsUpdatingOverlay()
     }
     if (showingCreate) {
         ModalBottomSheet(
-            onDismissRequest = { if (!state.creating) showingCreate = false },
+            onDismissRequest = {
+                if (!state.creating) {
+                    showingCreate = false
+                    guidedCreateActive = false
+                }
+            },
             sheetState = createSheetState,
             modifier = Modifier.testTag("caregiver-create-sheet"),
         ) {
@@ -722,10 +836,19 @@ private fun CaregiverPatientSelectionScreen(
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(stringResource(R.string.caregiver_create_patient), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                            Text(stringResource(R.string.caregiver_create_patient_message), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                stringResource(
+                                    if (guidedCreateActive) R.string.caregiver_guided_create_patient_message
+                                    else R.string.caregiver_create_patient_message,
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                         TextButton(
-                            onClick = { showingCreate = false },
+                            onClick = {
+                                showingCreate = false
+                                guidedCreateActive = false
+                            },
                             enabled = !state.creating,
                             modifier = Modifier.testTag("caregiver-create-close"),
                         ) { Text(stringResource(R.string.common_close)) }
@@ -739,10 +862,18 @@ private fun CaregiverPatientSelectionScreen(
                         onCreate = {
                             scope.launch {
                                 if (repository.createPatient(displayName)) {
+                                    val completedGuidedCreation = guidedCreateActive
                                     displayName = ""
                                     showingCreate = false
-                                    showingPostCreateGuide = true
+                                    guidedCreateActive = false
+                                    showingPostCreateGuide = !completedGuidedCreation
                                     analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.CAREGIVER_PATIENT_CREATED)
+                                    if (completedGuidedCreation) onGuidedPatientCreated()
+                                } else {
+                                    analyticsService?.logCoreActionFailed(
+                                        AnalyticsCoreAction.CAREGIVER_PATIENT_CREATED,
+                                        if (displayName.isBlank()) AnalyticsFailureReason.INVALID_INPUT else AnalyticsFailureReason.SERVER,
+                                    )
                                 }
                             }
                         },
@@ -754,11 +885,14 @@ private fun CaregiverPatientSelectionScreen(
     }
     state.linkingCode?.let { code ->
         ModalBottomSheet(
-            onDismissRequest = repository::dismissLinkingCode,
+            onDismissRequest = {
+                repository.dismissLinkingCode()
+                onLinkingCodeDismissed()
+            },
             sheetState = linkingCodeSheetState,
             modifier = Modifier.testTag("caregiver-linking-code-sheet"),
         ) {
-            CaregiverLinkingCodeSheet(code)
+            CaregiverLinkingCodeSheet(code, analyticsService)
         }
     }
     if (showingSlotTimes && selectedPatient != null) {
@@ -803,19 +937,17 @@ private fun CaregiverPatientSelectionScreen(
     }
     confirmation?.let { action ->
         val account = action == "account"
-        val revoke = action == "revoke"
         val logout = action == "logout"
         AlertDialog(
             onDismissRequest = { confirmation = null },
-            title = { Text(stringResource(if (logout) R.string.caregiver_logout_confirm_title else if (account) R.string.caregiver_account_delete_confirm_title else if (revoke) R.string.caregiver_patient_revoke_confirm_title else R.string.caregiver_patient_delete_confirm_title)) },
-            text = { Text(stringResource(if (logout) R.string.caregiver_logout_confirm_message else if (account) R.string.caregiver_account_delete_confirm_message else if (revoke) R.string.caregiver_patient_revoke_confirm_message else R.string.caregiver_patient_delete_confirm_message)) },
+            title = { Text(stringResource(if (logout) R.string.caregiver_logout_confirm_title else if (account) R.string.caregiver_account_delete_confirm_title else R.string.caregiver_patient_delete_confirm_title)) },
+            text = { Text(stringResource(if (logout) R.string.caregiver_logout_confirm_message else if (account) R.string.caregiver_account_delete_confirm_message else R.string.caregiver_patient_delete_confirm_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         confirmation = null
                         if (logout) onLogout() else scope.launch {
                             val success = when (action) {
-                                "revoke" -> repository.revokeSelectedPatient()
                                 "delete" -> repository.deleteSelectedPatient()
                                 else -> repository.deleteCaregiverAccount()
                             }
@@ -823,7 +955,7 @@ private fun CaregiverPatientSelectionScreen(
                         }
                     },
                     enabled = logout || account || patientActionsEnabled,
-                ) { Text(stringResource(if (logout) R.string.caregiver_account_logout else if (account) R.string.caregiver_account_delete else if (revoke) R.string.caregiver_patient_revoke_confirm else R.string.caregiver_patient_delete_confirm)) }
+                ) { Text(stringResource(if (logout) R.string.caregiver_account_logout else if (account) R.string.caregiver_account_delete else R.string.caregiver_patient_delete_confirm)) }
             },
             dismissButton = { TextButton(onClick = { confirmation = null }) { Text(stringResource(R.string.common_cancel)) } },
         )
@@ -920,7 +1052,6 @@ private fun CaregiverSelectedPatientCard(
     destructiveActionInProgress: Boolean,
     linkingCodeFailed: Boolean,
     onIssue: () -> Unit,
-    onRevoke: () -> Unit,
     onDelete: () -> Unit,
 ) {
     Card(
@@ -967,14 +1098,6 @@ private fun CaregiverSelectedPatientCard(
             if (linkingCodeFailed) {
                 Text(stringResource(R.string.caregiver_linking_code_failed), color = MaterialTheme.colorScheme.error)
             }
-            CaregiverSettingsActionButton(
-                title = stringResource(R.string.caregiver_patient_revoke),
-                icon = Icons.Rounded.LinkOff,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                enabled = enabled && !destructiveActionInProgress,
-                modifier = Modifier.testTag("caregiver-patient-revoke"),
-                onClick = onRevoke,
-            )
             CaregiverSettingsActionButton(
                 title = stringResource(R.string.caregiver_patient_delete),
                 icon = Icons.Rounded.Delete,
@@ -1351,7 +1474,7 @@ private fun CaregiverLegalRow(
 }
 
 @Composable
-private fun CaregiverLinkingCodeSheet(code: CaregiverLinkingCode) {
+private fun CaregiverLinkingCodeSheet(code: CaregiverLinkingCode, analyticsService: AnalyticsService?) {
     val context = LocalContext.current
     val expiry = formatLinkingCodeExpiry(code)
     var copied by rememberSaveable(code.code) { mutableStateOf(false) }
@@ -1394,7 +1517,10 @@ private fun CaregiverLinkingCodeSheet(code: CaregiverLinkingCode) {
                 Text(stringResource(R.string.caregiver_linking_code_copy))
             }
             OutlinedButton(
-                onClick = { shareLinkingCode(context, code, expiry) },
+                onClick = {
+                    analyticsService?.logPatientLinkCodeShareTapped()
+                    shareLinkingCode(context, code, expiry)
+                },
                 modifier = Modifier.weight(1f).height(48.dp).testTag("caregiver-linking-code-share"),
             ) {
                 Icon(Icons.Rounded.Share, contentDescription = null)

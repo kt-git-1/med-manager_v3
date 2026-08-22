@@ -7,8 +7,8 @@ if [[ -n "${1:-}" ]]; then
 else
   APK=""
   for candidate in \
-    "$PROJECT_DIR/app/build/outputs/apk/release/app-release.apk" \
-    "$PROJECT_DIR/app/build/outputs/apk/release/app-release-unsigned.apk"
+    "$PROJECT_DIR/app/build/outputs/apk/production/release/app-production-release.apk" \
+    "$PROJECT_DIR/app/build/outputs/apk/production/release/app-production-release-unsigned.apk"
   do
     if [[ -f "$candidate" ]]; then
       if [[ -n "$APK" ]]; then
@@ -22,7 +22,7 @@ fi
 
 if [[ -z "$APK" || ! -f "$APK" ]]; then
   echo "Release APK not found: $APK" >&2
-  echo "Run ./gradlew :app:assembleRelease first." >&2
+  echo "Run ./gradlew :app:assembleProductionRelease first." >&2
   exit 1
 fi
 

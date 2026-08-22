@@ -17,6 +17,7 @@ import com.afterlifearchive.medmanager.data.patient.PatientSlotBulkRequestDto
 import com.afterlifearchive.medmanager.data.patient.PatientSlotBulkResponseDto
 import com.afterlifearchive.medmanager.data.patient.PatientPrnRecordRequestDto
 import com.afterlifearchive.medmanager.data.patient.PatientWireJson
+import com.afterlifearchive.medmanager.data.patient.PatientRequestJson
 import com.afterlifearchive.medmanager.data.patient.RecordedByType
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.SlotBulkRecordResult
@@ -133,7 +134,7 @@ class CaregiverTodayApi(private val client: ApiClient) : CaregiverTodayDataSourc
     override suspend fun recordPrn(patientId: String, medication: PatientMedication, clientMutationId: String) {
         client.postBody(
             "api/patients/$patientId/prn-dose-records",
-            PatientWireJson.encodeToString(
+            PatientRequestJson.encodeToString(
                 PatientPrnRecordRequestDto(
                     medicationId = medication.id,
                     clientMutationId = clientMutationId,
@@ -228,6 +229,13 @@ class CaregiverTodayRepository(
                 )
             } else {
                 CaregiverTodayState(patientId = patientId, loadFailed = true)
+            }
+        } finally {
+            // A LaunchedEffect refresh can be cancelled when its freshness key changes. Never
+            // leave the repository permanently guarded by a stale loading/refreshing flag.
+            val current = mutableState.value
+            if (current.patientId == patientId && (current.loading || current.refreshing)) {
+                mutableState.value = current.copy(loading = false, refreshing = false)
             }
         }
     }

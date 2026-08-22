@@ -204,7 +204,7 @@ fun releaseBundleStructureFailures(entries: Set<String>): List<String> = buildLi
 val generatedRoleAssets = layout.buildDirectory.dir("generated/role-assets/res")
 val releaseApplicationId = "com.afterlifearchive.medmanager"
 val releaseVersionCode = 1
-val releaseVersionName = "1.0.6"
+val releaseVersionName = "1.0.0"
 val releaseMinSdk = 26
 val releaseTargetSdk = 35
 val publishedIosApiBaselineSha = "432b34c064d70a59c20753116b39390bee2c1cd0"
@@ -222,34 +222,71 @@ val releaseSigningConfigured = listOf(
     releaseKeyAlias,
     releaseKeyPassword,
 ).all(String::isNotBlank)
-val productionApiBaseUrl = runtimeConfig("API_BASE_URL", "https://www.okusuri-mimamori.com/")
-val productionSupabaseUrl = runtimeConfig("SUPABASE_URL")
-val productionSupabaseAnonKey = runtimeConfig("SUPABASE_ANON_KEY")
-val productionFirebaseAppId = runtimeConfig("FIREBASE_APP_ID")
-val productionFirebaseApiKey = runtimeConfig("FIREBASE_API_KEY")
-val productionFirebaseProjectId = runtimeConfig("FIREBASE_PROJECT_ID")
-val productionFirebaseSenderId = runtimeConfig("FIREBASE_SENDER_ID")
+val stagingApiBaseUrl = runtimeConfig(
+    "STAGING_API_BASE_URL",
+    runtimeConfig("API_BASE_URL", "https://staging-api.okusuri-mimamori.com/"),
+)
+val stagingSupabaseUrl = runtimeConfig("STAGING_SUPABASE_URL", runtimeConfig("SUPABASE_URL"))
+val stagingSupabaseAnonKey = runtimeConfig("STAGING_SUPABASE_ANON_KEY", runtimeConfig("SUPABASE_ANON_KEY"))
+val stagingFirebaseAppId = runtimeConfig("STAGING_FIREBASE_APP_ID", runtimeConfig("FIREBASE_APP_ID"))
+val stagingFirebaseApiKey = runtimeConfig("STAGING_FIREBASE_API_KEY", runtimeConfig("FIREBASE_API_KEY"))
+val stagingFirebaseProjectId = runtimeConfig("STAGING_FIREBASE_PROJECT_ID", runtimeConfig("FIREBASE_PROJECT_ID"))
+val stagingFirebaseSenderId = runtimeConfig("STAGING_FIREBASE_SENDER_ID", runtimeConfig("FIREBASE_SENDER_ID"))
+val stagingPushDeviceEnvironment = runtimeConfig(
+    "STAGING_PUSH_DEVICE_ENVIRONMENT",
+    runtimeConfig("PUSH_DEVICE_ENVIRONMENT", "PROD"),
+).uppercase()
+val stagingEmailRedirectUrl = runtimeConfig(
+    "STAGING_EMAIL_CONFIRMATION_REDIRECT_URL",
+    runtimeConfig("EMAIL_CONFIRMATION_REDIRECT_URL", "https://www.okusuri-mimamori.com/auth/confirmed"),
+)
+val stagingBillingEnabled = runtimeConfig("STAGING_BILLING_ENABLED", runtimeConfig("BILLING_ENABLED", "false"))
+
+val productionApiBaseUrl = runtimeConfig("PRODUCTION_API_BASE_URL", "https://www.okusuri-mimamori.com/")
+val productionSupabaseUrl = runtimeConfig(
+    "PRODUCTION_SUPABASE_URL",
+    "https://gsnasheyrncfbbnbomh.supabase.co",
+)
+val productionSupabaseAnonKey = runtimeConfig("PRODUCTION_SUPABASE_ANON_KEY")
+val productionFirebaseAppId = runtimeConfig("PRODUCTION_FIREBASE_APP_ID")
+val productionFirebaseApiKey = runtimeConfig("PRODUCTION_FIREBASE_API_KEY")
+val productionFirebaseProjectId = runtimeConfig("PRODUCTION_FIREBASE_PROJECT_ID")
+val productionFirebaseSenderId = runtimeConfig("PRODUCTION_FIREBASE_SENDER_ID")
+val productionPushDeviceEnvironment = runtimeConfig("PRODUCTION_PUSH_DEVICE_ENVIRONMENT", "PROD").uppercase()
 val productionEmailRedirectUrl = runtimeConfig(
     "EMAIL_CONFIRMATION_REDIRECT_URL",
     "https://www.okusuri-mimamori.com/auth/confirmed",
 )
-val productionBillingEnabled = runtimeConfig("BILLING_ENABLED", "false")
+val productionBillingEnabled = runtimeConfig("PRODUCTION_BILLING_ENABLED", "false")
 
-fun firebaseRuntimeFailures(): List<String> = buildList {
-    val appIdMatch = Regex("^1:([0-9]+):android:[A-Za-z0-9]+$").matchEntire(productionFirebaseAppId)
-    if (appIdMatch == null) add("FIREBASE_APP_ID is missing or malformed")
-    if (!productionFirebaseApiKey.startsWith("AIza") || productionFirebaseApiKey.length < 20) {
-        add("FIREBASE_API_KEY is missing or malformed")
+fun firebaseRuntimeFailures(
+    firebaseAppId: String,
+    firebaseApiKey: String,
+    firebaseProjectId: String,
+    firebaseSenderId: String,
+    prefix: String,
+): List<String> = buildList {
+    val appIdMatch = Regex("^1:([0-9]+):android:[A-Za-z0-9]+$").matchEntire(firebaseAppId)
+    if (appIdMatch == null) add("${prefix}_FIREBASE_APP_ID is missing or malformed")
+    if (!firebaseApiKey.startsWith("AIza") || firebaseApiKey.length < 20) {
+        add("${prefix}_FIREBASE_API_KEY is missing or malformed")
     }
-    if (!productionFirebaseProjectId.matches(Regex("^[a-z][a-z0-9-]{4,}$"))) {
-        add("FIREBASE_PROJECT_ID is missing or malformed")
+    if (!firebaseProjectId.matches(Regex("^[a-z][a-z0-9-]{4,}$"))) {
+        add("${prefix}_FIREBASE_PROJECT_ID is missing or malformed")
     }
-    if (!productionFirebaseSenderId.matches(Regex("^[0-9]+$"))) {
-        add("FIREBASE_SENDER_ID is missing or malformed")
+    if (!firebaseSenderId.matches(Regex("^[0-9]+$"))) {
+        add("${prefix}_FIREBASE_SENDER_ID is missing or malformed")
     }
-    if (appIdMatch != null && appIdMatch.groupValues[1] != productionFirebaseSenderId) {
-        add("FIREBASE_APP_ID project number must match FIREBASE_SENDER_ID")
+    if (appIdMatch != null && appIdMatch.groupValues[1] != firebaseSenderId) {
+        add("${prefix}_FIREBASE_APP_ID project number must match ${prefix}_FIREBASE_SENDER_ID")
     }
+}
+
+check(stagingPushDeviceEnvironment in setOf("DEV", "PROD")) {
+    "STAGING_PUSH_DEVICE_ENVIRONMENT must be DEV or PROD"
+}
+check(productionPushDeviceEnvironment in setOf("DEV", "PROD")) {
+    "PRODUCTION_PUSH_DEVICE_ENVIRONMENT must be DEV or PROD"
 }
 val syncRoleAssets by tasks.registering(Sync::class) {
     into(generatedRoleAssets)
@@ -264,6 +301,10 @@ val syncRoleAssets by tasks.registering(Sync::class) {
     from(rootProject.file("../ios/MedicationApp/Assets.xcassets/AppImage.imageset/med_1024_transparent.png")) {
         into("drawable-nodpi")
         rename { "app_image.png" }
+    }
+    from(rootProject.file("../ios/MedicationApp/Assets.xcassets/AppLogo.imageset/med_1024_transparent_centered_scaled3.png")) {
+        into("drawable-nodpi")
+        rename { "app_logo.png" }
     }
 }
 
@@ -285,28 +326,51 @@ android {
         versionCode = releaseVersionCode
         versionName = releaseVersionName
 
-        buildConfigField("String", "API_BASE_URL", productionApiBaseUrl.asBuildConfigString())
-        buildConfigField("String", "SUPABASE_URL", productionSupabaseUrl.asBuildConfigString())
-        buildConfigField("String", "SUPABASE_ANON_KEY", productionSupabaseAnonKey.asBuildConfigString())
-        buildConfigField("boolean", "BILLING_ENABLED", productionBillingEnabled)
-        buildConfigField("String", "FIREBASE_APP_ID", productionFirebaseAppId.asBuildConfigString())
-        buildConfigField("String", "FIREBASE_API_KEY", productionFirebaseApiKey.asBuildConfigString())
-        buildConfigField("String", "FIREBASE_PROJECT_ID", productionFirebaseProjectId.asBuildConfigString())
-        buildConfigField("String", "FIREBASE_SENDER_ID", productionFirebaseSenderId.asBuildConfigString())
-        // FirebaseApp can be initialized from FirebaseOptions, but Analytics still resolves its
-        // Android app identity from the standard google-services resources. Generate the same
-        // resource contract from Git-ignored runtime values without committing google-services.json.
-        resValue("string", "google_app_id", productionFirebaseAppId)
-        resValue("string", "google_api_key", productionFirebaseApiKey)
-        resValue("string", "gcm_defaultSenderId", productionFirebaseSenderId)
-        resValue("string", "project_id", productionFirebaseProjectId)
-        buildConfigField(
-            "String",
-            "EMAIL_CONFIRMATION_REDIRECT_URL",
-            productionEmailRedirectUrl.asBuildConfigString(),
-        )
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    flavorDimensions += "environment"
+    productFlavors {
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".staging"
+            versionNameSuffix = "-staging"
+            manifestPlaceholders["appLinkAutoVerify"] = "false"
+            buildConfigField("String", "BUILD_ENVIRONMENT", "STAGING".asBuildConfigString())
+            buildConfigField("String", "API_BASE_URL", stagingApiBaseUrl.asBuildConfigString())
+            buildConfigField("String", "SUPABASE_URL", stagingSupabaseUrl.asBuildConfigString())
+            buildConfigField("String", "SUPABASE_ANON_KEY", stagingSupabaseAnonKey.asBuildConfigString())
+            buildConfigField("boolean", "BILLING_ENABLED", stagingBillingEnabled)
+            buildConfigField("String", "FIREBASE_APP_ID", stagingFirebaseAppId.asBuildConfigString())
+            buildConfigField("String", "FIREBASE_API_KEY", stagingFirebaseApiKey.asBuildConfigString())
+            buildConfigField("String", "FIREBASE_PROJECT_ID", stagingFirebaseProjectId.asBuildConfigString())
+            buildConfigField("String", "FIREBASE_SENDER_ID", stagingFirebaseSenderId.asBuildConfigString())
+            buildConfigField("String", "PUSH_DEVICE_ENVIRONMENT", stagingPushDeviceEnvironment.asBuildConfigString())
+            buildConfigField("String", "EMAIL_CONFIRMATION_REDIRECT_URL", stagingEmailRedirectUrl.asBuildConfigString())
+            resValue("string", "google_app_id", stagingFirebaseAppId)
+            resValue("string", "google_api_key", stagingFirebaseApiKey)
+            resValue("string", "gcm_defaultSenderId", stagingFirebaseSenderId)
+            resValue("string", "project_id", stagingFirebaseProjectId)
+        }
+        create("production") {
+            dimension = "environment"
+            manifestPlaceholders["appLinkAutoVerify"] = "true"
+            buildConfigField("String", "BUILD_ENVIRONMENT", "PRODUCTION".asBuildConfigString())
+            buildConfigField("String", "API_BASE_URL", productionApiBaseUrl.asBuildConfigString())
+            buildConfigField("String", "SUPABASE_URL", productionSupabaseUrl.asBuildConfigString())
+            buildConfigField("String", "SUPABASE_ANON_KEY", productionSupabaseAnonKey.asBuildConfigString())
+            buildConfigField("boolean", "BILLING_ENABLED", productionBillingEnabled)
+            buildConfigField("String", "FIREBASE_APP_ID", productionFirebaseAppId.asBuildConfigString())
+            buildConfigField("String", "FIREBASE_API_KEY", productionFirebaseApiKey.asBuildConfigString())
+            buildConfigField("String", "FIREBASE_PROJECT_ID", productionFirebaseProjectId.asBuildConfigString())
+            buildConfigField("String", "FIREBASE_SENDER_ID", productionFirebaseSenderId.asBuildConfigString())
+            buildConfigField("String", "PUSH_DEVICE_ENVIRONMENT", productionPushDeviceEnvironment.asBuildConfigString())
+            buildConfigField("String", "EMAIL_CONFIRMATION_REDIRECT_URL", productionEmailRedirectUrl.asBuildConfigString())
+            resValue("string", "google_app_id", productionFirebaseAppId)
+            resValue("string", "google_api_key", productionFirebaseApiKey)
+            resValue("string", "gcm_defaultSenderId", productionFirebaseSenderId)
+            resValue("string", "project_id", productionFirebaseProjectId)
+        }
     }
 
     signingConfigs {
@@ -345,7 +409,7 @@ android {
 }
 
 configurations.configureEach {
-    if (name == "releaseRuntimeClasspath") {
+    if (name == "productionReleaseRuntimeClasspath") {
         resolutionStrategy.activateDependencyLocking()
     }
 }
@@ -560,11 +624,17 @@ val verifyPlayInstalledAppLinks by tasks.registering(org.gradle.api.tasks.Exec::
 
 val verifyFirebaseRuntime by tasks.registering {
     group = "verification"
-    description = "Fails unless the Android Firebase app identity is complete and internally consistent."
+    description = "Fails unless the staging Android Firebase app identity is complete and internally consistent."
     doLast {
-        val failures = firebaseRuntimeFailures()
+        val failures = firebaseRuntimeFailures(
+            stagingFirebaseAppId,
+            stagingFirebaseApiKey,
+            stagingFirebaseProjectId,
+            stagingFirebaseSenderId,
+            "STAGING",
+        )
         require(failures.isEmpty()) {
-            "Firebase runtime configuration is incomplete:\n - ${failures.joinToString("\n - ")}"
+            "Staging Firebase runtime configuration is incomplete:\n - ${failures.joinToString("\n - ")}"
         }
     }
 }
@@ -594,11 +664,21 @@ val verifyProductionRuntime by tasks.registering {
         val failures = buildList {
             val apiUri = httpsUri(productionApiBaseUrl)
             if (apiUri?.host != "www.okusuri-mimamori.com") add("API_BASE_URL must use the production HTTPS host")
-            if (httpsUri(productionSupabaseUrl) == null) add("SUPABASE_URL is missing or is not HTTPS")
-            if (!isClientSafeSupabaseKey(productionSupabaseAnonKey)) {
-                add("SUPABASE_ANON_KEY must be a client-safe publishable or legacy anon key")
+            if (httpsUri(productionSupabaseUrl)?.host != "gsnasheyrncfbbnbomh.supabase.co") {
+                add("PRODUCTION_SUPABASE_URL must use the production Supabase project")
             }
-            addAll(firebaseRuntimeFailures())
+            if (!isClientSafeSupabaseKey(productionSupabaseAnonKey)) {
+                add("PRODUCTION_SUPABASE_ANON_KEY must be a client-safe publishable or legacy anon key")
+            }
+            addAll(
+                firebaseRuntimeFailures(
+                    productionFirebaseAppId,
+                    productionFirebaseApiKey,
+                    productionFirebaseProjectId,
+                    productionFirebaseSenderId,
+                    "PRODUCTION",
+                ),
+            )
             val redirectUri = httpsUri(productionEmailRedirectUrl)
             if (redirectUri?.host != "www.okusuri-mimamori.com" || redirectUri.path != "/auth/confirmed") {
                 add("EMAIL_CONFIRMATION_REDIRECT_URL must use the production confirmation route")
@@ -609,6 +689,34 @@ val verifyProductionRuntime by tasks.registering {
         }
         require(failures.isEmpty()) {
             "Production runtime configuration is not Play-ready:\n - ${failures.joinToString("\n - ")}"
+        }
+    }
+}
+
+val verifyStagingRuntime by tasks.registering {
+    group = "verification"
+    description = "Fails unless the staging artifact is isolated to the approved staging API and database."
+    dependsOn(verifyRuntimeCredentialSafety, verifyFirebaseRuntime)
+    doLast {
+        fun httpsHost(value: String): String? = runCatching { URI(value) }.getOrNull()
+            ?.takeIf { it.scheme == "https" }
+            ?.host
+        val failures = buildList {
+            if (httpsHost(stagingApiBaseUrl) != "staging-api.okusuri-mimamori.com") {
+                add("STAGING_API_BASE_URL must use the staging API host")
+            }
+            if (httpsHost(stagingSupabaseUrl) != "kairaeahklftpjfcaddh.supabase.co") {
+                add("STAGING_SUPABASE_URL must use the staging Supabase project")
+            }
+            if (!isClientSafeSupabaseKey(stagingSupabaseAnonKey)) {
+                add("STAGING_SUPABASE_ANON_KEY must be a client-safe publishable or legacy anon key")
+            }
+            if (stagingBillingEnabled != "false") {
+                add("STAGING_BILLING_ENABLED must remain false")
+            }
+        }
+        require(failures.isEmpty()) {
+            "Staging runtime configuration is unsafe:\n - ${failures.joinToString("\n - ")}"
         }
     }
 }
@@ -650,7 +758,7 @@ val verifyReleaseSdkPolicyContract by tasks.registering {
     }
 }
 
-val releaseRuntimeClasspath = providers.provider { configurations.getByName("releaseRuntimeClasspath") }
+val releaseRuntimeClasspath = providers.provider { configurations.getByName("productionReleaseRuntimeClasspath") }
 val releaseSdkInventoryFile = layout.buildDirectory.file("reports/release-sdk-inventory.txt")
 val releaseDependencyLockFile = project.file("gradle.lockfile")
 val verifyReleaseSdkPolicy by tasks.registering {
@@ -714,9 +822,13 @@ val verifyReleaseSdkPolicy by tasks.registering {
 val verifyReleaseApkCompatibility by tasks.registering(org.gradle.api.tasks.Exec::class) {
     group = "verification"
     description = "Inspects Release manifest security/privacy, SDK, permissions and 16 KB compatibility."
-    dependsOn("assembleRelease", verifyReleaseSdkPolicy)
-    val apkFileName = if (releaseSigningConfigured) "app-release.apk" else "app-release-unsigned.apk"
-    val apkFile = layout.buildDirectory.file("outputs/apk/release/$apkFileName")
+    dependsOn("assembleProductionRelease", verifyReleaseSdkPolicy)
+    val apkFileName = if (releaseSigningConfigured) {
+        "app-production-release.apk"
+    } else {
+        "app-production-release-unsigned.apk"
+    }
+    val apkFile = layout.buildDirectory.file("outputs/apk/production/release/$apkFileName")
     inputs.files(
         apkFile,
         rootProject.file("scripts/verify-release-apk.sh"),
@@ -996,7 +1108,7 @@ val verifyPlayStoreAssets by tasks.registering {
     }
 }
 
-val releaseBundleFile = layout.buildDirectory.file("outputs/bundle/release/app-release.aab")
+val releaseBundleFile = layout.buildDirectory.file("outputs/bundle/productionRelease/app-production-release.aab")
 val releaseBundleManifestFile = layout.buildDirectory.file("reports/release-bundle-manifest.xml")
 
 val verifyReleaseBundlePolicyContract by tasks.registering {
@@ -1028,7 +1140,7 @@ val verifyReleaseBundlePolicyContract by tasks.registering {
 val prepareReleaseBundleManifest by tasks.registering(org.gradle.api.tasks.Exec::class) {
     group = "verification"
     description = "Validates the Release AAB and atomically extracts its base manifest with pinned bundletool."
-    dependsOn("bundleRelease", verifyReleaseBundlePolicyContract)
+    dependsOn("bundleProductionRelease", verifyReleaseBundlePolicyContract)
     inputs.files(
         releaseBundleFile,
         bundletoolCli,
@@ -1335,8 +1447,8 @@ val verifyPlayGeneratedApksReceiptContract by tasks.registering(org.gradle.api.t
 val verifyPlayDownloadedBaseApksReceiptContract by tasks.registering(org.gradle.api.tasks.Exec::class) {
     group = "verification"
     description = "Exercises downloaded Play base-master APK byte/signing checks and chained receipt output."
-    dependsOn("assembleDebug")
-    val debugApk = layout.buildDirectory.file("outputs/apk/debug/app-debug.apk")
+    dependsOn("assembleProductionDebug")
+    val debugApk = layout.buildDirectory.file("outputs/apk/production/debug/app-production-debug.apk")
     inputs.files(
         rootProject.file("scripts/prepare-play-release-handoff.py"),
         rootProject.file("scripts/test-prepare-play-release-handoff.py"),
@@ -1453,7 +1565,7 @@ tasks.register("bundleSignedRelease") {
 verifyReleaseApkCompatibility.configure {
     mustRunAfter(verifyProductionRuntime, verifyProductionSigning, verifyUploadKeystore)
 }
-tasks.matching { it.name == "bundleRelease" }.configureEach {
+tasks.matching { it.name == "bundleProductionRelease" }.configureEach {
     mustRunAfter(
         verifyProductionRuntime,
         verifyProductionSigning,

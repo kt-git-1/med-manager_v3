@@ -16,6 +16,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.performClick
@@ -29,6 +30,7 @@ import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayDataSource
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayRepository
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayMutationMessage
 import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
 import com.afterlifearchive.medmanager.data.patient.DoseStatus
 import com.afterlifearchive.medmanager.data.patient.PatientDose
@@ -40,6 +42,7 @@ import com.afterlifearchive.medmanager.data.patient.SlotBulkRecordResult
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import androidx.core.view.WindowCompat
 import java.time.Instant
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -62,20 +65,24 @@ class CaregiverTodayScreenTest {
             inventory = listOf(CaregiverInventorySummary("noon", true, 0.0, 1.0, true, true)),
         )
 
+        composeRule.onNodeWithTag("caregiver-today-pull-refresh").assertIsDisplayed()
         composeRule.onNodeWithText("さくらさん").assertIsDisplayed()
         composeRule.onNodeWithText("さくらさんを見守り中").assertDoesNotExist()
         composeRule.onNodeWithText("次にすること").assertDoesNotExist()
         composeRule.onNodeWithText("今日の服薬状況").assertIsDisplayed()
-        composeRule.onNodeWithText("1/3回分 記録済み").assertIsDisplayed()
-        composeRule.onNodeWithText("飲み忘れが1回分あります").assertIsDisplayed()
-        composeRule.onNodeWithText("頓服薬が1件あります").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-overview-morning"))
+        composeRule.onNodeWithContentDescription("朝、記録済み、8:00", substring = true).assertExists()
+        composeRule.onNodeWithContentDescription("昼、未記録、13:00", substring = true).assertExists()
+        composeRule.onNodeWithContentDescription("夜、飲み忘れ、19:00", substring = true).assertExists()
+        composeRule.onNodeWithContentDescription("眠前、予定なし、22:00", substring = true).assertExists()
+        composeRule.onNodeWithText("頓服薬が1種類あります").assertIsDisplayed()
         composeRule.onNodeWithText("飲み忘れがあります").assertIsDisplayed()
         composeRule.onNodeWithText("夜 19:00の服薬が飲み忘れになっています。下の今日の予定で確認できます").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-today-primary-record").assertDoesNotExist()
         captureDevice(activity, "android-ui-201-caregiver-today-light.png")
         composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-timeline-noon"))
         composeRule.onNodeWithTag("caregiver-today-slot-action-noon").assertDoesNotExist()
-        composeRule.onNodeWithText("在庫不足").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("在庫不足").assertIsDisplayed()
     }
 
     @Test
@@ -94,8 +101,11 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithText("田中 花子さん").assertIsDisplayed()
         composeRule.onNodeWithText("田中 花子さんを見守り中").assertDoesNotExist()
         composeRule.onNodeWithText("今日の服薬状況").assertIsDisplayed()
-        composeRule.onNodeWithText("2/3回分 記録済み").assertIsDisplayed()
-        composeRule.onNodeWithText("未記録が1回分あります").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-overview-morning"))
+        composeRule.onNodeWithContentDescription("朝、記録済み、8:00", substring = true).assertExists()
+        composeRule.onNodeWithContentDescription("昼、未記録、12:30", substring = true).assertExists()
+        composeRule.onNodeWithContentDescription("夜、記録済み、19:00", substring = true).assertExists()
+        composeRule.onNodeWithContentDescription("眠前、予定なし、22:00", substring = true).assertExists()
         composeRule.onNodeWithText("昼が次に記録する服薬です").assertDoesNotExist()
         composeRule.onNodeWithText("次にすること").assertDoesNotExist()
         composeRule.onNodeWithTag("caregiver-today-primary-record").assertDoesNotExist()
@@ -122,8 +132,11 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithText("なおみさん").assertIsDisplayed()
         composeRule.onNodeWithText("飲み忘れがあります").assertIsDisplayed()
         composeRule.onNodeWithText("朝 8:00の服薬が飲み忘れになっています。下の今日の予定で確認できます").assertIsDisplayed()
-        composeRule.onNodeWithText("1/3回分 記録済み").assertIsDisplayed()
-        composeRule.onNodeWithText("飲み忘れが1回分あります").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-overview-morning"))
+        composeRule.onNodeWithContentDescription("朝、飲み忘れ、8:00", substring = true).assertExists()
+        composeRule.onNodeWithContentDescription("昼、未記録、13:00", substring = true).assertExists()
+        composeRule.onNodeWithContentDescription("夜、記録済み、19:00", substring = true).assertExists()
+        composeRule.onNodeWithContentDescription("眠前、予定なし、22:00", substring = true).assertExists()
         composeRule.onNodeWithText("今日の予定").assertIsDisplayed()
         captureDevice(activity, "android-ui-201-caregiver-today-status-matched-light.png")
     }
@@ -141,11 +154,117 @@ class CaregiverTodayScreenTest {
         )
 
         composeRule.onNodeWithText("飲み遅れが1回ありました").assertIsDisplayed()
+        composeRule.onNodeWithText("1時間25分遅れ").assertIsDisplayed()
         composeRule.onNodeWithText("昼 12:00予定 → 13:25に家族が代理で記録").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-overview-morning"))
+        composeRule.onNodeWithContentDescription("昼、飲み遅れ、13:25", substring = true).assertExists()
         composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-timeline-noon"))
         composeRule.onNodeWithText("実際 13:25").assertIsDisplayed()
         composeRule.onNodeWithText("家族が代理で記録").assertIsDisplayed()
         composeRule.onNodeWithText("飲み遅れ").assertIsDisplayed()
+    }
+
+    @Test
+    fun mixedRecordersAreShownAsPatientAndCaregiverInsteadOfUnknown() {
+        setContent(
+            doses = listOf(
+                dose(
+                    "late-patient", DoseStatus.TAKEN, "2026-07-15T03:00:00Z",
+                    "本人が記録した薬", "5 mg", RecordedByType.PATIENT,
+                    takenAt = Instant.parse("2026-07-15T04:20:00Z"),
+                ),
+                dose(
+                    "late-caregiver", DoseStatus.TAKEN, "2026-07-15T03:00:00Z",
+                    "家族が記録した薬", "10 mg", RecordedByType.CAREGIVER,
+                    takenAt = Instant.parse("2026-07-15T04:25:00Z"),
+                ),
+            ),
+        )
+
+        composeRule.onNodeWithText("昼 12:00予定 → 13:25に本人・家族が記録").assertIsDisplayed()
+        composeRule.onNodeWithText("記録者を確認できません").assertDoesNotExist()
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-timeline-noon"))
+        composeRule.onNodeWithText("本人・家族が記録").assertIsDisplayed()
+    }
+
+    @Test
+    fun missingRecorderMetadataUsesAnExplicitUnavailableLabel() {
+        setContent(
+            doses = listOf(
+                dose(
+                    "late-unknown", DoseStatus.TAKEN, "2026-07-15T03:00:00Z",
+                    "記録者情報なし", "5 mg", recordedByType = null,
+                    takenAt = Instant.parse("2026-07-15T04:25:00Z"),
+                ),
+            ),
+        )
+
+        composeRule.onNodeWithText("昼 12:00予定 → 13:25に記録者を確認できません").assertIsDisplayed()
+        composeRule.onNodeWithText("記録者不明").assertDoesNotExist()
+    }
+
+    @Test
+    fun statusOverviewMatchesCurrentIosReferenceState() {
+        val activity = setContent(
+            patientName = "なおみ",
+            slotTimes = CaregiverSlotTimes("08:00", "13:00", "19:00", "23:00"),
+            doses = listOf(
+                dose(
+                    "reference-morning",
+                    DoseStatus.TAKEN,
+                    "2026-07-15T23:00:00Z",
+                    "血圧の薬",
+                    "5 mg",
+                    RecordedByType.PATIENT,
+                    Instant.parse("2026-07-16T04:21:00Z"),
+                ),
+                dose("reference-noon", DoseStatus.PENDING, "2026-07-16T04:00:00Z", "カルボシステイン", "500 mg"),
+                dose(
+                    "reference-evening",
+                    DoseStatus.TAKEN,
+                    "2026-07-16T10:00:00Z",
+                    "夕の薬",
+                    "10 mg",
+                    RecordedByType.PATIENT,
+                    Instant.parse("2026-07-16T10:05:00Z"),
+                ),
+                dose("reference-bedtime", DoseStatus.PENDING, "2026-07-16T14:00:00Z", "眠前の薬", "1錠"),
+            ),
+        )
+
+        composeRule.onNodeWithText("飲み遅れが1回ありました").assertIsDisplayed()
+        composeRule.onNodeWithText("5時間21分遅れ").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-overview-morning"))
+        composeRule.onNodeWithContentDescription("朝、飲み遅れ、13:21", substring = true).assertExists()
+        composeRule.onNodeWithContentDescription("昼、未記録、13:00", substring = true).assertExists()
+        composeRule.onNodeWithContentDescription("夜、記録済み、19:05", substring = true).assertExists()
+        composeRule.onNodeWithContentDescription("眠前、未記録、23:00", substring = true).assertExists()
+        captureDevice(activity, "android-ui-201-caregiver-today-overview-ios-reference.png")
+    }
+
+    @Test
+    fun partialSlotIsNotPresentedAsEntirelyUnrecorded() {
+        setContent(
+            doses = listOf(
+                dose(
+                    "morning-taken",
+                    DoseStatus.TAKEN,
+                    "2026-07-14T23:00:00Z",
+                    "血圧の薬",
+                    "5 mg",
+                    takenAt = Instant.parse("2026-07-15T01:30:00Z"),
+                ),
+                dose("morning-short", DoseStatus.PENDING, "2026-07-14T23:00:00Z", "胃薬", "1錠"),
+            ),
+            inventory = listOf(CaregiverInventorySummary("morning-short", true, 0.0, 1.0, true, true)),
+        )
+
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-overview-morning"))
+        composeRule.onNodeWithContentDescription("朝、一部記録、10:30", substring = true).assertExists()
+        composeRule.onNodeWithText("1/2種類").assertExists()
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-timeline-morning"))
+        composeRule.onNodeWithText("一部記録").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("在庫不足").assertIsDisplayed()
     }
 
     @Test
@@ -163,9 +282,8 @@ class CaregiverTodayScreenTest {
             fontScale = 2f,
         )
 
-        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-progress"))
-        composeRule.onNodeWithTag("caregiver-today-progress").assertIsDisplayed()
-        composeRule.onNodeWithText("1/3回分 記録済み").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-status-overview"))
+        composeRule.onNodeWithTag("caregiver-today-status-overview").assertIsDisplayed()
         captureDevice(activity, "android-ui-201-caregiver-today-dark-font-2.0.png", darkTheme = true)
     }
 
@@ -187,8 +305,8 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithText("未記録").assertIsDisplayed()
         composeRule.onNodeWithText("次に記録").assertDoesNotExist()
         composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-slot-action-noon"))
-        composeRule.onNodeWithText("2件をまとめて代理で記録").assertIsDisplayed()
-        composeRule.onNodeWithText("この時間帯の2件を記録").assertDoesNotExist()
+        composeRule.onNodeWithText("2種類をまとめて代理で記録").assertIsDisplayed()
+        composeRule.onNodeWithText("この時間帯の2種類を記録").assertDoesNotExist()
         composeRule.onNodeWithTag("caregiver-today-dose-action-morning").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-today-dose-action-noon-1").assertDoesNotExist()
         captureDevice(activity, "android-ui-201-caregiver-today-timeline-source-calibrated-light.png")
@@ -311,11 +429,13 @@ class CaregiverTodayScreenTest {
     @Test
     fun takenDoseActionDeletesThroughCurrentIosTimeline() {
         var current = listOf(dose("dose-1", DoseStatus.TAKEN, "2026-07-14T23:00:00Z", recordedByType = RecordedByType.CAREGIVER))
+        var deleteCalls = 0
         val source = object : CaregiverTodayDataSource {
             override suspend fun today(patientId: String) = current
             override suspend fun medications(patientId: String) = emptyList<PatientMedication>()
             override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
             override suspend fun deleteDose(patientId: String, dose: PatientDose) {
+                deleteCalls += 1
                 current = current.map { if (it.key == dose.key) it.copy(status = DoseStatus.PENDING) else it }
             }
         }
@@ -330,9 +450,19 @@ class CaregiverTodayScreenTest {
 
         composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-dose-action-dose-1"))
         composeRule.onNodeWithTag("caregiver-today-dose-action-dose-1").performClick()
-        composeRule.waitForIdle()
-        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-mutation-message"))
-        composeRule.onNodeWithText("服用記録を取り消しました").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-delete-dialog").assertIsDisplayed()
+        composeRule.onNodeWithText("「薬dose-1」の服用記録を未記録に戻します。").assertIsDisplayed()
+        composeRule.runOnIdle { assertEquals(0, deleteCalls) }
+        composeRule.onNodeWithText("キャンセル").performClick()
+        composeRule.onNodeWithTag("caregiver-today-delete-dialog").assertDoesNotExist()
+        composeRule.runOnIdle { assertEquals(0, deleteCalls) }
+
+        composeRule.onNodeWithTag("caregiver-today-dose-action-dose-1").performClick()
+        composeRule.onNodeWithTag("caregiver-today-delete-confirm").performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.mutationMessage == CaregiverTodayMutationMessage.DELETED }
+        composeRule.runOnIdle { assertEquals(1, deleteCalls) }
+        composeRule.onNodeWithTag("caregiver-today-mutation-message").assertDoesNotExist()
+        composeRule.onNodeWithText("服用記録を取り消しました").assertDoesNotExist()
         composeRule.onNodeWithTag("caregiver-today-dose-action-dose-1").assertDoesNotExist()
     }
 
@@ -362,9 +492,9 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithTag("caregiver-today-slot-dialog").assertIsDisplayed()
         composeRule.onNodeWithText("朝の飲み忘れを代理で記録しますか？").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-today-slot-confirm").performClick()
-        composeRule.waitForIdle()
-        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-mutation-message"))
-        composeRule.onNodeWithText("1件を記録しました").assertIsDisplayed()
+        composeRule.waitUntil(5_000) { repository.state.value.mutationMessage == CaregiverTodayMutationMessage.SLOT_RECORDED }
+        composeRule.onNodeWithTag("caregiver-today-mutation-message").assertDoesNotExist()
+        composeRule.onNodeWithText("1種類を記録しました").assertDoesNotExist()
     }
 
     @Test
@@ -402,9 +532,10 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithText("さくらさんが「痛み止め」を今服用した記録を残します。").assertIsDisplayed()
         captureDevice(activity, "android-ui-201-caregiver-today-confirm-light-matched.png")
         composeRule.onNodeWithTag("caregiver-today-prn-confirm").performClick()
-        composeRule.waitForIdle()
+        composeRule.waitUntil(5_000) { repository.state.value.mutationMessage == CaregiverTodayMutationMessage.PRN_RECORDED }
         composeRule.onNodeWithTag("caregiver-today-prn-picker").assertDoesNotExist()
-        composeRule.onNodeWithText("頓服を記録しました").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-mutation-message").assertDoesNotExist()
+        composeRule.onNodeWithText("頓服を記録しました").assertDoesNotExist()
     }
 
     @Test
@@ -530,10 +661,10 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-slot-action-morning"))
         composeRule.onNodeWithTag("caregiver-today-slot-action-morning").performClick()
         composeRule.onNodeWithTag("caregiver-today-slot-confirm").performClick()
-        composeRule.waitForIdle()
+        composeRule.waitUntil(5_000) { repository.state.value.mutationMessage == CaregiverTodayMutationMessage.SLOT_RECORDED }
 
-        composeRule.onNodeWithTag("caregiver-today-list").performScrollToNode(hasTestTag("caregiver-today-mutation-message"))
-        composeRule.onNodeWithText("1件を記録しました").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-mutation-message").assertDoesNotExist()
+        composeRule.onNodeWithText("1種類を記録しました").assertDoesNotExist()
         composeRule.onNodeWithTag("caregiver-today-stale").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-today-mutation-error").assertDoesNotExist()
         composeRule.onNodeWithText("情報を取得できませんでした").assertDoesNotExist()

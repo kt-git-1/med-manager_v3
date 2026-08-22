@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.hasTestTag
@@ -25,7 +26,10 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
@@ -40,6 +44,7 @@ import com.afterlifearchive.medmanager.data.patient.PatientSlotTimes
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import androidx.core.view.WindowCompat
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import java.time.Instant
@@ -52,6 +57,39 @@ import kotlinx.coroutines.runBlocking
 class PatientTodayContentTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun pullToRefreshInvokesPatientTodayReload() {
+        var refreshCalls = 0
+        composeRule.setContent {
+            MedicationAppTheme {
+                TodayContent(
+                    doses = listOf(dose("enough", DoseStatus.PENDING)),
+                    loading = false,
+                    updatingKey = null,
+                    error = null,
+                    message = null,
+                    maintenanceWarning = null,
+                    medications = mapOf("enough" to medication("enough", 10.0)),
+                    nextSlot = MedicationSlot.MORNING,
+                    updatingSlot = null,
+                    prnMedications = emptyList(),
+                    updatingPrnMedicationId = null,
+                    onRetry = {},
+                    onRecord = {},
+                    onDetail = {},
+                    onRecordSlot = {},
+                    onRecordPrn = {},
+                    onRemind = {},
+                    onRefresh = { refreshCalls += 1 },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("patient-today-pull-refresh").performTouchInput { swipeDown() }
+
+        composeRule.runOnIdle { assertEquals(1, refreshCalls) }
+    }
 
     @Test
     fun rendersNextSlotInventoryPartialActionAndPrn() {
@@ -94,10 +132,11 @@ class PatientTodayContentTest {
             }
         }
 
+        composeRule.onNodeWithTag("patient-today-pull-refresh").assertIsDisplayed()
         composeRule.onNodeWithText("次のお薬").assertIsDisplayed()
         composeRule.onNodeWithTag("patient-today-list")
-            .performScrollToNode(hasText("在庫不足のお薬が1件あります"))
-        composeRule.onAllNodesWithText("在庫不足のお薬が1件あります").onFirst().assertIsDisplayed()
+            .performScrollToNode(hasText("在庫不足のお薬が1種類あります"))
+        composeRule.onAllNodesWithText("在庫不足のお薬が1種類あります").onFirst().assertIsDisplayed()
         composeRule.runOnIdle { normalizeStatusBar(activity) }
         SystemClock.sleep(250)
         writeDeviceScreenshotFixture("android-ui-101-patient-inventory-partial-light.png")
@@ -157,6 +196,15 @@ class PatientTodayContentTest {
         composeRule.onNodeWithTag("patient-today-primary-bulk-record").assertIsDisplayed().assertIsNotEnabled()
         composeRule.onNodeWithText("記録できる時間になるまでお待ちください").assertDoesNotExist()
         composeRule.runOnIdle { normalizeStatusBar(activity) }
+        composeRule.waitForIdle()
+        val strip = composeRule.onNodeWithTag("patient-today-progress-strip").fetchSemanticsNode().boundsInRoot
+        MedicationSlot.entries.forEach { slot ->
+            val time = composeRule
+                .onNodeWithTag("patient-today-progress-time-${slot.name.lowercase()}")
+                .fetchSemanticsNode().boundsInRoot
+            assertTrue("${slot.name} time must stay inside progress strip", time.top >= strip.top && time.bottom <= strip.bottom)
+            assertTrue("${slot.name} time must have readable height", time.height >= 20f)
+        }
         SystemClock.sleep(250)
         writeDeviceScreenshotFixture("android-ui-101-published-v105-light.png")
     }
@@ -174,7 +222,57 @@ class PatientTodayContentTest {
         composeRule.onNodeWithText("朝 8:07に服用").assertIsDisplayed()
         composeRule.onNodeWithText("薬の内容を見る").performClick()
         composeRule.onNodeWithText("薬の内容を閉じる").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-list")
+            .performScrollToNode(hasTestTag("patient-today-summary-dose-dose-taken"))
         composeRule.onNodeWithTag("patient-today-summary-dose-dose-taken").assertIsDisplayed()
+    }
+
+    @Test
+    fun partialSlotShowsRecordedCountAndKeepsOnlyInsufficientDoseUnrecorded() {
+        val doses = listOf(
+            dose("enough", DoseStatus.TAKEN).copy(takenAt = Instant.parse("2026-07-13T23:08:00Z")),
+            dose("short", DoseStatus.PENDING),
+        )
+        val medications = mapOf(
+            "enough" to medication("enough", 9.0),
+            "short" to medication("short", 0.5),
+        )
+        composeRule.setContent {
+            MedicationAppTheme {
+                Box(Modifier.fillMaxSize().background(PatientBackground).safeDrawingPadding()) {
+                    TodayContent(
+                        doses = doses,
+                        loading = false,
+                        updatingKey = null,
+                        error = null,
+                        message = null,
+                        maintenanceWarning = null,
+                        medications = medications,
+                        nextSlot = null,
+                        updatingSlot = null,
+                        prnMedications = emptyList(),
+                        updatingPrnMedicationId = null,
+                        onRetry = {},
+                        onRecord = {},
+                        onDetail = {},
+                        onRecordSlot = {},
+                        onRecordPrn = {},
+                        onRemind = {},
+                        now = Instant.parse("2026-07-13T23:15:00Z"),
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag("patient-today-list")
+            .performScrollToNode(hasTestTag("patient-today-partial-slot-morning"))
+        composeRule.onNodeWithText("一部記録").assertIsDisplayed()
+        composeRule.onNodeWithText("朝 1/2種類記録済み").assertIsDisplayed()
+        composeRule.onNodeWithText("在庫不足の1種類は未記録です").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-summary-dose-dose-enough").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-summary-dose-dose-short").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-progress-time-morning").assertTextEquals("1/2")
+        composeRule.onNodeWithText("薬の種類").assertIsDisplayed()
     }
 
     @Test
@@ -309,7 +407,9 @@ class PatientTodayContentTest {
     fun prnRecordActionRemainsReachableAtTwoHundredPercentFontScale() {
         val activity = showPrnSheet(fontScale = 2f)
 
-        composeRule.onNodeWithTag("patient-today-prn-entry").performScrollTo().performClick()
+        composeRule.onNodeWithTag("patient-today-list")
+            .performScrollToNode(hasTestTag("patient-today-prn-entry"))
+        composeRule.onNodeWithTag("patient-today-prn-entry").assertIsDisplayed().performClick()
         composeRule.onNodeWithText("頭痛薬 1錠").assertIsDisplayed()
         composeRule.onNodeWithTag("prn-record-prn").performScrollTo().assertIsDisplayed()
         capturePrnScreen(activity, "android-ui-103-prn-list-font-2.0-matched.png")
@@ -411,7 +511,7 @@ class PatientTodayContentTest {
     }
 
     @Test
-    fun todayBlocksCachedContentBehindCurrentIosUpdatingOverlay() {
+    fun todayRefreshKeepsCachedContentBehindPullIndicator() {
         val scheduledAt = Instant.parse("2026-07-15T18:00:00Z")
         val doses = listOf(
             dose("enough", DoseStatus.PENDING).copy(scheduledAt = scheduledAt, slot = MedicationSlot.BEDTIME),
@@ -434,8 +534,8 @@ class PatientTodayContentTest {
         )
 
         composeRule.waitUntil(timeoutMillis = 5_000) { repository.state.value.refreshing }
-        composeRule.onNodeWithTag("patient-today-updating").assertIsDisplayed()
-        composeRule.onNodeWithText("更新中...").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-today-pull-refresh").assertIsDisplayed()
+        composeRule.onAllNodesWithTag("patient-today-updating").assertCountEquals(0)
         composeRule.runOnIdle { assertEquals(2, repository.state.value.doses.size) }
         composeRule.runOnIdle { normalizeStatusBar(activity) }
         composeRule.waitForIdle()
@@ -603,7 +703,7 @@ class PatientTodayContentTest {
         SystemClock.sleep(250)
         writeDeviceScreenshotFixture("android-ui-102-patient-dose-detail-content-font-2.0-matched.png")
         composeRule.onNodeWithText("1回に飲む量").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("1回1.5錠").assertIsDisplayed()
+        composeRule.onNodeWithText("1回1.5錠").performScrollTo().assertIsDisplayed()
     }
 
     @Test

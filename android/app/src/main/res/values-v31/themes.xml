@@ -3,8 +3,11 @@
     <style name="Theme.MedicationApp" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowBackground">#F2FAFC</item>
         <item name="android:statusBarColor">#F2FAFC</item>
         <item name="android:navigationBarColor">#F2FAFC</item>
+        <item name="android:windowSplashScreenBackground">#F2FAFC</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_transparent_icon</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+        <item name="android:windowSplashScreenAnimationDuration">0</item>
     </style>
 </resources>

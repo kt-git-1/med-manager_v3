@@ -9,6 +9,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+
+internal const val MedicationBaseFontScaleMultiplier = 1.25f
 
 private val TealLight = Color(0xFF008C80)
 private val TealDark = Color(0xFF009E99)
@@ -118,7 +122,13 @@ fun MedicationAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
+    val systemDensity = LocalDensity.current
+    val readableDensity = Density(
+        density = systemDensity.density,
+        fontScale = systemDensity.fontScale * MedicationBaseFontScaleMultiplier,
+    )
     androidx.compose.runtime.CompositionLocalProvider(
+        LocalDensity provides readableDensity,
         LocalMedicationExtendedColors provides if (darkTheme) DarkExtendedColors else LightExtendedColors,
     ) {
         MaterialTheme(

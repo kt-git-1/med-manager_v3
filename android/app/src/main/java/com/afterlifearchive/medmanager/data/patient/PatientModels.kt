@@ -124,7 +124,17 @@ data class HistoryDay(
     val evening: HistoryStatus,
     val bedtime: HistoryStatus,
     val prnCount: Int,
+    val slotProgress: Map<MedicationSlot, HistorySlotProgress> = emptyMap(),
 )
+
+data class HistorySlotProgress(
+    val scheduledCount: Int,
+    val takenCount: Int,
+    val pendingCount: Int,
+    val missedCount: Int,
+) {
+    val isPartial: Boolean get() = takenCount > 0 && takenCount < scheduledCount
+}
 
 data class HistoryScheduledDose(
     val medicationId: String,

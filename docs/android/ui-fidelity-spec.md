@@ -16,6 +16,7 @@ Android must reproduce the iOS app's identity, hierarchy, density, content group
 - Empty/loading/error/confirmation/success/disabled states
 - Large-text intent and minimum touch-target behavior
 - Tutorial content attached to the real operational screen
+- Launch identity: suppress the Android system's masked launcher icon, then show the full transparent iOS `AppLogo` at 180 dp for two seconds with the same 0.88-to-1.0 scale and 700 ms fade-in
 
 ### May be Android-native
 
@@ -52,6 +53,7 @@ Dark colors must be derived from the iOS dark semantic values and verified separ
 
 - Use Japanese system sans fonts unless the iOS asset explicitly uses another font.
 - Preserve semantic hierarchy rather than copying raw point sizes across platforms.
+- The product baseline applies a 1.25x font multiplier across both modes for the primary 40–50s audience. This multiplies, rather than replaces, the Android system font scale so user accessibility preferences remain effective.
 - Patient mode defaults to larger readable text and must remain usable at Android font scale 1.0, 1.3, and 2.0.
 - Essential content must not truncate at 1.3 font scale.
 - At 2.0, wrapping/scrolling is allowed but primary actions must remain reachable.

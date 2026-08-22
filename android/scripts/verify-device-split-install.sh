@@ -102,7 +102,7 @@ if [[ "$installed_names" != "$expected_installed_names" ]]; then
 fi
 package_dump="$("$ADB" -s "$SERIAL" shell dumpsys package "$PACKAGE")"
 if ! grep -Eq 'versionCode=1([[:space:]]|$)' <<< "$package_dump" ||
-  ! grep -Eq 'versionName=1\.0\.6([[:space:]]|$)' <<< "$package_dump"; then
+  ! grep -Eq 'versionName=1\.0\.0([[:space:]]|$)' <<< "$package_dump"; then
   echo "Installed split package version identity is incorrect." >&2
   exit 1
 fi
@@ -117,4 +117,4 @@ fi
 
 echo "Physical device split install verification passed."
 echo "serial=$SERIAL model=$device_model sdk=$actual_sdk abi=arm64-v8a density=$actual_density locale=$actual_locale"
-echo "selectedApks=4 versionCode=1 versionName=1.0.6 cleanup=passed"
+echo "selectedApks=4 versionCode=1 versionName=1.0.0 cleanup=passed"

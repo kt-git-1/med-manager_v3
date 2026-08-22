@@ -68,9 +68,9 @@ jobs:
       - name: Residual release gates
         run: ./gradlew verifyReleaseGates
 
-      - name: Firebase runtime
+      - name: Staging runtime isolation
         if: github.event_name == 'push'
-        run: ./gradlew verifyFirebaseRuntime
+        run: ./gradlew verifyStagingRuntime
 
       - name: Runtime credential safety
         run: ./gradlew verifyRuntimeCredentialSafety
@@ -125,14 +125,14 @@ jobs:
             exit 1
           fi
 
-      - name: Unit tests (Debug and Release)
-        run: ./gradlew testDebugUnitTest testReleaseUnitTest
+      - name: Unit tests (Staging Debug and Production Release)
+        run: ./gradlew testStagingDebugUnitTest testProductionReleaseUnitTest
 
-      - name: Debug build
-        run: ./gradlew assembleDebug
+      - name: Staging debug build
+        run: ./gradlew assembleStagingDebug
 
-      - name: Lint
-        run: ./gradlew lintDebug
+      - name: Staging lint
+        run: ./gradlew lintStagingDebug
 
       - name: Release compatibility
         run: ./gradlew verifyReleaseApkCompatibility

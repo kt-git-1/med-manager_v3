@@ -1,7 +1,7 @@
 # Android Firebase Analytics verification runbook
 
 **Status:** Android Firebase app, physical consent boundary, DebugView and Realtime verified in C76; processed Events verified in C80; Explore pending
-**Package:** `com.afterlifearchive.medmanager`
+**Packages:** Staging `com.afterlifearchive.medmanager.staging`; Production `com.afterlifearchive.medmanager`
 **Source baseline:** published app baseline `main@432b34c`; privacy-first Analytics contract retained from the pre-publication Android plan
 **Owner gate:** H07 / `XP-004`
 
@@ -11,13 +11,13 @@ Latest redacted execution records: `docs/android/evidence/h07-20260817/README.md
 
 ## 1. Required external inputs
 
-The Android Firebase app for `com.afterlifearchive.medmanager` was registered in the existing project during C76. Its four runtime values are configured as GitHub Actions secrets; local verification must still supply them through Git-ignored `android/local.properties` or process environment variables:
+Firebase inputs are environment-specific. Staging temporarily accepts the former generic secret names as a compatibility fallback; Production accepts only `PRODUCTION_FIREBASE_*`. Register and verify separate Firebase Android app identities before Play release. Local verification supplies values through Git-ignored `android/local.properties` or process environment variables:
 
 ```properties
-FIREBASE_APP_ID=...
-FIREBASE_API_KEY=...
-FIREBASE_PROJECT_ID=...
-FIREBASE_SENDER_ID=...
+STAGING_FIREBASE_APP_ID=...
+STAGING_FIREBASE_API_KEY=...
+STAGING_FIREBASE_PROJECT_ID=...
+STAGING_FIREBASE_SENDER_ID=...
 ```
 
 Do not commit `google-services.json`, populated `local.properties`, Console exports or screenshots containing unrelated user/device data. Gradle generates both `BuildConfig` fields and the standard `google_app_id`/API key/sender/project resources from the four runtime values. The latter are required by Firebase Analytics even though FirebaseApp itself can initialize from `FirebaseOptions`. The manifest intentionally keeps `firebase_analytics_collection_enabled=false` and FCM auto-init disabled.
@@ -26,8 +26,8 @@ Preflight from `android/`:
 
 ```bash
 ./gradlew :app:verifyFirebaseRuntime
-./gradlew :app:verifyProductionRuntime
-./gradlew :app:testDebugUnitTest :app:assembleDebug
+./gradlew :app:verifyStagingRuntime
+./gradlew :app:testStagingDebugUnitTest :app:assembleStagingDebug
 ```
 
 Record the tested commit, application version/build, Firebase Android app/package, physical-device model and Android version without recording the advertising ID, FCM token, patient/caregiver identifiers or email.
@@ -37,10 +37,10 @@ Record the tested commit, application version/build, Firebase Android app/packag
 Use a dedicated test Firebase property/device and a non-production test account. Install the configured Debug APK, clear prior app consent, and enable Firebase debug mode:
 
 ```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb shell pm clear com.afterlifearchive.medmanager
-adb shell setprop debug.firebase.analytics.app com.afterlifearchive.medmanager
-adb shell monkey -p com.afterlifearchive.medmanager -c android.intent.category.LAUNCHER 1
+adb install -r app/build/outputs/apk/staging/debug/app-staging-debug.apk
+adb shell pm clear com.afterlifearchive.medmanager.staging
+adb shell setprop debug.firebase.analytics.app com.afterlifearchive.medmanager.staging
+adb shell monkey -p com.afterlifearchive.medmanager.staging -c android.intent.category.LAUNCHER 1
 ```
 
 In Firebase Console open **Analytics > DebugView** and select this device. On the first-decision dialog choose `許可しない`, then navigate through mode selection. Confirm that no custom event from the allowlist in section 4 appears during the recorded control window. Automatic/debug transport noise is not proof of a custom event; inspect event names before recording the result.
@@ -78,6 +78,9 @@ The executable source of truth is `AnalyticsEventSchema` in `AnalyticsService.kt
 | `caregiver_tab_viewed`, `patient_tab_viewed` | `tab_name` |
 | `tutorial_step_viewed` | `mode`, `step` (`1..20`) |
 | `core_action_completed` | `action_name` |
+| `core_action_failed` | fixed `action_name`, fixed `reason` |
+| `patient_link_code_share_tapped` | `surface=patient_management` |
+| `notification_permission_result` | fixed `result`, fixed `surface` |
 | premium/paywall/purchase-interest events | fixed `feature`, `surface`, and where applicable fixed `result` |
 | `premium_activated` | `source` |
 | restore events | fixed `surface`, and where applicable fixed `result` |

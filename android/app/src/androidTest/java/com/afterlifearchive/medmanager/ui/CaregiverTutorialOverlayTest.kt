@@ -13,6 +13,9 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableIntStateOf
@@ -22,9 +25,14 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.unit.Density
 import androidx.test.platform.app.InstrumentationRegistry
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientDataSource
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverLinkingCode
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationDataSource
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatient
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientRepository
 import com.afterlifearchive.medmanager.data.session.CaregiverSelectionRepository
 import com.afterlifearchive.medmanager.data.session.SessionStorage
+import com.afterlifearchive.medmanager.data.freshness.MutationFreshnessStore
 import com.afterlifearchive.medmanager.ui.theme.MedicationAppTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -86,6 +94,81 @@ class CaregiverTutorialOverlayTest {
     }
 
     @Test
+    fun stepSevenOpensRealPatientCreationOnlyAfterExplicitAction() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val preferences = context.getSharedPreferences("caregiver_tutorial", android.content.Context.MODE_PRIVATE)
+        preferences.edit().clear().commit()
+        val storage = TutorialStorage()
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val repository = CaregiverPatientRepository(CaregiverPatientDataSource { emptyList() }, selection)
+        composeRule.setContent {
+            MedicationAppTheme { CaregiverHomeScreen(repository, tutorialEnabled = true) }
+        }
+
+        repeat(6) { composeRule.onNodeWithTag("caregiver-tutorial-next").performClick() }
+
+        composeRule.onNodeWithTag("caregiver-tutorial-sample-register").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-tutorial").assertIsDisplayed()
+        composeRule.onAllNodesWithTag("caregiver-create-sheet").assertCountEquals(0)
+        composeRule.onNodeWithTag("caregiver-tutorial-next").performClick()
+        composeRule.onNodeWithTag("caregiver-create-sheet").assertIsDisplayed()
+        assertTrue(!preferences.getBoolean("seen", false))
+    }
+
+    @Test
+    fun successfulPatientAndCodeActionsAdvancePagesSevenThroughNine() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        context.getSharedPreferences("caregiver_tutorial", android.content.Context.MODE_PRIVATE).edit().clear().commit()
+        val patients = mutableListOf<CaregiverPatient>()
+        val dataSource = object : CaregiverPatientDataSource {
+            override suspend fun listPatients() = patients.toList()
+            override suspend fun createPatient(displayName: String) =
+                CaregiverPatient("created", displayName).also(patients::add)
+            override suspend fun issueLinkingCode(patientId: String) =
+                CaregiverLinkingCode("123456", "2026-08-21T18:00:00Z")
+        }
+        val selection = CaregiverSelectionRepository(TutorialStorage()).also { it.restore() }
+        val repository = CaregiverPatientRepository(dataSource, selection)
+        val medicationRepository = CaregiverMedicationRepository(
+            CaregiverMedicationDataSource { emptyList() },
+            MutationFreshnessStore(),
+        )
+        composeRule.setContent {
+            MedicationAppTheme {
+                CaregiverHomeScreen(
+                    repository,
+                    medicationRepository = medicationRepository,
+                    tutorialEnabled = true,
+                )
+            }
+        }
+
+        repeat(6) { composeRule.onNodeWithTag("caregiver-tutorial-next").performClick() }
+        composeRule.onNodeWithTag("caregiver-tutorial-next").performClick()
+        composeRule.onNodeWithTag("caregiver-create-name").performTextInput("さくら")
+        composeRule.onNodeWithTag("caregiver-create-submit").performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.selectedPatientId == "created" }
+        composeRule.onNode(
+            SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "家族モードの使い方 8/10"),
+        ).assertIsDisplayed()
+
+        composeRule.onNodeWithTag("caregiver-tutorial-next").performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.linkingCode != null }
+        composeRule.onNodeWithTag("caregiver-linking-code-sheet").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-linking-code-sheet").performTouchInput { swipeDown() }
+        composeRule.onNode(
+            SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "家族モードの使い方 9/10"),
+        ).assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-tutorial-sample-register-medication").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-tutorial-next").performClick()
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithTag("caregiver-guided-medication-step").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithTag("caregiver-medication-form").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-guided-medication-step").assertIsDisplayed()
+    }
+
+    @Test
     fun publishedDedicatedSampleCoversAllTenTutorialSteps() {
         val step = mutableIntStateOf(0)
         composeRule.setContent {
@@ -101,7 +184,7 @@ class CaregiverTutorialOverlayTest {
             "caregiver-tutorial-sample-time-preset" to "朝・昼・夜・眠前の時刻を変更できます",
             "caregiver-tutorial-sample-register" to "本人の名前を入力して保存します。",
             "caregiver-tutorial-sample-issue-code" to "連携コードを発行",
-            "caregiver-tutorial-sample-share-code" to "有効期限: 今日 18:00",
+            "caregiver-tutorial-sample-register-medication" to "残り18錠",
             "caregiver-tutorial-sample-notification" to "服薬記録をすぐ確認できます",
         )
         expected.forEachIndexed { index, (tag, text) ->
@@ -125,7 +208,7 @@ class CaregiverTutorialOverlayTest {
             }
         }
 
-        val names = listOf("today", "medications", "inventory", "history", "settings", "time-preset", "register", "issue-code", "share-code", "notification")
+        val names = listOf("today", "medications", "inventory", "history", "settings", "time-preset", "register", "issue-code", "register-medication", "notification")
         names.forEachIndexed { index, name ->
             composeRule.runOnIdle { step.intValue = index }
             composeRule.onNodeWithTag("caregiver-tutorial-sample-$name").assertIsDisplayed()
@@ -162,32 +245,18 @@ class CaregiverTutorialOverlayTest {
     }
 
     @Test
-    fun finalPrimaryOpensRealRegistrationAndRequestsNotificationPermission() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val preferences = context.getSharedPreferences("caregiver_tutorial", android.content.Context.MODE_PRIVATE)
-        preferences.edit().clear().commit()
-        val storage = TutorialStorage()
-        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
-        val repository = CaregiverPatientRepository(CaregiverPatientDataSource { emptyList() }, selection)
+    fun finalOverlayPrimaryRequestsItsAction() {
         var permissionRequests = 0
         composeRule.setContent {
             MedicationAppTheme {
-                CaregiverHomeScreen(
-                    repository,
-                    tutorialEnabled = true,
-                    requestNotificationPermission = { permissionRequests += 1 },
-                )
+                CaregiverTutorialOverlay(9, {}, {}, { permissionRequests += 1 })
             }
         }
 
-        repeat(9) { composeRule.onNodeWithTag("caregiver-tutorial-next").performClick() }
         composeRule.onNodeWithText("家族の服薬状況を通知しますか？").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-tutorial-next").performClick()
 
-        composeRule.onAllNodesWithTag("caregiver-tutorial").assertCountEquals(0)
-        composeRule.onNodeWithTag("caregiver-create-name").assertIsDisplayed()
         assertTrue(permissionRequests == 1)
-        assertTrue(preferences.getBoolean("seen", false))
     }
 }
 

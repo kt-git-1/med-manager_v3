@@ -107,6 +107,7 @@ internal fun TodayContent(
     prnSuccessRevision: Long = 0,
     onClearPrnFeedback: () -> Unit = {},
     refreshing: Boolean = false,
+    onRefresh: (() -> Unit)? = null,
     scrollTargetSlot: MedicationSlot? = null,
     now: Instant = Instant.now(),
 ) {
@@ -127,13 +128,17 @@ internal fun TodayContent(
     val completedSlots = MedicationSlot.entries.filter { slot ->
         grouped[slot].orEmpty().let { it.isNotEmpty() && it.all { dose -> dose.status == DoseStatus.TAKEN } }
     }
+    val partialSlots = MedicationSlot.entries.filter { slot ->
+        val slotDoses = grouped[slot].orEmpty()
+        slot != nextSlot && slotDoses.any { it.status == DoseStatus.TAKEN } && slotDoses.any { it.status != DoseStatus.TAKEN }
+    }
     val lateSlots = MedicationSlot.entries.filter { slot ->
         val slotDoses = grouped[slot].orEmpty()
         val scheduledAt = slotDoses.minOfOrNull(PatientDose::scheduledAt)
-        slot != nextSlot && scheduledAt != null && slotDoses.any { it.status != DoseStatus.TAKEN } &&
+        slot != nextSlot && slot !in partialSlots && scheduledAt != null && slotDoses.any { it.status != DoseStatus.TAKEN } &&
             MedicationRecordingPolicy.isRecordable(scheduledAt, now) && MedicationRecordingPolicy.isLate(scheduledAt, now)
     }
-    val compactSummarySlots = lateSlots + completedSlots
+    val compactSummarySlots = partialSlots + lateSlots + completedSlots
     val insufficientMedicationNames = buildList {
         val seenMedicationIds = mutableSetOf<String>()
         doses.forEach { dose ->
@@ -189,12 +194,19 @@ internal fun TodayContent(
     }
 
     Box(Modifier.fillMaxSize()) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize().testTag("patient-today-list"),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+        MedicationPullToRefresh(
+            isRefreshing = refreshing,
+            enabled = onRefresh != null && !screenUpdating && updatingPrnMedicationId == null && !showPrnSheet,
+            onRefresh = { onRefresh?.invoke() },
+            testTag = "patient-today-pull-refresh",
+            modifier = Modifier.fillMaxSize(),
         ) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize().testTag("patient-today-list"),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
             item { PatientTodayHeader(date) }
             if (insufficientMedicationNames.isNotEmpty()) {
                 item { PatientInventoryWarningCard(insufficientMedicationNames) }
@@ -262,6 +274,16 @@ internal fun TodayContent(
             if (!loading && error == null && doses.isNotEmpty() && compactSummarySlots.isEmpty()) {
                 item { PatientTodayEmptyRecordCard() }
             }
+            partialSlots.forEach { slot ->
+                item(key = "patient-today-partial-${slot.name}") {
+                    PatientTodayPartialSlotCard(
+                        slot = slot,
+                        doses = grouped[slot].orEmpty(),
+                        medications = medications,
+                        onDetail = onDetail,
+                    )
+                }
+            }
             lateSlots.forEach { slot ->
                 item(key = "patient-today-late-${slot.name}") {
                     PatientTodayLateRecordCard(
@@ -285,10 +307,11 @@ internal fun TodayContent(
                     )
                 }
             }
-            item { Spacer(Modifier.height(12.dp)) }
+                item { Spacer(Modifier.height(12.dp)) }
+            }
         }
 
-        if (screenUpdating && !showPrnSheet) PatientTodayUpdatingOverlay()
+        if ((updatingKey != null || updatingSlot != null) && !showPrnSheet) PatientTodayUpdatingOverlay()
 
         if (showPrnSheet) {
             val dismissPrn = {
@@ -579,12 +602,12 @@ private fun PatientDayProgressStrip(
     val connectorColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
     val completedColor = PatientTeal
     Box(
-        modifier = Modifier.fillMaxWidth().height(142.dp).testTag("patient-today-progress-strip"),
+        modifier = Modifier.fillMaxWidth().height(154.dp).testTag("patient-today-progress-strip"),
     ) {
         Canvas(Modifier.fillMaxSize()) {
             val start = 35.dp.toPx()
             val end = size.width - start
-            val y = 72.dp.toPx()
+            val y = 77.dp.toPx()
             val stroke = 8.dp.toPx()
             drawLine(connectorColor, Offset(start, y), Offset(end, y), stroke, StrokeCap.Round)
             if (completedConnectorCount > 0) {
@@ -599,25 +622,38 @@ private fun PatientDayProgressStrip(
             MedicationSlot.entries.forEach { slot ->
                 val slotDoses = grouped[slot].orEmpty()
                 val completed = slotDoses.isNotEmpty() && slotDoses.all { it.status == DoseStatus.TAKEN }
+                val takenCount = slotDoses.count { it.status == DoseStatus.TAKEN }
+                val partial = takenCount > 0 && takenCount < slotDoses.size
                 val takenAt = slotDoses.mapNotNull(PatientDose::takenAt).maxOrNull()
                 val accent = when {
                     completed -> PatientTeal
+                    partial -> PatientOrange
                     slot == nextSlot -> PatientOrange
                     else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
                 }
-                val emphasized = completed || slot == nextSlot
+                val emphasized = completed || partial || slot == nextSlot
                 Card(
-                    modifier = Modifier.weight(1f).height(142.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(154.dp)
+                        .testTag("patient-today-progress-card-${slot.name.lowercase()}"),
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = BorderStroke(2.dp, accent.copy(alpha = if (emphasized) 1f else 0.26f)),
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 11.dp),
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+                        verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),
                     ) {
-                        Text(patientSlotShortTitle(slot), color = accent, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Text(
+                            patientSlotShortTitle(slot),
+                            color = accent,
+                            fontSize = 22.sp,
+                            lineHeight = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                        )
                         Box(
                             Modifier.size(52.dp).background(
                                 if (emphasized) accent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
@@ -627,16 +663,49 @@ private fun PatientDayProgressStrip(
                         ) {
                             val icon = when {
                                 completed -> Icons.Rounded.Check
+                                partial -> Icons.Rounded.Warning
                                 slotDoses.isEmpty() -> Icons.Rounded.Remove
                                 slot == MedicationSlot.BEDTIME -> Icons.Rounded.DarkMode
                                 else -> Icons.Rounded.AccessTime
                             }
                             Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
                         }
-                        val detail = takenAt?.let(::instantTimeText)
-                            ?: slotDoses.minOfOrNull(PatientDose::scheduledAt)?.let(::instantTimeText)
-                            ?: "—"
-                        Text(detail, color = accent, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        if (partial) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(0.dp),
+                            ) {
+                                Text(
+                                    stringResource(R.string.patient_today_progress_partial, takenCount, slotDoses.size),
+                                    color = accent,
+                                    fontSize = 17.sp,
+                                    lineHeight = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    modifier = Modifier.testTag("patient-today-progress-time-${slot.name.lowercase()}"),
+                                )
+                                Text(
+                                    stringResource(R.string.patient_today_progress_partial_unit),
+                                    color = accent,
+                                    fontSize = 10.sp,
+                                    lineHeight = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                )
+                            }
+                        } else {
+                            Text(
+                                takenAt?.let(::instantTimeText)
+                                    ?: slotDoses.minOfOrNull(PatientDose::scheduledAt)?.let(::instantTimeText)
+                                    ?: "—",
+                                color = accent,
+                                fontSize = 19.sp,
+                                lineHeight = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                modifier = Modifier.testTag("patient-today-progress-time-${slot.name.lowercase()}"),
+                            )
+                        }
                     }
                 }
             }
@@ -851,6 +920,63 @@ private fun PatientTodayEmptyRecordCard() {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Text(stringResource(R.string.patient_today_summary_empty_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Text(stringResource(R.string.patient_today_summary_empty_message), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PatientTodayPartialSlotCard(
+    slot: MedicationSlot,
+    doses: List<PatientDose>,
+    medications: Map<String, PatientMedication>,
+    onDetail: (PatientDose) -> Unit,
+) {
+    var expanded by rememberSaveable(slot.name) { mutableStateOf(true) }
+    val takenCount = doses.count { it.status == DoseStatus.TAKEN }
+    val insufficientCount = doses.count { dose ->
+        dose.status != DoseStatus.TAKEN && medications[dose.medicationId]?.isInsufficientForDose == true
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth().testTag("patient-today-partial-slot-${slot.name.lowercase()}"),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.5.dp, PatientOrange.copy(alpha = 0.65f)),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                Modifier.fillMaxWidth().clickable { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Box(Modifier.size(52.dp).background(PatientOrange.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.Warning, contentDescription = null, tint = PatientOrange, modifier = Modifier.size(28.dp))
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.patient_today_summary_partial), color = PatientOrange, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(
+                        stringResource(R.string.patient_today_summary_partial_detail, patientSlotShortTitle(slot), takenCount, doses.size),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    if (insufficientCount > 0) {
+                        Text(
+                            stringResource(R.string.patient_today_summary_partial_inventory, insufficientCount),
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+                Icon(if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown, contentDescription = null, tint = PatientOrange)
+            }
+            if (expanded) {
+                androidx.compose.material3.HorizontalDivider()
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    doses.forEach { dose ->
+                        PatientTodayCompactDoseRow(dose, medications[dose.medicationId]?.isInsufficientForDose == true) { onDetail(dose) }
+                    }
+                }
             }
         }
     }

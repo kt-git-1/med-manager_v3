@@ -106,7 +106,7 @@ class MedicationApplication : Application() {
         )
         caregiverReportRepository = CaregiverReportRepository(CaregiverReportApi(apiClient))
         caregiverPushRepository = CaregiverPushRepository(
-            dataSource = CaregiverPushApi(apiClient, if (BuildConfig.DEBUG) "DEV" else "PROD"),
+            dataSource = CaregiverPushApi(apiClient, BuildConfig.PUSH_DEVICE_ENVIRONMENT),
             tokenSource = FirebaseCaregiverPushTokenSource(this),
             storage = AndroidCaregiverPushStorage(this),
         )

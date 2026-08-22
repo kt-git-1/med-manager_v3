@@ -6,8 +6,8 @@
             android:exported="true"
             android:permission="android.permission.DUMP">
             <intent-filter>
-                <action android:name="com.afterlifearchive.medmanager.debug.SCHEDULE_PATIENT_REMINDER" />
-                <action android:name="com.afterlifearchive.medmanager.debug.CANCEL_PATIENT_REMINDERS" />
+                <action android:name="${applicationId}.debug.SCHEDULE_PATIENT_REMINDER" />
+                <action android:name="${applicationId}.debug.CANCEL_PATIENT_REMINDERS" />
             </intent-filter>
         </receiver>
         <receiver
@@ -15,8 +15,8 @@
             android:exported="true"
             android:permission="android.permission.DUMP">
             <intent-filter>
-                <action android:name="com.afterlifearchive.medmanager.debug.VERIFY_FCM_TOKEN" />
-                <action android:name="com.afterlifearchive.medmanager.debug.CLEANUP_FCM_TOKEN" />
+                <action android:name="${applicationId}.debug.VERIFY_FCM_TOKEN" />
+                <action android:name="${applicationId}.debug.CLEANUP_FCM_TOKEN" />
             </intent-filter>
         </receiver>
     </application>

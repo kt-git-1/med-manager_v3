@@ -40,7 +40,7 @@ if [[ "$(basename "$0")" == "fake-adb" ]]; then
         "getprop ro.product.model") echo A302SH ;;
         "dumpsys package com.afterlifearchive.medmanager")
           echo 'versionCode=1 minSdk=26 targetSdk=35'
-          echo 'versionName=1.0.6'
+          echo 'versionName=1.0.0'
           ;;
         *) exit 2 ;;
       esac

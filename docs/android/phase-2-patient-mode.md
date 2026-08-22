@@ -52,7 +52,7 @@ A04 establishes the shared contract. A05 binds reminder maintenance; A06 supplie
 ## Implemented foundation
 
 - Patient-only bottom navigation: Today, History, Settings
-- Today's scheduled doses from `GET /api/patient/today`
+- Today's scheduled doses from `GET /api/patient/today`; the API excludes dates before the medication starts and on/after its end boundary even if a regimen was left enabled
 - Dose cards with time, medication snapshot, and status
 - Confirmed dose recording through `POST /api/patient/dose-records`
 - Ten-minute local reminder using AlarmManager and notification permission
@@ -122,7 +122,7 @@ This selector foundation is connected to inventory-backed production candidates 
 - Individual recording is blocked before the request when the current medication quantity cannot satisfy one dose; the backend remains the authoritative concurrent check.
 - `/api/patient/dose-records/slot` has a typed request/response covering all counts, pill/med totals, slot time, four-slot summary, and optional recording group.
 - Slot cards show the number of recordable and insufficient doses, expose one updating state per slot, and preserve server partial-success semantics.
-- A partial result marks only inventory-sufficient doses taken; insufficient doses remain pending and the result message names both counts.
+- A partial result marks only inventory-sufficient doses taken; insufficient doses remain pending and the result message names both counts. Patient Today must also keep that state visible after the transient message: the progress strip shows `recorded/total` with a separate `薬の種類` label so the meaning remains clear without clipping at the product's enlarged text scale, and an expanded partial card shows the slot count plus each taken or inventory-insufficient medication.
 - A zero-update result never performs an optimistic local status transition.
 
 ### PRN recording
@@ -215,6 +215,7 @@ This selector foundation is connected to inventory-backed production candidates 
 - Current iOS no longer exposes the month calendar or day-detail navigation in patient mode. Android now renders the same simplified hierarchy: Today progress, This Week and Recent Records.
 - Initial history loading now includes the exact current-iOS loading message. Failure uses the warning state plus `再試行` action and preserves a deterministic callback contract; no-schedule and retention states have direct API-35 device evidence.
 - Today's card derives its denominator from active morning/noon/evening/bedtime slots, uses taken/remaining/missed pills and applies the iOS no-plan, missed, complete, partial and start message priority.
+- When a slot contains multiple medications, History uses `slotProgress` medication counts rather than collapsing the slot to wholly unrecorded. Mixed taken and pending/missed medication records render `一部記録`, the exact recorded/total count and the remaining count; older responses without `slotProgress` retain the legacy slot-level fallback.
 - The Monday-first seven-day card counts fully recorded days, renders taken/pending/missed/none icons and applies the same recorded-count/consecutive-day encouragement thresholds.
 - Recent Records summarizes today and yesterday with active slot names, PRN-only/no-plan fallback, and done/pending/missed state treatment.
 - The production preview accepts a fixed History destination and fixed Tokyo date/data, so UI-104 screenshots do not depend on the wall clock.

@@ -12,6 +12,8 @@ import com.afterlifearchive.medmanager.data.patient.HistoryStatus
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.SlotBulkRecordResult
 import java.time.Instant
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
@@ -126,8 +128,8 @@ class CaregiverTodayRepositoryTest {
         assertEquals("https://example.test/api/patients/patient-1/prn-dose-records", captured?.url)
         val body = JSONObject(captured?.body.orEmpty())
         assertEquals("prn-1", body.getString("medicationId"))
-        assertTrue(body.isNull("takenAt"))
-        assertTrue(body.isNull("quantityTaken"))
+        assertFalse(body.has("takenAt"))
+        assertFalse(body.has("quantityTaken"))
         assertEquals(4, UUID.fromString(body.getString("clientMutationId")).version())
         assertEquals("Bearer caregiver-token", captured?.headers?.get("Authorization"))
     }
@@ -159,6 +161,41 @@ class CaregiverTodayRepositoryTest {
         assertEquals(setOf("pending"), repository.state.value.outOfStockMedicationIds)
         assertTrue(repository.state.value.hasLowStock)
         assertFalse(repository.state.value.loadFailed)
+    }
+
+    @Test
+    fun cancelledRefreshClearsProgressAndAllowsTheNextRefresh() = runTest {
+        var suspendToday = false
+        var todayCalls = 0
+        val refreshStarted = CompletableDeferred<Unit>()
+        val source = object : CaregiverTodayDataSource {
+            override suspend fun today(patientId: String): List<PatientDose> {
+                todayCalls += 1
+                if (suspendToday) {
+                    refreshStarted.complete(Unit)
+                    awaitCancellation()
+                }
+                return listOf(dose("dose-1", DoseStatus.PENDING, "2026-07-15T08:00:00Z"))
+            }
+            override suspend fun medications(patientId: String) = emptyList<PatientMedication>()
+            override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
+        }
+        val repository = CaregiverTodayRepository(source, MutationFreshnessStore())
+        repository.load("patient-1")
+
+        suspendToday = true
+        val cancelledRefresh = launch { repository.load("patient-1") }
+        refreshStarted.await()
+        assertTrue(repository.state.value.refreshing)
+        cancelledRefresh.cancelAndJoin()
+
+        assertFalse(repository.state.value.loading)
+        assertFalse(repository.state.value.refreshing)
+        suspendToday = false
+        repository.load("patient-1")
+        assertEquals(3, todayCalls)
+        assertFalse(repository.state.value.refreshing)
+        assertFalse(repository.state.value.refreshFailed)
     }
 
     @Test

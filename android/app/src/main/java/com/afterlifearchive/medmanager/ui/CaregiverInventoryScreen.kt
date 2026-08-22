@@ -135,19 +135,27 @@ internal fun CaregiverInventoryScreen(
     val selectedItem = state.items.firstOrNull { it.medicationId == selectedItemId }
     if (selected != null && selectedItem != null) {
         Box(Modifier.fillMaxSize()) {
-            CaregiverInventoryDetail(
-                patientId = selected.id,
-                item = selectedItem,
-                repository = repository,
-                updating = state.updatingMedicationId == selectedItem.medicationId,
-                failed = state.mutationFailed,
-                message = state.mutationMessage,
-                refreshFailed = state.refreshFailed,
-                onRetry = { scope.launch { repository.load(selected.id) } },
-                enabled = enabled && !state.refreshFailed,
-                onClose = { selectedItemId = null },
-            )
-            if (state.refreshing || state.updatingMedicationId != null) CaregiverInventoryUpdatingOverlay()
+            MedicationPullToRefresh(
+                isRefreshing = state.refreshing,
+                enabled = enabled && !state.loading && !state.refreshing && state.updatingMedicationId == null,
+                onRefresh = { scope.launch { repository.load(selected.id) } },
+                testTag = "caregiver-inventory-detail-pull-refresh",
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                CaregiverInventoryDetail(
+                    patientId = selected.id,
+                    item = selectedItem,
+                    repository = repository,
+                    updating = state.updatingMedicationId == selectedItem.medicationId,
+                    failed = state.mutationFailed,
+                    message = state.mutationMessage,
+                    refreshFailed = state.refreshFailed,
+                    onRetry = { scope.launch { repository.load(selected.id) } },
+                    enabled = enabled && !state.refreshFailed,
+                    onClose = { selectedItemId = null },
+                )
+            }
+            if (state.updatingMedicationId != null) CaregiverInventoryUpdatingOverlay()
         }
         return
     }
@@ -180,19 +188,27 @@ internal fun CaregiverInventoryScreen(
             testTagPrefix = "caregiver-inventory",
         )
         else -> Box(Modifier.fillMaxSize()) {
-            CaregiverInventoryList(
-                patientName = selected.displayName,
-                items = state.items,
-                refreshFailed = state.refreshFailed,
-                failed = state.mutationFailed,
-                message = state.mutationMessage,
-                onRetry = { scope.launch { repository.load(selected.id) } },
-                onSelect = { selectedItemId = it.medicationId },
-                onQuickRefill = { item -> scope.launch { repository.refill(selected.id, item, plannedRefill(item, 7)) } },
-                onOpenMedications = onOpenMedications,
-                actionsEnabled = enabled && !state.refreshFailed && !state.refreshing && state.updatingMedicationId == null,
-            )
-            if (state.refreshing || state.updatingMedicationId != null) CaregiverInventoryUpdatingOverlay()
+            MedicationPullToRefresh(
+                isRefreshing = state.refreshing,
+                enabled = enabled && !state.loading && !state.refreshing && state.updatingMedicationId == null,
+                onRefresh = { scope.launch { repository.load(selected.id) } },
+                testTag = "caregiver-inventory-pull-refresh",
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                CaregiverInventoryList(
+                    patientName = selected.displayName,
+                    items = state.items,
+                    refreshFailed = state.refreshFailed,
+                    failed = state.mutationFailed,
+                    message = state.mutationMessage,
+                    onRetry = { scope.launch { repository.load(selected.id) } },
+                    onSelect = { selectedItemId = it.medicationId },
+                    onQuickRefill = { item -> scope.launch { repository.refill(selected.id, item, plannedRefill(item, 7)) } },
+                    onOpenMedications = onOpenMedications,
+                    actionsEnabled = enabled && !state.refreshFailed && !state.refreshing && state.updatingMedicationId == null,
+                )
+            }
+            if (state.updatingMedicationId != null) CaregiverInventoryUpdatingOverlay()
         }
     }
 }

@@ -103,6 +103,9 @@ import androidx.compose.ui.unit.sp
 import androidx.activity.compose.BackHandler
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.R
+import com.afterlifearchive.medmanager.AnalyticsCoreAction
+import com.afterlifearchive.medmanager.AnalyticsFailureReason
+import com.afterlifearchive.medmanager.AnalyticsService
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationRepository
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationDraft
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverMedicationValidationError
@@ -141,6 +144,11 @@ internal fun CaregiverMedicationScreen(
     onOpenPatients: () -> Unit = {},
     onCreatePatient: () -> Unit = {},
     onRetryPatients: () -> Unit = onOpenPatients,
+    openCreateRequested: Boolean = false,
+    onOpenCreateConsumed: () -> Unit = {},
+    onGuidedCreateClosed: () -> Unit = {},
+    onGuidedMedicationCreated: () -> Unit = {},
+    analyticsService: AnalyticsService? = null,
 ) {
     val state by repository.state.collectAsStateWithLifecycle()
     val freshness by repository.freshness.collectAsStateWithLifecycle()
@@ -150,11 +158,19 @@ internal fun CaregiverMedicationScreen(
     var filterName by rememberSaveable { mutableStateOf(CaregiverMedicationFilter.ALL.name) }
     var editingMedicationId by rememberSaveable { mutableStateOf<String?>(null) }
     var addingMedication by rememberSaveable { mutableStateOf(false) }
+    var guidedMedicationCreation by rememberSaveable { mutableStateOf(false) }
     val filter = CaregiverMedicationFilter.valueOf(filterName)
 
     LaunchedEffect(enabled, selected?.id, freshness.medication, freshness.inventory, freshness.slotTimes) {
         if (enabled && selected != null) cursor.refreshIfStale { repository.load(selected.id) }
         if (selected == null) repository.clear()
+    }
+    LaunchedEffect(openCreateRequested, enabled, selected?.id, state.hasLoaded, state.refreshFailed) {
+        if (openCreateRequested && enabled && selected != null && state.hasLoaded && !state.refreshFailed) {
+            guidedMedicationCreation = true
+            addingMedication = true
+            onOpenCreateConsumed()
+        }
     }
 
     val editingMedication = state.items.firstOrNull { it.id == editingMedicationId }
@@ -164,10 +180,16 @@ internal fun CaregiverMedicationScreen(
             medication = editingMedication,
             slotTimes = selected.slotTimes,
             repository = repository,
+            analyticsService = analyticsService,
             enabled = enabled,
+            guidedOnboarding = guidedMedicationCreation && editingMedication == null,
+            onGuidedMedicationCreated = onGuidedMedicationCreated,
             onClose = {
+                val wasGuided = guidedMedicationCreation
                 addingMedication = false
+                guidedMedicationCreation = false
                 editingMedicationId = null
+                if (wasGuided) onGuidedCreateClosed()
             },
         )
         return
@@ -199,19 +221,29 @@ internal fun CaregiverMedicationScreen(
             testTagPrefix = "caregiver-medication",
         )
         else -> Box(Modifier.fillMaxSize()) {
-            CaregiverMedicationList(
-                items = state.items,
-                patientName = selected.displayName,
-                slotTimes = selected.slotTimes,
-                filter = filter,
-                onFilter = { filterName = it.name },
-                onAdd = { addingMedication = true },
-                onEdit = { editingMedicationId = it.id },
-                refreshFailed = state.refreshFailed,
-                onRetry = { scope.launch { repository.load(selected.id) } },
-                enabled = enabled && !state.refreshFailed && !state.refreshing,
-            )
-            if (state.refreshing) CaregiverMedicationUpdatingOverlay()
+            MedicationPullToRefresh(
+                isRefreshing = state.refreshing,
+                enabled = enabled && !state.loading && !state.refreshing,
+                onRefresh = { scope.launch { repository.load(selected.id) } },
+                testTag = "caregiver-medication-pull-refresh",
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                CaregiverMedicationList(
+                    items = state.items,
+                    patientName = selected.displayName,
+                    slotTimes = selected.slotTimes,
+                    filter = filter,
+                    onFilter = { filterName = it.name },
+                    onAdd = {
+                        guidedMedicationCreation = false
+                        addingMedication = true
+                    },
+                    onEdit = { editingMedicationId = it.id },
+                    refreshFailed = state.refreshFailed,
+                    onRetry = { scope.launch { repository.load(selected.id) } },
+                    enabled = enabled && !state.refreshFailed && !state.refreshing,
+                )
+            }
         }
     }
 }
@@ -600,7 +632,10 @@ private fun CaregiverMedicationEditor(
     medication: PatientMedication?,
     slotTimes: CaregiverSlotTimes?,
     repository: CaregiverMedicationRepository,
+    analyticsService: AnalyticsService?,
     enabled: Boolean,
+    guidedOnboarding: Boolean,
+    onGuidedMedicationCreated: () -> Unit,
     onClose: () -> Unit,
 ) {
     var draft by remember(medication?.id) {
@@ -656,6 +691,18 @@ private fun CaregiverMedicationEditor(
                         fontWeight = FontWeight.Bold,
                     )
                     Text(stringResource(R.string.caregiver_medication_form_register_guide), fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+        }
+        if (guidedOnboarding) item {
+            Card(
+                modifier = Modifier.fillMaxWidth().testTag("caregiver-guided-medication-step"),
+                colors = CardDefaults.cardColors(containerColor = MedicationTheme.colors.caregiverBlue.copy(alpha = 0.10f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MedicationTheme.colors.caregiverBlue.copy(alpha = 0.35f)),
+            ) {
+                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text(stringResource(R.string.caregiver_guided_setup_medication_title), fontSize = 17.sp, fontWeight = FontWeight.Bold, color = MedicationTheme.colors.caregiverBlue)
+                    Text(stringResource(R.string.caregiver_guided_setup_medication_message), fontSize = 14.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -732,8 +779,17 @@ private fun CaregiverMedicationEditor(
                         scope.launch {
                             val result = repository.save(patientId, medication?.id, draft)
                             submitting = false
-                            if (result.isSuccess) onClose() else saveFailed = true
+                            if (result.isSuccess) {
+                                if (medication == null) analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.MEDICATION_CREATED)
+                                if (guidedOnboarding) onGuidedMedicationCreated()
+                                onClose()
+                            } else {
+                                if (medication == null) analyticsService?.logCoreActionFailed(AnalyticsCoreAction.MEDICATION_CREATED, AnalyticsFailureReason.SERVER)
+                                saveFailed = true
+                            }
                         }
+                    } else if (medication == null) {
+                        analyticsService?.logCoreActionFailed(AnalyticsCoreAction.MEDICATION_CREATED, AnalyticsFailureReason.INVALID_INPUT)
                     }
                 },
                 enabled = enabled && !submitting,
@@ -1356,7 +1412,15 @@ private fun MedicationInlineField(
             Row(Modifier.fillMaxWidth().padding(contentPadding), verticalAlignment = Alignment.CenterVertically) {
                 leading?.let { it(); Spacer(Modifier.width(12.dp)) }
                 Box(Modifier.weight(1f)) {
-                    if (value.isEmpty()) Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 16.sp)
+                    if (value.isEmpty()) {
+                        Text(
+                            placeholder,
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 16.sp,
+                            textAlign = textAlign,
+                        )
+                    }
                     inner()
                 }
                 trailing?.let { Spacer(Modifier.width(4.dp)); it() }

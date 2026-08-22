@@ -1,5 +1,6 @@
 package com.afterlifearchive.medmanager.ui
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -27,12 +28,15 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Bed
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.LocalHospital
 import androidx.compose.material.icons.rounded.Medication
+import androidx.compose.material.icons.rounded.MoreHoriz
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material.icons.rounded.WbTwilight
 import androidx.compose.material.icons.automirrored.rounded.Undo
@@ -61,9 +65,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -71,6 +77,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.R
+import com.afterlifearchive.medmanager.AnalyticsCoreAction
+import com.afterlifearchive.medmanager.AnalyticsFailureReason
+import com.afterlifearchive.medmanager.AnalyticsService
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverPatientState
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverSlotTimes
 import com.afterlifearchive.medmanager.data.caregiver.CaregiverTodayRepository
@@ -94,15 +103,28 @@ internal fun CaregiverTodayScreen(
     onOpenMedications: () -> Unit,
     onReturnToLogin: () -> Unit = {},
     onRetryPatients: () -> Unit = {},
+    analyticsService: AnalyticsService? = null,
 ) {
     val state by repository.state.collectAsStateWithLifecycle()
     val freshness by repository.freshness.collectAsStateWithLifecycle()
     val selected = patientState.selectedPatient
     val cursor = remember(repository) { repository.newFreshnessCursor() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var slotToConfirm by remember { mutableStateOf<Pair<MedicationSlot, List<PatientDose>>?>(null) }
+    var doseToDelete by remember(selected?.id) { mutableStateOf<PatientDose?>(null) }
     var showingPrnPicker by remember { mutableStateOf(false) }
     var prnToConfirm by remember { mutableStateOf<PatientMedication?>(null) }
+    val mutationToastText = state.mutationMessage?.let {
+        caregiverMutationMessage(it, state.lastUpdatedCount, state.lastInsufficientCount)
+    }
+
+    LaunchedEffect(mutationToastText) {
+        mutationToastText?.let {
+            val duration = if (state.mutationMessage == CaregiverTodayMutationMessage.SLOT_PARTIAL) Toast.LENGTH_LONG else Toast.LENGTH_SHORT
+            Toast.makeText(context, it, duration).show()
+        }
+    }
 
     LaunchedEffect(enabled, selected?.id, freshness.dose, freshness.medication, freshness.inventory, freshness.slotTimes) {
         if (enabled && selected != null) {
@@ -136,30 +158,61 @@ internal fun CaregiverTodayScreen(
             testTagPrefix = "caregiver-today",
         )
         else -> Box(Modifier.fillMaxSize()) {
-            CaregiverTodayContent(
-                patientName = selected.displayName,
-                slotTimes = selected.slotTimes,
-                doses = state.doses,
-                prnMedications = state.prnMedications,
-                outOfStockMedicationIds = state.outOfStockMedicationIds,
-                updatingDoseKey = state.updatingDoseKey,
-                mutationError = state.mutationError,
-                mutationMessage = state.mutationMessage,
-                refreshFailed = state.refreshFailed,
-                lastUpdatedCount = state.lastUpdatedCount,
-                lastInsufficientCount = state.lastInsufficientCount,
-                updatingSlot = state.updatingSlot,
-                enabled = enabled && !state.refreshFailed,
-                onRetry = { scope.launch { repository.load(selected.id) } },
-                onDeleteDose = { dose -> scope.launch { repository.deleteDose(selected.id, dose) } },
-                onRecordSlot = { slot, doses -> slotToConfirm = slot to doses },
-                onOpenPrn = { showingPrnPicker = true },
-                onOpenMedications = onOpenMedications,
-            )
-            if (state.refreshing || state.updatingDoseKey != null || state.updatingSlot != null) {
+            MedicationPullToRefresh(
+                isRefreshing = state.refreshing,
+                enabled = enabled && !state.loading && !state.refreshing && state.updatingDoseKey == null && state.updatingSlot == null && state.updatingPrnMedicationId == null,
+                onRefresh = { scope.launch { repository.load(selected.id) } },
+                testTag = "caregiver-today-pull-refresh",
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                CaregiverTodayContent(
+                    patientName = selected.displayName,
+                    slotTimes = selected.slotTimes,
+                    doses = state.doses,
+                    prnMedications = state.prnMedications,
+                    outOfStockMedicationIds = state.outOfStockMedicationIds,
+                    updatingDoseKey = state.updatingDoseKey,
+                    mutationError = state.mutationError,
+                    refreshFailed = state.refreshFailed,
+                    updatingSlot = state.updatingSlot,
+                    enabled = enabled && !state.refreshFailed,
+                    onRetry = { scope.launch { repository.load(selected.id) } },
+                    onDeleteDose = { dose -> doseToDelete = dose },
+                    onRecordSlot = { slot, doses -> slotToConfirm = slot to doses },
+                    onOpenPrn = { showingPrnPicker = true },
+                    onOpenMedications = onOpenMedications,
+                )
+            }
+            if (state.updatingDoseKey != null || state.updatingSlot != null) {
                 CaregiverTodayUpdatingOverlay()
             }
         }
+    }
+
+    val deleteConfirmation = doseToDelete
+    if (deleteConfirmation != null && selected != null) {
+        AlertDialog(
+            onDismissRequest = { doseToDelete = null },
+            title = { Text(stringResource(R.string.caregiver_today_delete_confirm_title)) },
+            text = {
+                Text(stringResource(R.string.caregiver_today_delete_confirm_message, deleteConfirmation.medicationName))
+            },
+            dismissButton = {
+                TextButton(onClick = { doseToDelete = null }) {
+                    Text(stringResource(R.string.caregiver_medication_form_cancel))
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        doseToDelete = null
+                        scope.launch { repository.deleteDose(selected.id, deleteConfirmation) }
+                    },
+                    modifier = Modifier.testTag("caregiver-today-delete-confirm"),
+                ) { Text(stringResource(R.string.caregiver_today_delete_confirm_action)) }
+            },
+            modifier = Modifier.testTag("caregiver-today-delete-dialog"),
+        )
     }
 
     val confirmation = slotToConfirm
@@ -188,7 +241,13 @@ internal fun CaregiverTodayScreen(
                 TextButton(
                     onClick = {
                         slotToConfirm = null
-                        scope.launch { repository.recordSlot(selected.id, confirmation.first, confirmation.second) }
+                        scope.launch {
+                            if (repository.recordSlot(selected.id, confirmation.first, confirmation.second)) {
+                                analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.DOSE_RECORDED)
+                            } else {
+                                analyticsService?.logCoreActionFailed(AnalyticsCoreAction.DOSE_RECORDED, AnalyticsFailureReason.SERVER)
+                            }
+                        }
                     },
                     modifier = Modifier.testTag("caregiver-today-slot-confirm"),
                 ) { Text(stringResource(R.string.caregiver_today_confirm_record)) }
@@ -228,7 +287,12 @@ internal fun CaregiverTodayScreen(
                     onClick = {
                         prnToConfirm = null
                         scope.launch {
-                            if (repository.recordPrn(selected.id, prnConfirmation)) showingPrnPicker = false
+                            if (repository.recordPrn(selected.id, prnConfirmation)) {
+                                analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.DOSE_RECORDED)
+                                showingPrnPicker = false
+                            } else {
+                                analyticsService?.logCoreActionFailed(AnalyticsCoreAction.DOSE_RECORDED, AnalyticsFailureReason.SERVER)
+                            }
                         }
                     },
                     modifier = Modifier.testTag("caregiver-today-prn-confirm"),
@@ -248,10 +312,7 @@ private fun CaregiverTodayContent(
     outOfStockMedicationIds: Set<String>,
     updatingDoseKey: String?,
     mutationError: CaregiverTodayMutationError?,
-    mutationMessage: CaregiverTodayMutationMessage?,
     refreshFailed: Boolean,
-    lastUpdatedCount: Int,
-    lastInsufficientCount: Int,
     updatingSlot: MedicationSlot?,
     enabled: Boolean,
     onRetry: () -> Unit,
@@ -266,8 +327,6 @@ private fun CaregiverTodayContent(
     }
     val missedSlotRows = rows.filter { (_, items) -> items.any { it.status == DoseStatus.MISSED } }
     val missedRows = missedSlotRows.size
-    val pendingRows = rows.count { (_, items) -> items.any { it.status == DoseStatus.PENDING } }
-    val takenRows = rows.count { (_, items) -> items.all { it.status == DoseStatus.TAKEN } }
     val lateRows = rows.filter { (_, items) ->
         items.any { dose -> dose.takenAt?.let { MedicationRecordingPolicy.isLate(dose.scheduledAt, it) } == true }
     }
@@ -302,16 +361,6 @@ private fun CaregiverTodayContent(
                 }
             }
         }
-        mutationMessage?.let { message ->
-            item {
-                Text(
-                    caregiverMutationMessage(message, lastUpdatedCount, lastInsufficientCount),
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.testTag("caregiver-today-mutation-message"),
-                )
-            }
-        }
         if (doses.isEmpty() && prnCount == 0) {
             item { CaregiverTodayEmpty(onOpenMedications) }
         } else {
@@ -342,7 +391,7 @@ private fun CaregiverTodayContent(
                 val takenAt = lateDoses.mapNotNull(PatientDose::takenAt).maxOrNull()
                 TodayCard(colors.orange, Modifier.testTag("caregiver-today-late-alert")) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-                        TodayIcon(Icons.Rounded.AccessTime, colors.orange)
+                        TodayIcon(Icons.Rounded.AccessTime, colors.orange, filled = true)
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(stringResource(R.string.caregiver_today_late_title, lateRows.size), color = colors.orange, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                             if (takenAt != null) {
@@ -350,13 +399,20 @@ private fun CaregiverTodayContent(
                                     stringResource(
                                         if (lateRows.size == 1) R.string.caregiver_today_late_message_single else R.string.caregiver_today_late_message_multiple,
                                         slotLabel(slot),
-                                        caregiverTime(scheduledAt),
+                                        timelineDisplayTime(slot, lateDoses, slotTimes),
                                         caregiverTime(takenAt),
-                                        caregiverRecordedBy(lateDoses.mapNotNull(PatientDose::recordedByType).distinct().singleOrNull()),
+                                        caregiverRecordedBy(lateDoses.filter { it.status == DoseStatus.TAKEN }.map(PatientDose::recordedByType)),
                                     ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.SemiBold,
+                                )
+                                Text(
+                                    caregiverDelayText(MedicationRecordingPolicy.delaySeconds(scheduledAt, takenAt)),
+                                    color = colors.orange,
+                                    fontSize = 13.sp,
+                                    lineHeight = 17.sp,
+                                    fontWeight = FontWeight.Bold,
                                 )
                             }
                         }
@@ -364,34 +420,10 @@ private fun CaregiverTodayContent(
                 }
             }
             if (rows.isNotEmpty()) item {
-                TodayCard(modifier = Modifier.testTag("caregiver-today-progress")) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Box(contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(
-                                progress = { takenRows.toFloat() / rows.size.coerceAtLeast(1) },
-                                modifier = Modifier.size(76.dp),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
-                                strokeWidth = 9.dp,
-                            )
-                            Text("$takenRows/${rows.size}", color = colors.primaryTealText, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                        }
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(stringResource(R.string.caregiver_today_progress_title), fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                            Text(stringResource(R.string.caregiver_today_progress_format, takenRows, rows.size), fontSize = 20.sp, color = colors.primaryTealText, fontWeight = FontWeight.Bold)
-                            Text(
-                                when {
-                                    missedRows > 0 -> stringResource(R.string.caregiver_today_progress_missed, missedRows)
-                                    pendingRows > 0 -> stringResource(R.string.caregiver_today_progress_pending, pendingRows)
-                                    else -> stringResource(R.string.caregiver_today_progress_done)
-                                },
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        }
-                    }
-                }
+                CaregiverTodayStatusOverview(
+                    rows = rows.toMap(),
+                    slotTimes = slotTimes,
+                )
             }
             if (prnCount > 0) item {
                 TodayCard(
@@ -669,6 +701,7 @@ private fun CaregiverTimelineCard(
 ) {
     val recordable = doses.filter { it.status != DoseStatus.TAKEN && it.medicationId !in outOfStockMedicationIds }
     val hasOutOfStock = doses.any { it.medicationId in outOfStockMedicationIds }
+    val partial = doses.any { it.status == DoseStatus.TAKEN } && doses.any { it.status != DoseStatus.TAKEN }
     val status = when {
         doses.isEmpty() -> null
         doses.all { it.status == DoseStatus.TAKEN } -> DoseStatus.TAKEN
@@ -677,7 +710,7 @@ private fun CaregiverTimelineCard(
     }
     val actualTakenAt = doses.mapNotNull(PatientDose::takenAt).maxOrNull()
     val scheduledAt = doses.minOfOrNull(PatientDose::scheduledAt)
-    val recordedByType = doses.filter { it.status == DoseStatus.TAKEN }.mapNotNull(PatientDose::recordedByType).distinct().singleOrNull()
+    val recordedByTypes = doses.filter { it.status == DoseStatus.TAKEN }.map(PatientDose::recordedByType)
     val isLate = actualTakenAt != null && scheduledAt != null && MedicationRecordingPolicy.isLate(scheduledAt, actualTakenAt)
     val tint = when (status) {
         DoseStatus.TAKEN -> if (isLate) MedicationTheme.colors.orange else MaterialTheme.colorScheme.primary
@@ -707,14 +740,16 @@ private fun CaregiverTimelineCard(
                 }
                 CaregiverTodayStatusPill(
                     text = when {
+                        partial -> stringResource(R.string.caregiver_today_timeline_partial)
                         hasOutOfStock -> stringResource(R.string.patient_inventory_insufficient)
                         status == null -> stringResource(R.string.caregiver_today_timeline_no_plan)
                         status == DoseStatus.TAKEN -> stringResource(if (isLate) R.string.patient_status_late else R.string.caregiver_today_timeline_taken)
                         status == DoseStatus.MISSED -> stringResource(R.string.caregiver_today_timeline_missed)
                         else -> stringResource(R.string.caregiver_today_timeline_pending)
                     },
-                    color = if (hasOutOfStock) MedicationTheme.colors.caregiverRed else tint,
+                    color = if (partial) MedicationTheme.colors.orange else if (hasOutOfStock) MedicationTheme.colors.caregiverRed else tint,
                     icon = when {
+                        partial -> Icons.Rounded.Warning
                         hasOutOfStock -> Icons.Rounded.Warning
                         status == DoseStatus.TAKEN -> Icons.Rounded.CheckCircle
                         status == DoseStatus.PENDING -> Icons.Rounded.Warning
@@ -730,8 +765,8 @@ private fun CaregiverTimelineCard(
                         color = if (isLate) MedicationTheme.colors.orange else MedicationTheme.colors.primaryTealText,
                         fontWeight = FontWeight.Bold,
                     )
-                    recordedByType?.let {
-                        Text(caregiverRecordedBy(it), color = MedicationTheme.colors.primaryTealText, fontWeight = FontWeight.Bold)
+                    if (recordedByTypes.isNotEmpty()) {
+                        Text(caregiverRecordedBy(recordedByTypes), color = MedicationTheme.colors.primaryTealText, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -776,6 +811,137 @@ private fun CaregiverTimelineCard(
                     )
                 }
             }
+        }
+    }
+}
+
+private enum class CaregiverTodayOverviewState {
+    NO_PLAN,
+    LATE,
+    TAKEN,
+    PARTIAL,
+    MISSED,
+    PENDING,
+}
+
+@Composable
+private fun CaregiverTodayStatusOverview(
+    rows: Map<MedicationSlot, List<PatientDose>>,
+    slotTimes: CaregiverSlotTimes?,
+) {
+    TodayCard(modifier = Modifier.testTag("caregiver-today-status-overview")) {
+        Text(
+            stringResource(R.string.caregiver_today_progress_title),
+            fontSize = 18.sp,
+            lineHeight = 23.sp,
+            fontWeight = FontWeight.Bold,
+        )
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            MedicationSlot.entries.forEachIndexed { index, slot ->
+                CaregiverTodaySlotOverviewCell(
+                    slot = slot,
+                    doses = rows[slot].orEmpty(),
+                    slotTimes = slotTimes,
+                    modifier = Modifier.weight(1f),
+                )
+                if (index < MedicationSlot.entries.lastIndex) {
+                    Box(
+                        Modifier
+                            .size(width = 1.dp, height = 72.dp)
+                            .background(MedicationTheme.colors.cardStroke),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CaregiverTodaySlotOverviewCell(
+    slot: MedicationSlot,
+    doses: List<PatientDose>,
+    slotTimes: CaregiverSlotTimes?,
+    modifier: Modifier = Modifier,
+) {
+    val takenCount = doses.count { it.status == DoseStatus.TAKEN }
+    val actualTakenAt = doses.mapNotNull(PatientDose::takenAt).maxOrNull()
+    val scheduledAt = doses.minOfOrNull(PatientDose::scheduledAt)
+    val isLate = actualTakenAt != null && scheduledAt != null && MedicationRecordingPolicy.isLate(scheduledAt, actualTakenAt)
+    val state = when {
+        doses.isEmpty() -> CaregiverTodayOverviewState.NO_PLAN
+        takenCount > 0 && takenCount < doses.size -> CaregiverTodayOverviewState.PARTIAL
+        isLate -> CaregiverTodayOverviewState.LATE
+        takenCount == doses.size -> CaregiverTodayOverviewState.TAKEN
+        doses.any { it.status == DoseStatus.MISSED } -> CaregiverTodayOverviewState.MISSED
+        else -> CaregiverTodayOverviewState.PENDING
+    }
+    val stateColor = when (state) {
+        CaregiverTodayOverviewState.LATE,
+        CaregiverTodayOverviewState.PARTIAL -> MedicationTheme.colors.orange
+        CaregiverTodayOverviewState.TAKEN -> MaterialTheme.colorScheme.primary
+        CaregiverTodayOverviewState.MISSED -> MedicationTheme.colors.caregiverRed
+        CaregiverTodayOverviewState.NO_PLAN,
+        CaregiverTodayOverviewState.PENDING -> Color(0xFF99999D)
+    }
+    val stateIcon = when (state) {
+        CaregiverTodayOverviewState.NO_PLAN -> Icons.Rounded.Remove
+        CaregiverTodayOverviewState.LATE -> Icons.Rounded.AccessTime
+        CaregiverTodayOverviewState.TAKEN -> Icons.Rounded.Check
+        CaregiverTodayOverviewState.PARTIAL,
+        CaregiverTodayOverviewState.MISSED -> Icons.Rounded.Warning
+        CaregiverTodayOverviewState.PENDING -> Icons.Rounded.MoreHoriz
+    }
+    val statusText = when (state) {
+        CaregiverTodayOverviewState.NO_PLAN -> stringResource(R.string.caregiver_today_timeline_no_plan)
+        CaregiverTodayOverviewState.LATE -> stringResource(R.string.patient_status_late)
+        CaregiverTodayOverviewState.TAKEN -> stringResource(R.string.patient_status_taken)
+        CaregiverTodayOverviewState.PARTIAL -> stringResource(R.string.history_status_partial)
+        CaregiverTodayOverviewState.MISSED -> stringResource(R.string.patient_status_missed)
+        CaregiverTodayOverviewState.PENDING -> stringResource(R.string.patient_status_pending)
+    }
+    val displayTime = actualTakenAt?.let(::caregiverTime) ?: timelineDisplayTime(slot, doses, slotTimes)
+    val accessibilityText = stringResource(
+        R.string.caregiver_today_overview_accessibility,
+        slotLabel(slot),
+        statusText,
+        displayTime,
+    )
+
+    Column(
+        modifier = modifier
+            .testTag("caregiver-today-overview-${slot.name.lowercase()}")
+            .semantics(mergeDescendants = true) { contentDescription = accessibilityText },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            slotLabel(slot),
+            color = if (state == CaregiverTodayOverviewState.LATE || state == CaregiverTodayOverviewState.PARTIAL) stateColor else MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 13.sp,
+            lineHeight = 16.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+        )
+        Box(Modifier.size(38.dp).background(stateColor, CircleShape), contentAlignment = Alignment.Center) {
+            Icon(stateIcon, contentDescription = null, tint = Color.White, modifier = Modifier.size(21.dp))
+        }
+        Text(
+            displayTime,
+            color = if (state == CaregiverTodayOverviewState.LATE || state == CaregiverTodayOverviewState.PARTIAL) stateColor else MaterialTheme.colorScheme.onSurface,
+            fontSize = 15.sp,
+            lineHeight = 18.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+        )
+        if (state == CaregiverTodayOverviewState.PARTIAL) {
+            Text(
+                stringResource(R.string.caregiver_today_overview_partial_count, takenCount, doses.size),
+                color = stateColor,
+                fontSize = 11.sp,
+                lineHeight = 14.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+            )
         }
     }
 }
@@ -882,12 +1048,12 @@ private fun caregiverTimelineSlotIcon(slot: MedicationSlot): ImageVector = when 
 
 @Composable
 private fun caregiverMutationMessage(message: CaregiverTodayMutationMessage, updated: Int, insufficient: Int): String = when (message) {
-    CaregiverTodayMutationMessage.RECORDED -> stringResource(R.string.caregiver_today_recorded)
+    CaregiverTodayMutationMessage.RECORDED -> stringResource(R.string.patient_message_dose_recorded)
     CaregiverTodayMutationMessage.DELETED -> stringResource(R.string.caregiver_today_deleted)
-    CaregiverTodayMutationMessage.SLOT_RECORDED -> stringResource(R.string.caregiver_today_slot_recorded, updated)
+    CaregiverTodayMutationMessage.SLOT_RECORDED -> stringResource(R.string.patient_message_slot_recorded, updated)
     CaregiverTodayMutationMessage.SLOT_PARTIAL -> stringResource(R.string.caregiver_today_slot_partial, updated, insufficient)
     CaregiverTodayMutationMessage.NOTHING_TO_RECORD -> stringResource(R.string.caregiver_today_nothing_to_record)
-    CaregiverTodayMutationMessage.PRN_RECORDED -> stringResource(R.string.caregiver_today_prn_recorded)
+    CaregiverTodayMutationMessage.PRN_RECORDED -> stringResource(R.string.patient_message_prn_recorded)
 }
 
 @Composable
@@ -917,9 +1083,12 @@ private fun TodayCard(accent: Color? = null, modifier: Modifier = Modifier, cont
 }
 
 @Composable
-private fun TodayIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, tint: Color, size: Int = 44) {
-    Box(Modifier.size(size.dp).clip(CircleShape).background(tint.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
-        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size((size * 0.55f).dp))
+private fun TodayIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, tint: Color, size: Int = 44, filled: Boolean = false) {
+    Box(
+        Modifier.size(size.dp).clip(CircleShape).background(if (filled) tint else tint.copy(alpha = 0.12f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = null, tint = if (filled) Color.White else tint, modifier = Modifier.size((size * 0.55f).dp))
     }
 }
 
@@ -992,10 +1161,17 @@ private fun caregiverDelayText(seconds: Long): String {
     }
 }
 
-private fun caregiverRecordedBy(type: com.afterlifearchive.medmanager.data.patient.RecordedByType?): String = when (type) {
-    com.afterlifearchive.medmanager.data.patient.RecordedByType.PATIENT -> "本人が記録"
-    com.afterlifearchive.medmanager.data.patient.RecordedByType.CAREGIVER -> "家族が代理で記録"
-    null -> "記録者不明"
+@Composable
+private fun caregiverRecordedBy(types: Collection<com.afterlifearchive.medmanager.data.patient.RecordedByType?>): String {
+    val knownTypes = types.filterNotNull().toSet()
+    val resource = when {
+        types.isEmpty() || types.any { it == null } -> R.string.history_recorded_by_unknown
+        knownTypes.size > 1 -> R.string.history_recorded_by_mixed
+        knownTypes.singleOrNull() == com.afterlifearchive.medmanager.data.patient.RecordedByType.PATIENT ->
+            R.string.patient_history_recorded_by_patient
+        else -> R.string.patient_history_recorded_by_caregiver
+    }
+    return stringResource(resource)
 }
 
 @Composable

@@ -62,6 +62,29 @@ class CaregiverHomeScreenTest {
     val composeRule = createComposeRule()
 
     @Test
+    fun settingsPullToRefreshReloadsPatientList() {
+        var patientCalls = 0
+        val storage = TestSelectionStorage()
+        val selection = CaregiverSelectionRepository(storage).also { it.restore() }
+        val repository = CaregiverPatientRepository(
+            CaregiverPatientDataSource {
+                patientCalls += 1
+                listOf(CaregiverPatient("patient-1", "さくら"))
+            },
+            selection,
+        )
+        composeRule.setContent {
+            MedicationAppTheme { CaregiverHomeScreen(repository, tutorialEnabled = false) }
+        }
+        composeRule.waitUntil(5_000) { patientCalls >= 1 && repository.state.value.hasLoaded }
+        composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+
+        composeRule.onNodeWithTag("caregiver-settings-pull-refresh").performTouchInput { swipeDown() }
+
+        composeRule.waitUntil(5_000) { patientCalls >= 2 && !repository.state.value.refreshing }
+    }
+
+    @Test
     fun startsOnTodayAndExposesFiveTabsInCurrentIosOrder() {
         setContent(listOf(CaregiverPatient("patient-1", "さくら")))
 
@@ -76,6 +99,7 @@ class CaregiverHomeScreenTest {
         val (repository, storage) = setContent(listOf(CaregiverPatient("patient-1", "さくら")))
 
         composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
+        composeRule.onNodeWithTag("caregiver-settings-pull-refresh").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-patient-patient-1").assertTextContains("さくら")
         composeRule.onNodeWithText("選択中").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-slot-times"))
@@ -85,10 +109,9 @@ class CaregiverHomeScreenTest {
         composeRule.onNodeWithTag("caregiver-slot-times-sheet").performTouchInput { swipeDown() }
         composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-linking-code-issue"))
         composeRule.onNodeWithTag("caregiver-linking-code-issue").assertIsDisplayed()
-        composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-patient-revoke"))
-        composeRule.onNodeWithTag("caregiver-patient-revoke").performClick()
-        composeRule.onNodeWithText("既存の本人セッションは失効しますが、データは保持されます。", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("キャンセル").performClick()
+        composeRule.onAllNodesWithTag("caregiver-patient-revoke").assertCountEquals(0)
+        composeRule.onNodeWithTag("caregiver-settings-list").performScrollToNode(hasTestTag("caregiver-patient-delete"))
+        composeRule.onNodeWithTag("caregiver-patient-delete").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-tab-today").performClick()
         composeRule.onNodeWithText("さくらさんを見守り中").assertIsDisplayed()
 
@@ -302,7 +325,19 @@ class CaregiverHomeScreenTest {
             },
             selection,
         )
-        composeRule.setContent { MedicationAppTheme { CaregiverHomeScreen(repository, tutorialEnabled = false) } }
+        val medicationRepository = CaregiverMedicationRepository(
+            CaregiverMedicationDataSource { emptyList() },
+            MutationFreshnessStore(),
+        )
+        composeRule.setContent {
+            MedicationAppTheme {
+                CaregiverHomeScreen(
+                    repository,
+                    medicationRepository = medicationRepository,
+                    tutorialEnabled = false,
+                )
+            }
+        }
         composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
         composeRule.onNodeWithTag("caregiver-tab-settings").performClick()
         composeRule.onNodeWithTag("caregiver-register-patient").performClick()

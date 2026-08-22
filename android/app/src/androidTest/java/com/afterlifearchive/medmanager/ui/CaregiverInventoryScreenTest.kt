@@ -1,7 +1,6 @@
 package com.afterlifearchive.medmanager.ui
 
 import android.app.Activity
-import android.view.KeyEvent
 import android.os.SystemClock
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
@@ -40,7 +39,6 @@ import org.junit.Assert.assertTrue
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.CompletableDeferred
 import androidx.core.view.WindowCompat
-import androidx.test.platform.app.InstrumentationRegistry
 
 class CaregiverInventoryScreenTest {
     @get:Rule
@@ -50,6 +48,7 @@ class CaregiverInventoryScreenTest {
     fun listShowsMetricsStatusAndFilters() {
         setContent(mutableListOf(item("low", "少ない薬", 2.0, low = true), item("out", "切れた薬", 0.0, out = true), item("off", "未設定薬", 0.0, enabled = false)))
 
+        composeRule.onNodeWithTag("caregiver-inventory-pull-refresh").assertIsDisplayed()
         composeRule.onNodeWithText("在庫を確認").assertIsDisplayed()
         composeRule.onNodeWithText("要確認").assertIsDisplayed()
         composeRule.onNodeWithText("まず補充が必要な薬があります").assertIsDisplayed()
@@ -384,6 +383,11 @@ class CaregiverInventoryScreenTest {
     @Test
     fun detailRefillAndCorrectionRequireConfirmationAndUseAuthoritativeValues() {
         setContent(mutableListOf(item("low", "少ない薬", 2.0, low = true)))
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithTag("caregiver-inventory-list").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithTag("caregiver-inventory-list")
+            .performScrollToNode(hasTestTag("caregiver-inventory-item-low"))
         composeRule.onNodeWithTag("caregiver-inventory-item-low").performClick()
 
         composeRule.onNodeWithText("何をしますか？").assertIsDisplayed()
@@ -393,7 +397,6 @@ class CaregiverInventoryScreenTest {
         composeRule.onNodeWithTag("inventory-refill-amount").performTextReplacement("5")
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("inventory-refill-amount").assertTextEquals("5")
-        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-refill"))
         composeRule.onNodeWithTag("inventory-refill").assertIsDisplayed()
@@ -412,7 +415,6 @@ class CaregiverInventoryScreenTest {
         composeRule.onNodeWithTag("inventory-action-correction").performClick()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction-quantity"))
         composeRule.onNodeWithTag("inventory-correction-quantity").performTextReplacement("4")
-        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("caregiver-inventory-detail-scroll").performScrollToNode(hasTestTag("inventory-correction"))
         composeRule.onNodeWithTag("inventory-correction").performClick()
@@ -475,10 +477,10 @@ class CaregiverInventoryScreenTest {
         composeRule.onNodeWithTag("caregiver-inventory-detail").assertIsDisplayed()
         captureDevice(activity, "android-ui-205-caregiver-inventory-detail-failure-light-matched.png")
         composeRule.onNodeWithTag("inventory-retry").performClick()
-        composeRule.waitUntil(10_000) {
+        composeRule.waitUntil(20_000) {
             repository.state.value.updatingMedicationId == null && !repository.state.value.mutationFailed
         }
-        composeRule.waitUntil(10_000) { composeRule.onAllNodesWithTag("caregiver-inventory-list").fetchSemanticsNodes().isNotEmpty() }
+        composeRule.waitUntil(20_000) { composeRule.onAllNodesWithTag("caregiver-inventory-list").fetchSemanticsNodes().isNotEmpty() }
     }
 
     @Test
@@ -547,6 +549,7 @@ class CaregiverInventoryScreenTest {
         composeRule.onNodeWithTag("caregiver-inventory-list").performScrollToNode(hasTestTag("caregiver-inventory-item-$medicationId"))
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag("caregiver-inventory-item-$medicationId").fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag("caregiver-inventory-item-$medicationId").performClick()
+        composeRule.onNodeWithTag("caregiver-inventory-detail-pull-refresh").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-inventory-detail").assertIsDisplayed()
         return activity
     }

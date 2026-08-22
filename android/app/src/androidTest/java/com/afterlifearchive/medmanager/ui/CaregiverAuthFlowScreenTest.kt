@@ -122,7 +122,7 @@ class CaregiverAuthFlowScreenTest {
         val repository = authRepository()
         val activity = render(repository)
 
-        composeRule.onNodeWithText("新規登録").performClick()
+        composeRule.onNodeWithTag("caregiver-auth-choice-signup").performScrollTo().performClick()
         composeRule.onNodeWithTag(AUTH_NAVIGATION_BACK_TAG).assertIsDisplayed()
         composeRule.onNodeWithText("家族アカウント作成").assertIsDisplayed()
         composeRule.onNodeWithText("服薬を見守る家族用のアカウントを作成します").assertIsDisplayed()
@@ -274,12 +274,12 @@ class CaregiverAuthFlowScreenTest {
         val repository = authRepository()
         render(repository, fontScale = 2f)
 
-        composeRule.onNodeWithText("新規登録").performClick()
+        composeRule.onNodeWithTag("caregiver-auth-choice-signup").performScrollTo().performClick()
         composeRule.onNodeWithTag(AUTH_EMAIL_TAG).performScrollTo().performTextInput("care@example.com")
         composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performScrollTo().performTextInput("123456")
         composeRule.onNodeWithTag(AUTH_CONFIRMATION_TAG).performScrollTo().performTextInput("123456")
         composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).performScrollTo().performClick()
-
+        composeRule.waitUntil(5_000) { repository.state.value.canResendConfirmation }
         composeRule.onNodeWithText("確認メールを送信しました。", substring = true)
             .performScrollTo()
             .assertIsDisplayed()
@@ -390,6 +390,7 @@ class CaregiverAuthFlowScreenTest {
         composeRule.onNodeWithTag(AUTH_PASSWORD_TAG).performTextInput("123456")
         composeRule.onNodeWithTag(AUTH_CONFIRMATION_TAG).performTextInput("123456")
         composeRule.onNodeWithTag(AUTH_SUBMIT_TAG).performScrollTo().performClick()
+        composeRule.waitUntil(5_000) { repository.state.value.canResendConfirmation }
         composeRule.onNodeWithText("確認メールを送信しました。", substring = true)
             .performScrollTo()
             .assertIsDisplayed()

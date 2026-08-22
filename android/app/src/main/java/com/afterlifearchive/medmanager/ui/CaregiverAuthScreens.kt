@@ -99,6 +99,7 @@ const val AUTH_FORM_LIST_TAG = "caregiver-auth-form-list"
 const val AUTH_RESEND_TAG = "caregiver-auth-resend"
 const val AUTH_ERROR_TAG = "caregiver-auth-error"
 const val AUTH_INFO_TAG = "caregiver-auth-info"
+const val AUTH_CHOICE_LIST_TAG = "caregiver-auth-choice-list"
 
 @Composable
 fun CaregiverAuthFlow(
@@ -133,7 +134,7 @@ fun CaregiverAuthFlow(
 @Composable
 fun CaregiverAuthChoiceScreen(onLogin: () -> Unit, onSignup: () -> Unit, onBack: () -> Unit) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(AuthBackground).safeDrawingPadding(),
+        modifier = Modifier.fillMaxSize().background(AuthBackground).safeDrawingPadding().testTag(AUTH_CHOICE_LIST_TAG),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp, 48.dp, 20.dp, 32.dp),
         verticalArrangement = Arrangement.spacedBy(22.dp),
     ) {

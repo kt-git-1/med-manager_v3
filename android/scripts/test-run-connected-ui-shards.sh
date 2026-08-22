@@ -50,7 +50,7 @@ make_fixture() {
     'tests="$((shard + 3))"' \
     'skipped=0' \
     'if [[ "${FAKE_RESULT_MODE:-valid}" == "skipped" ]]; then skipped=1; fi' \
-    'directory="$PWD/app/build/outputs/androidTest-results/connected/debug"' \
+    'directory="$PWD/app/build/outputs/androidTest-results/connected/debug/flavors/staging"' \
     'mkdir -p "$directory"' \
     'printf "%s\n" "<testsuite tests=\"$tests\" failures=\"0\" errors=\"0\" skipped=\"$skipped\"></testsuite>" > "$directory/TEST-fixture.xml"' > "$root/gradlew"
   chmod +x "$root/gradlew"
@@ -70,12 +70,12 @@ awake_root="$(make_fixture awake)"
 run_fixture "$awake_root" env ANDROID_UI_TEST_SHARDS=1 > "$awake_root/output"
 grep -q 'All 1 connected UI shards passed: tests=3 failures=0 errors=0 skipped=0' "$awake_root/output" || \
   fail "awake target did not pass with an aggregate summary"
-grep -q 'connectedDebugAndroidTest' "$awake_root/gradle.log" || fail "Gradle shard was not invoked"
+grep -q 'connectedStagingDebugAndroidTest' "$awake_root/gradle.log" || fail "Staging Gradle shard was not invoked"
 grep -q $'1/1\t3\t0\t0\t0\tshard-1-of-1.xml' "$awake_root/app/build/reports/connected-ui-shards/results.tsv" || \
   fail "awake target evidence summary drifted"
 [[ -f "$awake_root/app/build/reports/connected-ui-shards/shard-1-of-1.xml" ]] || \
   fail "awake target XML was not preserved"
-[[ "$(grep -c '^.*uninstall com.afterlifearchive.medmanager' "$awake_root/adb.log")" == "2" ]] || \
+[[ "$(grep -c '^.*uninstall com.afterlifearchive.medmanager.staging' "$awake_root/adb.log")" == "2" ]] || \
   fail "both packages were not cleaned after success"
 
 for state in dozing locked unknown; do
@@ -99,7 +99,7 @@ run_fixture "$failure_root" env FAKE_GRADLE_EXIT=17 ANDROID_UI_TEST_SHARDS=1 \
 status=$?
 set -e
 [[ "$status" == "17" ]] || fail "Gradle failure returned $status instead of 17"
-[[ "$(grep -c '^.*uninstall com.afterlifearchive.medmanager' "$failure_root/adb.log")" == "2" ]] || \
+[[ "$(grep -c '^.*uninstall com.afterlifearchive.medmanager.staging' "$failure_root/adb.log")" == "2" ]] || \
   fail "both packages were not cleaned after failure"
 
 for result_mode in missing skipped; do
@@ -110,7 +110,7 @@ for result_mode in missing skipped; do
   status=$?
   set -e
   [[ "$status" == "2" ]] || fail "$result_mode result returned $status instead of 2"
-  [[ "$(grep -c '^.*uninstall com.afterlifearchive.medmanager' "$result_root/adb.log")" == "2" ]] || \
+  [[ "$(grep -c '^.*uninstall com.afterlifearchive.medmanager.staging' "$result_root/adb.log")" == "2" ]] || \
     fail "both packages were not cleaned after $result_mode result"
 done
 grep -q 'Expected exactly one instrumentation XML' "$TEMP_ROOT/result-missing/output" || \

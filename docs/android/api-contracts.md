@@ -62,7 +62,7 @@ Link exchange additionally has a persistent IP limit of 20 requests per 15 minut
 |---|---|---|---|
 | API-020 | `GET /api/medications?patientId=...` | Current role; caregiver patient resolved explicitly | Returns medication list with lifecycle, PRN, inventory, next schedule and regimen summary fields |
 | API-021 | `POST /api/medications` | CAREGIVER | Creates regular or PRN medication; patientId is mandatory |
-| API-022 | `GET/PATCH/DELETE /api/medications/{id}?patientId=...` | CAREGIVER for mutation | Fetch/edit/archive/delete semantics remain server-authoritative |
+| API-022 | `GET/PATCH/DELETE /api/medications/{id}?patientId=...` | CAREGIVER for mutation | DELETE soft-archives with one `archivedAt`; it never deletes dose history |
 | API-023 | `GET/POST /api/medications/{id}/regimens` | CAREGIVER | Time zone, start/end, `times`, `daysOfWeek`, enabled schedule |
 | API-024 | `PATCH /api/regimens/{id}` | CAREGIVER | Partial update including enabled state |
 
@@ -72,8 +72,8 @@ Medication DTO fields required by Android include `id`, `patientId`, name/dosage
 
 | ID | Method/path | Policy | Key contract |
 |---|---|---|---|
-| API-030 | `GET /api/patient/today` | PATIENT | Current patient's schedule including optional actual `takenAt`; optional slot-time query supported |
-| API-031 | `GET /api/patients/{patientId}/today` | CAREGIVER | Selected patient's schedule including optional actual `takenAt` |
+| API-030 | `GET /api/patient/today` | PATIENT | Current patient's schedule including optional actual `takenAt`; optional slot-time query supported; doses exist only inside the intersection of the medication and regimen start/end periods |
+| API-031 | `GET /api/patients/{patientId}/today` | CAREGIVER | Selected patient's schedule including optional actual `takenAt`; uses the same medication/regimen period intersection as API-030 |
 | API-032 | `GET /api/patient/slot-times` | PATIENT | Four validated `HH:mm` values |
 | API-033 | `POST /api/patient/dose-records` | PATIENT | `{medicationId,scheduledAt}`; patient cannot delete |
 | API-034 | `POST /api/patients/{patientId}/dose-records` | CAREGIVER | Caregiver proxy record |
@@ -87,7 +87,7 @@ Schedule dose identity is `(patientId, medicationId, scheduledAt)` and the UI ke
 
 `takenAt` is the actual record time, not the scheduled time. A scheduled dose is late when `takenAt - scheduledAt >= 60 minutes`; the boundary is inclusive. Android must retain scheduled and actual times separately in Today and day-history models.
 
-At `main@3e52fb2`, single-dose creation performs history/event creation and inventory decrement concurrently, and slot-bulk recording performs event creation and inventory deltas concurrently. Caregiver push is still awaited only after those effects have succeeded. This is a latency change, not an Android wire-contract change: responses, idempotency, partial-slot counts, `insufficient_inventory` behavior and server inventory authority remain unchanged.
+Slot-bulk recording commits the successful medication records, their history events and inventory decrements in one database transaction. A concurrent inventory conflict rolls the whole attempt back instead of leaving a taken record without the matching inventory change. Caregiver push is attempted only after commit. This does not change the Android wire contract: responses, idempotency, partial-slot counts, `insufficient_inventory` behavior and server inventory authority remain unchanged.
 
 Slot-bulk response is top-level:
 
@@ -143,6 +143,10 @@ Slot-bulk response is top-level:
 | API-045 | `GET /api/patient/history/streak` | PATIENT | `{ currentStreakDays: Int, isAtLeast: Boolean, todayStatus: complete|inProgress|missed|noSchedule }` |
 
 History month accepts current `days` and legacy `monthSummary`; day accepts current `doses` and legacy `dayDetails`. Scheduled day details carry optional actual `takenAt`. Android may support both response envelopes for compatibility but tests must prefer the current response. Current history remains reachable under the published billing-off release policy; the server remains authoritative if retention/entitlement is enabled later.
+
+Medication archive is purpose-sensitive. Today, future schedule, reminder and new-recording paths exclude archived medications immediately. API-040 through API-045 and the caregiver PDF report retain scheduled doses strictly before `archivedAt`; existing PRN records remain joined to the archived medication. The additive nullable `archivedAt` migration backfills previously archived rows from `updatedAt` and does not alter the wire response, so current iOS clients remain compatible.
+
+Each month-history day may additionally carry `slotProgress.{morning|noon|evening|bedtime}` with `scheduledCount`, `takenCount`, `pendingCount` and `missedCount`. This is the authoritative medication-level progress for a slot. Android displays `一部記録` when `takenCount > 0` and `takenCount < scheduledCount`; it must not invent or persist a fifth dose-record status. The legacy `slotSummary` enum remains `pending|taken|missed|none`, so older iOS and Android clients continue decoding the response while ignoring the additive field.
 
 API-045 is supplementary to the ordinary history response. Its load or refresh failure hides/retains only the streak presentation and must not replace valid month/day history with an error. Android must parse the four `todayStatus` values strictly, preserve the server's `isAtLeast` qualifier, and refresh streak on History entry/refresh, slot-time changes, scheduled-dose mutations and selected patient-session changes.
 

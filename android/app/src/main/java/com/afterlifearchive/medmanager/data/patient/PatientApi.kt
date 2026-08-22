@@ -56,7 +56,7 @@ class PatientApi(private val client: ApiClient) : PatientDataSource {
     override suspend fun recordPrn(medication: PatientMedication, clientMutationId: String) {
         client.postBody(
             "api/patients/${medication.patientId}/prn-dose-records",
-            PatientWireJson.encodeToString(
+            PatientRequestJson.encodeToString(
                 PatientPrnRecordRequestDto(
                     medicationId = medication.id,
                     clientMutationId = clientMutationId,

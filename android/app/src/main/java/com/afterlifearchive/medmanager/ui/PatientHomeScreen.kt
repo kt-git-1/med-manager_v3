@@ -4,6 +4,7 @@ import android.Manifest
 import android.os.Build
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.NotificationManagerCompat
@@ -92,6 +93,10 @@ import com.afterlifearchive.medmanager.AnalyticsConsentPreferences
 import com.afterlifearchive.medmanager.AnalyticsPatientTab
 import com.afterlifearchive.medmanager.AnalyticsService
 import com.afterlifearchive.medmanager.AnalyticsAppMode
+import com.afterlifearchive.medmanager.AnalyticsCoreAction
+import com.afterlifearchive.medmanager.AnalyticsFailureReason
+import com.afterlifearchive.medmanager.AnalyticsNotificationPermissionResult
+import com.afterlifearchive.medmanager.AnalyticsSurface
 import com.afterlifearchive.medmanager.PatientNotificationPreferences
 import com.afterlifearchive.medmanager.PatientNotificationSettings
 import com.afterlifearchive.medmanager.PatientNotificationPlanBuilder
@@ -269,6 +274,7 @@ fun PatientHomeScreen(
     val freshness by repository.freshness.collectAsStateWithLifecycle()
     val errorText = state.error?.let { patientUserMessageText(it) }
     val messageText = state.message?.let { patientUserMessageText(it) }
+    val prnErrorText = state.prnError?.let { patientUserMessageText(it) }
     val navigation = rememberPatientNavigationState()
     val tab = navigation.tab
     var confirmDose by remember { mutableStateOf<PatientDose?>(null) }
@@ -289,6 +295,9 @@ fun PatientHomeScreen(
     val permissionPreferences = remember { context.getSharedPreferences("notification_permission", android.content.Context.MODE_PRIVATE) }
     var notificationPermissionDenied by remember {
         mutableStateOf(permissionPreferences.getBoolean("requested", false) && !NotificationManagerCompat.from(context).areNotificationsEnabled())
+    }
+    var notificationPermissionSurface by rememberSaveable {
+        mutableStateOf(AnalyticsSurface.NOTIFICATIONS.value)
     }
     val lifecycleOwner = LocalLifecycleOwner.current
     val historyFreshnessCursor = remember(repository) {
@@ -311,6 +320,11 @@ fun PatientHomeScreen(
     val notificationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
+        analyticsService?.logNotificationPermissionResult(
+            if (granted) AnalyticsNotificationPermissionResult.AUTHORIZED else AnalyticsNotificationPermissionResult.DENIED,
+            AnalyticsSurface.entries.firstOrNull { it.value == notificationPermissionSurface }
+                ?: AnalyticsSurface.NOTIFICATIONS,
+        )
         notificationPermissionDenied = !granted
         applyNotificationSettings(notificationSettings.copy(masterEnabled = granted))
     }
@@ -334,6 +348,15 @@ fun PatientHomeScreen(
     }
     LaunchedEffect(tutorialStep) {
         if (tutorialStep >= 0) analyticsService?.logTutorialStepViewed(AnalyticsAppMode.PATIENT, tutorialStep + 1)
+    }
+    LaunchedEffect(messageText) {
+        messageText?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+    }
+    LaunchedEffect(prnErrorText) {
+        prnErrorText?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            repository.clearPrnFeedback()
+        }
     }
 
     DisposableEffect(lifecycleOwner, tab) {
@@ -381,7 +404,7 @@ fun PatientHomeScreen(
                     refreshing = state.refreshing,
                     updatingKey = state.updatingDoseKey,
                     error = errorText,
-                    message = messageText,
+                    message = null,
                     maintenanceWarning = state.maintenanceWarning?.let { warning ->
                         when (warning) {
                             PatientMaintenanceWarning.REMINDER_REFRESH_FAILED -> stringResource(R.string.patient_reminder_refresh_failed)
@@ -403,12 +426,16 @@ fun PatientHomeScreen(
                     onRecordSlot = { confirmSlot = it },
                     onRecordPrn = { confirmPrn = it },
                     onRemind = { dose ->
-                        if (Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        if (Build.VERSION.SDK_INT >= 33) {
+                            notificationPermissionSurface = AnalyticsSurface.NOTIFICATIONS.value
+                            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
                         ReminderScheduler.schedule(context, dose.key)
                     },
-                    prnError = state.prnError?.let { patientUserMessageText(it) },
+                    prnError = null,
                     prnSuccessRevision = state.prnRecordSuccessRevision,
                     onClearPrnFeedback = repository::clearPrnFeedback,
+                    onRefresh = { scope.launch { repository.loadToday() } },
                 )
                 PatientTab.HISTORY -> HistoryContent(
                     days = state.history,
@@ -426,6 +453,12 @@ fun PatientHomeScreen(
                     onExpandRecentDate = { date -> scope.launch { repository.loadHistoryDay(date) } },
                     onCollapseRecentDate = repository::clearHistoryDay,
                     onRetryRecentDate = { date -> scope.launch { repository.loadHistoryDay(date) } },
+                    onRefresh = { expandedDate ->
+                        scope.launch {
+                            repository.loadHistory()
+                            expandedDate?.let { repository.loadHistoryDay(it) }
+                        }
+                    },
                 )
                 PatientTab.SETTINGS -> SettingsContent(
                     loading = state.loading,
@@ -435,6 +468,7 @@ fun PatientHomeScreen(
                     onNotificationSettingsChange = { updated ->
                         if (updated.masterEnabled && !notificationSettings.masterEnabled && Build.VERSION.SDK_INT >= 33) {
                             permissionPreferences.edit().putBoolean("requested", true).apply()
+                            notificationPermissionSurface = AnalyticsSurface.SETTINGS.value
                             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                         } else applyNotificationSettings(updated)
                     },
@@ -467,7 +501,12 @@ fun PatientHomeScreen(
                 Button(onClick = {
                     confirmDose = null
                     scope.launch {
-                        if (repository.record(dose)) repository.refreshTodayAfterAction(showProgress = false)
+                        if (repository.record(dose)) {
+                            analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.DOSE_RECORDED)
+                            repository.refreshTodayAfterAction(showProgress = false)
+                        } else {
+                            analyticsService?.logCoreActionFailed(AnalyticsCoreAction.DOSE_RECORDED, AnalyticsFailureReason.SERVER)
+                        }
                     }
                 }) { Text(stringResource(R.string.patient_record)) }
             },
@@ -483,7 +522,12 @@ fun PatientHomeScreen(
                 Button(onClick = {
                     confirmPrn = null
                     scope.launch {
-                        if (repository.recordPrn(medication)) repository.refreshTodayAfterAction(showProgress = false)
+                        if (repository.recordPrn(medication)) {
+                            analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.DOSE_RECORDED)
+                            repository.refreshTodayAfterAction(showProgress = false)
+                        } else {
+                            analyticsService?.logCoreActionFailed(AnalyticsCoreAction.DOSE_RECORDED, AnalyticsFailureReason.SERVER)
+                        }
                     }
                 }) { Text(stringResource(R.string.patient_prn_confirm_action)) }
             },
@@ -502,7 +546,12 @@ fun PatientHomeScreen(
                 Button(onClick = {
                     confirmSlot = null
                     scope.launch {
-                        if (repository.recordSlot(slot)) repository.refreshTodayAfterAction(showProgress = false)
+                        if (repository.recordSlot(slot)) {
+                            analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.DOSE_RECORDED)
+                            repository.refreshTodayAfterAction(showProgress = false)
+                        } else {
+                            analyticsService?.logCoreActionFailed(AnalyticsCoreAction.DOSE_RECORDED, AnalyticsFailureReason.SERVER)
+                        }
                     }
                 }) { Text(stringResource(R.string.patient_record_bulk)) }
             },
@@ -551,6 +600,7 @@ fun PatientHomeScreen(
                     if (requestTutorialNotificationPermission != null) {
                         requestTutorialNotificationPermission()
                     } else if (Build.VERSION.SDK_INT >= 33) {
+                        notificationPermissionSurface = AnalyticsSurface.NOTIFICATIONS.value
                         notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                     } else {
                         applyNotificationSettings(notificationSettings.copy(masterEnabled = true))

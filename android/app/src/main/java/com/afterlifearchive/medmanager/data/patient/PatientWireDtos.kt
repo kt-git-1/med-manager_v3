@@ -11,6 +11,11 @@ internal val PatientWireJson = Json {
     encodeDefaults = true
 }
 
+internal val PatientRequestJson = Json {
+    explicitNulls = false
+    encodeDefaults = true
+}
+
 @Serializable
 internal data class PatientDataListDto<T>(val data: List<T>)
 
@@ -175,6 +180,36 @@ internal data class PatientSlotSummaryDto(
 )
 
 @Serializable
+internal data class PatientSlotProgressDto(
+    val scheduledCount: Int = 0,
+    val takenCount: Int = 0,
+    val pendingCount: Int = 0,
+    val missedCount: Int = 0,
+) {
+    fun toDomain() = HistorySlotProgress(
+        scheduledCount = scheduledCount,
+        takenCount = takenCount,
+        pendingCount = pendingCount,
+        missedCount = missedCount,
+    )
+}
+
+@Serializable
+internal data class PatientSlotProgressSummaryDto(
+    val morning: PatientSlotProgressDto = PatientSlotProgressDto(),
+    val noon: PatientSlotProgressDto = PatientSlotProgressDto(),
+    val evening: PatientSlotProgressDto = PatientSlotProgressDto(),
+    val bedtime: PatientSlotProgressDto = PatientSlotProgressDto(),
+) {
+    fun toDomain() = mapOf(
+        MedicationSlot.MORNING to morning.toDomain(),
+        MedicationSlot.NOON to noon.toDomain(),
+        MedicationSlot.EVENING to evening.toDomain(),
+        MedicationSlot.BEDTIME to bedtime.toDomain(),
+    )
+}
+
+@Serializable
 internal data class PatientHistoryMonthResponseDto(
     val days: List<PatientHistoryDayDto>? = null,
     val monthSummary: List<PatientHistoryDayDto>? = null,
@@ -205,7 +240,11 @@ internal data class PatientHistoryStreakResponseDto(
 }
 
 @Serializable
-internal data class PatientHistoryDayDto(val date: String, val slotSummary: PatientSlotSummaryDto) {
+internal data class PatientHistoryDayDto(
+    val date: String,
+    val slotSummary: PatientSlotSummaryDto,
+    val slotProgress: PatientSlotProgressSummaryDto? = null,
+) {
     fun toDomain(prnCount: Int) = HistoryDay(
         date = date,
         morning = slotSummary.morning.toHistoryStatus(),
@@ -213,6 +252,7 @@ internal data class PatientHistoryDayDto(val date: String, val slotSummary: Pati
         evening = slotSummary.evening.toHistoryStatus(),
         bedtime = slotSummary.bedtime.toHistoryStatus(),
         prnCount = prnCount,
+        slotProgress = slotProgress?.toDomain().orEmpty(),
     )
 }
 

@@ -7,6 +7,7 @@ import com.afterlifearchive.medmanager.data.network.HttpTransport
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.SerializationException
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -144,7 +145,7 @@ class PatientApiContractTest {
     }
 
     @Test
-    fun prnRecordUsesPatientScopedRouteAndNullableDefaults() = runTest {
+    fun prnRecordUsesPatientScopedRouteAndOmitsUnsetOptionalFields() = runTest {
         val transport = ContractTransport(HttpResponse(200, """{"record":{"id":"prn-1"}}"""))
         val api = PatientApi(ApiClient("https://example.test/", { null }, transport = transport))
         val medication = api.medicationsFromFixtureForTest()
@@ -154,8 +155,10 @@ class PatientApiContractTest {
         val request = transport.requests.single()
         assertTrue(request.url.endsWith("/api/patients/patient-1/prn-dose-records"))
         assertTrue(request.body.orEmpty().contains("\"medicationId\":\"medication-1\""))
-        assertTrue(request.body.orEmpty().contains("\"takenAt\":null"))
-        assertEquals(4, UUID.fromString(JSONObject(request.body!!).getString("clientMutationId")).version())
+        val body = JSONObject(request.body!!)
+        assertFalse(body.has("takenAt"))
+        assertFalse(body.has("quantityTaken"))
+        assertEquals(4, UUID.fromString(body.getString("clientMutationId")).version())
     }
 
     @Test
@@ -194,6 +197,9 @@ class PatientApiContractTest {
         assertEquals(HistoryStatus.PENDING, day.evening)
         assertEquals(HistoryStatus.NONE, day.bedtime)
         assertEquals(2, day.prnCount)
+        assertEquals(2, day.slotProgress.getValue(MedicationSlot.NOON).scheduledCount)
+        assertEquals(1, day.slotProgress.getValue(MedicationSlot.NOON).takenCount)
+        assertTrue(day.slotProgress.getValue(MedicationSlot.NOON).isPartial)
     }
 
     @Test
@@ -252,7 +258,7 @@ class PatientApiContractTest {
         const val SLOT_TIMES_FIXTURE = """{"data":{"slotTimes":{"morning":"07:30","noon":"12:15","evening":"18:45","bedtime":"21:30"}}}"""
         const val MEDICATIONS_FIXTURE = """{"data":[{"id":"medication-1","patientId":"patient-1","name":"頓服薬","dosageText":"1回1錠","doseCountPerIntake":1.0,"dosageStrengthValue":10.0,"dosageStrengthUnit":"mg","notes":null,"isPrn":true,"prnInstructions":"痛い時","startDate":"2026-07-01T00:00:00Z","endDate":null,"inventoryCount":0.5,"inventoryUnit":"錠","inventoryEnabled":true,"inventoryQuantity":0.5,"inventoryOut":true,"isActive":true,"isArchived":false,"nextScheduledAt":null,"regimenTimes":["07:30","18:45"],"regimenDaysOfWeek":["MON","WED"]}]}"""
         const val BULK_FIXTURE = """{"updatedCount":2,"remainingCount":1,"insufficientCount":1,"totalPills":3.5,"medCount":3,"slotTime":"12:15","slotSummary":{"morning":"taken","noon":"pending","evening":"none","bedtime":"none"},"recordingGroupId":"group-1"}"""
-        const val HISTORY_MONTH_FIXTURE = """{"year":2026,"month":7,"days":[{"date":"2026-07-13","slotSummary":{"morning":"taken","noon":"missed","evening":"pending","bedtime":"none"}}],"prnCountByDay":{"2026-07-13":2}}"""
+        const val HISTORY_MONTH_FIXTURE = """{"year":2026,"month":7,"days":[{"date":"2026-07-13","slotSummary":{"morning":"taken","noon":"missed","evening":"pending","bedtime":"none"},"slotProgress":{"morning":{"scheduledCount":1,"takenCount":1,"pendingCount":0,"missedCount":0},"noon":{"scheduledCount":2,"takenCount":1,"pendingCount":0,"missedCount":1},"evening":{"scheduledCount":1,"takenCount":0,"pendingCount":1,"missedCount":0},"bedtime":{"scheduledCount":0,"takenCount":0,"pendingCount":0,"missedCount":0}}}],"prnCountByDay":{"2026-07-13":2}}"""
         const val HISTORY_DAY_FIXTURE = """{"date":"2026-07-13","doses":[{"medicationId":"med-1","medicationName":"血圧薬","dosageText":"1錠","doseCountPerIntake":1.0,"scheduledAt":"2026-07-13T03:15:00Z","takenAt":"2026-07-13T08:51:00Z","slot":"noon","effectiveStatus":"taken","recordedByType":"caregiver"}],"prnItems":[{"medicationId":"prn-1","medicationName":"頭痛薬","takenAt":"2026-07-13T05:00:00Z","quantityTaken":1.5,"actorType":"patient"}]}"""
     }
 }

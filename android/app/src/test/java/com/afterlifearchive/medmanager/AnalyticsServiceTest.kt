@@ -71,6 +71,41 @@ class AnalyticsServiceTest {
         assertEquals(1, transport.events.size)
     }
 
+    @Test
+    fun stagingIosParityEventsUseOnlyFixedSafeValues() {
+        val transport = FakeAnalyticsTransport()
+        val service = AnalyticsService(FakeConsentStore(AnalyticsConsentState(true, true)), transport)
+        service.configure()
+
+        service.logCoreActionFailed(AnalyticsCoreAction.DOSE_RECORDED, AnalyticsFailureReason.SERVER)
+        service.logPatientLinkCodeShareTapped()
+        service.logNotificationPermissionResult(
+            AnalyticsNotificationPermissionResult.AUTHORIZED,
+            AnalyticsSurface.NOTIFICATIONS,
+        )
+
+        assertEquals(
+            listOf(
+                "core_action_failed" to mapOf("action_name" to "dose_recorded", "reason" to "server"),
+                "patient_link_code_share_tapped" to mapOf("surface" to "patient_management"),
+                "notification_permission_result" to mapOf("result" to "authorized", "surface" to "notifications"),
+            ),
+            transport.events,
+        )
+    }
+
+    @Test
+    fun eventSpecificResultAllowlistCannotMixPurchaseAndNotificationValues() {
+        val transport = FakeAnalyticsTransport()
+        val service = AnalyticsService(FakeConsentStore(AnalyticsConsentState(true, true)), transport)
+        service.configure()
+
+        service.logChecked("purchase_result", mapOf("feature" to "widget", "surface" to "settings", "result" to "authorized"))
+        service.logChecked("notification_permission_result", mapOf("surface" to "settings", "result" to "success"))
+
+        assertTrue(transport.events.isEmpty())
+    }
+
     private class FakeConsentStore(initial: AnalyticsConsentState = AnalyticsConsentState()) : AnalyticsConsentStore {
         var state = initial
         override fun state() = state

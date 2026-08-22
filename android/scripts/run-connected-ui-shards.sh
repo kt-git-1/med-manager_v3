@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-readonly APP_PACKAGE="com.afterlifearchive.medmanager"
-readonly TEST_PACKAGE="com.afterlifearchive.medmanager.test"
+readonly APP_PACKAGE="com.afterlifearchive.medmanager.staging"
+readonly TEST_PACKAGE="com.afterlifearchive.medmanager.staging.test"
 readonly ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly RESULT_ROOT="$ROOT_DIR/app/build/reports/connected-ui-shards"
 
@@ -11,7 +11,7 @@ usage() {
   cat <<'EOF'
 Usage: scripts/run-connected-ui-shards.sh [adb-serial]
 
-Runs the complete connected Debug UI suite in bounded AndroidJUnitRunner shards.
+Runs the complete connected Staging Debug UI suite in bounded AndroidJUnitRunner shards.
 The target must not already contain the app or test package. Both packages are
 removed when the command exits, including after a failed shard.
 The target must remain awake and unlocked before every shard; the runner never
@@ -146,12 +146,12 @@ fi
 for (( shard = first_shard; shard < last_shard; shard += 1 )); do
   require_interactive_target
   echo "Running connected UI shard $((shard + 1))/$SHARD_COUNT"
-  ANDROID_SERIAL="$serial" ./gradlew :app:connectedDebugAndroidTest \
+  ANDROID_SERIAL="$serial" ./gradlew :app:connectedStagingDebugAndroidTest \
     --no-configuration-cache \
     "-Pandroid.testInstrumentationRunnerArguments.numShards=$SHARD_COUNT" \
     "-Pandroid.testInstrumentationRunnerArguments.shardIndex=$shard"
 
-  result_directory="$ROOT_DIR/app/build/outputs/androidTest-results/connected/debug"
+  result_directory="$ROOT_DIR/app/build/outputs/androidTest-results/connected/debug/flavors/staging"
   result_files="$(find "$result_directory" -maxdepth 1 -type f -name 'TEST-*.xml' -print 2>/dev/null || true)"
   result_count="$(printf '%s\n' "$result_files" | sed '/^$/d' | wc -l | tr -d ' ')"
   if [[ "$result_count" != "1" ]]; then

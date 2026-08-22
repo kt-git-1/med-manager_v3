@@ -133,6 +133,72 @@ class CaregiverHistoryRepositoryTest {
     }
 
     @Test
+    fun cancelledMonthLoadClearsLoadingAndAllowsTabReturnRetry() = runTest {
+        val requestStarted = CompletableDeferred<Unit>()
+        val firstResponseGate = CompletableDeferred<Unit>()
+        var calls = 0
+        val source = object : CaregiverHistoryDataSource {
+            override suspend fun month(patientId: String, yearMonth: YearMonth): List<HistoryDay> {
+                calls += 1
+                if (calls == 1) {
+                    requestStarted.complete(Unit)
+                    firstResponseGate.await()
+                }
+                return listOf(day("2026-07-15"))
+            }
+            override suspend fun day(patientId: String, date: LocalDate) = HistoryDayDetail(date.toString(), emptyList(), emptyList())
+            override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
+        }
+        val repository = CaregiverHistoryRepository(source, MutationFreshnessStore())
+
+        val first = launch { repository.loadMonth("p1", YearMonth.of(2026, 7)) }
+        requestStarted.await()
+        assertTrue(repository.state.value.loadingMonth)
+        first.cancel()
+        first.join()
+
+        assertFalse(repository.state.value.loadingMonth)
+        assertFalse(repository.state.value.refreshingMonth)
+        repository.loadMonth("p1", YearMonth.of(2026, 7))
+        assertEquals(2, calls)
+        assertTrue(repository.state.value.monthLoaded)
+        assertEquals(listOf("2026-07-15"), repository.state.value.days.map { it.date })
+    }
+
+    @Test
+    fun cancelledDayLoadClearsLoadingAndAllowsTabReturnRetry() = runTest {
+        val targetDate = LocalDate.of(2026, 7, 15)
+        val requestStarted = CompletableDeferred<Unit>()
+        val firstResponseGate = CompletableDeferred<Unit>()
+        var calls = 0
+        val source = object : CaregiverHistoryDataSource {
+            override suspend fun month(patientId: String, yearMonth: YearMonth) = listOf(day(targetDate.toString()))
+            override suspend fun day(patientId: String, date: LocalDate): HistoryDayDetail {
+                calls += 1
+                if (calls == 1) {
+                    requestStarted.complete(Unit)
+                    firstResponseGate.await()
+                }
+                return HistoryDayDetail(date.toString(), emptyList(), emptyList())
+            }
+            override suspend fun recordMissed(patientId: String, dose: HistoryScheduledDose) = Unit
+        }
+        val repository = CaregiverHistoryRepository(source, MutationFreshnessStore())
+        repository.loadMonth("p1", YearMonth.of(2026, 7))
+
+        val first = launch { repository.loadDay("p1", targetDate) }
+        requestStarted.await()
+        assertTrue(repository.state.value.loadingDay)
+        first.cancel()
+        first.join()
+
+        assertFalse(repository.state.value.loadingDay)
+        repository.loadDay("p1", targetDate)
+        assertEquals(2, calls)
+        assertEquals(targetDate.toString(), repository.state.value.dayDetail?.date)
+    }
+
+    @Test
     fun backfillPublishesOnlyAfterSuccessAndRefreshesAuthoritativeDay() = runTest {
         val freshness = MutationFreshnessStore()
         var recorded = false

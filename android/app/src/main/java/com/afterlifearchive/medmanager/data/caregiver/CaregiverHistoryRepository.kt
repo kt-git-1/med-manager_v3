@@ -148,7 +148,13 @@ class CaregiverHistoryRepository(
                 monthRefreshFailed = false,
             )
         } catch (error: Exception) {
-            if (error is CancellationException) throw error
+            if (error is CancellationException) {
+                val latest = mutableState.value
+                if (latest.patientId == patientId && latest.displayedMonth == yearMonth) {
+                    mutableState.value = latest.copy(loadingMonth = false, refreshingMonth = false)
+                }
+                throw error
+            }
             acceptLoadFailure(error, month = true)
         }
     }
@@ -173,7 +179,13 @@ class CaregiverHistoryRepository(
                 dayRefreshFailed = false,
             )
         } catch (error: Exception) {
-            if (error is CancellationException) throw error
+            if (error is CancellationException) {
+                val latest = mutableState.value
+                if (latest.patientId == patientId && latest.selectedDate == date) {
+                    mutableState.value = latest.copy(loadingDay = false)
+                }
+                throw error
+            }
             acceptLoadFailure(error, month = false)
         }
     }

@@ -56,14 +56,14 @@ The backend remains authoritative. Caregiver API tokens retain the existing `car
 
 ## Runtime configuration
 
-Runtime Supabase values are intentionally not committed. Add `SUPABASE_URL` and `SUPABASE_ANON_KEY` to ignored `android/local.properties`, or export them as environment variables before building. `API_BASE_URL` defaults to `https://www.okusuri-mimamori.com/` and can be overridden the same way.
+Runtime Supabase values are intentionally not committed. Current builds use the explicit `staging` / `production` mapping in `environment-flavors.md`. Staging accepts the old generic local names only as a compatibility fallback; Production reads only `PRODUCTION_*` inputs and fails its release preflight when they are absent.
 
 ## Verification performed so far
 
-- `./gradlew test assembleDebug lint`
+- `./gradlew testStagingDebugUnitTest assembleStagingDebug lintStagingDebug`
 - Current Android unit tests pass in both debug and release variants.
 - Production `/api/health` responds successfully.
-- A debug APK is generated at `android/app/build/outputs/apk/debug/app-debug.apk`.
+- A Staging debug APK is generated at `android/app/build/outputs/apk/staging/debug/app-staging-debug.apk`.
 
 Physical-device installation is pending because no Android device is currently visible to ADB.
 
@@ -136,7 +136,7 @@ Instrumentation tests run inside an Android 15 emulator and verify the real Andr
 - An expired patient token is removed while patient mode remains selected, returning the app to linking.
 - `adb shell am force-stop` followed by a cold `MainActivity` launch succeeds without a crash.
 
-Verification command: `./gradlew test assembleDebug lint connectedDebugAndroidTest`.
+Current verification command: `./gradlew testStagingDebugUnitTest assembleStagingDebug lintStagingDebug connectedStagingDebugAndroidTest`.
 
 `SH-007` is `IMPLEMENTED`, not `VERIFIED`, until the same restoration checks pass on a physical Android device.
 

@@ -1,5 +1,6 @@
 package com.afterlifearchive.medmanager.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -60,6 +61,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -80,6 +82,8 @@ import com.afterlifearchive.medmanager.data.patient.HistoryScheduledDose
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
 import com.afterlifearchive.medmanager.data.patient.MedicationRecordingPolicy
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
+import com.afterlifearchive.medmanager.data.patient.PrnActorType
+import com.afterlifearchive.medmanager.data.patient.PrnHistoryItem
 import com.afterlifearchive.medmanager.data.patient.RecordedByType
 import com.afterlifearchive.medmanager.ui.theme.MedicationTheme
 import java.time.LocalDate
@@ -92,6 +96,7 @@ import kotlinx.coroutines.launch
 
 private val HistoryPendingGray = Color(0xFF8E8E93)
 private val HistoryPrnPurple = Color(0xFFAF52DE)
+private const val HistoryPrnGroupKey = "prn"
 
 @Composable
 internal fun CaregiverHistoryScreen(
@@ -111,7 +116,16 @@ internal fun CaregiverHistoryScreen(
     val selectedPatient = patientState.selectedPatient
     val cursor = remember(repository) { repository.newFreshnessCursor() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var backfillDose by remember { mutableStateOf<HistoryScheduledDose?>(null) }
+    var pullRefreshing by remember { mutableStateOf(false) }
+    val backfillToastText = stringResource(R.string.patient_message_dose_recorded)
+
+    LaunchedEffect(state.mutationSucceeded, backfillToastText) {
+        if (state.mutationSucceeded) {
+            Toast.makeText(context, backfillToastText, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     LaunchedEffect(enabled, selectedPatient?.id, state.displayedMonth, freshness.dose, freshness.slotTimes) {
         if (enabled && selectedPatient != null) cursor.refreshIfStale {
@@ -153,35 +167,52 @@ internal fun CaregiverHistoryScreen(
             usePillsGlyph = false,
         )
         else -> Box(Modifier.fillMaxSize()) {
-            CaregiverHistoryMonth(
-                patientName = selectedPatient.displayName,
-                displayedMonth = state.displayedMonth,
-                days = state.days,
-                selectedDate = state.selectedDate,
-                dayDetail = state.dayDetail,
-                loadingMonth = state.loadingMonth && state.days.isEmpty(),
-                monthFailed = state.monthFailed,
-                loadingDay = state.loadingDay,
-                dayFailed = state.dayFailed,
-                dayRefreshFailed = state.dayRefreshFailed,
-                mutationFailed = state.mutationFailed,
-                mutationSucceeded = state.mutationSucceeded,
-                highlightedSlot = state.highlightedSlot,
-                refreshFailed = state.monthRefreshFailed,
-                retentionCutoffDate = state.retentionCutoffDate,
-                retentionDays = state.retentionDays,
-                onRetry = { scope.launch { repository.loadMonth(selectedPatient.id, state.displayedMonth) } },
-                onRetryDay = { state.selectedDate?.let { scope.launch { repository.loadDay(selectedPatient.id, it) } } },
-                onReturnToLogin = onReturnToLogin,
-                onMonth = { scope.launch { repository.loadMonth(selectedPatient.id, it) } },
-                onDate = repository::selectDate,
-                onRecordMissed = { backfillDose = it },
-                allowMonthNavigation = billingEnabled,
-                reportAction = if (reportRepository != null) {
-                    { CaregiverReportAction(reportRepository, selectedPatient.id, billingEnabled) }
-                } else null,
-            )
-            if (state.refreshingMonth || state.updating) CaregiverHistoryUpdatingOverlay()
+            MedicationPullToRefresh(
+                isRefreshing = pullRefreshing || state.refreshingMonth,
+                enabled = enabled && !pullRefreshing && !state.loadingMonth && !state.refreshingMonth && !state.loadingDay && !state.updating,
+                onRefresh = {
+                    scope.launch {
+                        pullRefreshing = true
+                        try {
+                            repository.loadMonth(selectedPatient.id, repository.state.value.displayedMonth)
+                            repository.state.value.selectedDate?.let { repository.loadDay(selectedPatient.id, it) }
+                        } finally {
+                            pullRefreshing = false
+                        }
+                    }
+                },
+                testTag = "caregiver-history-pull-refresh",
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                CaregiverHistoryMonth(
+                    patientName = selectedPatient.displayName,
+                    displayedMonth = state.displayedMonth,
+                    days = state.days,
+                    selectedDate = state.selectedDate,
+                    dayDetail = state.dayDetail,
+                    loadingMonth = state.loadingMonth && state.days.isEmpty(),
+                    monthFailed = state.monthFailed,
+                    loadingDay = state.loadingDay,
+                    dayFailed = state.dayFailed,
+                    dayRefreshFailed = state.dayRefreshFailed,
+                    mutationFailed = state.mutationFailed,
+                    highlightedSlot = state.highlightedSlot,
+                    refreshFailed = state.monthRefreshFailed,
+                    retentionCutoffDate = state.retentionCutoffDate,
+                    retentionDays = state.retentionDays,
+                    onRetry = { scope.launch { repository.loadMonth(selectedPatient.id, state.displayedMonth) } },
+                    onRetryDay = { state.selectedDate?.let { scope.launch { repository.loadDay(selectedPatient.id, it) } } },
+                    onReturnToLogin = onReturnToLogin,
+                    onMonth = { scope.launch { repository.loadMonth(selectedPatient.id, it) } },
+                    onDate = repository::selectDate,
+                    onRecordMissed = { backfillDose = it },
+                    allowMonthNavigation = billingEnabled,
+                    reportAction = if (reportRepository != null) {
+                        { CaregiverReportAction(reportRepository, selectedPatient.id, billingEnabled) }
+                    } else null,
+                )
+            }
+            if (state.updating) CaregiverHistoryUpdatingOverlay()
         }
     }
 
@@ -214,7 +245,6 @@ private fun CaregiverHistoryMonth(
     dayFailed: Boolean,
     dayRefreshFailed: Boolean,
     mutationFailed: Boolean,
-    mutationSucceeded: Boolean,
     highlightedSlot: com.afterlifearchive.medmanager.data.patient.MedicationSlot?,
     refreshFailed: Boolean,
     retentionCutoffDate: String?,
@@ -231,10 +261,12 @@ private fun CaregiverHistoryMonth(
     val now = LocalDate.now(ZoneId.of("Asia/Tokyo"))
     val currentMonth = YearMonth.from(now)
     val slotGroups = remember(dayDetail) { caregiverHistorySlotGroups(dayDetail?.doses.orEmpty()) }
+    val prnRecords = remember(dayDetail) { dayDetail?.prnItems.orEmpty().sortedBy(PrnHistoryItem::takenAt) }
     var expandedSlotKeys by rememberSaveable(selectedDate?.toString()) { mutableStateOf(emptySet<String>()) }
     LaunchedEffect(dayDetail?.date) {
         if (dayDetail != null) {
             expandedSlotKeys = slotGroups.filter { it.status == DoseStatus.TAKEN }.mapTo(mutableSetOf()) { it.slot.name }
+            if (prnRecords.isNotEmpty()) expandedSlotKeys = expandedSlotKeys + HistoryPrnGroupKey
             highlightedSlot?.let { expandedSlotKeys = expandedSlotKeys + it.name }
         }
     }
@@ -300,7 +332,6 @@ private fun CaregiverHistoryMonth(
                 item { CaregiverSelectedDaySummary(selectedDate, days.firstOrNull { it.date == selectedDate.toString() }) }
                 if (dayRefreshFailed) item { CaregiverStaleDataCard("caregiver-history-day-stale", onRetryDay) }
                 if (mutationFailed) item { Text(stringResource(R.string.caregiver_history_backfill_failed), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) }
-                if (mutationSucceeded) item { Text(stringResource(R.string.caregiver_history_backfill_success), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }
                 item { Text(selectedDate.format(DateTimeFormatter.ofPattern("M月d日 (E)", Locale.JAPANESE)), fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("caregiver-history-day-detail")) }
                 if (loadingDay) item { CaregiverHistoryInlineLoading("caregiver-history-day-loading") }
                 if (dayFailed) item {
@@ -329,14 +360,119 @@ private fun CaregiverHistoryMonth(
                             onRecordMissed = onRecordMissed,
                         )
                     }
-                    items(dayDetail.prnItems.sortedBy { it.takenAt }, key = { "prn:${it.medicationId}:${it.takenAt}" }) { record ->
-                        PrnHistoryRow(record, HistoryDayRowStyle.CAREGIVER)
+                    if (prnRecords.isNotEmpty()) item(key = HistoryPrnGroupKey) {
+                        CaregiverHistoryPrnGroupCard(
+                            records = prnRecords,
+                            expanded = HistoryPrnGroupKey in expandedSlotKeys,
+                            onToggle = {
+                                expandedSlotKeys = if (HistoryPrnGroupKey in expandedSlotKeys) {
+                                    expandedSlotKeys - HistoryPrnGroupKey
+                                } else {
+                                    expandedSlotKeys + HistoryPrnGroupKey
+                                }
+                            },
+                        )
                     }
                 }
             }
             reportAction?.let { item { it() } }
         }
         item { Spacer(Modifier.height(24.dp)) }
+    }
+}
+
+@Composable
+private fun CaregiverHistoryPrnGroupCard(
+    records: List<PrnHistoryItem>,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    val actorTypes = records.map(PrnHistoryItem::actorType).toSet()
+    val recorderText = when {
+        actorTypes.size > 1 -> stringResource(R.string.history_recorded_by_mixed)
+        actorTypes.singleOrNull() == PrnActorType.PATIENT -> stringResource(R.string.patient_history_recorded_by_patient)
+        else -> stringResource(R.string.patient_history_recorded_by_caregiver)
+    }
+    val timeText = if (records.size == 1) {
+        stringResource(R.string.caregiver_today_actual_time, caregiverHistoryTime(records.single().takenAt))
+    } else {
+        stringResource(
+            R.string.caregiver_history_prn_time_range,
+            caregiverHistoryTime(records.first().takenAt),
+            caregiverHistoryTime(records.last().takenAt),
+        )
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth().shadow(3.dp, RoundedCornerShape(16.dp)).testTag("caregiver-history-prn-group"),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, HistoryPrnPurple.copy(alpha = 0.38f)),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(14.dp)) {
+            Column(
+                Modifier.fillMaxWidth().clickable(onClick = onToggle).testTag("caregiver-history-prn-header"),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(Modifier.size(34.dp).background(HistoryPrnPurple, CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Rounded.MedicalServices, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    }
+                    Text(stringResource(R.string.caregiver_history_prn), color = HistoryPrnPurple, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.caregiver_history_prn_group_count, records.size), modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                    Row(
+                        Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.13f), CircleShape).padding(horizontal = 8.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    ) {
+                        Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                        Text(stringResource(R.string.patient_status_taken), color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, lineHeight = 15.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Icon(if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(timeText, color = MedicationTheme.colors.primaryTealText, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text(recorderText, color = MedicationTheme.colors.primaryTealText, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            }
+            if (expanded) {
+                androidx.compose.material3.HorizontalDivider(Modifier.padding(vertical = 10.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    records.forEach { record -> CaregiverHistoryPrnRecordRow(record) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CaregiverHistoryPrnRecordRow(record: PrnHistoryItem) {
+    val recordedBy = stringResource(
+        if (record.actorType == PrnActorType.PATIENT) R.string.patient_history_recorded_by_patient
+        else R.string.patient_history_recorded_by_caregiver,
+    )
+    Row(
+        Modifier.fillMaxWidth().background(MedicationTheme.colors.elevatedBackground.copy(alpha = 0.78f), RoundedCornerShape(12.dp))
+            .border(1.dp, MedicationTheme.colors.cardStroke, RoundedCornerShape(12.dp)).padding(horizontal = 10.dp, vertical = 9.dp)
+            .testTag("caregiver-history-prn-${record.medicationId}-${record.takenAt.toEpochMilli()}"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(Modifier.size(30.dp).background(HistoryPrnPurple.copy(alpha = 0.14f), CircleShape), contentAlignment = Alignment.Center) {
+            Icon(Icons.Rounded.MedicalServices, contentDescription = null, tint = HistoryPrnPurple, modifier = Modifier.size(17.dp))
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(record.medicationName, fontWeight = FontWeight.Bold)
+            Text(
+                stringResource(R.string.caregiver_history_prn_record_detail, caregiverHistoryTime(record.takenAt), formatHistoryQuantity(record.quantityTaken)),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(recordedBy, color = MedicationTheme.colors.primaryTealText, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+        Box(Modifier.size(26.dp).background(HistoryPrnPurple, CircleShape), contentAlignment = Alignment.Center) {
+            Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+        }
     }
 }
 
@@ -694,10 +830,12 @@ private fun HistoryLegendRow() {
 @Composable
 private fun CaregiverSelectedDaySummary(date: LocalDate, day: HistoryDay?) {
     val statuses = day?.let { listOf(it.morning, it.noon, it.evening, it.bedtime) }.orEmpty().filter { it != HistoryStatus.NONE }
-    val taken = statuses.count { it == HistoryStatus.TAKEN }
-    val pending = statuses.count { it == HistoryStatus.PENDING }
-    val missed = statuses.count { it == HistoryStatus.MISSED }
-    val total = statuses.size
+    val medicationProgress = day?.slotProgress?.values.orEmpty().filter { it.scheduledCount > 0 }
+    val hasMedicationProgress = medicationProgress.isNotEmpty()
+    val taken = if (hasMedicationProgress) medicationProgress.sumOf { it.takenCount } else statuses.count { it == HistoryStatus.TAKEN }
+    val pending = if (hasMedicationProgress) medicationProgress.sumOf { it.pendingCount } else statuses.count { it == HistoryStatus.PENDING }
+    val missed = if (hasMedicationProgress) medicationProgress.sumOf { it.missedCount } else statuses.count { it == HistoryStatus.MISSED }
+    val total = if (hasMedicationProgress) medicationProgress.sumOf { it.scheduledCount } else statuses.size
     val help = when {
         total == 0 && (day?.prnCount ?: 0) == 0 -> R.string.caregiver_history_selected_none_help
         missed > 0 -> R.string.caregiver_history_selected_missed_help
@@ -717,7 +855,11 @@ private fun CaregiverSelectedDaySummary(date: LocalDate, day: HistoryDay?) {
             }
             Text(
                 if (total == 0) stringResource(R.string.caregiver_history_selected_none)
-                else stringResource(R.string.caregiver_history_summary_format, taken, total),
+                else stringResource(
+                    if (hasMedicationProgress) R.string.caregiver_history_summary_format_items else R.string.caregiver_history_summary_format,
+                    taken,
+                    total,
+                ),
                 fontSize = 22.sp,
                 lineHeight = 28.sp,
                 fontWeight = FontWeight.Bold,
@@ -730,9 +872,21 @@ private fun CaregiverSelectedDaySummary(date: LocalDate, day: HistoryDay?) {
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     maxItemsInEachRow = 2,
                 ) {
-                    HistorySummaryPill(stringResource(R.string.caregiver_history_summary_taken, taken), MaterialTheme.colorScheme.primary, Icons.Rounded.CheckCircle)
-                    HistorySummaryPill(stringResource(R.string.caregiver_history_summary_pending, pending), if (pending > 0) MedicationTheme.colors.orange else HistoryPendingGray, Icons.Rounded.AccessTime)
-                    if (missed > 0) HistorySummaryPill(stringResource(R.string.caregiver_history_summary_missed, missed), MedicationTheme.colors.caregiverRed, Icons.Rounded.Warning)
+                    HistorySummaryPill(
+                        stringResource(if (hasMedicationProgress) R.string.caregiver_history_summary_taken_items else R.string.caregiver_history_summary_taken, taken),
+                        MaterialTheme.colorScheme.primary,
+                        Icons.Rounded.CheckCircle,
+                    )
+                    HistorySummaryPill(
+                        stringResource(if (hasMedicationProgress) R.string.caregiver_history_summary_pending_items else R.string.caregiver_history_summary_pending, pending),
+                        if (pending > 0) MedicationTheme.colors.orange else HistoryPendingGray,
+                        Icons.Rounded.AccessTime,
+                    )
+                    if (missed > 0) HistorySummaryPill(
+                        stringResource(if (hasMedicationProgress) R.string.caregiver_history_summary_missed_items else R.string.caregiver_history_summary_missed, missed),
+                        MedicationTheme.colors.caregiverRed,
+                        Icons.Rounded.Warning,
+                    )
                 }
             }
         }

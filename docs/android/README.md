@@ -25,6 +25,7 @@ An Android shortcut never overrides a backend rule or an intentional iOS product
 ## Required documents
 
 - [Master development plan](./android-port-master-plan.md)
+- [Pre-Phase 0 product additions](./pre-phase-0-product-additions.md)
 - [Pinned source baseline and change control](./source-baseline.md)
 - [API and session contracts](./api-contracts.md)
 - [UI and screen contracts](./ui-screen-contracts.md)
@@ -33,7 +34,9 @@ An Android shortcut never overrides a backend rule or an intentional iOS product
 - [UI fidelity specification](./ui-fidelity-spec.md)
 - [Current gap audit](./current-gap-audit.md)
 - [Firebase Analytics verification](./firebase-analytics.md)
+- [Staging / Production flavor contract](./environment-flavors.md)
 - [Physical-device verification matrix](./physical-device-matrix.md)
+- [Staging QA report (2026-08-22)](./staging-qa-2026-08-22.md)
 - [Play release runbook](./play-release-runbook.md)
 - [Play developer account onboarding](./play-developer-account-onboarding.md)
 - [Canonical residual release gates](./release-gates.json)
@@ -42,6 +45,7 @@ An Android shortcut never overrides a backend rule or an intentional iOS product
 - [Phase 2 patient-mode notes](./phase-2-patient-mode.md)
 - [Phase 3 caregiver-mode notes](./phase-3-caregiver-mode.md)
 - [Phase 4 analytics and privacy notes](./phase-4-analytics-privacy.md)
+- [Guided caregiver onboarding](./guided-caregiver-onboarding.md)
 - [Play release runbook](./play-release-runbook.md)
 - [Play Console declaration worksheet](./play-console-declarations.md)
 - [Japanese Play store listing and screenshot handoff](./play-store-listing-ja.md)

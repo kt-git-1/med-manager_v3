@@ -28,15 +28,15 @@ The 12 opted-in testers for 14 continuous days requirement applies to newly crea
 Supply these names either as environment variables or in the Git-ignored `android/local.properties`. `RELEASE_STORE_FILE` is resolved relative to the `android` project directory; an absolute path is also accepted.
 
 ```properties
-API_BASE_URL=https://www.okusuri-mimamori.com/
-SUPABASE_URL=...
-SUPABASE_ANON_KEY=...
-FIREBASE_APP_ID=...
-FIREBASE_API_KEY=...
-FIREBASE_PROJECT_ID=...
-FIREBASE_SENDER_ID=...
-EMAIL_CONFIRMATION_REDIRECT_URL=https://www.okusuri-mimamori.com/auth/confirmed
-BILLING_ENABLED=false
+PRODUCTION_API_BASE_URL=https://www.okusuri-mimamori.com/
+PRODUCTION_SUPABASE_URL=https://gsnasheyrncfbbnbomh.supabase.co
+PRODUCTION_SUPABASE_ANON_KEY=...
+PRODUCTION_FIREBASE_APP_ID=...
+PRODUCTION_FIREBASE_API_KEY=...
+PRODUCTION_FIREBASE_PROJECT_ID=...
+PRODUCTION_FIREBASE_SENDER_ID=...
+PRODUCTION_EMAIL_CONFIRMATION_REDIRECT_URL=https://www.okusuri-mimamori.com/auth/confirmed
+PRODUCTION_BILLING_ENABLED=false
 RELEASE_STORE_FILE=/absolute/private/path/upload-key.jks
 RELEASE_STORE_PASSWORD=...
 RELEASE_KEY_ALIAS=...
@@ -44,6 +44,8 @@ RELEASE_KEY_PASSWORD=...
 PLAY_UPLOAD_CERT_SHA256=<registered Play upload certificate SHA-256>
 PLAY_APP_SIGNING_CERT_SHA256_FINGERPRINTS=<Play app-signing certificate SHA-256>
 ```
+
+These Production values have no fallback to the generic Staging inputs. See `environment-flavors.md`; all Play artifacts must use the explicit `productionRelease` variant.
 
 `PLAY_UPLOAD_CERT_SHA256` and `PLAY_APP_SIGNING_CERT_SHA256_FINGERPRINTS` are different identities under Play App Signing. Read both independently only after the verified Organization account creates the exact production-package app; never substitute the locally generated upload certificate for the app-signing certificate delivered to users. The latter may be comma-separated only during an intentional certificate transition and is public certificate metadata, not a private key.
 
@@ -106,7 +108,7 @@ Use its anonymous counts to assess the unique-index deployment window. Deploy on
 ```bash
 cd android
 ./gradlew verifyMainMergeSurface
-./gradlew clean test assembleDebug assembleRelease lint
+./gradlew clean testStagingDebugUnitTest testProductionReleaseUnitTest assembleStagingDebug assembleProductionRelease lintStagingDebug lintProductionRelease
 ./gradlew verifyReleaseSdkPolicy
 ./gradlew verifyReleaseApkCompatibility
 ./gradlew verifyReleaseBundleContent
@@ -133,7 +135,7 @@ PLAY_INSTALLED_PACKAGE_RECEIPT_OUTPUT=<owner-path>/<handoff>.play-installed-pack
 ./gradlew verifyPlayInstalledPackageReceipt
 ```
 
-`verifyReleaseSdkPolicy` resolves the exact Release runtime graph and rejects unapproved collection/monetization SDKs. `verifyReleaseApkCompatibility` checks the exact assembled Release APK manifest/security/permission/SDK/16 KB contract. `verifyReleaseBundleContent` uses strict-locked bundletool to validate the AAB, requires only the reviewed base module, rejects embedded private configuration/key material, dumps the protobuf manifest and reapplies the APK policy before printing structure counts and SHA-256. `verifyReleaseBundleInstallSurface` uses that same locked bundletool and an ephemeral test key to build an exact two-entry universal APK Set from the exact AAB, proves the extracted APK's synthetic signer, then reapplies the complete APK policy. `verifyReleaseDeviceSplitSurface` builds the full APK Set once and selects exact base/ABI/Japanese/density quartets for API 26 arm64, API 33 x86_64 and API 35 A302SH; it verifies every split's package/certificate/16 KB contract and reapplies full policy to each selected base master. Both output families are diagnostic build output, not Play upload/install artifacts and not part of the C92 handoff. `verifyPlayStoreAssets` first exercises one accepted/twenty rejected listing fixtures, then binds locale/package/app name, disclosures, URLs, screenshot order and shipping configuration. It also exercises deterministic/invalid renderer inputs, generates all eight JPEGs in build output, requires byte-for-byte equality with the committed handoff and checks source pixels, padding, dimensions, iOS icon parity and graphics. Run `updatePlayStoreScreenshots` explicitly to accept reviewed source changes; verification never rewrites them. Neither task replaces exact signed-build comparison or Play preview. `verifyUploadKeystore` runs before AAB generation: the selected alias must be a usable private-key entry and its certificate must exactly match `PLAY_UPLOAD_CERT_SHA256`; passwords are neither printed nor declared as cacheable task inputs. `bundleSignedRelease` intentionally fails before generation when runtime/signing/key inputs are incomplete or inconsistent; after generation it requires all APK/AAB/install-surface gates, complete JAR signature coverage, exactly one signer and the same certificate identity. A normal `bundleRelease` may remain unsigned and is not a Play-upload artifact.
+`verifyReleaseSdkPolicy` resolves the exact Production Release runtime graph and rejects unapproved collection/monetization SDKs. `verifyReleaseApkCompatibility` checks the exact assembled Production Release APK manifest/security/permission/SDK/16 KB contract. `verifyReleaseBundleContent` uses strict-locked bundletool to validate the Production AAB, requires only the reviewed base module, rejects embedded private configuration/key material, dumps the protobuf manifest and reapplies the APK policy before printing structure counts and SHA-256. `verifyReleaseBundleInstallSurface` uses that same locked bundletool and an ephemeral test key to build an exact two-entry universal APK Set from the exact AAB, proves the extracted APK's synthetic signer, then reapplies the complete APK policy. `verifyReleaseDeviceSplitSurface` builds the full APK Set once and selects exact base/ABI/Japanese/density quartets for API 26 arm64, API 33 x86_64 and API 35 A302SH; it verifies every split's package/certificate/16 KB contract and reapplies full policy to each selected base master. Both output families are diagnostic build output, not Play upload/install artifacts and not part of the C92 handoff. `verifyPlayStoreAssets` first exercises one accepted/twenty rejected listing fixtures, then binds locale/package/app name, disclosures, URLs, screenshot order and shipping configuration. It also exercises deterministic/invalid renderer inputs, generates all eight JPEGs in build output, requires byte-for-byte equality with the committed handoff and checks source pixels, padding, dimensions, iOS icon parity and graphics. Run `updatePlayStoreScreenshots` explicitly to accept reviewed source changes; verification never rewrites them. Neither task replaces exact signed-build comparison or Play preview. `verifyUploadKeystore` runs before AAB generation: the selected alias must be a usable private-key entry and its certificate must exactly match `PLAY_UPLOAD_CERT_SHA256`; passwords are neither printed nor declared as cacheable task inputs. `bundleSignedRelease` intentionally fails before generation when runtime/signing/key inputs are incomplete or inconsistent; after generation it requires all APK/AAB/install-surface gates, complete JAR signature coverage, exactly one signer and the same certificate identity. A normal `bundleProductionRelease` may remain unsigned and is not a Play-upload artifact.
 
 `verifyMainMergeSurface` operates only on committed `origin/main...HEAD`. It requires current main as the exact ancestor, no deletion/rename, exactly the reviewed top-level/workflow/API/documentation scopes, no iOS path, no private/generated artifact or unsupported file mode, and bounded high-fidelity evidence size. Hosted CI uses full Git ancestry before running it. If main advances, merge/rebaseline main into `android-dev`, rerun API/Android gates and update the allowlist only after direct review; never force the task green by changing refs or removing a required contract.
 
@@ -222,7 +224,7 @@ C118 reruns C117 byte-for-byte and refuses missing rotation coverage, unknown/co
 
 `verifyProductionRuntime` also prevents privileged Supabase credentials from entering the client artifact. `SUPABASE_ANON_KEY` may contain a current `sb_publishable_...` key or a legacy JWT whose issuer is `supabase` and sole role is `anon`; `sb_secret_...`, legacy `service_role`, wrong-issuer, malformed and opaque-long values fail closed. The synthetic `verifyRuntimeCredentialSafety` task exercises this contract without reading or logging any real key.
 
-`app/gradle.lockfile` strictly pins `releaseRuntimeClasspath` and the isolated `bundletoolCli` verifier classpath. It currently represents 174 runtime coordinates and 17 bundletool coordinates, with four shared. Never hand-edit it. For an intentional app dependency update, use `./gradlew :app:dependencies --configuration releaseRuntimeClasspath --write-locks`; for a bundletool update, use the same command with `--configuration bundletoolCli`. Review every lock diff and rerun SDK, APK, AAB, disclosure and complete CI gates. Missing or stale state fails closed.
+`app/gradle.lockfile` strictly pins `productionReleaseRuntimeClasspath` and the isolated `bundletoolCli` verifier classpath. It currently represents 174 runtime coordinates and 17 bundletool coordinates, with four shared. Never hand-edit it. For an intentional app dependency update, use `./gradlew :app:dependencies --configuration productionReleaseRuntimeClasspath --write-locks`; for a bundletool update, use the same command with `--configuration bundletoolCli`. Review every lock diff and rerun SDK, APK, AAB, disclosure and complete CI gates. Missing or stale state fails closed.
 
 Before upload, also verify:
 

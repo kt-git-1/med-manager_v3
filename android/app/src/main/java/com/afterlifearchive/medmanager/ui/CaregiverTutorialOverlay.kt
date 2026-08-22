@@ -65,7 +65,7 @@ private val caregiverTutorialCopy = listOf(
     CaregiverTutorialCopy(R.string.caregiver_tutorial_time_title, R.string.caregiver_tutorial_time_message, Icons.Rounded.AccessTime),
     CaregiverTutorialCopy(R.string.caregiver_tutorial_register_title, R.string.caregiver_tutorial_register_message, Icons.Rounded.PersonAdd),
     CaregiverTutorialCopy(R.string.caregiver_tutorial_issue_title, R.string.caregiver_tutorial_issue_message, Icons.Rounded.Link),
-    CaregiverTutorialCopy(R.string.caregiver_tutorial_share_title, R.string.caregiver_tutorial_share_message, Icons.Rounded.Share),
+    CaregiverTutorialCopy(R.string.caregiver_tutorial_medication_register_title, R.string.caregiver_tutorial_medication_register_message, Icons.Rounded.Medication),
     CaregiverTutorialCopy(R.string.caregiver_tutorial_notification_title, R.string.caregiver_tutorial_notification_message, Icons.Rounded.Notifications),
 )
 
@@ -79,6 +79,13 @@ internal fun CaregiverTutorialOverlay(
     val safeStep = step.coerceIn(caregiverTutorialCopy.indices)
     val copy = caregiverTutorialCopy[safeStep]
     val finalStep = safeStep == caregiverTutorialCopy.lastIndex
+    val primaryLabel = when (safeStep) {
+        6 -> R.string.caregiver_create_patient_action
+        7 -> R.string.caregiver_linking_code_issue
+        8 -> R.string.caregiver_medication_add
+        9 -> R.string.caregiver_tutorial_enable
+        else -> R.string.common_next
+    }
     val pane = stringResource(R.string.caregiver_tutorial_pane, safeStep + 1, caregiverTutorialCopy.size)
     Box(
         Modifier.fillMaxSize().background(MedicationTheme.colors.tutorialScrim)
@@ -145,10 +152,20 @@ internal fun CaregiverTutorialOverlay(
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MedicationTheme.colors.orange),
                     ) {
-                        Icon(if (finalStep) Icons.Rounded.Notifications else Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(
+                            when (safeStep) {
+                                6 -> Icons.Rounded.PersonAdd
+                                7 -> Icons.Rounded.Link
+                                8 -> Icons.Rounded.Medication
+                                9 -> Icons.Rounded.Notifications
+                                else -> Icons.AutoMirrored.Rounded.ArrowForward
+                            },
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
                         Spacer(Modifier.size(4.dp))
                         Text(
-                            stringResource(if (finalStep) R.string.caregiver_tutorial_enable else R.string.common_next),
+                            stringResource(primaryLabel),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                         )
@@ -161,15 +178,8 @@ internal fun CaregiverTutorialOverlay(
 
 internal fun caregiverTutorialTab(step: Int): CaregiverTab = when (step.coerceIn(0, CAREGIVER_TUTORIAL_STEP_COUNT - 1)) {
     0, 9 -> CaregiverTab.TODAY
-    1 -> CaregiverTab.MEDICATIONS
+    1, 8 -> CaregiverTab.MEDICATIONS
     2 -> CaregiverTab.INVENTORY
     3 -> CaregiverTab.HISTORY
     else -> CaregiverTab.SETTINGS
-}
-
-internal fun caregiverTutorialFocusTag(step: Int): String? = when (step) {
-    5 -> "caregiver-slot-times"
-    6 -> "caregiver-create-name"
-    7, 8 -> "caregiver-linking-code"
-    else -> null
 }

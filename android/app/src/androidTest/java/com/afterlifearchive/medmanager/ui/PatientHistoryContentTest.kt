@@ -19,6 +19,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.unit.Density
@@ -29,6 +31,7 @@ import com.afterlifearchive.medmanager.data.patient.HistoryDayDetail
 import com.afterlifearchive.medmanager.data.patient.HistoryScheduledDose
 import com.afterlifearchive.medmanager.data.patient.HistoryStatus
 import com.afterlifearchive.medmanager.data.patient.HistoryStreakTodayStatus
+import com.afterlifearchive.medmanager.data.patient.HistorySlotProgress
 import com.afterlifearchive.medmanager.data.patient.MedicationSlot
 import com.afterlifearchive.medmanager.data.patient.PrnActorType
 import com.afterlifearchive.medmanager.data.patient.PrnHistoryItem
@@ -43,6 +46,29 @@ import java.time.LocalDate
 class PatientHistoryContentTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun pullToRefreshInvokesPatientHistoryReload() {
+        var refreshCalls = 0
+        composeRule.setContent {
+            MedicationAppTheme {
+                HistoryContent(
+                    days = listOf(HistoryDay("2026-07-14", HistoryStatus.TAKEN, HistoryStatus.NONE, HistoryStatus.NONE, HistoryStatus.NONE, 0)),
+                    loading = false,
+                    error = null,
+                    retentionCutoffDate = null,
+                    retentionDays = null,
+                    onRetry = {},
+                    now = LocalDate.parse("2026-07-14"),
+                    onRefresh = { refreshCalls += 1 },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("patient-history-pull-refresh").performTouchInput { swipeDown() }
+
+        composeRule.runOnIdle { org.junit.Assert.assertEquals(1, refreshCalls) }
+    }
 
     @Test
     fun simpleHistoryShowsTodayWeekAndRecentRecords() {
@@ -60,6 +86,7 @@ class PatientHistoryContentTest {
             }
         }
 
+        composeRule.onNodeWithTag("patient-history-pull-refresh").assertIsDisplayed()
         composeRule.onNodeWithText("飲んだ記録を確認できます").assertIsDisplayed()
         composeRule.onNodeWithText("1/2回分 記録済み").assertIsDisplayed()
         composeRule.onNodeWithText("残り 1回分").assertIsDisplayed()
@@ -71,6 +98,42 @@ class PatientHistoryContentTest {
             composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasText(text))
             composeRule.onNodeWithText(text).assertIsDisplayed()
         }
+    }
+
+    @Test
+    fun partialMedicationCountsRemainVisibleInHistory() {
+        val progress = mapOf(
+            MedicationSlot.MORNING to HistorySlotProgress(2, 1, 1, 0),
+            MedicationSlot.NOON to HistorySlotProgress(1, 1, 0, 0),
+        )
+        composeRule.setContent {
+            MedicationAppTheme {
+                HistoryContent(
+                    days = listOf(
+                        HistoryDay(
+                            "2026-07-14",
+                            HistoryStatus.PENDING,
+                            HistoryStatus.TAKEN,
+                            HistoryStatus.NONE,
+                            HistoryStatus.NONE,
+                            0,
+                            progress,
+                        ),
+                    ),
+                    loading = false,
+                    error = null,
+                    retentionCutoffDate = null,
+                    retentionDays = null,
+                    onRetry = {},
+                    now = LocalDate.parse("2026-07-14"),
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("2/3種類 記録済み").assertIsDisplayed()
+        composeRule.onNodeWithText("未記録 1種類").assertIsDisplayed()
+        composeRule.onNodeWithTag("patient-history-list").performScrollToNode(hasText("一部記録"))
+        composeRule.onNodeWithText("一部記録").assertIsDisplayed()
     }
 
     @Test

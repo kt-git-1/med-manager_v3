@@ -58,6 +58,7 @@ class CaregiverMedicationScreenTest {
     fun contentShowsMetricsFiltersScheduleAndInventory() {
         setContent(listOf(scheduled(), prn(), ended()))
 
+        composeRule.onNodeWithTag("caregiver-medication-pull-refresh").assertIsDisplayed()
         composeRule.onNodeWithText("薬を管理").assertIsDisplayed()
         composeRule.onNodeWithText("さくらさん").assertIsDisplayed()
         composeRule.onNodeWithTag("caregiver-medication-scheduled").assertIsDisplayed()

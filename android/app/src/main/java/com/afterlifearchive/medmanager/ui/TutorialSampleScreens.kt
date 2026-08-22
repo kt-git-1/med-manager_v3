@@ -235,14 +235,13 @@ internal fun CaregiverTutorialSampleScreen(step: Int) {
             CaregiverTutorialKind.TIME_PRESET -> { CaregiverTutorialSelectionCard(); CaregiverTutorialTimeCard() }
             CaregiverTutorialKind.REGISTER -> CaregiverTutorialRegistration()
             CaregiverTutorialKind.ISSUE_CODE -> { CaregiverTutorialSelectionCard(); CaregiverTutorialPatientCard(highlight = true) }
-            CaregiverTutorialKind.SHARE_CODE -> CaregiverTutorialLinkCode()
             CaregiverTutorialKind.NOTIFICATION -> CaregiverTutorialNotification()
         }
         Spacer(Modifier.height(240.dp))
     }
 }
 
-private enum class CaregiverTutorialKind { TODAY, MEDICATIONS, INVENTORY, HISTORY, SETTINGS, TIME_PRESET, REGISTER, ISSUE_CODE, SHARE_CODE, NOTIFICATION }
+private enum class CaregiverTutorialKind { TODAY, MEDICATIONS, INVENTORY, HISTORY, SETTINGS, TIME_PRESET, REGISTER, ISSUE_CODE, NOTIFICATION }
 private data class CaregiverTutorialSpec(val kind: CaregiverTutorialKind, val tag: String, val title: String, val subtitle: String, val icon: ImageVector)
 private fun caregiverTutorialSample(step: Int) = when (step.coerceIn(0, 9)) {
     0 -> CaregiverTutorialSpec(CaregiverTutorialKind.TODAY, "today", "今日の予定", "このように今日飲む予定がまとまります", Icons.Rounded.Home)
@@ -253,7 +252,7 @@ private fun caregiverTutorialSample(step: Int) = when (step.coerceIn(0, 9)) {
     5 -> CaregiverTutorialSpec(CaregiverTutorialKind.TIME_PRESET, "time-preset", "服用時間を調整", "朝・昼・夜・眠前の時刻を変更できます", Icons.Rounded.AccessTime)
     6 -> CaregiverTutorialSpec(CaregiverTutorialKind.REGISTER, "register", "見守る方を登録", "最初に本人の名前を登録します", Icons.Rounded.PersonAdd)
     7 -> CaregiverTutorialSpec(CaregiverTutorialKind.ISSUE_CODE, "issue-code", "連携コードを発行", "登録後に本人用のコードを作ります", Icons.Rounded.Link)
-    8 -> CaregiverTutorialSpec(CaregiverTutorialKind.SHARE_CODE, "share-code", "本人へコードを共有", "コピーまたは共有で本人へ渡します", Icons.Rounded.Share)
+    8 -> CaregiverTutorialSpec(CaregiverTutorialKind.MEDICATIONS, "register-medication", "最初の薬を登録", "実際の登録画面で薬と服用時間を設定します", Icons.Rounded.Medication)
     else -> CaregiverTutorialSpec(CaregiverTutorialKind.NOTIFICATION, "notification", "通知を受け取る", "服薬記録や飲み忘れを通知します", Icons.Rounded.Notifications)
 }
 

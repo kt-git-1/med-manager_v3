@@ -14,6 +14,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
@@ -99,7 +100,8 @@ class CaregiverAuthChoiceScreenTest {
         composeRule.onNodeWithText("ログイン").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("新規登録").performScrollTo().assertIsDisplayed()
         captureDevice(activity, "android-ui-003-caregiver-auth-choice-dark-font-2.0.png", darkTheme = true)
-        composeRule.onNodeWithText("モードを選び直す").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_CHOICE_LIST_TAG).performScrollToIndex(2)
+        composeRule.onNodeWithText("モードを選び直す").assertIsDisplayed()
     }
 
     @Test
@@ -126,7 +128,8 @@ class CaregiverAuthChoiceScreenTest {
         captureFixture("android-ui-003-caregiver-auth-choice-font-2.0.png")
         composeRule.onNodeWithText("ログイン").performClick()
         composeRule.onNodeWithText("新規登録").performScrollTo().assertIsDisplayed().performClick()
-        composeRule.onNodeWithText("モードを選び直す").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag(AUTH_CHOICE_LIST_TAG).performScrollToIndex(2)
+        composeRule.onNodeWithText("モードを選び直す").assertIsDisplayed()
         captureFixture("android-ui-003-caregiver-auth-choice-font-2.0-scrolled.png")
         composeRule.onNodeWithText("モードを選び直す").performClick()
 
