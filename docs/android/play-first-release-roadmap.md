@@ -10,7 +10,7 @@
 
 **現行Production:** `main@432b34c064d7`
 
-**状態:** 製品実装とStaging E2Eは完了。Play Console／Production操作は未開始。
+**状態:** Phase 0完了。Phase 1は全QAとAnalytics確認まで完了し、一時Exploreの削除確認だけが残る。Play Console／Production操作は未開始。
 
 この文書は、Androidを現在のStaging仕様へ再固定してからPlayストアへ初回公開するまでの実行順を示す。詳細な操作と安全条件は `play-release-runbook.md`、残存ゲートは `release-gates.json` を正とする。
 
@@ -28,8 +28,7 @@
 
 公開前に残るもの:
 
-- `staging@e9ec0d3`を基準にした最終iOS/API差分監査
-- Firebase Console ExploreでのAndroid判別と安全な固定enum確認（RG-001）
+- Firebase Consoleの検証済み一時Explore削除とRG-001の記録確定
 - Play Organization開発者アカウント、アプリ作成、Play App Signing、アップロード鍵（RG-005）
 - Production API migration/deploy、App Links、Android FCM（RG-002/RG-004）
 - Play Internalからインストールした正確なAABの検証（RG-006）
@@ -52,6 +51,8 @@
 
 ### Phase 0 — 最終仕様rebaseline
 
+**状態: 完了（2026-08-23）** — `staging@e9ec0d3`を`b75dedf`で統合し、未説明差分0件、APIテストの旧`platform=web`入力1件を現契約へ修正した。
+
 1. `origin/staging@e9ec0d3c6b10`をiOS/APIの固定参照にする。
 2. 前回同期点以降のiOS/API変更を、画面・文言・DTO・通知・履歴・チュートリアル単位で監査する。
 3. Androidに不足があれば、契約 → テスト → 実装 → Staging E2Eの順で修正する。
@@ -61,6 +62,8 @@
 **完了条件:** 未説明のiOS/API差分が0件。AndroidのRelease範囲にP0/P1不具合がない。
 
 ### Phase 1 — Stagingリリース候補の凍結
+
+**状態: 最終cleanup待ち（2026-08-23）** — API 351/351、Compose UI 299/299、全JVM/lint/build/release artifact gate、consent拒否/許可、DebugView 3イベント、Android限定Exploreまで合格。一時Exploreの削除だけがRG-001の残作業。
 
 1. Debug/Release unit、Compose UI、lint、assemble、API regressionを全実行する。
 2. 本人・家族の主要導線、部分記録、在庫不足、終了薬、頓服、薬archive履歴を再確認する。
@@ -132,13 +135,11 @@
 
 次に行う作業は以下の順番に固定する。
 
-1. Phase 0の`staging@e9ec0d3`差分監査
-2. 不足分があればAndroidへ反映して全自動QA
-3. Analytics Exploreの所有者確認（RG-001）
-4. Staging RC凍結
-5. Play Organizationアカウント準備（所有者作業）
-6. Production署名・Firebase・API/App Links/FCM
-7. Play Internal → 実機QA → Console宣言 → Closed test
-8. 最終`main`統合 → Production公開
+1. 検証済み一時Analytics Exploreの削除を所有者が即時確認し、RG-001を閉じる
+2. Staging RC commitを確定して`android-dev`へpushする
+3. Play Organizationアカウント準備（所有者作業）
+4. Production署名・Firebase・API/App Links/FCM
+5. Play Internal → 実機QA → Console宣言 → Closed test
+6. 最終`main`統合 → Production公開
 
 掲載素材の最終化はPhase 6まで保留し、Phase 0–5のUI変更で作り直しが発生しないようにする。

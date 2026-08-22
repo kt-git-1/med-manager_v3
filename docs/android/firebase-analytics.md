@@ -65,6 +65,20 @@ Clear app data again, relaunch, choose `許可する`, and perform only syntheti
 4. Return to mode selection, enter Caregiver mode with a non-production test account, and switch tabs to observe `caregiver_tab_viewed` with only `tab_name`.
 5. Exercise tutorial navigation if required and confirm `tutorial_started`, `tutorial_step_viewed`, and either `tutorial_completed` or `tutorial_skipped` contain only the documented mode/step values.
 
+After explicit consent is already ON, Debug builds expose a shell-only diagnostic for the three
+current iOS parity additions. It never changes consent and returns `CONSENT_OFF` without emitting
+when collection is disabled:
+
+```bash
+adb shell am broadcast \
+  -a com.afterlifearchive.medmanager.staging.debug.EMIT_ANALYTICS_PARITY \
+  -p com.afterlifearchive.medmanager.staging
+```
+
+Confirm `MedManagerAnalyticsDiagnostic: PARITY_EVENTS_EMITTED` locally, then inspect the exact
+three events and parameters in DebugView. The receiver is in the Debug source set, requires the
+shell-only `android.permission.DUMP` permission and is absent from every Release artifact.
+
 For every selected DebugView event, expand its parameters. Reject the build if any custom event contains a patient/caregiver ID, name, email, medication, dosage, dose status/time/date, inventory quantity, notification content, linking code, token, URL, arbitrary/free text or Firebase user ID. Do not use real medication or dose actions merely to create Analytics evidence.
 
 ## 4. Custom-event allowlist
@@ -125,6 +139,8 @@ Create `docs/android/evidence/h07-YYYYMMDD/README.md` and record:
 - links or redacted filenames for screenshots retained outside Git when Console/project metadata should not be published.
 
 Only after all rows pass may `XP-004` become `VERIFIED`. DebugView alone does not close Realtime/Events/Explore, and emulator-only evidence does not close the physical-device portion of Gate I.
+
+The 2026-08-23 Phase 1 run completed the fresh consent control, three-event DebugView parameter inspection and Android-only processed Explore inspection. Its redacted evidence is `evidence/h07-20260823/README.md`. The temporary Explore still requires immediate owner confirmation before deletion, so `RG-001` and `XP-004` intentionally remain open until cleanup is recorded.
 
 ## 8. Official references
 

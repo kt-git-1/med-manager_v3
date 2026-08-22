@@ -1,6 +1,6 @@
 # Android Port Master Development Plan
 
-**Status:** product implementation and Staging E2E complete; final Staging rebaseline pending; physical/release gates open
+**Status:** product implementation and Phase 0 Staging rebaseline complete; Phase 1 RC verification in progress; physical/release gates open
 **Development branch:** `android-dev`
 **Reference:** current iOS/API Staging `e9ec0d3c6b10`; published Production remains `main@432b34c064d7`
 **Stack:** Kotlin, Jetpack Compose, Material 3
@@ -78,7 +78,7 @@ Complete [the pre-Phase 0 contract](./pre-phase-0-product-additions.md) before r
 
 This phase is additive and backward compatible. It does not change the pinned published UI baseline or authorize Production/Play operations.
 
-Implementation, Staging archive/history E2E and consent transport verification are complete at `android-dev@2a716ed08fcc`. Final Analytics acceptance still requires synthetic DebugView observation of the three parity additions and the owner-controlled Explore check tracked as RG-001. The current Phase 0-to-publication sequence is [Android Play 初回公開ロードマップ](./play-first-release-roadmap.md); it supersedes the chronological checkpoint narrative below for execution order without weakening `release-gates.json`.
+Implementation and Staging archive/history E2E are complete. Phase 0 merged and audited the complete `staging@e9ec0d3c6b10` source at merge checkpoint `b75dedf`; details are in [the 2026-08-23 Staging RC record](./staging-rc-2026-08-23.md). Final Analytics acceptance still requires synthetic DebugView observation of the three parity additions and the owner-controlled Explore check tracked as RG-001. The current Phase 0-to-publication sequence is [Android Play 初回公開ロードマップ](./play-first-release-roadmap.md); it supersedes the chronological checkpoint narrative below for execution order without weakening `release-gates.json`.
 
 ### R0 — Baseline integrity and regression repair
 

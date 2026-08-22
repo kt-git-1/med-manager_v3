@@ -433,7 +433,7 @@ describe("POST /api/push/register — auth & validation errors", () => {
     const req = new Request("http://localhost/api/push/register", {
       method: "POST",
       headers: caregiverHeaders(),
-      body: JSON.stringify({ token: "fcm-token-1", platform: "web", environment: "DEV" })
+      body: JSON.stringify({ token: "fcm-token-1", platform: "android", environment: "DEV" })
     });
 
     const res = await POST(req);

@@ -1,10 +1,11 @@
 # Android Port Source Baseline
 
-**Baseline date:** 2026-08-15
+**Baseline date:** 2026-08-23
 **Development branch:** `android-dev`
-**Reference main commit:** `432b34c` (`chore(ios): prepare production TestFlight build 51`), published iOS 1.0.6
+**Reference Staging commit:** `e9ec0d3c6b10` (`chore(ios): prepare 1.0.7 build 54`)
+**Reference Production commit:** `432b34c` (`chore(ios): prepare production TestFlight build 51`), published iOS 1.0.6
 **Previous reference:** `3e52fb2f5367052bae8e664eee2c1043de76c377` (`Bump iOS build to 40 for production TestFlight`)
-**Baseline merge checkpoint:** C61 merge commit `36a6d4d` containing `main@432b34c`
+**Baseline merge checkpoint:** Phase 0 merge commit `b75dedf` containing `staging@e9ec0d3`
 
 This file pins the source material used to reproduce the current product on Android. A later change on `main` does not silently change the Android contract. It starts a new rebaseline procedure.
 
@@ -110,15 +111,17 @@ The C62 tutorial conclusion was reopened after direct comparison with the privat
 
 C64 enumerated all 69 parity rows against current sources, tests and release verifiers. Sixty-three implementation rows are complete; the six remaining `PARTIAL` rows require live Firebase, physical-device/TalkBack/OEM or release-owner Play evidence and are not treated as missing emulator implementation. The audit found one local boundary defect: medication validation and supply-calculation presentation text crossed from the data layer as Japanese strings. It now crosses as typed validation codes and calculation values, with the Compose layer selecting `strings.xml` resources. JVM 202/202, Lint, Debug/Release assembly, Release APK compatibility, Play asset validation, API 35 UI 272/272 and the affected medication-form class 25/25 on API 26/33/35 pass after the correction.
 
-The later staging-only privacy-safe Analytics change and Build 52 are not part of this published baseline and must enter through a future explicit rebaseline if released.
+### Phase 0 Staging delta: `main@432b34c..staging@e9ec0d3`
+
+The 2026-08-23 rebaseline merged the complete Staging history into `android-dev` with no conflict. It adds the privacy-safe Analytics parity events, Android FCM registration, atomic partial-dose progress, dosing-period exclusion, archive-bounded scheduled/PRN history retention, guided caregiver setup and grouped caregiver PRN history. Android already implemented the corresponding client/UI behavior; the audit found and corrected one stale API test that sent the obsolete `platform=web` while asserting Android acceptance. The full mapping and current evidence are recorded in `staging-rc-2026-08-23.md`.
 
 ## 5. Rebaseline procedure
 
-Run this procedure whenever API or iOS behavior changes on `main`.
+Run this procedure whenever API or iOS behavior changes on the currently pinned `staging` source. Production facts continue to come from `main`.
 
 1. Ensure `android-dev` is clean and all current Android work is committed or intentionally preserved.
-2. Record the old and new `main` SHAs.
-3. Merge `main` into `android-dev`; do not cherry-pick individual runtime files without their tests.
+2. Record the old and new `staging` SHAs plus the current Production `main` SHA.
+3. Merge `staging` into `android-dev`; do not cherry-pick individual runtime files without their tests.
 4. Review `git diff <old-main>..<new-main>` for `api/`, `ios/`, `specs/`, legal/privacy and Firebase changes.
 5. Update this file and `api-contracts.md`.
 6. Mark affected matrix rows `RECHECK_REQUIRED` before implementation.
@@ -129,7 +132,7 @@ Run this procedure whenever API or iOS behavior changes on `main`.
 
 ## 6. Baseline acceptance checklist
 
-- [x] `android-dev` contains published `main@432b34c` through the C61 merge checkpoint `36a6d4d`.
+- [x] `android-dev` contains current `staging@e9ec0d3` through the Phase 0 merge checkpoint `b75dedf` and therefore also contains published `main@432b34c`.
 - [x] The main delta was reviewed across API, iOS, and tests.
 - [x] Runtime/spec conflicts are explicitly identified.
 - [x] All affected Android contract tests have been updated for actual-time/late-dose behavior, slot ordering, medication supply calculation, action-first inventory editing and patient-first push routing.
