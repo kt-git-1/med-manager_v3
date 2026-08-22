@@ -108,6 +108,13 @@ enum AnalyticsCoreAction: String, Sendable {
     case doseRecorded = "dose_recorded"
 }
 
+enum AnalyticsNotificationPermissionResult: String, Sendable {
+    case authorized
+    case denied
+    case provisional
+    case unavailable
+}
+
 /// Privacy-first analytics facade.
 ///
 /// Only fixed enum values are accepted. Never add patient IDs, caregiver IDs,
@@ -258,6 +265,30 @@ final class AnalyticsService: ObservableObject {
 
     func logCoreActionCompleted(_ action: AnalyticsCoreAction) {
         log("core_action_completed", parameters: ["action_name": action.rawValue])
+    }
+
+    func logCoreActionFailed(_ action: AnalyticsCoreAction, reason: AnalyticsFailureReason) {
+        log(
+            "core_action_failed",
+            parameters: ["action_name": action.rawValue, "reason": reason.rawValue]
+        )
+    }
+
+    func logPatientLinkCodeShareTapped() {
+        log(
+            "patient_link_code_share_tapped",
+            parameters: ["surface": AnalyticsSurface.patientManagement.rawValue]
+        )
+    }
+
+    func logNotificationPermissionResult(
+        _ result: AnalyticsNotificationPermissionResult,
+        surface: AnalyticsSurface
+    ) {
+        log(
+            "notification_permission_result",
+            parameters: ["result": result.rawValue, "surface": surface.rawValue]
+        )
     }
 
     func logTutorialStarted(mode: AnalyticsAppMode) {

@@ -388,6 +388,43 @@ describe("prn dose records integration", () => {
     expect(payload.messages).toContain("medication must be PRN");
   });
 
+  it("rejects a new PRN record after the medication is archived", async () => {
+    (getMedicationRecordForPatient as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      id: "med-archived",
+      patientId: "patient-1",
+      name: "Archived PRN",
+      dosageText: "1 tablet",
+      doseCountPerIntake: 1,
+      dosageStrengthValue: 10,
+      dosageStrengthUnit: "mg",
+      notes: null,
+      isPrn: true,
+      startDate: new Date("2026-02-01T00:00:00.000Z"),
+      endDate: null,
+      inventoryCount: null,
+      inventoryUnit: null,
+      inventoryEnabled: false,
+      inventoryQuantity: 0,
+      inventoryLowThreshold: 0,
+      inventoryUpdatedAt: null,
+      inventoryLastAlertState: null,
+      isActive: false,
+      isArchived: true,
+      archivedAt: new Date("2026-02-02T00:00:00.000Z"),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    await expect(
+      createPrnRecord({
+        patientId: "patient-1",
+        medicationId: "med-archived",
+        actorType: "PATIENT"
+      })
+    ).resolves.toEqual({ error: "not_found" });
+    expect(applyInventoryDeltaMock).not.toHaveBeenCalled();
+  });
+
   it("rejects create when inventory is below quantityTaken", async () => {
     (getMedicationRecordForPatient as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       id: "med-1",

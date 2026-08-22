@@ -15,7 +15,8 @@ const baseMedication = {
   inventoryCount: null,
   inventoryUnit: null,
   isActive: true,
-  isArchived: false
+  isArchived: false,
+  archivedAt: null
 };
 
 const baseRegimen = {
@@ -69,7 +70,7 @@ describe("schedule generator", () => {
     expect(doses.map((dose) => dose.scheduledAt)).toEqual(["2026-01-31T23:00:00.000Z"]);
   });
 
-  it("excludes disabled regimens and inactive or archived medications", () => {
+  it("excludes disabled regimens and inactive medications or archived medications without a deletion time", () => {
     const from = new Date("2026-02-01T00:00:00Z");
     const to = new Date("2026-02-02T00:00:00Z");
 
@@ -86,6 +87,54 @@ describe("schedule generator", () => {
       ],
       from,
       to
+    });
+
+    expect(doses).toEqual([]);
+  });
+
+  it("keeps archived medication schedules before deletion and excludes schedules after deletion", () => {
+    const doses = generateSchedule({
+      medications: [
+        {
+          ...baseMedication,
+          isActive: false,
+          isArchived: true,
+          archivedAt: new Date("2026-02-03T03:00:00.000Z") // Feb 3, 12:00 JST
+        }
+      ],
+      regimens: [
+        {
+          ...baseRegimen,
+          daysOfWeek: [],
+          times: ["08:00", "13:00"]
+        }
+      ],
+      from: new Date("2026-02-01T00:00:00.000Z"),
+      to: new Date("2026-02-05T00:00:00.000Z"),
+      includeArchivedHistory: true
+    });
+
+    expect(doses.map((dose) => dose.scheduledAt)).toEqual([
+      "2026-02-01T04:00:00.000Z",
+      "2026-02-01T23:00:00.000Z",
+      "2026-02-02T04:00:00.000Z",
+      "2026-02-02T23:00:00.000Z"
+    ]);
+  });
+
+  it("does not return archived medications to today or recordable schedules", () => {
+    const doses = generateSchedule({
+      medications: [
+        {
+          ...baseMedication,
+          isActive: false,
+          isArchived: true,
+          archivedAt: new Date("2026-02-03T03:00:00.000Z")
+        }
+      ],
+      regimens: [{ ...baseRegimen, daysOfWeek: [], times: ["08:00"] }],
+      from: new Date("2026-02-01T00:00:00.000Z"),
+      to: new Date("2026-02-03T00:00:00.000Z")
     });
 
     expect(doses).toEqual([]);
@@ -110,6 +159,54 @@ describe("schedule generator", () => {
     });
 
     expect(doses.map((dose) => dose.scheduledAt)).toEqual(["2026-02-01T23:00:00.000Z"]);
+  });
+
+  it("excludes doses after the medication period ends even when the regimen remains enabled", () => {
+    const doses = generateSchedule({
+      medications: [
+        {
+          ...baseMedication,
+          endDate: new Date("2026-02-03T00:00:00Z")
+        }
+      ],
+      regimens: [
+        {
+          ...baseRegimen,
+          daysOfWeek: [],
+          endDate: null
+        }
+      ],
+      from: new Date("2026-02-01T00:00:00Z"),
+      to: new Date("2026-02-05T00:00:00Z")
+    });
+
+    expect(doses.map((dose) => dose.scheduledAt)).toEqual(["2026-02-01T23:00:00.000Z"]);
+  });
+
+  it("does not generate doses before the medication period starts", () => {
+    const doses = generateSchedule({
+      medications: [
+        {
+          ...baseMedication,
+          startDate: new Date("2026-02-03T00:00:00Z")
+        }
+      ],
+      regimens: [
+        {
+          ...baseRegimen,
+          startDate: new Date("2026-02-01T00:00:00Z"),
+          daysOfWeek: []
+        }
+      ],
+      from: new Date("2026-02-01T00:00:00Z"),
+      to: new Date("2026-02-05T00:00:00Z")
+    });
+
+    expect(doses.map((dose) => dose.scheduledAt)).toEqual([
+      "2026-02-02T23:00:00.000Z",
+      "2026-02-03T23:00:00.000Z",
+      "2026-02-04T23:00:00.000Z"
+    ]);
   });
 
   it("avoids duplicate doses across day boundary", () => {

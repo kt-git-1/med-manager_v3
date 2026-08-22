@@ -123,6 +123,10 @@ final class PatientTodayViewModel: ObservableObject {
                 notifyDoseRecordsUpdated()
                 refreshAfterMutationInBackground()
             } catch {
+                AnalyticsService.shared.logCoreActionFailed(
+                    .doseRecorded,
+                    reason: AnalyticsService.failureReason(for: error)
+                )
                 showToastMessage(for: error)
             }
         }
@@ -163,6 +167,10 @@ final class PatientTodayViewModel: ObservableObject {
                 requestScrollToTop()
                 refreshAfterMutationInBackground()
             } catch {
+                AnalyticsService.shared.logCoreActionFailed(
+                    .doseRecorded,
+                    reason: AnalyticsService.failureReason(for: error)
+                )
                 showToastMessage(for: error)
             }
         }
@@ -369,6 +377,10 @@ final class PatientTodayViewModel: ObservableObject {
                     requestScrollToTop()
                 }
             } catch {
+                AnalyticsService.shared.logCoreActionFailed(
+                    .doseRecorded,
+                    reason: AnalyticsService.failureReason(for: error)
+                )
                 showToastMessage(for: error)
             }
         }

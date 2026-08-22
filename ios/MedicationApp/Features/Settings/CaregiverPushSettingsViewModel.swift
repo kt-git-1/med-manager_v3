@@ -91,6 +91,10 @@ final class CaregiverPushSettingsViewModel: ObservableObject {
         do {
             // 1. Request notification permission
             let granted = try await notificationCenter.requestAuthorization(options: [.alert, .sound])
+            AnalyticsService.shared.logNotificationPermissionResult(
+                granted ? .authorized : .denied,
+                surface: .settings
+            )
             guard granted else {
                 errorMessage = NSLocalizedString(
                     "caregiver.settings.push.permission.denied",
@@ -118,6 +122,7 @@ final class CaregiverPushSettingsViewModel: ObservableObject {
             isPushEnabled = true
             userDefaults.set(true, forKey: Self.persistKey)
         } catch {
+            AnalyticsService.shared.logNotificationPermissionResult(.unavailable, surface: .settings)
             print("CaregiverPushSettingsViewModel: enable push failed: \(error.localizedDescription)")
             errorMessage = NSLocalizedString(
                 "caregiver.settings.push.error",

@@ -105,11 +105,16 @@ final class ReminderService {
     }
 
     private func requestAuthorization() async -> Bool {
-        await withCheckedContinuation { continuation in
-            notificationCenter.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-                continuation.resume(returning: granted)
+        let outcome: (granted: Bool, unavailable: Bool) = await withCheckedContinuation { continuation in
+            notificationCenter.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+                continuation.resume(returning: (granted, error != nil))
             }
         }
+        AnalyticsService.shared.logNotificationPermissionResult(
+            outcome.unavailable ? .unavailable : (outcome.granted ? .authorized : .denied),
+            surface: .notifications
+        )
+        return outcome.granted
     }
 
     private func clearExistingReminders() async {

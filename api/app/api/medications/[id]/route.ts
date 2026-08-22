@@ -89,6 +89,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         headers: { "content-type": "application/json" }
       });
     }
+    if (existing.isArchived) {
+      return new Response(JSON.stringify({ error: "not_found" }), {
+        status: 404,
+        headers: { "content-type": "application/json" }
+      });
+    }
     await assertCaregiverPatientScope(session.caregiverUserId, patientId);
     if (existing.patientId !== patientId) {
       return new Response(JSON.stringify({ error: "not_found" }), {

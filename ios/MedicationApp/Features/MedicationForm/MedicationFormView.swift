@@ -1216,6 +1216,9 @@ struct MedicationFormView: View {
         Button {
             let validationMessages = viewModel.validate()
             guard validationMessages.isEmpty else {
+                if !viewModel.isEditing {
+                    AnalyticsService.shared.logCoreActionFailed(.medicationCreated, reason: .invalidInput)
+                }
                 viewModel.errorMessage = nil
                 showsValidationErrors = true
                 let target = firstValidationTarget(for: validationMessages)

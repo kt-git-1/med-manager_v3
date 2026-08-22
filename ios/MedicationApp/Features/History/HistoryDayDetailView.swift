@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct HistoryDayDetailView: View {
+    private static let prnGroupKey = "prn"
     private static let historyTimeZone = AppConstants.defaultTimeZone
     private static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
@@ -90,13 +91,11 @@ struct HistoryDayDetailView: View {
                 )
             )
         }
-        .accessibilityIdentifier("HistoryDayDetailView")
+        .onAppear {
+            resetExpandedGroups()
+        }
         .onChange(of: viewModel.day?.date) { _, _ in
-            expandedSlotKeys = Set(
-                slotGroups
-                    .filter { $0.status == .taken || isSlotHighlighted($0.slot) }
-                    .map { $0.slot.rawValue }
-            )
+            resetExpandedGroups()
         }
     }
 
@@ -123,13 +122,13 @@ struct HistoryDayDetailView: View {
                     )
                 }
 
-                ForEach(prnItems, id: \.historyRowID) { record in
-                    HistoryDayPrnRow(
-                        timeText: HistoryDayDetailView.timeFormatter.string(from: record.takenAt),
-                        name: record.medicationName,
-                        quantity: record.quantityTaken,
-                        recordedByText: recordedByText(for: record.actorType),
-                        style: style
+                if !prnItems.isEmpty {
+                    CaregiverHistoryPrnGroupView(
+                        records: prnItems,
+                        isExpanded: expandedSlotKeys.contains(Self.prnGroupKey),
+                        timeText: { HistoryDayDetailView.timeFormatter.string(from: $0.takenAt) },
+                        recordedByText: { recordedByText(for: $0.actorType) },
+                        onToggle: { toggleGroup(Self.prnGroupKey) }
                     )
                 }
             }
@@ -202,13 +201,29 @@ struct HistoryDayDetailView: View {
     }
 
     private func toggleSlot(_ slot: HistorySlotDTO) {
+        toggleGroup(slot.rawValue)
+    }
+
+    private func toggleGroup(_ key: String) {
         withAnimation(.easeInOut(duration: 0.2)) {
-            if expandedSlotKeys.contains(slot.rawValue) {
-                expandedSlotKeys.remove(slot.rawValue)
+            if expandedSlotKeys.contains(key) {
+                expandedSlotKeys.remove(key)
             } else {
-                expandedSlotKeys.insert(slot.rawValue)
+                expandedSlotKeys.insert(key)
             }
         }
+    }
+
+    private func resetExpandedGroups() {
+        var expandedKeys = Set(
+            slotGroups
+                .filter { $0.status == .taken || isSlotHighlighted($0.slot) }
+                .map { $0.slot.rawValue }
+        )
+        if !prnItems.isEmpty {
+            expandedKeys.insert(Self.prnGroupKey)
+        }
+        expandedSlotKeys = expandedKeys
     }
 
     private func delayText(for group: HistoryDaySlotGroup) -> String? {
@@ -378,7 +393,10 @@ struct CaregiverHistoryV105DebugPreview: View {
         {"medicationId":"evening-1","medicationName":"夕食後の薬","dosageText":"1錠","doseCountPerIntake":1,"scheduledAt":"2026-07-22T10:00:00Z","takenAt":null,"slot":"evening","effectiveStatus":"pending","recordedByType":null},
         {"medicationId":"bedtime-1","medicationName":"眠前の薬","dosageText":"1錠","doseCountPerIntake":1,"scheduledAt":"2026-07-22T14:50:00Z","takenAt":null,"slot":"bedtime","effectiveStatus":"pending","recordedByType":null}
       ],
-      "prnItems": []
+      "prnItems": [
+        {"medicationId":"prn-1","medicationName":"頭痛薬","takenAt":"2026-07-22T05:10:00Z","quantityTaken":1,"actorType":"PATIENT"},
+        {"medicationId":"prn-2","medicationName":"解熱剤","takenAt":"2026-07-22T11:30:00Z","quantityTaken":2,"actorType":"CAREGIVER"}
+      ]
     }
     """#
 }
@@ -855,6 +873,85 @@ private enum HistoryTimelineItem: Identifiable {
     }
 }
 
+private struct CaregiverHistoryPrnGroupView: View {
+    let records: [PrnHistoryItemDTO]
+    let isExpanded: Bool
+    let timeText: (PrnHistoryItemDTO) -> String
+    let recordedByText: (PrnHistoryItemDTO) -> String
+    let onToggle: () -> Void
+
+    private let tint = Color.purple
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button(action: onToggle) {
+                HStack(spacing: 10) {
+                    Image(systemName: "cross.case.fill")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 34, height: 34)
+                        .background(tint, in: Circle())
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(NSLocalizedString("history.prn.group.title", comment: "PRN history group title"))
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(tint)
+                        Text(
+                            String(
+                                format: NSLocalizedString("history.prn.group.count", comment: "PRN history group count"),
+                                records.count
+                            )
+                        )
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.readableSecondaryText)
+                    }
+
+                    Spacer(minLength: 4)
+
+                    CaregiverStatusPill(
+                        text: NSLocalizedString("history.status.taken", comment: "Taken"),
+                        color: tint,
+                        systemImage: "checkmark"
+                    )
+
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("CaregiverHistoryPrnHeader")
+
+            if isExpanded {
+                Divider()
+                    .padding(.vertical, 10)
+
+                VStack(spacing: 8) {
+                    ForEach(records, id: \.historyRowID) { record in
+                        HistoryDayPrnRow(
+                            timeText: timeText(record),
+                            name: record.medicationName,
+                            quantity: record.quantityTaken,
+                            recordedByText: recordedByText(record),
+                            style: .caregiver
+                        )
+                        .accessibilityIdentifier("CaregiverHistoryPrnRecord.\(record.historyRowID)")
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .padding(14)
+        .background(CaregiverUI.cardBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(tint.opacity(0.38), lineWidth: 1)
+        }
+        .shadow(color: CaregiverUI.cardShadow, radius: 7, y: 3)
+    }
+}
+
 private struct HistoryDayPrnRow: View {
     let timeText: String
     let name: String
@@ -873,6 +970,14 @@ private struct HistoryDayPrnRow: View {
                     .font(style == .patient ? .title3.weight(.bold) : .headline)
                 Text("\(prnPrefix): \(name)")
                     .font(style == .patient ? .title3.weight(.bold) : .title3.weight(.semibold))
+                Text(
+                    String(
+                        format: NSLocalizedString("history.day.prn.doseCount", comment: "PRN dose count"),
+                        AppConstants.formatDecimal(quantity)
+                    )
+                )
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.readableSecondaryText)
                 HistoryRecordedByLabel(text: recordedByText, style: style)
             }
             Spacer()

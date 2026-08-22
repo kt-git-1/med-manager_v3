@@ -6,6 +6,7 @@ import {
   getScheduleWithStatus
 } from "../../../../../src/services/scheduleService";
 import {
+  buildSlotProgress,
   buildSlotSummary,
   groupDosesByLocalDate,
   parseSlotTimesFromParams
@@ -81,7 +82,8 @@ export async function GET(request: Request) {
       historyTimeZone,
       new Date(),
       effectiveSlotTimes,
-      slotTimeTimeline
+      slotTimeTimeline,
+      true
     );
     const grouped = groupDosesByLocalDate(doses, historyTimeZone);
     const prn = await listPrnHistoryItemsByRange({
@@ -91,7 +93,11 @@ export async function GET(request: Request) {
       timeZone: historyTimeZone
     });
 
-    const days: { date: string; slotSummary: ReturnType<typeof buildSlotSummary> }[] = [];
+    const days: {
+      date: string;
+      slotSummary: ReturnType<typeof buildSlotSummary>;
+      slotProgress: ReturnType<typeof buildSlotProgress>;
+    }[] = [];
     const cursor = new Date(range.from);
     while (cursor < range.to) {
       const dateKey = getLocalDateKey(cursor, historyTimeZone);
@@ -104,7 +110,8 @@ export async function GET(request: Request) {
       );
       days.push({
         date: dateKey,
-        slotSummary: buildSlotSummary(dayDoses, historyTimeZone, summarySlotTimes)
+        slotSummary: buildSlotSummary(dayDoses, historyTimeZone, summarySlotTimes),
+        slotProgress: buildSlotProgress(dayDoses, historyTimeZone, summarySlotTimes)
       });
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }

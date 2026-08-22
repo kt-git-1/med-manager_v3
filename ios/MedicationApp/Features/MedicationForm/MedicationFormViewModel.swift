@@ -225,11 +225,17 @@ final class MedicationFormViewModel: ObservableObject {
 
     func submit() async -> Bool {
         if sessionStore.mode == .caregiver, sessionStore.currentPatientId == nil {
+            if existingMedication == nil {
+                AnalyticsService.shared.logCoreActionFailed(.medicationCreated, reason: .invalidInput)
+            }
             errorMessage = NSLocalizedString("medication.form.patient.required", comment: "Patient required")
             return false
         }
         let errors = validate()
         if !errors.isEmpty {
+            if existingMedication == nil {
+                AnalyticsService.shared.logCoreActionFailed(.medicationCreated, reason: .invalidInput)
+            }
             errorMessage = errors.joined(separator: "\n")
             return false
         }
@@ -242,6 +248,9 @@ final class MedicationFormViewModel: ObservableObject {
             let patientId: String
             if sessionStore.mode == .caregiver {
                 guard let currentPatientId = sessionStore.currentPatientId, !currentPatientId.isEmpty else {
+                    if existingMedication == nil {
+                        AnalyticsService.shared.logCoreActionFailed(.medicationCreated, reason: .invalidInput)
+                    }
                     errorMessage = NSLocalizedString("medication.form.patient.required", comment: "Patient required")
                     return false
                 }
@@ -303,6 +312,12 @@ final class MedicationFormViewModel: ObservableObject {
             }
             return true
         } catch {
+            if existingMedication == nil {
+                AnalyticsService.shared.logCoreActionFailed(
+                    .medicationCreated,
+                    reason: AnalyticsService.failureReason(for: error)
+                )
+            }
             errorMessage = NSLocalizedString("common.error.generic", comment: "Generic error")
             return false
         }

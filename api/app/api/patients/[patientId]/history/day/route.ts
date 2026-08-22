@@ -114,7 +114,8 @@ export async function GET(
       historyTimeZone,
       new Date(),
       effectiveSlotTimes,
-      slotTimeTimeline
+      slotTimeTimeline,
+      true
     );
     const prn = await listPrnHistoryItemsByRange({
       patientId,

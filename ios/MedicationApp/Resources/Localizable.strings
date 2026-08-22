@@ -78,11 +78,16 @@
 "tutorial.caregiver.timePreset.title" = "服用時間を調整";
 "tutorial.caregiver.timePreset.message" = "時間プリセット設定から、朝・昼・夜・眠前の時刻を本人の生活リズムに合わせて変更できます。";
 "tutorial.caregiver.register.title" = "まず見守る方を登録";
-"tutorial.caregiver.register.message" = "本人の名前を登録します。チュートリアル完了後に登録画面を開きます。";
+"tutorial.caregiver.register.message" = "下の「患者を登録する」から、見守る方の表示名を実際に登録します。登録が完了すると次へ進みます。";
+"tutorial.caregiver.register.action" = "患者を登録する";
 "tutorial.caregiver.issueCode.title" = "連携コードを発行";
-"tutorial.caregiver.issueCode.message" = "登録した方を選び、「コード発行」から本人用の6桁コードを作ります。";
+"tutorial.caregiver.issueCode.message" = "下の「コードを発行する」から本人用の6桁コードを実際に作ります。表示されたコードはコピーまたは共有できます。";
+"tutorial.caregiver.issueCode.action" = "コードを発行する";
 "tutorial.caregiver.shareCode.title" = "本人へコードを共有";
 "tutorial.caregiver.shareCode.message" = "発行したコードをコピーまたは共有して、本人モードの端末で入力してもらいます。";
+"tutorial.caregiver.medicationRegister.title" = "最初の薬を登録";
+"tutorial.caregiver.medicationRegister.message" = "実際の薬登録画面を開き、薬の名前、服用タイミング、在庫を設定します。登録が完了すると最後のページへ進みます。";
+"tutorial.caregiver.medicationRegister.action" = "薬を追加する";
 "tutorial.caregiver.notification.title" = "家族の服薬状況を通知しますか？";
 "tutorial.caregiver.notification.message" = "本人がお薬を飲んだときや、飲み忘れがありそうなときに通知で確認できます。離れていても状況に気づきやすくなります。";
 "tutorial.patient.today.title" = "今日のお薬";
@@ -232,7 +237,7 @@
 "medication.form.patient.required" = "対象患者を選択してください";
 "medication.form.delete" = "薬を削除する";
 "medication.form.delete.confirm.title" = "薬を削除しますか？";
-"medication.form.delete.confirm.message" = "この操作は取り消せません。";
+"medication.form.delete.confirm.message" = "今後の服薬予定から削除します。これまでの服薬履歴は残ります。";
 "medication.form.delete.confirm.action" = "削除する";
 "medication.toast.deleted" = "薬を削除しました";
 
@@ -322,6 +327,8 @@
 "history.legend.missed" = "飲み忘れ";
 "history.legend.pending" = "未記録";
 "history.legend.prn" = "頓服";
+"history.prn.group.title" = "頓服の記録";
+"history.prn.group.count" = "%d件の記録";
 "history.legend.help" = "日付の下の点は、朝・昼・夜・眠前の服薬状況です。";
 "history.calendar.title" = "月間カレンダー";
 "history.calendar.message" = "日付をタップすると、その日の記録が下に表示されます。";

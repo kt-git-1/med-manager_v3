@@ -27,6 +27,10 @@ final class NotificationPermissionManager: ObservableObject {
         case .notDetermined:
             let granted = await requestAuthorization()
             status = await fetchStatus()
+            AnalyticsService.shared.logNotificationPermissionResult(
+                analyticsResult(for: status, granted: granted),
+                surface: .notifications
+            )
             return granted
         @unknown default:
             return false
@@ -46,6 +50,24 @@ final class NotificationPermissionManager: ObservableObject {
             notificationCenter.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
                 continuation.resume(returning: granted)
             }
+        }
+    }
+
+    private func analyticsResult(
+        for status: UNAuthorizationStatus,
+        granted: Bool
+    ) -> AnalyticsNotificationPermissionResult {
+        switch status {
+        case .authorized, .ephemeral:
+            return .authorized
+        case .provisional:
+            return .provisional
+        case .denied:
+            return .denied
+        case .notDetermined:
+            return granted ? .authorized : .unavailable
+        @unknown default:
+            return .unavailable
         }
     }
 }

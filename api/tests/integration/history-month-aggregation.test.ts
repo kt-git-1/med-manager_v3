@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSlotSummary } from "../../src/services/scheduleResponse";
+import { buildSlotProgress, buildSlotSummary } from "../../src/services/scheduleResponse";
 
 describe("history month aggregation integration", () => {
   it("applies MISSED > PENDING > TAKEN precedence per slot", () => {
@@ -30,6 +30,29 @@ describe("history month aggregation integration", () => {
     );
 
     expect(summary.morning).toBe("pending");
+  });
+
+  it("preserves medication counts for a partially recorded slot", () => {
+    const progress = buildSlotProgress(
+      [
+        { scheduledAt: "2026-02-01T23:00:00.000Z", effectiveStatus: "taken" },
+        { scheduledAt: "2026-02-01T23:00:00.000Z", effectiveStatus: "pending" }
+      ],
+      "Asia/Tokyo"
+    );
+
+    expect(progress.morning).toEqual({
+      scheduledCount: 2,
+      takenCount: 1,
+      pendingCount: 1,
+      missedCount: 0
+    });
+    expect(progress.noon).toEqual({
+      scheduledCount: 0,
+      takenCount: 0,
+      pendingCount: 0,
+      missedCount: 0
+    });
   });
 
   it("uses custom slot times when aggregating history slots", () => {

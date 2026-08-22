@@ -103,7 +103,9 @@ export async function generateReport(
     rangeTo,
     HISTORY_TZ,
     new Date(),
-    slotTimes
+    slotTimes,
+    undefined,
+    true
   );
   const grouped = groupDosesByLocalDate(doses, HISTORY_TZ);
 

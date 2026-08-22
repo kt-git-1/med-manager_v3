@@ -2,12 +2,33 @@ import XCTest
 
 @MainActor
 final class PatientTodayExpandableSummaryUITests: XCTestCase {
+    func testCaregiverTutorialIncludesOperationalSetupSteps() throws {
+        let app = XCUIApplication()
+
+        app.launchArguments = ["-CaregiverTutorialPreview", "-CaregiverTutorialPreviewStep.6"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["まず見守る方を登録"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["患者を登録する"].exists)
+
+        app.terminate()
+        app.launchArguments = ["-CaregiverTutorialPreview", "-CaregiverTutorialPreviewStep.7"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["連携コードを発行"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["コードを発行する"].exists)
+
+        app.terminate()
+        app.launchArguments = ["-CaregiverTutorialPreview", "-CaregiverTutorialPreviewStep.8"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["最初の薬を登録"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["薬を追加する"].exists)
+    }
+
     func testMedicationListExpandsAndCollapses() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-PatientTodayV105Preview"]
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["夜のお薬"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["飲み遅れのお薬"].waitForExistence(timeout: 3))
         XCTAssertFalse(app.staticTexts["昼のお薬"].exists)
 
         let toggle = app.buttons["PatientTodaySummaryToggle-morning"]
@@ -93,12 +114,28 @@ final class PatientTodayExpandableSummaryUITests: XCTestCase {
         XCTAssertTrue(bedtimeHeader.exists)
 
         XCTAssertTrue(noonHeader.isHittable)
-        noonHeader.tap()
+        let noonMedication = app.staticTexts["カルボシステイン 500 mg"]
+        if !noonMedication.exists {
+            noonHeader.tap()
+        }
 
-        XCTAssertTrue(app.staticTexts["カルボシステイン 500 mg"].waitForExistence(timeout: 2))
+        XCTAssertTrue(noonMedication.waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["整腸剤 50 mg"].exists)
         XCTAssertTrue(app.staticTexts["実際 17:51"].exists)
         XCTAssertTrue(app.staticTexts["5時間21分遅れ"].exists)
+
+        let prnHeader = app.buttons["CaregiverHistoryPrnHeader"]
+        for _ in 0..<6 where !prnHeader.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(prnHeader.waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["2件の記録"].exists)
+        XCTAssertTrue(app.staticTexts["頓服: 頭痛薬"].exists)
+        XCTAssertTrue(app.staticTexts["頓服: 解熱剤"].exists)
+
+        prnHeader.tap()
+        XCTAssertFalse(app.staticTexts["頓服: 頭痛薬"].waitForExistence(timeout: 1))
+        XCTAssertFalse(app.staticTexts["頓服: 解熱剤"].exists)
 
         let caregiverHistoryScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         caregiverHistoryScreenshot.name = "Caregiver history noon slot expanded"

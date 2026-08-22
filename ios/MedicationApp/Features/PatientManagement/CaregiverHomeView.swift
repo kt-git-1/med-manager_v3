@@ -23,6 +23,7 @@ private extension View {
 struct CaregiverHomeView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var notificationRouter: NotificationDeepLinkRouter
+    @EnvironmentObject private var toastPresenter: ToastPresenter
     @State private var selectedTab: CaregiverTab = .today
     @State private var currentPatientName: String?
     @State private var hasAnyPatient: Bool?
@@ -31,6 +32,11 @@ struct CaregiverHomeView: View {
     @State private var deepLinkTarget: NotificationDeepLinkTarget?
     @State private var shouldOpenCreatePatient = false
     @State private var tutorialStepIndex: Int?
+    @State private var showingTutorialPatientCreate = false
+    @State private var tutorialIssuedCode: LinkingCodeDTO?
+    @State private var shouldAdvanceAfterTutorialCode = false
+    @State private var showingTutorialMedicationForm = false
+    @State private var isTutorialOperationInFlight = false
     @State private var loadedTabs: Set<CaregiverTab> = [.today]
     var entitlementStore: EntitlementStore?
 
@@ -116,14 +122,16 @@ struct CaregiverHomeView: View {
                         skipTitle: isCurrentTutorialNotificationStep
                             ? NSLocalizedString("tutorial.notification.later", comment: "Set notification later")
                             : nil,
+                        primaryActionTitle: tutorialPrimaryActionTitle,
+                        primaryActionSystemImage: tutorialPrimaryActionSystemImage,
                         finalPrimaryTitle: isCurrentTutorialNotificationStep
                             ? NSLocalizedString("tutorial.notification.enable", comment: "Enable notification tutorial action")
                             : nil,
                         finalPrimarySystemImage: isCurrentTutorialNotificationStep ? "bell.badge.fill" : nil,
-                        onSkip: { finishTutorial(openRegistration: false) },
+                        onSkip: { finishTutorial(skipped: true) },
                         onPrevious: { moveTutorial(by: -1) },
                         onNext: { handleTutorialNext() },
-                        onFinish: { finishTutorial(openRegistration: true) }
+                        onFinish: { finishTutorial(skipped: false) }
                     )
                     .zIndex(10)
                 }
@@ -178,6 +186,36 @@ struct CaregiverHomeView: View {
             selectedTab = .history
             deepLinkTarget = target
             notificationRouter.clear()
+        }
+        .sheet(isPresented: $showingTutorialPatientCreate) {
+            PatientCreateView(
+                onSave: { displayName in
+                    await createPatientFromTutorial(displayName: displayName)
+                },
+                onSuccess: { message in
+                    showTutorialToast(message)
+                    advanceTutorialIfCurrentStepIs("caregiver-register-patient")
+                }
+            )
+        }
+        .sheet(item: $tutorialIssuedCode, onDismiss: {
+            guard shouldAdvanceAfterTutorialCode else { return }
+            shouldAdvanceAfterTutorialCode = false
+            advanceTutorialIfCurrentStepIs("caregiver-issue-code")
+        }) { code in
+            PatientLinkCodeView(code: code)
+        }
+        .sheet(isPresented: $showingTutorialMedicationForm) {
+            NavigationStack {
+                MedicationFormView(
+                    sessionStore: sessionStore,
+                    onSuccess: { message in
+                        showTutorialToast(message)
+                        advanceTutorialIfCurrentStepIs("caregiver-register-medication")
+                    }
+                )
+                .environmentObject(sessionStore)
+            }
         }
     }
 
@@ -264,13 +302,13 @@ struct CaregiverHomeView: View {
                 )
             ),
             CaregiverTutorialStep(
-                tab: .patients,
-                sample: .shareCode,
+                tab: .medications,
+                sample: .registerMedication,
                 step: GuidedTutorialStep(
-                    id: "caregiver-share-code",
-                    icon: "square.and.arrow.up",
-                    title: NSLocalizedString("tutorial.caregiver.shareCode.title", comment: "Caregiver share code tutorial title"),
-                    message: NSLocalizedString("tutorial.caregiver.shareCode.message", comment: "Caregiver share code tutorial message")
+                    id: "caregiver-register-medication",
+                    icon: "pills.fill",
+                    title: NSLocalizedString("tutorial.caregiver.medicationRegister.title", comment: "Caregiver medication registration tutorial title"),
+                    message: NSLocalizedString("tutorial.caregiver.medicationRegister.message", comment: "Caregiver medication registration tutorial message")
                 )
             ),
             CaregiverTutorialStep(
@@ -294,6 +332,36 @@ struct CaregiverHomeView: View {
     private var isCurrentTutorialNotificationStep: Bool {
         guard let tutorialStepIndex else { return false }
         return caregiverTutorialSteps[tutorialStepIndex].step.id == "caregiver-notification-permission"
+    }
+
+    private var tutorialPrimaryActionTitle: String? {
+        guard let tutorialStepIndex else { return nil }
+        switch caregiverTutorialSteps[tutorialStepIndex].step.id {
+        case "caregiver-register-patient":
+            return sessionStore.currentPatientId == nil
+                ? NSLocalizedString("tutorial.caregiver.register.action", comment: "Register patient tutorial action")
+                : NSLocalizedString("tutorial.next", comment: "Next tutorial action")
+        case "caregiver-issue-code":
+            return NSLocalizedString("tutorial.caregiver.issueCode.action", comment: "Issue code tutorial action")
+        case "caregiver-register-medication":
+            return NSLocalizedString("tutorial.caregiver.medicationRegister.action", comment: "Register medication tutorial action")
+        default:
+            return nil
+        }
+    }
+
+    private var tutorialPrimaryActionSystemImage: String? {
+        guard let tutorialStepIndex else { return nil }
+        switch caregiverTutorialSteps[tutorialStepIndex].step.id {
+        case "caregiver-register-patient":
+            return sessionStore.currentPatientId == nil ? "person.badge.plus.fill" : "chevron.right"
+        case "caregiver-issue-code":
+            return "link.badge.plus"
+        case "caregiver-register-medication":
+            return "pills.fill"
+        default:
+            return nil
+        }
     }
 
     private var isMarketingScreenshotPreview: Bool {
@@ -391,6 +459,15 @@ struct CaregiverHomeView: View {
     private func startTutorialIfNeeded() {
         #if DEBUG
         if let argument = ProcessInfo.processInfo.arguments.first(where: {
+            $0.hasPrefix("-CaregiverTutorialPreviewStep.")
+        }),
+           let requestedStep = Int(argument.dropFirst("-CaregiverTutorialPreviewStep.".count)),
+           caregiverTutorialSteps.indices.contains(requestedStep) {
+            tutorialStepIndex = requestedStep
+            selectedTab = caregiverTutorialSteps[requestedStep].tab
+            return
+        }
+        if let argument = ProcessInfo.processInfo.arguments.first(where: {
             $0.hasPrefix("-CaregiverMarketingScreenshot.")
         }) {
             let requestedTab = String(argument.dropFirst("-CaregiverMarketingScreenshot.".count))
@@ -423,7 +500,7 @@ struct CaregiverHomeView: View {
         guard let tutorialStepIndex else { return }
         let nextIndex = tutorialStepIndex + offset
         guard caregiverTutorialSteps.indices.contains(nextIndex) else {
-            finishTutorial(openRegistration: true)
+            finishTutorial(skipped: false)
             return
         }
         withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
@@ -432,11 +509,100 @@ struct CaregiverHomeView: View {
     }
 
     private func handleTutorialNext() {
-        if isCurrentTutorialNotificationStep {
+        guard let tutorialStepIndex else { return }
+        switch caregiverTutorialSteps[tutorialStepIndex].step.id {
+        case "caregiver-register-patient":
+            if sessionStore.currentPatientId == nil {
+                showingTutorialPatientCreate = true
+            } else {
+                moveTutorial(by: 1)
+            }
+        case "caregiver-issue-code":
+            issueLinkingCodeFromTutorial()
+        case "caregiver-register-medication":
+            guard sessionStore.currentPatientId != nil else {
+                moveTutorialToStep(id: "caregiver-register-patient")
+                return
+            }
+            showingTutorialMedicationForm = true
+        case "caregiver-notification-permission":
             Task { await enablePushNotificationsFromTutorial() }
-        } else {
+        default:
             moveTutorial(by: 1)
         }
+    }
+
+    @MainActor
+    private func createPatientFromTutorial(displayName: String) async -> Bool {
+        do {
+            let apiClient = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: sessionStore)
+            let patient = try await apiClient.createPatient(displayName: displayName)
+            sessionStore.setCurrentPatientId(patient.id)
+            currentPatientName = patient.displayName
+            hasAnyPatient = true
+            patientListErrorMessage = nil
+            AnalyticsService.shared.logCoreActionCompleted(.caregiverPatientCreated)
+            return true
+        } catch let error as APIError {
+            AnalyticsService.shared.logCoreActionFailed(
+                .caregiverPatientCreated,
+                reason: AnalyticsService.failureReason(for: error)
+            )
+            if case .patientLimitExceeded = error {
+                showTutorialToast(
+                    NSLocalizedString("caregiver.patients.limit.initialRelease", comment: "Initial release patient limit"),
+                    kind: .warning
+                )
+            }
+            return false
+        } catch {
+            AnalyticsService.shared.logCoreActionFailed(
+                .caregiverPatientCreated,
+                reason: AnalyticsService.failureReason(for: error)
+            )
+            return false
+        }
+    }
+
+    private func issueLinkingCodeFromTutorial() {
+        guard !isTutorialOperationInFlight else { return }
+        guard let patientId = sessionStore.currentPatientId else {
+            moveTutorialToStep(id: "caregiver-register-patient")
+            return
+        }
+        isTutorialOperationInFlight = true
+        Task { @MainActor in
+            defer { isTutorialOperationInFlight = false }
+            do {
+                let apiClient = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: sessionStore)
+                tutorialIssuedCode = try await apiClient.issueLinkingCode(patientId: patientId)
+                shouldAdvanceAfterTutorialCode = true
+                AnalyticsService.shared.logCoreActionCompleted(.linkCodeIssued)
+            } catch {
+                AnalyticsService.shared.logCoreActionFailed(
+                    .linkCodeIssued,
+                    reason: AnalyticsService.failureReason(for: error)
+                )
+                showTutorialToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
+            }
+        }
+    }
+
+    private func advanceTutorialIfCurrentStepIs(_ stepID: String) {
+        guard let tutorialStepIndex,
+              caregiverTutorialSteps[tutorialStepIndex].step.id == stepID else { return }
+        moveTutorial(by: 1)
+    }
+
+    private func moveTutorialToStep(id: String) {
+        guard let index = caregiverTutorialSteps.firstIndex(where: { $0.step.id == id }) else { return }
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+            tutorialStepIndex = index
+        }
+    }
+
+    private func showTutorialToast(_ message: String, kind: ToastKind = .success) {
+        toastPresenter.show(message, kind: kind)
     }
 
     private func enablePushNotificationsFromTutorial() async {
@@ -445,15 +611,20 @@ struct CaregiverHomeView: View {
             UIApplication.shared.registerForRemoteNotifications()
             await registerCaregiverPushDeviceIfPossible()
         }
-        finishTutorial(openRegistration: true)
+        finishTutorial(skipped: !granted)
     }
 
     private func requestNotificationAuthorization() async -> Bool {
-        await withCheckedContinuation { continuation in
-            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-                continuation.resume(returning: granted)
+        let outcome: (granted: Bool, unavailable: Bool) = await withCheckedContinuation { continuation in
+            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+                continuation.resume(returning: (granted, error != nil))
             }
         }
+        AnalyticsService.shared.logNotificationPermissionResult(
+            outcome.unavailable ? .unavailable : (outcome.granted ? .authorized : .denied),
+            surface: .notifications
+        )
+        return outcome.granted
     }
 
     private func registerCaregiverPushDeviceIfPossible() async {
@@ -486,15 +657,11 @@ struct CaregiverHomeView: View {
         throw lastError ?? DeviceTokenError.noFCMToken
     }
 
-    private func finishTutorial(openRegistration: Bool = false) {
-        AnalyticsService.shared.logTutorialFinished(mode: .caregiver, skipped: !openRegistration)
+    private func finishTutorial(skipped: Bool) {
+        AnalyticsService.shared.logTutorialFinished(mode: .caregiver, skipped: skipped)
         sessionStore.markModeTutorialSeen(for: .caregiver)
         withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
             tutorialStepIndex = nil
-        }
-        if openRegistration {
-            selectedTab = .patients
-            shouldOpenCreatePatient = true
         }
     }
 
@@ -520,15 +687,17 @@ private enum CaregiverTutorialSample {
     case timePreset
     case registerPatient
     case issueCode
-    case shareCode
+    case registerMedication
     case notificationPermission
 
     var tab: CaregiverTab {
         switch self {
         case .tab(let tab):
             return tab
-        case .timePreset, .registerPatient, .issueCode, .shareCode:
+        case .timePreset, .registerPatient, .issueCode:
             return .patients
+        case .registerMedication:
+            return .medications
         case .notificationPermission:
             return .today
         }
@@ -584,8 +753,8 @@ private struct CaregiverTutorialSampleView: View {
         case .issueCode:
             sampleSettingsSelectionCard()
             sampleSettingsPatientCard(highlightIssueCode: true)
-        case .shareCode:
-            sampleLinkCodeCard()
+        case .registerMedication:
+            sampleMedicationRegistrationCard()
         case .notificationPermission:
             sampleNotificationPermissionCard()
         case .tab:
@@ -733,8 +902,8 @@ private struct CaregiverTutorialSampleView: View {
             return "見守る方を登録"
         case .issueCode:
             return "連携コードを発行"
-        case .shareCode:
-            return "本人へコードを共有"
+        case .registerMedication:
+            return "最初の薬を登録"
         case .timePreset:
             return "服用時間を調整"
         case .notificationPermission:
@@ -762,8 +931,8 @@ private struct CaregiverTutorialSampleView: View {
             return "最初に本人の名前を登録します"
         case .issueCode:
             return "登録後に本人用のコードを作ります"
-        case .shareCode:
-            return "コピーまたは共有で本人へ渡します"
+        case .registerMedication:
+            return "薬の名前・飲む時間・在庫を設定します"
         case .timePreset:
             return "朝・昼・夜・眠前の時刻を変更できます"
         case .notificationPermission:
@@ -791,8 +960,8 @@ private struct CaregiverTutorialSampleView: View {
             return "person.badge.plus.fill"
         case .issueCode:
             return "link.badge.plus"
-        case .shareCode:
-            return "square.and.arrow.up"
+        case .registerMedication:
+            return "pills.fill"
         case .timePreset:
             return "clock.badge.checkmark.fill"
         case .notificationPermission:
@@ -902,6 +1071,42 @@ private struct CaregiverTutorialSampleView: View {
                     title: NSLocalizedString("common.save", comment: "Save"),
                     systemImage: "checkmark",
                     color: CaregiverUI.orange
+                )
+            }
+        }
+    }
+
+    private func sampleMedicationRegistrationCard() -> some View {
+        CaregiverCard(accent: CaregiverUI.teal) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 12) {
+                    Image(systemName: "pills.fill")
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(CaregiverUI.teal)
+                        .frame(width: 48, height: 48)
+                        .background(CaregiverUI.teal.opacity(0.12), in: Circle())
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(NSLocalizedString("medication.form.title.register", comment: "Register medication title"))
+                            .font(.title3.weight(.bold))
+                        Text("薬の名前・飲む時間・在庫を入力して登録します。")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.readableSecondaryText)
+                    }
+                }
+
+                sampleMedicationListRow(
+                    name: "血圧の薬 5 mg",
+                    badge: "定時",
+                    detail: "毎日 朝・夜",
+                    dose: "1回1錠",
+                    inventory: "30日分",
+                    color: CaregiverUI.teal
+                )
+
+                samplePrimaryButton(
+                    title: NSLocalizedString("tutorial.caregiver.medicationRegister.action", comment: "Register medication tutorial action"),
+                    systemImage: "plus.circle.fill",
+                    color: CaregiverUI.teal
                 )
             }
         }

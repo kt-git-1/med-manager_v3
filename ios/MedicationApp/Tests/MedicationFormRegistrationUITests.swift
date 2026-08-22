@@ -9,6 +9,9 @@ final class MedicationFormRegistrationUITests: XCTestCase {
     func testSupplyDaysShowsAutomaticInventoryCalculation() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-MedicationFormMarketingScreenshot"]
+        app.launchEnvironment["UITEST_SESSION_BOOTSTRAP"] = "1"
+        app.launchEnvironment["UITEST_MODE"] = "caregiver"
+        app.launchEnvironment["UITEST_CURRENT_PATIENT_ID"] = "qa-marketing-preview-patient"
         app.launch()
 
         XCTAssertTrue(app.staticTexts["お薬を登録"].waitForExistence(timeout: 10), app.debugDescription)

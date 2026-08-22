@@ -43,7 +43,7 @@ export async function createPrnRecord(
   }
 
   const medication = await getMedicationRecordForPatient(input.patientId, input.medicationId);
-  if (!medication) {
+  if (!medication || medication.isArchived || !medication.isActive) {
     return { error: "not_found" };
   }
   if (!medication.isPrn) {

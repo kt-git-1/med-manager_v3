@@ -70,6 +70,12 @@ vi.mock("../../src/services/scheduleService", () => ({
 }));
 
 vi.mock("../../src/services/scheduleResponse", () => ({
+  buildSlotProgress: vi.fn(() => ({
+    morning: { scheduledCount: 0, takenCount: 0, pendingCount: 0, missedCount: 0 },
+    noon: { scheduledCount: 0, takenCount: 0, pendingCount: 0, missedCount: 0 },
+    evening: { scheduledCount: 0, takenCount: 0, pendingCount: 0, missedCount: 0 },
+    bedtime: { scheduledCount: 0, takenCount: 0, pendingCount: 0, missedCount: 0 }
+  })),
   buildSlotSummary: vi.fn(() => ({
     morning: "none",
     noon: "none",

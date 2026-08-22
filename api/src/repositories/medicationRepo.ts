@@ -42,8 +42,11 @@ export async function updateMedicationRecord(id: string, input: MedicationUpdate
 }
 
 export async function archiveMedicationRecord(id: string) {
-  return prisma.medication.update({
-    where: { id },
-    data: { isArchived: true, isActive: false }
+  return prisma.$transaction(async (transaction) => {
+    await transaction.medication.updateMany({
+      where: { id, isArchived: false },
+      data: { isArchived: true, isActive: false, archivedAt: new Date() }
+    });
+    return transaction.medication.findUniqueOrThrow({ where: { id } });
   });
 }

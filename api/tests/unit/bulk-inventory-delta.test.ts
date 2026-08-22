@@ -8,6 +8,7 @@ const regimenFindMany = vi.fn(async () => []);
 const transaction = vi.fn(async (callback: (tx: unknown) => Promise<void>) =>
   callback({
     $queryRaw: queryRaw,
+    regimen: { findMany: regimenFindMany },
     medication: { updateMany },
     medicationInventoryAdjustment: { createMany: adjustmentCreateMany },
     inventoryAlertEvent: { createMany: alertCreateMany }
