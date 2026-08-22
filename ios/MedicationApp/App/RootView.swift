@@ -174,6 +174,8 @@ struct GuidedTutorialOverlay: View {
     var isSeniorFriendly = false
     var bottomClearance: CGFloat = 4
     var skipTitle: String?
+    var primaryActionTitle: String?
+    var primaryActionSystemImage: String?
     var finalPrimaryTitle: String?
     var finalPrimarySystemImage: String?
     var onSkip: (() -> Void)?
@@ -300,6 +302,9 @@ struct GuidedTutorialOverlay: View {
     }
 
     private var primaryTitle: String {
+        if let primaryActionTitle {
+            return primaryActionTitle
+        }
         if isFinalStep, let finalPrimaryTitle {
             return finalPrimaryTitle
         }
@@ -309,6 +314,9 @@ struct GuidedTutorialOverlay: View {
     }
 
     private var primarySystemImage: String {
+        if let primaryActionSystemImage {
+            return primaryActionSystemImage
+        }
         if isFinalStep, let finalPrimarySystemImage {
             return finalPrimarySystemImage
         }
