@@ -32,6 +32,13 @@ export function buildScheduleResponse(doses: ScheduleResponseInput[]) {
 export type HistorySlot = "morning" | "noon" | "evening" | "bedtime";
 export type SlotSummaryStatus = "pending" | "taken" | "missed" | "none";
 
+export type SlotProgressCounts = {
+  scheduledCount: number;
+  takenCount: number;
+  pendingCount: number;
+  missedCount: number;
+};
+
 const slotTimes: Record<HistorySlot, string> = { ...DEFAULT_SLOT_TIMES };
 
 function getLocalTimeString(scheduledAt: string, tz: string) {
@@ -110,6 +117,42 @@ export function buildSlotSummary(
     }
   }
   return summary;
+}
+
+/**
+ * Additive, backward-compatible medication-level counts for consumers that
+ * need to distinguish an entirely unrecorded slot from a partially recorded
+ * slot. The legacy slotSummary intentionally remains unchanged for older apps.
+ */
+export function buildSlotProgress(
+  doses: { scheduledAt: string; effectiveStatus?: "pending" | "taken" | "missed" }[],
+  tz: string,
+  customSlotTimes?: Partial<Record<HistorySlot, string>>
+): Record<HistorySlot, SlotProgressCounts> {
+  const progress: Record<HistorySlot, SlotProgressCounts> = {
+    morning: { scheduledCount: 0, takenCount: 0, pendingCount: 0, missedCount: 0 },
+    noon: { scheduledCount: 0, takenCount: 0, pendingCount: 0, missedCount: 0 },
+    evening: { scheduledCount: 0, takenCount: 0, pendingCount: 0, missedCount: 0 },
+    bedtime: { scheduledCount: 0, takenCount: 0, pendingCount: 0, missedCount: 0 }
+  };
+  for (const dose of doses) {
+    const slot = resolveSlot(dose.scheduledAt, tz, customSlotTimes);
+    if (!slot) continue;
+    const counts = progress[slot];
+    counts.scheduledCount += 1;
+    switch (dose.effectiveStatus ?? "pending") {
+      case "taken":
+        counts.takenCount += 1;
+        break;
+      case "missed":
+        counts.missedCount += 1;
+        break;
+      case "pending":
+        counts.pendingCount += 1;
+        break;
+    }
+  }
+  return progress;
 }
 
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;

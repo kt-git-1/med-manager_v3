@@ -13,11 +13,10 @@ import {
   type HistorySlot,
   type SlotSummaryStatus
 } from "./scheduleResponse";
-import { createDoseRecordEvents } from "../repositories/doseRecordEventRepo";
 import { getPatientRecordById } from "../repositories/patientRepo";
 import { listMedicationRecordsForPatientByIds } from "../repositories/medicationRepo";
 import { notifyCaregiversOfDoseTaken } from "./pushNotificationService";
-import { applyInventoryDeltasForDoseRecords } from "./medicationService";
+import { applyInventoryDeltasForDoseRecordsInTransaction } from "./medicationService";
 import { DEFAULT_TIMEZONE, DOSE_MISSED_WINDOW_MS, INTL_PARSE_LOCALE } from "../constants";
 import { randomUUID } from "crypto";
 
@@ -205,58 +204,62 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
   // 8. Generate recording group ID
   const recordingGroupId = randomUUID();
 
-  // 9. Insert all records in one database round trip. The unique constraint keeps
-  // concurrent/retried requests idempotent without an upsert per medication.
+  // 9. Commit dose rows, inventory deltas, inventory audit rows and dose events
+  // atomically. A concurrent inventory change therefore cannot leave a taken
+  // record without its matching inventory decrement.
   const takenAt = now;
-  const records = await prisma.doseRecord.createManyAndReturn({
-    data: recordableWithInventory.map((dose) => ({
-      patientId: input.patientId,
-      medicationId: dose.medicationId,
-      scheduledAt: new Date(dose.scheduledAt),
-      takenAt,
-      recordedByType,
-      recordedById,
-      recordingGroupId
-    })),
-    skipDuplicates: true
-  });
-
-  // 10. Side effects (outside the transaction)
   const patient = await getPatientRecordById(input.patientId);
   let anyWithinTime = false;
-  if (patient) {
-    const eventInputs = records.map((record) => {
-      const withinTime =
-        record.takenAt.getTime() <= record.scheduledAt.getTime() + DOSE_MISSED_WINDOW_MS;
+  const records = await prisma.$transaction(
+    async (tx) => {
+      const inserted = await tx.doseRecord.createManyAndReturn({
+        data: recordableWithInventory.map((dose) => ({
+          patientId: input.patientId,
+          medicationId: dose.medicationId,
+          scheduledAt: new Date(dose.scheduledAt),
+          takenAt,
+          recordedByType,
+          recordedById,
+          recordingGroupId
+        })),
+        skipDuplicates: true
+      });
+      if (!patient || inserted.length === 0) return inserted;
 
-      if (withinTime) anyWithinTime = true;
+      const eventInputs = inserted.map((record) => {
+        const withinTime =
+          record.takenAt.getTime() <= record.scheduledAt.getTime() + DOSE_MISSED_WINDOW_MS;
+        if (withinTime) anyWithinTime = true;
+        const medication = medicationById.get(record.medicationId);
+        return {
+          patientId: record.patientId,
+          scheduledAt: record.scheduledAt,
+          takenAt: record.takenAt,
+          withinTime,
+          displayName: patient.displayName,
+          medicationName: medication?.name,
+          isPrn: false
+        };
+      });
 
-      const medication = medicationById.get(record.medicationId);
-      return {
-        patientId: record.patientId,
-        scheduledAt: record.scheduledAt,
-        takenAt: record.takenAt,
-        withinTime,
-        displayName: patient.displayName,
-        medicationName: medication?.name,
-        isPrn: false
-      };
-    });
-    // These side effects do not depend on one another. Waiting for them in parallel
-    // preserves delivery/inventory guarantees while shortening the record response.
-    await Promise.all([
-      createDoseRecordEvents(eventInputs),
-      applyInventoryDeltasForDoseRecords({
+      await applyInventoryDeltasForDoseRecordsInTransaction(tx, {
         patientId: input.patientId,
         patientDisplayName: patient.displayName,
-        deltas: records.flatMap((record) => {
+        deltas: inserted.flatMap((record) => {
           const medication = medicationById.get(record.medicationId);
           if (!medication?.inventoryEnabled) return [];
           return [{ medicationId: medication.id, quantity: medication.doseCountPerIntake }];
         })
-      })
-    ]);
+      });
+      await tx.doseRecordEvent.createMany({ data: eventInputs });
+      return inserted;
+    },
+    { timeout: 10_000 }
+  );
 
+  // 10. Push is intentionally outside the database transaction and is already
+  // idempotent/best-effort. It runs only after the durable mutation commits.
+  if (patient) {
     if (records.length > 0) {
       // Preserve the existing guarantee that push is attempted only after history and
       // inventory side effects have both succeeded.

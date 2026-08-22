@@ -466,6 +466,24 @@ export async function applyInventoryDeltasForDoseRecords(input: {
   patientDisplayName: string;
   deltas: DoseRecordInventoryDelta[];
 }): Promise<void> {
+  if (!input.deltas.some((delta) => delta.quantity > 0)) return;
+  await prisma.$transaction((tx) => applyInventoryDeltasForDoseRecordsInTransaction(tx, input), {
+    timeout: 10_000
+  });
+}
+
+/**
+ * Transaction-aware variant used when dose records and their inventory
+ * adjustments must commit or roll back as one mutation.
+ */
+export async function applyInventoryDeltasForDoseRecordsInTransaction(
+  tx: Prisma.TransactionClient,
+  input: {
+    patientId: string;
+    patientDisplayName: string;
+    deltas: DoseRecordInventoryDelta[];
+  }
+): Promise<void> {
   const quantityByMedicationId = new Map<string, number>();
   for (const delta of input.deltas) {
     if (delta.quantity <= 0) continue;
@@ -479,7 +497,7 @@ export async function applyInventoryDeltasForDoseRecords(input: {
   }
 
   const medicationIds = [...quantityByMedicationId.keys()];
-  const regimens = await prisma.regimen.findMany({
+  const regimens = await tx.regimen.findMany({
     where: { medicationId: { in: medicationIds } }
   });
   const regimenMap = new Map<string, Regimen[]>();
@@ -497,9 +515,7 @@ export async function applyInventoryDeltasForDoseRecords(input: {
     )
   );
 
-  await prisma.$transaction(
-    async (tx) => {
-      const updated = await tx.$queryRaw<BulkInventoryUpdateRow[]>(Prisma.sql`
+  const updated = await tx.$queryRaw<BulkInventoryUpdateRow[]>(Prisma.sql`
         UPDATE "Medication" AS medication
         SET
           "inventoryQuantity" = medication."inventoryQuantity" - delta.quantity,
@@ -518,77 +534,74 @@ export async function applyInventoryDeltasForDoseRecords(input: {
           medication."inventoryLastAlertState"
       `);
 
-      if (updated.length !== quantityByMedicationId.size) {
-        throw new InsufficientInventoryError();
-      }
+  if (updated.length !== quantityByMedicationId.size) {
+    throw new InsufficientInventoryError();
+  }
 
-      const stateGroups = new Map<InventoryAlertState, string[]>();
-      const alerts: Array<{
-        patientId: string;
-        medicationId: string;
-        type: InventoryAlertType;
-        remaining: number;
-        threshold: number;
-        patientDisplayName: string;
-        medicationName: string;
-      }> = [];
+  const stateGroups = new Map<InventoryAlertState, string[]>();
+  const alerts: Array<{
+    patientId: string;
+    medicationId: string;
+    type: InventoryAlertType;
+    remaining: number;
+    threshold: number;
+    patientDisplayName: string;
+    medicationName: string;
+  }> = [];
 
-      for (const medication of updated) {
-        const plan = computeRefillPlan({
-          inventoryEnabled: true,
-          inventoryQuantity: medication.inventoryQuantity,
-          doseCountPerIntake: medication.doseCountPerIntake,
-          regimens: mapRegimensForPlan(regimenMap.get(medication.id) ?? [])
-        });
-        const nextState = computeInventoryState(
-          medication.inventoryQuantity,
-          DEFAULT_INVENTORY_LOW_THRESHOLD_DAYS,
-          plan.daysRemaining
-        );
-        const ids = stateGroups.get(nextState) ?? [];
-        ids.push(medication.id);
-        stateGroups.set(nextState, ids);
+  for (const medication of updated) {
+    const plan = computeRefillPlan({
+      inventoryEnabled: true,
+      inventoryQuantity: medication.inventoryQuantity,
+      doseCountPerIntake: medication.doseCountPerIntake,
+      regimens: mapRegimensForPlan(regimenMap.get(medication.id) ?? [])
+    });
+    const nextState = computeInventoryState(
+      medication.inventoryQuantity,
+      DEFAULT_INVENTORY_LOW_THRESHOLD_DAYS,
+      plan.daysRemaining
+    );
+    const ids = stateGroups.get(nextState) ?? [];
+    ids.push(medication.id);
+    stateGroups.set(nextState, ids);
 
-        const previousState = medication.inventoryLastAlertState ?? "NONE";
-        if (nextState !== previousState && nextState !== "NONE") {
-          alerts.push({
-            patientId: input.patientId,
-            medicationId: medication.id,
-            type: nextState,
-            remaining: medication.inventoryQuantity,
-            threshold: DEFAULT_INVENTORY_LOW_THRESHOLD_DAYS,
-            patientDisplayName: input.patientDisplayName,
-            medicationName: medication.name
-          });
-        }
-      }
-
-      for (const [state, ids] of stateGroups) {
-        await tx.medication.updateMany({
-          where: { id: { in: ids }, patientId: input.patientId },
-          data: {
-            inventoryLowThreshold: DEFAULT_INVENTORY_LOW_THRESHOLD_DAYS,
-            inventoryLastAlertState: state
-          }
-        });
-      }
-
-      await tx.medicationInventoryAdjustment.createMany({
-        data: [...quantityByMedicationId].map(([medicationId, quantity]) => ({
-          patientId: input.patientId,
-          medicationId,
-          delta: -quantity,
-          reason: "TAKEN_CREATE" as const,
-          actorType: "SYSTEM" as const,
-          actorId: null
-        }))
+    const previousState = medication.inventoryLastAlertState ?? "NONE";
+    if (nextState !== previousState && nextState !== "NONE") {
+      alerts.push({
+        patientId: input.patientId,
+        medicationId: medication.id,
+        type: nextState,
+        remaining: medication.inventoryQuantity,
+        threshold: DEFAULT_INVENTORY_LOW_THRESHOLD_DAYS,
+        patientDisplayName: input.patientDisplayName,
+        medicationName: medication.name
       });
-      if (alerts.length > 0) {
-        await tx.inventoryAlertEvent.createMany({ data: alerts });
+    }
+  }
+
+  for (const [state, ids] of stateGroups) {
+    await tx.medication.updateMany({
+      where: { id: { in: ids }, patientId: input.patientId },
+      data: {
+        inventoryLowThreshold: DEFAULT_INVENTORY_LOW_THRESHOLD_DAYS,
+        inventoryLastAlertState: state
       }
-    },
-    { timeout: 10_000 }
-  );
+    });
+  }
+
+  await tx.medicationInventoryAdjustment.createMany({
+    data: [...quantityByMedicationId].map(([medicationId, quantity]) => ({
+      patientId: input.patientId,
+      medicationId,
+      delta: -quantity,
+      reason: "TAKEN_CREATE" as const,
+      actorType: "SYSTEM" as const,
+      actorId: null
+    }))
+  });
+  if (alerts.length > 0) {
+    await tx.inventoryAlertEvent.createMany({ data: alerts });
+  }
 }
 
 export function assertInventoryAvailableForMedication(

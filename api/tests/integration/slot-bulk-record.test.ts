@@ -245,6 +245,7 @@ vi.mock("../../src/services/pushNotificationService", () => ({
 vi.mock("../../src/services/medicationService", () => ({
   applyInventoryDeltaForDoseRecord: vi.fn(async () => {}),
   applyInventoryDeltasForDoseRecords: vi.fn(async () => {}),
+  applyInventoryDeltasForDoseRecordsInTransaction: vi.fn(async () => {}),
   assertInventoryAvailableForMedication: vi.fn(
     (
       medication: { inventoryEnabled: boolean; inventoryQuantity: number },
@@ -384,8 +385,8 @@ vi.mock("../../src/services/scheduleService", async (importOriginal) => {
 
 // -- Mock Prisma bulk insert -------------------------------------------------
 
-vi.mock("../../src/repositories/prisma", () => ({
-  prisma: {
+vi.mock("../../src/repositories/prisma", () => {
+  const prismaMock: Record<string, unknown> = {
     doseRecord: {
       createManyAndReturn: vi.fn(
         async (args: {
@@ -422,9 +423,23 @@ vi.mock("../../src/repositories/prisma", () => ({
           return inserted;
         }
       )
+    },
+    doseRecordEvent: {
+      createMany: vi.fn(async ({ data }: { data: unknown[] }) => ({ count: data.length }))
     }
-  }
-}));
+  };
+  prismaMock.$transaction = vi.fn(async (callback: (tx: typeof prismaMock) => Promise<unknown>) => {
+    const snapshot = new Map(store);
+    try {
+      return await callback(prismaMock);
+    } catch (error) {
+      store.clear();
+      for (const [key, value] of snapshot) store.set(key, value);
+      throw error;
+    }
+  });
+  return { prisma: prismaMock };
+});
 
 // ---------------------------------------------------------------------------
 // T001: PENDING bulk -> TAKEN (core happy path)
@@ -451,8 +466,7 @@ describe("slot bulk record integration", () => {
   describe("T001: PENDING bulk -> TAKEN", () => {
     it("records 3 PENDING morning doses as TAKEN in a single bulk operation", async () => {
       mockScheduleDoses = makeMorningDoses("pending");
-      const { createDoseRecordEvents } = await import("../../src/repositories/doseRecordEventRepo");
-      const { applyInventoryDeltasForDoseRecords } =
+      const { applyInventoryDeltasForDoseRecordsInTransaction } =
         await import("../../src/services/medicationService");
       const { notifyCaregiversOfDoseTaken } =
         await import("../../src/services/pushNotificationService");
@@ -467,9 +481,7 @@ describe("slot bulk record integration", () => {
       expect(body.remainingCount).toBe(0);
       expect(body.recordingGroupId).toBeDefined();
       expect(typeof body.recordingGroupId).toBe("string");
-      expect(createDoseRecordEvents).toHaveBeenCalledTimes(1);
-      expect(vi.mocked(createDoseRecordEvents).mock.calls[0]?.[0]).toHaveLength(3);
-      expect(applyInventoryDeltasForDoseRecords).toHaveBeenCalledTimes(1);
+      expect(applyInventoryDeltasForDoseRecordsInTransaction).toHaveBeenCalledTimes(1);
       expect(notifyMock).toHaveBeenCalledTimes(1);
       expect(notifyMock).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -610,6 +622,26 @@ describe("slot bulk record integration", () => {
       expect(body.remainingCount).toBe(3);
       expect(body.insufficientCount).toBe(3);
       expect(body.recordingGroupId).toBeNull();
+      expect(store.size).toBe(0);
+    });
+
+    it("rolls back newly inserted dose records when the atomic inventory update loses a race", async () => {
+      mockScheduleDoses = makeMorningDoses("pending");
+      medications["med-1"].inventoryEnabled = true;
+      medications["med-1"].inventoryQuantity = 2;
+      const { applyInventoryDeltasForDoseRecordsInTransaction } =
+        await import("../../src/services/medicationService");
+      const inventoryRace = Object.assign(new Error("Insufficient inventory"), {
+        statusCode: 409,
+        code: "insufficient_inventory"
+      });
+      vi.mocked(applyInventoryDeltasForDoseRecordsInTransaction).mockRejectedValueOnce(
+        inventoryRace
+      );
+
+      const response = await POST(makePostRequest({ date: "2026-02-11", slot: "morning" }));
+
+      expect(response.status).toBe(409);
       expect(store.size).toBe(0);
     });
   });
