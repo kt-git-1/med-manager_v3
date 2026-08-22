@@ -65,6 +65,25 @@ Release gate ledger は `ready=3 / blocked=7` のままである。これは今�
 - A302SH 上の既存 `com.afterlifearchive.medmanager` はアンインストール・データ消去・ログイン変更をしていない。
 - API 33／26 の一時端末はテスト後に削除対象パッケージを除去して停止した。
 
+## 追加機能の Staging 実動作確認
+
+初回公開前に追加した「薬を削除しても過去の服薬履歴を残す」と Firebase Analytics について、2026-08-22 JST に次の確認を行った。
+
+### 薬削除後の履歴保持
+
+- ログイン済みの Staging 本人・家族モードだけを使用し、QA用の頓服で服用記録を作成した。
+- 家族モードから対象薬を削除すると、使用中の薬一覧と本人モードの「必要な時のお薬」から対象薬が消えた。
+- 削除後も本人履歴と家族履歴の双方に、薬名スナップショット、服用時刻、記録者種別が残った。
+- Staging API の `/api/health` は HTTP 200。存在しない薬の取得は HTTP 404 となり、`archivedAt` を含む移行後スキーマで稼働していることも確認した。
+
+### Firebase Analytics
+
+- 正規の Staging Flavor `com.afterlifearchive.medmanager.staging` を API 35 エミュレータへ既存アプリと併設した。
+- 初期状態と「今はしない」選択後は Firebase SDK が `app measurement disabled` と判定し、アプリイベントを送信しなかった。
+- 「許可する」選択後は `screen_viewed(screen_name=mode_select)` と `app_mode_selected(mode=patient)` が Firebase のデバッグログで記録・アップロードされた。
+- 送信パラメータに患者名、薬名、服薬内容、メールアドレス、内部IDが含まれないことを確認した。
+- 検証後は Staging Flavor のデータを消去して「今はしない」の状態に戻した。既存のログイン済みアプリのデータは消去していない。
+
 ## 今回の範囲外・公開前に必要な確認
 
 - Play Console 内部テストへ実際にアップロードした署名済み AAB のインストール
