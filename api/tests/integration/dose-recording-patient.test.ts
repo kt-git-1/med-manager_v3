@@ -14,6 +14,7 @@ type DoseRecord = {
 };
 
 const store = new Map<string, DoseRecord>();
+const medicationState = { isActive: true, isArchived: false };
 
 vi.mock("../../src/repositories/doseRecordRepo", () => ({
   upsertDoseRecord: async (input: {
@@ -94,8 +95,8 @@ vi.mock("../../src/repositories/medicationRepo", () => ({
     inventoryLowThreshold: 0,
     inventoryUpdatedAt: null,
     inventoryLastAlertState: null,
-    isActive: true,
-    isArchived: false,
+    isActive: medicationState.isActive,
+    isArchived: medicationState.isArchived,
     createdAt: new Date(),
     updatedAt: new Date()
   })
@@ -104,6 +105,8 @@ vi.mock("../../src/repositories/medicationRepo", () => ({
 describe("dose recording patient integration", () => {
   it("is idempotent for duplicate creates", async () => {
     store.clear();
+    medicationState.isActive = true;
+    medicationState.isArchived = false;
     const scheduledAt = new Date("2026-02-02T08:00:00.000Z");
     const first = await createDoseRecordIdempotent({
       patientId: "patient-1",
@@ -122,5 +125,25 @@ describe("dose recording patient integration", () => {
 
     expect(first.id).toBe(second.id);
     expect(store.size).toBe(1);
+  });
+
+  it("rejects a new record after the medication is archived", async () => {
+    store.clear();
+    medicationState.isActive = false;
+    medicationState.isArchived = true;
+
+    await expect(
+      createDoseRecordIdempotent({
+        patientId: "patient-1",
+        medicationId: "med-1",
+        scheduledAt: new Date("2026-02-02T08:00:00.000Z"),
+        recordedByType: "PATIENT",
+        recordedById: null
+      })
+    ).rejects.toMatchObject({ statusCode: 404, code: "not_found" });
+    expect(store.size).toBe(0);
+
+    medicationState.isActive = true;
+    medicationState.isArchived = false;
   });
 });

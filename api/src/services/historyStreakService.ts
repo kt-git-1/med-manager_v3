@@ -81,7 +81,8 @@ export async function getPatientHistoryStreak(
     historyTimeZone,
     now,
     undefined,
-    slotTimeTimeline
+    slotTimeTimeline,
+    true
   );
   return calculateHistoryStreak(doses, now, historyTimeZone);
 }

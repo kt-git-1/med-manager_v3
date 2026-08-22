@@ -18,6 +18,7 @@ import { notifyCaregiversOfDoseTaken } from "./pushNotificationService";
 import { resolveSlot } from "./scheduleResponse";
 import { getLocalDateKey } from "./scheduleService";
 import { DEFAULT_TIMEZONE, DOSE_MISSED_WINDOW_MS } from "../constants";
+import { MedicationUnavailableError } from "../errors/medicationUnavailableError";
 
 export type DoseRecordCreateInput = DoseRecordKey & {
   recordedByType: RecordedByType;
@@ -37,9 +38,10 @@ export async function createDoseRecordIdempotent(
   }
 
   const medication = await getMedicationRecordForPatient(input.patientId, input.medicationId);
-  if (medication) {
-    assertInventoryAvailableForMedication(medication, medication.doseCountPerIntake);
+  if (!medication || medication.isArchived || !medication.isActive) {
+    throw new MedicationUnavailableError();
   }
+  assertInventoryAvailableForMedication(medication, medication.doseCountPerIntake);
 
   const record = await upsertDoseRecord(input);
   const patient = await getPatientRecordById(record.patientId);
@@ -59,17 +61,15 @@ export async function createDoseRecordIdempotent(
       takenAt: record.takenAt,
       withinTime,
       displayName: patient.displayName,
-      medicationName: medication?.name,
-      isPrn: medication?.isPrn ?? false
+      medicationName: medication.name,
+      isPrn: medication.isPrn
     }),
-    medication
-      ? applyInventoryDeltaForDoseRecord({
-          patientId: record.patientId,
-          medicationId: record.medicationId,
-          delta: -medication.doseCountPerIntake,
-          reason: "TAKEN_CREATE"
-        })
-      : Promise.resolve()
+    applyInventoryDeltaForDoseRecord({
+      patientId: record.patientId,
+      medicationId: record.medicationId,
+      delta: -medication.doseCountPerIntake,
+      reason: "TAKEN_CREATE"
+    })
   ]);
 
   // Preserve the existing guarantee that push is attempted only after the inventory update.
@@ -82,7 +82,7 @@ export async function createDoseRecordIdempotent(
     excludeCaregiverId:
       input.recordedByType === "CAREGIVER" ? (input.recordedById ?? undefined) : undefined,
     withinTime,
-    isPrn: medication?.isPrn ?? false
+    isPrn: medication.isPrn
   });
 
   return record;

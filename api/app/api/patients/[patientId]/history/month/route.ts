@@ -98,7 +98,8 @@ export async function GET(
       historyTimeZone,
       new Date(),
       effectiveSlotTimes,
-      slotTimeTimeline
+      slotTimeTimeline,
+      true
     );
     const grouped = groupDosesByLocalDate(doses, historyTimeZone);
     const prn = await listPrnHistoryItemsByRange({

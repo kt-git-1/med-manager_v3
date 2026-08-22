@@ -232,7 +232,7 @@
 "medication.form.patient.required" = "対象患者を選択してください";
 "medication.form.delete" = "薬を削除する";
 "medication.form.delete.confirm.title" = "薬を削除しますか？";
-"medication.form.delete.confirm.message" = "この操作は取り消せません。";
+"medication.form.delete.confirm.message" = "今後の服薬予定から削除します。これまでの服薬履歴は残ります。";
 "medication.form.delete.confirm.action" = "削除する";
 "medication.toast.deleted" = "薬を削除しました";
 
