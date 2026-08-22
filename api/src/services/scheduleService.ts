@@ -252,6 +252,16 @@ function laterDate(left: Date, right: Date) {
   return left > right ? left : right;
 }
 
+function earlierOptionalDate(left?: Date | null, right?: Date | null) {
+  if (!left) {
+    return right ?? null;
+  }
+  if (!right) {
+    return left;
+  }
+  return left < right ? left : right;
+}
+
 function getRegimenWindowStart(regimen: RegimenRecord, tz: string) {
   const startDateFloor = startOfLocalDay(regimen.startDate, tz);
   if (!regimen.createdAt) {
@@ -299,8 +309,12 @@ export function generateSchedule({
     const normalizedFrom = truncateToMinutes(from, tz);
     const normalizedTo = truncateToMinutes(to, tz);
     const regimenStart = getRegimenWindowStart(regimen, tz);
+    const medicationStart = startOfLocalDay(medication.startDate, tz);
+    const effectiveStart = laterDate(regimenStart, medicationStart);
     const regimenEnd = regimen.endDate ? startOfLocalDay(regimen.endDate, tz) : null;
-    const window = intersectWindow(normalizedFrom, normalizedTo, regimenStart, regimenEnd);
+    const medicationEnd = medication.endDate ? startOfLocalDay(medication.endDate, tz) : null;
+    const effectiveEnd = earlierOptionalDate(regimenEnd, medicationEnd);
+    const window = intersectWindow(normalizedFrom, normalizedTo, effectiveStart, effectiveEnd);
     if (!window) {
       continue;
     }
