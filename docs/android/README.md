@@ -4,10 +4,10 @@ This directory is the source of truth for the Android port. Android work is isol
 
 ## Current baseline
 
-- Reference product: published iOS 1.0.6 Build 51, `main@432b34c`
-- Android baseline merge: `android-dev@36a6d4d`; current implementation checkpoint: C124
-- Baseline date: 2026-08-17
-- Current action: C124 rebaselines UI-104 Patient History from the unchanged published runtime. Android now matches the filled clock symbols, 34/17 shared Patient header, 1.5-unit streak accent, darker streak copy and exact `5/7日` fixture. Play screenshots 01–03 are source-bound to fresh published-build evidence; five store surfaces remain queued.
+- Current iOS/API release reference: `staging@e9ec0d3c6b10`; published Production: `main@432b34c064d7`
+- Android release candidate source: `android-dev@2a716ed08fcc`; machine-readable release-gate checkpoint: current implementation checkpoint: C124
+- Roadmap update date: 2026-08-23
+- Current action: run the final Staging delta audit in Phase 0 of `play-first-release-roadmap.md`, then freeze a Staging RC. Store-listing assets remain provisional until the final UI is frozen.
 
 ## Authority order
 
@@ -26,6 +26,7 @@ An Android shortcut never overrides a backend rule or an intentional iOS product
 
 - [Master development plan](./android-port-master-plan.md)
 - [Pre-Phase 0 product additions](./pre-phase-0-product-additions.md)
+- [Play first-release roadmap](./play-first-release-roadmap.md)
 - [Pinned source baseline and change control](./source-baseline.md)
 - [API and session contracts](./api-contracts.md)
 - [UI and screen contracts](./ui-screen-contracts.md)

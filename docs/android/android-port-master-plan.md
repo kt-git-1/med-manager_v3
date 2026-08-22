@@ -1,8 +1,8 @@
 # Android Port Master Development Plan
 
-**Status:** iOS 1.0.6 emulator parity complete; physical/release gates open
+**Status:** product implementation and Staging E2E complete; final Staging rebaseline pending; physical/release gates open
 **Development branch:** `android-dev`
-**Reference:** published iOS 1.0.6 Build 51, `main@432b34c`
+**Reference:** current iOS/API Staging `e9ec0d3c6b10`; published Production remains `main@432b34c064d7`
 **Stack:** Kotlin, Jetpack Compose, Material 3
 
 ## 1. Outcome
@@ -77,6 +77,8 @@ Complete [the pre-Phase 0 contract](./pre-phase-0-product-additions.md) before r
 4. pass automated regression and Staging cross-role verification.
 
 This phase is additive and backward compatible. It does not change the pinned published UI baseline or authorize Production/Play operations.
+
+Implementation, Staging archive/history E2E and consent transport verification are complete at `android-dev@2a716ed08fcc`. Final Analytics acceptance still requires synthetic DebugView observation of the three parity additions and the owner-controlled Explore check tracked as RG-001. The current Phase 0-to-publication sequence is [Android Play 初回公開ロードマップ](./play-first-release-roadmap.md); it supersedes the chronological checkpoint narrative below for execution order without weakening `release-gates.json`.
 
 ### R0 — Baseline integrity and regression repair
 

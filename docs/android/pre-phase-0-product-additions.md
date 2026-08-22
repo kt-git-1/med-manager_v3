@@ -1,6 +1,6 @@
 # Pre-Phase 0 product additions
 
-**Status:** API deployed and schema verified on Staging; Android commit/DebugView cross-role verification pending
+**Status:** implementation and Staging archive/history E2E complete; final Analytics Console acceptance pending
 **Branches:** API/iOS `staging`; Android `android-dev`
 **Authority:** current iOS Staging `AnalyticsService.swift`, API schema/routes/tests, then this contract
 
@@ -57,11 +57,16 @@ Permanent patient/account deletion remains a separate destructive operation and 
 - Staging DebugView confirms the three parity events and the privacy exclusion list.
 - Only after these checks pass does the Play publication Phase 0 roadmap resume.
 
-## 2026-08-22 verification checkpoint
+## 2026-08-23 verification checkpoint
 
 - `staging@470e2a2` contains the API, migration and iOS deletion-copy changes.
 - `GET /api/health` returned HTTP 200 from the canonical Staging host.
 - A non-existent medication lookup returned the expected HTTP 404 through the deployed Prisma medication query. This proves the deployed runtime can query the additive `archivedAt` schema instead of failing on a missing column.
 - API typecheck, lint, formatting and 326 Vitest tests passed locally.
 - Android Staging/Production JVM suites, Staging lint/build and 53 API 35 Compose tests passed locally.
-- Authenticated archive/history behavior and Firebase DebugView remain the final live checks.
+- `android-dev@2a716ed08fcc` contains Android Analytics parity, medication archive/history support and the history-retention deletion copy.
+- Authenticated Staging E2E confirmed that an archived PRN medication disappears from active medication/Today surfaces while Patient and Caregiver histories retain its medication snapshot, recorded time and recorder type.
+- A canonical Staging Flavor run confirmed collection disabled before consent and after refusal; after consent it uploaded only allowlisted `screen_viewed` and `app_mode_selected` parameters, and refusal suppressed later custom events.
+- Final Analytics acceptance has two observation tasks: exercise the three parity additions (`core_action_failed`, `patient_link_code_share_tapped`, `notification_permission_result`) in DebugView with synthetic data, then complete RG-001 by inspecting Android-only safe fixed-enum rows in a temporary Firebase Explore and removing the Explore afterward. These are Console verification gates, not missing client implementation.
+
+The current execution order after this checkpoint is maintained in `play-first-release-roadmap.md`.
