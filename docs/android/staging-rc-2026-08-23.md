@@ -6,6 +6,7 @@
 - iOS/API authority: `origin/staging@e9ec0d3c6b10`
 - Published Production reference: `origin/main@432b34c064d7`
 - Rebaseline merge checkpoint: `b75dedf`
+- Phase 1 implementation RC: `9ae1fc0`
 - Public version remains `1.0.0` / `versionCode=1`
 - No Play Console, Production deploy, signing-key or real-user operation is authorized by this record.
 

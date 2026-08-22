@@ -4,7 +4,7 @@
 
 **公開バージョン:** `1.0.0` / `versionCode=1`
 
-**Android開発:** `android-dev@2a716ed08fcc`
+**Android開発:** Phase 1 implementation RC `android-dev@9ae1fc0`
 
 **現行iOS/API参照:** `staging@e9ec0d3c6b10`
 
