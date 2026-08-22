@@ -7,7 +7,7 @@ This directory is the source of truth for the Android port. Android work is isol
 - Current iOS/API release reference: `staging@e9ec0d3c6b10`; published Production: `main@432b34c064d7`
 - Android Phase 0 source: rebaselined through merge `b75dedf`; Phase 1 implementation RC `9ae1fc0`; machine-readable release-gate checkpoint: current implementation checkpoint: C124
 - Roadmap update date: 2026-08-23
-- Current action: finish the Phase 1 Staging RC regression and Analytics acceptance in `play-first-release-roadmap.md`. Store-listing assets remain provisional until the final UI is frozen.
+- Current action: Phase 0/1 are complete; proceed to the owner-controlled Play Organization/signing prerequisites in Phase 2. Store-listing assets remain provisional until the final UI is frozen.
 
 ## Authority order
 

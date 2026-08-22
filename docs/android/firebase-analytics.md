@@ -140,7 +140,7 @@ Create `docs/android/evidence/h07-YYYYMMDD/README.md` and record:
 
 Only after all rows pass may `XP-004` become `VERIFIED`. DebugView alone does not close Realtime/Events/Explore, and emulator-only evidence does not close the physical-device portion of Gate I.
 
-The 2026-08-23 Phase 1 run completed the fresh consent control, three-event DebugView parameter inspection and Android-only processed Explore inspection. Its redacted evidence is `evidence/h07-20260823/README.md`. The temporary Explore still requires immediate owner confirmation before deletion, so `RG-001` and `XP-004` intentionally remain open until cleanup is recorded.
+The 2026-08-23 Phase 1 run completed the fresh consent control, three-event DebugView parameter inspection and Android-only processed Explore inspection. After explicit owner approval, the temporary Explore was deleted and confirmed absent from the exploration list. Its redacted evidence is `evidence/h07-20260823/README.md`; `RG-001` and `XP-004` are verified.
 
 ## 8. Official references
 

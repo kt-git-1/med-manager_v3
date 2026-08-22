@@ -78,7 +78,7 @@ Complete [the pre-Phase 0 contract](./pre-phase-0-product-additions.md) before r
 
 This phase is additive and backward compatible. It does not change the pinned published UI baseline or authorize Production/Play operations.
 
-Implementation and Staging archive/history E2E are complete. Phase 0 merged and audited the complete `staging@e9ec0d3c6b10` source at merge checkpoint `b75dedf`; details are in [the 2026-08-23 Staging RC record](./staging-rc-2026-08-23.md). Final Analytics acceptance still requires synthetic DebugView observation of the three parity additions and the owner-controlled Explore check tracked as RG-001. The current Phase 0-to-publication sequence is [Android Play 初回公開ロードマップ](./play-first-release-roadmap.md); it supersedes the chronological checkpoint narrative below for execution order without weakening `release-gates.json`.
+Implementation and Staging archive/history E2E are complete. Phase 0 merged and audited the complete `staging@e9ec0d3c6b10` source at merge checkpoint `b75dedf`; details are in [the 2026-08-23 Staging RC record](./staging-rc-2026-08-23.md). Phase 1 also completed the synthetic DebugView additions, Android-only fixed-enum Explore inspection and approved temporary-Explore deletion, closing RG-001. The current Phase 0-to-publication sequence is [Android Play 初回公開ロードマップ](./play-first-release-roadmap.md); it supersedes the chronological checkpoint narrative below for execution order without weakening `release-gates.json`.
 
 ### R0 — Baseline integrity and regression repair
 

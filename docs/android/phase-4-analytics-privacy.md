@@ -18,4 +18,4 @@ Automated coverage proves default-off behavior, explicit enable, disable/reset, 
 
 The production-package Android Firebase app is registered and the four values are held only in GitHub Actions secrets or supplied ephemerally for local verification. C76 passed the physical consent-off/on/reset boundary, safe fixed-enum transport, both-role shared state, DebugView parameter inspection and Realtime aggregation without recording identity or health data. The redacted result is `docs/android/evidence/h07-20260817/README.md`.
 
-Processed Events and the temporary privacy-reviewed Explore remain pending after aggregation delay. `XP-004` therefore remains `PARTIAL`; DebugView/Realtime evidence alone is not promoted to complete Analytics release acceptance.
+Processed Events passed in C80. The 2026-08-23 acceptance then verified Android-only fixed-enum rows in a privacy-reviewed Explore and removed the temporary Explore under explicit owner approval. `RG-001` and `XP-004` are verified.

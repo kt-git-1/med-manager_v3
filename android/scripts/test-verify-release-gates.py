@@ -45,8 +45,13 @@ def create_fixture(root: Path) -> dict[str, Path]:
         "| ID | Requirement | Android status | Missing |",
         "|---|---|---|---|",
     ]
-    for requirement in manifest["partialRequirementIds"]:
-        requirement_lines.append(f"| {requirement} | Fixture | PARTIAL | External |")
+    partial_requirements = set(manifest["partialRequirementIds"])
+    all_requirements = sorted(
+        {requirement for gate in manifest["gates"] for requirement in gate["requirements"]}
+    )
+    for requirement in all_requirements:
+        status = "PARTIAL" if requirement in partial_requirements else "VERIFIED"
+        requirement_lines.append(f"| {requirement} | Fixture | {status} | External |")
     write(requirements_path, "\n".join(requirement_lines) + "\n")
 
     prerequisites = sorted(
@@ -112,10 +117,10 @@ with tempfile.TemporaryDirectory(prefix="release-gate-valid-") as directory:
     paths = create_fixture(root)
     summary = verify(root, paths)
     assert summary.gates == 10
-    assert summary.ready == 3
+    assert summary.ready == 2
     assert summary.blocked == 7
-    assert summary.verified == 0
-    assert summary.partial_requirements == 6
+    assert summary.verified == 1
+    assert summary.partial_requirements == 5
 
 
 rejected("schema", lambda _root, paths: edit_manifest(paths, lambda value: value.update(schemaVersion=2)))
@@ -185,7 +190,7 @@ rejected(
         paths["backlog"],
         paths["backlog"]
         .read_text(encoding="utf-8")
-        .replace("- [ ] RG-001", "- [x] RG-001"),
+        .replace("- [x] RG-001", "- [ ] RG-001"),
     ),
 )
 rejected(
@@ -203,7 +208,7 @@ rejected(
 rejected(
     "requirement-coverage",
     lambda _root, paths: edit_manifest(
-        paths, lambda value: value["gates"][0].update(requirements=["XP-005"])
+        paths, lambda value: value["gates"][7].update(requirements=["XP-008"])
     ),
 )
 rejected(

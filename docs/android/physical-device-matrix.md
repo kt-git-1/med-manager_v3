@@ -1,6 +1,6 @@
 # Android physical-device verification matrix
 
-**Status:** procedure complete; authenticated role/appearance/lifecycle/permission, exact local reminder lifecycle, legal-link browser return, linking-code copy/chooser, read-only cached/cold offline recovery, explicit Caregiver/Patient role isolation, privacy-first Analytics through processed Events and automated navigation/tutorial accessibility semantics recorded on one API 35 non-Google OEM Debug device; local PRN/inventory idempotency is automated, while production migration, Analytics Explore, signed Play, FCM, destructive/mutation-interruption paths, full spoken TalkBack and remaining device classes are pending
+**Status:** procedure complete; authenticated role/appearance/lifecycle/permission, exact local reminder lifecycle, legal-link browser return, linking-code copy/chooser, read-only cached/cold offline recovery, explicit Caregiver/Patient role isolation, privacy-first Analytics through approved Android-only Explore cleanup and automated navigation/tutorial accessibility semantics are recorded; local PRN/inventory idempotency is automated, while production migration, signed Play, FCM, destructive/mutation-interruption paths, full spoken TalkBack and remaining device classes are pending
 **Package:** `com.afterlifearchive.medmanager`
 **Owner gate:** V1 / Gate I / `XP-005`, `XP-006`, `XP-008`, `XP-010`
 

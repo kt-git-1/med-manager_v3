@@ -67,6 +67,6 @@ Permanent patient/account deletion remains a separate destructive operation and 
 - `android-dev@2a716ed08fcc` contains Android Analytics parity, medication archive/history support and the history-retention deletion copy.
 - Authenticated Staging E2E confirmed that an archived PRN medication disappears from active medication/Today surfaces while Patient and Caregiver histories retain its medication snapshot, recorded time and recorder type.
 - A canonical Staging Flavor run confirmed collection disabled before consent and after refusal; after consent it uploaded only allowlisted `screen_viewed` and `app_mode_selected` parameters, and refusal suppressed later custom events.
-- Final Analytics acceptance has two observation tasks: exercise the three parity additions (`core_action_failed`, `patient_link_code_share_tapped`, `notification_permission_result`) in DebugView with synthetic data, then complete RG-001 by inspecting Android-only safe fixed-enum rows in a temporary Firebase Explore and removing the Explore afterward. These are Console verification gates, not missing client implementation.
+- Final Analytics acceptance completed both observation tasks on 2026-08-23: the three parity additions (`core_action_failed`, `patient_link_code_share_tapped`, `notification_permission_result`) were expanded in DebugView using synthetic fixed enums, then RG-001 verified Android-only safe rows and removed the temporary Explore under explicit owner approval.
 
 The current execution order after this checkpoint is maintained in `play-first-release-roadmap.md`.

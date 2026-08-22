@@ -40,7 +40,7 @@ No custom parameter contained a user/patient/caregiver identifier, name, email, 
 - The Explore uses only `イベント名` as the row, `イベント数` as the metric and `プラットフォーム` exactly matching `Android` as the filter.
 - The 28-day processed window ending 2026-08-22 showed 38 Android events and fixed event-name rows, including `app_clear_data`, `app_mode_selected`, `caregiver_tab_viewed`, `patient_tab_viewed`, `screen_viewed`, `tutorial_started` and `tutorial_skipped`.
 - Newly emitted parity events are accepted from DebugView rather than misreported as immediately processed Explore rows; aggregated reporting is asynchronous.
-- Temporary Explore removal is intentionally pending the release owner's immediate deletion confirmation. Until it is removed, `RG-001` and `XP-004` remain open.
+- The release owner explicitly approved deletion. The temporary Explore was deleted, the confirmation dialog closed, and the exploration list contained neither its row nor its name afterward. `RG-001` and `XP-004` are complete.
 
 ## Automated regression paired with this acceptance
 
@@ -48,4 +48,3 @@ No custom parameter contained a user/patient/caregiver identifier, name, email, 
 - Android: Staging/Production Debug/Release JVM tests, Staging Debug and Production Release lint/build passed.
 - Compose UI: API 35 four-shard run passed 299/299 with zero failures, errors or skips.
 - Release surfaces: APK/AAB content, min/target SDK, 16 KB alignment, credential/privacy policy, universal install surface and three representative device split surfaces passed.
-
