@@ -4,13 +4,13 @@
 
 **公開バージョン:** `1.0.0` / `versionCode=1`
 
-**Android開発:** Phase 1 implementation RC `android-dev@9ae1fc0`
+**Android開発:** Phase 1 implementation RC `9ae1fc0`; latest Staging compatibility test `6742990`
 
-**現行iOS/API参照:** `staging@e9ec0d3c6b10`
+**現行iOS/API参照:** `staging@94038748ce0a`
 
 **現行Production:** `main@432b34c064d7`
 
-**状態:** Phase 0・1完了。Staging RCとAnalytics RG-001は凍結済み。Play Console／Production操作は未開始。
+**状態:** Phase 0・1完了。最新Staging API追従テストも完了。Play Console／Production操作は未開始。
 
 この文書は、Androidを現在のStaging仕様へ再固定してからPlayストアへ初回公開するまでの実行順を示す。詳細な操作と安全条件は `play-release-runbook.md`、残存ゲートは `release-gates.json` を正とする。
 

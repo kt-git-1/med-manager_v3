@@ -1,8 +1,8 @@
 # Android Port Master Development Plan
 
-**Status:** product implementation and Phase 0 Staging rebaseline complete; Phase 1 RC verification in progress; physical/release gates open
+**Status:** product implementation and Phase 0/1 Staging RC complete; latest Staging API follow-up verified; physical/release gates open
 **Development branch:** `android-dev`
-**Reference:** current iOS/API Staging `e9ec0d3c6b10`; published Production remains `main@432b34c064d7`
+**Reference:** current iOS/API Staging `94038748ce0a`; published Production remains `main@432b34c064d7`
 **Stack:** Kotlin, Jetpack Compose, Material 3
 
 ## 1. Outcome
@@ -78,7 +78,7 @@ Complete [the pre-Phase 0 contract](./pre-phase-0-product-additions.md) before r
 
 This phase is additive and backward compatible. It does not change the pinned published UI baseline or authorize Production/Play operations.
 
-Implementation and Staging archive/history E2E are complete. Phase 0 merged and audited the complete `staging@e9ec0d3c6b10` source at merge checkpoint `b75dedf`; details are in [the 2026-08-23 Staging RC record](./staging-rc-2026-08-23.md). Phase 1 also completed the synthetic DebugView additions, Android-only fixed-enum Explore inspection and approved temporary-Explore deletion, closing RG-001. The current Phase 0-to-publication sequence is [Android Play 初回公開ロードマップ](./play-first-release-roadmap.md); it supersedes the chronological checkpoint narrative below for execution order without weakening `release-gates.json`.
+Implementation and Staging archive/history E2E are complete. Phase 0 merged and audited `staging@e9ec0d3c6b10` at `b75dedf`; Phase 1 completed the Analytics acceptance and closed RG-001. The subsequent one-commit API correction was merged at `8a71df3` and verified through both Android history roles at `6742990`; see [the Staging API follow-up](./staging-followup-2026-08-23.md). The current Phase 0-to-publication sequence is [Android Play 初回公開ロードマップ](./play-first-release-roadmap.md); it supersedes the chronological checkpoint narrative below without weakening `release-gates.json`.
 
 ### R0 — Baseline integrity and regression repair
 

@@ -4,7 +4,7 @@ This directory is the source of truth for the Android port. Android work is isol
 
 ## Current baseline
 
-- Current iOS/API release reference: `staging@e9ec0d3c6b10`; published Production: `main@432b34c064d7`
+- Current iOS/API release reference: `staging@94038748ce0a`; published Production: `main@432b34c064d7`
 - Android Phase 0 source: rebaselined through merge `b75dedf`; Phase 1 implementation RC `9ae1fc0`; machine-readable release-gate checkpoint: current implementation checkpoint: C124
 - Roadmap update date: 2026-08-23
 - Current action: Phase 0/1 are complete; proceed to the owner-controlled Play Organization/signing prerequisites in Phase 2. Store-listing assets remain provisional until the final UI is frozen.
@@ -39,6 +39,7 @@ An Android shortcut never overrides a backend rule or an intentional iOS product
 - [Physical-device verification matrix](./physical-device-matrix.md)
 - [Staging QA report (2026-08-22)](./staging-qa-2026-08-22.md)
 - [Staging RC rebaseline (2026-08-23)](./staging-rc-2026-08-23.md)
+- [Post-Phase 1 Staging API follow-up (2026-08-23)](./staging-followup-2026-08-23.md)
 - [Play release runbook](./play-release-runbook.md)
 - [Play developer account onboarding](./play-developer-account-onboarding.md)
 - [Canonical residual release gates](./release-gates.json)

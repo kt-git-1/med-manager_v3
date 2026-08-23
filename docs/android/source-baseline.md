@@ -2,10 +2,10 @@
 
 **Baseline date:** 2026-08-23
 **Development branch:** `android-dev`
-**Reference Staging commit:** `e9ec0d3c6b10` (`chore(ios): prepare 1.0.7 build 54`)
+**Reference Staging commit:** `94038748ce0a` (`fix(api): preserve early dose history after medication archive`)
 **Reference Production commit:** `432b34c` (`chore(ios): prepare production TestFlight build 51`), published iOS 1.0.6
 **Previous reference:** `3e52fb2f5367052bae8e664eee2c1043de76c377` (`Bump iOS build to 40 for production TestFlight`)
-**Baseline merge checkpoint:** Phase 0 merge commit `b75dedf` containing `staging@e9ec0d3`
+**Baseline merge checkpoint:** Phase 0 merge `b75dedf` plus post-Phase 1 API follow-up merge `8a71df3`, containing `staging@9403874`
 
 This file pins the source material used to reproduce the current product on Android. A later change on `main` does not silently change the Android contract. It starts a new rebaseline procedure.
 
@@ -115,6 +115,10 @@ C64 enumerated all 69 parity rows against current sources, tests and release ver
 
 The 2026-08-23 rebaseline merged the complete Staging history into `android-dev` with no conflict. It adds the privacy-safe Analytics parity events, Android FCM registration, atomic partial-dose progress, dosing-period exclusion, archive-bounded scheduled/PRN history retention, guided caregiver setup and grouped caregiver PRN history. Android already implemented the corresponding client/UI behavior; the audit found and corrected one stale API test that sent the obsolete `platform=web` while asserting Android acceptance. The full mapping and current evidence are recorded in `staging-rc-2026-08-23.md`.
 
+### Post-Phase 1 Staging API follow-up: `e9ec0d3..9403874`
+
+The one-commit delta preserves recorded doses whose same-day scheduled time falls after the medication archive timestamp, without restoring unrecorded schedules. It changed no Android wire shape or UI. `android-dev` merged it at `8a71df3`; Android commit `6742990` adds Patient/Caregiver history-contract coverage. API 352/352, all Android JVM/lint/build variants and 43/43 API 35 History Compose tests pass. See `staging-followup-2026-08-23.md`.
+
 ## 5. Rebaseline procedure
 
 Run this procedure whenever API or iOS behavior changes on the currently pinned `staging` source. Production facts continue to come from `main`.
@@ -132,7 +136,7 @@ Run this procedure whenever API or iOS behavior changes on the currently pinned 
 
 ## 6. Baseline acceptance checklist
 
-- [x] `android-dev` contains current `staging@e9ec0d3` through the Phase 0 merge checkpoint `b75dedf` and therefore also contains published `main@432b34c`.
+- [x] `android-dev` contains current `staging@9403874` through Phase 0 merge `b75dedf` and follow-up merge `8a71df3`, and therefore also contains published `main@432b34c`.
 - [x] The main delta was reviewed across API, iOS, and tests.
 - [x] Runtime/spec conflicts are explicitly identified.
 - [x] All affected Android contract tests have been updated for actual-time/late-dose behavior, slot ordering, medication supply calculation, action-first inventory editing and patient-first push routing.
