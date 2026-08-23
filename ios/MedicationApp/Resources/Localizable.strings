@@ -554,6 +554,9 @@
 "caregiver.today.empty.step.schedule" = "朝・昼・夜・眠前などの時間を設定";
 "caregiver.today.empty.step.record" = "今日画面で服薬状況を確認・記録";
 "caregiver.today.empty.action" = "薬を登録する";
+"caregiver.today.noSchedule.title" = "今日の服薬予定はありません";
+"caregiver.today.noSchedule.message" = "登録済みの薬はあります。今日の服用予定はないため、次の服用日からこの画面に表示されます。";
+"caregiver.today.noSchedule.action" = "登録した薬を確認する";
 "caregiver.today.title" = "今日の服薬";
 "caregiver.today.progress.format" = "%d/%d回分 記録済み";
 "caregiver.today.pending.count" = "未記録 %d";

@@ -186,6 +186,113 @@ final class TodayCaregiverFlowTests: XCTestCase {
         XCTAssertEqual(state, .taken)
         XCTAssertEqual(state.iconName, "checkmark")
     }
+
+    func testRegisteredMedicationIsDistinguishedFromNoMedicationWhenTodayHasNoSchedule() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [CaregiverTodayURLProtocol.self]
+        let urlSession = URLSession(configuration: configuration)
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        let sessionStore = SessionStore(
+            userDefaults: defaults,
+            secureStorage: CaregiverTodayTestSecureStorage()
+        )
+        sessionStore.setMode(.caregiver)
+        sessionStore.saveCaregiverSession(
+            SupabaseSession(
+                accessToken: "caregiver-token",
+                refreshToken: "refresh-token",
+                expiresIn: 3_600
+            )
+        )
+        sessionStore.setCurrentPatientId("patient-1")
+        let apiClient = APIClient(
+            baseURL: try XCTUnwrap(URL(string: "http://localhost:3000")),
+            sessionStore: sessionStore,
+            urlSession: urlSession
+        )
+
+        CaregiverTodayURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["content-type": "application/json"]
+            )!
+            switch request.url?.path {
+            case "/api/medications":
+                return (
+                    response,
+                    Data(
+                        #"{"data":[{"id":"med-1","patientId":"patient-1","name":"朝の薬","dosageText":"5 mg","doseCountPerIntake":1,"dosageStrengthValue":5,"dosageStrengthUnit":"mg","notes":null,"isPrn":false,"prnInstructions":null,"startDate":"2026-08-23T00:00:00Z","endDate":null,"inventoryCount":7,"inventoryUnit":"錠","inventoryEnabled":false,"inventoryQuantity":7,"inventoryOut":false,"isActive":true,"isArchived":false,"nextScheduledAt":"2026-08-24T08:00:00Z","regimenTimes":["morning"],"regimenDaysOfWeek":[]}] }"#.utf8
+                    )
+                )
+            case "/api/patients/patient-1/inventory":
+                return (response, Data(#"{"data":{"patientId":"patient-1","medications":[]}}"#.utf8))
+            default:
+                return (response, Data(#"{"data":[]}"#.utf8))
+            }
+        }
+
+        let viewModel = CaregiverTodayViewModel(apiClient: apiClient)
+        await viewModel.refresh()
+
+        XCTAssertTrue(viewModel.items.isEmpty)
+        XCTAssertTrue(viewModel.prnMedications.isEmpty)
+        XCTAssertTrue(viewModel.hasRegisteredMedications)
+        XCTAssertNil(viewModel.errorMessage)
+    }
+
+    func testRefreshRequestedDuringInitialLoadRunsAgain() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [CaregiverTodayURLProtocol.self]
+        let urlSession = URLSession(configuration: configuration)
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        let sessionStore = SessionStore(
+            userDefaults: defaults,
+            secureStorage: CaregiverTodayTestSecureStorage()
+        )
+        sessionStore.setMode(.caregiver)
+        sessionStore.saveCaregiverSession(
+            SupabaseSession(
+                accessToken: "caregiver-token",
+                refreshToken: "refresh-token",
+                expiresIn: 3_600
+            )
+        )
+        sessionStore.setCurrentPatientId("patient-1")
+        let apiClient = APIClient(
+            baseURL: try XCTUnwrap(URL(string: "http://localhost:3000")),
+            sessionStore: sessionStore,
+            urlSession: urlSession
+        )
+        let todayRequestCount = LockedCounter()
+
+        CaregiverTodayURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["content-type": "application/json"]
+            )!
+            if request.url?.path == "/api/patients/patient-1/today" {
+                let count = todayRequestCount.increment()
+                if count == 1 {
+                    Thread.sleep(forTimeInterval: 0.05)
+                }
+            }
+            if request.url?.path == "/api/patients/patient-1/inventory" {
+                return (response, Data(#"{"data":{"patientId":"patient-1","medications":[]}}"#.utf8))
+            }
+            return (response, Data(#"{"data":[]}"#.utf8))
+        }
+
+        let viewModel = CaregiverTodayViewModel(apiClient: apiClient)
+        viewModel.load(showLoading: true)
+        await viewModel.refresh()
+
+        XCTAssertEqual(todayRequestCount.value, 2)
+        XCTAssertNil(viewModel.errorMessage)
+    }
 }
 
 private final class CaregiverTodayURLProtocol: URLProtocol {
@@ -218,4 +325,20 @@ private final class CaregiverTodayTestSecureStorage: SessionSecureStorage {
     func string(forKey key: String) -> String? { values[key] }
     func setString(_ value: String, forKey key: String) { values[key] = value }
     func removeString(forKey key: String) { values.removeValue(forKey: key) }
+}
+
+private final class LockedCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage = 0
+
+    var value: Int {
+        lock.withLock { storage }
+    }
+
+    func increment() -> Int {
+        lock.withLock {
+            storage += 1
+            return storage
+        }
+    }
 }

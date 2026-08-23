@@ -155,13 +155,20 @@ struct CaregiverTodayView: View {
                                 headerView
                             }
                             todayHeader
-                            emptyTodayCard
+                            if viewModel.hasRegisteredMedications {
+                                noScheduleTodayCard
+                            } else {
+                                emptyTodayCard
+                            }
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 16)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                     .safeAreaPadding(.bottom, 120)
+                    .refreshable {
+                        await viewModel.refresh()
+                    }
                 }
             } else {
                 CaregiverScreenBackground {
@@ -198,7 +205,7 @@ struct CaregiverTodayView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                         .safeAreaPadding(.bottom, 120)
                         .refreshable {
-                            viewModel.load(showLoading: false)
+                            await viewModel.refresh()
                         }
                         .onChange(of: viewModel.scrollToTopRequest) { previousValue, newValue in
                             guard newValue > previousValue else { return }
@@ -272,6 +279,44 @@ struct CaregiverTodayView: View {
             }
         }
         .accessibilityIdentifier("CaregiverTodayEmptyCard")
+    }
+
+    private var noScheduleTodayCard: some View {
+        CaregiverCard(accent: CaregiverUI.teal) {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .top, spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(CaregiverUI.teal.opacity(0.13))
+                            .frame(width: 58, height: 58)
+                        Image(systemName: "calendar.badge.checkmark")
+                            .font(.title.weight(.bold))
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(CaregiverUI.teal)
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(NSLocalizedString("caregiver.today.noSchedule.title", comment: "No schedule today title"))
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(NSLocalizedString("caregiver.today.noSchedule.message", comment: "No schedule today message"))
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                CaregiverPrimaryButton(
+                    title: NSLocalizedString("caregiver.today.noSchedule.action", comment: "Open registered medications action"),
+                    systemImage: "pills.fill"
+                ) {
+                    onOpenMedications()
+                }
+            }
+        }
+        .accessibilityIdentifier("CaregiverTodayNoScheduleCard")
     }
 
     private var centeredLoadingState: some View {

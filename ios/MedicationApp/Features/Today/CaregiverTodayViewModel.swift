@@ -5,6 +5,7 @@ import SwiftUI
 final class CaregiverTodayViewModel: ObservableObject {
     @Published var items: [ScheduleDoseDTO] = []
     @Published var prnMedications: [MedicationDTO] = []
+    @Published private(set) var hasRegisteredMedications = false
     @Published var isLoading = false
     @Published var isUpdating = false
     @Published var errorMessage: String?
@@ -17,6 +18,8 @@ final class CaregiverTodayViewModel: ObservableObject {
     private let dateKeyFormatter: DateFormatter
     private let calendar: Calendar
     private let onLowStockChange: (Bool) -> Void
+    private var refreshTask: Task<Void, Never>?
+    private var refreshRequested = false
     var toastPresenter: ToastPresenter?
 
     init(apiClient: APIClient, onLowStockChange: @escaping (Bool) -> Void = { _ in }) {
@@ -41,23 +44,48 @@ final class CaregiverTodayViewModel: ObservableObject {
     }
 
     func load(showLoading: Bool) {
-        guard !isLoading else { return }
+        guard refreshTask == nil else {
+            refreshRequested = true
+            return
+        }
+        refreshRequested = false
+        refreshTask = Task { [weak self] in
+            await self?.runRefreshLoop(showLoading: showLoading)
+        }
+    }
+
+    func refresh() async {
+        load(showLoading: false)
+        await refreshTask?.value
+    }
+
+    private func runRefreshLoop(showLoading: Bool) async {
         isLoading = showLoading
         isUpdating = !showLoading
         errorMessage = nil
-        Task {
-            defer {
-                isLoading = false
-                isUpdating = false
-            }
+        defer {
+            isLoading = false
+            isUpdating = false
+            refreshTask = nil
+        }
+
+        while true {
             do {
+                try Task.checkCancellation()
                 try await refreshData()
+                errorMessage = nil
+            } catch is CancellationError {
+                return
             } catch {
                 items = []
                 prnMedications = []
+                hasRegisteredMedications = false
                 outOfStockMedicationIds = []
                 errorMessage = NSLocalizedString("caregiver.dataUnavailable.message", comment: "Caregiver data unavailable message")
+                return
             }
+            guard refreshRequested else { return }
+            refreshRequested = false
         }
     }
 
@@ -66,8 +94,12 @@ final class CaregiverTodayViewModel: ObservableObject {
     }
 
     func reset() {
+        refreshTask?.cancel()
+        refreshTask = nil
+        refreshRequested = false
         items = []
         prnMedications = []
+        hasRegisteredMedications = false
         outOfStockMedicationIds = []
         isLoading = false
         isUpdating = false
@@ -268,6 +300,7 @@ final class CaregiverTodayViewModel: ObservableObject {
         let (doses, medications, inventory) = try await (dosesTask, medicationsTask, inventoryTask)
 
         items = doses.sorted(by: sortDose)
+        hasRegisteredMedications = medications.contains { $0.isActive && !$0.isArchived }
         prnMedications = medications
             .filter { $0.isPrn && $0.isActive && !$0.isArchived }
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
