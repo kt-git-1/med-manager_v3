@@ -103,6 +103,10 @@ struct CaregiverTodayView: View {
                     viewModel.reset()
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: .medicationUpdated)) { _ in
+                guard loadDataOnAppear, sessionStore.currentPatientId != nil else { return }
+                viewModel.load(showLoading: viewModel.items.isEmpty && viewModel.prnMedications.isEmpty)
+            }
             .accessibilityIdentifier("CaregiverTodayView")
             .alert(
                 NSLocalizedString("caregiver.today.confirm.slot.title", comment: "Confirm slot record title"),

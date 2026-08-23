@@ -386,6 +386,9 @@ struct MedicationListView: View {
         .onReceive(NotificationCenter.default.publisher(for: .presetTimesUpdated)) { _ in
             viewModel.load(showLoading: viewModel.items.isEmpty)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .medicationUpdated)) { _ in
+            viewModel.load(showLoading: viewModel.items.isEmpty)
+        }
         .sheet(isPresented: $showingCreate) {
             NavigationStack {
                 MedicationFormView(sessionStore: sessionStore, onSuccess: showToast)
