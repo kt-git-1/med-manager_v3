@@ -1,5 +1,6 @@
 package com.afterlifearchive.medmanager.data.patient
 
+import com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryApi
 import com.afterlifearchive.medmanager.data.network.ApiClient
 import com.afterlifearchive.medmanager.data.network.HttpRequest
 import com.afterlifearchive.medmanager.data.network.HttpResponse
@@ -13,6 +14,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.json.JSONObject
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 class PatientApiContractTest {
@@ -253,6 +255,28 @@ class PatientApiContractTest {
         assertEquals("med-1", api.historyDay("2026-07-13").doses.single().medicationId)
     }
 
+    @Test
+    fun recordedDoseReturnedAfterSameDayArchiveRemainsVisibleToBothRoles() = runTest {
+        val patientTransport = ContractTransport(HttpResponse(200, ARCHIVED_SAME_DAY_HISTORY_FIXTURE))
+        val caregiverTransport = ContractTransport(HttpResponse(200, ARCHIVED_SAME_DAY_HISTORY_FIXTURE))
+        val patientApi = PatientApi(ApiClient("https://example.test/", { "patient-token" }, transport = patientTransport))
+        val caregiverApi = CaregiverHistoryApi(ApiClient("https://example.test/", { "caregiver-token" }, transport = caregiverTransport))
+
+        val patientDose = patientApi.historyDay("2026-02-03").doses.single()
+        val caregiverDose = caregiverApi.day("patient-1", LocalDate.parse("2026-02-03")).doses.single()
+
+        listOf(patientDose, caregiverDose).forEach { dose ->
+            assertEquals("archived-medication", dose.medicationId)
+            assertEquals("削除済みの昼薬", dose.medicationName)
+            assertEquals(Instant.parse("2026-02-03T04:00:00Z"), dose.scheduledAt)
+            assertEquals(Instant.parse("2026-02-03T04:05:00Z"), dose.takenAt)
+            assertEquals(DoseStatus.TAKEN, dose.status)
+            assertEquals(RecordedByType.PATIENT, dose.recordedByType)
+        }
+        assertTrue(patientTransport.requests.single().url.endsWith("/api/patient/history/day?date=2026-02-03"))
+        assertTrue(caregiverTransport.requests.single().url.endsWith("/api/patients/patient-1/history/day?date=2026-02-03"))
+    }
+
     private companion object {
         const val TODAY_FIXTURE = """{"data":[{"key":"dose-1","patientId":"patient-1","medicationId":"medication-1","scheduledAt":"2026-07-13T03:15:00Z","effectiveStatus":"missed","recordedByType":"caregiver","medicationSnapshot":{"name":"血圧のお薬","dosageText":"1回1.5錠","doseCountPerIntake":1.5,"dosageStrengthValue":5.0,"dosageStrengthUnit":"mg","notes":"食後"}}]}"""
         const val SLOT_TIMES_FIXTURE = """{"data":{"slotTimes":{"morning":"07:30","noon":"12:15","evening":"18:45","bedtime":"21:30"}}}"""
@@ -260,6 +284,7 @@ class PatientApiContractTest {
         const val BULK_FIXTURE = """{"updatedCount":2,"remainingCount":1,"insufficientCount":1,"totalPills":3.5,"medCount":3,"slotTime":"12:15","slotSummary":{"morning":"taken","noon":"pending","evening":"none","bedtime":"none"},"recordingGroupId":"group-1"}"""
         const val HISTORY_MONTH_FIXTURE = """{"year":2026,"month":7,"days":[{"date":"2026-07-13","slotSummary":{"morning":"taken","noon":"missed","evening":"pending","bedtime":"none"},"slotProgress":{"morning":{"scheduledCount":1,"takenCount":1,"pendingCount":0,"missedCount":0},"noon":{"scheduledCount":2,"takenCount":1,"pendingCount":0,"missedCount":1},"evening":{"scheduledCount":1,"takenCount":0,"pendingCount":1,"missedCount":0},"bedtime":{"scheduledCount":0,"takenCount":0,"pendingCount":0,"missedCount":0}}}],"prnCountByDay":{"2026-07-13":2}}"""
         const val HISTORY_DAY_FIXTURE = """{"date":"2026-07-13","doses":[{"medicationId":"med-1","medicationName":"血圧薬","dosageText":"1錠","doseCountPerIntake":1.0,"scheduledAt":"2026-07-13T03:15:00Z","takenAt":"2026-07-13T08:51:00Z","slot":"noon","effectiveStatus":"taken","recordedByType":"caregiver"}],"prnItems":[{"medicationId":"prn-1","medicationName":"頭痛薬","takenAt":"2026-07-13T05:00:00Z","quantityTaken":1.5,"actorType":"patient"}]}"""
+        const val ARCHIVED_SAME_DAY_HISTORY_FIXTURE = """{"date":"2026-02-03","doses":[{"medicationId":"archived-medication","medicationName":"削除済みの昼薬","dosageText":"1錠","doseCountPerIntake":1.0,"scheduledAt":"2026-02-03T04:00:00Z","takenAt":"2026-02-03T04:05:00Z","slot":"noon","effectiveStatus":"taken","recordedByType":"patient"}],"prnItems":[]}"""
     }
 }
 
