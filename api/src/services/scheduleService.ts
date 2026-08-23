@@ -289,7 +289,8 @@ export function generateSchedule({
   to,
   slotTimes,
   slotTimeTimeline,
-  includeArchivedHistory = false
+  includeArchivedHistory = false,
+  recordedDoseKeys
 }: {
   medications: MedicationRecord[];
   regimens: RegimenRecord[];
@@ -298,6 +299,7 @@ export function generateSchedule({
   slotTimes?: SlotTimeOverrides;
   slotTimeTimeline?: SlotTimeTimelineEntry[];
   includeArchivedHistory?: boolean;
+  recordedDoseKeys?: ReadonlySet<string>;
 }): ScheduleDose[] {
   const doses: ScheduleDose[] = [];
   const medicationMap = new Map(medications.map((medication) => [medication.id, medication]));
@@ -328,7 +330,11 @@ export function generateSchedule({
     const regimenEnd = regimen.endDate ? startOfLocalDay(regimen.endDate, tz) : null;
     const medicationEnd = medication.endDate ? startOfLocalDay(medication.endDate, tz) : null;
     const periodEnd = earlierOptionalDate(regimenEnd, medicationEnd);
-    const effectiveEnd = earlierOptionalDate(periodEnd, medication.archivedAt);
+    const archivedScheduleEnd =
+      includeArchivedHistory && medication.archivedAt
+        ? nextLocalDay(startOfLocalDay(medication.archivedAt, tz), tz)
+        : medication.archivedAt;
+    const effectiveEnd = earlierOptionalDate(periodEnd, archivedScheduleEnd);
     const window = intersectWindow(normalizedFrom, normalizedTo, effectiveStart, effectiveEnd);
     if (!window) {
       continue;
@@ -361,11 +367,26 @@ export function generateSchedule({
             },
             tz
           );
-          if (scheduledAtDate >= window.start && scheduledAtDate < window.end) {
+          const scheduledAt = scheduledAtDate.toISOString();
+          const isRecordedAfterArchive =
+            medication.isArchived &&
+            medication.archivedAt &&
+            scheduledAtDate >= medication.archivedAt &&
+            recordedDoseKeys?.has(`${regimen.patientId}:${regimen.medicationId}:${scheduledAt}`);
+          const isInsideArchiveWindow =
+            !medication.isArchived ||
+            !medication.archivedAt ||
+            scheduledAtDate < medication.archivedAt ||
+            isRecordedAfterArchive;
+          if (
+            scheduledAtDate >= window.start &&
+            scheduledAtDate < window.end &&
+            isInsideArchiveWindow
+          ) {
             doses.push({
               patientId: regimen.patientId,
               medicationId: regimen.medicationId,
-              scheduledAt: scheduledAtDate.toISOString(),
+              scheduledAt,
               medicationSnapshot: buildMedicationSnapshot(medication)
             });
           }
@@ -573,18 +594,34 @@ export async function generateScheduleForPatientWithStatus({
   timeZone?: string;
   includeArchivedHistory?: boolean;
 }) {
-  const { listDoseRecordsByPatientRange } = await import("../repositories/doseRecordRepo");
-  const [doses, records] = await Promise.all([
-    generateScheduleForPatient({
-      patientId,
-      from,
-      to,
-      slotTimes,
-      slotTimeTimeline,
-      includeArchivedHistory
-    }),
+  const [{ prisma }, { listDoseRecordsByPatientRange }] = await Promise.all([
+    import("../repositories/prisma"),
+    import("../repositories/doseRecordRepo")
+  ]);
+  const [medications, regimens, records] = await Promise.all([
+    prisma.medication.findMany({ where: { patientId, isPrn: false } }),
+    prisma.regimen.findMany({ where: { patientId } }),
     listDoseRecordsByPatientRange({ patientId, from, to })
   ]);
+  const recordedDoseKeys = new Set(
+    records.map((record) =>
+      doseKey({
+        patientId: record.patientId,
+        medicationId: record.medicationId,
+        scheduledAt: record.scheduledAt.toISOString()
+      })
+    )
+  );
+  const doses = generateSchedule({
+    medications,
+    regimens,
+    from,
+    to,
+    slotTimes,
+    slotTimeTimeline,
+    includeArchivedHistory,
+    recordedDoseKeys
+  });
   return applyDoseStatuses(doses, records, now, { timeZone, slotTimes, slotTimeTimeline });
 }
 
