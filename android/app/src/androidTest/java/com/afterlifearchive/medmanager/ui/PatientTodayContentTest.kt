@@ -59,12 +59,12 @@ class PatientTodayContentTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun pullToRefreshInvokesPatientTodayReload() {
+    fun pullToRefreshInvokesPatientTodayReloadWhenTodayHasNoSchedule() {
         var refreshCalls = 0
         composeRule.setContent {
             MedicationAppTheme {
                 TodayContent(
-                    doses = listOf(dose("enough", DoseStatus.PENDING)),
+                    doses = emptyList(),
                     loading = false,
                     updatingKey = null,
                     error = null,

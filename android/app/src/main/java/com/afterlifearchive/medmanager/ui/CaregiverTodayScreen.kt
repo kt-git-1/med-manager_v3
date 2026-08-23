@@ -169,6 +169,7 @@ internal fun CaregiverTodayScreen(
                     patientName = selected.displayName,
                     slotTimes = selected.slotTimes,
                     doses = state.doses,
+                    hasScheduledMedications = state.hasScheduledMedications,
                     prnMedications = state.prnMedications,
                     outOfStockMedicationIds = state.outOfStockMedicationIds,
                     updatingDoseKey = state.updatingDoseKey,
@@ -308,6 +309,7 @@ private fun CaregiverTodayContent(
     patientName: String,
     slotTimes: CaregiverSlotTimes?,
     doses: List<PatientDose>,
+    hasScheduledMedications: Boolean,
     prnMedications: List<PatientMedication>,
     outOfStockMedicationIds: Set<String>,
     updatingDoseKey: String?,
@@ -362,7 +364,10 @@ private fun CaregiverTodayContent(
             }
         }
         if (doses.isEmpty() && prnCount == 0) {
-            item { CaregiverTodayEmpty(onOpenMedications) }
+            item {
+                if (hasScheduledMedications) CaregiverTodayNoSchedule()
+                else CaregiverTodayEmpty(onOpenMedications)
+            }
         } else {
             if (missedRows > 0) item {
                 TodayCard(colors.caregiverRed, Modifier.testTag("caregiver-today-missed-alert")) {
@@ -468,6 +473,29 @@ private fun CaregiverTodayContent(
             }
         }
         item { Spacer(Modifier.height(24.dp)) }
+    }
+}
+
+@Composable
+private fun CaregiverTodayNoSchedule() {
+    TodayCard(MaterialTheme.colorScheme.primary, Modifier.testTag("caregiver-today-no-schedule")) {
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            TodayIcon(Icons.Rounded.CalendarMonth, MaterialTheme.colorScheme.primary)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text(
+                    stringResource(R.string.caregiver_today_no_schedule_title),
+                    fontSize = 22.sp,
+                    lineHeight = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    stringResource(R.string.caregiver_today_no_schedule_message),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 16.sp,
+                    lineHeight = 22.sp,
+                )
+            }
+        }
     }
 }
 

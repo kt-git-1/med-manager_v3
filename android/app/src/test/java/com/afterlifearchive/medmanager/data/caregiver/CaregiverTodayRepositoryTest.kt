@@ -157,6 +157,7 @@ class CaregiverTodayRepositoryTest {
         repository.load("patient-1")
 
         assertEquals(listOf("pending", "missed", "taken"), repository.state.value.doses.map { it.key })
+        assertTrue(repository.state.value.hasScheduledMedications)
         assertEquals(listOf("A頓服", "Z頓服"), repository.state.value.prnMedications.map { it.name })
         assertEquals(setOf("pending"), repository.state.value.outOfStockMedicationIds)
         assertTrue(repository.state.value.hasLowStock)

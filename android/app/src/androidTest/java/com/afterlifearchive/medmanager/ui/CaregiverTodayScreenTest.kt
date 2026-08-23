@@ -21,6 +21,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.unit.Density
@@ -331,6 +333,34 @@ class CaregiverTodayScreenTest {
         composeRule.onNodeWithTag("caregiver-today-open-medications").performClick()
 
         assertTrue(opened)
+    }
+
+    @Test
+    fun registeredMedicationWithoutTodayDoseShowsNoScheduleAndCanRefresh() {
+        var todayCalls = 0
+        val scheduledMedication = medication().copy(id = "regular", name = "朝の薬", isPrn = false, prnInstructions = null)
+        val source = object : CaregiverTodayDataSource {
+            override suspend fun today(patientId: String): List<PatientDose> {
+                todayCalls += 1
+                return emptyList()
+            }
+            override suspend fun medications(patientId: String) = listOf(scheduledMedication)
+            override suspend fun inventory(patientId: String) = emptyList<CaregiverInventorySummary>()
+        }
+        val repository = CaregiverTodayRepository(source, MutationFreshnessStore())
+        val patient = CaregiverPatient("patient-1", "さくら")
+        composeRule.setContent {
+            MedicationAppTheme {
+                CaregiverTodayScreen(repository, CaregiverPatientState(listOf(patient), patient.id), true, {})
+            }
+        }
+        composeRule.waitUntil(5_000) { repository.state.value.hasLoaded }
+
+        composeRule.onNodeWithTag("caregiver-today-no-schedule").assertIsDisplayed()
+        composeRule.onNodeWithText("今日の服用予定はありません").assertIsDisplayed()
+        composeRule.onNodeWithTag("caregiver-today-open-medications").assertDoesNotExist()
+        composeRule.onNodeWithTag("caregiver-today-pull-refresh").performTouchInput { swipeDown() }
+        composeRule.waitUntil(5_000) { todayCalls == 2 }
     }
 
     @Test

@@ -382,6 +382,8 @@
     <string name="caregiver_today_timeline_record_slot_multiple">%1$d種類をまとめて代理で記録</string>
     <string name="caregiver_today_prn_title">必要な時のお薬</string>
     <string name="caregiver_today_prn_message">頓服薬が%1$d種類あります</string>
+    <string name="caregiver_today_no_schedule_title">今日の服用予定はありません</string>
+    <string name="caregiver_today_no_schedule_message">登録済みのお薬は、次の服用予定日に表示されます。</string>
     <string name="caregiver_today_empty_title">今日の予定はまだ空です</string>
     <string name="caregiver_today_empty_message">薬を登録して飲む時間を設定すると、この画面に今日の予定が並びます。</string>
     <string name="caregiver_today_empty_step_medication">薬タブで薬名と飲む量を登録</string>

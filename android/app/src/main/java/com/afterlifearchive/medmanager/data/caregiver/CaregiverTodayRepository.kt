@@ -51,6 +51,7 @@ data class CaregiverTodayState(
     val patientId: String? = null,
     val hasLoaded: Boolean = false,
     val doses: List<PatientDose> = emptyList(),
+    val hasScheduledMedications: Boolean = false,
     val prnMedications: List<PatientMedication> = emptyList(),
     val outOfStockMedicationIds: Set<String> = emptySet(),
     val hasLowStock: Boolean = false,
@@ -208,6 +209,7 @@ class CaregiverTodayRepository(
                 patientId = patientId,
                 hasLoaded = true,
                 doses = loaded.first.sortedWith(compareBy<PatientDose>({ statusRank(it.status) }, { it.scheduledAt })),
+                hasScheduledMedications = loaded.second.any { !it.isPrn && it.isActive && !it.isArchived },
                 prnMedications = loaded.second
                     .filter { it.isPrn && it.isActive && !it.isArchived }
                     .sortedBy { it.name },
