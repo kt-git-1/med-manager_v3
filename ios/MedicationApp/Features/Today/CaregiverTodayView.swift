@@ -568,6 +568,24 @@ struct CaregiverTodayView: View {
         return sections
     }
 
+    enum TimelineRecorderSummary: Equatable {
+        case patient
+        case caregiver
+        case mixed
+        case unknown
+
+        static func resolve(recorders: [RecordedByTypeDTO?]) -> Self? {
+            guard !recorders.isEmpty else { return nil }
+            guard !recorders.contains(where: { $0 == nil }) else { return .unknown }
+
+            let actors = Set(recorders.compactMap { $0 })
+            if actors.count > 1 { return .mixed }
+            if actors.first == .patient { return .patient }
+            if actors.first == .caregiver { return .caregiver }
+            return .unknown
+        }
+    }
+
     struct TimelineRow: Identifiable {
         let id: String
         let slot: NotificationSlot?
@@ -580,7 +598,7 @@ struct CaregiverTodayView: View {
         let hasOutOfStock: Bool
         let scheduledAt: Date?
         let takenAt: Date?
-        let recordedByType: RecordedByTypeDTO?
+        let recorderSummary: TimelineRecorderSummary?
         let isLate: Bool
     }
 
@@ -594,7 +612,9 @@ struct CaregiverTodayView: View {
             let takenDoses = doses.filter { $0.effectiveStatus == .taken && $0.takenAt != nil }
             let actualTakenAt = takenDoses.compactMap(\.takenAt).max()
             let scheduledAt = representative?.scheduledAt
-            let actors = Set(takenDoses.compactMap(\.recordedByType))
+            let recorderSummary = TimelineRecorderSummary.resolve(
+                recorders: takenDoses.map(\.recordedByType)
+            )
             let recordableDoses = doses.filter {
                 $0.effectiveStatus != .taken
                     && !viewModel.isMedicationOutOfStock($0.medicationId)
@@ -611,7 +631,7 @@ struct CaregiverTodayView: View {
                 hasOutOfStock: doses.contains { viewModel.isMedicationOutOfStock($0.medicationId) },
                 scheduledAt: scheduledAt,
                 takenAt: actualTakenAt,
-                recordedByType: actors.count == 1 ? actors.first : nil,
+                recorderSummary: recorderSummary,
                 isLate: scheduledAt.flatMap { scheduled in
                     actualTakenAt.map { MedicationRecordingPolicy.isLate(scheduledAt: scheduled, takenAt: $0) }
                 } ?? false
@@ -693,7 +713,7 @@ struct CaregiverTodayView: View {
             slotTitle(for: row.slot),
             row.timeText,
             viewModel.timeText(for: takenAt),
-            recordedByText(for: row.recordedByType)
+            recordedByText(for: row.recorderSummary ?? .unknown)
         )
     }
 
@@ -711,13 +731,15 @@ struct CaregiverTodayView: View {
         return String(format: NSLocalizedString("history.delay.minutes", comment: "Delay minutes"), minutes)
     }
 
-    private func recordedByText(for actor: RecordedByTypeDTO?) -> String {
-        switch actor {
+    private func recordedByText(for summary: TimelineRecorderSummary) -> String {
+        switch summary {
         case .patient:
             return NSLocalizedString("history.recordedBy.patient", comment: "Patient recorded")
         case .caregiver:
             return NSLocalizedString("history.recordedBy.caregiver", comment: "Caregiver recorded")
-        case .none:
+        case .mixed:
+            return NSLocalizedString("history.recordedBy.mixed", comment: "Mixed recorders")
+        case .unknown:
             return NSLocalizedString("history.recordedBy.unknown", comment: "Unknown recorder")
         }
     }
@@ -1391,8 +1413,8 @@ private struct CaregiverTodayTimelineRow: View {
         .font(.caption.weight(.bold))
         .foregroundStyle(row.isLate ? CaregiverUI.orange : CaregiverUI.tealDark)
 
-        if let actor = row.recordedByType {
-            Label(recordedByText(for: actor), systemImage: "person.crop.circle.badge.checkmark")
+        if let summary = row.recorderSummary {
+            Label(recordedByText(for: summary), systemImage: "person.crop.circle.badge.checkmark")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(CaregiverUI.tealDark)
         }
@@ -1405,12 +1427,16 @@ private struct CaregiverTodayTimelineRow: View {
         return formatter.string(from: date)
     }
 
-    private func recordedByText(for actor: RecordedByTypeDTO) -> String {
-        switch actor {
+    private func recordedByText(for summary: CaregiverTodayView.TimelineRecorderSummary) -> String {
+        switch summary {
         case .patient:
             return NSLocalizedString("history.recordedBy.patient", comment: "Patient recorded")
         case .caregiver:
             return NSLocalizedString("history.recordedBy.caregiver", comment: "Caregiver recorded")
+        case .mixed:
+            return NSLocalizedString("history.recordedBy.mixed", comment: "Mixed recorders")
+        case .unknown:
+            return NSLocalizedString("history.recordedBy.unknown", comment: "Unknown recorder")
         }
     }
 

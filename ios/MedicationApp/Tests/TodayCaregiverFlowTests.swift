@@ -187,6 +187,35 @@ final class TodayCaregiverFlowTests: XCTestCase {
         XCTAssertEqual(state.iconName, "checkmark")
     }
 
+    func testTimelineRecorderSummaryIsNilWithoutTakenDoses() {
+        XCTAssertNil(CaregiverTodayView.TimelineRecorderSummary.resolve(recorders: []))
+    }
+
+    func testTimelineRecorderSummaryShowsSingleRecorder() {
+        XCTAssertEqual(
+            CaregiverTodayView.TimelineRecorderSummary.resolve(recorders: [.patient, .patient]),
+            .patient
+        )
+        XCTAssertEqual(
+            CaregiverTodayView.TimelineRecorderSummary.resolve(recorders: [.caregiver]),
+            .caregiver
+        )
+    }
+
+    func testTimelineRecorderSummaryShowsMixedRecorders() {
+        XCTAssertEqual(
+            CaregiverTodayView.TimelineRecorderSummary.resolve(recorders: [.patient, .caregiver]),
+            .mixed
+        )
+    }
+
+    func testTimelineRecorderSummaryShowsUnknownWhenAnyRecorderIsMissing() {
+        XCTAssertEqual(
+            CaregiverTodayView.TimelineRecorderSummary.resolve(recorders: [.patient, nil]),
+            .unknown
+        )
+    }
+
     func testRegisteredMedicationIsDistinguishedFromNoMedicationWhenTodayHasNoSchedule() async throws {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [CaregiverTodayURLProtocol.self]
