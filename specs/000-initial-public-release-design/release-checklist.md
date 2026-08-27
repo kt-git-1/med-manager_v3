@@ -55,7 +55,7 @@
 ### Artifact and environment
 
 - [x] `MARKETING_VERSION=1.0.8` and `CURRENT_PROJECT_VERSION=64` in both `project.yml` and the Xcode project.
-- [ ] Archive Info.plist reports version `1.0.8 (64)`, Japanese development region, Staging API URL, and no embedded server secrets.
+- [x] Archive Info.plist reports version `1.0.8 (64)`, Japanese development region, Staging API URL, and no embedded server secrets. (2026-08-27: archived app reports `1.0.8 (64)`, `ja`, and `https://staging-api.okusuri-mimamori.com/`; no server-secret values found)
 - [x] Staging Supabase has the soft-cancel migration and Staging Vercel is healthy on the matching commit. (2026-08-27: migration applied; API fix commit `83772a5` deployed `READY`)
 - [x] App Store Connect processing state is `VALID`, encryption declaration is complete, and the internal tester group can install Build 64. (2026-08-27: iPhone 13 installation confirmed)
 
@@ -103,7 +103,7 @@
 - [x] Upgrade install from Build 63 preserves caregiver login, patient link, medication, history, inventory, preferences, and notification authorization.
 - [ ] Patient scheduled recording, caregiver slot proxy recording, PRN recording/cancellation, inventory refill/correction, pull-to-refresh, and five-tab navigation pass.
 - [ ] Cold launch, background/resume, force quit/relaunch, offline launch/recovery, and expired-token refresh pass.
-- [ ] iPhone compact width, current large iPhone, iPad, portrait, and supported large Dynamic Type have no clipped actions or hidden content.
+- [x] iPhone compact width, current large iPhone, iPad, portrait, and supported large Dynamic Type have no clipped actions or hidden content. (2026-08-27: device matrix passed; patient Today, caregiver Today, and inventory editing also passed at accessibility-extra-large)
 - [x] VoiceOver labels distinguish scheduled time, actual time, recorder, cancellation, and destructive confirmation actions.
 - [x] Record/proxy/cancel interactions meet the release response-time thresholds on Staging and do not leave a long-running updating overlay. (API create/cancel/re-record 0.206–0.495 s; physical-device navigation/refresh measurements recorded)
 - [ ] Real local reminder delivers when unrecorded and is suppressed when recorded; caregiver missed-dose push delivers once and is suppressed after timely recording.
@@ -128,4 +128,5 @@
 - Android Staging offline launch showed `取得に失敗しました`; after network restoration and relaunch, Today recovered with the same actual times and next bedtime slot.
 - The temporary synthetic caregiver was logged out on iPhone, deleted through the public Staging account-deletion endpoint, and verified absent from Supabase Auth, patient, medication, dose-record, and push-device storage. Local QA Keychain items and Android emulator Staging state were cleared.
 - iPhone 13 TestFlight navigation measurements: patient history 1.626–1.698 s, Today 1.627–1.662 s, settings 1.636–1.658 s, pull refresh 2.363 s, relaunch 2.390 s; caregiver tabs 1.753–1.922 s.
-- Still open before the full cross-platform gate: PRN/partial/insufficient-inventory cross-platform cases, current-build iOS local-reminder delivery/suppression, large Dynamic Type, and a fully gesture-driven history confirmation mutation on physical iPhone.
+- Build 64 archive inspection passed for version/build, Japanese development region, Staging API URL, and absence of embedded server-secret values. Three high-risk screens passed at accessibility-extra-large on iPhone 17e Simulator.
+- Still open before the full cross-platform gate: PRN/partial/insufficient-inventory cross-platform cases, current-build iOS local-reminder delivery/suppression, and a fully gesture-driven history confirmation mutation on physical iPhone.
