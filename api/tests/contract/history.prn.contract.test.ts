@@ -7,6 +7,7 @@ describe("history day PRN contract", () => {
       doses: [],
       prnItems: [
         {
+          recordId: "prn-record-1",
           medicationId: "med-1",
           medicationName: "Medication A",
           takenAt: "2026-02-02T10:00:00.000Z",
@@ -19,6 +20,7 @@ describe("history day PRN contract", () => {
     const item = payload.prnItems[0];
     expect(payload.date).toBe("2026-02-02");
     expect(item).toMatchObject({
+      recordId: "prn-record-1",
       medicationId: "med-1",
       medicationName: "Medication A",
       takenAt: "2026-02-02T10:00:00.000Z",

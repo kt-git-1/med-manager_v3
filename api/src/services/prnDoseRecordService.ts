@@ -124,6 +124,7 @@ export async function listPrnHistoryItemsByRange(input: {
     const dateKey = getLocalDateKey(record.takenAt, input.timeZone);
     countByDay[dateKey] = (countByDay[dateKey] ?? 0) + 1;
     return {
+      recordId: record.id,
       medicationId: record.medicationId,
       medicationName: record.medication.name,
       takenAt: record.takenAt.toISOString(),
