@@ -32,6 +32,7 @@ struct HistoryDayDetailView: View {
     var onReturnToLogin: () -> Void = {}
     var onRecordMissedDose: (HistoryDayItemDTO) -> Void = { _ in }
     var onCancelDose: (HistoryDayItemDTO) -> Void = { _ in }
+    var onCancelPrn: (PrnHistoryItemDTO) -> Void = { _ in }
     @State private var pendingAction: HistoryDoseAction?
     @State private var expandedSlotKeys: Set<String> = []
 
@@ -72,17 +73,18 @@ struct HistoryDayDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .alert(item: $pendingAction) { action in
-            let dose = action.dose
             return Alert(
                 title: Text(action.confirmationTitle),
                 message: Text(confirmationMessage(for: action)),
                 primaryButton: .cancel(Text(NSLocalizedString("common.cancel", comment: "Cancel"))),
                 secondaryButton: .default(Text(action.confirmationButtonTitle)) {
                     switch action {
-                    case .backfill:
+                    case .backfill(let dose):
                         onRecordMissedDose(dose)
-                    case .cancel:
+                    case .cancel(let dose):
                         onCancelDose(dose)
+                    case .cancelPrn(let record):
+                        onCancelPrn(record)
                     }
                 }
             )
@@ -124,7 +126,8 @@ struct HistoryDayDetailView: View {
                         isExpanded: expandedSlotKeys.contains(Self.prnGroupKey),
                         timeText: { HistoryDayDetailView.timeFormatter.string(from: $0.takenAt) },
                         recordedByText: { recordedByText(for: $0.actorType) },
-                        onToggle: { toggleGroup(Self.prnGroupKey) }
+                        onToggle: { toggleGroup(Self.prnGroupKey) },
+                        onCancel: { record in pendingAction = .cancelPrn(record) }
                     )
                 }
             }
@@ -318,15 +321,14 @@ struct HistoryDayDetailView: View {
     }
 
     private func confirmationMessage(for action: HistoryDoseAction) -> String {
-        let dose = action.dose
         switch action {
-        case .backfill:
+        case .backfill(let dose):
             return String(
                 format: NSLocalizedString("history.day.backfill.confirm.message", comment: "Backfill confirm message"),
                 dose.medicationName,
                 HistoryDayDetailView.timeFormatter.string(from: dose.scheduledAt)
             )
-        case .cancel:
+        case .cancel(let dose):
             let recorder = dose.recordedByType.map(recordedByText(for:))
                 ?? NSLocalizedString("history.recordedBy.unknown", comment: "Unknown recorder")
             let actualTime = dose.takenAt.map { HistoryDayDetailView.timeFormatter.string(from: $0) } ?? "—"
@@ -336,6 +338,13 @@ struct HistoryDayDetailView: View {
                 HistoryDayDetailView.timeFormatter.string(from: dose.scheduledAt),
                 actualTime,
                 recorder
+            )
+        case .cancelPrn(let record):
+            return String(
+                format: NSLocalizedString("history.day.prn.cancel.confirm.message", comment: "Cancel PRN confirm message"),
+                record.medicationName,
+                HistoryDayDetailView.timeFormatter.string(from: record.takenAt),
+                recordedByText(for: record.actorType)
             )
         }
     }
@@ -413,8 +422,8 @@ struct CaregiverHistoryV105DebugPreview: View {
         {"medicationId":"bedtime-1","medicationName":"眠前の薬","dosageText":"1錠","doseCountPerIntake":1,"scheduledAt":"2026-07-22T14:50:00Z","takenAt":null,"slot":"bedtime","effectiveStatus":"missed","recordedByType":null,"cancelledAt":"2026-07-22T15:25:00Z","cancelledByType":"caregiver","cancelledRecordTakenAt":"2026-07-22T15:13:00Z","inventoryRestored":true}
       ],
       "prnItems": [
-        {"medicationId":"prn-1","medicationName":"頭痛薬","takenAt":"2026-07-22T05:10:00Z","quantityTaken":1,"actorType":"PATIENT"},
-        {"medicationId":"prn-2","medicationName":"解熱剤","takenAt":"2026-07-22T11:30:00Z","quantityTaken":2,"actorType":"CAREGIVER"}
+        {"recordId":"prn-record-1","medicationId":"prn-1","medicationName":"頭痛薬","takenAt":"2026-07-22T05:10:00Z","quantityTaken":1,"actorType":"PATIENT"},
+        {"recordId":"prn-record-2","medicationId":"prn-2","medicationName":"解熱剤","takenAt":"2026-07-22T11:30:00Z","quantityTaken":2,"actorType":"CAREGIVER"}
       ]
     }
     """#
@@ -429,17 +438,13 @@ enum HistoryDayDetailStyle {
 private enum HistoryDoseAction: Identifiable {
     case backfill(HistoryDayItemDTO)
     case cancel(HistoryDayItemDTO)
+    case cancelPrn(PrnHistoryItemDTO)
 
     var id: String {
         switch self {
         case .backfill(let dose): return "backfill-\(dose.historyRowID)"
         case .cancel(let dose): return "cancel-\(dose.historyRowID)"
-        }
-    }
-
-    var dose: HistoryDayItemDTO {
-        switch self {
-        case .backfill(let dose), .cancel(let dose): return dose
+        case .cancelPrn(let record): return "cancel-prn-\(record.historyRowID)"
         }
     }
 
@@ -449,6 +454,8 @@ private enum HistoryDoseAction: Identifiable {
             return NSLocalizedString("history.day.backfill.confirm.title", comment: "Backfill confirm title")
         case .cancel:
             return NSLocalizedString("history.day.cancel.confirm.title", comment: "Cancel confirm title")
+        case .cancelPrn:
+            return NSLocalizedString("history.day.cancel.confirm.title", comment: "Cancel confirm title")
         }
     }
 
@@ -457,6 +464,8 @@ private enum HistoryDoseAction: Identifiable {
         case .backfill:
             return NSLocalizedString("history.day.backfill.confirm.action", comment: "Backfill confirm action")
         case .cancel:
+            return NSLocalizedString("history.day.cancel.confirm.action", comment: "Cancel confirm action")
+        case .cancelPrn:
             return NSLocalizedString("history.day.cancel.confirm.action", comment: "Cancel confirm action")
         }
     }
@@ -977,6 +986,7 @@ private struct CaregiverHistoryPrnGroupView: View {
     let timeText: (PrnHistoryItemDTO) -> String
     let recordedByText: (PrnHistoryItemDTO) -> String
     let onToggle: () -> Void
+    let onCancel: (PrnHistoryItemDTO) -> Void
 
     private let tint = Color.purple
 
@@ -1032,9 +1042,10 @@ private struct CaregiverHistoryPrnGroupView: View {
                             name: record.medicationName,
                             quantity: record.quantityTaken,
                             recordedByText: recordedByText(record),
-                            style: .caregiver
+                            style: .caregiver,
+                            canCancel: record.recordId != nil,
+                            onCancel: { onCancel(record) }
                         )
-                        .accessibilityIdentifier("CaregiverHistoryPrnRecord.\(record.historyRowID)")
                     }
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -1056,36 +1067,53 @@ private struct HistoryDayPrnRow: View {
     let quantity: Double
     let recordedByText: String
     var style: HistoryDayDetailStyle = .caregiver
+    var canCancel = false
+    var onCancel: () -> Void = {}
 
     private var prnPrefix: String {
         NSLocalizedString("medication.list.badge.prn", comment: "PRN badge")
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(timeText)
-                    .font(style == .patient ? .title3.weight(.bold) : .headline)
-                Text("\(prnPrefix): \(name)")
-                    .font(style == .patient ? .title3.weight(.bold) : .title3.weight(.semibold))
-                Text(
-                    String(
-                        format: NSLocalizedString("history.day.prn.doseCount", comment: "PRN dose count"),
-                        AppConstants.formatDecimal(quantity)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(timeText)
+                        .font(style == .patient ? .title3.weight(.bold) : .headline)
+                    Text("\(prnPrefix): \(name)")
+                        .font(style == .patient ? .title3.weight(.bold) : .title3.weight(.semibold))
+                    Text(
+                        String(
+                            format: NSLocalizedString("history.day.prn.doseCount", comment: "PRN dose count"),
+                            AppConstants.formatDecimal(quantity)
+                        )
                     )
-                )
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.readableSecondaryText)
-                HistoryRecordedByLabel(text: recordedByText, style: style)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.readableSecondaryText)
+                    HistoryRecordedByLabel(text: recordedByText, style: style)
+                }
+                Spacer()
+                Text(prnPrefix)
+                    .font(.caption.weight(.semibold))
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .background(prnColor.opacity(0.18))
+                    .foregroundStyle(prnColor)
+                    .clipShape(Capsule())
             }
-            Spacer()
-            Text(prnPrefix)
-                .font(.caption.weight(.semibold))
-                .padding(.vertical, 4)
-                .padding(.horizontal, 8)
-                .background(prnColor.opacity(0.18))
-                .foregroundStyle(prnColor)
-                .clipShape(Capsule())
+
+            if canCancel {
+                Button(action: onCancel) {
+                    Label(NSLocalizedString("history.day.cancel.button", comment: "Cancel PRN button"), systemImage: "arrow.uturn.backward.circle.fill")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(CaregiverUI.red)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 42)
+                        .background(CaregiverUI.red.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("CaregiverHistoryPrnCancelButton")
+            }
         }
         .padding(style == .patient ? 16 : 14)
         .background(rowBackground)

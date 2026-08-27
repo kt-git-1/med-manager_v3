@@ -211,6 +211,28 @@ final class HistoryViewModel: ObservableObject {
         }
     }
 
+    func cancelCaregiverPrnDoseRecord(
+        _ record: PrnHistoryItemDTO,
+        date: String,
+        year: Int,
+        month: Int
+    ) {
+        guard sessionStore.mode == .caregiver, let recordId = record.recordId else { return }
+        startRequest()
+        Task {
+            defer { endRequest() }
+            do {
+                try await apiClient.deleteCaregiverPrnDoseRecord(recordId: recordId)
+                NotificationCenter.default.post(name: .doseRecordsUpdated, object: nil)
+                showToast(NSLocalizedString("history.day.cancel.completed", comment: "Dose cancellation completed"))
+                loadMonth(year: year, month: month)
+                loadDay(date: date)
+            } catch {
+                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
+            }
+        }
+    }
+
     private func startRequest() {
         activeRequests += 1
         isUpdating = activeRequests > 0

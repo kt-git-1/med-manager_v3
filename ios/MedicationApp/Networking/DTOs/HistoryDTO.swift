@@ -93,6 +93,7 @@ struct HistoryDayItemDTO: Decodable, Equatable {
 }
 
 struct PrnHistoryItemDTO: Decodable, Equatable {
+    let recordId: String?
     let medicationId: String
     let medicationName: String
     let takenAt: Date
@@ -100,7 +101,7 @@ struct PrnHistoryItemDTO: Decodable, Equatable {
     let actorType: PrnActorTypeDTO
 
     var historyRowID: String {
-        "\(medicationId)-\(takenAt.timeIntervalSince1970)"
+        recordId ?? "\(medicationId)-\(takenAt.timeIntervalSince1970)"
     }
 }
 

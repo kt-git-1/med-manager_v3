@@ -249,6 +249,59 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(sessionStore.caregiverToken, "caregiver-token")
         XCTAssertEqual(sessionStore.mode, .caregiver)
     }
+
+    func testDeleteCaregiverPrnDoseRecordUsesRecordEndpointAndAuthorization() async throws {
+        let userDefaults = UserDefaults(suiteName: suiteName)!
+        let sessionStore = SessionStore(
+            userDefaults: userDefaults,
+            secureStorage: APIClientTestSecureStorage()
+        )
+        sessionStore.setMode(.caregiver)
+        sessionStore.saveCaregiverToken("caregiver-token")
+        sessionStore.setCurrentPatientId("patient-1")
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [APIClientMockURLProtocol.self]
+        let urlSession = URLSession(configuration: configuration)
+        var receivedRequest: URLRequest?
+        APIClientMockURLProtocol.requestHandler = { request in
+            receivedRequest = request
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 204,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            return (response, Data())
+        }
+        let apiClient = APIClient(
+            baseURL: URL(string: "http://localhost:3000")!,
+            sessionStore: sessionStore,
+            urlSession: urlSession
+        )
+
+        try await apiClient.deleteCaregiverPrnDoseRecord(recordId: "prn-record-1")
+
+        XCTAssertEqual(receivedRequest?.httpMethod, "DELETE")
+        XCTAssertEqual(
+            receivedRequest?.url?.path,
+            "/api/patients/patient-1/prn-dose-records/prn-record-1"
+        )
+        XCTAssertEqual(receivedRequest?.value(forHTTPHeaderField: "Authorization"), "Bearer caregiver-token")
+    }
+
+    func testHistoryDayDecodesPrnRecordIdAndKeepsLegacyPayloadCompatible() throws {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let response = try decoder.decode(
+            HistoryDayResponseDTO.self,
+            from: Data(
+                #"{"date":"2026-08-28","doses":[],"prnItems":[{"recordId":"prn-record-1","medicationId":"med-1","medicationName":"頓服A","takenAt":"2026-08-28T01:00:00Z","quantityTaken":1,"actorType":"CAREGIVER"},{"medicationId":"med-2","medicationName":"頓服B","takenAt":"2026-08-28T02:00:00Z","quantityTaken":2,"actorType":"PATIENT"}]}"#.utf8
+            )
+        )
+
+        XCTAssertEqual(response.prnItems.first?.recordId, "prn-record-1")
+        XCTAssertNil(response.prnItems.last?.recordId)
+    }
 }
 
 private final class APIClientMockURLProtocol: URLProtocol {

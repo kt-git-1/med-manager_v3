@@ -428,6 +428,23 @@ final class APIClient {
         return try decoder.decode(PrnDoseRecordCreateResponseDTO.self, from: data).record
     }
 
+    func deleteCaregiverPrnDoseRecord(
+        patientId: String? = nil,
+        recordId: String
+    ) async throws {
+        await refreshCaregiverAuthenticationIfNeeded()
+        let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
+        let url = baseURL.appendingPathComponent(
+            "api/patients/\(resolvedPatientId)/prn-dose-records/\(recordId)"
+        )
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        if let token = tokenForCurrentMode() {
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        _ = try await send(request)
+    }
+
     func fetchCaregiverToday(
         patientId: String? = nil,
         slotTimeItems: [URLQueryItem] = []

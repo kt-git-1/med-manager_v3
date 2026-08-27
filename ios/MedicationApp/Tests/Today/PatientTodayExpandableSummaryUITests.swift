@@ -153,6 +153,13 @@ final class PatientTodayExpandableSummaryUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["2件の記録"].exists)
         XCTAssertTrue(app.staticTexts["頓服: 頭痛薬"].exists)
         XCTAssertTrue(app.staticTexts["頓服: 解熱剤"].exists)
+        let prnCancelButtons = app.buttons.matching(identifier: "CaregiverHistoryPrnCancelButton")
+        XCTAssertEqual(prnCancelButtons.count, 2)
+        prnCancelButtons.firstMatch.tap()
+        let cancelAlert = app.alerts["服薬記録を取り消しますか？"]
+        XCTAssertTrue(cancelAlert.waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "頭痛薬（頓服）")).firstMatch.exists)
+        cancelAlert.buttons["キャンセル"].tap()
 
         prnHeader.tap()
         XCTAssertFalse(app.staticTexts["頓服: 頭痛薬"].waitForExistence(timeout: 1))

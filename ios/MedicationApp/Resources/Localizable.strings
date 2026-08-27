@@ -377,6 +377,7 @@
 "history.day.cancel.button" = "記録を取り消す";
 "history.day.cancel.confirm.title" = "服薬記録を取り消しますか？";
 "history.day.cancel.confirm.message" = "%1$@\n予定 %2$@／実際 %3$@\n%4$@\n\n記録時の服用数が保存されている場合は、在庫も同時に戻します。";
+"history.day.prn.cancel.confirm.message" = "%1$@（頓服）\n実際 %2$@に服用\n%3$@\n\nこの記録を取り消すと、服用した錠数を在庫に戻します。";
 "history.day.cancel.confirm.action" = "取り消す";
 "history.day.cancel.completed" = "服薬記録を取り消しました";
 "history.day.cancelled.detail" = "家族が%@に取り消し";
