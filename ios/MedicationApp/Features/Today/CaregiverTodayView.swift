@@ -43,7 +43,8 @@ struct CaregiverTodayView: View {
     private let hasSelectedPatientOverride: Bool?
     @StateObject private var viewModel: CaregiverTodayViewModel
     @EnvironmentObject private var toastPresenter: ToastPresenter
-    private let preferencesStore: NotificationPreferencesStore
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var preferencesStore: NotificationPreferencesStore
     @State private var slotToConfirm: SlotRecordConfirmation?
 
     init(
@@ -66,9 +67,10 @@ struct CaregiverTodayView: View {
         self.hasSelectedPatientOverride = previewItems == nil ? nil : true
         let baseURL = SessionStore.resolveBaseURL()
         let preferencesStore = NotificationPreferencesStore()
-        self.preferencesStore = preferencesStore
+        _preferencesStore = StateObject(wrappedValue: preferencesStore)
         let viewModel = CaregiverTodayViewModel(
             apiClient: APIClient(baseURL: baseURL, sessionStore: store),
+            preferencesStore: preferencesStore,
             onLowStockChange: onLowStockChange
         )
         if let previewItems {
@@ -101,6 +103,14 @@ struct CaregiverTodayView: View {
                     viewModel.load(showLoading: true)
                 } else {
                     viewModel.reset()
+                }
+            }
+            .onChange(of: scenePhase) { _, newValue in
+                guard newValue == .active,
+                      loadDataOnAppear,
+                      sessionStore.currentPatientId != nil else { return }
+                Task {
+                    await viewModel.refresh()
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .medicationUpdated)) { _ in
@@ -328,20 +338,11 @@ struct CaregiverTodayView: View {
     }
 
     private var todayHeader: some View {
-        HStack(alignment: .center, spacing: 12) {
-            CaregiverAvatar(name: patientName, systemImage: "person.crop.circle.fill")
-                .frame(width: 58, height: 58)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(patientNameText)
-                    .font(.title3.weight(.bold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.78)
-                Text(NSLocalizedString("caregiver.today.title", comment: "Caregiver today title"))
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(.primary)
-            }
-            Spacer()
-        }
+        CaregiverPatientHeader(
+            title: NSLocalizedString("caregiver.today.title", comment: "Caregiver today title"),
+            patientName: patientName,
+            systemImage: "person.crop.circle.fill"
+        )
     }
 
     private var missedAlertCard: some View {
@@ -405,6 +406,30 @@ struct CaregiverTodayView: View {
                     .font(.headline.weight(.bold))
                     .foregroundStyle(.primary)
 
+                if let nextRow = nextExpectedTimelineRow {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.right.circle.fill")
+                            .font(.headline.weight(.bold))
+                        Text(
+                            String(
+                                format: NSLocalizedString("caregiver.today.overview.next", comment: "Next medication slot"),
+                                slotTitle(for: nextRow.slot),
+                                nextRow.timeText
+                            )
+                        )
+                        .font(.subheadline.weight(.bold))
+                    }
+                    .foregroundStyle(nextRow.slotColor)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(nextRow.slotColor.opacity(0.11), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(nextRow.slotColor.opacity(0.45), lineWidth: 1.5)
+                    }
+                }
+
                 HStack(spacing: 0) {
                     ForEach(timelineRows) { row in
                         CaregiverTodaySlotStatusCell(
@@ -412,7 +437,9 @@ struct CaregiverTodayView: View {
                             displayTime: row.takenAt.map { viewModel.timeText(for: $0) } ?? row.timeText,
                             iconName: overviewIconName(for: row),
                             color: overviewColor(for: row),
-                            isLate: row.isLate
+                            isLate: row.isLate,
+                            isNext: row.id == nextExpectedTimelineRow?.id,
+                            highlightColor: row.slotColor
                         )
                         if row.id != timelineRows.last?.id {
                             Divider()
@@ -539,13 +566,6 @@ struct CaregiverTodayView: View {
         }
     }
 
-    private var patientNameText: String {
-        guard let patientName, !patientName.isEmpty else {
-            return NSLocalizedString("caregiver.common.patient.none", comment: "No patient selected")
-        }
-        return String(format: NSLocalizedString("caregiver.common.patient.format", comment: "Patient name format"), patientName)
-    }
-
     private struct SlotSection: Identifiable {
         let id: String
         let slot: NotificationSlot?
@@ -641,6 +661,14 @@ struct CaregiverTodayView: View {
 
     private var scheduledTimelineRows: [TimelineRow] {
         timelineRows.filter { !$0.doses.isEmpty }
+    }
+
+    private var nextExpectedTimelineRow: TimelineRow? {
+        scheduledTimelineRows.first { row in
+            row.doses.contains { dose in
+                dose.effectiveStatus == nil || dose.effectiveStatus == .pending
+            }
+        }
     }
 
     private var totalCount: Int { scheduledTimelineRows.count }
@@ -825,7 +853,10 @@ struct CaregiverTodayView: View {
     }
 
     private func slot(for dose: ScheduleDoseDTO) -> NotificationSlot? {
-        NotificationSlot.from(date: dose.scheduledAt)
+        NotificationSlot.from(
+            date: dose.scheduledAt,
+            slotTimes: preferencesStore.slotTimesMap()
+        )
     }
 
     private func configuredTimeText(for slot: NotificationSlot) -> String {
@@ -872,18 +903,7 @@ struct CaregiverTodayView: View {
     }
 
     private func caregiverSlotColor(for slot: NotificationSlot?) -> Color {
-        switch slot {
-        case .morning:
-            return CaregiverUI.teal
-        case .noon:
-            return CaregiverUI.orange
-        case .evening:
-            return CaregiverUI.blue
-        case .bedtime:
-            return CaregiverUI.tealDark
-        case .none:
-            return .gray
-        }
+        AppConstants.slotColor(for: slot)
     }
 
     private func confirmSlotMessage(for confirmation: SlotRecordConfirmation) -> String {
@@ -1451,12 +1471,14 @@ private struct CaregiverTodaySlotStatusCell: View {
     let iconName: String
     let color: Color
     let isLate: Bool
+    let isNext: Bool
+    let highlightColor: Color
 
     var body: some View {
         VStack(spacing: 6) {
             Text(slotTitle)
                 .font(.caption.weight(.bold))
-                .foregroundStyle(isLate ? CaregiverUI.orange : .secondary)
+                .foregroundStyle(isLate ? CaregiverUI.orange : (isNext ? highlightColor : Color.secondary))
                 .lineLimit(1)
             Image(systemName: iconName)
                 .font(.system(size: 15, weight: .bold))
@@ -1468,7 +1490,16 @@ private struct CaregiverTodaySlotStatusCell: View {
                 .foregroundStyle(isLate ? CaregiverUI.orange : .primary)
                 .lineLimit(1)
         }
+        .padding(.horizontal, 3)
+        .padding(.vertical, 7)
         .frame(maxWidth: .infinity)
+        .background(isNext ? highlightColor.opacity(0.11) : Color.clear, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .overlay {
+            if isNext {
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .stroke(highlightColor.opacity(0.7), lineWidth: 2)
+            }
+        }
         .accessibilityElement(children: .combine)
     }
 }

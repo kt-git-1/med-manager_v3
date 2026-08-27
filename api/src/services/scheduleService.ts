@@ -594,17 +594,18 @@ export async function generateScheduleForPatientWithStatus({
   timeZone?: string;
   includeArchivedHistory?: boolean;
 }) {
-  const [{ prisma }, { listDoseRecordsByPatientRange }] = await Promise.all([
-    import("../repositories/prisma"),
-    import("../repositories/doseRecordRepo")
-  ]);
-  const [medications, regimens, records] = await Promise.all([
+  const [{ prisma }, { listDoseRecordsByPatientRange, listCancelledDoseRecordsByPatientRange }] =
+    await Promise.all([import("../repositories/prisma"), import("../repositories/doseRecordRepo")]);
+  const [medications, regimens, records, cancelledRecords] = await Promise.all([
     prisma.medication.findMany({ where: { patientId, isPrn: false } }),
     prisma.regimen.findMany({ where: { patientId } }),
-    listDoseRecordsByPatientRange({ patientId, from, to })
+    listDoseRecordsByPatientRange({ patientId, from, to }),
+    includeArchivedHistory
+      ? listCancelledDoseRecordsByPatientRange({ patientId, from, to })
+      : Promise.resolve([])
   ]);
   const recordedDoseKeys = new Set(
-    records.map((record) =>
+    [...records, ...cancelledRecords].map((record) =>
       doseKey({
         patientId: record.patientId,
         medicationId: record.medicationId,

@@ -211,6 +211,11 @@ model DoseRecord {
   recordedByType    RecordedByType
   recordedById      String?
   recordingGroupId  String?
+  consumedQuantity  Float?
+  cancelledAt       DateTime?
+  cancelledByType   RecordedByType?
+  cancelledById     String?
+  inventoryRestoredAt DateTime?
   createdAt         DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -219,6 +224,7 @@ model DoseRecord {
 
   @@unique([patientId, medicationId, scheduledAt])
   @@index([patientId, scheduledAt])
+  @@index([patientId, cancelledAt, scheduledAt])
 }
 
 model PrnDoseRecord {

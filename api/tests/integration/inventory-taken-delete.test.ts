@@ -9,6 +9,11 @@ type DoseRecord = {
   takenAt: Date;
   recordedByType: "PATIENT" | "CAREGIVER";
   recordedById: string | null;
+  consumedQuantity: number | null;
+  cancelledAt: Date | null;
+  cancelledByType: "PATIENT" | "CAREGIVER" | null;
+  cancelledById: string | null;
+  inventoryRestoredAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -48,6 +53,25 @@ function buildKey(input: { patientId: string; medicationId: string; scheduledAt:
 
 vi.mock("../../src/repositories/prisma", () => {
   const prisma = {
+    doseRecord: {
+      updateMany: vi.fn(async (input: { where: { id: string }; data: Partial<DoseRecord> }) => {
+        const entry = [...store.entries()].find(([, record]) => record.id === input.where.id);
+        if (!entry || entry[1].cancelledAt) return { count: 0 };
+        store.set(entry[0], { ...entry[1], ...input.data });
+        return { count: 1 };
+      }),
+      findUnique: vi.fn(
+        async (input: { where: { id: string } }) =>
+          [...store.values()].find((record) => record.id === input.where.id) ?? null
+      ),
+      update: vi.fn(async (input: { where: { id: string }; data: Partial<DoseRecord> }) => {
+        const entry = [...store.entries()].find(([, record]) => record.id === input.where.id);
+        if (!entry) throw new Error("Dose record not found");
+        const updated = { ...entry[1], ...input.data };
+        store.set(entry[0], updated);
+        return updated;
+      })
+    },
     medication: {
       findFirst: vi.fn(async (input: { where: { id: string; patientId: string } }) => {
         if (
@@ -123,10 +147,11 @@ vi.mock("../../src/repositories/doseRecordRepo", () => ({
     scheduledAt: Date;
     recordedByType: "PATIENT" | "CAREGIVER";
     recordedById?: string | null;
+    consumedQuantity: number;
   }) => {
     const key = buildKey(input);
     const existing = store.get(key);
-    if (existing) {
+    if (existing && !existing.cancelledAt) {
       return existing;
     }
     const now = new Date();
@@ -138,6 +163,11 @@ vi.mock("../../src/repositories/doseRecordRepo", () => ({
       takenAt: now,
       recordedByType: input.recordedByType,
       recordedById: input.recordedById ?? null,
+      consumedQuantity: input.consumedQuantity,
+      cancelledAt: null,
+      cancelledByType: null,
+      cancelledById: null,
+      inventoryRestoredAt: null,
       createdAt: now,
       updatedAt: now
     };
@@ -210,5 +240,39 @@ describe("inventory adjustments on TAKEN delete", () => {
     });
     expect(mockData.medication.inventoryQuantity).toBe(5);
     expect(mockData.adjustments).toHaveLength(2);
+    const cancelled = store.get(
+      buildKey({ patientId: "patient-1", medicationId: "med-1", scheduledAt })
+    );
+    expect(cancelled?.cancelledAt).toBeInstanceOf(Date);
+    expect(cancelled?.inventoryRestoredAt).toBeInstanceOf(Date);
+
+    await deleteDoseRecord({ patientId: "patient-1", medicationId: "med-1", scheduledAt });
+    expect(mockData.medication.inventoryQuantity).toBe(5);
+    expect(mockData.adjustments).toHaveLength(2);
+  });
+
+  it("does not guess an inventory quantity for a legacy record", async () => {
+    store.clear();
+    mockData.medication.inventoryQuantity = 5;
+    mockData.adjustments.length = 0;
+    const scheduledAt = new Date("2026-02-03T08:00:00.000Z");
+
+    await createDoseRecordIdempotent({
+      patientId: "patient-1",
+      medicationId: "med-1",
+      scheduledAt,
+      recordedByType: "CAREGIVER",
+      recordedById: "caregiver-1"
+    });
+    const key = buildKey({ patientId: "patient-1", medicationId: "med-1", scheduledAt });
+    const legacy = store.get(key)!;
+    store.set(key, { ...legacy, consumedQuantity: null });
+
+    await deleteDoseRecord({ patientId: "patient-1", medicationId: "med-1", scheduledAt });
+
+    expect(mockData.medication.inventoryQuantity).toBe(3);
+    expect(mockData.adjustments).toHaveLength(1);
+    expect(store.get(key)?.cancelledAt).toBeInstanceOf(Date);
+    expect(store.get(key)?.inventoryRestoredAt).toBeNull();
   });
 });

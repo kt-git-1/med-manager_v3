@@ -80,13 +80,13 @@ enum AppConstants {
     static func slotColor(for slot: NotificationSlot?) -> Color {
         switch slot {
         case .morning:
-            return .orange
+            return Color(red: 242.0 / 255.0, green: 182.0 / 255.0, blue: 0.0)
         case .noon:
-            return .blue
+            return Color(red: 240.0 / 255.0, green: 107.0 / 255.0, blue: 0.0)
         case .evening:
-            return .purple
+            return Color(red: 31.0 / 255.0, green: 111.0 / 255.0, blue: 209.0 / 255.0)
         case .bedtime:
-            return .indigo
+            return Color(red: 122.0 / 255.0, green: 76.0 / 255.0, blue: 194.0 / 255.0)
         case .none:
             return .gray
         }

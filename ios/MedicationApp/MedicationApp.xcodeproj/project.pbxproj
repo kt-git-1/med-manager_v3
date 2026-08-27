@@ -118,6 +118,7 @@
 		C6F26CAD5BC8841754DDEDEE /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55D848B099AC94BF91C18A12 /* SessionStore.swift */; };
 		CB90F4D6BCAB7C7E3B9D1AA2 /* EntitlementDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA899299A25BF07670D56E15 /* EntitlementDTO.swift */; };
 		CC241D83091F75F9817D86C1 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10B347F8F660C4110482F537 /* AuthService.swift */; };
+		CE4860F77D3875FFA09B54C0 /* DeviceTokenManagerLogoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2785A4B7C18B5530CD8FB0B /* DeviceTokenManagerLogoutTests.swift */; };
 		CF614E0251DC6ABDFC51D8D8 /* MedicationDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEE1F1D310B1C0AFFB60363E /* MedicationDTO.swift */; };
 		D427E43F32FD2C23CA3BB00A /* MedicationListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC08C3E7B359DD5774B5DAAA /* MedicationListView.swift */; };
 		D54B114E09FDD6541A0C9A68 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96625C38F8A39E22EE9BDE70 /* AppDelegate.swift */; };
@@ -299,6 +300,7 @@
 		DE96F6150C049AA64E9847D1 /* SlotCardRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotCardRenderingTests.swift; sourceTree = "<group>"; };
 		DFE65A55F3647F6BD3CD7116 /* AnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsService.swift; sourceTree = "<group>"; };
 		E051C14827C2DAF7D4738AA0 /* SessionKeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionKeychainStore.swift; sourceTree = "<group>"; };
+		E2785A4B7C18B5530CD8FB0B /* DeviceTokenManagerLogoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceTokenManagerLogoutTests.swift; sourceTree = "<group>"; };
 		E9E12BCBB71264FF90ADD7F7 /* PatientManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientManagementView.swift; sourceTree = "<group>"; };
 		EB55437B073B6E2D5D88F3AE /* MedicationListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationListViewModelTests.swift; sourceTree = "<group>"; };
 		EC08C3E7B359DD5774B5DAAA /* MedicationListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationListView.swift; sourceTree = "<group>"; };
@@ -527,6 +529,7 @@
 			children = (
 				D99651621C933E0B2FDC5AB5 /* CaregiverPushSettingsTests.swift */,
 				0AF6AFD1B47BE0E49B16EFD8 /* CaregiverPushUITests.swift */,
+				E2785A4B7C18B5530CD8FB0B /* DeviceTokenManagerLogoutTests.swift */,
 				F18E87A431F363088829F603 /* PushDeepLinkTests.swift */,
 			);
 			path = Push;
@@ -1009,6 +1012,7 @@
 				ED619E29E74E4546A2591DF6 /* APIClientTests.swift in Sources */,
 				1CE852A24B52CF698060C41C /* AuthServiceTests.swift in Sources */,
 				34D5BC6EC9144D274A5234CB /* CaregiverPushSettingsTests.swift in Sources */,
+				CE4860F77D3875FFA09B54C0 /* DeviceTokenManagerLogoutTests.swift in Sources */,
 				AE5360FCEE21DB28BEAF3CD4 /* EntitlementStoreTests.swift in Sources */,
 				D86536F626E516A3F76E9257 /* FeatureGateTests.swift in Sources */,
 				C6BA67D9849095E39EBC05DF /* HistoryRetentionTests.swift in Sources */,
@@ -1125,7 +1129,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 60;
+				CURRENT_PROJECT_VERSION = 64;
 				DEVELOPMENT_TEAM = QSZR732YXD;
 				EMAIL_CONFIRMATION_REDIRECT_URL = "https://www.okusuri-mimamori.com/auth/confirmed";
 				INFOPLIST_FILE = App/Info.plist;
@@ -1133,7 +1137,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.7;
+				MARKETING_VERSION = 1.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.afterlifearchive.medmanager;
 				SDKROOT = iphoneos;
 				SUPABASE_ANON_KEY = sb_publishable_7hGwwBAmU55gsNVbMw8IAg_KgS2GyaM;
@@ -1266,7 +1270,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 60;
+				CURRENT_PROJECT_VERSION = 64;
 				DEVELOPMENT_TEAM = QSZR732YXD;
 				EMAIL_CONFIRMATION_REDIRECT_URL = "https://www.okusuri-mimamori.com/auth/confirmed";
 				ENABLE_TESTABILITY = YES;
@@ -1275,7 +1279,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.7;
+				MARKETING_VERSION = 1.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.afterlifearchive.medmanager;
 				SDKROOT = iphoneos;
 				SUPABASE_ANON_KEY = sb_publishable_nVf6RMV1tUkg8ew7BJLVnw_YDnUMRra;
@@ -1401,7 +1405,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/MedicationApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 60;
+				CURRENT_PROJECT_VERSION = 64;
 				DEVELOPMENT_TEAM = QSZR732YXD;
 				EMAIL_CONFIRMATION_REDIRECT_URL = "https://www.okusuri-mimamori.com/auth/confirmed";
 				INFOPLIST_FILE = App/Info.plist;
@@ -1409,7 +1413,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.7;
+				MARKETING_VERSION = 1.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.afterlifearchive.medmanager;
 				SDKROOT = iphoneos;
 				SUPABASE_ANON_KEY = sb_publishable_7hGwwBAmU55gsNVbMw8IAg_KgS2GyaM;

@@ -442,6 +442,75 @@ export async function applyInventoryDeltaForDoseRecord(input: {
   });
 }
 
+/**
+ * Restores the exact quantity captured on a dose record. The caller owns the
+ * surrounding transaction so the soft-cancel and inventory restoration commit
+ * together. Legacy records without a captured quantity are intentionally not
+ * guessed from the medication's current dosage.
+ */
+export async function restoreDoseRecordInventoryInTransaction(
+  tx: Prisma.TransactionClient,
+  input: {
+    patientId: string;
+    medicationId: string;
+    quantity: number | null;
+    actorType: InventoryAdjustmentActorType;
+    actorId?: string | null;
+  }
+): Promise<boolean> {
+  if (input.quantity === null || input.quantity <= 0) {
+    return false;
+  }
+
+  const medication = await tx.medication.findFirst({
+    where: { id: input.medicationId, patientId: input.patientId }
+  });
+  if (!medication || !medication.inventoryEnabled) {
+    return false;
+  }
+
+  const now = new Date();
+  const regimens = await tx.regimen.findMany({ where: { medicationId: medication.id } });
+  const quantityMedication = await tx.medication.update({
+    where: { id: medication.id },
+    data: {
+      inventoryQuantity: { increment: input.quantity },
+      inventoryUpdatedAt: now
+    }
+  });
+  const plan = computeRefillPlan({
+    inventoryEnabled: quantityMedication.inventoryEnabled,
+    inventoryQuantity: quantityMedication.inventoryQuantity,
+    doseCountPerIntake: quantityMedication.doseCountPerIntake,
+    regimens: mapRegimensForPlan(regimens)
+  });
+  const nextState = computeInventoryState(
+    quantityMedication.inventoryQuantity,
+    inventoryLowThresholdFor(quantityMedication.inventoryEnabled),
+    plan.daysRemaining
+  );
+  await Promise.all([
+    tx.medication.update({
+      where: { id: medication.id },
+      data: {
+        inventoryLowThreshold: inventoryLowThresholdFor(quantityMedication.inventoryEnabled),
+        inventoryLastAlertState: nextState
+      }
+    }),
+    tx.medicationInventoryAdjustment.create({
+      data: {
+        patientId: input.patientId,
+        medicationId: input.medicationId,
+        delta: input.quantity,
+        reason: "TAKEN_DELETE",
+        actorType: input.actorType,
+        actorId: input.actorId ?? null
+      }
+    })
+  ]);
+  return true;
+}
+
 type DoseRecordInventoryDelta = {
   medicationId: string;
   quantity: number;

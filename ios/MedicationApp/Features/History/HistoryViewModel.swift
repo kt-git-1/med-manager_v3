@@ -162,7 +162,8 @@ final class HistoryViewModel: ObservableObject {
         year: Int,
         month: Int
     ) {
-        guard sessionStore.mode == .caregiver, dose.effectiveStatus == .missed else { return }
+        guard sessionStore.mode == .caregiver,
+              dose.effectiveStatus == .missed || dose.cancelledAt != nil else { return }
         startRequest()
         Task {
             defer {
@@ -177,6 +178,31 @@ final class HistoryViewModel: ObservableObject {
                 )
                 NotificationCenter.default.post(name: .doseRecordsUpdated, object: nil)
                 showToast(NSLocalizedString("history.day.backfill.recorded", comment: "Backfill recorded"))
+                loadMonth(year: year, month: month)
+                loadDay(date: date)
+            } catch {
+                showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
+            }
+        }
+    }
+
+    func cancelCaregiverDoseRecord(
+        _ dose: HistoryDayItemDTO,
+        date: String,
+        year: Int,
+        month: Int
+    ) {
+        guard sessionStore.mode == .caregiver, dose.effectiveStatus == .taken else { return }
+        startRequest()
+        Task {
+            defer { endRequest() }
+            do {
+                try await apiClient.deleteCaregiverDoseRecord(
+                    medicationId: dose.medicationId,
+                    scheduledAt: dose.scheduledAt
+                )
+                NotificationCenter.default.post(name: .doseRecordsUpdated, object: nil)
+                showToast(NSLocalizedString("history.day.cancel.completed", comment: "Dose cancellation completed"))
                 loadMonth(year: year, month: month)
                 loadDay(date: date)
             } catch {

@@ -230,42 +230,117 @@ struct MedicationFormView: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
 
-                HStack(spacing: 8) {
-                    TextField(NSLocalizedString("medication.form.name.placeholder", comment: "Medication name placeholder"), text: $viewModel.name)
-                        .font(.system(size: 18, weight: .bold))
-                        .layoutPriority(1)
-                        .accessibilityLabel(NSLocalizedString("a11y.medication.name", comment: "Name"))
-
-                    TextField("5", text: $viewModel.dosageStrengthValue)
-                        .keyboardType(.decimalPad)
-                        .font(.system(size: 18, weight: .bold))
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 48)
-                        .disabled(viewModel.dosageStrengthUnit == NSLocalizedString("common.dosage.unknown", comment: "Unknown dosage"))
-
-                    Picker(NSLocalizedString("medication.form.dosage.unit", comment: "Dosage unit"), selection: $viewModel.dosageStrengthUnit) {
-                        ForEach(dosageUnits, id: \.self) { unit in
-                            Text(unit.isEmpty ? NSLocalizedString("common.select", comment: "Select") : unit).tag(unit)
-                        }
-                    }
-                    .labelsHidden()
-                    .fixedSize()
-                }
+                TextField(
+                    NSLocalizedString("medication.form.name.placeholder", comment: "Medication name placeholder"),
+                    text: $viewModel.name
+                )
+                .font(.system(size: 18, weight: .bold))
+                .accessibilityLabel(NSLocalizedString("a11y.medication.name", comment: "Name"))
                 .padding(.horizontal, 14)
-                .frame(minHeight: 40)
+                .frame(minHeight: 48)
                 .background(Color.white.opacity(0.82), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 10)
                         .stroke(
-                            basicValidationMessages.isEmpty ? CaregiverUI.cardStroke : CaregiverUI.red,
-                            lineWidth: basicValidationMessages.isEmpty ? 1.2 : 2
+                            nameValidationMessages.isEmpty ? CaregiverUI.cardStroke : CaregiverUI.red,
+                            lineWidth: nameValidationMessages.isEmpty ? 1.2 : 2
                         )
                 }
 
-                if !basicValidationMessages.isEmpty {
+                if !nameValidationMessages.isEmpty {
                     inlineValidationMessages(
-                        basicValidationMessages,
-                        identifier: "MedicationBasicValidationError"
+                        nameValidationMessages,
+                        identifier: "MedicationNameValidationError"
+                    )
+                }
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 7) {
+                Text(NSLocalizedString("medication.form.dosage.label", comment: "Dosage strength label"))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Text(NSLocalizedString("medication.form.dosage.help", comment: "Dosage strength help"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack(alignment: .bottom, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(NSLocalizedString("medication.form.dosage.number", comment: "Dosage number"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        TextField(
+                            NSLocalizedString("medication.form.dosage.number.example", comment: "Dosage number example"),
+                            text: $viewModel.dosageStrengthValue
+                        )
+                        .keyboardType(.decimalPad)
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .multilineTextAlignment(.trailing)
+                        .disabled(viewModel.dosageStrengthUnit == NSLocalizedString("common.dosage.unknown", comment: "Unknown dosage"))
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 48)
+                        .background(Color.white.opacity(0.82), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(
+                                    dosageValueHasValidationError ? CaregiverUI.red : CaregiverUI.cardStroke,
+                                    lineWidth: dosageValueHasValidationError ? 2 : 1.2
+                                )
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(NSLocalizedString("medication.form.dosage.unit", comment: "Dosage unit"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Menu {
+                            ForEach(dosageUnits.filter { !$0.isEmpty }, id: \.self) { unit in
+                                Button(unit) {
+                                    viewModel.dosageStrengthUnit = unit
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Text(
+                                    viewModel.dosageStrengthUnit.isEmpty
+                                        ? NSLocalizedString("medication.form.dosage.unit.example", comment: "Dosage unit example")
+                                        : viewModel.dosageStrengthUnit
+                                )
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundStyle(viewModel.dosageStrengthUnit.isEmpty ? Color.secondary : Color.primary)
+                                .lineLimit(1)
+                                Spacer(minLength: 0)
+                                Image(systemName: "chevron.down")
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 12)
+                            .frame(minHeight: 48)
+                            .background(Color.white.opacity(0.82), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(
+                                        dosageUnitHasValidationError ? CaregiverUI.red : CaregiverUI.cardStroke,
+                                        lineWidth: dosageUnitHasValidationError ? 2 : 1.2
+                                    )
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(NSLocalizedString("medication.form.dosage.unit", comment: "Dosage unit"))
+                    }
+                    .frame(width: 132)
+                }
+
+                if !dosageValidationMessages.isEmpty {
+                    inlineValidationMessages(
+                        dosageValidationMessages,
+                        identifier: "MedicationDosageValidationError"
                     )
                 }
             }
@@ -1127,12 +1202,27 @@ struct MedicationFormView: View {
         showsValidationErrors ? viewModel.validate() : []
     }
 
-    private var basicValidationMessages: [String] {
+    private var nameValidationMessages: [String] {
+        validationMessages(for: ["medication.form.validation.name.required"])
+    }
+
+    private var dosageValidationMessages: [String] {
         validationMessages(for: [
-            "medication.form.validation.name.required",
             "medication.form.validation.dosage.required",
             "medication.form.validation.dosage.value.required"
         ])
+    }
+
+    private var dosageValueHasValidationError: Bool {
+        dosageValidationMessages.contains(
+            NSLocalizedString("medication.form.validation.dosage.value.required", comment: "Dosage value required")
+        )
+    }
+
+    private var dosageUnitHasValidationError: Bool {
+        dosageValidationMessages.contains(
+            NSLocalizedString("medication.form.validation.dosage.required", comment: "Dosage required")
+        )
     }
 
     private var scheduleValidationMessages: [String] {

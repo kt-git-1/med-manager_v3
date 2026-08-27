@@ -38,7 +38,8 @@ vi.mock("../../src/repositories/prisma", () => ({
 }));
 
 vi.mock("../../src/repositories/doseRecordRepo", () => ({
-  listDoseRecordsByPatientRange: mockData.listDoseRecordsByPatientRange
+  listDoseRecordsByPatientRange: mockData.listDoseRecordsByPatientRange,
+  listCancelledDoseRecordsByPatientRange: vi.fn(async () => [])
 }));
 
 describe("history day status integration", () => {

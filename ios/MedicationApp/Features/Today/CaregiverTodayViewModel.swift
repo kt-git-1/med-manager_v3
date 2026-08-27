@@ -13,6 +13,7 @@ final class CaregiverTodayViewModel: ObservableObject {
     @Published private(set) var scrollToTopRequest = 0
 
     private let apiClient: APIClient
+    private let preferencesStore: NotificationPreferencesStore
     private let dateFormatter: DateFormatter
     private let timeFormatter: DateFormatter
     private let dateKeyFormatter: DateFormatter
@@ -22,10 +23,15 @@ final class CaregiverTodayViewModel: ObservableObject {
     private var refreshRequested = false
     var toastPresenter: ToastPresenter?
 
-    init(apiClient: APIClient, onLowStockChange: @escaping (Bool) -> Void = { _ in }) {
+    init(
+        apiClient: APIClient,
+        preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore(),
+        onLowStockChange: @escaping (Bool) -> Void = { _ in }
+    ) {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = AppConstants.defaultTimeZone
         self.apiClient = apiClient
+        self.preferencesStore = preferencesStore
         self.onLowStockChange = onLowStockChange
         self.dateFormatter = DateFormatter()
         self.dateFormatter.locale = AppConstants.japaneseLocale
@@ -297,7 +303,12 @@ final class CaregiverTodayViewModel: ObservableObject {
         async let dosesTask = apiClient.fetchCaregiverToday(slotTimeItems: [])
         async let medicationsTask = apiClient.fetchMedications(patientId: nil)
         async let inventoryTask = apiClient.fetchInventory()
+        async let slotTimesTask: PatientSlotTimesDTO? = try? await apiClient.fetchCaregiverPatientSlotTimes()
         let (doses, medications, inventory) = try await (dosesTask, medicationsTask, inventoryTask)
+
+        if let slotTimes = await slotTimesTask {
+            preferencesStore.applyServerSlotTimes(slotTimes)
+        }
 
         items = doses.sorted(by: sortDose)
         hasRegisteredMedications = medications.contains { $0.isActive && !$0.isArchived }

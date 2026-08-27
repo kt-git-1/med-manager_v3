@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import FirebaseMessaging
 
 /// Manages FCM device token registration and API synchronization.
 ///
@@ -18,9 +19,44 @@ final class DeviceTokenManager: ObservableObject {
     private static let fcmTokenKey = "fcm.deviceToken"
     private static let registeredKey = "apns.registered"
     private static let fcmRegisteredKey = "fcm.registered"
+    private let deleteFCMToken: @MainActor () async throws -> Void
+    private let setFCMAutoInitEnabled: @MainActor (Bool) -> Void
+    private let clearFCMAPNSToken: @MainActor () -> Void
+    private let registerRemoteNotifications: @MainActor () -> Void
+    private let unregisterRemoteNotifications: @MainActor () -> Void
 
-    init(userDefaults: UserDefaults = .standard) {
+    init(
+        userDefaults: UserDefaults = .standard,
+        deleteFCMToken: @MainActor @escaping () async throws -> Void = {
+            try await withCheckedThrowingContinuation { continuation in
+                Messaging.messaging().deleteToken { error in
+                    if let error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume()
+                    }
+                }
+            }
+        },
+        setFCMAutoInitEnabled: @MainActor @escaping (Bool) -> Void = {
+            Messaging.messaging().isAutoInitEnabled = $0
+        },
+        clearFCMAPNSToken: @MainActor @escaping () -> Void = {
+            Messaging.messaging().apnsToken = nil
+        },
+        registerRemoteNotifications: @MainActor @escaping () -> Void = {
+            UIApplication.shared.registerForRemoteNotifications()
+        },
+        unregisterRemoteNotifications: @MainActor @escaping () -> Void = {
+            UIApplication.shared.unregisterForRemoteNotifications()
+        }
+    ) {
         self.userDefaults = userDefaults
+        self.deleteFCMToken = deleteFCMToken
+        self.setFCMAutoInitEnabled = setFCMAutoInitEnabled
+        self.clearFCMAPNSToken = clearFCMAPNSToken
+        self.registerRemoteNotifications = registerRemoteNotifications
+        self.unregisterRemoteNotifications = unregisterRemoteNotifications
         self.currentToken = userDefaults.string(forKey: Self.apnsTokenKey)
         self.currentFCMToken = userDefaults.string(forKey: Self.fcmTokenKey)
     }
@@ -29,7 +65,8 @@ final class DeviceTokenManager: ObservableObject {
 
     /// Request APNs remote notification registration.
     func requestRemoteNotificationRegistration() {
-        UIApplication.shared.registerForRemoteNotifications()
+        setFCMAutoInitEnabled(true)
+        registerRemoteNotifications()
     }
 
     /// Called when the system provides a new APNs device token.
@@ -145,6 +182,29 @@ final class DeviceTokenManager: ObservableObject {
         } catch {
             print("DeviceTokenManager: backend unregister failed (FCM): \(error.localizedDescription)")
         }
+    }
+
+    /// Revokes the device-side identity even if backend unregistration failed.
+    /// FCM notification payloads can otherwise be rendered by iOS without the app
+    /// getting an opportunity to reject them based on its signed-out state.
+    func revokeLocalPushIdentity() async {
+        unregisterRemoteNotifications()
+        setFCMAutoInitEnabled(false)
+
+        do {
+            try await deleteFCMToken()
+        } catch {
+            print("DeviceTokenManager: local FCM token deletion failed: \(error.localizedDescription)")
+        }
+
+        clearFCMAPNSToken()
+        currentToken = nil
+        currentFCMToken = nil
+        userDefaults.removeObject(forKey: Self.apnsTokenKey)
+        userDefaults.removeObject(forKey: Self.fcmTokenKey)
+        userDefaults.set(false, forKey: Self.registeredKey)
+        userDefaults.set(false, forKey: Self.fcmRegisteredKey)
+        userDefaults.set(false, forKey: CaregiverPushSettingsViewModel.persistKey)
     }
 
     /// Mark as needing re-registration (e.g. when switching caregiver accounts).

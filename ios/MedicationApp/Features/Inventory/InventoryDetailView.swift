@@ -67,6 +67,7 @@ struct InventoryDetailView: View {
                     .padding(.top, 10)
                     .padding(.bottom, 34)
                 }
+                .safeAreaPadding(.bottom, 120)
                 .scrollDismissesKeyboard(.interactively)
             }
 

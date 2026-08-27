@@ -9,7 +9,8 @@ const prismaMock = vi.hoisted(() => ({
 }));
 
 const doseRecordRepoMock = vi.hoisted(() => ({
-  listDoseRecordsByPatientRange: vi.fn()
+  listDoseRecordsByPatientRange: vi.fn(),
+  listCancelledDoseRecordsByPatientRange: vi.fn(async () => [])
 }));
 
 vi.mock("../../src/repositories/prisma", () => prismaMock);

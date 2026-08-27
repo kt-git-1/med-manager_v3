@@ -64,7 +64,7 @@ final class MedicationFormRegistrationUITests: XCTestCase {
         XCTAssertTrue(submitButton.isHittable, app.debugDescription)
         submitButton.tap()
 
-        let inlineError = app.descendants(matching: .any)["MedicationBasicValidationError"]
+        let inlineError = app.descendants(matching: .any)["MedicationDosageValidationError"]
         XCTAssertTrue(inlineError.waitForExistence(timeout: 3), app.debugDescription)
         XCTAssertTrue(app.staticTexts["用量は必須です"].isHittable, app.debugDescription)
         XCTAssertTrue(app.staticTexts["基本情報"].isHittable, app.debugDescription)

@@ -83,6 +83,65 @@ final class TodayCaregiverFlowTests: XCTestCase {
         await fulfillment(of: [historyRefresh], timeout: 1)
     }
 
+    func testCaregiverTodayRefreshUsesServerPatientSlotTimes() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [CaregiverTodayURLProtocol.self]
+        let urlSession = URLSession(configuration: configuration)
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        let sessionStore = SessionStore(
+            userDefaults: defaults,
+            secureStorage: CaregiverTodayTestSecureStorage()
+        )
+        sessionStore.setMode(.caregiver)
+        sessionStore.saveCaregiverSession(
+            SupabaseSession(
+                accessToken: "caregiver-token",
+                refreshToken: "refresh-token",
+                expiresIn: 3_600
+            )
+        )
+        sessionStore.setCurrentPatientId("patient-1")
+        let preferencesStore = NotificationPreferencesStore(defaults: defaults)
+        preferencesStore.switchPatient("patient-1")
+        preferencesStore.setSlotTime(.noon, hour: 13, minute: 0)
+        let apiClient = APIClient(
+            baseURL: try XCTUnwrap(URL(string: "http://localhost:3000")),
+            sessionStore: sessionStore,
+            urlSession: urlSession
+        )
+
+        CaregiverTodayURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["content-type": "application/json"]
+            )!
+            switch request.url?.path {
+            case "/api/patients":
+                return (response, Data(#"{"data":[{"id":"patient-1","displayName":"QA","slotTimes":{"morning":"07:15","noon":"12:20","evening":"18:40","bedtime":"22:30"}}]}"#.utf8))
+            case "/api/patients/patient-1/inventory":
+                return (response, Data(#"{"data":{"patientId":"patient-1","medications":[]}}"#.utf8))
+            default:
+                return (response, Data(#"{"data":[]}"#.utf8))
+            }
+        }
+
+        let viewModel = CaregiverTodayViewModel(
+            apiClient: apiClient,
+            preferencesStore: preferencesStore
+        )
+        viewModel.load(showLoading: true)
+        for _ in 0..<100 where preferencesStore.slotTime(for: .noon).hour == 13 {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        XCTAssertFalse(viewModel.isLoading)
+        XCTAssertNil(viewModel.errorMessage)
+        XCTAssertEqual(preferencesStore.slotTime(for: .noon).hour, 12)
+        XCTAssertEqual(preferencesStore.slotTime(for: .noon).minute, 20)
+    }
+
     func testBulkRecordUpdatesTodayImmediatelyAfterMutationSucceeds() async throws {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [CaregiverTodayURLProtocol.self]

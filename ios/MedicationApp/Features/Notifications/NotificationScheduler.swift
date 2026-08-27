@@ -118,3 +118,15 @@ final class NotificationScheduler {
         }
     }
 }
+
+/// Clears notification state that must not survive an account session.
+@MainActor
+enum SessionNotificationCleaner {
+    static func clearAll(
+        notificationCenter: UNUserNotificationCenter = .current()
+    ) async {
+        notificationCenter.removeAllPendingNotificationRequests()
+        notificationCenter.removeAllDeliveredNotifications()
+        try? await notificationCenter.setBadgeCount(0)
+    }
+}

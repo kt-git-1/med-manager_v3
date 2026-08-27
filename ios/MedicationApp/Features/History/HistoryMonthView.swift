@@ -475,7 +475,8 @@ struct HistoryMonthView: View {
                                     highlightedSlot: highlightedSlot,
                                     style: isPatientMode ? .patient : .caregiver,
                                     onReturnToLogin: { sessionStore.returnToCaregiverLogin() },
-                                    onRecordMissedDose: recordMissedDose
+                                    onRecordMissedDose: recordMissedDose,
+                                    onCancelDose: cancelDose
                                 )
                             }
                         }
@@ -1849,6 +1850,13 @@ struct HistoryMonthView: View {
         let components = Self.calendar.dateComponents([.year, .month], from: dose.scheduledAt)
         guard let year = components.year, let month = components.month else { return }
         viewModel.recordMissedCaregiverDose(dose, date: date, year: year, month: month)
+    }
+
+    private func cancelDose(_ dose: HistoryDayItemDTO) {
+        let date = HistoryMonthView.dateKeyFormatter.string(from: dose.scheduledAt)
+        let components = Self.calendar.dateComponents([.year, .month], from: dose.scheduledAt)
+        guard let year = components.year, let month = components.month else { return }
+        viewModel.cancelCaregiverDoseRecord(dose, date: date, year: year, month: month)
     }
 
     private func updateSelectionForDisplayedMonth() {

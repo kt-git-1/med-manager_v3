@@ -109,6 +109,26 @@ final class NotificationPreferencesStore: ObservableObject {
         )
     }
 
+    /// Applies the patient-scoped schedule maintained by the API.
+    /// The server is the source of truth so iOS and Android classify the same
+    /// scheduled doses into the same morning/noon/evening/bedtime slots.
+    func applyServerSlotTimes(_ dto: PatientSlotTimesDTO) {
+        let values: [(NotificationSlot, String)] = [
+            (.morning, dto.morning),
+            (.noon, dto.noon),
+            (.evening, dto.evening),
+            (.bedtime, dto.bedtime)
+        ]
+        for (slot, value) in values {
+            guard let parsed = Self.parseTimeString(value) else { continue }
+            setSlotTime(
+                slot,
+                hour: parsed.hour ?? slot.hourMinute.hour,
+                minute: parsed.minute ?? slot.hourMinute.minute
+            )
+        }
+    }
+
     // MARK: - Patient-scoped key helpers
 
     /// Returns the UserDefaults key for a slot time.

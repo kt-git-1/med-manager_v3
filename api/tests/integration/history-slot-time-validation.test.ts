@@ -69,6 +69,10 @@ vi.mock("../../src/repositories/prisma", () => ({
   }
 }));
 
+vi.mock("../../src/repositories/doseRecordRepo", () => ({
+  listCancelledDoseRecordsByPatientRange: vi.fn(async () => [])
+}));
+
 describe("history slot time validation", () => {
   it("returns 422 for invalid morningTime=99:99", async () => {
     const request = new Request(

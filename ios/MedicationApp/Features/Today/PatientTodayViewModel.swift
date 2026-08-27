@@ -434,7 +434,11 @@ final class PatientTodayViewModel: ObservableObject {
     private func refreshTodayData() async throws {
         async let dosesTask = apiClient.fetchPatientToday(slotTimeItems: [])
         async let medicationsTask = apiClient.fetchMedications(patientId: nil)
+        async let slotTimesTask: PatientSlotTimesDTO? = try? await apiClient.fetchPatientSlotTimes()
         let (doses, medications) = try await (dosesTask, medicationsTask)
+        if let slotTimes = await slotTimesTask {
+            preferencesStore.applyServerSlotTimes(slotTimes)
+        }
         items = doses.sorted(by: sortDose)
         prnMedications = medications.filter { $0.isPrn }
         outOfStockMedicationIds = Set(medications.filter { $0.isOutOfStock }.map { $0.id })

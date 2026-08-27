@@ -805,7 +805,7 @@ struct PatientManagementView: View {
         let success = await viewModel.deleteCaregiverAccount()
         isDeletingAccount = false
         if success {
-            await schedulingCoordinator.cancelScheduledNotifications()
+            await caregiverSessionController.clearLocalNotificationSession()
             withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                 sessionStore.resetAfterAccountDeletion()
             }

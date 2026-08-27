@@ -82,6 +82,10 @@ struct HistoryDayItemDTO: Decodable, Equatable {
     let slot: HistorySlotDTO
     let effectiveStatus: HistoryDoseStatusDTO
     let recordedByType: RecordedByTypeDTO?
+    let cancelledAt: Date?
+    let cancelledByType: RecordedByTypeDTO?
+    let cancelledRecordTakenAt: Date?
+    let inventoryRestored: Bool?
 
     var historyRowID: String {
         "\(medicationId)-\(scheduledAt.timeIntervalSince1970)"

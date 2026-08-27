@@ -9,6 +9,11 @@ type DoseRecord = {
   takenAt: Date;
   recordedByType: "PATIENT" | "CAREGIVER";
   recordedById: string | null;
+  consumedQuantity: number | null;
+  cancelledAt: Date | null;
+  cancelledByType: "PATIENT" | "CAREGIVER" | null;
+  cancelledById: string | null;
+  inventoryRestoredAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -26,10 +31,11 @@ vi.mock("../../src/repositories/doseRecordRepo", () => ({
     scheduledAt: Date;
     recordedByType: "PATIENT" | "CAREGIVER";
     recordedById?: string | null;
+    consumedQuantity: number;
   }) => {
     const key = buildKey(input);
     const existing = store.get(key);
-    if (existing) {
+    if (existing && !existing.cancelledAt) {
       return existing;
     }
     const now = new Date();
@@ -41,6 +47,11 @@ vi.mock("../../src/repositories/doseRecordRepo", () => ({
       takenAt: now,
       recordedByType: input.recordedByType,
       recordedById: input.recordedById ?? null,
+      consumedQuantity: input.consumedQuantity,
+      cancelledAt: null,
+      cancelledByType: null,
+      cancelledById: null,
+      inventoryRestoredAt: null,
       createdAt: now,
       updatedAt: now
     };
@@ -67,6 +78,39 @@ vi.mock("../../src/repositories/doseRecordRepo", () => ({
     return record;
   }
 }));
+
+vi.mock("../../src/services/medicationService", () => ({
+  assertInventoryAvailableForMedication: () => {},
+  applyInventoryDeltaForDoseRecord: async () => {},
+  restoreDoseRecordInventoryInTransaction: async () => false
+}));
+
+vi.mock("../../src/repositories/prisma", () => {
+  const prisma = {
+    doseRecord: {
+      updateMany: async (input: {
+        where: { id: string; cancelledAt: null };
+        data: Partial<DoseRecord>;
+      }) => {
+        const entry = [...store.entries()].find(([, record]) => record.id === input.where.id);
+        if (!entry || entry[1].cancelledAt) return { count: 0 };
+        store.set(entry[0], { ...entry[1], ...input.data });
+        return { count: 1 };
+      },
+      findUnique: async (input: { where: { id: string } }) =>
+        [...store.values()].find((record) => record.id === input.where.id) ?? null,
+      update: async (input: { where: { id: string }; data: Partial<DoseRecord> }) => {
+        const entry = [...store.entries()].find(([, record]) => record.id === input.where.id);
+        if (!entry) throw new Error("Dose record not found");
+        const updated = { ...entry[1], ...input.data };
+        store.set(entry[0], updated);
+        return updated;
+      }
+    },
+    $transaction: async (callback: (tx: typeof prisma) => unknown) => callback(prisma)
+  };
+  return { prisma };
+});
 
 vi.mock("../../src/repositories/patientRepo", () => ({
   getPatientRecordById: async (patientId: string) => ({
@@ -133,7 +177,7 @@ describe("dose recording caregiver integration", () => {
     expect(store.size).toBe(1);
   });
 
-  it("deletes caregiver dose record when present and returns null when missing", async () => {
+  it("soft-cancels caregiver dose record and keeps cancellation idempotent", async () => {
     store.clear();
     const scheduledAt = new Date("2026-02-02T08:00:00.000Z");
     await createDoseRecordIdempotent({
@@ -150,13 +194,14 @@ describe("dose recording caregiver integration", () => {
       scheduledAt
     });
     expect(deleted?.patientId).toBe("patient-1");
-    expect(store.size).toBe(0);
+    expect(deleted?.cancelledAt).toBeInstanceOf(Date);
+    expect(store.size).toBe(1);
 
     const missing = await deleteDoseRecord({
       patientId: "patient-1",
       medicationId: "med-1",
       scheduledAt
     });
-    expect(missing).toBeNull();
+    expect(missing?.cancelledAt).toEqual(deleted?.cancelledAt);
   });
 });

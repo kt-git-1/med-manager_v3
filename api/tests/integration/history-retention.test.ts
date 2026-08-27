@@ -107,6 +107,10 @@ vi.mock("../../src/repositories/prisma", () => ({
   }
 }));
 
+vi.mock("../../src/repositories/doseRecordRepo", () => ({
+  listCancelledDoseRecordsByPatientRange: vi.fn(async () => [])
+}));
+
 // ---------------------------------------------------------------------------
 // Imports (after mocks)
 // ---------------------------------------------------------------------------

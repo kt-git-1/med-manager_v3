@@ -1,18 +1,19 @@
 import type { DoseRecord, RecordedByType } from "@prisma/client";
 import {
-  deleteDoseRecordByKey,
   getDoseRecordByKey,
   listDoseRecordsByPatientRange,
   upsertDoseRecord,
   type DoseRecordKey
 } from "../repositories/doseRecordRepo";
+import { prisma } from "../repositories/prisma";
 import { createDoseRecordEvent } from "../repositories/doseRecordEventRepo";
 import { getMedicationRecordForPatient } from "../repositories/medicationRepo";
 import { getPatientRecordById } from "../repositories/patientRepo";
 import { assertCaregiverPatientScope } from "../middleware/auth";
 import {
   applyInventoryDeltaForDoseRecord,
-  assertInventoryAvailableForMedication
+  assertInventoryAvailableForMedication,
+  restoreDoseRecordInventoryInTransaction
 } from "./medicationService";
 import { notifyCaregiversOfDoseTaken } from "./pushNotificationService";
 import { resolveSlot } from "./scheduleResponse";
@@ -33,7 +34,7 @@ export async function createDoseRecordIdempotent(
     medicationId: input.medicationId,
     scheduledAt: input.scheduledAt
   });
-  if (existing) {
+  if (existing && !existing.cancelledAt) {
     return existing;
   }
 
@@ -43,7 +44,10 @@ export async function createDoseRecordIdempotent(
   }
   assertInventoryAvailableForMedication(medication, medication.doseCountPerIntake);
 
-  const record = await upsertDoseRecord(input);
+  const record = await upsertDoseRecord({
+    ...input,
+    consumedQuantity: medication.doseCountPerIntake
+  });
   const patient = await getPatientRecordById(record.patientId);
   if (!patient) {
     return record;
@@ -88,24 +92,44 @@ export async function createDoseRecordIdempotent(
   return record;
 }
 
-export async function deleteDoseRecord(key: DoseRecordKey): Promise<DoseRecord | null> {
-  const [existing, medication] = await Promise.all([
-    getDoseRecordByKey(key),
-    getMedicationRecordForPatient(key.patientId, key.medicationId)
-  ]);
+export async function deleteDoseRecord(
+  key: DoseRecordKey,
+  actor: { type: RecordedByType; id?: string | null } = { type: "CAREGIVER" }
+): Promise<DoseRecord | null> {
+  const existing = await getDoseRecordByKey(key);
   if (!existing) {
     return null;
   }
-  const deleted = await deleteDoseRecordByKey(key);
-  if (medication) {
-    await applyInventoryDeltaForDoseRecord({
+  if (existing.cancelledAt) {
+    return existing;
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const cancelledAt = new Date();
+    const result = await tx.doseRecord.updateMany({
+      where: { id: existing.id, cancelledAt: null },
+      data: {
+        cancelledAt,
+        cancelledByType: actor.type,
+        cancelledById: actor.id ?? null
+      }
+    });
+    if (result.count === 0) {
+      return tx.doseRecord.findUnique({ where: { id: existing.id } });
+    }
+
+    const inventoryRestored = await restoreDoseRecordInventoryInTransaction(tx, {
       patientId: existing.patientId,
       medicationId: existing.medicationId,
-      delta: medication.doseCountPerIntake,
-      reason: "TAKEN_DELETE"
+      quantity: existing.consumedQuantity,
+      actorType: "CAREGIVER",
+      actorId: actor.id
     });
-  }
-  return deleted;
+    return tx.doseRecord.update({
+      where: { id: existing.id },
+      data: { inventoryRestoredAt: inventoryRestored ? cancelledAt : null }
+    });
+  });
 }
 
 export async function createCaregiverDoseRecord(input: {
@@ -131,11 +155,17 @@ export async function deleteCaregiverDoseRecord(input: {
   scheduledAt: Date;
 }): Promise<DoseRecord | null> {
   await assertCaregiverPatientScope(input.caregiverUserId, input.patientId);
-  return deleteDoseRecord({
-    patientId: input.patientId,
-    medicationId: input.medicationId,
-    scheduledAt: input.scheduledAt
-  });
+  return deleteDoseRecord(
+    {
+      patientId: input.patientId,
+      medicationId: input.medicationId,
+      scheduledAt: input.scheduledAt
+    },
+    {
+      type: "CAREGIVER",
+      id: input.caregiverUserId
+    }
+  );
 }
 
 export async function listDoseRecordsForPatientRange(input: {

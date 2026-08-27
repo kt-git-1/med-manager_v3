@@ -29,6 +29,9 @@ final class PatientTodayExpandableSummaryUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.staticTexts["飲み遅れのお薬"].waitForExistence(timeout: 3))
+        let nextExpectedSlot = app.descendants(matching: .any)["PatientTodayNextExpectedSlot"]
+        XCTAssertTrue(nextExpectedSlot.waitForExistence(timeout: 2))
+        XCTAssertTrue(nextExpectedSlot.label.contains("次は 夜 19:00"))
         XCTAssertFalse(app.staticTexts["昼のお薬"].exists)
 
         let toggle = app.buttons["PatientTodaySummaryToggle-morning"]
@@ -65,6 +68,7 @@ final class PatientTodayExpandableSummaryUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.descendants(matching: .any)["CaregiverTodayLateRecordAlertCard"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["次は 昼 13:00"].exists)
         XCTAssertTrue(app.staticTexts["実際 13:21"].exists)
         XCTAssertTrue(app.staticTexts["本人が記録"].exists)
         XCTAssertFalse(app.buttons["CaregiverTodayRecordSlotButton.morning"].exists)
@@ -123,6 +127,23 @@ final class PatientTodayExpandableSummaryUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["整腸剤 50 mg"].exists)
         XCTAssertTrue(app.staticTexts["実際 17:51"].exists)
         XCTAssertTrue(app.staticTexts["5時間21分遅れ"].exists)
+        XCTAssertTrue(app.buttons["記録を取り消す"].exists)
+
+        for _ in 0..<5 where !eveningHeader.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(eveningHeader.isHittable)
+        eveningHeader.tap()
+        XCTAssertTrue(app.buttons["代理で記録"].waitForExistence(timeout: 2))
+
+        for _ in 0..<5 where !bedtimeHeader.isHittable {
+            app.swipeUp()
+        }
+        if bedtimeHeader.isHittable {
+            bedtimeHeader.tap()
+            XCTAssertTrue(app.staticTexts["取り消し済み"].exists)
+            XCTAssertTrue(app.buttons["もう一度代理で記録"].waitForExistence(timeout: 2))
+        }
 
         let prnHeader = app.buttons["CaregiverHistoryPrnHeader"]
         for _ in 0..<6 where !prnHeader.isHittable {

@@ -17,7 +17,7 @@ struct HistoryDayDetailView: View {
         formatter.dateFormat = "M月d日 (E)"
         return formatter
     }()
-    private static let timeFormatter: DateFormatter = {
+    fileprivate static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.calendar = HistoryDayDetailView.calendar
         formatter.timeZone = HistoryDayDetailView.historyTimeZone
@@ -31,8 +31,8 @@ struct HistoryDayDetailView: View {
     var style: HistoryDayDetailStyle = .caregiver
     var onReturnToLogin: () -> Void = {}
     var onRecordMissedDose: (HistoryDayItemDTO) -> Void = { _ in }
-    @State private var doseToBackfill: HistoryDayItemDTO?
-    @State private var showingBackfillConfirmation = false
+    var onCancelDose: (HistoryDayItemDTO) -> Void = { _ in }
+    @State private var pendingAction: HistoryDoseAction?
     @State private var expandedSlotKeys: Set<String> = []
 
     var body: some View {
@@ -71,24 +71,20 @@ struct HistoryDayDetailView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .alert(
-            NSLocalizedString("history.day.backfill.confirm.title", comment: "Backfill confirm title"),
-            isPresented: $showingBackfillConfirmation,
-            presenting: doseToBackfill
-        ) { dose in
-            Button(NSLocalizedString("common.cancel", comment: "Cancel"), role: .cancel) {
-                doseToBackfill = nil
-            }
-            Button(NSLocalizedString("history.day.backfill.confirm.action", comment: "Backfill confirm action")) {
-                onRecordMissedDose(dose)
-                doseToBackfill = nil
-            }
-        } message: { dose in
-            Text(
-                String(
-                    format: NSLocalizedString("history.day.backfill.confirm.message", comment: "Backfill confirm message"),
-                    dose.medicationName
-                )
+        .alert(item: $pendingAction) { action in
+            let dose = action.dose
+            return Alert(
+                title: Text(action.confirmationTitle),
+                message: Text(confirmationMessage(for: action)),
+                primaryButton: .cancel(Text(NSLocalizedString("common.cancel", comment: "Cancel"))),
+                secondaryButton: .default(Text(action.confirmationButtonTitle)) {
+                    switch action {
+                    case .backfill:
+                        onRecordMissedDose(dose)
+                    case .cancel:
+                        onCancelDose(dose)
+                    }
+                }
             )
         }
         .onAppear {
@@ -116,9 +112,9 @@ struct HistoryDayDetailView: View {
                         delayText: delayText(for: group),
                         onToggle: { toggleSlot(group.slot) },
                         onBackfill: { dose in
-                            doseToBackfill = dose
-                            showingBackfillConfirmation = true
-                        }
+                            pendingAction = .backfill(dose)
+                        },
+                        onCancel: { dose in pendingAction = .cancel(dose) }
                     )
                 }
 
@@ -320,6 +316,29 @@ struct HistoryDayDetailView: View {
             return NSLocalizedString("history.recordedBy.caregiver", comment: "Caregiver recorded")
         }
     }
+
+    private func confirmationMessage(for action: HistoryDoseAction) -> String {
+        let dose = action.dose
+        switch action {
+        case .backfill:
+            return String(
+                format: NSLocalizedString("history.day.backfill.confirm.message", comment: "Backfill confirm message"),
+                dose.medicationName,
+                HistoryDayDetailView.timeFormatter.string(from: dose.scheduledAt)
+            )
+        case .cancel:
+            let recorder = dose.recordedByType.map(recordedByText(for:))
+                ?? NSLocalizedString("history.recordedBy.unknown", comment: "Unknown recorder")
+            let actualTime = dose.takenAt.map { HistoryDayDetailView.timeFormatter.string(from: $0) } ?? "—"
+            return String(
+                format: NSLocalizedString("history.day.cancel.confirm.message", comment: "Cancel confirm message"),
+                dose.medicationName,
+                HistoryDayDetailView.timeFormatter.string(from: dose.scheduledAt),
+                actualTime,
+                recorder
+            )
+        }
+    }
 }
 
 #if targetEnvironment(simulator)
@@ -390,8 +409,8 @@ struct CaregiverHistoryV105DebugPreview: View {
         {"medicationId":"morning-1","medicationName":"朝・昼・夜 確認用のお薬","dosageText":"1錠","doseCountPerIntake":1,"scheduledAt":"2026-07-21T23:00:00Z","takenAt":"2026-07-22T08:21:00Z","slot":"morning","effectiveStatus":"taken","recordedByType":"patient"},
         {"medicationId":"noon-1","medicationName":"カルボシステイン","dosageText":"500 mg","doseCountPerIntake":1,"scheduledAt":"2026-07-22T03:30:00Z","takenAt":"2026-07-22T08:51:00Z","slot":"noon","effectiveStatus":"taken","recordedByType":"patient"},
         {"medicationId":"noon-2","medicationName":"整腸剤","dosageText":"50 mg","doseCountPerIntake":1,"scheduledAt":"2026-07-22T03:30:00Z","takenAt":"2026-07-22T08:51:00Z","slot":"noon","effectiveStatus":"taken","recordedByType":"patient"},
-        {"medicationId":"evening-1","medicationName":"夕食後の薬","dosageText":"1錠","doseCountPerIntake":1,"scheduledAt":"2026-07-22T10:00:00Z","takenAt":null,"slot":"evening","effectiveStatus":"pending","recordedByType":null},
-        {"medicationId":"bedtime-1","medicationName":"眠前の薬","dosageText":"1錠","doseCountPerIntake":1,"scheduledAt":"2026-07-22T14:50:00Z","takenAt":null,"slot":"bedtime","effectiveStatus":"pending","recordedByType":null}
+        {"medicationId":"evening-1","medicationName":"夕食後の薬","dosageText":"1錠","doseCountPerIntake":1,"scheduledAt":"2026-07-22T10:00:00Z","takenAt":null,"slot":"evening","effectiveStatus":"missed","recordedByType":null},
+        {"medicationId":"bedtime-1","medicationName":"眠前の薬","dosageText":"1錠","doseCountPerIntake":1,"scheduledAt":"2026-07-22T14:50:00Z","takenAt":null,"slot":"bedtime","effectiveStatus":"missed","recordedByType":null,"cancelledAt":"2026-07-22T15:25:00Z","cancelledByType":"caregiver","cancelledRecordTakenAt":"2026-07-22T15:13:00Z","inventoryRestored":true}
       ],
       "prnItems": [
         {"medicationId":"prn-1","medicationName":"頭痛薬","takenAt":"2026-07-22T05:10:00Z","quantityTaken":1,"actorType":"PATIENT"},
@@ -405,6 +424,42 @@ struct CaregiverHistoryV105DebugPreview: View {
 enum HistoryDayDetailStyle {
     case caregiver
     case patient
+}
+
+private enum HistoryDoseAction: Identifiable {
+    case backfill(HistoryDayItemDTO)
+    case cancel(HistoryDayItemDTO)
+
+    var id: String {
+        switch self {
+        case .backfill(let dose): return "backfill-\(dose.historyRowID)"
+        case .cancel(let dose): return "cancel-\(dose.historyRowID)"
+        }
+    }
+
+    var dose: HistoryDayItemDTO {
+        switch self {
+        case .backfill(let dose), .cancel(let dose): return dose
+        }
+    }
+
+    var confirmationTitle: String {
+        switch self {
+        case .backfill:
+            return NSLocalizedString("history.day.backfill.confirm.title", comment: "Backfill confirm title")
+        case .cancel:
+            return NSLocalizedString("history.day.cancel.confirm.title", comment: "Cancel confirm title")
+        }
+    }
+
+    var confirmationButtonTitle: String {
+        switch self {
+        case .backfill:
+            return NSLocalizedString("history.day.backfill.confirm.action", comment: "Backfill confirm action")
+        case .cancel:
+            return NSLocalizedString("history.day.cancel.confirm.action", comment: "Cancel confirm action")
+        }
+    }
 }
 
 struct HistoryDaySlotGroup: Identifiable, Equatable {
@@ -446,6 +501,10 @@ struct HistoryDaySlotGroup: Identifiable, Equatable {
     var recordedByTypes: Set<RecordedByTypeDTO> {
         Set(doses.compactMap(\.recordedByType))
     }
+
+    var allCancelled: Bool {
+        !doses.isEmpty && doses.allSatisfy { $0.cancelledAt != nil }
+    }
 }
 
 private struct CaregiverHistorySlotGroupView: View {
@@ -460,6 +519,7 @@ private struct CaregiverHistorySlotGroupView: View {
     let delayText: String?
     let onToggle: () -> Void
     let onBackfill: (HistoryDayItemDTO) -> Void
+    let onCancel: (HistoryDayItemDTO) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -512,8 +572,10 @@ private struct CaregiverHistorySlotGroupView: View {
                     ForEach(group.doses.sorted(by: doseSort), id: \.historyRowID) { dose in
                         CaregiverHistoryMedicationRow(
                             dose: dose,
-                            canBackfill: dose.effectiveStatus == .missed,
-                            onBackfill: { onBackfill(dose) }
+                            canBackfill: dose.effectiveStatus == .missed || dose.cancelledAt != nil,
+                            canCancel: dose.effectiveStatus == .taken,
+                            onBackfill: { onBackfill(dose) },
+                            onCancel: { onCancel(dose) }
                         )
                     }
                 }
@@ -553,6 +615,9 @@ private struct CaregiverHistorySlotGroupView: View {
     }
 
     private var statusText: String {
+        if group.allCancelled {
+            return NSLocalizedString("history.status.cancelled", comment: "Cancelled")
+        }
         if group.isPartiallyTaken {
             return NSLocalizedString("history.status.partial", comment: "Partially recorded")
         }
@@ -569,6 +634,7 @@ private struct CaregiverHistorySlotGroupView: View {
     }
 
     private var statusColor: Color {
+        if group.allCancelled { return .gray }
         if group.isPartiallyTaken { return CaregiverUI.orange }
         if group.isLate { return CaregiverUI.orange }
         switch group.status {
@@ -579,6 +645,7 @@ private struct CaregiverHistorySlotGroupView: View {
     }
 
     private var statusIconName: String? {
+        if group.allCancelled { return "arrow.uturn.backward" }
         if group.isPartiallyTaken { return "exclamationmark" }
         if group.isLate { return "clock.badge.exclamationmark.fill" }
         switch group.status {
@@ -605,7 +672,9 @@ private struct CaregiverHistorySlotGroupView: View {
 private struct CaregiverHistoryMedicationRow: View {
     let dose: HistoryDayItemDTO
     let canBackfill: Bool
+    let canCancel: Bool
     let onBackfill: () -> Void
+    let onCancel: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -620,6 +689,16 @@ private struct CaregiverHistoryMedicationRow: View {
                     Text(String(format: NSLocalizedString("patient.today.doseCount.format", comment: "Dose count"), AppConstants.formatDecimal(dose.doseCountPerIntake)))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(Color.readableSecondaryText)
+                    if let cancelledAt = dose.cancelledAt {
+                        Text(
+                            String(
+                                format: NSLocalizedString("history.day.cancelled.detail", comment: "Cancelled detail"),
+                                HistoryDayDetailView.timeFormatter.string(from: cancelledAt)
+                            )
+                        )
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.readableSecondaryText)
+                    }
                 }
                 Spacer(minLength: 0)
                 Image(systemName: statusIconName)
@@ -631,12 +710,29 @@ private struct CaregiverHistoryMedicationRow: View {
 
             if canBackfill {
                 Button(action: onBackfill) {
-                    Label(NSLocalizedString("history.day.backfill.button", comment: "Backfill button"), systemImage: "checkmark.circle.fill")
+                    Label(
+                        dose.cancelledAt == nil
+                            ? NSLocalizedString("history.day.backfill.button", comment: "Backfill button")
+                            : NSLocalizedString("history.day.backfill.again.button", comment: "Backfill again button"),
+                        systemImage: "checkmark.circle.fill"
+                    )
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 42)
                         .background(CaregiverUI.teal, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+
+            if canCancel {
+                Button(action: onCancel) {
+                    Label(NSLocalizedString("history.day.cancel.button", comment: "Cancel dose button"), systemImage: "arrow.uturn.backward.circle.fill")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(CaregiverUI.red)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 42)
+                        .background(CaregiverUI.red.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }
@@ -656,6 +752,7 @@ private struct CaregiverHistoryMedicationRow: View {
     }
 
     private var statusColor: Color {
+        if dose.cancelledAt != nil { return .gray }
         switch dose.effectiveStatus {
         case .taken: return CaregiverUI.teal
         case .missed: return CaregiverUI.red
@@ -664,6 +761,7 @@ private struct CaregiverHistoryMedicationRow: View {
     }
 
     private var statusIconName: String {
+        if dose.cancelledAt != nil { return "arrow.uturn.backward" }
         switch dose.effectiveStatus {
         case .taken: return "checkmark"
         case .missed: return "exclamationmark"

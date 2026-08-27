@@ -109,6 +109,16 @@ final class APIClient {
         return try JSONDecoder().decode(PatientSlotTimesResponseDTO.self, from: data).data.slotTimes
     }
 
+    func fetchCaregiverPatientSlotTimes(patientId: String? = nil) async throws -> PatientSlotTimesDTO {
+        let resolvedPatientId = try resolvedCaregiverPatientId(requestedPatientId: patientId)
+        guard let slotTimes = try await listPatients()
+            .first(where: { $0.id == resolvedPatientId })?
+            .slotTimes else {
+            throw APIError.notFound
+        }
+        return slotTimes
+    }
+
     func issueLinkingCode(patientId: String) async throws -> LinkingCodeDTO {
         await refreshCaregiverAuthenticationIfNeeded()
         let url = baseURL.appendingPathComponent("api/patients/\(patientId)/linking-codes")

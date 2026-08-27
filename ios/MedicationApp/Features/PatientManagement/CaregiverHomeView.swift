@@ -883,17 +883,11 @@ private struct CaregiverTutorialSampleView: View {
     }
 
     private var todayHeader: some View {
-        HStack(alignment: .center, spacing: 12) {
-            CaregiverAvatar(name: "田中 花子", systemImage: "person.crop.circle.fill")
-                .frame(width: 58, height: 58)
-            VStack(alignment: .leading, spacing: 3) {
-                Text("田中 花子さん")
-                    .font(.title3.weight(.bold))
-                Text(NSLocalizedString("caregiver.today.title", comment: "Caregiver today title"))
-                    .font(.title2.weight(.bold))
-            }
-            Spacer()
-        }
+        CaregiverPatientHeader(
+            title: NSLocalizedString("caregiver.today.title", comment: "Caregiver today title"),
+            patientName: "田中 花子",
+            systemImage: "person.crop.circle.fill"
+        )
     }
 
     private var title: String {

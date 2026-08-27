@@ -97,6 +97,55 @@ final class PatientTodayViewModelPerformanceTests: XCTestCase {
         // Let the deliberately slow background data refresh finish before teardown.
         try await Task.sleep(for: .seconds(1))
     }
+
+    func testPatientTodayRefreshUsesServerSlotTimes() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [PatientTodayPerformanceURLProtocol.self]
+        let urlSession = URLSession(configuration: configuration)
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        let sessionStore = SessionStore(
+            userDefaults: userDefaults,
+            secureStorage: PatientTodayPerformanceTestSecureStorage()
+        )
+        sessionStore.setMode(.patient)
+        sessionStore.savePatientToken(
+            "patient-token",
+            expiresAt: Date().addingTimeInterval(60 * 24 * 60 * 60)
+        )
+        let preferencesStore = NotificationPreferencesStore(defaults: userDefaults)
+        preferencesStore.setSlotTime(.noon, hour: 13, minute: 0)
+        let apiClient = APIClient(
+            baseURL: try XCTUnwrap(URL(string: "http://localhost:3000")),
+            sessionStore: sessionStore,
+            urlSession: urlSession
+        )
+        PatientTodayPerformanceURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["content-type": "application/json"]
+            )!
+            if request.url?.path == "/api/patient/slot-times" {
+                return (response, Data(#"{"data":{"slotTimes":{"morning":"07:15","noon":"12:20","evening":"18:40","bedtime":"22:30"}}}"#.utf8))
+            }
+            return (response, Data(#"{"data":[]}"#.utf8))
+        }
+
+        let viewModel = PatientTodayViewModel(
+            apiClient: apiClient,
+            preferencesStore: preferencesStore
+        )
+        viewModel.load(showLoading: true)
+        for _ in 0..<100 where viewModel.isLoading {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        XCTAssertFalse(viewModel.isLoading)
+        XCTAssertNil(viewModel.errorMessage)
+        XCTAssertEqual(preferencesStore.slotTime(for: .noon).hour, 12)
+        XCTAssertEqual(preferencesStore.slotTime(for: .noon).minute, 20)
+    }
 }
 
 private final class PatientTodayPerformanceURLProtocol: URLProtocol {

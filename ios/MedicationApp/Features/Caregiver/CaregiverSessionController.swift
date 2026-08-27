@@ -24,8 +24,16 @@ final class CaregiverSessionController: ObservableObject {
     var tokenManager: DeviceTokenManager { deviceTokenManager }
 
     func logoutCaregiver() async {
+        await SessionNotificationCleaner.clearAll()
         await unregisterPushFromBackend()
+        await deviceTokenManager.revokeLocalPushIdentity()
         sessionStore.clearCaregiverToken()
+    }
+
+    func clearLocalNotificationSession() async {
+        await SessionNotificationCleaner.clearAll()
+        await deviceTokenManager.revokeLocalPushIdentity()
+        hasRegisteredPush = false
     }
 
     func unregisterPushFromBackend() async {

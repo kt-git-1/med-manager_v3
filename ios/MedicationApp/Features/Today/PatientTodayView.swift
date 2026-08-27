@@ -408,7 +408,8 @@ private struct PatientTodayRootView: View {
                 hasRecordableInventory: summary.hasRecordableInventory
             )
         }
-        guard let nextSlot = PatientTodayNextSlotSelector.selectSlot(from: candidates) else {
+        let selectionNow = viewModel.slotSummaries.values.first?.currentTime ?? Date()
+        guard let nextSlot = PatientTodayNextSlotSelector.selectSlot(from: candidates, now: selectionNow) else {
             return nil
         }
         return slotSections.first { $0.slot == nextSlot }
@@ -525,6 +526,7 @@ private struct PatientTodayLifecycleModifier: ViewModifier {
     @ObservedObject var viewModel: PatientTodayViewModel
     let loadDataOnAppear: Bool
     let onHandleDeepLink: () -> Void
+    @Environment(\.scenePhase) private var scenePhase
 
     func body(content: Content) -> some View {
         content
@@ -538,6 +540,10 @@ private struct PatientTodayLifecycleModifier: ViewModifier {
                 if loadDataOnAppear {
                     viewModel.handleDisappear()
                 }
+            }
+            .onChange(of: scenePhase) { _, newValue in
+                guard loadDataOnAppear, newValue == .active else { return }
+                viewModel.load(showLoading: false)
             }
     }
 }
@@ -658,10 +664,13 @@ private struct PatientTodayListView: View {
                     PatientInventoryWarningCard(warning: inventoryWarning)
                 }
 
+                nextExpectedSlotBanner
+
                 PatientDayProgressStrip(
                     summaries: slotSummaries,
                     slotTitle: slotTitle,
                     activeSlot: nextSlotSection?.slot,
+                    slotColor: slotColor,
                     timeText: timeText
                 )
 
@@ -690,6 +699,38 @@ private struct PatientTodayListView: View {
         }
         .refreshable {
             viewModel.load(showLoading: false)
+        }
+    }
+
+    @ViewBuilder
+    private var nextExpectedSlotBanner: some View {
+        if let nextSlotSection,
+           let slot = nextSlotSection.slot,
+           let summary = slotSummaries[slot] {
+            let activeColor = slotColor(slot)
+            HStack(spacing: 12) {
+                Image(systemName: "clock.fill")
+                    .font(.title3.weight(.bold))
+
+                Text(String(
+                    format: NSLocalizedString("patient.today.summary.next", comment: "Next medication slot"),
+                    slotTitle(slot),
+                    summary.slotTime
+                ))
+                .font(.title3.weight(.bold))
+
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(activeColor)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 13)
+            .background(activeColor.opacity(0.11), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(activeColor.opacity(0.45), lineWidth: 1.5)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("PatientTodayNextExpectedSlot")
         }
     }
 
@@ -815,7 +856,8 @@ private struct PatientTodayListView: View {
                 hasRecordableInventory: summary.hasRecordableInventory
             )
         }
-        guard let nextSlot = PatientTodayNextSlotSelector.selectSlot(from: candidates) else {
+        let selectionNow = slotSummaries.values.first?.currentTime ?? Date()
+        guard let nextSlot = PatientTodayNextSlotSelector.selectSlot(from: candidates, now: selectionNow) else {
             return nil
         }
         return slotSections.first { $0.slot == nextSlot }
@@ -924,6 +966,7 @@ private struct PatientDayProgressStrip: View {
     let summaries: [NotificationSlot: PatientTodayViewModel.SlotSummary]
     let slotTitle: (NotificationSlot?) -> String
     let activeSlot: NotificationSlot?
+    let slotColor: (NotificationSlot?) -> Color
     let timeText: (Date) -> String
 
     var body: some View {
@@ -1001,7 +1044,7 @@ private struct PatientDayProgressStrip: View {
     private func accentColor(for slot: NotificationSlot) -> Color {
         guard let summary = summaries[slot] else { return .secondary }
         if summary.aggregateStatus == .taken { return PatientUI.teal }
-        if slot == activeSlot { return PatientUI.orange }
+        if slot == activeSlot { return slotColor(slot) }
         return .secondary
     }
 
@@ -1011,7 +1054,7 @@ private struct PatientDayProgressStrip: View {
 
     private func borderColor(for slot: NotificationSlot) -> Color {
         if summaries[slot]?.aggregateStatus == .taken { return PatientUI.teal }
-        if slot == activeSlot { return PatientUI.orange }
+        if slot == activeSlot { return slotColor(slot) }
         return Color.secondary.opacity(0.26)
     }
 

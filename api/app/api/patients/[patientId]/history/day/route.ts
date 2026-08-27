@@ -23,6 +23,7 @@ import { listPrnHistoryItemsByRange } from "../../../../../../src/services/prnDo
 import { validateDateString } from "../../../../../../src/validators/schedule";
 import { checkRetentionForDay } from "../../../../../../src/services/historyRetentionService";
 import { HistoryRetentionError } from "../../../../../../src/errors/historyRetentionError";
+import { listCancelledDoseRecordsByPatientRange } from "../../../../../../src/repositories/doseRecordRepo";
 
 export const runtime = "nodejs";
 
@@ -107,22 +108,31 @@ export async function GET(
       effectiveSlotTimes,
       slotTimeTimeline
     );
-    const doses = await getScheduleWithStatus(
-      patientId,
-      range.from,
-      range.to,
-      historyTimeZone,
-      new Date(),
-      effectiveSlotTimes,
-      slotTimeTimeline,
-      true
+    const [doses, prn, cancelledRecords] = await Promise.all([
+      getScheduleWithStatus(
+        patientId,
+        range.from,
+        range.to,
+        historyTimeZone,
+        new Date(),
+        effectiveSlotTimes,
+        slotTimeTimeline,
+        true
+      ),
+      listPrnHistoryItemsByRange({
+        patientId,
+        from: range.from,
+        to: range.to,
+        timeZone: historyTimeZone
+      }),
+      listCancelledDoseRecordsByPatientRange({ patientId, from: range.from, to: range.to })
+    ]);
+    const cancelledByDoseKey = new Map(
+      cancelledRecords.map((record) => [
+        `${record.medicationId}:${record.scheduledAt.toISOString()}`,
+        record
+      ])
     );
-    const prn = await listPrnHistoryItemsByRange({
-      patientId,
-      from: range.from,
-      to: range.to,
-      timeZone: historyTimeZone
-    });
 
     const items = doses
       .map((dose) => {
@@ -130,6 +140,9 @@ export async function GET(
         if (!slot) {
           return null;
         }
+        const cancelledRecord = cancelledByDoseKey.get(
+          `${dose.medicationId}:${new Date(dose.scheduledAt).toISOString()}`
+        );
         return {
           medicationId: dose.medicationId,
           medicationName: dose.medicationSnapshot.name,
@@ -139,7 +152,11 @@ export async function GET(
           takenAt: dose.takenAt ?? null,
           slot,
           effectiveStatus: dose.effectiveStatus,
-          recordedByType: dose.recordedByType ?? null
+          recordedByType: dose.recordedByType ?? null,
+          cancelledAt: cancelledRecord?.cancelledAt?.toISOString() ?? null,
+          cancelledByType: cancelledRecord?.cancelledByType?.toLowerCase() ?? null,
+          cancelledRecordTakenAt: cancelledRecord?.takenAt.toISOString() ?? null,
+          inventoryRestored: cancelledRecord?.inventoryRestoredAt != null
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null)

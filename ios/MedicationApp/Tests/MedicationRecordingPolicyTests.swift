@@ -94,7 +94,11 @@ final class MedicationRecordingPolicyTests: XCTestCase {
             takenAt: takenAt,
             slot: .noon,
             effectiveStatus: status,
-            recordedByType: actor
+            recordedByType: actor,
+            cancelledAt: nil,
+            cancelledByType: nil,
+            cancelledRecordTakenAt: nil,
+            inventoryRestored: nil
         )
     }
 
