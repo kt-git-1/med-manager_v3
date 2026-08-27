@@ -95,7 +95,7 @@
 - [x] Inventory detail can scroll above the bottom tab on compact iPhones and with larger text.
 - [x] Slot-time changes made on iOS appear on Android after refresh/resume, and Android changes appear on iOS after refresh/resume.
 - [x] Foreground refresh does not duplicate schedules, records, reminders, or network mutations.
-- [ ] Logout, unlink, account deletion, and mode changes clear local reminders, APNs/FCM identity, and stale push preferences.
+- [ ] Logout, unlink, account deletion, and mode changes clear local reminders, APNs/FCM identity, and stale push preferences. (Build 65 patient logout/mode change cleared delivered local reminders; unlink/deletion and remote identity cleanup remain open.)
 
 ### Core smoke and device matrix
 
@@ -141,3 +141,5 @@
 - [x] Upload Build 65, set the existing non-exempt-encryption declaration, confirm Apple state `VALID`, and install it from TestFlight on the physical iPhone.
 - [x] On a physical iPhone, verify one unrecorded real local reminder delivers. (23:33 evening reminder, XCUI screenshot evidence)
 - [x] On the same physical iPhone, record a later slot and immediately background the app; verify neither its primary nor repeat reminder delivers. (23:37 bedtime reminder absent through 23:38, XCUI count 0; API confirmed the patient record)
+- [x] Upgrade from Build 64 preserves the synthetic patient session and Build 65 patient navigation/refresh/relaunch smoke passes. (history/Today/settings 1.621–1.667 s; refresh 2.385 s; relaunch 2.407 s)
+- [x] Build 65 caregiver login and Today/history/inventory/medication navigation smoke passes. (tab transitions 1.781–2.018 s; history fixed-scroll rendering captured on the physical iPhone)
