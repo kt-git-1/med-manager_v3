@@ -54,65 +54,78 @@
 
 ### Artifact and environment
 
-- [ ] `MARKETING_VERSION=1.0.8` and `CURRENT_PROJECT_VERSION=64` in both `project.yml` and the Xcode project.
+- [x] `MARKETING_VERSION=1.0.8` and `CURRENT_PROJECT_VERSION=64` in both `project.yml` and the Xcode project.
 - [ ] Archive Info.plist reports version `1.0.8 (64)`, Japanese development region, Staging API URL, and no embedded server secrets.
-- [ ] Staging Supabase has the soft-cancel migration and Staging Vercel is healthy on the matching commit.
-- [ ] App Store Connect processing state is `VALID`, encryption declaration is complete, and the internal tester group can install Build 64.
+- [x] Staging Supabase has the soft-cancel migration and Staging Vercel is healthy on the matching commit. (2026-08-27: migration applied; API fix commit `83772a5` deployed `READY`)
+- [x] App Store Connect processing state is `VALID`, encryption declaration is complete, and the internal tester group can install Build 64. (2026-08-27: iPhone 13 installation confirmed)
 
 ### Automated API and database checks
 
-- [x] Prisma schema validates; API typecheck, production build, lint, and all unit/integration tests pass. (2026-08-27: 70 files / 328 tests)
-- [ ] Active schedule/history/streak/report calculations ignore cancelled records while caregiver history retains cancellation metadata.
-- [ ] New single and bulk records persist the exact consumed quantity.
-- [ ] Cancellation and inventory restoration commit atomically.
-- [ ] Repeated or concurrent cancellation cannot restore inventory twice.
-- [ ] Legacy records without captured quantity are cancelled without guessing an inventory restoration amount.
-- [ ] Re-recording a cancelled schedule creates one active result and decrements inventory once.
-- [ ] Cancellation does not invoke the dose-taken push path.
-- [ ] Account deletion and patient unlink cleanup still remove the new cancellation-bearing records safely.
+- [x] Prisma schema validates; API typecheck, production build, lint, and all unit/integration tests pass. (2026-08-27 rerun: 70 files / 329 tests)
+- [x] Active schedule/history/streak/report calculations ignore cancelled records while caregiver history retains cancellation metadata.
+- [x] New single and bulk records persist the exact consumed quantity.
+- [x] Cancellation and inventory restoration commit atomically.
+- [x] Repeated or concurrent cancellation cannot restore inventory twice.
+- [x] Legacy records without captured quantity are cancelled without guessing an inventory restoration amount.
+- [x] Re-recording a cancelled schedule creates one active result and decrements inventory once. (API/DB sequence and Android patient re-record both verified)
+- [x] Cancellation does not invoke the dose-taken push path.
+- [x] Account deletion and patient unlink cleanup still remove the new cancellation-bearing records safely.
 
 ### Caregiver history correction flow
 
-- [ ] A patient-recorded dose shows actual time, recorder, and `記録を取り消す`.
-- [ ] A caregiver-recorded dose shows actual time, recorder, and `記録を取り消す`.
+- [x] A patient-recorded dose shows actual time, recorder, and `記録を取り消す`. (Android patient record reflected in iPhone TestFlight caregiver history)
+- [x] A caregiver-recorded dose shows actual time, recorder, and `記録を取り消す`.
 - [ ] Tapping cancel presents drug, scheduled time, actual time, recorder, and inventory explanation before mutation.
 - [ ] Dismissing the confirmation makes no API, history, inventory, streak, or notification change.
 - [ ] Confirming changes the card to `取り消し済み` and shows cancellation time.
 - [ ] Today, month summary, selected-day summary, streak, report, and inventory refresh consistently after cancellation.
-- [ ] The patient receives no push notification for cancellation.
+- [x] The patient receives no push notification for cancellation.
 - [ ] A cancelled dose can be recorded again with `もう一度代理で記録`.
-- [ ] A past missed dose can be recorded with `代理で記録`; actual time is the operation time and recorder is family.
+- [x] A past missed dose can be recorded with `代理で記録`; actual time is the operation time and recorder is family. (public Staging API plus iPhone TestFlight accessibility state)
 - [ ] Future unrecorded doses cannot be proxy-recorded from history unless they are explicitly in a cancelled state.
 - [ ] Multiple drugs in one slot support partial cancel/re-record without changing the other drugs.
 - [ ] Insufficient inventory, expired auth, offline, timeout, and server failure show an error and preserve the pre-operation state.
 
 ### 1.0.8 UI and synchronization regression
 
-- [ ] Caregiver Today header matches the title/name layout used by the other caregiver screens.
-- [ ] Caregiver and patient Today clearly highlight the same next expected slot.
-- [ ] Slot colors are morning yellow, noon orange, evening blue, and bedtime purple across Today and history.
-- [ ] Medication dosage input separates numeric value and unit, supports Japanese labels, and places validation errors beside the field.
-- [ ] Inventory detail can scroll above the bottom tab on compact iPhones and with larger text.
-- [ ] Slot-time changes made on iOS appear on Android after refresh/resume, and Android changes appear on iOS after refresh/resume.
-- [ ] Foreground refresh does not duplicate schedules, records, reminders, or network mutations.
+- [x] Caregiver Today header matches the title/name layout used by the other caregiver screens.
+- [x] Caregiver and patient Today clearly highlight the same next expected slot.
+- [x] Slot colors are morning yellow, noon orange, evening blue, and bedtime purple across Today and history.
+- [x] Medication dosage input separates numeric value and unit, supports Japanese labels, and places validation errors beside the field.
+- [x] Inventory detail can scroll above the bottom tab on compact iPhones and with larger text.
+- [x] Slot-time changes made on iOS appear on Android after refresh/resume, and Android changes appear on iOS after refresh/resume.
+- [x] Foreground refresh does not duplicate schedules, records, reminders, or network mutations.
 - [ ] Logout, unlink, account deletion, and mode changes clear local reminders, APNs/FCM identity, and stale push preferences.
 
 ### Core smoke and device matrix
 
 - [ ] Fresh install: caregiver signup/login, patient creation, linking code issue, patient link, medication registration, and Today schedule generation.
-- [ ] Upgrade install from Build 63 preserves caregiver login, patient link, medication, history, inventory, preferences, and notification authorization.
+- [x] Upgrade install from Build 63 preserves caregiver login, patient link, medication, history, inventory, preferences, and notification authorization.
 - [ ] Patient scheduled recording, caregiver slot proxy recording, PRN recording/cancellation, inventory refill/correction, pull-to-refresh, and five-tab navigation pass.
 - [ ] Cold launch, background/resume, force quit/relaunch, offline launch/recovery, and expired-token refresh pass.
 - [ ] iPhone compact width, current large iPhone, iPad, portrait, and supported large Dynamic Type have no clipped actions or hidden content.
-- [ ] VoiceOver labels distinguish scheduled time, actual time, recorder, cancellation, and destructive confirmation actions.
-- [ ] Record/proxy/cancel interactions meet the release response-time thresholds on Staging and do not leave a long-running updating overlay.
+- [x] VoiceOver labels distinguish scheduled time, actual time, recorder, cancellation, and destructive confirmation actions.
+- [x] Record/proxy/cancel interactions meet the release response-time thresholds on Staging and do not leave a long-running updating overlay. (API create/cancel/re-record 0.206–0.495 s; physical-device navigation/refresh measurements recorded)
 - [ ] Real local reminder delivers when unrecorded and is suppressed when recorded; caregiver missed-dose push delivers once and is suppressed after timely recording.
-- [ ] iOS caregiver ↔ Android patient and Android caregiver ↔ iOS patient interoperability passes on the same Staging account.
+- [x] iOS caregiver ↔ Android patient and Android caregiver ↔ iOS patient scheduled-dose interoperability passes on the same Staging account. (PRN/partial/insufficient-inventory extensions remain open in the matrix above.)
 
 ### Build 64 execution record
 
 - [x] iOS unit tests: 215 executed, 35 known environment/unfinished-spec skips, 0 failures.
 - [x] iOS UI retry set: medication supply calculation, caregiver history grouping/cancellation UI, caregiver tutorial, and patient medicine expansion all passed; the empty-inventory route remains skipped because that launch fixture is unavailable.
 - [x] The first full UI run was invalidated by an iOS 26.5 Simulator accessibility-runtime runner exit. The five affected cases were rerun after a Simulator reboot: four passed and one retained its explicit fixture-unavailable skip, with zero assertion failures.
-- [ ] Simulator smoke against the deployed Staging API.
-- [ ] Physical-device TestFlight smoke, performance measurements, notifications, upgrade from Build 63, and Android interoperability.
+- [x] Simulator smoke against the deployed Staging API.
+- [x] Physical-device TestFlight smoke, performance measurements, dose-taken and missed-dose Push, and upgrade from Build 63. Android patient → iOS caregiver interoperability passed; the full bidirectional matrix remains open above.
+
+### Build 64 rerun evidence (2026-08-27)
+
+- Public Staging history mutation: missed → caregiver record → cancel → repeated cancel → re-record passed; inventory sequence was `18 → 17 → 18 → 18 → 17`.
+- QA found and fixed a real regression where patient slot bulk recording skipped a cancelled row. Commit `83772a5` revives only cancelled rows under a concurrency guard; the new regression case brings the API suite to 329 passing tests.
+- Android Staging patient re-recorded the cancelled evening slot. iPhone 13 TestFlight history then showed actual time, `本人が記録`, and the cancellation action; inventory changed once from 18 to 17.
+- Android caregiver bulk-recorded two bedtime medications; iPhone TestFlight patient Today refreshed to the same actual time and two medications. After cancellation, iPhone patient re-recorded both in 4.028 s and Android caregiver Today refreshed to `本人が記録`. A final Android caregiver re-record was reflected back on iPhone patient Today.
+- Real caregiver dose-taken Push arrived on iPhone from the Android patient write. The matching delivery row was created exactly once.
+- Scoped real missed-dose Push arrived on iPhone with the Japanese bedtime message. A second send of the same patient/date/slot created no second delivery.
+- Android Staging offline launch showed `取得に失敗しました`; after network restoration and relaunch, Today recovered with the same actual times and next bedtime slot.
+- The temporary synthetic caregiver was logged out on iPhone, deleted through the public Staging account-deletion endpoint, and verified absent from Supabase Auth, patient, medication, dose-record, and push-device storage. Local QA Keychain items and Android emulator Staging state were cleared.
+- iPhone 13 TestFlight navigation measurements: patient history 1.626–1.698 s, Today 1.627–1.662 s, settings 1.636–1.658 s, pull refresh 2.363 s, relaunch 2.390 s; caregiver tabs 1.753–1.922 s.
+- Still open before the full cross-platform gate: PRN/partial/insufficient-inventory cross-platform cases, current-build iOS local-reminder delivery/suppression, large Dynamic Type, and a fully gesture-driven history confirmation mutation on physical iPhone.
