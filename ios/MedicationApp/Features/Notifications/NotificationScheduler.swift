@@ -48,6 +48,16 @@ final class NotificationScheduler {
         notificationCenter.removePendingNotificationRequests(withIdentifiers: [identifier])
     }
 
+    /// Remove this slot immediately after a successful record. The full plan is
+    /// rebuilt in the background, but this synchronous removal prevents a user
+    /// who backgrounds the app straight after recording from receiving a stale
+    /// reminder while that refresh is still fetching history.
+    func cancelReminders(dateKey: String, slot: NotificationSlot) {
+        let identifiers = [1, 2].map { "notif:\(dateKey):\(slot.rawValue):\($0)" }
+        notificationCenter.removePendingNotificationRequests(withIdentifiers: identifiers)
+        notificationCenter.removeDeliveredNotifications(withIdentifiers: identifiers)
+    }
+
     func cancelAllScheduledNotifications() async {
         await clearExistingReminders()
     }

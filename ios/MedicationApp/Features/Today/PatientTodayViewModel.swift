@@ -21,6 +21,7 @@ final class PatientTodayViewModel: ObservableObject {
     private let apiClient: APIClient
     private let nowProvider: () -> Date
     private let onScheduledDoseRecorded: @MainActor () async -> Void
+    private let cancelScheduledReminders: @MainActor (String, NotificationSlot) -> Void
     let preferencesStore: NotificationPreferencesStore
     private let dateFormatter: DateFormatter
     private let timeFormatter: DateFormatter
@@ -34,12 +35,16 @@ final class PatientTodayViewModel: ObservableObject {
         apiClient: APIClient,
         preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore(),
         nowProvider: @escaping () -> Date = Date.init,
-        onScheduledDoseRecorded: @escaping @MainActor () async -> Void = {}
+        onScheduledDoseRecorded: @escaping @MainActor () async -> Void = {},
+        cancelScheduledReminders: @escaping @MainActor (String, NotificationSlot) -> Void = { dateKey, slot in
+            NotificationScheduler().cancelReminders(dateKey: dateKey, slot: slot)
+        }
     ) {
         self.apiClient = apiClient
         self.nowProvider = nowProvider
         self.preferencesStore = preferencesStore
         self.onScheduledDoseRecorded = onScheduledDoseRecorded
+        self.cancelScheduledReminders = cancelScheduledReminders
         self.dateFormatter = DateFormatter()
         self.dateFormatter.locale = AppConstants.japaneseLocale
         self.dateFormatter.dateStyle = .medium
@@ -119,6 +124,7 @@ final class PatientTodayViewModel: ObservableObject {
                 requestScrollToTop()
                 AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
                 showToast(NSLocalizedString("patient.today.recorded", comment: "Recorded"))
+                cancelReminder(for: dose)
                 refreshNotificationsAfterScheduledDoseRecord()
                 notifyDoseRecordsUpdated()
                 refreshAfterMutationInBackground()
@@ -353,6 +359,7 @@ final class PatientTodayViewModel: ObservableObject {
                 )
                 if result.updatedCount > 0 {
                     AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
+                    cancelScheduledReminders(dateString, slot)
                     refreshNotificationsAfterScheduledDoseRecord()
                     notifyDoseRecordsUpdated()
                 }
@@ -393,6 +400,16 @@ final class PatientTodayViewModel: ObservableObject {
         Task { @MainActor [onScheduledDoseRecorded] in
             await onScheduledDoseRecorded()
         }
+    }
+
+    private func cancelReminder(for dose: ScheduleDoseDTO) {
+        let slotTimes = preferencesStore.slotTimesMap()
+        guard let slot = NotificationSlot.from(
+            date: dose.scheduledAt,
+            timeZone: calendar.timeZone,
+            slotTimes: slotTimes
+        ) else { return }
+        cancelScheduledReminders(dateKeyFormatter.string(from: dose.scheduledAt), slot)
     }
 
     private func notifyDoseRecordsUpdated() {

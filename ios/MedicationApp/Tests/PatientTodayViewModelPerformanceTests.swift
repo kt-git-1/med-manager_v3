@@ -54,15 +54,22 @@ final class PatientTodayViewModelPerformanceTests: XCTestCase {
             return (response, Data(#"{"data":[]}"#.utf8))
         }
         let refreshStarted = expectation(description: "notification refresh started")
+        let reminderCancelled = expectation(description: "recorded slot reminder cancelled immediately")
+        let scheduledAt = try XCTUnwrap(
+            ISO8601DateFormatter().date(from: "2026-07-16T03:00:00Z")
+        )
         let viewModel = PatientTodayViewModel(
             apiClient: apiClient,
+            nowProvider: { scheduledAt },
             onScheduledDoseRecorded: {
                 refreshStarted.fulfill()
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
+            },
+            cancelScheduledReminders: { dateKey, slot in
+                XCTAssertEqual(dateKey, "2026-07-16")
+                XCTAssertEqual(slot, .noon)
+                reminderCancelled.fulfill()
             }
-        )
-        let scheduledAt = try XCTUnwrap(
-            ISO8601DateFormatter().date(from: "2026-07-16T03:00:00Z")
         )
         viewModel.items = [
             ScheduleDoseDTO(
@@ -87,7 +94,7 @@ final class PatientTodayViewModelPerformanceTests: XCTestCase {
         viewModel.confirmBulkRecord(for: .noon)
         viewModel.executeBulkRecord()
 
-        await fulfillment(of: [refreshStarted], timeout: 1)
+        await fulfillment(of: [reminderCancelled, refreshStarted], timeout: 1)
         try await Task.sleep(nanoseconds: 200_000_000)
         XCTAssertFalse(viewModel.isUpdating)
         XCTAssertEqual(viewModel.items.first?.effectiveStatus, .taken)

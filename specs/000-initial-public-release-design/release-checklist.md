@@ -75,16 +75,16 @@
 
 - [x] A patient-recorded dose shows actual time, recorder, and `記録を取り消す`. (Android patient record reflected in iPhone TestFlight caregiver history)
 - [x] A caregiver-recorded dose shows actual time, recorder, and `記録を取り消す`.
-- [ ] Tapping cancel presents drug, scheduled time, actual time, recorder, and inventory explanation before mutation.
-- [ ] Dismissing the confirmation makes no API, history, inventory, streak, or notification change.
-- [ ] Confirming changes the card to `取り消し済み` and shows cancellation time.
+- [x] Tapping cancel presents drug, scheduled time, actual time, recorder, and inventory explanation before mutation. (iPhone TestFlight XCUI, Build 64)
+- [x] Dismissing the confirmation makes no API, history, inventory, streak, or notification change. (iPhone TestFlight XCUI plus public Staging API state/inventory verification)
+- [x] Confirming changes the card to `取り消し済み` and shows cancellation time. (iPhone TestFlight XCUI, Build 64)
 - [ ] Today, month summary, selected-day summary, streak, report, and inventory refresh consistently after cancellation.
 - [x] The patient receives no push notification for cancellation.
-- [ ] A cancelled dose can be recorded again with `もう一度代理で記録`.
+- [x] A cancelled dose can be recorded again with `もう一度代理で記録`. (iPhone TestFlight XCUI; record, cancel, and re-record sequence)
 - [x] A past missed dose can be recorded with `代理で記録`; actual time is the operation time and recorder is family. (public Staging API plus iPhone TestFlight accessibility state)
-- [ ] Future unrecorded doses cannot be proxy-recorded from history unless they are explicitly in a cancelled state.
-- [ ] Multiple drugs in one slot support partial cancel/re-record without changing the other drugs.
-- [ ] Insufficient inventory, expired auth, offline, timeout, and server failure show an error and preserve the pre-operation state.
+- [x] Future unrecorded doses cannot be proxy-recorded from history unless they are explicitly in a cancelled state. (iPhone TestFlight XCUI, Build 64)
+- [x] Multiple drugs in one slot support partial cancel/re-record without changing the other drugs. (iPhone TestFlight XCUI plus public Staging API/inventory verification, Build 64)
+- [ ] Insufficient inventory, expired auth, offline, timeout, and server failure show an error and preserve the pre-operation state. (Insufficient-inventory path passed on iPhone TestFlight and public Staging API; the other failure paths remain open.)
 
 ### 1.0.8 UI and synchronization regression
 
@@ -129,4 +129,15 @@
 - The temporary synthetic caregiver was logged out on iPhone, deleted through the public Staging account-deletion endpoint, and verified absent from Supabase Auth, patient, medication, dose-record, and push-device storage. Local QA Keychain items and Android emulator Staging state were cleared.
 - iPhone 13 TestFlight navigation measurements: patient history 1.626–1.698 s, Today 1.627–1.662 s, settings 1.636–1.658 s, pull refresh 2.363 s, relaunch 2.390 s; caregiver tabs 1.753–1.922 s.
 - Build 64 archive inspection passed for version/build, Japanese development region, Staging API URL, and absence of embedded server-secret values. Three high-risk screens passed at accessibility-extra-large on iPhone 17e Simulator.
-- Still open before the full cross-platform gate: PRN/partial/insufficient-inventory cross-platform cases, current-build iOS local-reminder delivery/suppression, and a fully gesture-driven history confirmation mutation on physical iPhone.
+- Future unrecorded history, a two-medication partial cancel/re-record, and insufficient-inventory rejection passed through gesture-driven iPhone TestFlight XCUI with API/inventory state verification.
+- An unrecorded real local reminder delivered, but Build 64 still delivered the recorded bedtime reminder when the app was backgrounded immediately after recording. This exposed an async rebuild race, so Build 64 is not merge eligible.
+
+### Build 65 notification-race follow-up
+
+- [x] Immediately remove the recorded slot's primary and repeat local-reminder identifiers before starting the asynchronous full notification-plan rebuild.
+- [x] Focused patient-Today performance/regression tests pass, including immediate reminder cancellation without waiting for the background rebuild.
+- [x] iOS unit tests: 215 executed, 35 known environment/unfinished-spec skips, 0 failures.
+- [x] Archive reports `1.0.8 (65)`, Japanese development region, Staging API URL, valid APNs entitlement, and no embedded database/JWT/service-role secret values.
+- [ ] Upload and install Staging TestFlight Build 65.
+- [ ] On a physical iPhone, verify one unrecorded real local reminder delivers.
+- [ ] On the same physical iPhone, record a later slot and immediately background the app; verify neither its primary nor repeat reminder delivers.
