@@ -106,7 +106,7 @@
 - [x] iPhone compact width, current large iPhone, iPad, portrait, and supported large Dynamic Type have no clipped actions or hidden content. (2026-08-27: device matrix passed; patient Today, caregiver Today, and inventory editing also passed at accessibility-extra-large)
 - [x] VoiceOver labels distinguish scheduled time, actual time, recorder, cancellation, and destructive confirmation actions.
 - [x] Record/proxy/cancel interactions meet the release response-time thresholds on Staging and do not leave a long-running updating overlay. (API create/cancel/re-record 0.206–0.495 s; physical-device navigation/refresh measurements recorded)
-- [ ] Real local reminder delivers when unrecorded and is suppressed when recorded; caregiver missed-dose push delivers once and is suppressed after timely recording.
+- [ ] Real local reminder delivers when unrecorded and is suppressed when recorded; caregiver missed-dose push delivers once and is suppressed after timely recording. (Build 65 real local delivery/suppression passed; the caregiver timely-recording suppression half remains open.)
 - [x] iOS caregiver ↔ Android patient and Android caregiver ↔ iOS patient scheduled-dose interoperability passes on the same Staging account. (PRN/partial/insufficient-inventory extensions remain open in the matrix above.)
 
 ### Build 64 execution record
@@ -138,6 +138,6 @@
 - [x] Focused patient-Today performance/regression tests pass, including immediate reminder cancellation without waiting for the background rebuild.
 - [x] iOS unit tests: 215 executed, 35 known environment/unfinished-spec skips, 0 failures.
 - [x] Archive reports `1.0.8 (65)`, Japanese development region, Staging API URL, valid APNs entitlement, and no embedded database/JWT/service-role secret values.
-- [ ] Upload and install Staging TestFlight Build 65.
-- [ ] On a physical iPhone, verify one unrecorded real local reminder delivers.
-- [ ] On the same physical iPhone, record a later slot and immediately background the app; verify neither its primary nor repeat reminder delivers.
+- [x] Upload Build 65, set the existing non-exempt-encryption declaration, confirm Apple state `VALID`, and install it from TestFlight on the physical iPhone.
+- [x] On a physical iPhone, verify one unrecorded real local reminder delivers. (23:33 evening reminder, XCUI screenshot evidence)
+- [x] On the same physical iPhone, record a later slot and immediately background the app; verify neither its primary nor repeat reminder delivers. (23:37 bedtime reminder absent through 23:38, XCUI count 0; API confirmed the patient record)
