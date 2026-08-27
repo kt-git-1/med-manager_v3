@@ -15,6 +15,11 @@ type DoseRecord = {
   recordedByType: "PATIENT" | "CAREGIVER";
   recordedById: string | null;
   recordingGroupId: string | null;
+  consumedQuantity: number | null;
+  cancelledAt: Date | null;
+  cancelledByType: "PATIENT" | "CAREGIVER" | null;
+  cancelledById: string | null;
+  inventoryRestoredAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -64,6 +69,11 @@ vi.mock("../../src/repositories/doseRecordRepo", () => ({
         recordedByType: input.recordedByType,
         recordedById: input.recordedById ?? null,
         recordingGroupId: null,
+        consumedQuantity: null,
+        cancelledAt: null,
+        cancelledByType: null,
+        cancelledById: null,
+        inventoryRestoredAt: null,
         createdAt: now,
         updatedAt: now
       };
@@ -414,6 +424,11 @@ vi.mock("../../src/repositories/prisma", () => {
               recordedByType: data.recordedByType as "PATIENT" | "CAREGIVER",
               recordedById: data.recordedById,
               recordingGroupId: data.recordingGroupId,
+              consumedQuantity: null,
+              cancelledAt: null,
+              cancelledByType: null,
+              cancelledById: null,
+              inventoryRestoredAt: null,
               createdAt: new Date(),
               updatedAt: new Date()
             };
@@ -421,6 +436,44 @@ vi.mock("../../src/repositories/prisma", () => {
             inserted.push(record);
           }
           return inserted;
+        }
+      ),
+      updateMany: vi.fn(
+        async ({
+          where,
+          data
+        }: {
+          where: {
+            patientId: string;
+            medicationId: string;
+            scheduledAt: Date;
+            cancelledAt: { not: null };
+          };
+          data: Partial<DoseRecord>;
+        }) => {
+          const key = `${where.patientId}:${where.medicationId}:${where.scheduledAt.toISOString()}`;
+          const existing = store.get(key);
+          if (!existing?.cancelledAt) return { count: 0 };
+          store.set(key, { ...existing, ...data, updatedAt: new Date() });
+          return { count: 1 };
+        }
+      ),
+      findUnique: vi.fn(
+        async ({
+          where
+        }: {
+          where: {
+            patientId_medicationId_scheduledAt: {
+              patientId: string;
+              medicationId: string;
+              scheduledAt: Date;
+            };
+          };
+        }) => {
+          const keyData = where.patientId_medicationId_scheduledAt;
+          return store.get(
+            `${keyData.patientId}:${keyData.medicationId}:${keyData.scheduledAt.toISOString()}`
+          ) ?? null;
         }
       )
     },
@@ -713,6 +766,49 @@ describe("slot bulk record integration", () => {
 
       expect(response2.status).toBe(200);
       expect(body2.updatedCount).toBe(0);
+    });
+
+    it("revives a cancelled dose once when the patient records the slot again", async () => {
+      mockScheduleDoses = [makeMorningDoses("missed")[0]];
+      const scheduledAt = new Date(MORNING_SCHEDULED_AT_1);
+      const key = `patient-1:med-1:${scheduledAt.toISOString()}`;
+      store.set(key, {
+        id: "cancelled-dose",
+        patientId: "patient-1",
+        medicationId: "med-1",
+        scheduledAt,
+        takenAt: new Date("2026-02-10T22:40:00.000Z"),
+        recordedByType: "CAREGIVER",
+        recordedById: "caregiver-1",
+        recordingGroupId: "old-group",
+        consumedQuantity: 2,
+        cancelledAt: new Date("2026-02-10T22:45:00.000Z"),
+        cancelledByType: "CAREGIVER",
+        cancelledById: "caregiver-1",
+        inventoryRestoredAt: new Date("2026-02-10T22:45:00.000Z"),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      const first = await POST(makePostRequest({ date: "2026-02-11", slot: "morning" }));
+      const firstBody = await first.json();
+      const restored = store.get(key);
+
+      expect(firstBody.updatedCount).toBe(1);
+      expect(restored).toEqual(
+        expect.objectContaining({
+          recordedByType: "PATIENT",
+          recordedById: null,
+          cancelledAt: null,
+          cancelledByType: null,
+          cancelledById: null,
+          inventoryRestoredAt: null
+        })
+      );
+
+      mockScheduleDoses = [{ ...mockScheduleDoses[0], effectiveStatus: "taken" as const }];
+      const second = await POST(makePostRequest({ date: "2026-02-11", slot: "morning" }));
+      expect((await second.json()).updatedCount).toBe(0);
     });
 
     it("returns 401 when no auth header is provided", async () => {

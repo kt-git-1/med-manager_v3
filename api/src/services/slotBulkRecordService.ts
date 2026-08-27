@@ -225,9 +225,61 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
         })),
         skipDuplicates: true
       });
-      if (!patient || inserted.length === 0) return inserted;
 
-      const eventInputs = inserted.map((record) => {
+      // A caregiver can cancel a dose after it has been recorded. That row still
+      // owns the unique schedule key, so createMany(skipDuplicates) cannot revive
+      // it when the patient later records the same slot. Restore only cancelled
+      // rows, and use updateMany's predicate as the concurrency guard so a second
+      // request cannot decrement inventory twice.
+      const insertedKeys = new Set(
+        inserted.map((record) =>
+          scheduleDoseKey({
+            patientId: record.patientId,
+            medicationId: record.medicationId,
+            scheduledAt: record.scheduledAt.toISOString()
+          })
+        )
+      );
+      const restored = [];
+      for (const dose of recordableWithInventory) {
+        if (insertedKeys.has(scheduleDoseKey(dose))) continue;
+        const scheduledAt = new Date(dose.scheduledAt);
+        const result = await tx.doseRecord.updateMany({
+          where: {
+            patientId: input.patientId,
+            medicationId: dose.medicationId,
+            scheduledAt,
+            cancelledAt: { not: null }
+          },
+          data: {
+            takenAt,
+            recordedByType,
+            recordedById,
+            recordingGroupId,
+            consumedQuantity:
+              medicationById.get(dose.medicationId)?.doseCountPerIntake ?? null,
+            cancelledAt: null,
+            cancelledByType: null,
+            cancelledById: null,
+            inventoryRestoredAt: null
+          }
+        });
+        if (result.count === 0) continue;
+        const record = await tx.doseRecord.findUnique({
+          where: {
+            patientId_medicationId_scheduledAt: {
+              patientId: input.patientId,
+              medicationId: dose.medicationId,
+              scheduledAt
+            }
+          }
+        });
+        if (record) restored.push(record);
+      }
+      const committed = [...inserted, ...restored];
+      if (!patient || committed.length === 0) return committed;
+
+      const eventInputs = committed.map((record) => {
         const withinTime =
           record.takenAt.getTime() <= record.scheduledAt.getTime() + DOSE_MISSED_WINDOW_MS;
         if (withinTime) anyWithinTime = true;
@@ -246,14 +298,14 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
       await applyInventoryDeltasForDoseRecordsInTransaction(tx, {
         patientId: input.patientId,
         patientDisplayName: patient.displayName,
-        deltas: inserted.flatMap((record) => {
+        deltas: committed.flatMap((record) => {
           const medication = medicationById.get(record.medicationId);
           if (!medication?.inventoryEnabled) return [];
           return [{ medicationId: medication.id, quantity: medication.doseCountPerIntake }];
         })
       });
       await tx.doseRecordEvent.createMany({ data: eventInputs });
-      return inserted;
+      return committed;
     },
     { timeout: 10_000 }
   );
@@ -282,7 +334,15 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
   const remainingCount = insufficientDoses.length;
 
   // 12. Build updated slot summary — mark recorded doses as "taken"
-  const recordedKeys = new Set(recordableWithInventory.map(scheduleDoseKey));
+  const recordedKeys = new Set(
+    records.map((record) =>
+      scheduleDoseKey({
+        patientId: record.patientId,
+        medicationId: record.medicationId,
+        scheduledAt: record.scheduledAt.toISOString()
+      })
+    )
+  );
   const updatedDoses = allDoses.map((dose) => {
     if (recordedKeys.has(scheduleDoseKey(dose))) {
       const doseSlot = resolveSlot(dose.scheduledAt, tz, input.customSlotTimes);
