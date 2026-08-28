@@ -209,7 +209,8 @@ final class TodayCaregiverFlowTests: XCTestCase {
                 notes: nil
             )
         )
-        let viewModel = CaregiverTodayViewModel(apiClient: apiClient)
+        let analytics = CaregiverAnalyticsTrackingSpy()
+        let viewModel = CaregiverTodayViewModel(apiClient: apiClient, analytics: analytics)
         viewModel.items = [dose]
         let mutationSucceeded = expectation(
             forNotification: .doseRecordsUpdated,
@@ -226,6 +227,13 @@ final class TodayCaregiverFlowTests: XCTestCase {
         XCTAssertEqual(viewModel.items.first?.recordedByType, .caregiver)
         XCTAssertEqual(viewModel.scrollToTopRequest, 1)
         XCTAssertFalse(viewModel.isUpdating)
+        XCTAssertEqual(
+            analytics.events,
+            [
+                "started:dose_recorded:caregiver",
+                "completed:dose_recorded:caregiver"
+            ]
+        )
         try await Task.sleep(for: .milliseconds(50))
     }
 
@@ -381,6 +389,29 @@ final class TodayCaregiverFlowTests: XCTestCase {
         XCTAssertEqual(todayRequestCount.value, 2)
         XCTAssertNil(viewModel.errorMessage)
     }
+}
+
+@MainActor
+private final class CaregiverAnalyticsTrackingSpy: AnalyticsTracking {
+    private(set) var events: [String] = []
+
+    func logCoreActionStarted(_ action: AnalyticsCoreAction, mode: AnalyticsAppMode?) {
+        events.append("started:\(action.rawValue):\(mode?.rawValue ?? "none")")
+    }
+
+    func logCoreActionCompleted(_ action: AnalyticsCoreAction, mode: AnalyticsAppMode?) {
+        events.append("completed:\(action.rawValue):\(mode?.rawValue ?? "none")")
+    }
+
+    func logCoreActionFailed(
+        _ action: AnalyticsCoreAction,
+        reason: AnalyticsFailureReason,
+        mode: AnalyticsAppMode?
+    ) {
+        events.append("failed:\(action.rawValue):\(mode?.rawValue ?? "none"):\(reason.rawValue)")
+    }
+
+    func logNotificationOpened(source: AnalyticsNotificationSource) {}
 }
 
 private final class CaregiverTodayURLProtocol: URLProtocol {

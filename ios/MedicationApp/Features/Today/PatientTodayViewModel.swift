@@ -20,6 +20,7 @@ final class PatientTodayViewModel: ObservableObject {
 
     private let apiClient: APIClient
     private let nowProvider: () -> Date
+    private let analytics: any AnalyticsTracking
     private let onScheduledDoseRecorded: @MainActor () async -> Void
     private let cancelScheduledReminders: @MainActor (String, NotificationSlot) -> Void
     let preferencesStore: NotificationPreferencesStore
@@ -34,6 +35,7 @@ final class PatientTodayViewModel: ObservableObject {
     init(
         apiClient: APIClient,
         preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore(),
+        analytics: any AnalyticsTracking = AnalyticsService.shared,
         nowProvider: @escaping () -> Date = Date.init,
         onScheduledDoseRecorded: @escaping @MainActor () async -> Void = {},
         cancelScheduledReminders: @escaping @MainActor (String, NotificationSlot) -> Void = { dateKey, slot in
@@ -41,6 +43,7 @@ final class PatientTodayViewModel: ObservableObject {
         }
     ) {
         self.apiClient = apiClient
+        self.analytics = analytics
         self.nowProvider = nowProvider
         self.preferencesStore = preferencesStore
         self.onScheduledDoseRecorded = onScheduledDoseRecorded
@@ -111,6 +114,7 @@ final class PatientTodayViewModel: ObservableObject {
         guard let dose = confirmDose else { return }
         confirmDose = nil
         isUpdating = true
+        analytics.logCoreActionStarted(.doseRecorded, mode: .patient)
         Task { @MainActor in
             defer { isUpdating = false }
             do {
@@ -122,16 +126,17 @@ final class PatientTodayViewModel: ObservableObject {
                 )
                 markDosesRecorded([dose])
                 requestScrollToTop()
-                AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
+                analytics.logCoreActionCompleted(.doseRecorded, mode: .patient)
                 showToast(NSLocalizedString("patient.today.recorded", comment: "Recorded"))
                 cancelReminder(for: dose)
                 refreshNotificationsAfterScheduledDoseRecord()
                 notifyDoseRecordsUpdated()
                 refreshAfterMutationInBackground()
             } catch {
-                AnalyticsService.shared.logCoreActionFailed(
+                analytics.logCoreActionFailed(
                     .doseRecorded,
-                    reason: AnalyticsService.failureReason(for: error)
+                    reason: AnalyticsService.failureReason(for: error),
+                    mode: .patient
                 )
                 showToastMessage(for: error)
             }
@@ -152,6 +157,7 @@ final class PatientTodayViewModel: ObservableObject {
         guard !isPrnSubmitting else { return }
         isUpdating = true
         isPrnSubmitting = true
+        analytics.logCoreActionStarted(.doseRecorded, mode: .patient)
         Task { @MainActor in
             defer {
                 isUpdating = false
@@ -166,16 +172,17 @@ final class PatientTodayViewModel: ObservableObject {
                         quantityTaken: nil
                     )
                 )
-                AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
+                analytics.logCoreActionCompleted(.doseRecorded, mode: .patient)
                 notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("patient.today.prn.recorded", comment: "PRN recorded"))
                 onSuccess()
                 requestScrollToTop()
                 refreshAfterMutationInBackground()
             } catch {
-                AnalyticsService.shared.logCoreActionFailed(
+                analytics.logCoreActionFailed(
                     .doseRecorded,
-                    reason: AnalyticsService.failureReason(for: error)
+                    reason: AnalyticsService.failureReason(for: error),
+                    mode: .patient
                 )
                 showToastMessage(for: error)
             }
@@ -348,6 +355,7 @@ final class PatientTodayViewModel: ObservableObject {
             ) == slot
         }
         isUpdating = true
+        analytics.logCoreActionStarted(.doseRecorded, mode: .patient)
         Task { @MainActor in
             defer { isUpdating = false }
             do {
@@ -358,10 +366,16 @@ final class PatientTodayViewModel: ObservableObject {
                     slotTimes: []
                 )
                 if result.updatedCount > 0 {
-                    AnalyticsService.shared.logCoreActionCompleted(.doseRecorded)
+                    analytics.logCoreActionCompleted(.doseRecorded, mode: .patient)
                     cancelScheduledReminders(dateString, slot)
                     refreshNotificationsAfterScheduledDoseRecord()
                     notifyDoseRecordsUpdated()
+                } else {
+                    analytics.logCoreActionFailed(
+                        .doseRecorded,
+                        reason: .operationRejected,
+                        mode: .patient
+                    )
                 }
                 if result.insufficientCount > 0 && result.updatedCount > 0 {
                     showToast(NSLocalizedString("patient.today.slot.bulk.partialSuccess", comment: "Bulk partially recorded"), kind: .warning)
@@ -384,9 +398,10 @@ final class PatientTodayViewModel: ObservableObject {
                     requestScrollToTop()
                 }
             } catch {
-                AnalyticsService.shared.logCoreActionFailed(
+                analytics.logCoreActionFailed(
                     .doseRecorded,
-                    reason: AnalyticsService.failureReason(for: error)
+                    reason: AnalyticsService.failureReason(for: error),
+                    mode: .patient
                 )
                 showToastMessage(for: error)
             }

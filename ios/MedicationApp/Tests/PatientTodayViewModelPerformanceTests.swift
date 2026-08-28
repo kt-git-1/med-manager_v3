@@ -58,8 +58,10 @@ final class PatientTodayViewModelPerformanceTests: XCTestCase {
         let scheduledAt = try XCTUnwrap(
             ISO8601DateFormatter().date(from: "2026-07-16T03:00:00Z")
         )
+        let analytics = PatientAnalyticsTrackingSpy()
         let viewModel = PatientTodayViewModel(
             apiClient: apiClient,
+            analytics: analytics,
             nowProvider: { scheduledAt },
             onScheduledDoseRecorded: {
                 refreshStarted.fulfill()
@@ -100,6 +102,13 @@ final class PatientTodayViewModelPerformanceTests: XCTestCase {
         XCTAssertEqual(viewModel.items.first?.effectiveStatus, .taken)
         XCTAssertEqual(viewModel.items.first?.recordedByType, .patient)
         XCTAssertEqual(viewModel.scrollToTopRequest, 1)
+        XCTAssertEqual(
+            analytics.events,
+            [
+                "started:dose_recorded:patient",
+                "completed:dose_recorded:patient"
+            ]
+        )
 
         // Let the deliberately slow background data refresh finish before teardown.
         try await Task.sleep(for: .seconds(1))
@@ -153,6 +162,29 @@ final class PatientTodayViewModelPerformanceTests: XCTestCase {
         XCTAssertEqual(preferencesStore.slotTime(for: .noon).hour, 12)
         XCTAssertEqual(preferencesStore.slotTime(for: .noon).minute, 20)
     }
+}
+
+@MainActor
+private final class PatientAnalyticsTrackingSpy: AnalyticsTracking {
+    private(set) var events: [String] = []
+
+    func logCoreActionStarted(_ action: AnalyticsCoreAction, mode: AnalyticsAppMode?) {
+        events.append("started:\(action.rawValue):\(mode?.rawValue ?? "none")")
+    }
+
+    func logCoreActionCompleted(_ action: AnalyticsCoreAction, mode: AnalyticsAppMode?) {
+        events.append("completed:\(action.rawValue):\(mode?.rawValue ?? "none")")
+    }
+
+    func logCoreActionFailed(
+        _ action: AnalyticsCoreAction,
+        reason: AnalyticsFailureReason,
+        mode: AnalyticsAppMode?
+    ) {
+        events.append("failed:\(action.rawValue):\(mode?.rawValue ?? "none"):\(reason.rawValue)")
+    }
+
+    func logNotificationOpened(source: AnalyticsNotificationSource) {}
 }
 
 private final class PatientTodayPerformanceURLProtocol: URLProtocol {

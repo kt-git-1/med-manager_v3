@@ -4,7 +4,8 @@ import XCTest
 @MainActor
 final class PushDeepLinkTests: XCTestCase {
     func testDoseTakenPushWithMorningSlotRoutesToHistoryTarget() {
-        let router = NotificationDeepLinkRouter()
+        let analytics = PushAnalyticsTrackingSpy()
+        let router = NotificationDeepLinkRouter(analytics: analytics)
 
         router.routeFromRemotePush(userInfo: [
             "type": "DOSE_TAKEN",
@@ -21,6 +22,7 @@ final class PushDeepLinkTests: XCTestCase {
                 patientId: "patient-a"
             )
         )
+        XCTAssertEqual(analytics.openedSources, [.remotePush])
     }
 
     func testDoseTakenPushWithBedtimeSlotRoutesToHistoryTarget() {
@@ -159,5 +161,22 @@ final class PushDeepLinkTests: XCTestCase {
         let target = NotificationDeepLinkParser.parse(identifier: "notif:2026-02-11:bedtime:1")
         XCTAssertEqual(target?.dateKey, "2026-02-11")
         XCTAssertEqual(target?.slot, .bedtime)
+    }
+}
+
+@MainActor
+private final class PushAnalyticsTrackingSpy: AnalyticsTracking {
+    private(set) var openedSources: [AnalyticsNotificationSource] = []
+
+    func logCoreActionStarted(_ action: AnalyticsCoreAction, mode: AnalyticsAppMode?) {}
+    func logCoreActionCompleted(_ action: AnalyticsCoreAction, mode: AnalyticsAppMode?) {}
+    func logCoreActionFailed(
+        _ action: AnalyticsCoreAction,
+        reason: AnalyticsFailureReason,
+        mode: AnalyticsAppMode?
+    ) {}
+
+    func logNotificationOpened(source: AnalyticsNotificationSource) {
+        openedSources.append(source)
     }
 }

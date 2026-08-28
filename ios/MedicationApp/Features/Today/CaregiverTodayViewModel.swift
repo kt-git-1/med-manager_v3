@@ -13,6 +13,7 @@ final class CaregiverTodayViewModel: ObservableObject {
     @Published private(set) var scrollToTopRequest = 0
 
     private let apiClient: APIClient
+    private let analytics: any AnalyticsTracking
     private let preferencesStore: NotificationPreferencesStore
     private let dateFormatter: DateFormatter
     private let timeFormatter: DateFormatter
@@ -26,11 +27,13 @@ final class CaregiverTodayViewModel: ObservableObject {
     init(
         apiClient: APIClient,
         preferencesStore: NotificationPreferencesStore = NotificationPreferencesStore(),
+        analytics: any AnalyticsTracking = AnalyticsService.shared,
         onLowStockChange: @escaping (Bool) -> Void = { _ in }
     ) {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = AppConstants.defaultTimeZone
         self.apiClient = apiClient
+        self.analytics = analytics
         self.preferencesStore = preferencesStore
         self.onLowStockChange = onLowStockChange
         self.dateFormatter = DateFormatter()
@@ -115,6 +118,7 @@ final class CaregiverTodayViewModel: ObservableObject {
     func recordDose(_ dose: ScheduleDoseDTO) {
         guard dose.effectiveStatus != .taken else { return }
         isUpdating = true
+        analytics.logCoreActionStarted(.doseRecorded, mode: .caregiver)
         Task {
             defer { isUpdating = false }
             do {
@@ -125,11 +129,17 @@ final class CaregiverTodayViewModel: ObservableObject {
                     )
                 )
                 markDosesRecorded([dose])
+                analytics.logCoreActionCompleted(.doseRecorded, mode: .caregiver)
                 requestScrollToTop()
                 notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("caregiver.today.recorded", comment: "Recorded"))
                 refreshAfterMutationInBackground()
             } catch {
+                analytics.logCoreActionFailed(
+                    .doseRecorded,
+                    reason: AnalyticsService.failureReason(for: error),
+                    mode: .caregiver
+                )
                 showToastMessage(for: error)
             }
         }
@@ -139,6 +149,7 @@ final class CaregiverTodayViewModel: ObservableObject {
         let recordableDoses = doses.filter { $0.effectiveStatus != .taken }
         guard !recordableDoses.isEmpty else { return }
         isUpdating = true
+        analytics.logCoreActionStarted(.doseRecorded, mode: .caregiver)
         Task {
             defer { isUpdating = false }
             do {
@@ -147,7 +158,14 @@ final class CaregiverTodayViewModel: ObservableObject {
                     slot: slot.rawValue
                 )
                 if result.updatedCount > 0 {
+                    analytics.logCoreActionCompleted(.doseRecorded, mode: .caregiver)
                     notifyDoseRecordsUpdated()
+                } else {
+                    analytics.logCoreActionFailed(
+                        .doseRecorded,
+                        reason: .operationRejected,
+                        mode: .caregiver
+                    )
                 }
                 if result.insufficientCount > 0 {
                     showToast(
@@ -170,6 +188,11 @@ final class CaregiverTodayViewModel: ObservableObject {
                     requestScrollToTop()
                 }
             } catch {
+                analytics.logCoreActionFailed(
+                    .doseRecorded,
+                    reason: AnalyticsService.failureReason(for: error),
+                    mode: .caregiver
+                )
                 showToastMessage(for: error)
             }
         }
@@ -178,6 +201,7 @@ final class CaregiverTodayViewModel: ObservableObject {
     func recordPrnDose(for medication: MedicationDTO, onSuccess: @escaping () -> Void) {
         guard !isUpdating, !medication.isInsufficientForDose else { return }
         isUpdating = true
+        analytics.logCoreActionStarted(.doseRecorded, mode: .caregiver)
         Task {
             defer { isUpdating = false }
             do {
@@ -189,11 +213,17 @@ final class CaregiverTodayViewModel: ObservableObject {
                         quantityTaken: nil
                     )
                 )
+                analytics.logCoreActionCompleted(.doseRecorded, mode: .caregiver)
                 notifyDoseRecordsUpdated()
                 showToast(NSLocalizedString("caregiver.today.prn.recorded", comment: "Caregiver PRN recorded"))
                 onSuccess()
                 refreshAfterMutationInBackground()
             } catch {
+                analytics.logCoreActionFailed(
+                    .doseRecorded,
+                    reason: AnalyticsService.failureReason(for: error),
+                    mode: .caregiver
+                )
                 showToastMessage(for: error)
             }
         }

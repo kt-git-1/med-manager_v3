@@ -60,6 +60,7 @@ enum AnalyticsFailureReason: String, Sendable {
     case credentialConflict = "credential_conflict"
     case cancelled
     case notFound = "not_found"
+    case operationRejected = "operation_rejected"
     case network
     case server
     case unknown
@@ -106,6 +107,23 @@ enum AnalyticsCoreAction: String, Sendable {
     case linkCodeIssued = "link_code_issued"
     case medicationCreated = "medication_created"
     case doseRecorded = "dose_recorded"
+}
+
+enum AnalyticsNotificationSource: String, Sendable {
+    case localReminder = "local_reminder"
+    case remotePush = "remote_push"
+}
+
+@MainActor
+protocol AnalyticsTracking: AnyObject {
+    func logCoreActionStarted(_ action: AnalyticsCoreAction, mode: AnalyticsAppMode?)
+    func logCoreActionCompleted(_ action: AnalyticsCoreAction, mode: AnalyticsAppMode?)
+    func logCoreActionFailed(
+        _ action: AnalyticsCoreAction,
+        reason: AnalyticsFailureReason,
+        mode: AnalyticsAppMode?
+    )
+    func logNotificationOpened(source: AnalyticsNotificationSource)
 }
 
 enum AnalyticsNotificationPermissionResult: String, Sendable {
@@ -263,15 +281,29 @@ final class AnalyticsService: ObservableObject {
         log("patient_tab_viewed", parameters: ["tab_name": tab.rawValue])
     }
 
-    func logCoreActionCompleted(_ action: AnalyticsCoreAction) {
-        log("core_action_completed", parameters: ["action_name": action.rawValue])
+    func logCoreActionStarted(_ action: AnalyticsCoreAction, mode: AnalyticsAppMode? = nil) {
+        log("core_action_started", parameters: coreActionParameters(action, mode: mode))
     }
 
-    func logCoreActionFailed(_ action: AnalyticsCoreAction, reason: AnalyticsFailureReason) {
+    func logCoreActionCompleted(_ action: AnalyticsCoreAction, mode: AnalyticsAppMode? = nil) {
+        log("core_action_completed", parameters: coreActionParameters(action, mode: mode))
+    }
+
+    func logCoreActionFailed(
+        _ action: AnalyticsCoreAction,
+        reason: AnalyticsFailureReason,
+        mode: AnalyticsAppMode? = nil
+    ) {
+        var parameters = coreActionParameters(action, mode: mode)
+        parameters["reason"] = reason.rawValue
         log(
             "core_action_failed",
-            parameters: ["action_name": action.rawValue, "reason": reason.rawValue]
+            parameters: parameters
         )
+    }
+
+    func logNotificationOpened(source: AnalyticsNotificationSource) {
+        log("notification_opened", parameters: ["source": source.rawValue])
     }
 
     func logPatientLinkCodeShareTapped() {
@@ -342,6 +374,17 @@ final class AnalyticsService: ObservableObject {
         )
     }
 
+    private func coreActionParameters(
+        _ action: AnalyticsCoreAction,
+        mode: AnalyticsAppMode?
+    ) -> [String: String] {
+        var parameters = ["action_name": action.rawValue]
+        if let mode {
+            parameters["mode"] = mode.rawValue
+        }
+        return parameters
+    }
+
     private func log(_ name: String, parameters: [String: String]) {
         guard isConfigured, isEnabled, !isSuppressedEnvironment else { return }
         Analytics.logEvent(name, parameters: parameters)
@@ -354,3 +397,5 @@ final class AnalyticsService: ObservableObject {
             || process.arguments.contains("-disableAnalytics")
     }
 }
+
+extension AnalyticsService: AnalyticsTracking {}

@@ -47,13 +47,22 @@ enum NotificationDeepLinkParser {
 @MainActor
 final class NotificationDeepLinkRouter: ObservableObject {
     @Published private(set) var target: NotificationDeepLinkTarget?
+    private let analytics: any AnalyticsTracking
+
+    init(analytics: any AnalyticsTracking = AnalyticsService.shared) {
+        self.analytics = analytics
+    }
 
     func handleNotificationResponse(_ response: UNNotificationResponse) {
         route(identifier: response.notification.request.identifier)
     }
 
     func route(identifier: String) {
-        target = NotificationDeepLinkParser.parse(identifier: identifier)
+        guard let parsedTarget = NotificationDeepLinkParser.parse(identifier: identifier) else {
+            target = nil
+            return
+        }
+        routeFromTarget(parsedTarget, source: .localReminder)
     }
 
     /// Route from a remote push notification payload (012-push-foundation).
@@ -61,12 +70,18 @@ final class NotificationDeepLinkRouter: ObservableObject {
         guard let parsedTarget = NotificationDeepLinkParser.parseRemotePush(userInfo: userInfo) else {
             return
         }
-        target = parsedTarget
+        routeFromTarget(parsedTarget, source: .remotePush)
     }
 
     /// Route from an already-parsed deep link target. Used when parsing happens
     /// off the main actor to avoid Sendable issues with userInfo dictionaries.
-    func routeFromTarget(_ parsedTarget: NotificationDeepLinkTarget) {
+    func routeFromTarget(
+        _ parsedTarget: NotificationDeepLinkTarget,
+        source: AnalyticsNotificationSource? = nil
+    ) {
+        if let source {
+            analytics.logNotificationOpened(source: source)
+        }
         target = parsedTarget
     }
 
@@ -107,7 +122,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
 
         Task { @MainActor in
             if isRemotePush, let target = remotePushTarget {
-                router.routeFromTarget(target)
+                router.routeFromTarget(target, source: .remotePush)
             } else if !isRemotePush, canRouteLocalNotification() {
                 router.route(identifier: identifier)
             } else if !isRemotePush {
