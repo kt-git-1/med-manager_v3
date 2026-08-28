@@ -203,7 +203,7 @@ struct PatientManagementView: View {
         _viewModel = StateObject(wrappedValue: PatientManagementViewModel(sessionStore: store))
         let client = APIClient(baseURL: SessionStore.resolveBaseURL(), sessionStore: store)
         self.apiClient = client
-        #if DEBUG
+        #if DEBUG || targetEnvironment(simulator)
         if ProcessInfo.processInfo.environment["UITEST_MOCK_PUSH"] == "1" {
             _pushSettingsViewModel = StateObject(wrappedValue: CaregiverPushSettingsViewModel(
                 notificationCenter: UITestNotificationAuthorizationProvider(),
@@ -299,7 +299,13 @@ struct PatientManagementView: View {
         }
         }
         .onAppear {
+            #if targetEnvironment(simulator)
+            if ProcessInfo.processInfo.environment["UITEST_MOCK_PUSH"] != "1" {
+                viewModel.load()
+            }
+            #else
             viewModel.load()
+            #endif
             preferencesStore.switchPatient(viewModel.selectedPatientId)
             applySelectedPatientSlotTimes()
             draftTimes = buildDraftTimes()
@@ -1112,7 +1118,7 @@ struct PatientManagementView: View {
 
 }
 
-#if DEBUG
+#if DEBUG || targetEnvironment(simulator)
 private struct UITestNotificationAuthorizationProvider: NotificationAuthorizationProvider {
     func requestAuthorization(options: UNAuthorizationOptions) async throws -> Bool {
         true

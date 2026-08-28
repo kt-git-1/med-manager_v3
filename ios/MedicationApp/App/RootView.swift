@@ -144,6 +144,7 @@ struct RootView: View {
     private var isPatientTodayV105PreviewActive: Bool {
         #if targetEnvironment(simulator)
         ProcessInfo.processInfo.arguments.contains("-PatientTodayV105Preview")
+            || ProcessInfo.processInfo.arguments.contains("-PatientNotificationTapPreview")
         #else
         false
         #endif

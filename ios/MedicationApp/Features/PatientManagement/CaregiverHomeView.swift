@@ -24,7 +24,7 @@ struct CaregiverHomeView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var notificationRouter: NotificationDeepLinkRouter
     @EnvironmentObject private var toastPresenter: ToastPresenter
-    @State private var selectedTab: CaregiverTab = .today
+    @State private var selectedTab: CaregiverTab = CaregiverHomeView.initialTab
     @State private var currentPatientName: String?
     @State private var hasAnyPatient: Bool?
     @State private var patientListErrorMessage: String?
@@ -37,7 +37,7 @@ struct CaregiverHomeView: View {
     @State private var shouldAdvanceAfterTutorialCode = false
     @State private var showingTutorialMedicationForm = false
     @State private var isTutorialOperationInFlight = false
-    @State private var loadedTabs: Set<CaregiverTab> = [.today]
+    @State private var loadedTabs: Set<CaregiverTab> = [CaregiverHomeView.initialTab]
     var entitlementStore: EntitlementStore?
 
     var body: some View {
@@ -375,6 +375,14 @@ struct CaregiverHomeView: View {
     // MARK: - Data Loading
 
     private func loadCurrentPatientName() {
+        #if targetEnvironment(simulator)
+        if ProcessInfo.processInfo.environment["UITEST_MOCK_PUSH"] == "1" {
+            currentPatientName = "QA"
+            hasAnyPatient = true
+            patientListErrorMessage = nil
+            return
+        }
+        #endif
         guard sessionStore.mode == .caregiver else {
             currentPatientName = nil
             hasAnyPatient = nil
@@ -412,6 +420,15 @@ struct CaregiverHomeView: View {
         }
     }
 
+    private static var initialTab: CaregiverTab {
+        #if targetEnvironment(simulator)
+        if ProcessInfo.processInfo.environment["UITEST_MOCK_PUSH"] == "1" {
+            return .patients
+        }
+        #endif
+        return .today
+    }
+
     private func checkLowStock() {
         guard sessionStore.mode == .caregiver,
               sessionStore.currentPatientId != nil else {
@@ -439,7 +456,7 @@ struct CaregiverHomeView: View {
     }
 
     private func routeUITestRemotePushIfNeeded() {
-        #if DEBUG
+        #if DEBUG || targetEnvironment(simulator)
         let env = ProcessInfo.processInfo.environment
         guard env["UITEST_MOCK_PUSH"] == "1",
               let date = env["UITEST_REMOTE_PUSH_DATE"],

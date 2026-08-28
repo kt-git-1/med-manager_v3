@@ -44,6 +44,8 @@ struct PatientTodayView: View {
 
 struct PatientTodayV105DebugPreview: View {
     @EnvironmentObject private var sessionStore: SessionStore
+    @State private var deepLinkTarget: NotificationDeepLinkTarget?
+    @State private var didConsumeDeepLink = false
 
     var body: some View {
         ZStack {
@@ -51,8 +53,18 @@ struct PatientTodayV105DebugPreview: View {
             PatientTodayView(
                 sessionStore: sessionStore,
                 previewItems: Self.previewItems,
-                nowProvider: { Self.previewNow }
+                nowProvider: { Self.previewNow },
+                deepLinkTarget: previewDeepLinkTarget
             )
+        }
+        .overlay(alignment: .topTrailing) {
+            if didConsumeDeepLink {
+                Text("通知遷移済")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("PatientNotificationDeepLinkApplied")
+                    .padding(8)
+            }
         }
         .safeAreaInset(edge: .bottom) {
             HStack(spacing: 12) {
@@ -68,6 +80,28 @@ struct PatientTodayV105DebugPreview: View {
             .padding(.horizontal, 14)
             .padding(.bottom, 8)
         }
+        .task {
+            guard ProcessInfo.processInfo.arguments.contains("-PatientNotificationTapPreview") else {
+                return
+            }
+            try? await Task.sleep(for: .seconds(1))
+            deepLinkTarget = NotificationDeepLinkTarget(
+                dateKey: Self.dateKey(for: Self.previewNow),
+                slot: .bedtime
+            )
+        }
+    }
+
+    private var previewDeepLinkTarget: Binding<NotificationDeepLinkTarget?> {
+        Binding(
+            get: { deepLinkTarget },
+            set: { newValue in
+                if deepLinkTarget != nil, newValue == nil {
+                    didConsumeDeepLink = true
+                }
+                deepLinkTarget = newValue
+            }
+        )
     }
 
     private func previewTab(_ title: String, systemImage: String, selected: Bool) -> some View {
@@ -127,6 +161,15 @@ struct PatientTodayV105DebugPreview: View {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = AppConstants.defaultTimeZone
         return calendar.date(bySettingHour: hour, minute: minute, second: 0, of: Date()) ?? Date()
+    }
+
+    private static func dateKey(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = AppConstants.defaultTimeZone
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
     }
 }
 
