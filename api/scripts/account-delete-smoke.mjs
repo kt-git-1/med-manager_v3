@@ -73,6 +73,17 @@ async function api(method, path, accessToken, body) {
   return { status: response.status, payload };
 }
 
+async function apiStatus(method, path, accessToken) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    method,
+    headers: {
+      authorization: `Bearer caregiver-${accessToken}`
+    }
+  });
+  await response.text();
+  return response.status;
+}
+
 async function deleteAuthUser(userId) {
   if (!userId) return 0;
   await pool.query("delete from auth.identities where user_id = $1::uuid", [userId]);
@@ -118,6 +129,12 @@ try {
   }
   result.push({ step: "auth_login", status: login.status });
 
+  const activeTokenStatus = await apiStatus("GET", "/api/patients", accessToken);
+  if (activeTokenStatus !== 200) {
+    throw new Error(`active caregiver token returned ${activeTokenStatus}, expected 200`);
+  }
+  result.push({ step: "active_token_access", status: activeTokenStatus });
+
   const patient = await api("POST", "/api/patients", accessToken, {
     displayName: `Codex Account Delete Smoke ${runId}`
   });
@@ -129,6 +146,12 @@ try {
     status: deleted.status,
     deleted: deleted.payload?.data?.deleted
   });
+
+  const deletedTokenStatus = await apiStatus("GET", "/api/patients", accessToken);
+  if (deletedTokenStatus !== 401) {
+    throw new Error(`deleted caregiver token returned ${deletedTokenStatus}, expected 401`);
+  }
+  result.push({ step: "deleted_token_rejected", status: deletedTokenStatus });
 
   const leftovers = await pool.query(
     `select
