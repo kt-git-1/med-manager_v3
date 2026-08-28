@@ -1,6 +1,201 @@
 import XCTest
 
 @MainActor
+final class ConnectedDeviceFunnelUITests: XCTestCase {
+    func testDedicatedQASessionIsAvailable() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-disableAnalytics"]
+        app.launch()
+
+        let caregiverToday = app.staticTexts["今日の服薬"]
+        let patientToday = app.staticTexts["今日のお薬"]
+        let deadline = Date().addingTimeInterval(20)
+        while Date() < deadline, !caregiverToday.exists, !patientToday.exists {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+        }
+
+        let detectedMode: String
+        if caregiverToday.exists {
+            detectedMode = "caregiver"
+        } else if patientToday.exists {
+            detectedMode = "patient"
+        } else {
+            XCTFail("Dedicated QA session is not available on the connected device.")
+            return
+        }
+
+        let attachment = XCTAttachment(string: detectedMode)
+        attachment.name = "ConnectedDeviceQAMode"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    func testCaregiverMajorSurfacesAreReachable() throws {
+        let app = launchConnectedCaregiver()
+
+        assertTab("薬", opens: "CaregiverMedicationView", in: app)
+        assertTab("履歴", opens: "CaregiverHistoryView", in: app)
+        assertTab("在庫", opens: "InventoryListView", in: app)
+        assertTab("設定", opens: "PatientManagementView", in: app)
+        assertTab("今日", opens: "CaregiverTodayView", in: app)
+    }
+
+    func testCaregiverRecordConfirmationCanCancelWithoutWriting() throws {
+        let app = launchConnectedCaregiver()
+        let predicate = NSPredicate(
+            format: "identifier BEGINSWITH %@",
+            "CaregiverTodayRecordSlotButton."
+        )
+        let recordButton = app.buttons.matching(predicate).firstMatch
+        for _ in 0..<10 where !recordButton.exists || !recordButton.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(recordButton.waitForExistence(timeout: 5))
+        XCTAssertTrue(recordButton.isHittable)
+        recordButton.tap()
+
+        let alert = app.alerts["時間帯の服薬を記録"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5))
+        XCTAssertTrue(alert.buttons["代理で記録する"].exists)
+        XCTAssertTrue(alert.buttons["キャンセル"].exists)
+        alert.buttons["キャンセル"].tap()
+        XCTAssertFalse(alert.waitForExistence(timeout: 2))
+    }
+
+    func testCaregiverCanCreateOneSyntheticBulkRecord() throws {
+        let app = launchConnectedCaregiver()
+        let predicate = NSPredicate(
+            format: "identifier BEGINSWITH %@",
+            "CaregiverTodayRecordSlotButton."
+        )
+        let recordButton = app.buttons.matching(predicate).firstMatch
+        for _ in 0..<10 where !recordButton.exists || !recordButton.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(recordButton.waitForExistence(timeout: 5))
+        XCTAssertTrue(recordButton.isHittable)
+        recordButton.tap()
+
+        let alert = app.alerts["時間帯の服薬を記録"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5))
+        alert.buttons["代理で記録する"].tap()
+
+        let success = app.staticTexts.matching(
+            NSPredicate(format: "label MATCHES %@", "[0-9]+件を記録しました")
+        ).firstMatch
+        XCTAssertTrue(success.waitForExistence(timeout: 20))
+        XCTAssertFalse(app.otherElements["SchedulingRefreshOverlay"].exists)
+    }
+
+    func testCaregiverPushSettingIsReachable() throws {
+        let app = launchConnectedCaregiver()
+        let toggle = openPushToggle(in: app)
+        guard let state = toggle.value as? String else {
+            XCTFail("Push toggle did not expose its state.")
+            return
+        }
+        let attachment = XCTAttachment(string: state)
+        attachment.name = "ConnectedDevicePushState"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    func testCaregiverPushToggleCanRoundTripAndRestoreState() throws {
+        let app = launchConnectedCaregiver()
+        let toggle = openPushToggle(in: app)
+        guard let originalValue = toggle.value as? String,
+              ["0", "1"].contains(originalValue) else {
+            XCTFail("Push toggle did not expose a binary state.")
+            return
+        }
+        let changedValue = originalValue == "1" ? "0" : "1"
+
+        defer {
+            if (toggle.value as? String) != originalValue {
+                toggle.tap()
+                _ = waitForSwitch(toggle, value: originalValue, timeout: 30)
+            }
+        }
+
+        addUIInterruptionMonitor(withDescription: "Notification permission") { alert in
+            for label in ["許可", "Allow"] {
+                let button = alert.buttons[label]
+                if button.exists {
+                    button.tap()
+                    return true
+                }
+            }
+            return false
+        }
+
+        toggle.tap()
+        app.tap()
+        XCTAssertTrue(waitForSwitch(toggle, value: changedValue, timeout: 30))
+
+        toggle.tap()
+        XCTAssertTrue(waitForSwitch(toggle, value: originalValue, timeout: 30))
+    }
+
+    private func launchConnectedCaregiver() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = ["-disableAnalytics"]
+        app.launch()
+        XCTAssertTrue(
+            app.descendants(matching: .any)["CaregiverTodayView"]
+                .waitForExistence(timeout: 20)
+        )
+        return app
+    }
+
+    private func assertTab(
+        _ label: String,
+        opens identifier: String,
+        in app: XCUIApplication
+    ) {
+        let tab = app.buttons[label].firstMatch
+        XCTAssertTrue(tab.waitForExistence(timeout: 10))
+        tab.tap()
+        XCTAssertTrue(
+            app.descendants(matching: .any)[identifier]
+                .waitForExistence(timeout: 10)
+        )
+    }
+
+    private func openPushToggle(in app: XCUIApplication) -> XCUIElement {
+        let settingsTab = app.buttons["設定"].firstMatch
+        XCTAssertTrue(settingsTab.waitForExistence(timeout: 10))
+        settingsTab.tap()
+        XCTAssertTrue(
+            app.descendants(matching: .any)["PatientManagementView"]
+                .waitForExistence(timeout: 10)
+        )
+
+        var toggle = app.switches["PushNotificationToggle"]
+        for _ in 0..<10 where !toggle.exists || !toggle.isHittable {
+            app.swipeUp()
+        }
+        if !toggle.exists {
+            toggle = app.switches.element(boundBy: 1)
+        }
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+        XCTAssertTrue(toggle.isHittable)
+        return toggle
+    }
+
+    private func waitForSwitch(
+        _ toggle: XCUIElement,
+        value: String,
+        timeout: TimeInterval
+    ) -> Bool {
+        let predicate = NSPredicate(format: "value == %@", value)
+        return XCTWaiter.wait(
+            for: [XCTNSPredicateExpectation(predicate: predicate, object: toggle)],
+            timeout: timeout
+        ) == .completed
+    }
+}
+
+@MainActor
 final class ExploratoryUITapCoverageTests: XCTestCase {
     private var qaContext: QAContext!
 
