@@ -256,8 +256,7 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
             recordedByType,
             recordedById,
             recordingGroupId,
-            consumedQuantity:
-              medicationById.get(dose.medicationId)?.doseCountPerIntake ?? null,
+            consumedQuantity: medicationById.get(dose.medicationId)?.doseCountPerIntake ?? null,
             cancelledAt: null,
             cancelledByType: null,
             cancelledById: null,

@@ -471,9 +471,11 @@ vi.mock("../../src/repositories/prisma", () => {
           };
         }) => {
           const keyData = where.patientId_medicationId_scheduledAt;
-          return store.get(
-            `${keyData.patientId}:${keyData.medicationId}:${keyData.scheduledAt.toISOString()}`
-          ) ?? null;
+          return (
+            store.get(
+              `${keyData.patientId}:${keyData.medicationId}:${keyData.scheduledAt.toISOString()}`
+            ) ?? null
+          );
         }
       )
     },
