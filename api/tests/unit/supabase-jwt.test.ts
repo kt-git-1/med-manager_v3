@@ -1,4 +1,4 @@
-import { describe, expect, it, afterEach, vi } from "vitest";
+import { describe, expect, it, afterEach, beforeEach, vi } from "vitest";
 import { createHmac, createSign, generateKeyPairSync } from "crypto";
 import { verifySupabaseJwt } from "../../src/auth/supabaseJwt";
 
@@ -21,6 +21,20 @@ const ORIGINAL_PUBLIC_KEY = process.env.SUPABASE_JWT_PUBLIC_KEY;
 const ORIGINAL_SUPABASE_URL = process.env.SUPABASE_URL;
 const ORIGINAL_SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const ORIGINAL_SUPABASE_JWT_JWKS_URL = process.env.SUPABASE_JWT_JWKS_URL;
+
+beforeEach(() => {
+  process.env.SUPABASE_URL = "https://example.supabase.co";
+  process.env.SUPABASE_ANON_KEY = "anon-key";
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () =>
+      new Response(JSON.stringify({ id: "caregiver-1" }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      })
+    )
+  );
+});
 
 afterEach(() => {
   if (ORIGINAL_SECRET === undefined) {
@@ -86,6 +100,38 @@ describe("supabase jwt verification", () => {
     await expect(verifySupabaseJwt(token)).rejects.toThrow("Missing subject");
   });
 
+  it("rejects a cryptographically valid token after its Supabase user is deleted", async () => {
+    process.env.SUPABASE_JWT_SECRET = "secret";
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 401 })));
+    const token = signToken(
+      { sub: "caregiver-1", exp: Math.floor(Date.now() / 1000) + 60 },
+      "secret"
+    );
+
+    await expect(verifySupabaseJwt(token)).rejects.toThrow("Supabase user is not active");
+  });
+
+  it("rejects when Supabase returns a different user than the token subject", async () => {
+    process.env.SUPABASE_JWT_SECRET = "secret";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(JSON.stringify({ id: "caregiver-2" }), {
+          status: 200,
+          headers: { "content-type": "application/json" }
+        })
+      )
+    );
+    const token = signToken(
+      { sub: "caregiver-1", exp: Math.floor(Date.now() / 1000) + 60 },
+      "secret"
+    );
+
+    await expect(verifySupabaseJwt(token)).rejects.toThrow(
+      "Supabase user does not match token subject"
+    );
+  });
+
   it("verifies ES256 token using public key", async () => {
     const { privateKey, publicKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
     process.env.SUPABASE_JWT_PUBLIC_KEY = publicKey
@@ -121,25 +167,31 @@ describe("supabase jwt verification", () => {
     const derSignature = createSign("sha256").update(data).end().sign(privateKey);
     const rawSignature = derSignatureToRaw(derSignature);
     const token = `${data}.${base64UrlEncode(rawSignature)}`;
-    const fetchMock = vi.fn(
-      async () =>
-        new Response(
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      if (String(input).endsWith("/auth/v1/user")) {
+        return new Response(JSON.stringify({ id: "caregiver-1" }), {
+          status: 200,
+          headers: { "content-type": "application/json" }
+        });
+      }
+      return new Response(
           JSON.stringify({
             keys: [{ ...jwk, kid: "test-key-1", alg: "ES256", use: "sig" }]
           }),
           { status: 200 }
-        )
-    );
+        );
+    });
     vi.stubGlobal("fetch", fetchMock);
 
     const { verifySupabaseJwt: verifyWithFreshModule } = await import("../../src/auth/supabaseJwt");
     const session = await verifyWithFreshModule(token);
 
     expect(session.caregiverUserId).toBe("caregiver-1");
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[0][0]).toBe(
       "https://example.supabase.co/auth/v1/.well-known/jwks.json"
     );
+    expect(fetchMock.mock.calls[1][0]).toBe("https://example.supabase.co/auth/v1/user");
   });
 });
 

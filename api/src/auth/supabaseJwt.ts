@@ -16,6 +16,10 @@ type JwtPayload = {
   exp?: number;
 };
 
+type SupabaseUserResponse = {
+  id?: string;
+};
+
 function base64UrlDecode(input: string) {
   const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
   const padding = normalized.length % 4 === 0 ? "" : "=".repeat(4 - (normalized.length % 4));
@@ -154,6 +158,30 @@ async function resolveEs256Key(header: JwtHeader) {
   return createPublicKey({ key: jwk as JsonWebKey, format: "jwk" });
 }
 
+async function assertSupabaseUserActive(token: string, expectedUserId: string) {
+  const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
+  const anonKey = process.env.SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !anonKey) {
+    throw new Error("Missing Supabase Auth configuration");
+  }
+
+  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: {
+      apikey: anonKey,
+      authorization: `Bearer ${token}`
+    },
+    cache: "no-store",
+    signal: AbortSignal.timeout(5_000)
+  });
+  if (!response.ok) {
+    throw new Error("Supabase user is not active");
+  }
+  const user = (await response.json()) as SupabaseUserResponse;
+  if (!user.id || user.id !== expectedUserId) {
+    throw new Error("Supabase user does not match token subject");
+  }
+}
+
 export async function verifySupabaseJwt(token: string): Promise<CaregiverSession> {
   if (!token) {
     throw new Error("Missing token");
@@ -218,5 +246,10 @@ export async function verifySupabaseJwt(token: string): Promise<CaregiverSession
   if (!payload.sub) {
     throw new Error("Missing subject");
   }
+  // A locally valid JWT remains cryptographically valid until exp even after
+  // its Supabase Auth user is deleted. Resolve the token against Auth on every
+  // caregiver request so account deletion takes effect immediately and a
+  // deleted identity cannot keep using an already-issued access token.
+  await assertSupabaseUserActive(token, payload.sub);
   return { caregiverUserId: payload.sub };
 }
