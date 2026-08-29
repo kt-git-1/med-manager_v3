@@ -500,12 +500,23 @@ fun PatientHomeScreen(
             confirmButton = {
                 Button(onClick = {
                     confirmDose = null
+                    analyticsService?.logCoreActionStarted(
+                        AnalyticsCoreAction.DOSE_RECORDED,
+                        AnalyticsAppMode.PATIENT,
+                    )
                     scope.launch {
                         if (repository.record(dose)) {
-                            analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.DOSE_RECORDED)
+                            analyticsService?.logCoreActionCompleted(
+                                AnalyticsCoreAction.DOSE_RECORDED,
+                                AnalyticsAppMode.PATIENT,
+                            )
                             repository.refreshTodayAfterAction(showProgress = false)
                         } else {
-                            analyticsService?.logCoreActionFailed(AnalyticsCoreAction.DOSE_RECORDED, AnalyticsFailureReason.SERVER)
+                            analyticsService?.logCoreActionFailed(
+                                AnalyticsCoreAction.DOSE_RECORDED,
+                                AnalyticsFailureReason.SERVER,
+                                AnalyticsAppMode.PATIENT,
+                            )
                         }
                     }
                 }) { Text(stringResource(R.string.patient_record)) }
@@ -521,12 +532,23 @@ fun PatientHomeScreen(
             confirmButton = {
                 Button(onClick = {
                     confirmPrn = null
+                    analyticsService?.logCoreActionStarted(
+                        AnalyticsCoreAction.DOSE_RECORDED,
+                        AnalyticsAppMode.PATIENT,
+                    )
                     scope.launch {
                         if (repository.recordPrn(medication)) {
-                            analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.DOSE_RECORDED)
+                            analyticsService?.logCoreActionCompleted(
+                                AnalyticsCoreAction.DOSE_RECORDED,
+                                AnalyticsAppMode.PATIENT,
+                            )
                             repository.refreshTodayAfterAction(showProgress = false)
                         } else {
-                            analyticsService?.logCoreActionFailed(AnalyticsCoreAction.DOSE_RECORDED, AnalyticsFailureReason.SERVER)
+                            analyticsService?.logCoreActionFailed(
+                                AnalyticsCoreAction.DOSE_RECORDED,
+                                AnalyticsFailureReason.SERVER,
+                                AnalyticsAppMode.PATIENT,
+                            )
                         }
                     }
                 }) { Text(stringResource(R.string.patient_prn_confirm_action)) }
@@ -545,12 +567,23 @@ fun PatientHomeScreen(
             confirmButton = {
                 Button(onClick = {
                     confirmSlot = null
+                    analyticsService?.logCoreActionStarted(
+                        AnalyticsCoreAction.DOSE_RECORDED,
+                        AnalyticsAppMode.PATIENT,
+                    )
                     scope.launch {
                         if (repository.recordSlot(slot)) {
-                            analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.DOSE_RECORDED)
+                            analyticsService?.logCoreActionCompleted(
+                                AnalyticsCoreAction.DOSE_RECORDED,
+                                AnalyticsAppMode.PATIENT,
+                            )
                             repository.refreshTodayAfterAction(showProgress = false)
                         } else {
-                            analyticsService?.logCoreActionFailed(AnalyticsCoreAction.DOSE_RECORDED, AnalyticsFailureReason.SERVER)
+                            analyticsService?.logCoreActionFailed(
+                                AnalyticsCoreAction.DOSE_RECORDED,
+                                AnalyticsFailureReason.SERVER,
+                                AnalyticsAppMode.PATIENT,
+                            )
                         }
                     }
                 }) { Text(stringResource(R.string.patient_record_bulk)) }

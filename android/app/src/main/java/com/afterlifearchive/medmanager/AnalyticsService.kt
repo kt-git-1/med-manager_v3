@@ -69,6 +69,7 @@ enum class AnalyticsScreen(val value: String) { MODE_SELECT("mode_select"), CARE
 enum class AnalyticsSurface(val value: String) { TODAY("today"), HISTORY("history"), PATIENT_MANAGEMENT("patient_management"), NOTIFICATIONS("notifications"), SETTINGS("settings"), WIDGET_SETUP("widget_setup"), CALENDAR("calendar"), PRESCRIPTION_REGISTRATION("prescription_registration") }
 enum class PremiumFeature(val value: String) { REMINDER_ADVANCED("reminder_advanced"), CAREGIVER_ALERTS("caregiver_alerts"), WIDGET("widget"), PRESCRIPTION_AI("prescription_ai"), MULTIPLE_CAREGIVERS("multiple_caregivers"), MULTIPLE_PATIENTS("multiple_patients"), ALERT_CUSTOMIZATION("alert_customization"), UNLIMITED_HISTORY("unlimited_history"), PDF_EXPORT("pdf_export"), SCHEDULED_REPORTS("scheduled_reports"), CALENDAR_INTEGRATION("calendar_integration") }
 enum class AnalyticsCoreAction(val value: String) { CAREGIVER_PATIENT_CREATED("caregiver_patient_created"), LINK_CODE_ISSUED("link_code_issued"), MEDICATION_CREATED("medication_created"), DOSE_RECORDED("dose_recorded") }
+enum class AnalyticsNotificationSource(val value: String) { LOCAL_REMINDER("local_reminder"), REMOTE_PUSH("remote_push") }
 enum class AnalyticsNotificationPermissionResult(val value: String) { AUTHORIZED("authorized"), DENIED("denied"), PROVISIONAL("provisional"), UNAVAILABLE("unavailable") }
 enum class PurchaseAnalyticsResult(val value: String) { SUCCESS("success"), CANCELLED("cancelled"), PENDING("pending"), FAILED("failed"), NOT_FOUND("not_found") }
 enum class PremiumActivationSource(val value: String) { PURCHASE("purchase"), RESTORE("restore"), REFRESH("refresh") }
@@ -115,9 +116,17 @@ class AnalyticsService(
     }
     fun logTutorialFinished(mode: AnalyticsAppMode, skipped: Boolean) =
         log(if (skipped) "tutorial_skipped" else "tutorial_completed", mapOf("mode" to mode.value))
+    fun logCoreActionStarted(action: AnalyticsCoreAction, mode: AnalyticsAppMode) =
+        log("core_action_started", coreActionParameters(action, mode))
     fun logCoreActionCompleted(action: AnalyticsCoreAction) = log("core_action_completed", mapOf("action_name" to action.value))
+    fun logCoreActionCompleted(action: AnalyticsCoreAction, mode: AnalyticsAppMode) =
+        log("core_action_completed", coreActionParameters(action, mode))
     fun logCoreActionFailed(action: AnalyticsCoreAction, reason: AnalyticsFailureReason) =
         log("core_action_failed", mapOf("action_name" to action.value, "reason" to reason.value))
+    fun logCoreActionFailed(action: AnalyticsCoreAction, reason: AnalyticsFailureReason, mode: AnalyticsAppMode) =
+        log("core_action_failed", coreActionParameters(action, mode) + ("reason" to reason.value))
+    fun logNotificationOpened(source: AnalyticsNotificationSource) =
+        log("notification_opened", mapOf("source" to source.value))
     fun logPatientLinkCodeShareTapped() =
         log("patient_link_code_share_tapped", mapOf("surface" to AnalyticsSurface.PATIENT_MANAGEMENT.value))
     fun logNotificationPermissionResult(result: AnalyticsNotificationPermissionResult, surface: AnalyticsSurface) =
@@ -150,6 +159,8 @@ class AnalyticsService(
     }
 
     private fun suppressed() = sessionSuppressed || environmentSuppressed()
+    private fun coreActionParameters(action: AnalyticsCoreAction, mode: AnalyticsAppMode) =
+        mapOf("action_name" to action.value, "mode" to mode.value)
     private fun featureSurface(feature: PremiumFeature, surface: AnalyticsSurface) =
         mapOf("feature" to feature.value, "surface" to surface.value)
 }
@@ -164,8 +175,10 @@ internal object AnalyticsEventSchema {
         "tutorial_step_viewed" to setOf("mode", "step"),
         "tutorial_completed" to setOf("mode"),
         "tutorial_skipped" to setOf("mode"),
+        "core_action_started" to setOf("action_name", "mode"),
         "core_action_completed" to setOf("action_name"),
         "core_action_failed" to setOf("action_name", "reason"),
+        "notification_opened" to setOf("source"),
         "patient_link_code_share_tapped" to setOf("surface"),
         "notification_permission_result" to setOf("result", "surface"),
         "premium_feature_interest" to setOf("feature", "surface"),
@@ -199,17 +212,19 @@ internal object AnalyticsEventSchema {
         "action_name" to AnalyticsCoreAction.entries.map { it.value }.toSet(),
         "feature" to PremiumFeature.entries.map { it.value }.toSet(),
         "surface" to AnalyticsSurface.entries.map { it.value }.toSet(),
-        "source" to PremiumActivationSource.entries.map { it.value }.toSet(),
         "auth_method" to AnalyticsAuthMethod.entries.map { it.value }.toSet(),
         "reason" to AnalyticsFailureReason.entries.map { it.value }.toSet(),
     )
 
     fun accept(name: String, parameters: Map<String, String>): Map<String, String>? {
-        if (parameters.keys != exactKeys[name]) return null
+        val expectedKeys = exactKeys[name] ?: return null
+        val acceptsMode = name == "core_action_completed" || name == "core_action_failed"
+        if (parameters.keys != expectedKeys && (!acceptsMode || parameters.keys != expectedKeys + "mode")) return null
         if (parameters.any { (key, value) ->
                 when (key) {
                     "step" -> value.toIntOrNull()?.let { it in 1..20 } != true
                     "result" -> value !in resultValuesFor(name)
+                    "source" -> value !in sourceValuesFor(name)
                     else -> value !in values.getValue(key)
                 }
             }) return null
@@ -219,6 +234,12 @@ internal object AnalyticsEventSchema {
     private fun resultValuesFor(eventName: String): Set<String> = when (eventName) {
         "notification_permission_result" -> AnalyticsNotificationPermissionResult.entries.map { it.value }.toSet()
         "purchase_result", "restore_result" -> PurchaseAnalyticsResult.entries.map { it.value }.toSet()
+        else -> emptySet()
+    }
+
+    private fun sourceValuesFor(eventName: String): Set<String> = when (eventName) {
+        "notification_opened" -> AnalyticsNotificationSource.entries.map { it.value }.toSet()
+        "premium_activated" -> PremiumActivationSource.entries.map { it.value }.toSet()
         else -> emptySet()
     }
 }

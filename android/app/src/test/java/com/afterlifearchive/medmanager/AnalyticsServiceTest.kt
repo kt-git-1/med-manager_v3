@@ -95,6 +95,52 @@ class AnalyticsServiceTest {
     }
 
     @Test
+    fun doseFunnelAndNotificationOpenUseOnlyFixedModeAndSourceValues() {
+        val transport = FakeAnalyticsTransport()
+        val service = AnalyticsService(FakeConsentStore(AnalyticsConsentState(true, true)), transport)
+        service.configure()
+
+        service.logCoreActionStarted(AnalyticsCoreAction.DOSE_RECORDED, AnalyticsAppMode.PATIENT)
+        service.logCoreActionCompleted(AnalyticsCoreAction.DOSE_RECORDED, AnalyticsAppMode.PATIENT)
+        service.logCoreActionFailed(
+            AnalyticsCoreAction.DOSE_RECORDED,
+            AnalyticsFailureReason.SERVER,
+            AnalyticsAppMode.CAREGIVER,
+        )
+        service.logNotificationOpened(AnalyticsNotificationSource.LOCAL_REMINDER)
+        service.logNotificationOpened(AnalyticsNotificationSource.REMOTE_PUSH)
+
+        assertEquals(
+            listOf(
+                "core_action_started" to mapOf("action_name" to "dose_recorded", "mode" to "patient"),
+                "core_action_completed" to mapOf("action_name" to "dose_recorded", "mode" to "patient"),
+                "core_action_failed" to mapOf("action_name" to "dose_recorded", "mode" to "caregiver", "reason" to "server"),
+                "notification_opened" to mapOf("source" to "local_reminder"),
+                "notification_opened" to mapOf("source" to "remote_push"),
+            ),
+            transport.events,
+        )
+    }
+
+    @Test
+    fun funnelSchemaRejectsMissingModeCrossEventSourcesAndPrivateKeys() {
+        val transport = FakeAnalyticsTransport()
+        val service = AnalyticsService(FakeConsentStore(AnalyticsConsentState(true, true)), transport)
+        service.configure()
+
+        service.logChecked("core_action_started", mapOf("action_name" to "dose_recorded"))
+        service.logChecked("core_action_started", mapOf("action_name" to "dose_recorded", "mode" to "unknown"))
+        service.logChecked("notification_opened", mapOf("source" to "purchase"))
+        service.logChecked("premium_activated", mapOf("source" to "local_reminder"))
+        service.logChecked(
+            "core_action_completed",
+            mapOf("action_name" to "dose_recorded", "mode" to "patient", "patient_id" to "private"),
+        )
+
+        assertTrue(transport.events.isEmpty())
+    }
+
+    @Test
     fun eventSpecificResultAllowlistCannotMixPurchaseAndNotificationValues() {
         val transport = FakeAnalyticsTransport()
         val service = AnalyticsService(FakeConsentStore(AnalyticsConsentState(true, true)), transport)

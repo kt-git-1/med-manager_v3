@@ -29,8 +29,8 @@ class MainActivity : ComponentActivity() {
         if (BuildConfig.DEBUG && listOf("PREVIEW_CAREGIVER", "PREVIEW_PATIENT_SETTINGS", "PREVIEW_PATIENT_HISTORY", "PREVIEW_PATIENT").any { intent.getBooleanExtra(it, false) }) {
             analyticsService.setSessionSuppressed(true)
         }
-        handlePatientNotificationIntent(intent, patientRepository)
-        handleCaregiverNotificationIntent(intent, caregiverHistoryRepository)
+        handlePatientNotificationIntent(intent, patientRepository, analyticsService)
+        handleCaregiverNotificationIntent(intent, caregiverHistoryRepository, analyticsService)
         setContent {
             MedicationAppTheme {
                 if (BuildConfig.DEBUG && intent.getBooleanExtra("PREVIEW_CAREGIVER", false)) {
@@ -53,26 +53,44 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         intent.dataString?.let { (application as MedicationApplication).sessionRepository.handleAuthCallback(it) }
-        handlePatientNotificationIntent(intent, (application as MedicationApplication).patientRepository)
-        handleCaregiverNotificationIntent(intent, (application as MedicationApplication).caregiverHistoryRepository)
+        val app = application as MedicationApplication
+        handlePatientNotificationIntent(intent, app.patientRepository, app.analyticsService)
+        handleCaregiverNotificationIntent(intent, app.caregiverHistoryRepository, app.analyticsService)
     }
 
-    private fun handlePatientNotificationIntent(intent: Intent, repository: com.afterlifearchive.medmanager.data.patient.PatientRepository) {
-        repository.handleNotificationTarget(
+    private fun handlePatientNotificationIntent(
+        intent: Intent,
+        repository: com.afterlifearchive.medmanager.data.patient.PatientRepository,
+        analyticsService: AnalyticsService,
+    ) {
+        val handled = repository.handleNotificationTarget(
             intent.getStringExtra("notification_date"),
             intent.getStringExtra("notification_slot"),
         )
+        if (handled) {
+            analyticsService.logNotificationOpened(AnalyticsNotificationSource.LOCAL_REMINDER)
+            intent.removeExtra("notification_date")
+            intent.removeExtra("notification_slot")
+        }
     }
 
     private fun handleCaregiverNotificationIntent(
         intent: Intent,
         repository: com.afterlifearchive.medmanager.data.caregiver.CaregiverHistoryRepository,
+        analyticsService: AnalyticsService,
     ) {
-        repository.handleNotificationTarget(
+        val handled = repository.handleNotificationTarget(
             intent.getStringExtra("type"),
             intent.getStringExtra("patientId"),
             intent.getStringExtra("date"),
             intent.getStringExtra("slot"),
         )
+        if (handled) {
+            analyticsService.logNotificationOpened(AnalyticsNotificationSource.REMOTE_PUSH)
+            intent.removeExtra("type")
+            intent.removeExtra("patientId")
+            intent.removeExtra("date")
+            intent.removeExtra("slot")
+        }
     }
 }

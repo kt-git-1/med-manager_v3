@@ -77,6 +77,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.afterlifearchive.medmanager.R
+import com.afterlifearchive.medmanager.AnalyticsAppMode
 import com.afterlifearchive.medmanager.AnalyticsCoreAction
 import com.afterlifearchive.medmanager.AnalyticsFailureReason
 import com.afterlifearchive.medmanager.AnalyticsService
@@ -242,11 +243,22 @@ internal fun CaregiverTodayScreen(
                 TextButton(
                     onClick = {
                         slotToConfirm = null
+                        analyticsService?.logCoreActionStarted(
+                            AnalyticsCoreAction.DOSE_RECORDED,
+                            AnalyticsAppMode.CAREGIVER,
+                        )
                         scope.launch {
                             if (repository.recordSlot(selected.id, confirmation.first, confirmation.second)) {
-                                analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.DOSE_RECORDED)
+                                analyticsService?.logCoreActionCompleted(
+                                    AnalyticsCoreAction.DOSE_RECORDED,
+                                    AnalyticsAppMode.CAREGIVER,
+                                )
                             } else {
-                                analyticsService?.logCoreActionFailed(AnalyticsCoreAction.DOSE_RECORDED, AnalyticsFailureReason.SERVER)
+                                analyticsService?.logCoreActionFailed(
+                                    AnalyticsCoreAction.DOSE_RECORDED,
+                                    AnalyticsFailureReason.SERVER,
+                                    AnalyticsAppMode.CAREGIVER,
+                                )
                             }
                         }
                     },
@@ -287,12 +299,23 @@ internal fun CaregiverTodayScreen(
                 TextButton(
                     onClick = {
                         prnToConfirm = null
+                        analyticsService?.logCoreActionStarted(
+                            AnalyticsCoreAction.DOSE_RECORDED,
+                            AnalyticsAppMode.CAREGIVER,
+                        )
                         scope.launch {
                             if (repository.recordPrn(selected.id, prnConfirmation)) {
-                                analyticsService?.logCoreActionCompleted(AnalyticsCoreAction.DOSE_RECORDED)
+                                analyticsService?.logCoreActionCompleted(
+                                    AnalyticsCoreAction.DOSE_RECORDED,
+                                    AnalyticsAppMode.CAREGIVER,
+                                )
                                 showingPrnPicker = false
                             } else {
-                                analyticsService?.logCoreActionFailed(AnalyticsCoreAction.DOSE_RECORDED, AnalyticsFailureReason.SERVER)
+                                analyticsService?.logCoreActionFailed(
+                                    AnalyticsCoreAction.DOSE_RECORDED,
+                                    AnalyticsFailureReason.SERVER,
+                                    AnalyticsAppMode.CAREGIVER,
+                                )
                             }
                         }
                     },
