@@ -131,19 +131,38 @@ final class AnalyticsServiceTests: XCTestCase {
     func testPublicEventSurfaceUsesOnlyPrivacySafeKeys() {
         let service = makeEnabledService()
 
+        service.logFeatureInterest(.pdfExport, surface: .history)
+        service.logPremiumNeed(.multiplePatients, surface: .patientManagement)
+        service.logPaywallViewed(feature: .widget, surface: .settings)
+        service.logPaywallDismissed(feature: .widget, surface: .settings)
+        service.logPurchaseStarted(feature: .widget, surface: .settings)
+        service.logPurchaseResult(.cancelled, feature: .widget, surface: .settings)
+        service.logPremiumActivated(source: .restore)
+        service.logRestoreStarted(surface: .settings)
+        service.logRestoreResult(.notFound, surface: .settings)
         service.logScreenViewed(.caregiverLogin)
         service.logModeSelected(.caregiver)
         service.logAuth(.loginFailed, method: .email, reason: .invalidCredentials)
+        service.logPatientLinkStarted()
+        service.logPatientLinkCompleted()
         service.logPatientLinkFailed(reason: .notFound)
+        service.logCaregiverTabViewed(.inventory)
+        service.logPatientTabViewed(.history)
+        service.logCoreActionStarted(.medicationCreated, mode: .caregiver)
+        service.logCoreActionCompleted(.medicationCreated, mode: .caregiver)
+        service.logCoreActionFailed(.medicationCreated, reason: .server, mode: .caregiver)
         service.logPatientLinkCodeShareTapped()
         service.logNotificationPermissionResult(.denied, surface: .settings)
         service.logNotificationOpened(source: .remotePush)
+        service.logTutorialStarted(mode: .patient)
+        service.logTutorialStepViewed(mode: .patient, step: 3)
         service.logTutorialFinished(mode: .patient, skipped: false)
 
-        XCTAssertEqual(backend.events.count, 8)
+        XCTAssertEqual(backend.events.count, 26)
         assertNoSensitiveKeysOrValues(in: backend.events)
         let allowedKeys: Set<String> = [
-            "screen_name", "mode", "auth_method", "reason", "surface", "result", "source"
+            "screen_name", "mode", "auth_method", "reason", "surface", "result", "source",
+            "feature", "tab_name", "action_name", "step"
         ]
         XCTAssertTrue(
             backend.events.allSatisfy { Set($0.parameters.keys).isSubset(of: allowedKeys) }

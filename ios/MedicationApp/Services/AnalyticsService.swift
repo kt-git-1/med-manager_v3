@@ -405,6 +405,7 @@ final class AnalyticsService: ObservableObject {
     /// Explicit DebugView connectivity check. Never compiled into Release builds.
     func logDebugVerificationIfRequested() {
         guard ProcessInfo.processInfo.arguments.contains("-analyticsSmokeTest") else { return }
+        setCollectionEnabled(true)
         log("analytics_debug_verification", parameters: ["source": "simulator"])
     }
     #endif

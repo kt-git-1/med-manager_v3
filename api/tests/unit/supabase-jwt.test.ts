@@ -27,11 +27,12 @@ beforeEach(() => {
   process.env.SUPABASE_ANON_KEY = "anon-key";
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () =>
-      new Response(JSON.stringify({ id: "caregiver-1" }), {
-        status: 200,
-        headers: { "content-type": "application/json" }
-      })
+    vi.fn(
+      async () =>
+        new Response(JSON.stringify({ id: "caregiver-1" }), {
+          status: 200,
+          headers: { "content-type": "application/json" }
+        })
     )
   );
 });
@@ -102,7 +103,10 @@ describe("supabase jwt verification", () => {
 
   it("rejects a cryptographically valid token after its Supabase user is deleted", async () => {
     process.env.SUPABASE_JWT_SECRET = "secret";
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 401 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(null, { status: 401 }))
+    );
     const token = signToken(
       { sub: "caregiver-1", exp: Math.floor(Date.now() / 1000) + 60 },
       "secret"
@@ -115,11 +119,12 @@ describe("supabase jwt verification", () => {
     process.env.SUPABASE_JWT_SECRET = "secret";
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () =>
-        new Response(JSON.stringify({ id: "caregiver-2" }), {
-          status: 200,
-          headers: { "content-type": "application/json" }
-        })
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ id: "caregiver-2" }), {
+            status: 200,
+            headers: { "content-type": "application/json" }
+          })
       )
     );
     const token = signToken(
@@ -175,11 +180,11 @@ describe("supabase jwt verification", () => {
         });
       }
       return new Response(
-          JSON.stringify({
-            keys: [{ ...jwk, kid: "test-key-1", alg: "ES256", use: "sig" }]
-          }),
-          { status: 200 }
-        );
+        JSON.stringify({
+          keys: [{ ...jwk, kid: "test-key-1", alg: "ES256", use: "sig" }]
+        }),
+        { status: 200 }
+      );
     });
     vi.stubGlobal("fetch", fetchMock);
 
