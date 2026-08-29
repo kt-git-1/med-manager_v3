@@ -340,6 +340,7 @@
 "history.selected.noSchedule" = "予定なし";
 "history.selected.noScheduleHelp" = "この日は定時薬の予定も頓服の記録もありません。";
 "history.selected.missedHelp" = "飲み忘れがあります。下の詳細で薬名と時間を確認してください。";
+"history.selected.partialHelp" = "一部だけ記録された時間帯があります。下の詳細で残りの薬を確認してください。";
 "history.selected.pendingHelp" = "まだ記録されていない服薬があります。未来の予定は未記録として表示されます。";
 "history.selected.upcomingHelp" = "これからの予定です。当日になったら無理なく記録しましょう。";
 "history.selected.completeHelp" = "この日の予定は記録済みです。下で薬ごとの詳細を確認できます。";
@@ -441,9 +442,10 @@
 "caregiver.medications.title" = "薬を管理";
 "caregiver.history.title" = "服薬履歴";
 "caregiver.history.subtitle" = "毎日の記録を確認します";
-"caregiver.history.summary.format" = "%d/%d回分 記録済み";
+"caregiver.history.summary.format" = "%d/%d回分 記録あり";
 "caregiver.history.summary.taken" = "記録済み %d回分";
 "caregiver.history.summary.pending" = "未記録 %d回分";
+"caregiver.history.summary.partial" = "一部記録 %d回分";
 "caregiver.history.summary.missed" = "飲み忘れ %d回分";
 "caregiver.history.summary.noSelection" = "日付を選択";
 "caregiver.inventory.title" = "在庫を確認";

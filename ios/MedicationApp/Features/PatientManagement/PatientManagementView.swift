@@ -320,6 +320,16 @@ struct PatientManagementView: View {
                 await refreshTimePresetStateFromServer()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .caregiverTabBecameActive)) { notification in
+            guard notification.object as? CaregiverTab == .patients else { return }
+            #if targetEnvironment(simulator)
+            if ProcessInfo.processInfo.environment["UITEST_MOCK_PUSH"] != "1" {
+                viewModel.load()
+            }
+            #else
+            viewModel.load()
+            #endif
+        }
         .onChange(of: shouldOpenCreate.wrappedValue) { _, _ in
             openCreateIfRequested()
         }

@@ -163,6 +163,7 @@ struct CaregiverHomeView: View {
         .onChange(of: selectedTab) { _, newTab in
             loadedTabs.insert(newTab)
             AnalyticsService.shared.logCaregiverTabViewed(analyticsTab(for: newTab))
+            NotificationCenter.default.post(name: .caregiverTabBecameActive, object: newTab)
         }
         .onChange(of: tutorialStepIndex) { _, index in
             guard let index else { return }

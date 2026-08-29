@@ -389,6 +389,11 @@ struct MedicationListView: View {
         .onReceive(NotificationCenter.default.publisher(for: .medicationUpdated)) { _ in
             viewModel.load(showLoading: viewModel.items.isEmpty)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .caregiverTabBecameActive)) { notification in
+            guard sessionStore.mode == .caregiver,
+                  notification.object as? CaregiverTab == .medications else { return }
+            viewModel.load(showLoading: false)
+        }
         .sheet(isPresented: $showingCreate) {
             NavigationStack {
                 MedicationFormView(sessionStore: sessionStore, onSuccess: showToast)

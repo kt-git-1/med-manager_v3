@@ -20,6 +20,45 @@ enum HistorySlotSummaryStatusDTO: String, Decodable, Equatable {
     case none
 }
 
+enum HistorySlotProgressDisplayStatus: Equatable {
+    case none
+    case pending
+    case taken
+    case missed
+    case partial
+
+    init(_ legacyStatus: HistorySlotSummaryStatusDTO) {
+        switch legacyStatus {
+        case .none: self = .none
+        case .pending: self = .pending
+        case .taken: self = .taken
+        case .missed: self = .missed
+        }
+    }
+}
+
+struct HistorySlotProgressCountsDTO: Decodable, Equatable {
+    let scheduledCount: Int
+    let takenCount: Int
+    let pendingCount: Int
+    let missedCount: Int
+
+    var displayStatus: HistorySlotProgressDisplayStatus {
+        guard scheduledCount > 0 else { return .none }
+        if takenCount >= scheduledCount { return .taken }
+        if takenCount > 0 { return .partial }
+        if missedCount > 0 { return .missed }
+        return .pending
+    }
+}
+
+struct HistorySlotProgressDTO: Decodable, Equatable {
+    let morning: HistorySlotProgressCountsDTO
+    let noon: HistorySlotProgressCountsDTO
+    let evening: HistorySlotProgressCountsDTO
+    let bedtime: HistorySlotProgressCountsDTO
+}
+
 enum HistoryStreakTodayStatusDTO: String, Decodable, Equatable {
     case complete
     case inProgress
@@ -36,6 +75,7 @@ struct HistoryStreakResponseDTO: Decodable, Equatable {
 struct HistoryDaySummaryDTO: Decodable, Equatable {
     let date: String
     let slotSummary: HistorySlotSummaryDTO
+    let slotProgress: HistorySlotProgressDTO?
 }
 
 struct HistorySlotSummaryDTO: Decodable, Equatable {

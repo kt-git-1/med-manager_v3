@@ -14,6 +14,7 @@ final class HistoryViewModel: ObservableObject {
     @Published var retentionLocked = false
     @Published var retentionCutoffDate: String?
     @Published var retentionDays: Int?
+    @Published private(set) var scrollToSelectedDayRequest = 0
 
     private let apiClient: APIClient
     private let sessionStore: SessionStore
@@ -22,6 +23,7 @@ final class HistoryViewModel: ObservableObject {
     private var pendingDayRequest: String?
     private var isLoadingPatientStreak = false
     private var pendingPatientStreakLoad = false
+    private var scrollAfterMutationDate: String?
     var toastPresenter: ToastPresenter?
 
     init(
@@ -86,6 +88,10 @@ final class HistoryViewModel: ObservableObject {
             return
         }
         dayErrorMessage = nil
+        let shouldScrollAfterLoad = scrollAfterMutationDate == date
+        if shouldScrollAfterLoad {
+            scrollAfterMutationDate = nil
+        }
         let shouldShowUpdatingOverlay = self.day != nil
         if shouldShowUpdatingOverlay {
             startRequest()
@@ -110,6 +116,9 @@ final class HistoryViewModel: ObservableObject {
                     self.day = try await apiClient.fetchCaregiverHistoryDay(date: date, slotTimeItems: [])
                 case .none:
                     self.day = nil
+                }
+                if shouldScrollAfterLoad {
+                    scrollToSelectedDayRequest += 1
                 }
                 self.retentionLocked = false
                 self.retentionCutoffDate = nil
@@ -176,7 +185,7 @@ final class HistoryViewModel: ObservableObject {
                         scheduledAt: dose.scheduledAt
                     )
                 )
-                NotificationCenter.default.post(name: .doseRecordsUpdated, object: nil)
+                NotificationCenter.default.post(name: .doseRecordsUpdated, object: self)
                 showToast(NSLocalizedString("history.day.backfill.recorded", comment: "Backfill recorded"))
                 loadMonth(year: year, month: month)
                 loadDay(date: date)
@@ -201,7 +210,8 @@ final class HistoryViewModel: ObservableObject {
                     medicationId: dose.medicationId,
                     scheduledAt: dose.scheduledAt
                 )
-                NotificationCenter.default.post(name: .doseRecordsUpdated, object: nil)
+                scrollAfterMutationDate = date
+                NotificationCenter.default.post(name: .doseRecordsUpdated, object: self)
                 showToast(NSLocalizedString("history.day.cancel.completed", comment: "Dose cancellation completed"))
                 loadMonth(year: year, month: month)
                 loadDay(date: date)
@@ -223,7 +233,8 @@ final class HistoryViewModel: ObservableObject {
             defer { endRequest() }
             do {
                 try await apiClient.deleteCaregiverPrnDoseRecord(recordId: recordId)
-                NotificationCenter.default.post(name: .doseRecordsUpdated, object: nil)
+                scrollAfterMutationDate = date
+                NotificationCenter.default.post(name: .doseRecordsUpdated, object: self)
                 showToast(NSLocalizedString("history.day.cancel.completed", comment: "Dose cancellation completed"))
                 loadMonth(year: year, month: month)
                 loadDay(date: date)

@@ -262,7 +262,7 @@ final class CaregiverTodayViewModel: ObservableObject {
     }
 
     private func notifyDoseRecordsUpdated() {
-        NotificationCenter.default.post(name: .doseRecordsUpdated, object: nil)
+        NotificationCenter.default.post(name: .doseRecordsUpdated, object: self)
     }
 
     private func requestScrollToTop() {

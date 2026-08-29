@@ -117,6 +117,19 @@ struct CaregiverTodayView: View {
                 guard loadDataOnAppear, sessionStore.currentPatientId != nil else { return }
                 viewModel.load(showLoading: viewModel.items.isEmpty && viewModel.prnMedications.isEmpty)
             }
+            .onReceive(NotificationCenter.default.publisher(for: .doseRecordsUpdated)) { notification in
+                guard loadDataOnAppear, sessionStore.currentPatientId != nil else { return }
+                if let sender = notification.object as? CaregiverTodayViewModel, sender === viewModel {
+                    return
+                }
+                viewModel.load(showLoading: false)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .caregiverTabBecameActive)) { notification in
+                guard notification.object as? CaregiverTab == .today,
+                      loadDataOnAppear,
+                      sessionStore.currentPatientId != nil else { return }
+                viewModel.load(showLoading: false)
+            }
             .accessibilityIdentifier("CaregiverTodayView")
             .alert(
                 NSLocalizedString("caregiver.today.confirm.slot.title", comment: "Confirm slot record title"),

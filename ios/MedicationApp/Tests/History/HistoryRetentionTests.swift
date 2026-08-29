@@ -7,6 +7,59 @@ import XCTest
 
 @MainActor
 final class HistoryRetentionTests: XCTestCase {
+    func testMonthSlotProgressDistinguishesPartialFromPending() throws {
+        let data = Data(#"""
+        {
+          "year": 2026,
+          "month": 8,
+          "days": [{
+            "date": "2026-08-29",
+            "slotSummary": {
+              "morning": "missed",
+              "noon": "pending",
+              "evening": "pending",
+              "bedtime": "none"
+            },
+            "slotProgress": {
+              "morning": {"scheduledCount": 1, "takenCount": 0, "pendingCount": 0, "missedCount": 1},
+              "noon": {"scheduledCount": 1, "takenCount": 0, "pendingCount": 1, "missedCount": 0},
+              "evening": {"scheduledCount": 2, "takenCount": 1, "pendingCount": 1, "missedCount": 0},
+              "bedtime": {"scheduledCount": 0, "takenCount": 0, "pendingCount": 0, "missedCount": 0}
+            }
+          }]
+        }
+        """#.utf8)
+
+        let response = try JSONDecoder().decode(HistoryMonthResponseDTO.self, from: data)
+        let progress = try XCTUnwrap(response.days.first?.slotProgress)
+
+        XCTAssertEqual(progress.morning.displayStatus, .missed)
+        XCTAssertEqual(progress.noon.displayStatus, .pending)
+        XCTAssertEqual(progress.evening.displayStatus, .partial)
+        XCTAssertEqual(progress.bedtime.displayStatus, .none)
+    }
+
+    func testMonthHistoryStillDecodesWithoutSlotProgress() throws {
+        let data = Data(#"""
+        {
+          "year": 2026,
+          "month": 8,
+          "days": [{
+            "date": "2026-08-29",
+            "slotSummary": {
+              "morning": "taken",
+              "noon": "none",
+              "evening": "none",
+              "bedtime": "none"
+            }
+          }]
+        }
+        """#.utf8)
+
+        let response = try JSONDecoder().decode(HistoryMonthResponseDTO.self, from: data)
+        XCTAssertNil(response.days.first?.slotProgress)
+    }
+
     func testRetentionLockIsHiddenWhileBillingIsDisabled() {
         XCTAssertFalse(
             HistoryRetentionPresentationPolicy.shouldPresentLock(

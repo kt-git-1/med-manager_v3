@@ -347,6 +347,7 @@ enum PatientHistoryTodayEncouragement {
 }
 
 struct HistoryMonthView: View {
+    private static let selectedDayScrollID = "history-selected-day"
     private static let historyTimeZone = AppConstants.defaultTimeZone
     private static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
@@ -456,37 +457,49 @@ struct HistoryMonthView: View {
                             .ignoresSafeArea()
                     }
 
-                    ScrollView {
-                        LazyVStack(spacing: 16) {
-                            header
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            LazyVStack(spacing: 16) {
+                                header
 
-                            if viewModel.isLoadingMonth && viewModel.month == nil {
-                                LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
-                            } else if let errorMessage = viewModel.monthErrorMessage {
-                                errorSection(message: errorMessage, retry: loadMonth)
-                            } else if isPatientMode {
-                                patientSimpleHistory
-                            } else {
-                                calendarSection
-                                selectedDaySummaryCard
-                                HistoryDayDetailView(
-                                    viewModel: viewModel,
-                                    selectedDate: selectedDate,
-                                    highlightedSlot: highlightedSlot,
-                                    style: isPatientMode ? .patient : .caregiver,
-                                    onReturnToLogin: { sessionStore.returnToCaregiverLogin() },
-                                    onRecordMissedDose: recordMissedDose,
-                                    onCancelDose: cancelDose,
-                                    onCancelPrn: cancelPrn
-                                )
+                                if viewModel.isLoadingMonth && viewModel.month == nil {
+                                    LoadingStateView(message: NSLocalizedString("common.loading", comment: "Loading"))
+                                } else if let errorMessage = viewModel.monthErrorMessage {
+                                    errorSection(message: errorMessage, retry: loadMonth)
+                                } else if isPatientMode {
+                                    patientSimpleHistory
+                                } else {
+                                    calendarSection
+                                    selectedDaySummaryCard
+                                        .id(Self.selectedDayScrollID)
+                                    HistoryDayDetailView(
+                                        viewModel: viewModel,
+                                        selectedDate: selectedDate,
+                                        highlightedSlot: highlightedSlot,
+                                        style: isPatientMode ? .patient : .caregiver,
+                                        onReturnToLogin: { sessionStore.returnToCaregiverLogin() },
+                                        onRecordMissedDose: recordMissedDose,
+                                        onCancelDose: cancelDose,
+                                        onCancelPrn: cancelPrn
+                                    )
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.top, 12)
+                            .padding(.bottom, 120)
+                        }
+                        .scrollContentBackground(.hidden)
+                        .onChange(of: viewModel.scrollToSelectedDayRequest) { previousValue, newValue in
+                            guard newValue > previousValue else { return }
+                            Task { @MainActor in
+                                await Task.yield()
+                                withAnimation(.easeOut(duration: 0.25)) {
+                                    proxy.scrollTo(Self.selectedDayScrollID, anchor: .top)
+                                }
                             }
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                        .padding(.bottom, 120)
                     }
-                    .scrollContentBackground(.hidden)
                 }
                 .refreshable {
                     loadMonth()
@@ -517,9 +530,17 @@ struct HistoryMonthView: View {
             updateSelectionForDisplayedMonth()
             loadSelectedDay()
         }
-        .onReceive(NotificationCenter.default.publisher(for: .doseRecordsUpdated)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .doseRecordsUpdated)) { notification in
+            if let sender = notification.object as? HistoryViewModel, sender === viewModel {
+                return
+            }
             loadMonth()
             viewModel.loadPatientStreak()
+            loadSelectedDay()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .caregiverTabBecameActive)) { notification in
+            guard !isPatientMode, notification.object as? CaregiverTab == .history else { return }
+            loadMonth()
             loadSelectedDay()
         }
         .onChange(of: sessionStore.currentPatientId) { _, _ in
@@ -1486,32 +1507,43 @@ struct HistoryMonthView: View {
                 .foregroundStyle(Color.readableSecondaryText)
                 .fixedSize(horizontal: false, vertical: true)
             if selectedTotalCount > 0 {
-                LazyVGrid(columns: selectedSummaryPillColumns, alignment: .leading, spacing: 8) {
-                    historyStatusPill(
-                        text: String(format: NSLocalizedString("caregiver.history.summary.taken", comment: "Taken count"), selectedTakenCount),
-                        color: historyTakenColor,
-                        systemImage: "checkmark.circle.fill"
-                    )
-                    historyStatusPill(
-                        text: String(format: NSLocalizedString("caregiver.history.summary.pending", comment: "Pending count"), selectedPendingCount),
-                        color: selectedPendingCount > 0 ? historyPendingColor : .gray,
-                        systemImage: "clock.fill"
-                    )
-                    if selectedMissedCount > 0 {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
                         historyStatusPill(
-                            text: String(format: NSLocalizedString("caregiver.history.summary.missed", comment: "Missed count"), selectedMissedCount),
-                            color: historyMissedColor,
-                            systemImage: "exclamationmark.triangle.fill"
+                            text: String(format: NSLocalizedString("caregiver.history.summary.taken", comment: "Taken count"), selectedTakenCount),
+                            color: historyTakenColor,
+                            systemImage: "checkmark.circle.fill"
                         )
+                        historyStatusPill(
+                            text: String(format: NSLocalizedString("caregiver.history.summary.pending", comment: "Pending count"), selectedPendingCount),
+                            color: selectedPendingCount > 0 ? historyPendingColor : .gray,
+                            systemImage: "clock.fill"
+                        )
+                        Spacer(minLength: 0)
+                    }
+                    if selectedPartialCount > 0 || selectedMissedCount > 0 {
+                        HStack(spacing: 8) {
+                            if selectedPartialCount > 0 {
+                                historyStatusPill(
+                                    text: String(format: NSLocalizedString("caregiver.history.summary.partial", comment: "Partial count"), selectedPartialCount),
+                                    color: historyPendingColor,
+                                    systemImage: "exclamationmark.circle.fill"
+                                )
+                            }
+                            if selectedMissedCount > 0 {
+                                historyStatusPill(
+                                    text: String(format: NSLocalizedString("caregiver.history.summary.missed", comment: "Missed count"), selectedMissedCount),
+                                    color: historyMissedColor,
+                                    systemImage: "exclamationmark.triangle.fill"
+                                )
+                            }
+                            Spacer(minLength: 0)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-    }
-
-    private var selectedSummaryPillColumns: [GridItem] {
-        [GridItem(.adaptive(minimum: 140), spacing: 8, alignment: .leading)]
     }
 
     private var calendarGrid: some View {
@@ -1697,14 +1729,27 @@ struct HistoryMonthView: View {
         return summariesByDate[selectedDateKey]
     }
 
-    private var selectedStatuses: [HistorySlotSummaryStatusDTO] {
+    private var selectedStatuses: [HistorySlotProgressDisplayStatus] {
         guard let selectedSummary else { return [] }
+        if let progress = selectedDaySummary?.slotProgress {
+            return [progress.morning, progress.noon, progress.evening, progress.bedtime]
+                .map(\.displayStatus)
+                .filter { $0 != .none }
+        }
         return [selectedSummary.morning, selectedSummary.noon, selectedSummary.evening, selectedSummary.bedtime]
+            .map(HistorySlotProgressDisplayStatus.init)
             .filter { $0 != .none }
+    }
+
+    private var selectedDaySummary: HistoryDaySummaryDTO? {
+        guard let selectedDateKey else { return nil }
+        return viewModel.month?.days.first { $0.date == selectedDateKey }
     }
 
     private var selectedTotalCount: Int { selectedStatuses.count }
     private var selectedTakenCount: Int { selectedStatuses.filter { $0 == .taken }.count }
+    private var selectedPartialCount: Int { selectedStatuses.filter { $0 == .partial }.count }
+    private var selectedRecordedCount: Int { selectedTakenCount + selectedPartialCount }
     private var selectedPendingCount: Int { selectedStatuses.filter { $0 == .pending }.count }
     private var selectedMissedCount: Int { selectedStatuses.filter { $0 == .missed }.count }
     private var selectedPrnCount: Int {
@@ -1718,7 +1763,7 @@ struct HistoryMonthView: View {
         }
         return String(
             format: NSLocalizedString("caregiver.history.summary.format", comment: "History summary"),
-            selectedTakenCount,
+            selectedRecordedCount,
             selectedTotalCount
         )
     }
@@ -1729,6 +1774,9 @@ struct HistoryMonthView: View {
         }
         if selectedMissedCount > 0 {
             return NSLocalizedString("history.selected.missedHelp", comment: "Missed help")
+        }
+        if selectedPartialCount > 0 {
+            return NSLocalizedString("history.selected.partialHelp", comment: "Partial help")
         }
         if selectedPendingCount > 0 {
             if let selectedDate, isFutureDate(selectedDate) {

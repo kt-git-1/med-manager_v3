@@ -177,6 +177,10 @@ struct InventoryListView: View {
         .onReceive(NotificationCenter.default.publisher(for: .medicationUpdated)) { _ in
             viewModel.load(showLoading: viewModel.items.isEmpty)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .caregiverTabBecameActive)) { notification in
+            guard notification.object as? CaregiverTab == .inventory else { return }
+            viewModel.load(showLoading: false)
+        }
         .navigationDestination(isPresented: detailIsPresented) {
             if let item = selectedItem {
                 InventoryDetailView(
