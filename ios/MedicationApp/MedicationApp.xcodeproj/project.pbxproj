@@ -96,6 +96,7 @@
 		99577734807B7EA60CCA2553 /* CaregiverSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C084FA5333D8A7F1BF0CC274 /* CaregiverSettingsView.swift */; };
 		99C00580D1C7031D0250D81F /* CaregiverAuthChoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0B3D46C84BDF4988FAD45A /* CaregiverAuthChoiceView.swift */; };
 		9AC12771713EEFB88AB180B2 /* MedicationApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6422C8656A2A888B307E5A94 /* MedicationApp.swift */; };
+		9BA4D2231F085E85833D1F39 /* AnalyticsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0659F8BD6583BB89719EBC79 /* AnalyticsServiceTests.swift */; };
 		9BDBE28767029C5017FDA414 /* SchedulingRefreshOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3335A90BDEB52C323A153517 /* SchedulingRefreshOverlay.swift */; };
 		9CD32F9777E00CA402463257 /* MedicationFormViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 816F71313F426FE0A622F4B3 /* MedicationFormViewModel.swift */; };
 		9D2399E1B34F75CBD52AD0F0 /* PeriodPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 891C730CACE8B439AA82280A /* PeriodPickerSheet.swift */; };
@@ -173,6 +174,7 @@
 		013B6B790A720A87F5E3035D /* TodayPatientFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayPatientFlowTests.swift; sourceTree = "<group>"; };
 		01D43997A9913A554CA15C41 /* HistoryRetentionLockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryRetentionLockView.swift; sourceTree = "<group>"; };
 		030FF0398901FCE2AFC189D6 /* NotificationTapUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationTapUITests.swift; sourceTree = "<group>"; };
+		0659F8BD6583BB89719EBC79 /* AnalyticsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsServiceTests.swift; sourceTree = "<group>"; };
 		071D9CAF62C18AC6DDC887BD /* InventoryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryDetailView.swift; sourceTree = "<group>"; };
 		0822331373D994BC40BCB45F /* MedicationFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationFormView.swift; sourceTree = "<group>"; };
 		08D4DBCBF2CE5522633BB90C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -659,6 +661,7 @@
 		E3BBD46D74E5948FF9B26BF2 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				0659F8BD6583BB89719EBC79 /* AnalyticsServiceTests.swift */,
 				C864E2CD124754159C571F26 /* APIClientTests.swift */,
 				C0C0A8C5F4DC619A7E070636 /* AuthServiceTests.swift */,
 				D9ADE3B816AD8CA592B9B529 /* ExploratoryUITapCoverageUITests.swift */,
@@ -1010,6 +1013,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				ED619E29E74E4546A2591DF6 /* APIClientTests.swift in Sources */,
+				9BA4D2231F085E85833D1F39 /* AnalyticsServiceTests.swift in Sources */,
 				1CE852A24B52CF698060C41C /* AuthServiceTests.swift in Sources */,
 				34D5BC6EC9144D274A5234CB /* CaregiverPushSettingsTests.swift in Sources */,
 				CE4860F77D3875FFA09B54C0 /* DeviceTokenManagerLogoutTests.swift in Sources */,

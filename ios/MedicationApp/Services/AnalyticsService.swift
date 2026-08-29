@@ -1,6 +1,38 @@
 import Foundation
 import FirebaseAnalytics
 
+@MainActor
+protocol AnalyticsBackend: AnyObject {
+    func setCollectionEnabled(_ enabled: Bool)
+    func setUserID(_ userID: String?)
+    func setUserProperty(_ value: String?, forName name: String)
+    func resetData()
+    func logEvent(_ name: String, parameters: [String: String])
+}
+
+@MainActor
+private final class FirebaseAnalyticsBackend: AnalyticsBackend {
+    func setCollectionEnabled(_ enabled: Bool) {
+        Analytics.setAnalyticsCollectionEnabled(enabled)
+    }
+
+    func setUserID(_ userID: String?) {
+        Analytics.setUserID(userID)
+    }
+
+    func setUserProperty(_ value: String?, forName name: String) {
+        Analytics.setUserProperty(value, forName: name)
+    }
+
+    func resetData() {
+        Analytics.resetAnalyticsData()
+    }
+
+    func logEvent(_ name: String, parameters: [String: String]) {
+        Analytics.logEvent(name, parameters: parameters)
+    }
+}
+
 enum PremiumFeature: String, Sendable {
     case reminderAdvanced = "reminder_advanced"
     case caregiverAlerts = "caregiver_alerts"
@@ -147,8 +179,18 @@ final class AnalyticsService: ObservableObject {
     @Published private(set) var isEnabled: Bool
     @Published private(set) var hasConsentDecision: Bool
     private var isConfigured = false
+    private let defaults: UserDefaults
+    private let backend: any AnalyticsBackend
+    private let environmentIsSuppressed: () -> Bool
 
-    private init(defaults: UserDefaults = .standard) {
+    init(
+        defaults: UserDefaults = .standard,
+        backend: any AnalyticsBackend = FirebaseAnalyticsBackend(),
+        environmentIsSuppressed: @escaping () -> Bool = AnalyticsService.defaultEnvironmentIsSuppressed
+    ) {
+        self.defaults = defaults
+        self.backend = backend
+        self.environmentIsSuppressed = environmentIsSuppressed
         isEnabled = defaults.bool(forKey: Self.preferenceKey)
         hasConsentDecision = defaults.bool(forKey: Self.consentDecisionKey)
             || defaults.object(forKey: Self.preferenceKey) != nil
@@ -159,29 +201,29 @@ final class AnalyticsService: ObservableObject {
         isConfigured = true
 
         if isSuppressedEnvironment {
-            Analytics.setAnalyticsCollectionEnabled(false)
+            backend.setCollectionEnabled(false)
             return
         }
 
-        Analytics.setUserID(nil)
-        Analytics.setUserProperty("false", forName: AnalyticsUserPropertyAllowAdPersonalizationSignals)
-        Analytics.setAnalyticsCollectionEnabled(isEnabled)
+        backend.setUserID(nil)
+        backend.setUserProperty("false", forName: AnalyticsUserPropertyAllowAdPersonalizationSignals)
+        backend.setCollectionEnabled(isEnabled)
     }
 
     func setCollectionEnabled(_ enabled: Bool) {
-        UserDefaults.standard.set(enabled, forKey: Self.preferenceKey)
-        UserDefaults.standard.set(true, forKey: Self.consentDecisionKey)
+        defaults.set(enabled, forKey: Self.preferenceKey)
+        defaults.set(true, forKey: Self.consentDecisionKey)
         isEnabled = enabled
         hasConsentDecision = true
 
         guard !isSuppressedEnvironment else {
-            Analytics.setAnalyticsCollectionEnabled(false)
+            backend.setCollectionEnabled(false)
             return
         }
 
-        Analytics.setAnalyticsCollectionEnabled(enabled)
+        backend.setCollectionEnabled(enabled)
         if !enabled {
-            Analytics.resetAnalyticsData()
+            backend.resetData()
         }
     }
 
@@ -387,10 +429,14 @@ final class AnalyticsService: ObservableObject {
 
     private func log(_ name: String, parameters: [String: String]) {
         guard isConfigured, isEnabled, !isSuppressedEnvironment else { return }
-        Analytics.logEvent(name, parameters: parameters)
+        backend.logEvent(name, parameters: parameters)
     }
 
     private var isSuppressedEnvironment: Bool {
+        environmentIsSuppressed()
+    }
+
+    private nonisolated static func defaultEnvironmentIsSuppressed() -> Bool {
         let process = ProcessInfo.processInfo
         return process.environment["XCTestConfigurationFilePath"] != nil
             || process.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
