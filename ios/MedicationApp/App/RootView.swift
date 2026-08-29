@@ -101,7 +101,7 @@ struct RootView: View {
     }
 
     private var isCaregiverTutorialPreviewActive: Bool {
-        #if DEBUG
+        #if DEBUG || targetEnvironment(simulator)
         ProcessInfo.processInfo.arguments.contains("-CaregiverTutorialPreview")
         #else
         false

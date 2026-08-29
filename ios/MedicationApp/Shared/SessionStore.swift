@@ -107,7 +107,7 @@ final class SessionStore: ObservableObject {
     }
 
     private func applyTutorialPreviewOverridesIfNeeded() {
-        #if DEBUG
+        #if DEBUG || targetEnvironment(simulator)
         let arguments = ProcessInfo.processInfo.arguments
         if arguments.contains("-CaregiverTutorialPreview") {
             saveCaregiverToken("tutorial-preview-caregiver-token")

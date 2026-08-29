@@ -12,6 +12,7 @@ final class APIClientTests: XCTestCase {
 
     override func tearDown() {
         APIClientMockURLProtocol.requestHandler = nil
+        APIClientMockURLProtocol.shouldHang = false
         UserDefaults(suiteName: suiteName)?.removePersistentDomain(forName: suiteName)
         super.tearDown()
     }
@@ -44,7 +45,8 @@ final class APIClientTests: XCTestCase {
         let apiClient = APIClient(
             baseURL: URL(string: "http://localhost:3000")!,
             sessionStore: sessionStore,
-            urlSession: urlSession
+            urlSession: urlSession,
+            linkURLSession: urlSession
         )
 
         let linked = try await apiClient.exchangeLinkCode(code: "123456")
@@ -76,7 +78,8 @@ final class APIClientTests: XCTestCase {
         let apiClient = APIClient(
             baseURL: URL(string: "http://localhost:3000")!,
             sessionStore: sessionStore,
-            urlSession: urlSession
+            urlSession: urlSession,
+            linkURLSession: urlSession
         )
 
         do {
@@ -89,6 +92,70 @@ final class APIClientTests: XCTestCase {
         }
 
         XCTAssertEqual(sessionStore.patientToken, "existing-patient-token")
+    }
+
+    func testLinkExchangeMapsTransportFailureAndUsesShortTimeout() async throws {
+        let userDefaults = UserDefaults(suiteName: suiteName)!
+        let sessionStore = SessionStore(
+            userDefaults: userDefaults,
+            secureStorage: APIClientTestSecureStorage()
+        )
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [APIClientMockURLProtocol.self]
+        let urlSession = URLSession(configuration: configuration)
+        var receivedTimeout: TimeInterval?
+        APIClientMockURLProtocol.requestHandler = { request in
+            receivedTimeout = request.timeoutInterval
+            throw URLError(.notConnectedToInternet)
+        }
+        let apiClient = APIClient(
+            baseURL: URL(string: "http://localhost:3000")!,
+            sessionStore: sessionStore,
+            urlSession: urlSession,
+            linkURLSession: urlSession
+        )
+
+        do {
+            _ = try await apiClient.exchangeLinkCode(code: "123456")
+            XCTFail("Expected network error")
+        } catch APIError.network {
+            // Expected.
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        XCTAssertEqual(receivedTimeout, 15)
+    }
+
+    func testLinkExchangeManualDeadlineStopsHangingTransport() async throws {
+        let userDefaults = UserDefaults(suiteName: suiteName)!
+        let sessionStore = SessionStore(
+            userDefaults: userDefaults,
+            secureStorage: APIClientTestSecureStorage()
+        )
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [APIClientMockURLProtocol.self]
+        let urlSession = URLSession(configuration: configuration)
+        APIClientMockURLProtocol.shouldHang = true
+        let apiClient = APIClient(
+            baseURL: URL(string: "http://localhost:3000")!,
+            sessionStore: sessionStore,
+            urlSession: urlSession,
+            linkURLSession: urlSession,
+            linkExchangeTimeout: 0.05
+        )
+        let startedAt = Date()
+
+        do {
+            _ = try await apiClient.exchangeLinkCode(code: "123456")
+            XCTFail("Expected network timeout")
+        } catch APIError.network {
+            // Expected.
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        XCTAssertLessThan(Date().timeIntervalSince(startedAt), 1)
     }
 
     func testCreateRegimenRequestEncodesScheduleFields() throws {
@@ -186,12 +253,14 @@ final class APIClientTests: XCTestCase {
 
 private final class APIClientMockURLProtocol: URLProtocol {
     nonisolated(unsafe) static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+    nonisolated(unsafe) static var shouldHang = false
 
     override class func canInit(with request: URLRequest) -> Bool { true }
 
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
+        if Self.shouldHang { return }
         guard let handler = Self.requestHandler else {
             client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
             return

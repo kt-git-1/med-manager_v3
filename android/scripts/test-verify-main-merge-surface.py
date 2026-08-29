@@ -44,7 +44,7 @@ def create_repository(root: Path) -> tuple[str, str]:
     git(root, "init", "-b", "main")
     git(root, "config", "user.name", "C96 Fixture")
     git(root, "config", "user.email", "fixture@example.invalid")
-    write(root, ".gitignore", "docs/\ntmp/\noutput/")
+    write(root, ".gitignore", "docs/\ntmp/\noutput/\n")
     write(root, "README.md")
     base = commit_all(root, "base")
     git(root, "update-ref", "refs/remotes/origin/main", base)
@@ -62,6 +62,7 @@ def create_repository(root: Path) -> tuple[str, str]:
                 "!docs/android/**",
                 "tmp/",
                 "output/",
+                "/evidence/",
                 "",
                 "# Android",
                 "android/.gradle/",

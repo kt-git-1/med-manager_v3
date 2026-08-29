@@ -66,7 +66,6 @@ EXPECTED_API_PATHS = {
     "api/src/services/pushNotificationService.ts",
     "api/src/validators/inventory.ts",
     "api/src/validators/prnDoseRecord.ts",
-    "api/src/validators/pushRegister.ts",
     "api/tests/integration/android-assetlinks.test.ts",
     "api/tests/integration/dose-record-event.test.ts",
     "api/tests/integration/dose-recording-caregiver.test.ts",
@@ -129,7 +128,7 @@ EXPECTED_GITIGNORE_ADDED_LINES = (
     "docs/*",
     "!docs/android/",
     "!docs/android/**",
-    "output/",
+    "/evidence/",
     "",
     "# Android",
     "android/.gradle/",
@@ -139,7 +138,7 @@ EXPECTED_GITIGNORE_ADDED_LINES = (
     "*.jks",
     "*.keystore",
 )
-EXPECTED_GITIGNORE_REMOVED_LINES = ("output/",)
+EXPECTED_GITIGNORE_REMOVED_LINES: tuple[str, ...] = ()
 
 
 class MergeSurfaceError(ValueError):

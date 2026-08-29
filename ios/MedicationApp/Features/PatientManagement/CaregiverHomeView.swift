@@ -457,7 +457,7 @@ struct CaregiverHomeView: View {
     }
 
     private func startTutorialIfNeeded() {
-        #if DEBUG
+        #if DEBUG || targetEnvironment(simulator)
         if let argument = ProcessInfo.processInfo.arguments.first(where: {
             $0.hasPrefix("-CaregiverTutorialPreviewStep.")
         }),

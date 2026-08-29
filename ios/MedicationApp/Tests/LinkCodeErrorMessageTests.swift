@@ -16,6 +16,13 @@ final class LinkCodeErrorMessageTests: XCTestCase {
         )
     }
 
+    func testRawTransportErrorUsesNetworkGuidance() {
+        XCTAssertEqual(
+            LinkCodeErrorMessage.message(for: URLError(.notConnectedToInternet)),
+            "通信に失敗しました。接続を確認して、もう一度お試しください"
+        )
+    }
+
     func testMissingOrUsedCodeUsesExistingGuidance() {
         XCTAssertEqual(
             LinkCodeErrorMessage.message(for: APIError.notFound),

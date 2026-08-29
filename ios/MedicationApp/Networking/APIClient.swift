@@ -1,15 +1,46 @@
 import Foundation
 
+private final class URLSessionDeadlineState: @unchecked Sendable {
+    private let lock = NSLock()
+    private var isCompleted = false
+
+    func claimCompletion() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !isCompleted else { return false }
+        isCompleted = true
+        return true
+    }
+}
+
 @MainActor
 final class APIClient {
     let baseURL: URL
     let sessionStore: SessionStore
     private let urlSession: URLSession
+    private let linkURLSession: URLSession
+    private let linkExchangeTimeout: TimeInterval
 
-    init(baseURL: URL, sessionStore: SessionStore, urlSession: URLSession = .shared) {
+    init(
+        baseURL: URL,
+        sessionStore: SessionStore,
+        urlSession: URLSession = .shared,
+        linkURLSession: URLSession? = nil,
+        linkExchangeTimeout: TimeInterval = 15
+    ) {
         self.baseURL = baseURL
         self.sessionStore = sessionStore
         self.urlSession = urlSession
+        self.linkExchangeTimeout = linkExchangeTimeout
+        if let linkURLSession {
+            self.linkURLSession = linkURLSession
+        } else {
+            let configuration = URLSessionConfiguration.ephemeral
+            configuration.waitsForConnectivity = false
+            configuration.timeoutIntervalForRequest = linkExchangeTimeout
+            configuration.timeoutIntervalForResource = linkExchangeTimeout
+            self.linkURLSession = URLSession(configuration: configuration)
+        }
     }
 
     func request(path: String, method: String = "GET") async throws -> Data {
@@ -197,10 +228,24 @@ final class APIClient {
         let url = baseURL.appendingPathComponent("api/patient/link")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        request.timeoutInterval = linkExchangeTimeout
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         let payload = ["code": code]
         request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
-        let data = try await send(request, usesCurrentAuthorization: false)
+        let data: Data
+        do {
+            let response: URLResponse
+            (data, response) = try await performDataTask(
+                for: requestWithoutAuthorization(request),
+                using: linkURLSession,
+                deadline: linkExchangeTimeout
+            )
+            try mapErrorIfNeeded(response: response, data: data, handlesAuthFailure: false)
+        } catch let apiError as APIError {
+            throw apiError
+        } catch let urlError as URLError {
+            throw APIError.network(urlError.localizedDescription)
+        }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         do {
@@ -574,6 +619,32 @@ final class APIClient {
             handlesAuthFailure: usesCurrentAuthorization
         )
         return data
+    }
+
+    private func performDataTask(
+        for request: URLRequest,
+        using session: URLSession,
+        deadline: TimeInterval
+    ) async throws -> (Data, URLResponse) {
+        try await withCheckedThrowingContinuation { continuation in
+            let state = URLSessionDeadlineState()
+            let task = session.dataTask(with: request) { data, response, error in
+                guard state.claimCompletion() else { return }
+                if let error {
+                    continuation.resume(throwing: error)
+                } else if let data, let response {
+                    continuation.resume(returning: (data, response))
+                } else {
+                    continuation.resume(throwing: URLError(.badServerResponse))
+                }
+            }
+            task.resume()
+            DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + deadline) {
+                guard state.claimCompletion() else { return }
+                task.cancel()
+                continuation.resume(throwing: URLError(.timedOut))
+            }
+        }
     }
 
     private func requestWithoutAuthorization(_ request: URLRequest) -> URLRequest {

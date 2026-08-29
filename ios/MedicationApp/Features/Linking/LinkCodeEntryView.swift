@@ -2,6 +2,10 @@ import SwiftUI
 
 enum LinkCodeErrorMessage {
     static func message(for error: Error) -> String {
+        if error is URLError {
+            return NSLocalizedString("link.code.error.network", comment: "Link network error")
+        }
+
         guard let apiError = error as? APIError else {
             return NSLocalizedString("common.error.linking.generic", comment: "Linking failed")
         }
