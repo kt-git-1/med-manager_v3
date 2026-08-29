@@ -56,6 +56,40 @@ class AnalyticsServiceTest {
     }
 
     @Test
+    fun configureIsIdempotentAndDoesNotToggleFirebaseCollectionTwice() {
+        val transport = FakeAnalyticsTransport()
+        val service = AnalyticsService(
+            FakeConsentStore(AnalyticsConsentState(enabled = true, decided = true)),
+            transport,
+        )
+
+        service.configure()
+        service.configure()
+
+        assertEquals(listOf(true), transport.collectionChanges)
+    }
+
+    @Test
+    fun sessionSuppressionImmediatelyStopsCollectionAndFutureEvents() {
+        val transport = FakeAnalyticsTransport()
+        val service = AnalyticsService(
+            FakeConsentStore(AnalyticsConsentState(enabled = true, decided = true)),
+            transport,
+        )
+        service.configure()
+        service.logModeSelected(AnalyticsAppMode.PATIENT)
+
+        service.setSessionSuppressed(true)
+        service.logModeSelected(AnalyticsAppMode.CAREGIVER)
+
+        assertEquals(listOf(true, false), transport.collectionChanges)
+        assertEquals(
+            listOf("app_mode_selected" to mapOf("mode" to "patient")),
+            transport.events,
+        )
+    }
+
+    @Test
     fun wrapperBoundaryRejectsUnknownEventsKeysFreeTextAndOutOfRangeSteps() {
         val transport = FakeAnalyticsTransport()
         val service = AnalyticsService(FakeConsentStore(AnalyticsConsentState(true, true)), transport)
