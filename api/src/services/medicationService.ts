@@ -119,16 +119,12 @@ export type InventoryAdjustInput = {
   absoluteQuantity?: number;
 };
 
-function computeInventoryState(
+export function computeInventoryState(
   quantity: number,
   threshold: number,
   daysRemaining: number | null
 ): InventoryAlertState {
-  if (daysRemaining !== null) {
-    if (daysRemaining <= 0) {
-      return "OUT";
-    }
-  } else if (quantity <= 0) {
+  if (quantity <= 0) {
     return "OUT";
   }
   if (threshold > 0) {

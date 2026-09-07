@@ -512,9 +512,9 @@ struct InventoryListView: View {
 
     @ViewBuilder
     private func inventoryBadge(for item: InventoryItemDTO) -> some View {
-        if item.out {
+        if isOutOfInventory(item) {
             badge(text: NSLocalizedString("caregiver.inventory.status.out", comment: "Out badge"), color: .red)
-        } else if item.low {
+        } else if shouldShowLowInventory(for: item) {
             badge(text: NSLocalizedString("caregiver.inventory.status.low", comment: "Low badge"), color: .orange)
         } else if !item.inventoryEnabled {
             badge(text: NSLocalizedString("caregiver.inventory.status.unconfigured", comment: "Unconfigured badge"), color: .gray)
@@ -551,7 +551,7 @@ struct InventoryListView: View {
             case .lowOnly:
                 return shouldShowLowInventory(for: item)
             case .outOnly:
-                return item.inventoryEnabled && item.out
+                return isOutOfInventory(item)
             }
         }
         return sortedItems(baseItems)
@@ -562,11 +562,11 @@ struct InventoryListView: View {
             if lhs.periodEnded != rhs.periodEnded {
                 return !lhs.periodEnded
             }
-            if lhs.out != rhs.out {
-                return lhs.out
+            if isOutOfInventory(lhs) != isOutOfInventory(rhs) {
+                return isOutOfInventory(lhs)
             }
-            if lhs.low != rhs.low {
-                return lhs.low
+            if shouldShowLowInventory(for: lhs) != shouldShowLowInventory(for: rhs) {
+                return shouldShowLowInventory(for: lhs)
             }
             let lhsDays = lhs.daysRemaining ?? Int.max
             let rhsDays = rhs.daysRemaining ?? Int.max
@@ -595,7 +595,7 @@ struct InventoryListView: View {
     private var needsActionItems: [InventoryItemDTO] {
         sortedItems(
             viewModel.items.filter { item in
-                item.inventoryEnabled && !item.periodEnded && (item.out || shouldShowLowInventory(for: item))
+                item.inventoryEnabled && !item.periodEnded && (isOutOfInventory(item) || shouldShowLowInventory(for: item))
             }
         )
     }
@@ -659,7 +659,7 @@ struct InventoryListView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                if shouldShowLowInventory(for: item) || item.out {
+                if shouldShowLowInventory(for: item) || isOutOfInventory(item) {
                     Button {
                         Task { await adjustListInventory(item, delta: weeklyRefillAmount(for: item)) }
                     } label: {
@@ -789,7 +789,7 @@ struct InventoryListView: View {
                     color: CaregiverUI.orange
                 )
             }
-            if item.out {
+            if isOutOfInventory(item) {
                 badge(
                     text: NSLocalizedString("caregiver.inventory.status.out", comment: "Out badge"),
                     color: .red
@@ -818,6 +818,12 @@ struct InventoryListView: View {
         guard let daysRemaining = item.daysRemaining else {
             return "—"
         }
+        if item.hasLessThanOneDayRemaining {
+            return NSLocalizedString(
+                "caregiver.inventory.plan.lessThanOneDay",
+                comment: "Less than one day remaining"
+            )
+        }
         return String(
             format: NSLocalizedString(
                 "caregiver.inventory.plan.daysRemaining.short",
@@ -831,8 +837,23 @@ struct InventoryListView: View {
         if item.periodEnded {
             return NSLocalizedString("caregiver.inventory.help.periodEnded", comment: "Period ended help")
         }
-        if item.out {
+        if isOutOfInventory(item) {
             return NSLocalizedString("caregiver.inventory.help.out", comment: "Out help")
+        }
+        if item.hasLessThanOneDayRemaining {
+            if let remainingDoseCount = item.remainingWholeDoseCount, remainingDoseCount > 0 {
+                return String(
+                    format: NSLocalizedString(
+                        "caregiver.inventory.help.lessThanOneDay.doses",
+                        comment: "Remaining doses below one day"
+                    ),
+                    remainingDoseCount
+                )
+            }
+            return NSLocalizedString(
+                "caregiver.inventory.help.lessThanOneDay",
+                comment: "Less than one day remaining help"
+            )
         }
         if shouldShowLowInventory(for: item) {
             if item.daysRemaining != nil {
@@ -847,11 +868,20 @@ struct InventoryListView: View {
     }
 
     private func shouldShowLowInventory(for item: InventoryItemDTO) -> Bool {
-        item.inventoryEnabled && !item.periodEnded && item.low
+        item.inventoryEnabled
+            && !item.periodEnded
+            && !isOutOfInventory(item)
+            && (item.low || item.hasLessThanOneDayRemaining)
     }
 
     private func shouldShowAttention(for item: InventoryItemDTO) -> Bool {
-        item.inventoryEnabled && !item.periodEnded && (item.out || shouldShowLowInventory(for: item))
+        item.inventoryEnabled
+            && !item.periodEnded
+            && (isOutOfInventory(item) || shouldShowLowInventory(for: item))
+    }
+
+    private func isOutOfInventory(_ item: InventoryItemDTO) -> Bool {
+        item.inventoryEnabled && item.inventoryQuantity <= 0
     }
 
     private func daysRemainingColor(for item: InventoryItemDTO) -> Color {
@@ -873,7 +903,7 @@ struct InventoryListView: View {
         guard let item else {
             return NSLocalizedString("caregiver.inventory.guide.ok.message", comment: "Inventory guide ok message")
         }
-        if item.out {
+        if isOutOfInventory(item) {
             return String(
                 format: NSLocalizedString("caregiver.inventory.guide.out.message", comment: "Inventory guide out message"),
                 item.name

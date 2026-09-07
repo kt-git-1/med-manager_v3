@@ -511,11 +511,14 @@
 "caregiver.inventory.status.unconfigured" = "未設定";
 "caregiver.inventory.plan.daysRemaining" = "あと%d日分";
 "caregiver.inventory.plan.daysRemaining.short" = "あと%d日分";
+"caregiver.inventory.plan.lessThanOneDay" = "1日分未満";
 "caregiver.inventory.plan.ended" = "服用期間終了";
 "caregiver.inventory.plan.refillDue" = "補充目安";
 "caregiver.inventory.help.available" = "服薬記録に合わせて自動で減ります。数が違うときはタップして補充・修正できます。";
 "caregiver.inventory.help.low" = "残り日数が少ないため、早めの補充が必要です。";
 "caregiver.inventory.help.out" = "在庫が0です。服薬前に補充してください。";
+"caregiver.inventory.help.lessThanOneDay" = "1回分未満です。早めに補充してください。";
+"caregiver.inventory.help.lessThanOneDay.doses" = "あと%d回服用できます。早めに補充してください。";
 "caregiver.inventory.help.prn" = "頓服薬です。使った分だけ在庫が減ります。";
 "caregiver.inventory.help.periodEnded" = "服用期間が終了しているため、通常の補充対象ではありません。";
 "caregiver.inventory.unconfigured.title" = "まだ在庫管理を始めていません";

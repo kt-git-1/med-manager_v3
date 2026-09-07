@@ -23,6 +23,20 @@ struct InventoryItemDTO: Decodable, Identifiable {
     var isInsufficientForDose: Bool {
         inventoryEnabled && inventoryQuantity < doseCountPerIntake
     }
+
+    var hasLessThanOneDayRemaining: Bool {
+        inventoryEnabled
+            && !isPrn
+            && inventoryQuantity > 0
+            && (daysRemaining.map { $0 <= 0 } ?? false)
+    }
+
+    var remainingWholeDoseCount: Int? {
+        guard inventoryQuantity > 0, doseCountPerIntake > 0 else {
+            return nil
+        }
+        return Int((inventoryQuantity / doseCountPerIntake).rounded(.down))
+    }
 }
 
 struct InventoryListDataDTO: Decodable {

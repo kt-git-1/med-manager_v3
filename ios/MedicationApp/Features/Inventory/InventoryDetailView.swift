@@ -519,11 +519,7 @@ struct InventoryDetailView: View {
             return .unconfigured
         }
         let sanitizedThreshold = max(0, item.inventoryLowThreshold)
-        if let daysRemaining = item.daysRemaining {
-            if daysRemaining <= 0 {
-                return .out
-            }
-        } else if quantity <= 0 {
+        if quantity <= 0 {
             return .out
         }
         if sanitizedThreshold > 0, let daysRemaining = item.daysRemaining, daysRemaining <= sanitizedThreshold {
@@ -542,6 +538,12 @@ struct InventoryDetailView: View {
         }
         guard let daysRemaining = item.daysRemaining else {
             return "—"
+        }
+        if quantity > 0, daysRemaining <= 0 {
+            return NSLocalizedString(
+                "caregiver.inventory.plan.lessThanOneDay",
+                comment: "Less than one day remaining"
+            )
         }
         return String(
             format: NSLocalizedString(
