@@ -152,7 +152,7 @@ final class TodayCaregiverFlowTests: XCTestCase {
         }
         XCTAssertEqual(
             toastPresenter.toast?.message,
-            NSLocalizedString("patient.today.inventory.insufficient", comment: "Insufficient inventory")
+            "「在庫切れの薬」は在庫が不足しているため代理で記録できません。在庫を補充してから、もう一度お試しください。"
         )
         XCTAssertEqual(toastPresenter.toast?.kind, .warning)
     }

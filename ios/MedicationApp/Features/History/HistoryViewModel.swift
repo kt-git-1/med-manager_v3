@@ -192,7 +192,13 @@ final class HistoryViewModel: ObservableObject {
             } catch let apiError as APIError {
                 if case .insufficientInventory = apiError {
                     showToast(
-                        NSLocalizedString("patient.today.inventory.insufficient", comment: "Insufficient inventory"),
+                        String(
+                            format: NSLocalizedString(
+                                "history.day.backfill.inventory.insufficient",
+                                comment: "History backfill insufficient inventory"
+                            ),
+                            dose.medicationName
+                        ),
                         kind: .warning
                     )
                 } else {

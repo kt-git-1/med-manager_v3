@@ -374,6 +374,7 @@
 "history.day.backfill.confirm.message" = "%1$@（予定 %2$@）を現在時刻で代理記録します。";
 "history.day.backfill.confirm.action" = "代理で記録";
 "history.day.backfill.recorded" = "代理で記録しました";
+"history.day.backfill.inventory.insufficient" = "「%@」は在庫が不足しているため代理で記録できません。在庫を補充してから、もう一度お試しください。";
 "history.status.cancelled" = "取り消し済み";
 "history.day.cancel.button" = "記録を取り消す";
 "history.day.cancel.confirm.title" = "服薬記録を取り消しますか？";
