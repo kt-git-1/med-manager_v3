@@ -83,6 +83,80 @@ final class TodayCaregiverFlowTests: XCTestCase {
         await fulfillment(of: [historyRefresh], timeout: 1)
     }
 
+    func testHistoryBackfillShowsInventoryWarningForInsufficientInventory() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [CaregiverTodayURLProtocol.self]
+        let urlSession = URLSession(configuration: configuration)
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        let sessionStore = SessionStore(
+            userDefaults: defaults,
+            secureStorage: CaregiverTodayTestSecureStorage()
+        )
+        sessionStore.setMode(.caregiver)
+        sessionStore.saveCaregiverSession(
+            SupabaseSession(
+                accessToken: "caregiver-token",
+                refreshToken: "refresh-token",
+                expiresIn: 3_600
+            )
+        )
+        sessionStore.setCurrentPatientId("patient-1")
+        let apiClient = APIClient(
+            baseURL: try XCTUnwrap(URL(string: "http://localhost:3000")),
+            sessionStore: sessionStore,
+            urlSession: urlSession
+        )
+        CaregiverTodayURLProtocol.requestHandler = { request in
+            XCTAssertEqual(request.url?.path, "/api/patients/patient-1/dose-records")
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 409,
+                httpVersion: nil,
+                headerFields: ["content-type": "application/json"]
+            )!
+            return (response, Data(#"{"error":"insufficient_inventory"}"#.utf8))
+        }
+
+        let toastPresenter = ToastPresenter()
+        let viewModel = HistoryViewModel(apiClient: apiClient, sessionStore: sessionStore)
+        viewModel.toastPresenter = toastPresenter
+        let scheduledAt = try XCTUnwrap(
+            ISO8601DateFormatter().date(from: "2026-09-06T14:30:00Z")
+        )
+        let dose = HistoryDayItemDTO(
+            medicationId: "medication-1",
+            medicationName: "在庫切れの薬",
+            dosageText: "1回1錠",
+            doseCountPerIntake: 1,
+            scheduledAt: scheduledAt,
+            takenAt: nil,
+            slot: .bedtime,
+            effectiveStatus: .missed,
+            recordedByType: nil,
+            cancelledAt: nil,
+            cancelledByType: nil,
+            cancelledRecordTakenAt: nil,
+            inventoryRestored: nil
+        )
+
+        viewModel.recordMissedCaregiverDose(
+            dose,
+            date: "2026-09-06",
+            year: 2026,
+            month: 9
+        )
+
+        let deadline = Date().addingTimeInterval(1)
+        while toastPresenter.toast == nil, Date() < deadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertEqual(
+            toastPresenter.toast?.message,
+            NSLocalizedString("patient.today.inventory.insufficient", comment: "Insufficient inventory")
+        )
+        XCTAssertEqual(toastPresenter.toast?.kind, .warning)
+    }
+
     func testCaregiverTodayRefreshUsesServerPatientSlotTimes() async throws {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [CaregiverTodayURLProtocol.self]

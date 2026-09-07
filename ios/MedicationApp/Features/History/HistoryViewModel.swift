@@ -189,6 +189,15 @@ final class HistoryViewModel: ObservableObject {
                 showToast(NSLocalizedString("history.day.backfill.recorded", comment: "Backfill recorded"))
                 loadMonth(year: year, month: month)
                 loadDay(date: date)
+            } catch let apiError as APIError {
+                if case .insufficientInventory = apiError {
+                    showToast(
+                        NSLocalizedString("patient.today.inventory.insufficient", comment: "Insufficient inventory"),
+                        kind: .warning
+                    )
+                } else {
+                    showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
+                }
             } catch {
                 showToast(NSLocalizedString("common.error.generic", comment: "Generic error"), kind: .error)
             }
