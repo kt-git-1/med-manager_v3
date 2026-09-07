@@ -1916,19 +1916,27 @@ struct HistoryMonthView: View {
     }
 
     private func updateSelectionForDisplayedMonth() {
-        let today = Date()
-        if Self.calendar.isDate(today, equalTo: displayedMonth, toGranularity: .month) {
-            selectedDate = today
-            return
+        selectedDate = Self.preferredSelectedDate(
+            displayedMonth: displayedMonth,
+            selectedDate: selectedDate,
+            today: Date()
+        )
+    }
+
+    static func preferredSelectedDate(
+        displayedMonth: Date,
+        selectedDate: Date?,
+        today: Date
+    ) -> Date {
+        if let selectedDate,
+           calendar.isDate(selectedDate, equalTo: displayedMonth, toGranularity: .month) {
+            return selectedDate
         }
-        if selectedDate == nil,
-           let firstDay = Self.calendar.date(byAdding: .day, value: 0, to: displayedMonth) {
-            selectedDate = firstDay
-        } else if let selectedDate,
-                  !Self.calendar.isDate(selectedDate, equalTo: displayedMonth, toGranularity: .month),
-                  let firstDay = Self.calendar.date(byAdding: .day, value: 0, to: displayedMonth) {
-            self.selectedDate = firstDay
+        if calendar.isDate(today, equalTo: displayedMonth, toGranularity: .month) {
+            return today
         }
+        let components = calendar.dateComponents([.year, .month], from: displayedMonth)
+        return calendar.date(from: components) ?? displayedMonth
     }
 
     private static func startOfMonth(for date: Date) -> Date {

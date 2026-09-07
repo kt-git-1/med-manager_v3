@@ -16,6 +16,46 @@ final class TodayCaregiverFlowTests: XCTestCase {
         super.tearDown()
     }
 
+    func testHistoryMonthRefreshPreservesSelectedPastDateInDisplayedMonth() throws {
+        let selectedDate = try XCTUnwrap(
+            ISO8601DateFormatter().date(from: "2026-09-06T03:00:00Z")
+        )
+        let displayedMonth = try XCTUnwrap(
+            ISO8601DateFormatter().date(from: "2026-09-01T03:00:00Z")
+        )
+        let today = try XCTUnwrap(
+            ISO8601DateFormatter().date(from: "2026-09-07T03:00:00Z")
+        )
+
+        let result = HistoryMonthView.preferredSelectedDate(
+            displayedMonth: displayedMonth,
+            selectedDate: selectedDate,
+            today: today
+        )
+
+        XCTAssertEqual(result, selectedDate)
+    }
+
+    func testHistoryMonthSwitchToCurrentMonthSelectsToday() throws {
+        let selectedDate = try XCTUnwrap(
+            ISO8601DateFormatter().date(from: "2026-08-29T03:00:00Z")
+        )
+        let displayedMonth = try XCTUnwrap(
+            ISO8601DateFormatter().date(from: "2026-09-01T03:00:00Z")
+        )
+        let today = try XCTUnwrap(
+            ISO8601DateFormatter().date(from: "2026-09-07T03:00:00Z")
+        )
+
+        let result = HistoryMonthView.preferredSelectedDate(
+            displayedMonth: displayedMonth,
+            selectedDate: selectedDate,
+            today: today
+        )
+
+        XCTAssertEqual(result, today)
+    }
+
     func testDeletingDoseNotifiesCachedHistoryToRefresh() async throws {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [CaregiverTodayURLProtocol.self]
