@@ -8,7 +8,10 @@ import {
   buildScheduleResponse,
   parseSlotTimesFromParams
 } from "../../../../src/services/scheduleResponse";
-import { resolvePatientSlotTimes } from "../../../../src/services/patientSlotTimeService";
+import {
+  getPatientSlotTimeTimeline,
+  resolvePatientSlotTimes
+} from "../../../../src/services/patientSlotTimeService";
 
 export const runtime = "nodejs";
 
@@ -29,12 +32,19 @@ export async function GET(request: Request) {
       });
     }
 
+    const slotTimeTimeline = slotTimeParse.slotTimes
+      ? undefined
+      : await getPatientSlotTimeTimeline(session.patientId, from, to);
+    const effectiveSlotTimes = slotTimeParse.slotTimes
+      ? await resolvePatientSlotTimes(session.patientId, slotTimeParse.slotTimes)
+      : undefined;
     const doses = await generateScheduleForPatientWithStatus({
       patientId: session.patientId,
       from,
       to,
       now,
-      slotTimes: await resolvePatientSlotTimes(session.patientId, slotTimeParse.slotTimes)
+      slotTimes: effectiveSlotTimes,
+      slotTimeTimeline
     });
     const payload = buildScheduleResponse(doses);
     return new Response(JSON.stringify(payload), {

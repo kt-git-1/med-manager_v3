@@ -454,4 +454,57 @@ describe("schedule generator", () => {
     expect(result[0].effectiveStatus).toBe("taken");
     expect(result[0].recordedByType).toBe("patient");
   });
+
+  it("does not move an earlier slot record into a different current slot after same-day preset changes", () => {
+    const medicationSnapshot = {
+      name: "Medication A",
+      dosageText: "1 tablet",
+      doseCountPerIntake: 1,
+      dosageStrengthValue: 10,
+      dosageStrengthUnit: "mg",
+      notes: null
+    };
+    const doses = [
+      {
+        patientId: "patient-1",
+        medicationId: "med-1",
+        scheduledAt: "2026-09-08T04:00:00.000Z", // 13:00 JST, current noon
+        medicationSnapshot
+      },
+      {
+        patientId: "patient-1",
+        medicationId: "med-1",
+        scheduledAt: "2026-09-08T10:00:00.000Z", // 19:00 JST, current evening
+        medicationSnapshot
+      }
+    ];
+    const records = [
+      {
+        patientId: "patient-1",
+        medicationId: "med-1",
+        scheduledAt: new Date("2026-09-08T03:22:00.000Z"), // 12:22 JST, former evening
+        takenAt: new Date("2026-09-08T03:23:00.000Z"),
+        recordedByType: "patient"
+      }
+    ];
+    const slotTimeTimeline = [
+      {
+        effectiveFrom: new Date("2026-09-07T15:00:00.000Z"),
+        slotTimes: { noon: "11:00", evening: "12:22" }
+      },
+      {
+        effectiveFrom: new Date("2026-09-08T03:30:00.000Z"),
+        slotTimes: { noon: "13:00", evening: "19:00" }
+      }
+    ];
+
+    const result = applyDoseStatuses(doses, records, new Date("2026-09-08T05:00:01.000Z"), {
+      timeZone: "Asia/Tokyo",
+      slotTimeTimeline
+    });
+
+    expect(result.map((dose) => dose.effectiveStatus)).toEqual(["missed", "taken"]);
+    expect(result[0].recordedByType).toBeUndefined();
+    expect(result[1].recordedByType).toBe("patient");
+  });
 });
