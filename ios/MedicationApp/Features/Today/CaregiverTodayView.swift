@@ -2,6 +2,7 @@ import SwiftUI
 
 enum CaregiverTodayOverviewState: Equatable {
     case noPlan
+    case partial
     case late
     case taken
     case missed
@@ -9,8 +10,10 @@ enum CaregiverTodayOverviewState: Equatable {
 
     static func resolve(statuses: [DoseStatusDTO?], isLate: Bool) -> Self {
         guard !statuses.isEmpty else { return .noPlan }
+        let allTaken = statuses.allSatisfy { $0 == .taken }
+        if statuses.contains(where: { $0 == .taken }) && !allTaken { return .partial }
         if isLate { return .late }
-        if statuses.allSatisfy({ $0 == .taken }) { return .taken }
+        if allTaken { return .taken }
         if statuses.contains(where: { $0 == .missed }) { return .missed }
         return .pending
     }
@@ -19,6 +22,8 @@ enum CaregiverTodayOverviewState: Equatable {
         switch self {
         case .noPlan:
             return "minus"
+        case .partial:
+            return "circle.lefthalf.filled"
         case .late:
             return "clock.badge.exclamationmark.fill"
         case .taken:
@@ -787,6 +792,8 @@ struct CaregiverTodayView: View {
 
     private func overviewColor(for row: TimelineRow) -> Color {
         switch overviewState(for: row) {
+        case .partial:
+            return CaregiverUI.orange
         case .late:
             return CaregiverUI.orange
         case .taken:
@@ -878,41 +885,44 @@ struct CaregiverTodayView: View {
     }
 
     private func timelineStatusText(for doses: [ScheduleDoseDTO]) -> String {
-        guard !doses.isEmpty else {
+        switch timelineState(for: doses) {
+        case .noPlan:
             return NSLocalizedString("caregiver.today.timeline.noPlan", comment: "No plan")
-        }
-        if doses.allSatisfy({ $0.effectiveStatus == .taken }) {
-            if doses.contains(where: { dose in
-                guard let takenAt = dose.takenAt else { return false }
-                return MedicationRecordingPolicy.isLate(scheduledAt: dose.scheduledAt, takenAt: takenAt)
-            }) {
-                return NSLocalizedString("history.status.late", comment: "Late dose")
-            }
+        case .partial:
+            return NSLocalizedString("caregiver.today.timeline.partial", comment: "Partially recorded")
+        case .late:
+            return NSLocalizedString("history.status.late", comment: "Late dose")
+        case .taken:
             return NSLocalizedString("caregiver.today.timeline.taken", comment: "Taken")
-        }
-        if doses.allSatisfy({ $0.effectiveStatus == .missed }) {
+        case .missed:
             return NSLocalizedString("caregiver.today.timeline.missed", comment: "Missed")
+        case .pending:
+            return NSLocalizedString("caregiver.today.timeline.pending", comment: "Pending")
         }
-        return NSLocalizedString("caregiver.today.timeline.pending", comment: "Pending")
     }
 
     private func statusColor(for doses: [ScheduleDoseDTO]) -> Color {
-        if doses.isEmpty {
+        switch timelineState(for: doses) {
+        case .noPlan, .pending:
             return .gray
-        }
-        if doses.allSatisfy({ $0.effectiveStatus == .taken }) {
-            if doses.contains(where: { dose in
-                guard let takenAt = dose.takenAt else { return false }
-                return MedicationRecordingPolicy.isLate(scheduledAt: dose.scheduledAt, takenAt: takenAt)
-            }) {
-                return CaregiverUI.orange
-            }
+        case .partial, .late:
+            return CaregiverUI.orange
+        case .taken:
             return CaregiverUI.teal
-        }
-        if doses.allSatisfy({ $0.effectiveStatus == .missed }) {
+        case .missed:
             return CaregiverUI.red
         }
-        return CaregiverUI.orange
+    }
+
+    private func timelineState(for doses: [ScheduleDoseDTO]) -> CaregiverTodayOverviewState {
+        let isLate = doses.contains { dose in
+            guard dose.effectiveStatus == .taken, let takenAt = dose.takenAt else { return false }
+            return MedicationRecordingPolicy.isLate(scheduledAt: dose.scheduledAt, takenAt: takenAt)
+        }
+        return CaregiverTodayOverviewState.resolve(
+            statuses: doses.map(\.effectiveStatus),
+            isLate: isLate
+        )
     }
 
     private func caregiverSlotColor(for slot: NotificationSlot?) -> Color {

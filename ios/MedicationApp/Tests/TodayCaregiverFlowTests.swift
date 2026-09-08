@@ -377,6 +377,21 @@ final class TodayCaregiverFlowTests: XCTestCase {
         XCTAssertEqual(state.iconName, "checkmark")
     }
 
+    func testOverviewShowsPartialWhenOnlySomeScheduledDosesAreTaken() {
+        let pendingState = CaregiverTodayOverviewState.resolve(
+            statuses: [.taken, .pending],
+            isLate: false
+        )
+        let missedState = CaregiverTodayOverviewState.resolve(
+            statuses: [.taken, .missed],
+            isLate: false
+        )
+
+        XCTAssertEqual(pendingState, .partial)
+        XCTAssertEqual(missedState, .partial)
+        XCTAssertEqual(pendingState.iconName, "circle.lefthalf.filled")
+    }
+
     func testTimelineRecorderSummaryIsNilWithoutTakenDoses() {
         XCTAssertNil(CaregiverTodayView.TimelineRecorderSummary.resolve(recorders: []))
     }

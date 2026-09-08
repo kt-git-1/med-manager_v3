@@ -602,6 +602,7 @@
 "caregiver.today.timeline.recordSlot.single" = "代理で記録";
 "caregiver.today.timeline.recordSlot.multiple" = "%d件をまとめて代理で記録";
 "caregiver.today.timeline.taken" = "飲みました";
+"caregiver.today.timeline.partial" = "一部記録";
 "caregiver.today.timeline.pending" = "未記録";
 "caregiver.today.timeline.missed" = "飲み忘れ";
 "caregiver.today.record.button" = "代理で記録する";
