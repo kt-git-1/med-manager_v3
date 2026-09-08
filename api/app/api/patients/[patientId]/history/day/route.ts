@@ -103,11 +103,6 @@ export async function GET(
     const effectiveSlotTimes = customSlotTimes
       ? await resolvePatientSlotTimes(patientId, customSlotTimes)
       : undefined;
-    const daySlotTimes = resolveRouteSlotTimesForDate(
-      new Date(range.to.getTime() - 1),
-      effectiveSlotTimes,
-      slotTimeTimeline
-    );
     const [doses, prn, cancelledRecords] = await Promise.all([
       getScheduleWithStatus(
         patientId,
@@ -136,7 +131,12 @@ export async function GET(
 
     const items = doses
       .map((dose) => {
-        const slot = resolveSlot(dose.scheduledAt, historyTimeZone, daySlotTimes);
+        const doseSlotTimes = resolveRouteSlotTimesForDate(
+          new Date(dose.scheduledAt),
+          effectiveSlotTimes,
+          slotTimeTimeline
+        );
+        const slot = resolveSlot(dose.scheduledAt, historyTimeZone, doseSlotTimes);
         if (!slot) {
           return null;
         }
