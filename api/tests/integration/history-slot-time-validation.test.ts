@@ -3,6 +3,9 @@ import { GET as patientDayRoute } from "../../app/api/patient/history/day/route"
 import { GET as patientMonthRoute } from "../../app/api/patient/history/month/route";
 import { GET as caregiverDayRoute } from "../../app/api/patients/[patientId]/history/day/route";
 import { GET as caregiverMonthRoute } from "../../app/api/patients/[patientId]/history/month/route";
+import { getScheduleWithStatus } from "../../src/services/scheduleService";
+import { getPatientSlotTimeTimeline } from "../../src/services/patientSlotTimeService";
+import { listCancelledDoseRecordsByPatientRange } from "../../src/repositories/doseRecordRepo";
 
 vi.mock("../../src/middleware/error", () => ({
   errorResponse: (error: unknown) =>
@@ -43,6 +46,11 @@ vi.mock("../../src/services/scheduleService", () => ({
 
 vi.mock("../../src/services/prnDoseRecordService", () => ({
   listPrnHistoryItemsByRange: vi.fn(async () => ({ items: [], countByDay: {} }))
+}));
+
+vi.mock("../../src/services/patientSlotTimeService", () => ({
+  getPatientSlotTimeTimeline: vi.fn(async () => []),
+  resolvePatientSlotTimes: vi.fn(async (_patientId: string, slotTimes: unknown) => slotTimes)
 }));
 
 vi.mock("../../src/validators/schedule", () => ({
@@ -129,5 +137,69 @@ describe("history slot time validation", () => {
 
     expect(patientMonthResponse.status).toBe(200);
     expect(caregiverDayResponse.status).toBe(200);
+  });
+
+  it("keeps cancellation metadata when a same-day preset change moves the generated time", async () => {
+    vi.mocked(getPatientSlotTimeTimeline).mockResolvedValueOnce([
+      {
+        effectiveFrom: new Date("2026-02-01T00:00:00.000Z"),
+        slotTimes: { morning: "08:00", noon: "10:00", evening: "12:00", bedtime: "12:24" }
+      },
+      {
+        effectiveFrom: new Date("2026-02-01T04:00:00.000Z"),
+        slotTimes: { morning: "08:00", noon: "13:00", evening: "19:00", bedtime: "22:00" }
+      }
+    ]);
+    vi.mocked(getScheduleWithStatus).mockResolvedValueOnce([
+      {
+        patientId: "patient-1",
+        medicationId: "med-1",
+        scheduledAt: "2026-02-01T13:00:00.000Z",
+        medicationSnapshot: {
+          name: "Medication A",
+          dosageText: "1 tablet",
+          doseCountPerIntake: 1,
+          dosageStrengthValue: 5,
+          dosageStrengthUnit: "mg"
+        },
+        effectiveStatus: "pending"
+      }
+    ]);
+    vi.mocked(listCancelledDoseRecordsByPatientRange).mockResolvedValueOnce([
+      {
+        id: "record-1",
+        patientId: "patient-1",
+        medicationId: "med-1",
+        scheduledAt: new Date("2026-02-01T03:24:00.000Z"),
+        takenAt: new Date("2026-02-01T03:25:00.000Z"),
+        recordedByType: "PATIENT",
+        recordedById: null,
+        recordingGroupId: null,
+        consumedQuantity: 1,
+        cancelledAt: new Date("2026-02-01T05:00:00.000Z"),
+        cancelledByType: "CAREGIVER",
+        cancelledById: "caregiver-1",
+        inventoryRestoredAt: new Date("2026-02-01T05:00:00.000Z"),
+        createdAt: new Date("2026-02-01T03:25:00.000Z"),
+        updatedAt: new Date("2026-02-01T05:00:00.000Z")
+      }
+    ]);
+
+    const response = await caregiverDayRoute(
+      new Request("http://localhost/api/patients/patient-1/history/day?date=2026-02-01", {
+        headers: { authorization: "Bearer caregiver-valid" }
+      }),
+      { params: Promise.resolve({ patientId: "patient-1" }) }
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.doses[0]).toMatchObject({
+      scheduledAt: "2026-02-01T03:24:00.000Z",
+      slot: "bedtime",
+      cancelledAt: "2026-02-01T05:00:00.000Z",
+      cancelledRecordTakenAt: "2026-02-01T03:25:00.000Z",
+      inventoryRestored: true
+    });
   });
 });
