@@ -4,7 +4,12 @@ import { requirePatient } from "../../../../../src/middleware/auth";
 import { validateSlotBulkRecordRequest } from "../../../../../src/validators/slotBulkRecord";
 import { parseSlotTimesFromParams } from "../../../../../src/services/scheduleResponse";
 import { bulkRecordSlot } from "../../../../../src/services/slotBulkRecordService";
-import { resolvePatientSlotTimes } from "../../../../../src/services/patientSlotTimeService";
+import { getDayRange } from "../../../../../src/services/scheduleService";
+import {
+  getPatientSlotTimeTimeline,
+  resolvePatientSlotTimes
+} from "../../../../../src/services/patientSlotTimeService";
+import { DEFAULT_TIMEZONE } from "../../../../../src/constants";
 
 export const runtime = "nodejs";
 
@@ -36,12 +41,21 @@ export async function POST(request: Request) {
       });
     }
 
+    const { from, to } = getDayRange(new Date(`${validation.date!}T00:00:00`), DEFAULT_TIMEZONE);
+    const slotTimeTimeline = slotTimeParse.slotTimes
+      ? undefined
+      : await getPatientSlotTimeTimeline(session.patientId, from, to);
+    const customSlotTimes = slotTimeParse.slotTimes
+      ? await resolvePatientSlotTimes(session.patientId, slotTimeParse.slotTimes)
+      : undefined;
+
     // Execute bulk record
     const result = await bulkRecordSlot({
       patientId: session.patientId,
       date: validation.date!,
       slot: validation.slot!,
-      customSlotTimes: await resolvePatientSlotTimes(session.patientId, slotTimeParse.slotTimes)
+      customSlotTimes,
+      slotTimeTimeline
     });
 
     logDoseRecordOperation("create", "patient");

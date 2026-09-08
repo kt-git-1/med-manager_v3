@@ -580,6 +580,55 @@ describe("slot bulk record integration", () => {
       );
     });
 
+    it("records a dose in its historical slot after a same-day preset change", async () => {
+      mockScheduleDoses = [
+        {
+          ...makeMorningDoses("missed")[0],
+          scheduledAt: "2026-02-11T01:00:00.000Z"
+        }
+      ];
+      const { bulkRecordSlot } = await import("../../src/services/slotBulkRecordService");
+
+      const result = await bulkRecordSlot({
+        patientId: "patient-1",
+        date: "2026-02-11",
+        slot: "noon",
+        customSlotTimes: {
+          morning: "08:00",
+          noon: "13:00",
+          evening: "19:00",
+          bedtime: "23:00"
+        },
+        slotTimeTimeline: [
+          {
+            effectiveFrom: new Date("2026-02-10T00:00:00.000Z"),
+            slotTimes: {
+              morning: "08:00",
+              noon: "10:00",
+              evening: "19:00",
+              bedtime: "23:00"
+            }
+          },
+          {
+            effectiveFrom: new Date("2026-02-11T02:00:00.000Z"),
+            slotTimes: {
+              morning: "08:00",
+              noon: "13:00",
+              evening: "19:00",
+              bedtime: "23:00"
+            }
+          }
+        ],
+        recordedByType: "CAREGIVER",
+        recordedById: "caregiver-1"
+      });
+
+      expect(result.updatedCount).toBe(1);
+      expect(result.remainingCount).toBe(0);
+      expect(result.slotSummary.noon).toBe("taken");
+      expect(result.slotSummary.morning).toBe("none");
+    });
+
     it("allows a caregiver to proxy-record missed doses after the patient recording window", async () => {
       vi.setSystemTime(new Date("2026-02-11T01:00:00.000Z"));
       mockScheduleDoses = makeMorningDoses("missed");

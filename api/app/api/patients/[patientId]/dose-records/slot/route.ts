@@ -9,7 +9,9 @@ import {
 } from "../../../../../../src/middleware/auth";
 import { validateSlotBulkRecordRequest } from "../../../../../../src/validators/slotBulkRecord";
 import { bulkRecordSlot } from "../../../../../../src/services/slotBulkRecordService";
-import { resolvePatientSlotTimes } from "../../../../../../src/services/patientSlotTimeService";
+import { getDayRange } from "../../../../../../src/services/scheduleService";
+import { getPatientSlotTimeTimeline } from "../../../../../../src/services/patientSlotTimeService";
+import { DEFAULT_TIMEZONE } from "../../../../../../src/constants";
 
 export const runtime = "nodejs";
 
@@ -36,11 +38,12 @@ export async function POST(
       });
     }
 
+    const { from, to } = getDayRange(new Date(`${validation.date!}T00:00:00`), DEFAULT_TIMEZONE);
     const result = await bulkRecordSlot({
       patientId,
       date: validation.date!,
       slot: validation.slot!,
-      customSlotTimes: await resolvePatientSlotTimes(patientId),
+      slotTimeTimeline: await getPatientSlotTimeTimeline(patientId, from, to),
       recordedByType: "CAREGIVER",
       recordedById: session.caregiverUserId
     });

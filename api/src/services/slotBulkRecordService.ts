@@ -6,13 +6,13 @@
 // ---------------------------------------------------------------------------
 
 import { prisma } from "../repositories/prisma";
-import { getScheduleWithStatus, getDayRange } from "./scheduleService";
 import {
-  resolveSlot,
-  buildSlotSummary,
-  type HistorySlot,
-  type SlotSummaryStatus
-} from "./scheduleResponse";
+  getScheduleWithStatus,
+  getDayRange,
+  resolveSlotTimesForDate,
+  type SlotTimeTimelineEntry
+} from "./scheduleService";
+import { resolveSlot, type HistorySlot, type SlotSummaryStatus } from "./scheduleResponse";
 import { getPatientRecordById } from "../repositories/patientRepo";
 import { listMedicationRecordsForPatientByIds } from "../repositories/medicationRepo";
 import { notifyCaregiversOfDoseTaken } from "./pushNotificationService";
@@ -33,6 +33,7 @@ export type SlotBulkRecordInput = {
   date: string;
   slot: HistorySlot;
   customSlotTimes?: Partial<Record<HistorySlot, string>>;
+  slotTimeTimeline?: SlotTimeTimelineEntry[];
   recordedByType?: "PATIENT" | "CAREGIVER";
   recordedById?: string | null;
 };
@@ -74,6 +75,37 @@ function scheduleDoseKey(dose: { patientId: string; medicationId: string; schedu
   return `${dose.patientId}:${dose.medicationId}:${dose.scheduledAt}`;
 }
 
+function slotTimesForDose(input: SlotBulkRecordInput, scheduledAt: string) {
+  return resolveSlotTimesForDate(
+    new Date(scheduledAt),
+    input.customSlotTimes,
+    input.slotTimeTimeline
+  );
+}
+
+function buildTimelineAwareSlotSummary(
+  doses: { scheduledAt: string; effectiveStatus?: "pending" | "taken" | "missed" }[],
+  input: SlotBulkRecordInput,
+  tz: string
+) {
+  const summary: Record<HistorySlot, SlotSummaryStatus> = {
+    morning: "none",
+    noon: "none",
+    evening: "none",
+    bedtime: "none"
+  };
+  for (const dose of doses) {
+    const slot = resolveSlot(dose.scheduledAt, tz, slotTimesForDose(input, dose.scheduledAt));
+    if (!slot) continue;
+    const status = dose.effectiveStatus ?? "pending";
+    const current = summary[slot];
+    if (status === "missed") summary[slot] = "missed";
+    else if (status === "pending" && current !== "missed") summary[slot] = "pending";
+    else if (status === "taken" && current === "none") summary[slot] = "taken";
+  }
+  return summary;
+}
+
 // ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
@@ -95,12 +127,13 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
     to,
     tz,
     now,
-    input.customSlotTimes
+    input.customSlotTimes,
+    input.slotTimeTimeline
   );
 
   // 3. Filter to target slot
   const slotDoses = allDoses.filter((dose) => {
-    const doseSlot = resolveSlot(dose.scheduledAt, tz, input.customSlotTimes);
+    const doseSlot = resolveSlot(dose.scheduledAt, tz, slotTimesForDose(input, dose.scheduledAt));
     return doseSlot === input.slot;
   });
 
@@ -123,7 +156,7 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
     const { to: nextLocalDayStart } = getDayRange(new Date(firstScheduledAt), tz);
     const windowClose = nextLocalDayStart.getTime() + RECORDING_DEADLINE_AFTER_DAY_START_MS;
     if (now.getTime() < windowOpen || now.getTime() >= windowClose) {
-      const slotSummary = buildSlotSummary(allDoses, tz, input.customSlotTimes);
+      const slotSummary = buildTimelineAwareSlotSummary(allDoses, input, tz);
       return {
         updatedCount: 0,
         remainingCount: slotDoses.filter(
@@ -146,7 +179,7 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
 
   // 7. If nothing to record, return summary with zero updates
   if (recordable.length === 0) {
-    const slotSummary = buildSlotSummary(allDoses, tz, input.customSlotTimes);
+    const slotSummary = buildTimelineAwareSlotSummary(allDoses, input, tz);
     return {
       updatedCount: 0,
       remainingCount: 0,
@@ -188,7 +221,7 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
   }
 
   if (recordableWithInventory.length === 0) {
-    const slotSummary = buildSlotSummary(allDoses, tz, input.customSlotTimes);
+    const slotSummary = buildTimelineAwareSlotSummary(allDoses, input, tz);
     return {
       updatedCount: 0,
       remainingCount: insufficientDoses.length,
@@ -344,14 +377,14 @@ export async function bulkRecordSlot(input: SlotBulkRecordInput): Promise<SlotBu
   );
   const updatedDoses = allDoses.map((dose) => {
     if (recordedKeys.has(scheduleDoseKey(dose))) {
-      const doseSlot = resolveSlot(dose.scheduledAt, tz, input.customSlotTimes);
+      const doseSlot = resolveSlot(dose.scheduledAt, tz, slotTimesForDose(input, dose.scheduledAt));
       if (doseSlot === input.slot && dose.effectiveStatus !== "taken") {
         return { ...dose, effectiveStatus: "taken" as const };
       }
     }
     return dose;
   });
-  const slotSummary = buildSlotSummary(updatedDoses, tz, input.customSlotTimes);
+  const slotSummary = buildTimelineAwareSlotSummary(updatedDoses, input, tz);
 
   // 13. Return result
   return {
