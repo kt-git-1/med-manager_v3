@@ -237,7 +237,7 @@ final class CaregiverTodayViewModel: ObservableObject {
             do {
                 try await apiClient.deleteCaregiverDoseRecord(
                     medicationId: dose.medicationId,
-                    scheduledAt: dose.scheduledAt
+                    scheduledAt: dose.recordScheduledAt ?? dose.scheduledAt
                 )
                 markDoseDeleted(dose)
                 notifyDoseRecordsUpdated()

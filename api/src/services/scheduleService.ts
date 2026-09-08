@@ -49,6 +49,7 @@ export type ScheduleDoseWithStatus = ScheduleDose & {
   effectiveStatus: DoseStatus;
   recordedByType?: "patient" | "caregiver";
   takenAt?: string;
+  recordScheduledAt?: string;
 };
 
 import {
@@ -568,13 +569,10 @@ export function applyDoseStatuses(
     const hasTaken = !!record;
     return {
       ...dose,
-      // A same-day preset change regenerates the schedule with a new time, while an
-      // existing record keeps its original unique key. Expose the persisted key so
-      // later cancellation targets the record that was actually written.
-      scheduledAt: record?.scheduledAt.toISOString() ?? dose.scheduledAt,
       effectiveStatus: deriveDoseStatus({ scheduledAt: dose.scheduledAt, hasTaken, now }),
       recordedByType: hasTaken ? (record!.recordedByType as "patient" | "caregiver") : undefined,
-      takenAt: record?.takenAt ? record.takenAt.toISOString() : undefined
+      takenAt: record?.takenAt ? record.takenAt.toISOString() : undefined,
+      recordScheduledAt: record?.scheduledAt.toISOString()
     };
   });
 }

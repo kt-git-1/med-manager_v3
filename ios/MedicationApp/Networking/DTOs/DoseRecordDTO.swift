@@ -25,6 +25,7 @@ struct ScheduleDoseDTO: Decodable, Identifiable, Equatable {
     let patientId: String
     let medicationId: String
     let scheduledAt: Date
+    var recordScheduledAt: Date? = nil
     let takenAt: Date?
     let effectiveStatus: DoseStatusDTO?
     let recordedByType: RecordedByTypeDTO?

@@ -453,7 +453,8 @@ describe("schedule generator", () => {
 
     expect(result[0].effectiveStatus).toBe("taken");
     expect(result[0].recordedByType).toBe("patient");
-    expect(result[0].scheduledAt).toBe("2026-07-06T13:00:00.000Z");
+    expect(result[0].scheduledAt).toBe("2026-07-06T11:00:00.000Z");
+    expect(result[0].recordScheduledAt).toBe("2026-07-06T13:00:00.000Z");
   });
 
   it("does not move an earlier slot record into a different current slot after same-day preset changes", () => {
@@ -507,6 +508,7 @@ describe("schedule generator", () => {
     expect(result.map((dose) => dose.effectiveStatus)).toEqual(["missed", "taken"]);
     expect(result[0].recordedByType).toBeUndefined();
     expect(result[1].recordedByType).toBe("patient");
-    expect(result[1].scheduledAt).toBe("2026-09-08T03:22:00.000Z");
+    expect(result[1].scheduledAt).toBe("2026-09-08T10:00:00.000Z");
+    expect(result[1].recordScheduledAt).toBe("2026-09-08T03:22:00.000Z");
   });
 });

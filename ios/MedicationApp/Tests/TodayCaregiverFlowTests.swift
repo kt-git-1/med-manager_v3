@@ -7,6 +7,7 @@ final class TodayCaregiverFlowTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
+        CaregiverTodayURLProtocol.resetCapturedScheduledAt()
         UserDefaults(suiteName: suiteName)?.removePersistentDomain(forName: suiteName)
     }
 
@@ -81,6 +82,9 @@ final class TodayCaregiverFlowTests: XCTestCase {
         )
 
         CaregiverTodayURLProtocol.requestHandler = { request in
+            if request.httpMethod == "DELETE" {
+                CaregiverTodayURLProtocol.captureScheduledAt(from: request)
+            }
             let response = HTTPURLResponse(
                 url: request.url!,
                 statusCode: 200,
@@ -105,6 +109,7 @@ final class TodayCaregiverFlowTests: XCTestCase {
             patientId: "patient-1",
             medicationId: "med-1",
             scheduledAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T04:00:00Z")),
+            recordScheduledAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T03:30:00Z")),
             takenAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T04:05:00Z")),
             effectiveStatus: .taken,
             recordedByType: .caregiver,
@@ -121,6 +126,10 @@ final class TodayCaregiverFlowTests: XCTestCase {
         viewModel.deleteDose(dose)
 
         await fulfillment(of: [historyRefresh], timeout: 1)
+        XCTAssertEqual(
+            CaregiverTodayURLProtocol.capturedScheduledAt,
+            "2026-07-14T03:30:00.000Z"
+        )
     }
 
     func testHistoryBackfillShowsInventoryWarningForInsufficientInventory() async throws {
@@ -530,6 +539,26 @@ private final class CaregiverAnalyticsTrackingSpy: AnalyticsTracking {
 
 private final class CaregiverTodayURLProtocol: URLProtocol {
     nonisolated(unsafe) static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+    private static let captureLock = NSLock()
+    private nonisolated(unsafe) static var capturedScheduledAtStorage: String?
+
+    static var capturedScheduledAt: String? {
+        captureLock.withLock { capturedScheduledAtStorage }
+    }
+
+    static func resetCapturedScheduledAt() {
+        captureLock.withLock { capturedScheduledAtStorage = nil }
+    }
+
+    static func captureScheduledAt(from request: URLRequest) {
+        let value = request.url.flatMap {
+            URLComponents(url: $0, resolvingAgainstBaseURL: false)?
+                .queryItems?
+                .first(where: { $0.name == "scheduledAt" })?
+                .value
+        }
+        captureLock.withLock { capturedScheduledAtStorage = value }
+    }
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }

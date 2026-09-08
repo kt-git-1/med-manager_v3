@@ -105,12 +105,13 @@ export async function GET(request: Request) {
 
     const items = doses
       .map((dose) => {
+        const recordScheduledAt = dose.recordScheduledAt ?? dose.scheduledAt;
         const doseSlotTimes = resolveRouteSlotTimesForDate(
-          new Date(dose.scheduledAt),
+          new Date(recordScheduledAt),
           effectiveSlotTimes,
           slotTimeTimeline
         );
-        const slot = resolveSlot(dose.scheduledAt, historyTimeZone, doseSlotTimes);
+        const slot = resolveSlot(recordScheduledAt, historyTimeZone, doseSlotTimes);
         if (!slot) {
           return null;
         }
@@ -119,7 +120,7 @@ export async function GET(request: Request) {
           medicationName: dose.medicationSnapshot.name,
           dosageText: dose.medicationSnapshot.dosageText,
           doseCountPerIntake: dose.medicationSnapshot.doseCountPerIntake,
-          scheduledAt: dose.scheduledAt,
+          scheduledAt: recordScheduledAt,
           takenAt: dose.takenAt ?? null,
           slot,
           effectiveStatus: dose.effectiveStatus,

@@ -150,17 +150,18 @@ export async function GET(
 
     const items = doses
       .map((dose) => {
+        const recordScheduledAt = dose.recordScheduledAt ?? dose.scheduledAt;
         const doseSlotTimes = resolveRouteSlotTimesForDate(
-          new Date(dose.scheduledAt),
+          new Date(recordScheduledAt),
           effectiveSlotTimes,
           slotTimeTimeline
         );
-        const slot = resolveSlot(dose.scheduledAt, historyTimeZone, doseSlotTimes);
+        const slot = resolveSlot(recordScheduledAt, historyTimeZone, doseSlotTimes);
         if (!slot) {
           return null;
         }
         let cancelledRecord = cancelledByDoseKey.get(
-          `${dose.medicationId}:${new Date(dose.scheduledAt).toISOString()}`
+          `${dose.medicationId}:${new Date(recordScheduledAt).toISOString()}`
         );
         if (!cancelledRecord && dose.effectiveStatus !== "taken") {
           cancelledRecord = (
@@ -173,7 +174,7 @@ export async function GET(
           medicationName: dose.medicationSnapshot.name,
           dosageText: dose.medicationSnapshot.dosageText,
           doseCountPerIntake: dose.medicationSnapshot.doseCountPerIntake,
-          scheduledAt: cancelledRecord?.scheduledAt.toISOString() ?? dose.scheduledAt,
+          scheduledAt: cancelledRecord?.scheduledAt.toISOString() ?? recordScheduledAt,
           takenAt: dose.takenAt ?? null,
           slot,
           effectiveStatus: dose.effectiveStatus,
